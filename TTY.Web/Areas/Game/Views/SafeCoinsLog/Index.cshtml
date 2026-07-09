@@ -1,0 +1,105 @@
+﻿@{
+    Layout = "~/Views/Shared/Layout/_ContentLayout.cshtml";
+    ViewBag.RouteMap = "保险柜操作记录";
+    M_LoginUser loginUser = WebHelper.GetLoginInfo();
+}
+
+@section include_res{
+    <script>
+    $(function () {
+        // 加载指定的模块
+        easyloader.load(['textbox', 'linkbutton', 'datagrid'], function () {
+            //适应窗口大小变化
+            $(window).resize(function () {
+                if ($('body').data('grid-init')) {
+                    setGridSize();
+                }
+            });
+            //初始化插件
+            pluginInit();
+            //初始化查询
+            queryData();
+        });
+    })
+    //重置表格大小
+    function setGridSize(param) {
+        var w = $(window).width() - 8;
+        var h = $(window).height() - 78;
+        resizeGrid('tb_SafeCoinsLog', 'auto', h);
+    }
+    //查询数据
+    function queryData() {
+        var para = $("#frm_srch").serializeObject();
+        bindGridData(para);
+    }
+    //绑定表格数据
+    function bindGridData(para) {
+        if (!$('body').data('grid-init')) {
+            $('#tb_SafeCoinsLog').datagrid({
+                url: "/Game/SafeCoinsLog/GetSafeCoinsLog",
+                queryParams: $.extend({}, para),
+                pagination: true,
+                fitColumns: true,
+                singleSelect: true,
+                striped: true,
+                rownumbers: true,
+                height: 768,
+                pageSize: 20,
+                pageList: [10, 20, 50],
+                idField: 'ID',
+                onBeforeLoad: setGridSize,
+                onLoadSuccess: onLoaded
+            });
+        } else {
+            $('#tb_SafeCoinsLog').datagrid('load', para);
+        }
+    }
+    //格式化
+    function fmtForzen(value, rowData, rowIndex) {
+        if (value == 1)
+            return '<span class="red">存入</span>';
+        else
+            return '<span>取出</span>';
+    }
+
+
+
+    </script>
+}
+
+@*查询条件*@
+<form id="frm_srch">
+    <table width="100%" border="0" cellpadding="0" cellspacing="0" class="titleQueBg" style="height:40px;">
+        <tr>
+            <td>
+
+                <div class="left Lpd5">
+                    用户账号
+                    <input type="text" class="easyui-textbox" name="UserId" />
+                </div>
+
+                <div class="left Lmg10">
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="queryData();" data-options="plain:true,iconCls:'icon-search'">查找</a>
+
+                </div>
+            </td>
+        </tr>
+    </table>
+</form>
+
+@*查询保险柜记录的信息*@
+<table id="tb_SafeCoinsLog">
+    <thead>
+        <tr>
+            <th field="User_Id" width="110">用户账号</th>
+            <th field="type" width="110" formatter="fmtForzen">类型</th>
+            <th field="coins" width="110">操作金额</th>
+            <th field="new_Coins" width="110">操作后金额</th>
+            <th field="safe_Coins" width="110">保险柜剩余金额</th>
+            <th field="CreateTimeStr" width="180">操作时间</th>
+
+        </tr>
+    </thead>
+</table>
+
+

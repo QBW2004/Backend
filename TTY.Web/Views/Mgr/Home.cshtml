@@ -1,0 +1,204 @@
+﻿@{
+    Layout = null;
+    M_LoginUser loginUser = WebHelper.GetLoginInfo();
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    @Styles.Render("~/res/easyui-css")
+    <link href="@Url.Content("~/Content/css/font-awesome.css")" rel="stylesheet" />
+    <link href="@Url.Content("~/Content/css/animate.css")" rel="stylesheet" />
+    <link href="@Url.Content("~/Content/css/style.css")" rel="stylesheet" />
+    <link href="@Url.Content("~/Content/bootstrap.min.css")" rel="stylesheet" />
+    <script src="@Url.Content("~/Scripts/jquery-2.1.4.min.js")"></script>
+    <script src="@Url.Content("~/Scripts/easyloader.js")"></script>
+    <script src="@Url.Content("~/Scripts/bootstrap.min.js")"></script>
+    <script src="@Url.Content("~/Scripts/app/common.js")?v=@(System.IO.File.GetLastWriteTimeUtc(Server.MapPath("~/Scripts/app/common.js")).Ticks)"></script>
+    <style>
+        body {
+            font-family: "open sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            font-size: 14px;
+            color: #676a6c;
+            overflow-x: hidden;
+        }
+        /* WIDGETS */
+        .widget {
+            border-radius: 5px;
+            padding: 15px 20px;
+            margin-bottom: 10px;
+            margin-top: 10px;
+        }
+
+            .widget.style1 h2 {
+                font-size: 30px;
+            }
+
+            .widget h2,
+            .widget h3 {
+                margin-top: 5px;
+                margin-bottom: 0;
+            }
+
+        .widget-text-box {
+            padding: 20px;
+            border: 1px solid #e7eaec;
+            background: #ffffff;
+        }
+
+        .widget-head-color-box {
+            border-radius: 5px 5px 0px 0px;
+            margin-top: 10px;
+        }
+
+        .widget .flot-chart {
+            height: 100px;
+        }
+
+        .vertical-align div {
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        .vertical-align h2,
+        .vertical-align h3 {
+            margin: 0;
+        }
+
+        .todo-list {
+            list-style: none outside none;
+            margin: 0;
+            padding: 0;
+            font-size: 14px;
+        }
+
+            .todo-list.small-list {
+                font-size: 12px;
+            }
+
+                .todo-list.small-list > li {
+                    background: #f3f3f4;
+                    border-left: none;
+                    border-right: none;
+                    border-radius: 4px;
+                    color: inherit;
+                    margin-bottom: 2px;
+                    padding: 6px 6px 6px 12px;
+                }
+
+                .todo-list.small-list .btn-xs,
+                .todo-list.small-list .btn-group-xs > .btn {
+                    border-radius: 5px;
+                    font-size: 10px;
+                    line-height: 1.5;
+                    padding: 1px 2px 1px 5px;
+                }
+
+            .todo-list > li {
+                background: #f3f3f4;
+                border-left: 6px solid #e7eaec;
+                border-right: 6px solid #e7eaec;
+                border-radius: 4px;
+                color: inherit;
+                margin-bottom: 2px;
+                padding: 10px;
+            }
+
+            .todo-list .handle {
+                cursor: move;
+                display: inline-block;
+                font-size: 16px;
+                margin: 0 5px;
+            }
+
+            .todo-list > li .label {
+                font-size: 9px;
+                margin-left: 10px;
+            }
+
+        .check-link {
+            font-size: 16px;
+        }
+
+        .todo-completed {
+            text-decoration: line-through;
+        }
+
+        .geo-statistic h1 {
+            font-size: 36px;
+            margin-bottom: 0;
+        }
+
+        .glyphicon.fa {
+            font-family: "FontAwesome";
+        }
+
+        .widget {
+            height: 209px !important;
+        }
+    </style>
+    <script>
+        $(function () {
+
+            function getReport() {
+                request('/api/Reports', {}, function (_msg) {
+                    setTimeout(function () {
+                        $('#rptList_1,#rptList_2,#rptList_3').empty();
+                        var arr_1 = [];
+                        var arr_2 = [];
+                        var arr_3 = [];
+                        var row;
+                        var data = _msg.datas;
+
+                        for (var i = 0; i < data.length; i++) {
+                            row = data[i];
+                            if (row.ReportType == 1)
+                                arr_1.push('<li><span class="fa fa-caret-right"></span> <label>' + data[i].Title + '：</label>' + (data[i].Title == '今日充值额度' ? top.goldFormat(data[i].Val):data[i].Val) + '</li>');
+                            else if (row.ReportType == 2)
+                                arr_2.push('<li><span class="fa fa-caret-right"></span> <label>' + data[i].Title + '：</label>' + top.goldFormat(data[i].Val) + '</li>');
+                            else if (row.ReportType == 3)
+                                arr_3.push('<li><span class="fa fa-caret-right"></span> <label>' + data[i].Title + '：</label>' + data[i].Val + '人</li>');
+                        }
+                        $('#rptList_1').html(arr_1.join(''));
+                        $('#rptList_2').html(arr_2.join(''));
+                        $('#rptList_3').html(arr_3.join(''));
+                    }, 100)
+                },'GET');
+            }
+            setTimeout(getReport, 100);
+            setInterval(function () {
+                getReport();
+            }, 1000 * 10);
+
+        });
+    </script>
+</head>
+<body class="gray-bg">
+    <div class="wrapper wrapper-content animated fadeInRight">
+        <div class="row">
+            <div class="col-sm-4">
+                <div class="widget lazur-bg p-xl">
+                    <h4 i18n="i18n.Personnelinformation"><span class="fa fa-pie-chart m-r-xs"></span>人员信息</h4>
+                    <ul class="list-unstyled m-t-md" id="rptList_3"></ul>
+                </div>
+            </div>
+            <div class="col-sm-4">
+                <div class="widget yellow-bg p-xl">
+                    <h4 i18n="i18n.Platformprofitability"><span class="fa fa-pie-chart m-r-xs"></span>平台盈利</h4>
+                    <ul class="list-unstyled m-t-md" id="rptList_2"></ul>
+                </div>
+            </div>
+            @if (loginUser != null && loginUser.UserPriv == 0)
+            {
+                <div class="col-sm-4">
+                    <div class="widget navy-bg p-xl">
+                        <h4 i18n="i18n.Rechargeinformation"><span class="fa fa-cny m-r-xs"></span>充值信息</h4>
+                        <ul class="list-unstyled m-t-md" id="rptList_1"></ul>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</body>
+</html>

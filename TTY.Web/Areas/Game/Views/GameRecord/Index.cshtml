@@ -1,0 +1,24 @@
+﻿
+@{
+    Layout = "~/Views/Shared/Layout/_ContentLayout.cshtml";
+    ViewBag.RouteMap = "游戏帐目";
+}
+@section include_res{
+    <link href="@Url.Content("~/Content/app/para.css?v=" + ConfigHelper.Get("WebVer"))" rel="stylesheet" />
+    <script src="@Url.Content("~/Scripts/app/game.acc.js?v=" + ConfigHelper.Get("WebVer"))"></script>
+    <style>
+        .validatebox-invalid, .textbox-invalid { border-color: #f76262 !important; }
+    </style>
+}
+<div id="main" class="easyui-layout" data-options="onLoad:resizeContainer" style="height:768px;width:100%;">
+    <div data-options="region:'west',title:'【节目区域】',split:true,collapsible:true" style="width:150px;">
+        <ul id="typeTree" class="easyui-tree" data-options="onSelect:onTreeSel,loadFilter:treeLoadFilter,method:'post',url:'@Url.Action("GetGameList","GameConfig",new { area = "Game"})'"></ul>
+    </div>
+    <div data-options="region:'center',title:'【参数区域】',collapsible:false" style="padding:4px;">
+        @Html.Partial("BetGame")
+        @Html.Partial("CardGame")
+        @Html.Partial("FishGame")
+        @Html.Partial("LabaGame")
+        @Html.AntiForgeryToken()
+    </div>
+</div>

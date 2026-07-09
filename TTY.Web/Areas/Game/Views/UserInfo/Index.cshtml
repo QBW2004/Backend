@@ -1,0 +1,1291 @@
+﻿@{
+    Layout = "~/Views/Shared/Layout/_ContentLayout.cshtml";
+    ViewBag.RouteMap = "用户管理";
+    M_LoginUser loginUser = WebHelper.GetLoginInfo();
+}
+
+@section include_res{
+    <script>
+    var canKickWholeLine = @((loginUser?.UserPriv == 0 || loginUser?.ManageScope == 2).ToString().ToLower());
+    var loginAgencyAccount = "@(loginUser?.Accounts)";
+    $(function () {
+        // 加载指定的模块
+        easyloader.load(['textbox', 'linkbutton', 'datagrid'], function () {
+            //适应窗口大小变化
+            $(window).resize(function () {
+                if ($('body').data('grid-init')) {
+                    setGridSize();
+                }
+            });
+            //初始化插件
+            pluginInit();
+            bindUserRechargeCoinTriggers();
+            //初始化查询
+            queryData();
+            startUserInfoAutoRefresh();
+        });
+
+
+        //setTimeout(function () {
+        //    $(".panel-body-noheader").eq(1).children('div').each(function (index) {
+        //        $(this).on("click", function () {
+        //            goFirstPage(index);
+        //        });
+        //    })
+
+        //    $(".panel-body-noheader").eq(2).children('div').each(function (index) {
+        //        $(this).on("click", function () {
+        //            let text = $(this).text();
+        //            setTimeout(function () {
+        //                $("#_easyui_textbox_input14").val(text)
+        //            }, 10)
+        //        });
+        //    })
+        //},1000)
+    })
+    //    function goFirstPage(index) {
+    //        valSelData(index)
+    //}
+    //重置表格大小
+    function setGridSize(param) {
+        var w = $(window).width() - 8;
+        var h = $(window).height() - 78;
+        resizeGrid('tb_UserInfo', 'auto', h);
+    }
+    //查询数据
+    function queryData() {
+        var para = $("#frm_srch").serializeObject();
+        bindGridData(para);
+    }
+    var userInfoAutoRefreshTimer = null;
+    var userInfoSilentRefreshRunning = false;
+    function startUserInfoAutoRefresh() {
+        if (userInfoAutoRefreshTimer) {
+            clearInterval(userInfoAutoRefreshTimer);
+        }
+        userInfoAutoRefreshTimer = setInterval(function () {
+            refreshVisibleUserRows();
+        }, 3000);
+    }
+    function getVisibleUserIds() {
+        var grid = $('#tb_UserInfo');
+        if (!grid.data('datagrid')) {
+            return [];
+        }
+        var rows = grid.datagrid('getRows') || [];
+        var ids = [];
+        for (var i = 0; i < rows.length; i++) {
+            if (rows[i] && rows[i].ID) {
+                ids.push(rows[i].ID);
+            }
+        }
+        return ids;
+    }
+    function refreshVisibleUserRows() {
+        refreshVisibleUserRowsByIds(getVisibleUserIds());
+    }
+    function refreshVisibleUserRowsByIds(ids) {
+        var grid = $('#tb_UserInfo');
+        if (!grid.data('datagrid') || userInfoSilentRefreshRunning || !ids || ids.length < 1) {
+            return;
+        }
+        userInfoSilentRefreshRunning = true;
+        $.ajax({
+            url: '/Game/UserInfo/GetVisibleUserRows',
+            type: 'POST',
+            dataType: 'json',
+            data: { UserIDs: JSON.stringify(ids) },
+            success: function (data) {
+                if (!data || data.code != 1 || !data.datas) {
+                    return;
+                }
+                applyVisibleUserRows(data.datas);
+            },
+            complete: function () {
+                userInfoSilentRefreshRunning = false;
+            }
+        });
+    }
+    function applyVisibleUserRows(serverRows) {
+        var grid = $('#tb_UserInfo');
+        var rows = grid.datagrid('getRows') || [];
+        var indexById = {};
+        for (var i = 0; i < rows.length; i++) {
+            if (rows[i] && rows[i].ID) {
+                indexById[rows[i].ID] = i;
+            }
+        }
+        for (var j = 0; j < serverRows.length; j++) {
+            var fresh = serverRows[j];
+            if (!fresh || indexById[fresh.ID] == null) {
+                continue;
+            }
+            var rowIndex = indexById[fresh.ID];
+            grid.datagrid('updateRow', {
+                index: rowIndex,
+                row: $.extend({}, rows[rowIndex], fresh)
+            });
+        }
+        refreshUserInfoFooter();
+    }
+    function refreshUserInfoFooter() {
+        var rows = $('#tb_UserInfo').datagrid('getRows') || [];
+        var footer = {
+            FROZEN: 2,
+            NAME: '合计',
+            COINS: 0,
+            GAME_SCORE: 0,
+            COINS_BUY: 0,
+            COINS_BACK: 0,
+            Profit: 0
+        };
+        for (var i = 0; i < rows.length; i++) {
+            footer.COINS += Number(rows[i].COINS || 0);
+            footer.GAME_SCORE += Number(rows[i].GAME_SCORE || 0);
+            footer.COINS_BUY += Number(rows[i].COINS_BUY || 0);
+            footer.COINS_BACK += Number(rows[i].COINS_BACK || 0);
+            footer.Profit += Number(rows[i].Profit || 0);
+        }
+        $('#tb_UserInfo').datagrid('reloadFooter', [footer]);
+    }
+    function refreshChangedUserRow(id, delay) {
+        if (!id) {
+            setTimeout(function () { refreshVisibleUserRows(); }, delay || 0);
+            return;
+        }
+        setTimeout(function () { refreshVisibleUserRowsByIds([id]); }, delay || 0);
+    }
+    function patchVisibleUserRow(id, patch) {
+        var grid = $('#tb_UserInfo');
+        if (!grid.data('datagrid') || !id || !patch) {
+            return;
+        }
+        var rowIndex = grid.datagrid('getRowIndex', id);
+        if (rowIndex < 0) {
+            return;
+        }
+        grid.datagrid('updateRow', { index: rowIndex, row: patch });
+        refreshUserInfoFooter();
+    }
+    //绑定表格数据
+    function bindGridData(para) {
+        if (!$('body').data('grid-init')) {
+            $('#tb_UserInfo').datagrid({
+                url: "/Game/UserInfo/GetUsers",
+                queryParams: $.extend({}, para),
+                pagination: true,
+                fitColumns: true,
+                checkbox: true,
+                singleSelect: false,
+                striped: true,
+                rownumbers: true,
+                showFooter: true,
+                height: 768,
+                pageSize: 20,
+                pageList: [10, 20, 50],
+                idField: 'ID',
+                //sortName: 'INHALL',
+                //sortOrder: 'desc',
+                //remoteSort: false,
+                onBeforeLoad: setGridSize,
+                onLoadSuccess: onLoaded
+            });
+        } else {
+            $('#tb_UserInfo').datagrid('load', para);
+        }
+    }
+    //格式化
+        function fmtForzen(value, rowData, rowIndex) {
+            if (rowData.FROZEN != 2) {
+                if (value == 1)
+                    return '<span class="red">是</span>';
+                else
+                    return '<span>否</span>';
+
+            } else {
+                return '';
+            }
+        }
+        function fmtOpt(value, rowData, rowIndex) {
+            if (!rowData || rowData.FROZEN == 2) {
+                return '';
+            }
+            var arr = [];
+            if (rowData.FROZEN != 2) {
+                @if (loginUser.UserPriv == 0 || loginUser.IsDelete == 1)
+                {
+                @Html.Raw("arr.push('<a href=\"javascript:void(0)\" class=\"blue Lpd5\" onclick=\"deleteUser(\\\'' + rowData.ID + '\\\')\">删除</a>');");
+                }
+                // arr.push('<a href="javascript:void(0)" class="blue Lpd5" onclick="showGrade(\'' + rowData.ID + '\')">等级设置</a>');
+                if (rowData.FROZEN == 1) {
+                  @if (loginUser.IsFrozen == 1) {
+                       @Html.Raw("arr.push('<a href=\"javascript: void(0)\" class=\"blue Lpd5\" onclick=\"frozenUser(\\\'' + rowData.ID + '\\\',0)\">解冻</a>'); ");
+                  }
+                }
+                else {
+                  @if (loginUser.IsFrozen == 1)
+                  {
+                       @Html.Raw("arr.push('<a href=\"javascript: void(0)\" class=\"blue Lpd5\" onclick=\"frozenUser(\\\'' + rowData.ID + '\\\',1)\">冻结</a>'); ");
+                  }
+                }
+                 @if (loginUser.UserPriv == 0 || loginUser.IsKill == 1 || loginUser.IsProbability == 1 || loginUser.IsRelease == 1)
+                 {
+                      @Html.Raw("arr.push('<a href=\"javascript:void(0)\" class=\"blue Lpd5\" onclick=\"showCtrlSelect(\\\'' + rowData.ID + '\\\')\">控制</a>');");
+                 }
+                @*鱼机控制已合并到「控制」按钮*@
+                @*牌机控制已合并到「控制」按钮*@
+                @*注机控制已合并到「控制」按钮*@
+                @if (loginUser.UserPriv == 0 || loginUser.IsKicking == 1)
+                 {
+                    @Html.Raw("if (canKickWholeLine || rowData.AGENCY == loginAgencyAccount) {");
+                      @Html.Raw("arr.push('<a href=\"javascript:void(0)\" class=\"blue Lpd5\" onclick=\"kickPlayer(\\\'' + rowData.ID + '\\\')\">踢人</a>');");
+                    @Html.Raw("}");
+                 }
+            }
+            @if (loginUser.UserPriv == 0 || loginUser.IsUpDown == 1)
+            {
+            @Html.Raw("arr.push('<a href=\"javascript:void(0)\" class=\"blue Lpd5\" onclick=\"showReChange(\\\'' + rowData.ID + '\\\')\">充值</a>');");
+            }
+            // arr.push('<a href="javascript:void(0)" class="blue Lpd5" onclick="showGive(\'' + rowData.ID + '\')">赠送</a>');
+            @if (loginUser.UserPriv == 0 || loginUser.IsUpDown == 1)
+            {
+            @Html.Raw("arr.push('<a href=\"javascript:void(0)\" class=\"blue Lpd5\" onclick=\"showDeduct(\\\'' + rowData.ID + '\\\')\">扣币</a>');");
+            }
+            @if (false)
+            {
+            @Html.Raw("arr.push('<a href=\"javascript:void(0)\" class=\"blue Lpd5\" onclick=\"showChgSafePwdWin(\\\'' + rowData.ID + '\\\')\">修改保险柜密码</a>');");
+            }
+            @if (loginUser.UserPriv == 0 || loginUser.IsModifyPwd == 1)
+            {
+            @Html.Raw("arr.push('<a href=\"javascript:void(0)\" class=\"blue Lpd5\" onclick=\"showChgWin(\\\'' + rowData.ID + '\\\')\">修改密码</a>');");
+            }
+            return arr.join('  ');
+        }
+        function fmtCoins(value, rowData, rowIndex) {
+            return top.goldFormat(value);
+        }
+        function showUserToast(message, type) {
+            var toast = $('#userInfoToast');
+            if (toast.length < 1) {
+                toast = $('<div id="userInfoToast"></div>').appendTo('body');
+            }
+            var color = '#4b89dc';
+            if (type == 'success')
+                color = '#3c9b5f';
+            else if (type == 'danger' || type == 'error')
+                color = '#d9534f';
+            else if (type == 'warning')
+                color = '#f0ad4e';
+            toast.stop(true, true)
+                .text(message)
+                .css({
+                    position: 'fixed',
+                    top: '18px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    zIndex: 99999,
+                    background: color,
+                    color: '#fff',
+                    padding: '10px 22px',
+                    borderRadius: '4px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,.18)',
+                    fontSize: '14px',
+                    lineHeight: '20px',
+                    display: 'none'
+                })
+                .fadeIn(120)
+                .delay(5000)
+                .fadeOut(180);
+        }
+        function showUserResult(data, dangerOnSuccess) {
+            if (!data)
+                return;
+            if (data.code == -1) {
+                loginTimeoutCallback(data);
+                return;
+            }
+            var message = data.msg ? data.msg : data.content;
+            var type = data.code < 1 ? 'danger' : (dangerOnSuccess ? 'danger' : 'success');
+            showUserToast(message, type);
+        }
+        function frozenUser(id, flag) {
+            confirm('确认' + (flag == 0 ? '解冻' : '冻结') + '选定的用户？', function () {
+                request('/Game/UserInfo/FrozenUser', { ID: id, frozen: flag }, function (data) {
+                    //提示消息
+                    showUserResult(data);
+                    if (data && data.code == 1) {
+                        patchVisibleUserRow(id, { FROZEN: flag });
+                        refreshChangedUserRow(id, 300);
+                    }
+                });
+            });
+        }
+        function deleteUser(id) {
+             @Html.Raw(@"        confirm('确认删除所选用户？', function () {
+                request('/Game/UserInfo/DelUser', { ID: id }, function (data) {
+                    //提示消息
+                    showUserResult(data, data && data.code == 1);
+                    if (data && data.code == 1) {
+                        queryData();//重新加载数据
+                    }
+                });
+            });");
+        }
+
+        function showChgWin(uid) {
+            var para = {
+                winId: '#chgWin',
+                title: '【修改密码】',
+                iconCls: 'icon-user-edit',
+                callBack: function () {
+                    $('#txtE_UID').textbox('setValue', uid);
+                    $('#hfUID').val(uid);
+                }
+            };
+            openWin(para);
+        }
+        function showChgSafePwdWin(uid) {
+            var para = {
+                winId: '#chgSafePwdWin',
+                title: '【修改保险柜密码】',
+                iconCls: 'icon-user-edit',
+                callBack: function () {
+                    $('#txtE_SAFE_UID').textbox('setValue', uid);
+                    $('#hfSafeUID').val(uid);
+                }
+            };
+            openWin(para);
+        }
+        function showGrade(uid) {
+            var para = {
+                winId: '#chgGrade',
+                title: '【等级设置】',
+                iconCls: 'icon-user-edit',
+                callBack: function () {
+                    $('#txtE_UID2').textbox('setValue', uid);
+                    $('#hfUID2').val(uid);
+                }
+            };
+            openWin(para);
+        }
+
+        function showReChange(uid) {
+            var para = {
+                winId: '#chgReChange',
+                title: '【用户充值】',
+                iconCls: 'icon-user-edit',
+                callBack: function () {
+                    $('#txtE_UID3').textbox('setValue', uid);
+                    $('#hfUID3').val(uid);
+                    resetPlayerCoins('#txtCurrentCoins_Recharge', '#btnSaveReChange');
+                    QueryPlayerCoins('#hfUID3', '#txtCurrentCoins_Recharge', '#btnSaveReChange');
+                }
+            };
+            openWin(para);
+        }
+
+
+        function showGive(uid) {
+            var para = {
+                winId: '#chgGive',
+                title: '【用户赠送】',
+                iconCls: 'icon-user-edit',
+                callBack: function () {
+                    $('#txtE_UID4').textbox('setValue', uid);
+                    $('#hfUID4').val(uid);
+                }
+            };
+            openWin(para);
+        }
+
+        function showDeduct(uid) {
+            var para = {
+                winId: '#chgDeduct',
+                title: '【用户扣币】',
+                iconCls: 'icon-user-edit',
+                callBack: function () {
+                    $('#txtE_UID5').textbox('setValue', uid);
+                    $('#hfUID5').val(uid);
+                    resetPlayerCoins('#txtCurrentCoins_Deduct', '#btnSaveDeduct');
+                    QueryPlayerCoins('#hfUID5', '#txtCurrentCoins_Deduct', '#btnSaveDeduct');
+                }
+            };
+            openWin(para);
+        }
+
+        function SaveUserPwd() {
+            var para = $('#form2').serializeObject();
+            request('/Game/UserInfo/ChgPwd', para, function (data) {
+                //提示消息
+                showUserResult(data);
+                if (data && data.code == 1) {
+                    $('#chgWin').dialog('close');
+                    $('#form2').form('reset');
+                    refreshChangedUserRow(para.ID, 300);
+                }
+            });
+        }
+        function SaveUserSafePwd() {
+            var para = $('#formSafePwd').serializeObject();
+            request('/Game/UserInfo/ChgSafePwd', para, function (data) {
+                showUserResult(data);
+                if (data && data.code == 1) {
+                    $('#chgSafePwdWin').dialog('close');
+                    $('#formSafePwd').form('reset');
+                    refreshChangedUserRow(para.ID, 300);
+                }
+            });
+        }
+
+        function SaveGrade() {
+            var para = $('#form7').serializeObject();
+            request('/Game/UserInfo/ChgGrade', para, function (data) {
+                //提示消息
+                showUserResult(data);
+                if (data && data.code == 1) {
+                    $('#chgGrade').dialog('close');
+                    $('#form7').form('reset');
+                    refreshChangedUserRow(para.ID2, 300);
+                }
+            });
+        }
+
+        function SaveReChange() {
+            var para = $('#form8').serializeObject();
+            request('/Game/UserInfo/SaveReChange', para, function (data) {
+                //提示消息
+                showUserResult(data);
+                if (data && data.code == 1) {
+                    $('#chgReChange').dialog('close');
+                    $('#form8').form('reset');
+                    refreshChangedUserRow(para.ID3, 500);
+                }
+            });
+        }
+        function resetPlayerCoins(tipId, btnId) {
+            $(tipId).text('--');
+            $(btnId).linkbutton('disable');
+        }
+        function bindUserRechargeCoinTriggers() {
+            var queryRechargeByEnter = function (e) {
+                if (e.which == 13) {
+                    e.preventDefault();
+                    QueryPlayerCoins('#hfUID3', '#txtCurrentCoins_Recharge', '#btnSaveReChange');
+                }
+            };
+            var queryDeductByEnter = function (e) {
+                if (e.which == 13) {
+                    e.preventDefault();
+                    QueryPlayerCoins('#hfUID5', '#txtCurrentCoins_Deduct', '#btnSaveDeduct');
+                }
+            };
+            $('#txtE_UID3').textbox();
+            $('#txtE_UID3').textbox('textbox')
+                .on('blur', function () { QueryPlayerCoins('#hfUID3', '#txtCurrentCoins_Recharge', '#btnSaveReChange'); })
+                .on('keydown', queryRechargeByEnter);
+            $('#txtE_UID5').textbox();
+            $('#txtE_UID5').textbox('textbox')
+                .on('blur', function () { QueryPlayerCoins('#hfUID5', '#txtCurrentCoins_Deduct', '#btnSaveDeduct'); })
+                .on('keydown', queryDeductByEnter);
+        }
+        function QueryPlayerCoins(hiddenId, tipId, btnId) {
+            var id = $(hiddenId).val();
+            request('/Game/UserInfo/QueryPlayerCoins', { ID: id }, function (data) {
+                if (data && data.code == 1) {
+                    $(tipId).text(top.goldFormat(data.datas.displayCoins || data.datas.coins || 0));
+                    $(btnId).linkbutton('enable');
+                } else {
+                    showUserResult(data);
+                }
+            });
+        }
+
+        function SaveGive() {
+            var para = $('#form9').serializeObject();
+            request('/Game/UserInfo/SaveGive', para, function (data) {
+                //提示消息
+                showUserResult(data);
+                if (data && data.code == 1) {
+                    $('#chgGive').dialog('close');
+                    $('#form9').form('reset');
+                    refreshChangedUserRow(para.ID4, 500);
+                }
+            });
+        }
+
+        function SaveDeduct() {
+            var para = $('#form10').serializeObject();
+            request('/Game/UserInfo/SaveDeduct', para, function (data) {
+                //提示消息
+                showUserResult(data);
+                if (data && data.code == 1) {
+                    $('#chgDeduct').dialog('close');
+                    $('#form10').form('reset');
+                    refreshChangedUserRow(para.ID5, 500);
+                }
+            });
+        }
+
+        function showRateCtrlWin(uid) {
+            var para = {
+                winId: '#chgRateWin',
+                title: '【鱼机控制】',
+                iconCls: 'icon-chart_curve',
+                callBack: function () {
+                    $('#txtE_ID').textbox('setValue', uid);
+                    $('#hfID').val(uid);
+                    $('#selE_Action1').combobox('loadData', actionSelData());
+                    $('#selE_Val1').combobox('loadData', getComboValKill());
+                }
+            };
+            openWin(para);
+        }
+        function showRateCtrlWinBet(uid) {
+            var para = {
+                winId: '#chgRateWinBet',
+                title: '【注机控制】',
+                iconCls: 'icon-chart_curve',
+                callBack: function () {
+                    $('#txtE_ID11').textbox('setValue', uid);
+                    $('#hfID11').val(uid);
+                    $('#selE_Action2').combobox('loadData', actionSelDataBet());
+                    $('#selE_Val2').combobox('loadData', getComboValKill());
+                }
+            };
+            openWin(para);
+        }
+        function showRateCtrlWinPAIJI(uid) {
+            var para = {
+                winId: '#chgRateWinPAIJI',
+                title: '【牌机控制】',
+                iconCls: 'icon-chart_curve',
+                callBack: function () {
+                    $('#txtE_ID1').textbox('setValue', uid);
+                    $('#hfID1').val(uid);
+                }
+            };
+            openWin(para);
+        }
+
+        @*合并控制按钮选择窗口*@
+        function showCtrlSelect(uid) {
+            var para = {
+                winId: '#chgCtrlSelect',
+                title: '【控制】',
+                iconCls: 'icon-chart_curve',
+                width: 280,
+                height: 200,
+                callBack: function () {
+                    $('#chgCtrlSelect').data('uid', uid);
+                    var canFish = @Html.Raw((loginUser.UserPriv == 0 || loginUser.IsKill == 1 || loginUser.IsProbability == 1) ? "true" : "false");
+                    var canPaiJi = @Html.Raw((loginUser.UserPriv == 0 || loginUser.IsRelease == 1) ? "true" : "false");
+                    var canBet = @Html.Raw((loginUser.UserPriv == 0 || loginUser.IsKill == 1 || loginUser.IsProbability == 1) ? "true" : "false");
+                    if (canFish) $('#btnFishCtrl').show(); else $('#btnFishCtrl').hide();
+                    if (canPaiJi) $('#btnPaiJiCtrl').show(); else $('#btnPaiJiCtrl').hide();
+                    if (canBet) $('#btnBetCtrl').show(); else $('#btnBetCtrl').hide();
+                }
+            };
+            openWin(para);
+        }
+        function subCtrlClick(type) {
+            var uid = $('#chgCtrlSelect').data('uid');
+            $('#chgCtrlSelect').dialog('close');
+            if (type == 'fish') showRateCtrlWin(uid);
+            else if (type == 'paiji') showRateCtrlWinPAIJI(uid);
+            else if (type == 'bet') showRateCtrlWinBet(uid);
+        }
+        function actionSelData() {
+            var items = [];
+            @if (loginUser.UserPriv == 0 || loginUser.IsKill == 1)
+            {
+                @Html.Raw("items.push({ id: 1, text: '鱼机点杀' });");
+            }
+            @if (loginUser.UserPriv == 0 || loginUser.IsProbability == 1)
+            {
+                @Html.Raw("items.push({ id: 2, text: '鱼机放水' });");
+            }
+            if (items.length > 0) items[0].selected = true;
+            return items;
+        }
+
+        function actionSelDataBet() {
+            var items = [];
+            @if (loginUser.UserPriv == 0 || loginUser.IsKill == 1)
+            {
+                @Html.Raw("items.push({ id: 3, text: '注机点杀' });");
+            }
+            @if (loginUser.UserPriv == 0 || loginUser.IsProbability == 1)
+            {
+                @Html.Raw("items.push({ id: 4, text: '注机放水' });");
+            }
+            if (items.length > 0) items[0].selected = true;
+            return items;
+        }
+
+        function actionSelDataPAIJI() {
+            return [
+                { id: 5, text: '大字版控制', selected: true  },
+                { id: 6, text: 'ATT连环炮控制' },
+                { id: 7, text: 'ATT3控制' },
+                { id: 8, text: 'ATT满花版' },
+                { id: 9, text: 'ATT超级至尊' },
+                { id: 10, text: 'ATT至尊' },
+                { id: 11, text: '人鱼传说' },
+                { id: 12, text: '金皇冠' },
+                { id: 13, text: 'NBA' },
+                { id: 14, text: '火凤凰' }
+            ];
+        }
+        function valSelData() {
+            var arr = [];
+            for (var i = 0; i < 11; i++)
+                if (i == 0)
+                    arr.push({ id: i, text: i });
+                else
+                    arr.push({ id: i, text: i });
+            return arr;
+        }
+        function valSelDataPAIJI1() {
+            var arr = [];
+            arr.push({ id: 5, text: '五把之内' });
+            arr.push({ id: 10, text: '十把之内' });
+            return arr;
+        }
+
+        function valSelDataPAIJI2() {
+            var arr = [];
+            arr.push({ id: 0, text: '杂牌(0倍)' });
+            arr.push({ id: 1, text: '一对(1倍)' });
+            arr.push({ id: 2, text: '两对(2倍)' });
+            arr.push({ id: 3, text: '三条(3倍)' });
+            arr.push({ id: 4, text: '顺子(5倍)' });
+            arr.push({ id: 5, text: '同花(7倍)' });
+            arr.push({ id: 6, text: '葫芦(15倍)' });
+            arr.push({ id: 7, text: '小四梅(65倍)' });
+            arr.push({ id: 8, text: '大四梅(65倍)' });
+            arr.push({ id: 9, text: '同花顺(150倍)' });
+            return arr;
+        }
+
+        function valSelDataPAIJI3() {
+            var arr = [];
+            arr.push({ id: 0, text: '杂牌(0倍)' });
+            arr.push({ id: 1, text: '一对(1倍)' });
+            arr.push({ id: 2, text: '两对(2倍)' });
+            arr.push({ id: 3, text: '三条(3倍)' });
+            arr.push({ id: 4, text: '顺子(5倍)' });
+            arr.push({ id: 5, text: '同花(7倍)' });
+            arr.push({ id: 6, text: '葫芦(15倍)' });
+            arr.push({ id: 7, text: '小四梅(65倍)' });
+            arr.push({ id: 8, text: '大四梅(65倍)' });
+            arr.push({ id: 9, text: '同花顺(150倍)' });
+            arr.push({ id: 10, text: '关闭控制' });
+            return arr;
+        }
+
+        function bindGameTypePaiJi(newValue, oldValue) {
+            console.log("newValue:" + newValue);
+            console.log("oldValue:" + oldValue);
+          
+            if (oldValue && newValue > -1 && newValue != oldValue) {
+                if (newValue == 5 || newValue == 12 || newValue == 13 || newValue == 14) {
+                    $('#selE_Type').combobox('loadData', valSelDataPAIJI3())
+                } else {
+                    $('#selE_Type').combobox('loadData', valSelDataPAIJI2())
+                }
+            }
+        }
+
+        function SaveUserRate() {
+            @Html.Raw(@"       var para = $('#form3').serializeObject();
+                request('/Game/UserInfo/ChgUserRate', para, function (data) {
+                    //提示消息
+                    showUserResult(data);
+                    if (data && data.code == 1) {
+                        $('#chgRateWin').dialog('close');
+                        $('#form3').form('reset');
+                        refreshChangedUserRow(para.ID, 500);
+                    }
+                });");
+        }
+        function SaveUserRateBet() {
+            @Html.Raw(@"       var para = $('#form11').serializeObject();
+                request('/Game/UserInfo/ChgUserRateBet', para, function (data) {
+                    //提示消息
+                    showUserResult(data);
+                    if (data && data.code == 1) {
+                        $('#chgRateWinBet').dialog('close');
+                        $('#form11').form('reset');
+                        refreshChangedUserRow(para.ID11, 500);
+                    }
+                });");
+        }
+        function SaveUserRatePAIJI() {
+            @Html.Raw(@"       var para = $('#form6').serializeObject();
+                request('/Game/UserInfo/ChgUserRatePAIJI', para, function (data) {
+                    //提示消息
+                    showUserResult(data);
+                    if (data && data.code == 1) {
+                        $('#chgRateWinPAIJI').dialog('close');
+                        $('#form6').form('reset');
+                        refreshChangedUserRow(para.ID1, 500);
+                    }
+                });");
+        }
+        function kickPlayer(id) {
+            var _tip = 'ALL', _url = '/Game/UserInfo/KickAllPlayer';
+            if (id && id.length > 0) {
+                _tip = '选择的';
+                _url = '/Game/UserInfo/KickPlayer';
+            }
+            @Html.Raw(@"        confirm('确认踢出' + _tip + ' 用户？', function () {
+                request(_url, { UserID: id }, function (data) {
+                    //提示消息
+                    showUserResult(data);
+                    if (data && data.code == 1) {
+                        if (id && id.length > 0) {
+                            patchVisibleUserRow(id, { INHALL: false, CurrentGameName: null, CurrentGameType: null, CurrentRoomId: null, CurrentTableId: null, CurrentSeatId: null, CurrentBetCoins: null, CurrentWinLose: null });
+                            refreshChangedUserRow(id, 800);
+                        } else {
+                            refreshChangedUserRow(null, 800);
+                        }
+                    }
+                });
+            }); ");
+        }
+        function showAddUser() {
+            var para = {
+                winId: '#addUser',
+                title: '【添加用户】',
+                iconCls: 'icon-user_add'
+            };
+            openWin(para);
+        }
+
+        function SaveUserInfo() {
+            var para = $('#form4').serializeObject();
+            request('/Game/UserInfo/AddUser', para, function (data) {
+                //提示消息
+                showUserResult(data);
+                if (data && data.code == 1) {
+                    $('#addUser').dialog('close');
+                    $('#form4').form('reset');
+                    //queryData();//重新绑定表格数据
+                    $('#tb_UserInfo').datagrid('reload');
+                }
+            });
+        }
+        function fmtUserID(value, rowData, rowIndex) {
+            if (rowData.FROZEN != 2) {
+                return value;
+            } else {
+                return '';
+            }
+        }
+
+        function bindAction(newValue, oldValue) {
+            if (oldValue && newValue > -1 && newValue != oldValue) {
+                if (newValue == 1) {
+                    $('#selE_Val1').combobox('loadData', getComboValKill());
+                } else if (newValue == 2) {
+                    $('#selE_Val1').combobox('loadData', getComboValPut());
+                } else if (newValue == 3) {
+                    $('#selE_Val2').combobox('loadData', getComboValKill());
+                } else {
+                    $('#selE_Val2').combobox('loadData', getComboValPut());
+                }
+
+            }
+        }
+
+        function getComboValKill() {
+            var arr = [];
+            arr.push({ id: 3, text: '小杀(3%)', selected: true });
+            arr.push({ id: 6, text: '中杀(6%)' });
+            arr.push({ id: 9, text: '大杀(9%)' });
+            arr.push({ id: 0, text: '关闭' });
+            return arr;
+        }
+        function getComboValPut() {
+            var arr = [];
+            arr.push({ id: 3, text: '小放(3%)', selected: true });
+            arr.push({ id: 6, text: '中放(6%)' });
+            arr.push({ id: 9, text: '大放(9%)' });
+            arr.push({ id: 0, text: '关闭' });
+            return arr;
+        }
+    </script>
+    <style>
+        .dialog-coin-tip { display: block; padding-top: 6px; color: #c00; white-space: nowrap; }
+        .coin-dialog-table { width: auto; margin: 0 auto; }
+        .coin-dialog-label { width: 72px; text-align: right; white-space: nowrap; vertical-align: top; padding-top: 9px; }
+        .coin-dialog-field { text-align: left; white-space: nowrap; }
+        .coin-dialog-tip { color: #999; text-align: left; }
+        .coin-dialog-form { min-height: 260px; height: 100%; display: flex; align-items: center; justify-content: center; margin: 0; }
+    </style>
+}
+
+@*查询条件*@
+<form id="frm_srch">
+    <table width="100%" border="0" cellpadding="0" cellspacing="0" class="titleQueBg" style="height:40px;">
+        <tr>
+            <td>
+                <div class="left Lpd5">
+                    用户账号
+                    <input type="text" class="easyui-textbox" name="srch_ID" />
+                </div>
+                <div class="left Lpd5">
+                    昵称
+                    <input type="text" class="easyui-textbox" name="srch_NAME" />
+                </div>
+                <div class="left Lpd5">
+                    所属代理
+                    <input type="text" class="easyui-textbox" name="srch_Agency" />
+                </div>
+                @*<div class="left Lpd5">
+                        开始时间
+                        <input class="easyui-datetimebox" name="srch_StartTime"
+                               data-options="required:true,showSeconds:false" value="3/4/2010 2:3" style="width:150px">
+                    </div>
+                    <div class="left Lpd5">
+                        结束时间
+                        <input class="easyui-datetimebox" name="srch_EndTime"
+                               data-options="required:true,showSeconds:false" value="3/4/2010 2:3" style="width:150px">
+                    </div>*@
+                <div class="left Lmg10">
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="queryData();" data-options="plain:true,iconCls:'icon-search'">查找</a>
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="showAddUser();" data-options="plain:true,iconCls:'icon-add'">添加用户</a>
+                    @if (loginUser?.UserPriv == 0)
+                    {
+                        <a href="javascript:void(0);" class="easyui-linkbutton" onclick="kickPlayer();" data-options="plain:true,iconCls:'icon-user_cross'">剔除所有人</a>
+                    }
+                    @if (loginUser?.UserPriv == 1 && loginUser?.IsKicking == 1)
+                    {
+                        <a href="javascript:void(0);" class="easyui-linkbutton" onclick="kickPlayer();" data-options="plain:true,iconCls:'icon-user_cross'">@(loginUser?.ManageScope == 2 ? "剔除整条线在线玩家" : "剔除直属在线玩家")</a>
+                    }
+                </div>
+            </td>
+        </tr>
+    </table>
+</form>
+
+@*查询代理的信息*@
+<table id="tb_UserInfo">
+    <thead>
+        <tr>
+            <th data-options="field:'ck',checkbox:true"></th>
+            <th field="ID" width="110">用户账号</th>
+            <th field="NAME" width="110">昵称</th>
+            <th field="AGENCY" width="85">所属代理</th>
+            <th field="FROZEN" width="65" formatter="fmtForzen">是否冻结</th>
+            <th field="INHALL" width="65" formatter="fmtForzen">是否在线</th>
+            <th field="COINS" width="95" formatter="fmtCoins" sortable="true">账面余额</th>
+            <th field="GAME_SCORE" width="95" formatter="fmtCoins" sortable="true">账面游戏分</th>
+            <th field="CurrentGameName" width="120" hidden="true">当前游戏</th>
+            <th field="CurrentRoomId" width="80" hidden="true">当前厅</th>
+            <th field="CurrentTableId" width="80" hidden="true">桌号</th>
+            <th field="CurrentSeatId" width="80" hidden="true">座号</th>
+            <th field="CurrentBetCoins" width="90" formatter="fmtCoins" hidden="true">下注</th>
+            <th field="CurrentWinLose" width="90" formatter="fmtCoins" hidden="true">当前输赢</th>
+            <th field="COINS_BUY" width="85" formatter="fmtCoins">充值</th>
+            <th field="COINS_BACK" width="85" formatter="fmtCoins">兑换</th>
+            <th field="Profit" width="85" formatter="fmtCoins">盈利</th>
+            @if (loginUser.UserPriv == 0 || loginUser.IsViewSafePwd == 1)
+            {
+                <th field="PWD" width="110">用户密码</th>
+                <!-- 保险柜密码已隐藏 -->
+            }
+            <!-- 保险柜余额已隐藏 -->
+            @*@if (loginUser?.UserPriv == 0)
+                {
+                    <th field="TELEPHONE" width="110">手机号</th>
+                }*@
+            <th field="OPT" width="700" formatter="fmtOpt">操作</th>
+
+        </tr>
+    </thead>
+</table>
+
+@*修改密码窗口*@
+<div id="chgWin" class="hide">
+    <form id="form2">
+        <table cellpadding="0" cellspacing="0" border="0" width="100%" align="center">
+            <tr>
+                <td colspan="2" align="left" style="padding-left: 50px;color:#999;">
+                    <p style="margin-left:-35px;">温馨提示:修改后即时生效</p>
+                </td>
+            </tr>
+            <tr>
+                <td align="right">用户账号</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-textbox win-txt" id="txtE_UID" disabled />
+                </td>
+            </tr>
+            <tr>
+                <td align="right">新密码</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-passwordbox win-txt" id="txtE_PWD" name="PWD" />
+                </td>
+            </tr>
+            <tr>
+                <td align="center" colspan="2" class="pd5">
+                    <input type="hidden" id="hfUID" name="ID" value="0" />
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="SaveUserPwd()" data-options="plain:true,iconCls:'icon-save'">保存</a>
+                </td>
+            </tr>
+        </table>
+    </form>
+</div>
+
+@*修改保险柜密码窗口*@
+<div id="chgSafePwdWin" class="hide">
+    <form id="formSafePwd">
+        <table cellpadding="0" cellspacing="0" border="0" width="100%" align="center">
+            <tr>
+                <td colspan="2" align="left" style="padding-left: 50px;color:#999;">
+                    <p style="margin-left:-35px;">温馨提示:修改后即时生效</p>
+                </td>
+            </tr>
+            <tr>
+                <td align="right">用户账号</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-textbox win-txt" id="txtE_SAFE_UID" disabled />
+                </td>
+            </tr>
+            <tr>
+                <td align="right">新保险柜密码</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-passwordbox win-txt" id="txtE_SAFE_PWD" name="SAFE_PWD" />
+                </td>
+            </tr>
+            <tr>
+                <td align="center" colspan="2" class="pd5">
+                    <input type="hidden" id="hfSafeUID" name="ID" value="0" />
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="SaveUserSafePwd()" data-options="plain:true,iconCls:'icon-save'">保存</a>
+                </td>
+            </tr>
+        </table>
+    </form>
+</div>
+
+@*控制类型选择窗口*@
+<div id="chgCtrlSelect" class="hide" style="text-align:center;padding:30px 20px;">
+    <a id="btnFishCtrl" href="javascript:void(0);" class="easyui-linkbutton" onclick="subCtrlClick('fish')" data-options="plain:true,iconCls:'icon-chart_curve'" style="margin:8px;width:140px;">鱼机控制</a>
+    <br/>
+    <a id="btnPaiJiCtrl" href="javascript:void(0);" class="easyui-linkbutton" onclick="subCtrlClick('paiji')" data-options="plain:true,iconCls:'icon-chart_curve'" style="margin:8px;width:140px;">牌机控制</a>
+    <br/>
+    <a id="btnBetCtrl" href="javascript:void(0);" class="easyui-linkbutton" onclick="subCtrlClick('bet')" data-options="plain:true,iconCls:'icon-chart_curve'" style="margin:8px;width:140px;">注机控制</a>
+</div>
+
+@*修改鱼机控制窗口*@
+<div id="chgRateWin" class="hide">
+    <form id="form3">
+        <table cellpadding="0" cellspacing="0" border="0" width="100%" align="center">
+            <tr>
+                <td colspan="2" align="left" style="padding-left: 50px;color:#999;">
+                    <p style="margin-left:-35px;">温馨提示:修改后即时生效</p>
+                </td>
+            </tr>
+            <tr>
+                <td align="right">用户账号</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-textbox win-txt" id="txtE_ID" disabled />
+                </td>
+            </tr>
+            <tr>
+                <td align="right">功能</td>
+                <td align="left" class="pd5">
+                    <select class="easyui-combobox win-txt" id="selE_Action1" name="Action" data-options="valueField:'id',textField:'text',panelHeight:150,data:actionSelData(),onChange:bindAction"></select>
+                </td>
+            </tr>
+            <tr>
+                <td align="right">控值</td>
+                <td align="left" class="pd5">
+                    <select class="easyui-combobox win-txt" id="selE_Val1" name="Val" data-options="valueField:'id',textField:'text',panelHeight:150,data:getComboValKill()"></select>
+
+                </td>
+            </tr>
+            <tr>
+                <td align="center" colspan="2" class="pd5">
+                    <input type="hidden" id="hfID" name="ID" value="0" />
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="SaveUserRate()" data-options="plain:true,iconCls:'icon-save'">保存</a>
+                </td>
+            </tr>
+        </table>
+    </form>
+</div>
+
+
+@*修改注机控制窗口*@
+<div id="chgRateWinBet" class="hide">
+    <form id="form11">
+        <table cellpadding="0" cellspacing="0" border="0" width="100%" align="center">
+            <tr>
+                <td colspan="2" align="left" style="padding-left: 50px;color:#999;">
+                    <p style="margin-left:-35px;">温馨提示:修改后即时生效</p>
+                </td>
+            </tr>
+            <tr>
+                <td align="right">用户账号</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-textbox win-txt" id="txtE_ID11" disabled />
+                </td>
+            </tr>
+            <tr>
+                <td align="right">功能</td>
+                <td align="left" class="pd5">
+                    <select class="easyui-combobox win-txt" id="selE_Action2" name="Action11" data-options="valueField:'id',textField:'text',panelHeight:150,data:actionSelDataBet(),onChange:bindAction"></select>
+                </td>
+            </tr>
+            <tr>
+                <td align="right">控值</td>
+                <td align="left" class="pd5">
+                    <select class="easyui-combobox win-txt" id="selE_Val2" name="Val11" data-options="valueField:'id',textField:'text',panelHeight:150,data:getComboValKill()"></select>
+
+                </td>
+            </tr>
+            <tr>
+                <td align="center" colspan="2" class="pd5">
+                    <input type="hidden" id="hfID11" name="ID11" value="0" />
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="SaveUserRateBet()" data-options="plain:true,iconCls:'icon-save'">保存</a>
+                </td>
+            </tr>
+        </table>
+    </form>
+</div>
+
+@*修改牌机控制窗口*@
+
+<div id="chgRateWinPAIJI" class="hide">
+    <form id="form6">
+        <table cellpadding="0" cellspacing="0" border="0" width="100%" align="center">
+            <tr>
+                <td colspan="2" align="left" style="padding-left: 50px;color:#999;">
+                    <p style="margin-left:-35px;">温馨提示:修改后即时生效</p>
+                </td>
+            </tr>
+            <tr>
+                <td align="right">用户账号</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-textbox win-txt" id="txtE_ID1" disabled />
+                </td>
+            </tr>
+            <tr>
+                <td align="right">控制游戏类型</td>
+                <td align="left" class="pd5">
+                    <select class="easyui-combobox win-txt" id="selE_Action" name="Action1" data-options="valueField:'id',textField:'text',panelHeight:150,data:actionSelDataPAIJI(),onChange:bindGameTypePaiJi"></select>
+                </td>
+            </tr>
+
+            <tr>
+                <td align="right">控制牌类型</td>
+                <td align="left" class="pd5">
+                    <select class="easyui-combobox" id="selE_Type" name="Type1" data-options="valueField:'id',textField:'text',panelHeight:150,data:valSelDataPAIJI3()"></select>
+
+                </td>
+            </tr>
+
+            <tr>
+                <td align="right">次数</td>
+                <td align="left" class="pd5">
+                    <select class="easyui-combobox win-txt" id="selE_Number" name="Number1" data-options="valueField:'id',textField:'text',panelHeight:150,data:valSelData()"></select>
+
+                </td>
+            </tr>
+
+            <tr>
+                <td align="right">总次数</td>
+                <td align="left" class="pd5">
+                    <select class="easyui-combobox win-txt" id="selE_Val" name="Val1" data-options="valueField:'id',textField:'text',panelHeight:150,data:valSelDataPAIJI1()"></select>
+
+                </td>
+            </tr>
+
+
+            <tr>
+                <td align="center" colspan="2" class="pd5">
+                    <input type="hidden" id="hfID1" name="ID1" value="0" />
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="SaveUserRatePAIJI()" data-options="plain:true,iconCls:'icon-save'">保存</a>
+                </td>
+            </tr>
+        </table>
+    </form>
+</div>
+
+@*添加窗口*@
+<div id="addUser" class="hide">
+    <form id="form4">
+        <table cellpadding="0" cellspacing="0" border="0" width="100%" align="center">
+            <tr>
+                <td colspan="2" align="left" style="padding-left: 50px;color:#999;">
+                    <p style="margin-left:-35px;">温馨提示：添加成功后即时生效。</p>
+                </td>
+            </tr>
+            <tr>
+                <td align="right">用户登录账户：</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-textbox win-txt" name="txtE_UID1" />
+                </td>
+            </tr>
+            <tr>
+                <td align="right">用户显示昵称：</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-textbox win-txt" name="txtE_NAME1" />
+                </td>
+            </tr>
+            <tr>
+                <td align="right">手机号：</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-textbox win-txt" name="txtE_TELEPHONE1" />
+                </td>
+            </tr>
+            <tr>
+                <td align="right">用户登录密码：</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-passwordbox win-txt" name="PWD1" />
+                </td>
+            </tr>
+            <tr>
+                <td align="right">确认密码：</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-passwordbox win-txt" name="RE_PWD1" />
+                </td>
+            </tr>
+            <tr>
+                <td align="center" colspan="2" class="pd5">
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="SaveUserInfo()" data-options="plain:true,iconCls:'icon-save'">保存</a>
+                </td>
+            </tr>
+        </table>
+    </form>
+</div>
+
+
+@*等级窗口*@
+<div id="chgGrade" class="hide">
+    <form id="form7">
+        <table cellpadding="0" cellspacing="0" border="0" width="100%" align="center">
+            <tr>
+                <td colspan="2" align="left" style="padding-left: 50px;color:#999;">
+                    <p style="margin-left:-35px;">温馨提示:修改后即时生效</p>
+                </td>
+            </tr>
+            <tr>
+                <td align="right">用户账号</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-textbox win-txt" id="txtE_UID2" disabled />
+                </td>
+            </tr>
+            <tr>
+                <td align="right">用户等级</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-textbox win-txt" id="txtE_GRADE" name="GRADE" />
+                </td>
+            </tr>
+            <tr>
+                <td align="center" colspan="2" class="pd5">
+                    <input type="hidden" id="hfUID2" name="ID2" value="0" />
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="SaveGrade()" data-options="plain:true,iconCls:'icon-save'">保存</a>
+                </td>
+            </tr>
+        </table>
+    </form>
+</div>
+
+
+@*充值窗口*@
+<div id="chgReChange" class="hide">
+    <form id="form8" class="coin-dialog-form">
+        <table cellpadding="0" cellspacing="0" border="0" class="coin-dialog-table">
+            <tr>
+                <td colspan="2" class="coin-dialog-tip">
+                    温馨提示:充值后即时生效
+                </td>
+            </tr>
+            <tr>
+                <td class="coin-dialog-label">用户账号</td>
+                <td class="pd5 coin-dialog-field">
+                    <input class="easyui-textbox win-txt" id="txtE_UID3" disabled />
+                    <span class="dialog-coin-tip">当前剩余金币：<span id="txtCurrentCoins_Recharge">--</span></span>
+                </td>
+            </tr>
+            <tr>
+                <td class="coin-dialog-label">金币</td>
+                <td class="pd5 coin-dialog-field">
+                    <input class="easyui-textbox win-txt" id="txtE_COINS1" name="txtE_COINS1" />
+                </td>
+            </tr>
+            <tr>
+                <td align="center" colspan="2" class="pd5">
+                    <input type="hidden" id="hfUID3" name="ID3" value="0" />
+                    <a href="javascript:void(0);" id="btnSaveReChange" class="easyui-linkbutton" onclick="SaveReChange()" data-options="plain:true,iconCls:'icon-save',disabled:true">充值</a>
+                </td>
+            </tr>
+        </table>
+    </form>
+</div>
+
+
+@*赠送窗口*@
+<div id="chgGive" class="hide">
+    <form id="form9">
+        <table cellpadding="0" cellspacing="0" border="0" width="100%" align="center">
+            <tr>
+                <td colspan="2" align="left" style="padding-left: 50px;color:#999;">
+                    <p style="margin-left:-35px;">温馨提示:赠送后即时生效</p>
+                </td>
+            </tr>
+            <tr>
+                <td align="right">用户账号</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-textbox win-txt" id="txtE_UID4" disabled />
+                </td>
+            </tr>
+            <tr>
+                <td align="right">金币</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-textbox win-txt" id="txtE_COINS2" name="txtE_COINS2" />
+                </td>
+            </tr>
+            <tr>
+                <td align="center" colspan="2" class="pd5">
+                    <input type="hidden" id="hfUID4" name="ID4" value="0" />
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="SaveGive()" data-options="plain:true,iconCls:'icon-save'">赠送</a>
+                </td>
+            </tr>
+        </table>
+    </form>
+</div>
+
+
+@*扣币窗口*@
+<div id="chgDeduct" class="hide">
+    <form id="form10" class="coin-dialog-form">
+        <table cellpadding="0" cellspacing="0" border="0" class="coin-dialog-table">
+            <tr>
+                <td colspan="2" class="coin-dialog-tip">
+                    温馨提示:扣币后即时生效
+                </td>
+            </tr>
+            <tr>
+                <td class="coin-dialog-label">用户账号</td>
+                <td class="pd5 coin-dialog-field">
+                    <input class="easyui-textbox win-txt" id="txtE_UID5" disabled />
+                    <span class="dialog-coin-tip">当前剩余金币：<span id="txtCurrentCoins_Deduct">--</span></span>
+                </td>
+            </tr>
+            <tr>
+                <td class="coin-dialog-label">金币</td>
+                <td class="pd5 coin-dialog-field">
+                    <input class="easyui-textbox win-txt" id="txtE_COINS3" name="txtE_COINS3" />
+                </td>
+            </tr>
+            <tr>
+                <td align="center" colspan="2" class="pd5">
+                    <input type="hidden" id="hfUID5" name="ID5" value="0" />
+                    <a href="javascript:void(0);" id="btnSaveDeduct" class="easyui-linkbutton" onclick="SaveDeduct()" data-options="plain:true,iconCls:'icon-save',disabled:true">保存</a>
+                </td>
+            </tr>
+        </table>
+    </form>
+</div>

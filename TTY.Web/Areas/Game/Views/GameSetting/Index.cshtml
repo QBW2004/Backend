@@ -1,0 +1,201 @@
+﻿@{
+    Layout = "~/Views/Shared/Layout/_ContentLayout.cshtml";
+    ViewBag.RouteMap = "游戏设置";
+    M_LoginUser loginUser = WebHelper.GetLoginInfo();
+}
+
+@section include_res{
+    <script>
+    $(function () {
+        // 加载指定的模块
+        easyloader.load(['textbox', 'linkbutton', 'datagrid'], function () {
+            //适应窗口大小变化
+            $(window).resize(function () {
+                if ($('body').data('grid-init')) {
+                    setGridSize();
+                }
+            });
+            //初始化插件
+            pluginInit();
+            //初始化查询
+            queryData();
+        });
+    })
+    //重置表格大小
+    function setGridSize(param) {
+        var w = $(window).width() - 8;
+        var h = $(window).height() - 78;
+        resizeGrid('tb_PlatType', 'auto', h);
+    }
+    //查询数据
+    function queryData() {
+        var para = $("#frm_srch").serializeObject();
+        bindGridData(para);
+    }
+    //绑定表格数据
+    function bindGridData(para) {
+        if (!$('body').data('grid-init')) {
+            $('#tb_PlatType').datagrid({
+                url: "/Game/GameSetting/GetGames",
+                queryParams: $.extend({}, para),
+                pagination: true,
+                fitColumns: true,
+                singleSelect: true,
+                striped: true,
+                rownumbers: true,
+                height: 768,
+                pageSize: 20,
+                pageList: [10, 20, 50],
+                idField: 'ID',
+                onBeforeLoad: setGridSize,
+                onLoadSuccess: onLoaded
+            });
+        } else {
+            $('#tb_PlatType').datagrid('load', para);
+        }
+    }
+    //格式化
+        function fmtEnable(value, rowData, rowIndex) {
+            if (value == 1)
+                return '<span>是</span>';
+            else
+                return '<span  class="red">否</span>';
+        }
+
+        function fmtOpt(value, rowData, rowIndex) {
+            var arr = [];
+
+            if (rowData.Enable == 0) {
+                 @Html.Raw("arr.push('<a href=\"javascript: void(0)\" class=\"green Lpd5\" onclick=\"EnableGames(\\\'' + rowData.GameId + '\\\',1)\">启用</a>'); ");
+            }
+            else {
+                 @Html.Raw("arr.push('<a href=\"javascript: void(0)\" class=\"green Lpd5\" onclick=\"EnableGames(\\\'' + rowData.GameId + '\\\',0)\">禁用</a>'); ");
+                  @*@Html.Raw("arr.push('<a href=\"javascript: void(0)\" class=\"blue Lpd5\" onclick=\"setUp(\\\'' + rowData.GameId + '\\\',1)\">设置</a>'); ");*@
+            }
+
+            return arr.join('  ');
+        }
+        function EnableGames(id, flag) {
+            confirm('确认' + (flag == 1 ? '启用' : '禁用') + '选定的游戏？', function () {
+                request('/Game/GameSetting/EnableGames', { GameId: id, Enable: flag }, function (data) {
+                    //提示消息
+                    showMsg(data);
+                    if (data && data.code == 1) {
+                        queryData();//重新加载数据
+                    }
+                });
+            });
+        }
+
+        function actionSelData1() {
+            return [
+                { id: -1, text: '全部', selected: true },
+                { id: 0, text: '押注类' },
+                { id: 1, text: '牌机类' },
+                { id: 2, text: '鱼机类' },
+                { id: 3, text: '其他类' }
+            ];
+        }
+        function fmtGameType(value, rowData, rowIndex) {
+            if (value == 0)
+                return '<span>押注类</span>';
+            else if (value == 1)
+                return '<span>牌机类</span>';
+            else if (value == 2)
+                return '<span>鱼机类</span>';
+            else
+                return '<span>其他类</span>';
+        }
+
+        function setUp(GameId) {
+            var para = {
+                winId: '#setUp',
+                title: '【设置】',
+                height: 250,
+                iconCls: 'icon-user-edit',
+                callBack: function () {
+                    $('#gameID1').textbox('setValue', GameId);
+                    $('#gameID2').val(GameId);
+                }
+            };
+            openWin(para);
+        }
+        function SetUpdate() {
+            @Html.Raw(@"var para = $('#form5').serializeObject();
+                request('/Game/GameSetting/RobotSetUpdate', para, function (data) {
+                    //提示消息
+                    showMsg(data);
+                    if (data && data.code == 1) {
+                        $('#setUp').dialog('close');
+                        $('#form5').form('reset');
+                        queryData();//重新绑定表格数据
+                    }
+             });");
+        }
+    </script>
+}
+
+@*查询条件*@
+<form id="frm_srch">
+    <table width="100%" border="0" cellpadding="0" cellspacing="0" class="titleQueBg" style="height:40px;">
+        <tr>
+            <td>
+
+                <div class="left Lpd5">
+                    游戏类型
+                    <select class="easyui-combobox win-txt" id="addGameType" name="GameType" data-options="valueField:'id',textField:'text',panelHeight:150,data:actionSelData1()"></select>
+                </div>
+                <div class="left Lpd5">
+                    游戏名称
+                    <input type="text" class="easyui-textbox" name="Name" />
+                </div>
+                <div class="left Lmg10">
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="queryData();" data-options="plain:true,iconCls:'icon-search'">查找</a>
+
+                </div>
+            </td>
+        </tr>
+    </table>
+</form>
+
+@*查询游戏的信息*@
+<table id="tb_PlatType">
+    <thead>
+        <tr>
+            <th field="GameId" width="150">游戏ID</th>
+            <th field="GameType" width="150" formatter="fmtGameType">游戏类型</th>
+            <th field="Name" width="150">游戏名称</th>
+            <th field="Enable" width="150" formatter="fmtEnable">是否启用</th>
+            <th field="Num" width="150">机器人数量</th>
+            <th field="PWD" width="150"  align="center" formatter="fmtOpt">操作</th>
+        </tr>
+    </thead>
+</table>
+
+
+@*设置游戏机器人数量窗口*@
+<div id="setUp" class="hide">
+    <form id="form5">
+        <table cellpadding="0" cellspacing="0" border="0" width="100%" align="center">
+
+            <tr>
+                <td align="right">游戏ID</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-textbox win-txt" id="gameID1" disabled />
+                </td>
+            </tr>
+            <tr>
+                <td align="right">机器人数量</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-textbox win-txt" id="txtNum2" name="Num" />
+                </td>
+            </tr>
+            <tr>
+                <td align="center" colspan="2" class="pd5">
+                    <input type="hidden" id="gameID2" name="gameID2" value="0" />
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="SetUpdate()" data-options="plain:true,iconCls:'icon-save'">保存</a>
+                </td>
+            </tr>
+        </table>
+    </form>
+</div>

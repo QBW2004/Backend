@@ -1,0 +1,84 @@
+﻿<!--数据列表-->
+<div id="content">
+    <table id="tb_SumRptDataTable">
+        <thead>
+            <tr>
+                <th field="RowIndex" width="45" align="center">序号</th>
+                <th field="TotalUserCount" width="85" align="center">用户总量</th>
+                <th field="MaxUserCount" width="85" align="center">峰值用户量</th>
+                <th field="OldUserCount" width="85" align="center">老用户</th>
+                <th field="NewUserCount" width="85" align="center">新用户</th>
+
+                <th field="AnchorCount" width="85" align="center">开播主播数</th>
+                <th field="PerCount" width="85" align="center">游戏局数</th>
+
+                <th field="SysWin" width="135" align="center">系统收入</th>
+                <th field="SysTax" width="135" align="center">系统水费</th>
+                <th field="SysLost" width="135" align="center">系统赔付</th>
+                <th field="SysWinLostResult" width="135" align="center">收支</th>
+            </tr>
+        </thead>
+    </table>
+</div>
+<script>
+    var dtype = @ViewBag.PageType;
+    var rq_url = "";
+    switch (dtype) {
+        case 1:
+            rq_url = "/ScdMgr/HourReport"
+            break;
+        case 2:
+            rq_url = "/ScdMgr/DayReport"
+            break;
+        case 3:
+            rq_url = "/ScdMgr/WeekReport"
+            break;
+        case 4:
+            rq_url = "/ScdMgr/MonthReport"
+            break;
+    }
+
+    //查询数据
+    function queryData() {
+        var para = $("#frm_srch").serializeObject();
+        bindGridData(para);
+    }
+
+    //绑定表格数据
+    function bindGridData(para) {
+        if (!$('body').data('grid-init')) {
+            $('#tb_SumRptDataTable').datagrid({
+                url: rq_url,
+                queryParams: $.extend({}, para),
+                pagination: true,
+                fitColumns: true,
+                singleSelect: true,
+                height: 500,
+                pageSize: 20,
+                pageList: [20, 50],
+                onBeforeLoad: setGridSize,
+                onLoadSuccess: onLoaded
+            });
+        } else {
+            $('#tb_SumRptDataTable').datagrid('load', para);
+        }
+    }
+
+    //重置表格大小
+    function setGridSize(param) {
+        var runCount = 0;
+        setInterval(function () {
+            if (++runCount <= 3) {
+                var w = $(window).width() - 10;
+                var h = $(window).height() - $('#frm_srch').outerHeight() - 30;
+                resizeGrid('tb_SumRptDataTable', w, h);
+            }
+        }, 50);
+    }
+
+    //下载报表
+    function downloadXls() {
+        var para = $("#frm_srch").serializeObject();
+        download('/OxMgr/PlayerDailyReportDownload?i=' + Math.random(), para);
+    }
+</script>

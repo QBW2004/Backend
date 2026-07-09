@@ -1,0 +1,117 @@
+﻿
+@{
+    Layout = "~/Views/Shared/Layout/_ContentLayout.cshtml";
+    ViewBag.RouteMap = "玩家账目";
+    M_LoginUser loginUser = WebHelper.GetLoginInfo();
+}
+
+
+@section include_res{
+    <script>
+    $(function () {
+        // 加载指定的模块
+        easyloader.load(['textbox', 'linkbutton', 'datagrid'], function () {
+            //适应窗口大小变化
+            $(window).resize(function () {
+                if ($('body').data('grid-init')) {
+                    setGridSize();
+                }
+            });
+            //初始化插件
+            pluginInit();
+            //初始化查询
+            queryData();
+        });
+    })
+    //重置表格大小
+    function setGridSize(param) {
+        var w = $(window).width() - 8;
+        var h = $(window).height() - 78;
+        resizeGrid('tb_UserInfo', 'auto', h);
+    }
+    //查询数据
+    function queryData() {
+        var para = $("#frm_srch").serializeObject();
+        bindGridData(para);
+    }
+    //绑定表格数据
+     function bindGridData(para) {
+            $('#tb_UserInfo').datagrid({
+                url: "/Game/UserInfo/GetDailyAccounts",
+                queryParams: $.extend({}, para),
+                pagination: false, // 禁用分页
+                fitColumns: true,
+                singleSelect: true,
+                striped: true,
+                rownumbers: true,
+                height: 768,
+                idField: 'ID',
+                onBeforeLoad: setGridSize,
+                onLoadSuccess: onLoaded
+            });
+        //if (!$('body').data('grid-init')) {
+        //    $('#tb_UserInfo').datagrid({
+        //        url: "/Game/UserInfo/GetDailyAccounts",
+        //        queryParams: $.extend({}, para),
+        //        pagination: true,
+        //        fitColumns: true,
+        //        singleSelect: true,
+        //        striped: true,
+        //        rownumbers: true,
+        //        height: 768,
+        //        //pageSize: 20,
+        //        //pageList: [10, 20, 50],
+        //        idField: 'ID',
+        //        onBeforeLoad: setGridSize,
+        //        onLoadSuccess: onLoaded
+        //    });
+        //} else {
+        //    $('#tb_UserInfo').datagrid('load', para);
+        //}
+    }
+    </script>
+}
+
+@*查询条件*@
+<form id="frm_srch">
+    <table width="100%" border="0" cellpadding="0" cellspacing="0" class="titleQueBg" style="height:40px;">
+        <tr>
+            <td>
+                <div class="left Lpd5">
+                    用户ID
+                    <input type="text" class="easyui-textbox" name="srch_ID" />
+                </div>
+                <div class="left Lpd5">
+                    昵称
+                    <input type="text" class="easyui-textbox" name="srch_NAME" />
+                </div>
+                <div class="left Lpd5">
+                    所属代理
+                    <input type="text" class="easyui-textbox" name="srch_Agency" />
+                </div>
+                <div class="left Lmg10">
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="queryData();" data-options="plain:true,iconCls:'icon-search'">查找</a>
+
+                </div>
+            </td>
+        </tr>
+    </table>
+</form>
+
+@*查询代理的信息*@
+<table id="tb_UserInfo">
+    <thead>
+        <tr>
+            <th field="ID" width="180">用户账号</th>
+            <th field="NAME" width="180">昵称</th>
+            <th field="AGENCY" width="180">所属代理</th>
+            <th field="GAMETIME_STR" width="180">时间</th>
+            <th field="UPPER" width="180">上</th>
+            <th field="BELOW" width="180">下</th>
+            <th field="PROFIT" width="180">盈利</th>
+        </tr>
+    </thead>
+</table>
+
+
+

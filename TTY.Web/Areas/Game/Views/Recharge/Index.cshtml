@@ -1,0 +1,407 @@
+﻿
+@{
+    Layout = "~/Views/Shared/Layout/_ContentLayout.cshtml";
+    ViewBag.RouteMap = "账户充值";
+    YYT.Entity.M_LoginUser loginUser = YYT.Common.WebHelper.GetLoginInfo();
+    bool isRMB = YYT.Common.ConfigHelper.Get("IsRMB").Equals("1");
+}
+
+@section include_res{
+    <script>
+      
+        var currentRechargeType = null;
+        var userOptionsRequest = null;
+        $(function () {
+            // 加载指定的模块
+            easyloader.load(['textbox', 'combobox', 'numberbox', 'linkbutton', 'tree', 'form'], function () {
+                //初始化插件
+                pluginInit();
+                bindRechargeCoinTriggers();
+                initRechargeTypeTree();
+                //隐藏Loding
+                hideLoading();
+                $('#main').height($(window).height() - 38);
+            })
+        })
+        function hasRechargeForm() {
+            return $('#form1').length > 0;
+        }
+        function ensureAgencyOptionsLoaded(targetPriv) {
+            if (!hasRechargeForm() || $('#selAgency').length < 1)
+                return;
+
+            var _data = $('body').data('sel_agency_db_' + targetPriv);
+            if (!_data) {
+                $.getJSON('/api/Agency/' + targetPriv, function (data) {
+                    $('body').data('sel_agency_db_' + targetPriv, data);
+                    $('#selAgency').combobox('loadData', data);
+                });
+            } else {
+                $('#selAgency').combobox('loadData', _data);
+            }
+        }
+        function setCtrl(flag) {
+            if (flag == -2) {
+                $('#tr_1').show();
+                $('#tr_2').hide();
+            } else {
+                $('#tr_1').hide();
+                $('#tr_2').show();
+            }
+        }
+        function onTypeSelect(node) {
+
+            currentRechargeType = node;
+            setCtrl(node.id);
+            resetCurrentCoins();
+            if (!hasRechargeForm())
+                return;
+
+            $('#selUser').combobox('clear');
+
+            if (node.id > -2) {
+                $('#selAgency').combobox('clear');
+                ensureAgencyOptionsLoaded(node.id);
+            }
+        }
+        function selectDefaultRechargeType() {
+            var roots = $('#typeTree').tree('getRoots');
+            if (roots.length > 0) {
+                $('#typeTree').tree('select', roots[0].target);
+            }
+        }
+        function initRechargeTypeTree() {
+            $('#typeTree').tree({
+                data: @Html.Raw(ViewBag.TreeData),
+                onSelect: onTypeSelect,
+                onLoadSuccess: selectDefaultRechargeType
+            });
+        }
+        function resetCurrentCoins() {
+            if (!hasRechargeForm())
+                return;
+
+            $('#btnSaveCoin').linkbutton('disable');
+            $('#txtCurrentCoins,#txtCurrentCoins_agent').text('--');
+        }
+        function showRechargeToast(message, type) {
+            var toast = $('#rechargeToast');
+            if (toast.length < 1) {
+                toast = $('<div id="rechargeToast"></div>').appendTo('body');
+            }
+            var color = '#4b89dc';
+            if (type == 'success')
+                color = '#3c9b5f';
+            else if (type == 'danger' || type == 'error')
+                color = '#d9534f';
+            else if (type == 'warning')
+                color = '#f0ad4e';
+            toast.stop(true, true)
+                .text(message)
+                .css({
+                    position: 'fixed',
+                    top: '18px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    zIndex: 99999,
+                    background: color,
+                    color: '#fff',
+                    padding: '10px 22px',
+                    borderRadius: '4px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,.18)',
+                    fontSize: '14px',
+                    lineHeight: '20px',
+                    display: 'none'
+                })
+                .fadeIn(120)
+                .delay(5000)
+                .fadeOut(180);
+        }
+        function showRechargeResult(data, dangerOnSuccess, overrideMessage) {
+            if (!data)
+                return;
+            if (data.code == -1) {
+                loginTimeoutCallback(data);
+                return;
+            }
+            var message = overrideMessage || data.msg || data.content;
+            var type = data.code < 1 ? 'danger' : (dangerOnSuccess ? 'danger' : 'success');
+            showRechargeToast(message, type);
+        }
+        function containsFilter(q, row) {
+            var key = (q || '').toLowerCase();
+            var values = [row.ID, row.Agency];
+            for (var i = 0; i < values.length; i++) {
+                if (values[i] && values[i].toString().toLowerCase().indexOf(key) >= 0)
+                    return true;
+            }
+            return false;
+        }
+        function userFormatter(row) {
+            return row.ID;
+        }
+        function agencyFormatter(row) {
+            if (row.Agency && row.Agency != row.ID)
+                return row.ID + ' - ' + row.Agency;
+            return row.ID;
+        }
+        function getComboText(selector) {
+            return $.trim($(selector).combobox('getText'));
+        }
+        function queryCoinsIfInputReady(selector) {
+            if (getComboText(selector).length < 1)
+                return;
+            queryCoins(true);
+        }
+        function resetCoinsOnInput() {
+            resetCurrentCoins();
+        }
+        function loadUserOptions(keyword) {
+            keyword = $.trim(keyword || '');
+            if (keyword.length < 1) {
+                $('#selUser').combobox('loadData', []);
+                return;
+            }
+            if (userOptionsRequest && userOptionsRequest.readyState !== 4) {
+                userOptionsRequest.abort();
+            }
+            userOptionsRequest = $.ajax({
+                url: '/Game/Recharge/GetUserOptions',
+                type: 'POST',
+                dataType: 'json',
+                data: { keyword: keyword },
+                success: function (data) {
+                    $('#selUser').combobox('loadData', data || []);
+                    $('#selUser').combobox('showPanel');
+                }
+            });
+        }
+        function bindRechargeCoinTriggers() {
+            if (!hasRechargeForm())
+                return;
+
+            var queryByEnterUp = function (e) {
+                if (e.which == 13) {
+                    e.preventDefault();
+                    var selector = $('#tr_2').is(':visible') ? '#selAgency' : '#selUser';
+                    queryCoinsIfInputReady(selector);
+                    $(this).blur();
+                }
+            };
+            $('#selUser').combobox({
+                valueField: 'ID',
+                textField: 'ID',
+                mode: 'local',
+                hasDownArrow: false,
+                panelHeight: 180,
+                filter: containsFilter,
+                formatter: userFormatter,
+                keyHandler: $.extend({}, $.fn.combobox.defaults.keyHandler, {
+                    query: function (q, e) {
+                        $.fn.combobox.defaults.keyHandler.query.call(this, q, e);
+                        loadUserOptions(q);
+                        resetCoinsOnInput();
+                    }
+                }),
+                onSelect: function () {
+                    resetCurrentCoins();
+                }
+            });
+            $('#selAgency').combobox({
+                valueField: 'ID',
+                textField: 'ID',
+                mode: 'local',
+                hasDownArrow: false,
+                panelHeight: 180,
+                filter: containsFilter,
+                formatter: agencyFormatter,
+                keyHandler: $.extend({}, $.fn.combobox.defaults.keyHandler, {
+                    query: function (q, e) {
+                        $.fn.combobox.defaults.keyHandler.query.call(this, q, e);
+                        resetCoinsOnInput();
+                    }
+                }),
+                onSelect: function () {
+                    resetCurrentCoins();
+                }
+            });
+            $('#selUser').combobox('textbox')
+                .on('blur', function () { queryCoinsIfInputReady('#selUser'); })
+                .on('keyup', queryByEnterUp);
+            $('#selAgency').combobox('textbox')
+                .on('blur', function () { queryCoinsIfInputReady('#selAgency'); })
+                .on('keyup', queryByEnterUp);
+        }
+        function getFormData(skipCoinCheck, silentEmpty) {
+           
+            var para = $('#form1').serializeObject();
+            var _targetType = currentRechargeType || $('#typeTree').tree('getSelected');
+
+            if (_targetType == null) {
+                if (!silentEmpty)
+                    alert('请选择要充值的对象！', 'warning');
+                return null;
+            }
+
+            var _coin = parseInt(para.Val_3, 10);
+            if (!skipCoinCheck && (isNaN(_coin) || _coin < 1)) {
+                alert('请填写充值数量！', 'warning');
+                return null;
+            }
+
+            var _id = "";
+            if ($('#tr_2').is(':visible')) {
+                // 代理
+                _id = getComboText('#selAgency');
+                if (_id.length < 1) {
+                    if (!silentEmpty)
+                        alert('请选择充值的代理！', 'warning');
+                    return null;
+                }
+            } else {
+                // 用户
+                _id = getComboText('#selUser');
+                if (_id.length < 1) {
+                    if (!silentEmpty)
+                        alert('请填写用户账号！', 'warning');
+                    return null;
+                }
+            }
+
+            return { 'id': _id, 'coin': skipCoinCheck ? 0 : _coin, 'targetType': _targetType.id, 'payType': _targetType.attributes.payType, idType: 0, '__RequestVerificationToken': para['__RequestVerificationToken'] };
+        }
+        function queryCoins(silentEmpty) {
+            var para = getFormData(true, silentEmpty);
+            if (para == null)
+                return;
+
+            request('/Game/Recharge/QueryCoins', para, function (data) {
+                if (data && data.code == 1) {
+                    $('#txtCurrentCoins,#txtCurrentCoins_agent').text(top.goldFormat(data.datas.displayCoins || data.datas.coins || 0));
+                    $('#btnSaveCoin').linkbutton('enable');
+                } else {
+                    showRechargeResult(data, false, '该账号不存在，请重新输入!');
+                }
+            });
+        }
+        function saveCoin() {
+            var para = getFormData();
+            if (para == null)
+                return;
+
+            $.ajax({
+                url: '/Game/Recharge/SaveCoin',
+                data: para,
+                type: 'POST',
+                dataType: 'json',
+                beforeSend: function () {
+                    if ($('.main-loading').length < 1) {
+                        $('<div class="main-loading bg"><div class="main-loading-mask">正在处理，请稍待。。。</div></div>').prependTo('.main');
+                    }
+                },
+                success: function (data) {
+                    //提示消息
+                    showRechargeResult(data);
+                    if (data && data.code == 1 && $('#form1').length > 0) {
+                        $('#form1').form('reset');
+                    }
+                },
+                complete: function () {
+                    //隐藏Loding
+                    hideLoading();
+                }
+            });
+        }
+        
+       
+       
+        
+        function getSafeVal(s) {
+            //s = s.toString().replace('￥', '');
+            if (s.toString().length > 0)
+                return parseInt(s, 10).toString() + ".00";
+            //return "0.00";
+        }
+    </script>
+    <style>
+        .tabs-selected .tabs-title { color: #ff0000; }
+        .w_90 { width: 90px; }
+        .w_200 {
+            width: 145px;
+           
+        }
+        form table td { padding: 5px; }
+        .center { text-align: center; }
+        .hide { display: none; }
+        .tree-file { background: url('/Content/easyui/themes/icons/user_suit.png') no-repeat center center !important; }
+        .tree-node-selected { color: #ff0000 !important; }
+        .recharge-form { margin: 20px; padding: 20px; width: 560px; }
+        .recharge-form table { width: 100%; }
+        .recharge-label { width: 86px; text-align: right; white-space: nowrap; color: #333; }
+        .recharge-field { text-align: left; }
+        .recharge-tip-row td { padding-left: 96px; color: #999; }
+        .coin-tip { display: inline-block; padding-left: 14px; color: #c00; white-space: nowrap; }
+        .account-combo { width: 180px; }
+    </style>
+}
+
+<div id="main" class="easyui-layout" style="height:768px;width:100%;">
+    <div data-options="region:'west',title:'【充值对象】',split:true,collapsible:false" style="width:150px;">
+        <ul id="typeTree"></ul>
+    </div>
+    <div data-options="region:'center',title:'【充值区域】',collapsible:false">
+        @if (loginUser != null && loginUser.UserPriv != 10 && (loginUser.UserPriv == 0 || loginUser.IsUpDown == 1))
+        {
+            <form id="form1" class="recharge-form">
+                @if (isRMB == true)
+                {
+                    <table border="0" cellpadding="0" cellspacing="0">
+                        <tr class="recharge-tip-row">
+                            <td colspan="2">温馨提示：充值或兑换金额会自动换算成金币数量。</td>
+                        </tr>
+                    </table>
+                }
+                <table border="0" cellpadding="0" cellspacing="0">
+                    <tr id="tr_1">
+                        <td class="recharge-label">用户账号：</td>
+                        <td class="recharge-field">
+                            <select id="selUser" name="Val_1" class="account-combo"></select>
+                            <span class="coin-tip">当前剩余金币：<span id="txtCurrentCoins">--</span></span>
+                        </td>
+                    </tr>
+                    <tr id="tr_2" class="hide">
+                        <td class="recharge-label">代理账号：</td>
+                        <td class="recharge-field">
+                            <select id="selAgency" name="Val_2" class="account-combo"></select>
+                            <span class="coin-tip">当前剩余金币：<span id="txtCurrentCoins_agent">--</span></span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="recharge-label">@(isRMB == true ? "金额：" : "金币：")</td>
+                        <td class="recharge-field">
+                            @if (isRMB == true)
+                            {
+                                <input type="text" class="easyui-numberbox account-combo" name="Val_3" data-options="min:1,@*prefix:'￥',*@precision:2,parser:getSafeVal" />
+                            }
+                            else
+                            {
+                                <input type="text" class="easyui-numberbox account-combo" name="Val_3" data-options="min:1" />
+                            }
+                        </td>
+                    </tr>
+                    <tr>
+                        <td></td>
+                        <td class="recharge-field">
+                            <a href="javascript:void(0);" id="btnSaveCoin" class="easyui-linkbutton" onclick="saveCoin()" data-options="plain:true,iconCls:'icon-save',disabled:true">确定</a>
+                        </td>
+                    </tr>
+                </table>
+                @Html.AntiForgeryToken()
+            </form>
+        }
+        else
+        {
+            <h4 style="margin:10px;color:#f00;">对不起，没有充值权限！</h4>
+        }
+    </div>
+</div>

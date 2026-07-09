@@ -1,0 +1,576 @@
+﻿
+@{
+    Layout = "~/Views/Shared/Layout/_ContentLayout.cshtml";
+    ViewBag.RouteMap = "代理权限设置";
+    M_LoginUser loginUser = WebHelper.GetLoginInfo();
+}
+
+@section include_res{
+    <script>
+        $(function () {
+            // 加载指定的模块
+            easyloader.load(['textbox', 'linkbutton', 'datagrid'], function () {
+                //适应窗口大小变化
+                $(window).resize(function () {
+                    if ($('body').data('grid-init')) {
+                        setGridSize();
+                    }
+                });
+                //初始化插件
+                pluginInit();
+                //初始化查询
+                queryData();
+            });
+        })
+        //重置表格大小
+        function setGridSize(param) {
+            var w = $(window).width() - 8;
+            var h = $(window).height() - 78;
+            resizeGrid('tb_AgencyInfo', 'auto', h);
+        }
+        //查询数据
+        function queryData() {
+            var para = $("#frm_srch").serializeObject();
+            bindGridData(para);
+        }
+        //绑定表格数据
+        function bindGridData(para) {
+            if (!$('body').data('grid-init')) {
+                $('#tb_AgencyInfo').datagrid({
+                    url: "/Game/AgencyInfo/GetAgencies",
+                    queryParams: $.extend({}, para),
+                    pagination: true,
+                    fitColumns: true,
+                    singleSelect: true,
+                    striped: false,
+                    rownumbers: true,
+                    //showFooter: true,
+                    height: 768,
+                    pageSize: 20,
+                    pageList: [10, 20, 50],
+                    idField: 'ID',
+                    rowStyler: agencyRowStyler,
+                    onBeforeLoad: setGridSize,
+                    onLoadSuccess: function () {
+                        onLoaded();
+                        bindAgencyRowNumberToggle();
+                    }
+                });
+            } else {
+                $('#tb_AgencyInfo').datagrid('load', para);
+            }
+        }
+        //格式化
+        function fmtRechargeSwitch(value, rowData, rowIndex) {
+            if (value == 1)
+                return '<span>开</span>';
+            else
+                return '<span class="red">关</span>';
+        }
+        function fmtOpt(value, rowData, rowIndex) {
+            if (rowData.ID == "@(loginUser?.Accounts)")
+                return "";
+
+            var arr = [];
+           
+            if (rowData.IsFrozen== 0)
+                arr.push('<a href="javascript:void(0)" class="green Lpd5" onclick="setFrozen(\'' + rowData.ID + '\',1)">启用冻结</a>');
+            else
+                arr.push('<a href="javascript:void(0)" class="red Lpd5" onclick="setFrozen(\'' + rowData.ID + '\',0)">禁用冻结</a>');
+            if (rowData.IsKicking == 0)
+                arr.push('<a href="javascript:void(0)" class="green Lpd5" onclick="setIsKicking(\'' + rowData.ID + '\',1)">启用踢人</a>');
+            else
+                arr.push('<a href="javascript:void(0)" class="red Lpd5" onclick="setIsKicking(\'' + rowData.ID + '\',0)">禁用踢人</a>');
+            if (rowData.IsRelease == 0)
+                arr.push('<a href="javascript:void(0)" class="green Lpd5" onclick="setIsRelease(\'' + rowData.ID + '\',1)">启用牌机</a>');
+            else
+                arr.push('<a href="javascript:void(0)" class="red Lpd5" onclick="setIsRelease(\'' + rowData.ID + '\',0)">禁用牌机</a>');
+            if (rowData.IsKill == 0)
+                arr.push('<a href="javascript:void(0)" class="green Lpd5" onclick="setIsKill(\'' + rowData.ID + '\',1)">启用点杀</a>');
+            else
+                arr.push('<a href="javascript:void(0)" class="red Lpd5" onclick="setIsKill(\'' + rowData.ID + '\',0)">禁用点杀</a>');
+            if (rowData.IsProbability == 0)
+                arr.push('<a href="javascript:void(0)" class="green Lpd5" onclick="setProbability(\'' + rowData.ID + '\',1)">启用放水</a>');
+            else
+                arr.push('<a href="javascript:void(0)" class="red Lpd5" onclick="setProbability(\'' + rowData.ID + '\',0)">禁用放水</a>');
+            if (rowData.IsUpDown == 0)
+                arr.push('<a href="javascript:void(0)" class="green Lpd5" onclick="setIsUpDown(\'' + rowData.ID + '\',1)">启用上下分</a>');
+            else
+                arr.push('<a href="javascript:void(0)" class="red Lpd5" onclick="setIsUpDown(\'' + rowData.ID + '\',0)">禁用上下分</a>');
+            if (rowData.IsDelete == 0)
+                arr.push('<a href="javascript:void(0)" class="green Lpd5" onclick="setIsDelete(\'' + rowData.ID + '\',1)">启用删除用户</a>');
+            else
+                arr.push('<a href="javascript:void(0)" class="red Lpd5" onclick="setIsDelete(\'' + rowData.ID + '\',0)">禁用删除用户</a>');
+            if (rowData.IsModifyPwd == 0)
+                arr.push('<a href="javascript:void(0)" class="green Lpd5" onclick="setIsModifyPwd(\'' + rowData.ID + '\',1)">启用修改密码</a>');
+            else
+                arr.push('<a href="javascript:void(0)" class="red Lpd5" onclick="setIsModifyPwd(\'' + rowData.ID + '\',0)">禁用修改密码</a>');
+            if (rowData.IsViewSafePwd == 0)
+                arr.push('<a href="javascript:void(0)" class="green Lpd5" onclick="setIsViewSafePwd(\'' + rowData.ID + '\',1)">启用保险柜</a>');
+            else
+                arr.push('<a href="javascript:void(0)" class="red Lpd5" onclick="setIsViewSafePwd(\'' + rowData.ID + '\',0)">禁用保险柜</a>');
+            arr.push('<a href="javascript:void(0)" class="blue Lpd5" onclick="setKickScope(\'' + rowData.ID + '\',' + (rowData.KickScope == 2 ? 1 : 2) + ')">踢人范围:' + (rowData.KickScope == 2 ? '整条线' : '直属') + '</a>');
+            arr.push('<a href="javascript:void(0)" class="blue Lpd5" onclick="setManageScope(\'' + rowData.ID + '\',' + (rowData.ManageScope == 2 ? 1 : 2) + ')">管理范围:' + (rowData.ManageScope == 2 ? '整条线' : '直属') + '</a>');
+
+
+            return arr.join('  ');
+        }
+        function showAdminToast(message, type) {
+            var toast = $('#adminPermissionToast');
+            if (toast.length < 1) {
+                toast = $('<div id="adminPermissionToast"></div>').appendTo('body');
+            }
+            var color = '#4b89dc';
+            if (type == 'success')
+                color = '#3c9b5f';
+            else if (type == 'danger' || type == 'error')
+                color = '#d9534f';
+            else if (type == 'warning')
+                color = '#f0ad4e';
+            toast.stop(true, true)
+                .text(message)
+                .css({
+                    position: 'fixed',
+                    top: '18px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    zIndex: 99999,
+                    background: color,
+                    color: '#fff',
+                    padding: '10px 22px',
+                    borderRadius: '4px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,.18)',
+                    fontSize: '14px',
+                    lineHeight: '20px',
+                    display: 'none'
+                })
+                .fadeIn(120)
+                .delay(5000)
+                .fadeOut(180);
+        }
+        function showAdminResult(data) {
+            if (!data)
+                return;
+            if (data.code == -1) {
+                loginTimeoutCallback(data);
+                return;
+            }
+            var message = data.msg ? data.msg : data.content;
+            showAdminToast(message, data.code < 1 ? 'danger' : 'success');
+        }
+        //启用/禁用冻结
+        function setFrozen(id, flag) {
+            confirm('确认' + (flag == 0 ? '禁用冻结' : '启用冻结') + '所选代理的权限？', function () {
+                request('/Game/Admin/SetFrozen', { ID: id, IsFrozen: flag }, function (data) {
+                    //提示消息
+                    showAdminResult(data);
+                    if (data && data.code == 1) {
+                        //queryData();//重新加载数据
+                        $('#tb_AgencyInfo').datagrid('reload');
+                    }
+                });
+            });
+        }
+
+        //启用/禁用放水控制
+        function setProbability(id, flag) {
+            confirm('确认' + (flag == 0 ? '禁用放水' : '启用放水') + '所选代理的权限？', function () {
+                request('/Game/Admin/SetIsProbability', { ID: id, IsProbability: flag }, function (data) {
+                    //提示消息
+                    showAdminResult(data);
+                    if (data && data.code == 1) {
+                        //queryData();//重新加载数据
+                        $('#tb_AgencyInfo').datagrid('reload');
+                    }
+                });
+            });
+        }
+        //启用/禁用踢人控制
+        function setIsKicking(id, flag) {
+            confirm('确认' + (flag == 0 ? '禁用踢人' : '启用踢人') + '所选代理的权限？', function () {
+                request('/Game/Admin/SetIsKicking', { ID: id, IsKicking: flag }, function (data) {
+                    //提示消息
+                    showAdminResult(data);
+                    if (data && data.code == 1) {
+                        //queryData();//重新加载数据
+                        $('#tb_AgencyInfo').datagrid('reload');
+                    }
+                });
+            });
+        }
+        // 启用/禁用点杀控制权限
+        function setIsKill(id, flag) {
+            confirm('确认' + (flag == 0 ? '禁用点杀' : '启用点杀') + '所选代理的权限？', function () {
+                request('/Game/Admin/SetIsKill', { ID: id, IsKill: flag }, function (data) {
+                    showAdminResult(data);
+                    if (data && data.code == 1) {
+                        $('#tb_AgencyInfo').datagrid('reload');
+                    }
+                });
+            });
+        }
+
+        // 启用/禁用牌机控制权限
+        function setIsRelease(id, flag) {
+            confirm('确认' + (flag == 0 ? '禁用牌机' : '启用牌机') + '所选代理的权限？', function () {
+                request('/Game/Admin/SetIsRelease', { ID: id, IsRelease: flag }, function (data) {
+                    showAdminResult(data);
+                    if (data && data.code == 1) {
+                        $('#tb_AgencyInfo').datagrid('reload');
+                    }
+                });
+            });
+        }
+
+        // 启用/禁用保险柜权限
+        function setIsViewSafePwd(id, flag) {
+            confirm('确认' + (flag == 0 ? '禁用保险柜' : '启用保险柜') + '所选代理的权限？', function () {
+                request('/Game/Admin/SetIsViewSafePwd', { ID: id, IsViewSafePwd: flag }, function (data) {
+                    showAdminResult(data);
+                    if (data && data.code == 1) {
+                        $('#tb_AgencyInfo').datagrid('reload');
+                    }
+                });
+            });
+        }
+        function setIsUpDown(id, flag) {
+            confirm('确认' + (flag == 0 ? '禁用上下分' : '启用上下分') + '所选代理的权限？', function () {
+                request('/Game/Admin/SetIsUpDown', { ID: id, IsUpDown: flag }, function (data) {
+                    showAdminResult(data);
+                    if (data && data.code == 1) {
+                        $('#tb_AgencyInfo').datagrid('reload');
+                    }
+                });
+            });
+        }
+        function setIsDelete(id, flag) {
+            confirm('确认' + (flag == 0 ? '禁用删除用户' : '启用删除用户') + '所选代理的权限？', function () {
+                request('/Game/Admin/SetIsDelete', { ID: id, IsDelete: flag }, function (data) {
+                    showAdminResult(data);
+                    if (data && data.code == 1) {
+                        $('#tb_AgencyInfo').datagrid('reload');
+                    }
+                });
+            });
+        }
+        function setIsModifyPwd(id, flag) {
+            confirm('确认' + (flag == 0 ? '禁用修改密码' : '启用修改密码') + '所选代理的权限？', function () {
+                request('/Game/Admin/SetIsModifyPwd', { ID: id, IsModifyPwd: flag }, function (data) {
+                    showAdminResult(data);
+                    if (data && data.code == 1) {
+                        $('#tb_AgencyInfo').datagrid('reload');
+                    }
+                });
+            });
+        }
+        function setKickScope(id, scope) {
+            confirm('确认修改所选代理的踢人范围？', function () {
+                request('/Game/Admin/SetKickScope', { ID: id, KickScope: scope }, function (data) {
+                    showAdminResult(data);
+                    if (data && data.code == 1) {
+                        $('#tb_AgencyInfo').datagrid('reload');
+                    }
+                });
+            });
+        }
+        function setManageScope(id, scope) {
+            confirm('确认修改所选代理的管理范围？', function () {
+                request('/Game/Admin/SetManageScope', { ID: id, ManageScope: scope }, function (data) {
+                    showAdminResult(data);
+                    if (data && data.code == 1) {
+                        $('#tb_AgencyInfo').datagrid('reload');
+                    }
+                });
+            });
+        }
+
+
+        function fmtPriv(value, rowData, rowIndex) {
+            if (value == 0)
+                return '管理员';
+            if (value > 0)
+                return value + '级代理';
+            return '--';
+        }
+        function fmtAgencyLimit(value, rowData, rowIndex) {
+            if (value == 0)
+                return '无限制';
+            return value;
+        }
+        function fmtID(value, rowData, rowIndex) {
+            if (rowData.ID == "@(loginUser?.Accounts)")
+                return value;
+            return '<a href="javascript:void(0)" onclick="quickQuery(\'' + value + '\')">' + value + '</a>';
+        }
+        function fmtCoins(value, rowData, rowIndex) {
+            return top.goldFormat(value);
+        }
+
+        function canShowAgencyLimit(rowData) {
+            if (!rowData || rowData.PRIV <= 0)
+                return false;
+            if (@((loginUser?.UserPriv == 0).ToString().ToLower()))
+                return true;
+            return rowData.CanCreateChildAgent === true || rowData.CanCreateChildAgent == 1;
+        }
+
+        function agencyRowStyler(index, rowData) {
+            var color = rowData && rowData.AgencyGroupIndex % 2 == 1 ? '#eeeeee' : '#ffffff';
+            return 'background-color:' + color + ';';
+        }
+
+        function bindAgencyRowNumberToggle() {
+            var panel = $('#tb_AgencyInfo').datagrid('getPanel');
+            panel.find('div.datagrid-cell-rownumber').css('cursor', 'pointer').off('click.agencyTree').on('click.agencyTree', function () {
+                var rowIndex = parseInt($(this).closest('tr.datagrid-row').attr('datagrid-row-index'), 10);
+                toggleAgencyChildren(rowIndex);
+            });
+        }
+
+        function toggleAgencyChildren(rowIndex) {
+            var rows = $('#tb_AgencyInfo').datagrid('getRows');
+            var row = rows[rowIndex];
+            if (!row || !row.HasChildAgency)
+                return;
+
+            row._ChildrenCollapsed = !row._ChildrenCollapsed;
+            var baseDepth = row.AgencyTreeDepth || 0;
+            var panel = $('#tb_AgencyInfo').datagrid('getPanel');
+            for (var i = rowIndex + 1; i < rows.length; i++) {
+                var child = rows[i];
+                if ((child.AgencyTreeDepth || 0) <= baseDepth)
+                    break;
+                var tr = panel.find('tr[datagrid-row-index="' + i + '"]');
+                if (row._ChildrenCollapsed)
+                    tr.stop(true, true).slideUp(160);
+                else if (!hasCollapsedParent(rows, i))
+                    tr.stop(true, true).slideDown(160);
+            }
+        }
+
+        function hasCollapsedParent(rows, rowIndex) {
+            var depth = rows[rowIndex].AgencyTreeDepth || 0;
+            for (var i = rowIndex - 1; i >= 0; i--) {
+                var currentDepth = rows[i].AgencyTreeDepth || 0;
+                if (currentDepth < depth) {
+                    if (rows[i]._ChildrenCollapsed)
+                        return true;
+                    depth = currentDepth;
+                }
+            }
+            return false;
+        }
+
+        function quickQuery(account) {
+            $('#txtS_Agency').textbox('setValue', account);
+            queryData();
+        }
+        function setRecharge(id, flag) {
+            confirm('确认' + (flag == 0 ? '禁用' : '启用') + '所选代理？', function () {
+                request('/Game/AgencyInfo/SetRecharge', { ID: id, RE_ENABLE: flag }, function (data) {
+                    //提示消息
+                    showAdminResult(data);
+                    if (data && data.code == 1) {
+                        //queryData();//重新加载数据
+                        $('#tb_AgencyInfo').datagrid('reload');
+                    }
+                });
+            });
+        }
+        function showChgWin(uid) {
+            var para = {
+                winId: '#chgWin',
+                title: '【修改密码】',
+                iconCls: 'icon-user_edit',
+                callBack: function () {
+                    $('#txtE_ID').textbox('setValue', uid);
+                    $('#hfID').val(uid);
+                }
+            };
+            openWin(para);
+        }
+
+        function SaveAgencyPwd() {
+            var para = $('#form2').serializeObject();
+            request('/Game/AgencyInfo/ChgPwd', para, function (data) {
+                //提示消息
+                showAdminResult(data);
+                if (data && data.code == 1) {
+                    $('#chgWin').dialog('close');
+                    $('#form2').form('reset');
+                    //queryData();//重新绑定表格数据
+                    $('#tb_AgencyInfo').datagrid('reload');
+                }
+            });
+        }
+
+        function showAddWin() {
+            var para = {
+                winId: '#addWin',
+                title: '【添加代理】',
+                iconCls: 'icon-user_add'
+            };
+            openWin(para);
+        }
+        function SaveAgencyInfo() {
+            var para = $('#form3').serializeObject();
+            if (para.ID.length < 3) {
+                showAdminToast('账号ID不能少于3个字符！', 'warning');
+                return;
+            }
+            if (para.PWD.length < 6) {
+                showAdminToast('密码不能少于6个字符！', 'warning');
+                return;
+            }
+            if (para.RE_PWD.length < 6) {
+                showAdminToast('确认密码不能少于6个字符！', 'warning');
+                return;
+            }
+            if (para.PWD != para.RE_PWD) {
+                showAdminToast('两次输入的密码不一致！', 'warning');
+                return;
+            }
+            request('/Game/AgencyInfo/AddAgencyInfo', para, function (data) {
+                //提示消息
+                showAdminResult(data);
+                if (data && data.code == 1) {
+                    $('#addWin').dialog('close');
+                    $('#form3').form('reset');
+                    //queryData();//重新绑定表格数据
+                    $('#tb_AgencyInfo').datagrid('reload');
+                }
+            });
+        }
+    </script>
+
+    <style>
+    </style>
+}
+
+@*查询条件*@
+<form id="frm_srch">
+    <table width="100%" border="0" cellpadding="0" cellspacing="0" class="titleQueBg" style="height:40px;">
+        <tr>
+            <td>
+                <div class="left Lpd5">
+                    代理账号
+                    <input type="text" class="easyui-textbox" name="ID" />
+                </div>
+                <div class="left Lpd5">
+                    所属代理
+                    <input type="text" class="easyui-textbox" name="Agency" id="txtS_Agency" />
+                </div>
+                <div class="left Lmg10">
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="queryData();" data-options="plain:true,iconCls:'icon-search'">查找</a>
+                    @*@if (loginUser?.UserPriv < 3)
+                    {
+                        <a href="javascript:void(0);" class="easyui-linkbutton" onclick="showAddWin();" data-options="plain:true,iconCls:'icon-add'">添加代理</a>
+                    }*@
+                </div>
+            </td>
+        </tr>
+    </table>
+</form>
+
+@*查询代理的信息*@
+<table id="tb_AgencyInfo">
+    <thead>
+        <tr>
+            <th field="ID" width="85" formatter="fmtID">代理账号</th>
+            <th field="PRIV" width="85" formatter="fmtPriv">代理层级</th>
+            <th field="AGENCY" width="110">所属代理</th>
+            <th field="RE_ENABLE" width="85" formatter="fmtRechargeSwitch">账号状态</th>
+            <th field="AGENCY_LIMIT" width="80" formatter="fmtAgencyLimit">分代上限</th>
+            <th field="PWD" width="520" formatter="fmtOpt">操作</th>
+        </tr>
+    </thead>
+</table>
+
+@*修改窗口*@
+<div id="chgWin" class="hide">
+    <form id="form2">
+        <table cellpadding="0" cellspacing="0" border="0" width="100%" align="center">
+            <tr>
+                <td colspan="2" align="left" style="padding-left: 50px;color:#999;">
+                    <p style="margin-left:-35px;">温馨提示：修改后，请及时告知用户新密码。</p>
+                </td>
+            </tr>
+            <tr>
+                <td align="right">代理ID</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-textbox win-txt" id="txtE_ID" disabled />
+                </td>
+            </tr>
+            <tr>
+                <td align="right">新密码</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-passwordbox win-txt" id="txtE_PWD" name="PWD" />
+                </td>
+            </tr>
+            <tr>
+                <td align="center" colspan="2" class="pd5">
+                    <input type="hidden" id="hfID" name="ID" value="0" />
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="SaveAgencyPwd()" data-options="plain:true,iconCls:'icon-save'">保存</a>
+                </td>
+            </tr>
+        </table>
+    </form>
+</div>
+
+@*添加窗口*@
+<div id="addWin" class="hide">
+    <form id="form3">
+        <table cellpadding="0" cellspacing="0" border="0" width="100%" align="center">
+            <tr>
+                <td colspan="2" align="left" style="padding-left: 50px;color:#999;">
+                    <p style="margin-left:-35px;">温馨提示：添加成功后即时生效。</p>
+                </td>
+            </tr>
+            <tr>
+                <td align="right">代理层级</td>
+                <td align="left" class="pd5">
+                    <select class="easyui-combobox" data-options="panelHeight:80,editable:false" name="FLAG">
+                        @if (loginUser?.UserPriv == 0)
+                        {
+                            <option value="1">总代理</option>
+                        }
+                        <option value="0" selected>直属代理</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td align="right">状态</td>
+                <td align="left" class="pd5">
+                    <select class="easyui-combobox" data-options="panelHeight:80,editable:false" name="RE_ENABLE">
+                        <option value="0" selected>禁用</option>
+                        <option value="1">启用</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td align="right">账号ID</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-textbox win-txt" name="ID" />
+                </td>
+            </tr>
+            <tr>
+                <td align="right">密码</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-passwordbox win-txt" name="PWD" />
+                </td>
+            </tr>
+            <tr>
+                <td align="right">确认密码</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-passwordbox win-txt" name="RE_PWD" />
+                </td>
+            </tr>
+            <tr>
+                <td align="center" colspan="2" class="pd5">
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="SaveAgencyInfo()" data-options="plain:true,iconCls:'icon-save'">保存</a>
+                </td>
+            </tr>
+        </table>
+    </form>
+</div>
+

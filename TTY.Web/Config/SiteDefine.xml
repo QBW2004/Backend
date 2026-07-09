@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<root>
+  <!-- 游戏类型定义 -->
+  <rows key="GameType">
+    <row key="Bet" name="下注类型"/>
+    <row key="Card" name="牌机类型"/>
+    <row key="Fish" name="鱼机类型"/>
+    <row key="Laba" name="街机类型"/>
+  </rows>
+</root>

@@ -1,0 +1,68 @@
+﻿@charset "utf-8";
+
+/*全局样式----------------------------------------------------------------------------------------------------------------------------*/
+form { padding: 0; margin: 0; }
+html, body { margin: 0; padding: 0; font-size: 12px; font-family: 宋体; }
+button, input, textarea { vertical-align: middle; font-size: 12px; font-family: 宋体; }
+select { vertical-align: middle; font-size: 12px; }
+table { border-collapse: collapse; border-spacing: 0; }
+
+/*字体、间距、链接基本样式------------------------------------------------------------------------------------------------------------*/
+.bai { color: #fff; }
+.lan { color: #005ce5 !important; }
+.hong, .red { color: #FAB9B9 !important; }
+.bold { font-weight: bold; }
+.f14 { font-size: 14px; }
+.f12 { font-size: 12px; }
+.cheng { color: #FFFF00; }
+.hui { color: #bde9f6; }
+.hui6 { color: #666666; }
+.clear { clear: both; }
+#008000,.lv { color:#008000; }
+.left { float: left; }
+.right { float: right; }
+.Lmg30 { margin-left: 30px; }
+.Lmg10 { margin-left: 10px; }
+.Tmg7 { margin-top: 7px; }
+.Tmg20 { margin-top: 20px; }
+.lh { line-height: 20px; }
+.Tmg1 { margin-top: 1px; }
+.Rmg5 { margin-right: 5px; }
+.Bmg5 { margin-bottom: 5px; }
+.Lpd10 { padding-left: 10px; }
+.Lpd100 { padding-left: 100px; }
+.pd7 { padding: 7px; }
+.Lpd5 { padding-left: 5px; }
+.Rpd10 { padding-right: 10px; }
+.Rpd20 { padding-right: 20px; }
+.normal { font-weight: normal; }
+.hg3 { border-bottom: 3px solid #9ecee7; }
+.addrtitle { color: #99a8b0; }
+.hand { cursor: pointer; }
+
+a:link, a:visited { text-decoration: none; color: #000000; }
+a:hover { color: #FF8383; text-decoration: underline; }
+
+.l:link, .l:visited { text-decoration: underline; color: #005ce5; }
+.l:hover { color: #005ce5; text-decoration: none; }
+
+.l1:link, .l1:visited { text-decoration: underline; color: #000000; }
+.l1:hover { color: #005ce5; text-decoration: none; }
+
+.l2:link, .l2:visited { text-decoration: none; color: #005ce5; }
+.l2:hover { color: #005ce5; text-decoration: underline; }
+
+.retd { padding-left: 30px; }
+    .retd a { line-height: 25px; }
+.reasonSS { width: auto; margin-left: 10px; line-height: 20px; }
+
+/*按钮与文本框-----------------------------------------------------------------------------------------------------------*/
+textarea { width: 540px; border: 1px solid #718da6; padding: 3px; font-size: 12px; font-family: 宋体; }
+.text { border: 1px solid #7F9DB9; height: 16px; padding: 2px; line-height: 16px; width: 150px; }
+.btn, .button, .submit { font-size: 12px; height: auto; *height: 22px; line-height: 16px; *line-height: 16px; padding: 0; *padding: 0; margin-left: 6px; }
+.wd1 { width: 52px; margin: 1px 2px 0 0; }
+.wd2 { width: 72px; margin: 1px 2px 0 0; }
+.wd3, .wd5 { width: 104px; margin: 1px 2px 0 0; }
+.wd4 { width: 150px; margin: 1px 2px 0 0; }
+.wd6 { width: 66px; margin: 1px 2px 0 0; }
+.btnLine { border-left: 1px solid #0a4465; *border-left: none; border-top: none; *border-top: 1px solid #0a4465; border-right: 1px solid #93d3f6; border-bottom: none; *border-bottom: 1px solid #0a4465; width: 1px; *width: 2px; height: 21px !important; *height: 20px; line-height: auto; padding: 0; margin: 0 2px 0 7px; *margin: 0 7px 0 7px; background: #0a4465; }

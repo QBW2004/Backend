@@ -1,0 +1,29 @@
+# ===== Build artifacts =====
+build/
+bin/
+out/
+dist/
+
+# ===== Object files =====
+*.o
+*.obj
+*.so
+*.a
+*.dll
+*.exe
+
+# ===== Logs =====
+*.log
+
+# ===== IDE =====
+.vscode/
+.idea/
+.vs/
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+
+# ===== Temporary =====
+*.tmp
+*.swp

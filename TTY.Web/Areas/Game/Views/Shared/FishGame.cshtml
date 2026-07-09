@@ -1,0 +1,71 @@
+﻿<div id="type_2" class="hide">
+    <fieldset>
+        <legend>机台选择</legend>
+        <form>
+            <table border="0" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td width="52px">
+                        &nbsp;
+                    </td>
+                    <td>
+                        <select class="easyui-combobox" id="selRoomSel_2" name="RoomSel" data-options="label:'房间选择：',labelAlign:'right',valueField: 'id',textField: 'text',panelHeight:200,data: getRoomSelData(3),onChange:onRoomSelChange,editable:false" style="width:220px;"></select>
+                    </td>
+                    <td>
+                        <select class="easyui-combobox" id="selDeskSel_2" name="DeskSel" data-options="label:'机台选择：',labelAlign:'right',valueField: 'id',textField: 'text',panelHeight:200,data: getComboSelData(2,1),onChange:onDeskSelChange,editable:false" style="width:220px;"></select>
+                    </td>
+                </tr>
+            </table>
+        </form>
+    </fieldset>
+    <fieldset>
+        <legend>游戏账目</legend>
+        <form>
+            <table border="0" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="Small_In_0" data-options="label:'小段总入：',labelAlign:'right'" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="Small_Out_0" data-options="label:'小段总出：',labelAlign:'right'" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="Small_Per_0" data-options="label:'小段机率：',labelAlign:'right',precision:2" />
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="Medium_In_0" data-options="label:'中段总入：',labelAlign:'right'" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="Medium_Out_0" data-options="label:'中段总出：',labelAlign:'right'" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="Medium_Per_0" data-options="label:'中段机率：',labelAlign:'right',precision:2" />
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="Large_In_0" data-options="label:'大段总入：',labelAlign:'right'" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="Large_Out_0" data-options="label:'大段总出：',labelAlign:'right'" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="Large_Per_0" data-options="label:'大段机率：',labelAlign:'right',precision:2" />
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="Total_In_0" data-options="label:'总入：',labelAlign:'right'" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="Total_Out_0" data-options="label:'总出：',labelAlign:'right'" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="Total_Per_0" data-options="label:'机率：',labelAlign:'right',precision:2" />
+                    </td>
+                </tr>
+            </table>
+        </form>
+    </fieldset>
+</div>

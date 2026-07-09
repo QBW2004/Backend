@@ -1,0 +1,112 @@
+﻿
+@{
+    Layout = "~/Views/Shared/Layout/_ContentLayout.cshtml";
+
+    ViewBag.RouteMap = "游戏模式设置";
+    M_LoginUser loginUser = WebHelper.GetLoginInfo();
+}
+<script src="~/Scripts/jquery.form.js"></script>
+@section include_res{
+    <script>
+        $(function () {
+            // 加载指定的模块
+            easyloader.load(['textbox', 'linkbutton', 'datagrid'], function () {
+                //适应窗口大小变化
+                $(window).resize(function () {
+                    if ($('body').data('grid-init')) {
+                        setGridSize();
+                    }
+                });
+                //初始化插件
+                pluginInit();
+                //初始化查询
+                queryData();
+            });
+        })
+        //重置表格大小
+        function setGridSize(param) {
+            var w = $(window).width() - 8;
+            var h = $(window).height() - 78;
+            resizeGrid('tb_GameMo', 'auto', h);
+        }
+        //查询数据
+        function queryData() {
+            var para = $("#frm_srch").serializeObject();
+            bindGridData(para);
+        }
+        //绑定表格数据
+        function bindGridData(para) {
+            if (!$('body').data('grid-init')) {
+                $('#tb_GameMo').datagrid({
+                    url: "/Game/GameMo/GetGameMo",
+                    queryParams: $.extend({}, para),
+                    pagination: true,
+                    fitColumns: true,
+                    singleSelect: true,
+                    striped: true,
+                    rownumbers: true,
+                    height: 768,
+                    pageSize: 20,
+                    pageList: [10, 20, 50],
+                    idField: 'ID',
+                    onBeforeLoad: setGridSize,
+                    onLoadSuccess: onLoaded
+                });
+            } else {
+                $('#tb_GameMo').datagrid('load', para);
+            }
+        }
+
+        function fmtOpt(value, rowData, rowIndex) {
+            var arr = [];
+            if (rowData.GameMoType == 0) {
+                 @Html.Raw("arr.push('<a href=\"javascript: void(0)\" class=\"green Lpd5\" onclick=\"EnableGameMoType(\\\'' + rowData.ID + '\\\',1)\">切换真钱模式</a>'); ");
+            }
+            else {
+                 @Html.Raw("arr.push('<a href=\"javascript: void(0)\" class=\"green Lpd5\" onclick=\"EnableGameMoType(\\\'' + rowData.ID + '\\\',0)\">切换金币模式</a>'); ");
+            }
+            return arr.join('  ');
+        }
+        function fmtEnable(value, rowData, rowIndex) {
+            if (value == 1)
+                return '<span>真钱模式</span>';
+            else
+                return '<span>金币模式</span>';
+        }
+        function EnableGameMoType(id, flag) {
+            confirm('确认' + (flag == 1 ? '切换真钱' : '切换金币') + '模式？', function () {
+                request('/Game/GameMo/EnableGameMoType', { ID: id, GameMoType: flag }, function (data) {
+                    //提示消息
+                    showMsg(data);
+                    if (data && data.code == 1) {
+                        queryData();//重新加载数据
+                    }
+                });
+            });
+        }
+
+    </script>
+}
+
+<form id="frm_srch">
+    <table width="100%" border="0" cellpadding="0" cellspacing="0" class="titleQueBg" style="height:40px;">
+        <tr>
+            <td>
+            </td>
+        </tr>
+    </table>
+</form>
+<table id="tb_GameMo">
+    <thead>
+        <tr>
+            <th field="GameMoName" width="110">名称</th>
+            <th field="GameMoType" width="220" formatter="fmtEnable">值</th>
+
+            <th field="Id" width="110" align="center" formatter="fmtOpt">操作</th>
+        </tr>
+    </thead>
+</table>
+
+}
+
+

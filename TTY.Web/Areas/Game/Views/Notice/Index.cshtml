@@ -1,0 +1,234 @@
+﻿@{
+    Layout = "~/Views/Shared/Layout/_ContentLayout.cshtml";
+    ViewBag.RouteMap = "公告列表";
+    M_LoginUser loginUser = WebHelper.GetLoginInfo();
+}
+
+@section include_res{
+    <script>
+        $(function () {
+            // 加载指定的模块
+            easyloader.load(['textbox', 'linkbutton', 'datagrid'], function () {
+                //适应窗口大小变化
+                $(window).resize(function () {
+                    if ($('body').data('grid-init')) {
+                        setGridSize();
+                    }
+                });
+                //初始化插件
+                pluginInit();
+                //初始化查询
+                queryData();
+            });
+        })
+        //重置表格大小
+        function setGridSize(param) {
+            var w = $(window).width() - 8;
+            var h = $(window).height() - 78;
+            resizeGrid('tb_Notice', 'auto', h);
+        }
+        //查询数据
+        function queryData() {
+            var para = $("#frm_srch").serializeObject();
+            bindGridData(para);
+        }
+        //绑定表格数据
+        function bindGridData(para) {
+            if (!$('body').data('grid-init')) {
+                $('#tb_Notice').datagrid({
+                    url: "/Game/Notice/GetNotices",
+                    queryParams: $.extend({}, para),
+                    pagination: true,
+                    fitColumns: true,
+                    singleSelect: true,
+                    striped: true,
+                    rownumbers: true,
+                    height: 768,
+                    pageSize: 20,
+                    pageList: [10, 20, 50],
+                    idField: 'ID',
+                    onBeforeLoad: setGridSize,
+                    onLoadSuccess: onLoaded
+                });
+            } else {
+                $('#tb_Notice').datagrid('load', para);
+            }
+        }
+
+        function fmtOpt(value, rowData, rowIndex) {
+            var arr = [];
+            arr.push('<a href="javascript:void(0)" class="blue Lpd5" onclick="updateNotice(\'' + rowData.ID + '\')">修改</a>');
+            arr.push('<a href="javascript:void(0)" class="blue Lpd5" onclick="delNotic(\'' + rowData.ID + '\')">删除</a>');
+            return arr.join('  ');
+        }
+
+        function delNotic(id) {
+              @Html.Raw(@" confirm('确认删除公告？', function () {
+                request('/Game/Notice/delNotice', { ID: id }, function (data) {
+                    //提示消息
+                    showMsg(data);
+                    if (data && data.code == 1) {
+                        queryData();//重新加载数据
+                    }
+                });
+            });");
+
+        }
+
+
+        function setNotic() {
+            @Html.Raw(@"var para = $('#form2').serializeObject();
+                request('/Game/Notice/updateNotic', para, function (data) {
+                    //提示消息
+                    showMsg(data);
+                    if (data && data.code == 1) {
+                        $('#updateNotice').dialog('close');
+                        $('#form2').form('reset');
+                        queryData();//重新绑定表格数据
+                    }
+             });");
+        }
+        function updateNotice(uid) {
+            var para = {
+                winId: '#updateNotice',
+                title: '【修改公告】',
+                height: 370,
+                iconCls: 'icon-user-edit',
+                callBack: function () {
+                  /*  $('#hfUID1').textbox('setValue', uid);*/
+                    $('#hfUID1').val(uid);
+                }
+            };
+            openWin(para);
+        }
+
+        function showAddNotice() {
+            var para = {
+                winId: '#addNotice',
+                title: '【添加公告】',
+                iconCls: 'icon-user_add'
+            };
+            openWin(para);
+        }
+
+        function saveNotic() {
+            var para = $('#form1').serializeObject();
+            if (para.NOTICE.length < 1) {
+                alert('请填写内容！', 'warning');
+                return;
+            }
+            //console.log(para);
+            request('/Game/Notice/AddNotice', para, function (data) {
+                showMsg(data);
+                if (data && data.code == 1) {
+                    $('#addNotice').dialog('close');
+                    $('#form1').form('reset');
+                    queryData();//重新绑定表格数据
+                }
+            });
+        }
+    </script>
+}
+
+@*查询条件*@
+<form id="frm_srch">
+    <table width="100%" border="0" cellpadding="0" cellspacing="0" class="titleQueBg" style="height:40px;">
+        <tr>
+            <td>
+
+                <div class="left Lpd5">
+                    标题
+                    <input type="text" class="easyui-textbox" name="TITLE" />
+                </div>
+
+                <div class="left Lmg10">
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="queryData();" data-options="plain:true,iconCls:'icon-search'">查找</a>
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="showAddNotice();" data-options="plain:true,iconCls:'icon-add'">添加公告</a>
+                </div>
+            </td>
+        </tr>
+    </table>
+</form>
+
+@*查询的信息*@
+<table id="tb_Notice">
+    <thead>
+        <tr>
+            <th field="ID" width="110">ID</th>
+            <th field="TITLE" width="110">标题</th>
+            <th field="NOTICE" width="350">公告内容</th>
+            <th field="PWD" width="200" formatter="fmtOpt">操作</th>
+
+        </tr>
+    </thead>
+</table>
+
+
+@*添加窗口*@
+<div id="addNotice" class="hide">
+    <form id="form1">
+
+        <table cellpadding="0" cellspacing="0" border="0" width="100%" align="center">
+          
+            <tr>
+                <td align="right">标题</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-textbox win-txt" id="txtTitle" name="TITLE" />
+                </td>
+            </tr>
+            <tr>
+                <td align="right">公告</td>
+                <td align="left" class="pd5">
+                    <textarea type="text" class="easyui-textbox" id="txtNotice" multiline="true" name="NOTICE" style="width:60%;height:120px"></textarea>
+                </td>
+            </tr>
+            <tr>
+                <td align="center" colspan="2" class="pd5">
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="saveNotic()" data-options="plain:true,iconCls:'icon-save'">保存</a>
+                </td>
+            </tr>
+        </table>
+        @*<div class="easyui-panel" title="" style="width:100%;padding:30px;text-align:center;">
+            <div class="Bmg5">
+                <label>公告内容</label>
+                <textarea type="text" class="easyui-textbox" id="txtNotice" multiline="true" name="NOTICE" style="width:60%;height:120px">@(Model?.NOTICE)</textarea>
+            </div>
+            <div class="Bmg5">
+                <a href="javascript:void(0);" class="easyui-linkbutton" onclick="saveNotic()" data-options="plain:true,iconCls:'icon-save'">确认发布</a>
+            </div>
+        </div>*@
+    </form>
+</div>
+
+
+
+@*添加窗口*@
+<div id="updateNotice" class="hide">
+    <form id="form2">
+
+        <table cellpadding="0" cellspacing="0" border="0" width="100%" align="center">
+
+            <tr>
+                <td align="right">标题</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-textbox win-txt" id="txtTitle" name="TITLE" />
+                </td>
+            </tr>
+            <tr>
+                <td align="right">公告</td>
+                <td align="left" class="pd5">
+                    <textarea type="text" class="easyui-textbox" id="txtNotice" multiline="true" name="NOTICE" style="width:60%;height:120px"></textarea>
+                </td>
+            </tr>
+            <tr>
+                <td align="center" colspan="2" class="pd5">
+                    <input type="hidden" id="hfUID1" name="ID" value="0" />
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="setNotic()" data-options="plain:true,iconCls:'icon-save'">修改</a>
+                </td>
+            </tr>
+        </table>
+      
+    </form>
+</div>
+
+

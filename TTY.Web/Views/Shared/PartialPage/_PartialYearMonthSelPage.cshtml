@@ -1,0 +1,55 @@
+﻿@{
+    DateTime minDate;
+    DateTime maxDate;
+    new FengBo.BLL.B_ScdManage_HistoryDB().GetDataYearMonth(out minDate, out maxDate);
+}
+<script type="text/javascript">
+    var minYear = @minDate.Year;
+    var minMonth = @minDate.Month;
+    var maxYear = @maxDate.Year;
+    var maxMonth = @maxDate.Month;
+
+    function yearChang(newVal,oldVal){
+        var monthArr = [];
+        var sm = 1;
+        var em = 12;
+
+        var selYear = parseInt(newVal,10);
+        if(selYear == maxYear)
+        {
+            sm = 1;
+            em = maxMonth;
+        }
+        else
+        {
+            if(minMonth > 1)
+            {
+                sm = minMonth;
+                em = 12;
+            }
+            else
+            {
+                sm = 1;
+                em = 12;
+            }
+        }
+        for (var i = sm; i <= em; i++) {
+            monthArr.push({text:i + '月' ,id:i});
+        }
+        $('#selMonth').combobox('loadData',monthArr);
+    }
+</script>
+&nbsp;年份：
+<select class="easyui-combobox" style="width:95px;" id="selYear" name="selYear" data-options="onChange:yearChang">
+    @for (int i = minDate.Year; i <= maxDate.Year; i++)
+    {
+        <option value="@(i)">@(i)年</option>
+    }
+</select>
+&nbsp;月份：
+<select class="easyui-combobox" style="width:95px;" id="selMonth" name="selMonth" data-options="valueField: 'id',textField: 'text'">
+    @for (int i = 1; i <= maxDate.Month; i++)
+    {
+        <option value="@(i)">@(i)月</option>
+    }
+</select>

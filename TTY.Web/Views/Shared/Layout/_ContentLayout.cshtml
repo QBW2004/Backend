@@ -1,0 +1,30 @@
+﻿@using YYT.Common
+
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="utf-8" />
+    @*<meta name="viewport" content="width=device-width" />*@
+    <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title></title>
+    @Styles.Render("~/res/easyui-css")
+    <link href="@Url.Content("~/Content/css/font-awesome.css?v=" + ConfigHelper.Get("WebVer"))" rel="stylesheet" />
+    <link href="@Url.Content("~/Content/css/animate.css?v=" + ConfigHelper.Get("WebVer"))" rel="stylesheet" />
+    <link href="@Url.Content("~/Content/css/layout.css?v=" + ConfigHelper.Get("WebVer"))" rel="stylesheet" />
+    <script src="~/Scripts/jquery-2.1.4.js"></script>
+
+
+
+    @Scripts.Render("~/res/jquery-js")
+    @RenderSection("include_res", required: false)
+</head>
+<body>
+    <div class="title-map"><span>当前位置</span><span>@Html.Raw(ConstStr.FONT_SIGN_DB_GT) @ViewBag.RouteMap</span> </div>
+    <div class="main">
+        <div class="main-loading bg"><div class="main-loading-mask">正在处理;请稍待。。。</div></div>
+        @RenderBody()
+    </div>
+   
+</body>
+</html>

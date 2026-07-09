@@ -1,0 +1,334 @@
+﻿
+@{
+    Layout = "~/Views/Shared/Layout/_ContentLayout.cshtml";
+
+    ViewBag.RouteMap = "机器人设置";
+    M_LoginUser loginUser = WebHelper.GetLoginInfo();
+}
+<script src="~/Scripts/jquery.form.js"></script>
+@section include_res{
+    <script>
+        $(function () {
+            // 加载指定的模块
+            easyloader.load(['textbox', 'linkbutton', 'datagrid'], function () {
+                //适应窗口大小变化
+                $(window).resize(function () {
+                    if ($('body').data('grid-init')) {
+                        setGridSize();
+                    }
+                });
+                //初始化插件
+                pluginInit();
+                //初始化查询
+                queryData();
+                //根据游戏类型查询所有游戏
+                bindGameTypeTree(0,1);
+            });
+        })
+        //重置表格大小
+        function setGridSize(param) {
+            var w = $(window).width() - 8;
+            var h = $(window).height() - 78;
+            resizeGrid('tb_Robot', 'auto', h);
+        }
+        //查询数据
+        function queryData() {
+            var para = $("#frm_srch").serializeObject();
+            bindGridData(para);
+        }
+        //绑定表格数据
+        function bindGridData(para) {
+            if (!$('body').data('grid-init')) {
+                $('#tb_Robot').datagrid({
+                    url: "/Game/Robot/GetRobot",
+                    queryParams: $.extend({}, para),
+                    pagination: true,
+                    fitColumns: true,
+                    singleSelect: true,
+                    striped: true,
+                    rownumbers: true,
+                    showFooter: true,  
+                    height: 768,
+                    pageSize: 20,
+                    pageList: [10, 20, 50],
+                    idField: 'ID',
+                    onBeforeLoad: setGridSize,
+                    onLoadSuccess: onLoaded
+                });
+            } else {
+                $('#tb_Robot').datagrid('load', para);
+            }
+        }
+
+        function SaveRobot() {
+            @Html.Raw(@"var para = $('#form3').serializeObject();
+                request('/Game/Robot/SaveRobot', para, function (data) {
+                    //提示消息
+                    showMsg(data);
+                    if (data && data.code == 1) {
+                        $('#addWin').dialog('close');
+                        $('#form3').form('reset');
+                        queryData();//重新绑定表格数据
+                    }
+             });");
+        }
+
+        function deleteRobot(id) {
+           @Html.Raw(@" confirm('确认删除机器人？', function () {
+                request('/Game/Robot/DelRobot', { ID: id }, function (data) {
+                    //提示消息
+                    showMsg(data);
+                    if (data && data.code == 1) {
+                        queryData();//重新加载数据
+                    }
+                });
+            });");
+        }
+
+        function showAddWin() {
+            var para = {
+                winId: '#addWin',
+                title: '【添加机器人】',
+                height: 380,
+                iconCls: 'icon-user_add',
+                callBack: function () {
+                    $('#addGameType').combobox('loadData', actionSelData1());
+                }
+            };
+            openWin(para);
+        }
+        function bindGameTypeTree(newValue, oldValue) {
+            if (oldValue && newValue > -1 && newValue != oldValue) {
+                request('/Game/Robot/GetGamesTreeData', { GameType: newValue }, function (datas) {
+                    var arr = [];
+                    arr.push({ id: -1, text: '请选择游戏', selected: true });
+                    $('#addGameId').combobox('clear');
+                    for (var i = 0; i < datas.length; i++) {
+                        if (newValue == datas[i].id) {
+                            arr = arr.concat(datas[i].children);
+                        }
+                    }
+                    $('#addGameId').combobox('loadData', arr);
+                    if (newValue == 0) {
+                        $('#addRobotNo').combobox('loadData', getComboSelData(9,1))
+                    } else if (newValue == 1) {
+                        $('#addRobotNo').combobox('loadData', getComboSelData(2,1))
+                    } else {
+                        $('#addRobotNo').combobox('loadData', getComboSelData(5,1))
+                    }
+                })
+            }
+        }
+        function bindGamesTree(newValue, oldValue) {
+            if (oldValue && newValue > -1 && newValue != oldValue) {
+                if (newValue == "8" || newValue == "24" || newValue == "25" || newValue == "5" || newValue == "15") {
+                    $('#addRoomSel').combobox('loadData', getRoomSelData(4))
+                } else {
+                    $('#addRoomSel').combobox('loadData', getRoomSelData(3))
+                }
+               
+            }
+            getRoom();
+        }
+        function actionSelData1() {
+            return [
+                { id: -1, text: '请选择游戏类型', selected: true },
+                { id: 0, text: '押注类' },
+                { id: 1, text: '牌机类' },
+                { id: 2, text: '鱼机类' }
+            ];
+        }
+        function fmtGameType(value, rowData, rowIndex) {
+            if (value == 0)
+                return '<span>押注类</span>';
+            else if (value == 1)
+                return '<span>牌机类</span>';
+            else if (value == 2)
+                return '<span>鱼机类</span>';
+        }
+
+        function fmtTableID(value, rowData, rowIndex) {
+            if (value == -1)
+                return '';
+            else
+                return value;
+        }
+
+        function fmtRobotNo(value, rowData, rowIndex) {
+            if (rowData.GAME_TYPE != 5)
+                return value;
+            else
+                return '机器人总数量:' +value;
+        }
+        // 获取房间选项数据
+        function getRoomSelData(len) {
+            var arr = [];
+            for (var i = 0; i < len; i++) {
+                if (i == 0)
+                    arr.push({ id: i, text: '初级场', selected: true });
+                else if (i == 1)
+                    arr.push({ id: i, text: '中级场' });
+                else if (i == 2)
+                    arr.push({ id: i, text: '高级场' });
+                else if (i == 3)
+                    arr.push({ id: i, text: 'VIP 场' });
+            }
+            return arr;
+        }
+
+        // 获取房间选项数据
+        function getRoomName(len) {
+            var arr = [];
+            arr.push({ id: -1, text: '请选择房间', selected: true });
+            for (var i = 0; i < len; i++) {
+                if (i == 0)
+                    arr.push({ id: i, text: '初级场' });
+                else if (i == 1)
+                    arr.push({ id: i, text: '中级场' });
+                else if (i == 2)
+                    arr.push({ id: i, text: '高级场' });
+                else if (i == 3)
+                    arr.push({ id: i, text: 'VIP 场' });
+            }
+            return arr;
+        }
+
+        function getRoom() {
+            var gameType = $("input[name='GameType']").val()
+            //console.log("游戏类型：" + gameType);
+            var GameId = $("input[name='GameId']").val();
+            //console.log("游戏名称：" + GameId);
+            if (GameId == -1 || GameId=='') {
+              //alert("请选择游戏");
+                return;
+            }
+            var RoomSel = $("input[name='RoomSel']").val();
+            //console.log("RoomSel：" + RoomSel);
+            if (gameType == 0) {//押分类
+                request('/Game/Robot/GetParabetRoom', { GameId: GameId, RoomId: RoomSel }, function (data) {
+                    $('#addTABLE_ID').combobox('loadData', getComboSelData(data.NUM, 0))
+                })
+            } else {//鱼机、牌机
+                request('/Game/Robot/GetParaRoom', { GameId: GameId, RoomId: RoomSel }, function (data) {
+                    $('#addTABLE_ID').combobox('loadData', getComboSelData(data.NUM, 0))
+                })
+            }
+        }
+        //获取机台数据
+        function getComboSelData(len, minVal) {
+            var arr = [];
+            var _minVal = (typeof minVal == "number" ? minVal : 0)
+            for (var i = _minVal; i < len; i++) {
+                if (i == _minVal)
+                    arr.push({ id: i, text: i.toString(), selected: true });
+                else
+                    arr.push({ id: i, text: i.toString() });
+            }
+            return arr;
+        }
+
+        function fmtOpt(value, rowData, rowIndex) {
+              var arr = [];
+              if (rowData.ID != 0) {
+                  arr.push('<a href="javascript:void(0)" class="blue Lpd5" onclick="deleteRobot(\'' + rowData.ID + '\')">删除</a>');
+              }
+              return arr.join('  ');
+        }
+
+    </script>
+}
+
+<form id="frm_srch">
+    <table width="100%" border="0" cellpadding="0" cellspacing="0" class="titleQueBg" style="height:40px;">
+        <tr>
+            <td>
+                <div class="left Lpd5">
+                    游戏名称
+                    <input type="text" class="easyui-textbox" name="GameName" id="txtS_GameName" />
+                </div>
+                <div class="left Lpd5">
+                    房间名称
+                    <select class="easyui-combobox" id="txtS_RoomName" name="RoomId" data-options="valueField:'id',textField:'text',panelHeight:260,editable:false,data:getRoomName(4)" style="width:135px"></select>
+
+                </div>
+                <div class="left Lpd5">
+                    机台
+                    <input type="text" class="easyui-textbox" name="TABLE_ID" id="txtS_TABLE_ID" />
+                </div>
+                <div class="left Lmg10">
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="queryData();" data-options="plain:true,iconCls:'icon-search'">查找</a>
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="showAddWin();" data-options="plain:true,iconCls:'icon-add'">添加机器人</a>
+                </div>
+            </td>
+        </tr>
+    </table>
+</form>
+<table id="tb_Robot">
+    <thead>
+        <tr>
+            <th field="GAME_TYPE" width="110" formatter="fmtGameType">游戏类型</th>
+            <th field="GAME_NAME" width="110">游戏名称</th>
+            <th field="ROOM_NAME" width="110">房间名称</th>
+            <th field="TABLE_ID" width="110"  formatter="fmtTableID">机台</th>
+            <th field="ROBOT_NO" width="110"  formatter="fmtRobotNo">机器人数</th>
+            <th field="ID" width="110" align="center" formatter="fmtOpt">操作</th>
+        </tr>
+    </thead>
+</table>
+
+
+@*添加机器人窗口*@
+<div id="addWin" class="hide">
+    <form id="form3">
+        <table cellpadding="0" cellspacing="0" border="0" width="100%" align="center">
+            <tr>
+                <td colspan="2" align="left" style="padding-left: 50px;color:#999;">
+                    <p style="margin-left:-35px;">温馨提示：添加成功后即时生效。</p>
+                </td>
+            </tr>
+            <tr>
+                <td align="right">选择游戏类型</td>
+                <td align="left" class="pd5">
+                    <select class="easyui-combobox win-txt" id="addGameType" name="GameType" data-options="valueField:'id',textField:'text',panelHeight:150,data:actionSelData1(),onChange:bindGameTypeTree"></select>
+                </td>
+            </tr>
+            <tr>
+                <td align="right">选择游戏</td>
+                <td align="left" class="pd5">
+                    <select class="easyui-combobox" id="addGameId" data-options="valueField:'id',textField:'text',panelHeight:150,onChange:bindGamesTree" name="GameId">
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td align="right">选择房间</td>
+                <td align="left" class="pd5">
+                    <select class="easyui-combobox" id="addRoomSel" data-options="valueField:'id',textField:'text',panelHeight:150,data:getRoomSelData(3),onChange:getRoom" name="RoomSel">
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td align="right">选择机台</td>
+                <td align="left" class="pd5">
+                    <select class="easyui-combobox" id="addTABLE_ID" data-options="valueField:'id',textField:'text',panelHeight:150" name="TABLE_ID">
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td align="right">机器人数</td>
+                <td align="left" class="pd5">
+                    @*<input class="easyui-textbox win-txt" id="txtRobotNo" name="RobotNo" />*@
+
+                    <select class="easyui-combobox" id="addRobotNo" data-options="valueField:'id',textField:'text',panelHeight:150,data:getComboSelData(8)" name="RobotNo">
+                    </select>
+                </td>
+            </tr>
+            
+            <tr>
+                <td align="center" colspan="2" class="pd5">
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="SaveRobot()" data-options="plain:true,iconCls:'icon-save'">保存</a>
+                </td>
+            </tr>
+        </table>
+    </form>
+</div>
+

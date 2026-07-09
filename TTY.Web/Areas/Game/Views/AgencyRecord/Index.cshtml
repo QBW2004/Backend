@@ -1,0 +1,164 @@
+﻿
+@{
+    Layout = "~/Views/Shared/Layout/_ContentLayout.cshtml";
+    ViewBag.RouteMap = "代理记录";
+    M_LoginUser loginUser = WebHelper.GetLoginInfo();
+}
+@section include_res{
+    <script>
+        $(function () {
+            // 加载指定的模块
+                easyloader.load(['textbox', 'linkbutton', 'datagrid', 'messager'], function () {
+                //适应窗口大小变化
+                $(window).resize(function () {
+                    if ($('body').data('grid-init')) {
+                        setGridSize();
+                    }
+                });
+                //初始化插件
+                pluginInit();
+
+                //初始化查询
+                setTimeout(function () {
+                    queryData();
+                }, 10);
+            });
+        })
+        //重置表格大小
+        function setGridSize(param) {
+            var w = $(window).width() - 8;
+            var h = $(window).height() - 78;
+            resizeGrid('tb_AgencyRecords', 'auto', h);
+        }
+        //查询数据
+        function queryData() {
+            var para = $("#frm_srch").serializeObject();
+            bindGridData(para);
+        }
+        //绑定表格数据
+        function bindGridData(para) {
+            if (!$('body').data('grid-init')) {
+                $('#tb_AgencyRecords').datagrid({
+                    url: "/Game/AgencyRecord/GetAgencyRecords",
+                    queryParams: $.extend({}, para),
+                    pagination: true,
+                    fitColumns: true,
+                    singleSelect: true,
+                    striped: true,
+                    rownumbers: true,
+                    height: 768,
+                    pageSize: 20,
+                    pageList: [10, 20, 50],
+                    idField: 'USER',
+                    onBeforeLoad: setGridSize,
+                    onLoadSuccess: onLoaded
+                });
+            } else {
+                $('#tb_AgencyRecords').datagrid('load', para);
+            }
+        }
+        function fmtOptType(value, rowData, rowIndex) {
+            switch (value) {
+                case 0:
+                    return '充值';
+                case 1:
+                    return '兑换';
+                case 2:
+                    return '登录';
+                case 3:
+                    return '退出';
+                default:
+                    return '--';
+            }
+        }
+        function fmtContents(value, rowData, rowIndex) {
+            switch (rowData.OPT) {
+                case 0:
+                case 1:
+                    return getRechargeExchangeMsg(rowData);
+                case 2:
+                case 3:
+                    return getAngencyMsg(rowData);
+                default:
+                    return "--";
+            }
+        }
+        function getRechargeExchangeMsg(rowData) {
+            var optStr = fmtOptType(rowData.OPT);
+            return rowData.SrcUserTitle
+                + '账号[ ' + rowData.OptID
+                + ' ]给' + rowData.DestUserTitle
+                + '账号[ ' + rowData.ID + ' ]'
+                + optStr + ' ' + top.goldFormat(rowData.COINS)
+                + ' ，该账号' + optStr
+                + '前 ' + top.goldFormat(rowData.BEF_COINS) + ' ，'
+                + optStr + '后 ' + top.goldFormat(rowData.AFT_COINS) + ' 。';
+        }
+        function getAngencyMsg(rowData) {
+            var optStr = fmtOptType(rowData.OPT);
+            return rowData.SrcUserTitle
+                + '账号[ ' + rowData.OptID
+                + ' ]在 ' + rowData.REC_TIME_Str + ' ' + optStr
+                + '，' + optStr + '时携带 ' + top.goldFormat(rowData.BEF_COINS) + ' 。';
+        }
+        function clearRecords() {
+            $.messager.confirm('确认', '确定要清空全部代理记录吗？此操作不可恢复！', function (r) {
+                if (!r) return;
+                $.post('/Game/AgencyRecord/ClearRecords', {}, function (res) {
+                    if (res.code === 1) {
+                        $.messager.alert('提示', res.msg, 'info', function () { queryData(); });
+                    } else {
+                        $.messager.alert('提示', res.msg, 'error');
+                    }
+                });
+            });
+        }
+    </script>
+}
+@*查询条件*@
+<form id="frm_srch">
+    <table width="100%" border="0" cellpadding="0" cellspacing="0" class="titleQueBg" style="height:40px;">
+        <tr>
+            <td>
+                <div class="left Lpd5">
+                    搜索账号
+                    <input type="text" class="easyui-textbox" name="ID" />
+                </div>
+                <div class="left Lpd5">
+                    操作类型
+                    <select class="easyui-combobox" data-options="panelHeight:180,editable:false" name="OPT" style="width:155px;">
+                        <option value="-1" selected>-- 全部 --</option>
+                        <option value="0">充值</option>
+                        <option value="1">兑换</option>
+                        <option value="2">登录</option>
+                        <option value="3">退出</option>
+                    </select>
+                </div>
+                <div class="left Lpd5">
+                    时间
+                    <input type="text" class="easyui-datebox" name="TIME" value="return GetDate()" />
+                </div>
+                <div class="left Lmg10">
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="queryData();" data-options="plain:true,iconCls:'icon-search'">查找</a>
+                </div>
+                @if (loginUser != null && loginUser.UserPriv == 0)
+                {
+                <div class="left Lmg10">
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="clearRecords();" data-options="plain:true,iconCls:'icon-remove'">清理记录</a>
+                </div>
+                }
+            </td>
+        </tr>
+    </table>
+</form>
+
+@*查询代理的信息*@
+<table id="tb_AgencyRecords">
+    <thead>
+        <tr>
+            <th field="OptID" width="85">代理账号</th>
+            <th field="REC_TIME_Str" width="130">时间</th>
+            <th field="Contents" width="600" formatter="fmtContents">日志内容</th>
+        </tr>
+    </thead>
+</table>

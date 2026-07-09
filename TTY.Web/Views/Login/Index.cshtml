@@ -1,0 +1,105 @@
+﻿@{
+    Layout = null;
+    var srvMsg = TempData["msg"] != null ? TempData["msg"].ToString() : "";
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <script type="text/javascript">if (top.window.location.href != window.location.href) top.window.location.href = "/Login/Index";</script>
+
+    @Styles.Render("~/res/login-css")
+<script>
+        var _msg = '@srvMsg';
+</script>
+</head>
+<body>
+    <div class="navbar-collapse collapse">
+        <ul class="nav navbar-nav">
+            <li>@Html.ActionLink("en-US", "ChangeLanguage", "Login", new { NewLang = "en-US", ReturnUrl = Request.RawUrl }, new { @class = "testclass" })</li>
+            <li>@Html.ActionLink("zh-CN", "ChangeLanguage", "Login", new { NewLang = "zh-CN", ReturnUrl = Request.RawUrl }, new { @class = "testclass" })</li>
+            <li>@Html.ActionLink("vi-VN", "ChangeLanguage", "Login", new { NewLang = "vi-VN", ReturnUrl = Request.RawUrl }, new { @class = "testclass" })</li>
+        </ul>
+    </div>
+
+    <div id="alert-msg" class="alert alert-danger alert-dismissable msg animated fadeInDown hidden">
+    </div>
+    <div class="container">
+        <div class="row main">
+            <div class="col-xs-1 col-sm-3"></div>
+            <div class="col-xs-10 col-sm-6" style="padding-left:0;padding-right:0;">
+                @using (Html.BeginForm("Index", "Login", new { i = DateTime.Now.Ticks }, FormMethod.Post, new { onsubmit = "return checkInput()", role = "form", @class = "form-body center-block" }))
+                {
+                    <div class="row text-center active-h3" style="padding-bottom:20px;">
+                        <h3>@Resources.Language.String5</h3>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-xs-1 col-lg-2"></div>
+                        <div class="col-xs-10 col-lg-8 form-group">
+                            <div class="input-group input-group-sm">
+                                <input type="text" class="form-control" id="uname" name="uname" placeholder="@Resources.Language.String3" autocomplete="off">
+                                <span class="input-group-addon">
+                                    <i class="glyphicon glyphicon-user"></i>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-xs-1 col-lg-2"></div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-xs-1 col-lg-2"></div>
+                        <div class="col-xs-10 col-lg-8 form-group">
+                            <div class="input-group input-group-sm">
+                                <input type="password" class="form-control" id="upwd" name="upwd" placeholder="@Resources.Language.String4" autocomplete="off">
+                                <span class="input-group-addon">
+                                    <i class="glyphicon glyphicon-lock"></i>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-xs-1 col-lg-2"></div>
+                    </div>
+
+                    @*<div class="row">
+                            <div class="col-xs-1 col-lg-2"></div>
+                            <div class="col-xs-10 col-lg-8 form-group">
+                                <div class="input-group input-group-sm">
+                                    <div class="input-group input-group-sm" style="width: 100%;">
+                                        <input type="text" class="form-control" maxlength="4" id="code" name="code" placeholder="验证码" autocomplete="off" style="border-right: 0;" />
+                                        <div class="input-group-addon" style="padding: 0px;border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;">
+                                            <img src="/Validator/ValidateImage" id="imgChg" class="pull-left" title="点击更换验证码!" data-toggle="tooltip" data-placement="right" />
+                                        </div>
+                                    </div>
+                                    <span class="input-group-addon">
+                                        <i class="fa fa-refresh" id="lnkChg" data-toggle="tooltip" data-placement="right" title="点击更换验证码!"></i>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="col-xs-1 col-lg-2"></div>
+                        </div>*@
+
+                    <div class="row">
+                        <div class="col-xs-1 col-lg-2"></div>
+                        <div class="col-xs-10 col-lg-8" style="padding:20px;">
+                            <input type="button" class="btn btn-primary btn-block col-xs-offset-3" id="btnSubmit" style="width:50%;" value="@Resources.Language.String2" />
+                        </div>
+                        <div class="col-xs-1 col-lg-2"></div>
+                    </div>
+
+                    @Html.AntiForgeryToken()
+                }
+            </div>
+            <div class="col-xs-1 col-sm-3 hidden-xs"></div>
+        </div>
+
+        <div class="row hidden-xs hidden-md">
+            <span class="tip">@Resources.Language.String1</span>
+        </div>
+    </div>
+    @Scripts.Render("~/res/login-js")
+</body>
+</html>

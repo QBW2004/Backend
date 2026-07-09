@@ -1,0 +1,194 @@
+﻿
+@{
+    Layout = "~/Views/Shared/Layout/_ContentLayout.cshtml";
+    ViewBag.RouteMap = "玩家记录";
+    M_LoginUser loginUser = WebHelper.GetLoginInfo();
+}
+@section include_res{
+    <script>
+        $(function () {
+            // 加载指定的模块
+                easyloader.load(['textbox', 'linkbutton', 'datagrid', 'messager'], function () {
+                //适应窗口大小变化
+                $(window).resize(function () {
+                    if ($('body').data('grid-init')) {
+                        setGridSize();
+                    }
+                });
+                //初始化插件
+                pluginInit();
+                //初始化查询
+                queryData();
+            });
+        })
+        //重置表格大小
+        function setGridSize(param) {
+            var w = $(window).width() - 8;
+            var h = $(window).height() - 78;
+            resizeGrid('tb_UserRecords', 'auto', h);
+        }
+        //查询数据
+        function queryData() {
+            var para = $("#frm_srch").serializeObject();
+            bindGridData(para);
+        }
+        //绑定表格数据
+        function bindGridData(para) {
+            if (!$('body').data('grid-init')) {
+                $('#tb_UserRecords').datagrid({
+                    url: "/Game/UserRecord/GetUserRecords",
+                    queryParams: $.extend({}, para),
+                    pagination: true,
+                    fitColumns: true,
+                    singleSelect: true,
+                    striped: true,
+                    rownumbers: true,
+                    height: 768,
+                    pageSize: 20,
+                    pageList: [10, 20, 50],
+                    idField: 'USER',
+                    onBeforeLoad: setGridSize,
+                    onLoadSuccess: onLoaded
+                });
+            } else {
+                $('#tb_UserRecords').datagrid('load', para);
+            }
+        }
+        function fmtOPT(value, rowData, rowIndex) {
+            switch (value) {
+                case 2:
+                    return "进入";
+                case 3:
+                    return "离开";
+                case 0:
+                    return "充值";
+                case 1:
+                    return "兑换";
+                default:
+                    return "--";
+            }
+        }
+        function fmtContents(value, rowData, rowIndex) {
+            switch (rowData.OPT) {
+                case 0:
+                case 1:
+                    return getRechargeExchageMsg(rowData);
+                case 2:
+                case 3:
+                    return getLoginMgs(rowData);
+            }
+        }
+        function getRechargeExchageMsg(rowData) {
+            var optStr = '';
+            if (rowData.OPT == 0)
+                optStr = '充值后';
+            else if (rowData.OPT == 1)
+                optStr = '兑换后';
+
+            return '用户[ ' + rowData.UserID + ' ]' + optStr + '，余额：' + top.goldFormat(rowData.COINS);
+        }
+        function getLoginMgs(rowData) {
+            return (rowData.OPT == 2 ? '进入' : '离开')
+                + '[ ' + rowData.GameName + ' ]，[ ' + fmtRoom(rowData.ROOM, rowData) + ']，[ ' + fmtTableId(rowData.TABLE_ID, rowData) + ']，[ ' + fmtSeatId(rowData.SEAT_ID, rowData) + ']'
+                + '，下注：' + top.goldFormat(rowData.OPT_COINS)
+                + '，得分：' + top.goldFormat(rowData.SCORE)
+                + '，余额：' + top.goldFormat(rowData.COINS);
+        }
+
+        function fmtRoom(value, rowData, rowIndex) {
+            if (rowData.OPT == 0 || rowData.OPT == 1) {
+                return "--"; 
+            }
+            switch (value) {
+                case 0:
+                    return "初级场";
+                case 1:
+                    return "中级场";
+                case 2:
+                    return "高级场";
+                case 3:
+                    return "VIP场";
+                default:
+                    return "--";
+            }
+
+
+        }
+        function fmtTableId(value, rowData, rowIndex) {
+            switch (rowData.OPT) {
+                case 0:
+                case 1:
+                    return "--";
+                case 2:
+                case 3:
+                    return value + 1 + "号桌子";
+            }
+        }
+        function fmtSeatId(value, rowData, rowIndex) {
+            switch (rowData.OPT) {
+                case 0:
+                case 1:
+                    return "--";
+                case 2:
+                case 3:
+                    return value + 1 + "号位置";
+            }
+        }
+        function clearRecords() {
+            $.messager.confirm('确认', '确定要清空全部玩家记录吗？此操作不可恢复！', function (r) {
+                if (!r) return;
+                $.post('/Game/UserRecord/ClearRecords', {}, function (res) {
+                    if (res.code === 1) {
+                        $.messager.alert('提示', res.msg, 'info', function () { queryData(); });
+                    } else {
+                        $.messager.alert('提示', res.msg, 'error');
+                    }
+                });
+            });
+        }
+    </script>
+}
+@*查询条件*@
+<form id="frm_srch">
+    <table width="100%" border="0" cellpadding="0" cellspacing="0" class="titleQueBg" style="height:40px;">
+        <tr>
+            <td>
+                <div class="left Lpd5">
+                    用户账号
+                    <input type="text" class="easyui-textbox" name="ID" />
+                </div>
+                <div class="left Lpd5">
+                    时间
+                    <input type="text" class="easyui-datebox" name="TIME" value="return GetDate()" />
+                </div>
+                <div class="left Lmg10">
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="queryData();" data-options="plain:true,iconCls:'icon-search'">查找</a>
+                </div>
+                @if (loginUser != null && loginUser.UserPriv == 0)
+                {
+                <div class="left Lmg10">
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="clearRecords();" data-options="plain:true,iconCls:'icon-remove'">清理记录</a>
+                </div>
+                }
+            </td>
+        </tr>
+    </table>
+</form>
+
+@*记录的信息*@
+<table id="tb_UserRecords">
+    <thead>
+        <tr>
+            <th field="UserID" width="85">用户账号</th>
+            <th field="REC_TIME_Str" width="130">时间</th>
+            <th field="OPT" width="130" formatter="fmtOPT">操作类型</th>
+            <th field="GameName" width="130">游戏</th>
+            <th field="ROOM" width="130" formatter="fmtRoom">房间号</th>
+            <th field="TABLE_ID" width="130" formatter="fmtTableId">桌子号</th>
+            <th field="SEAT_ID" width="130" formatter="fmtSeatId">位置号</th>
+            <th field="OPT_COINS" width="130" formatter="top.goldFormat">下注</th>
+            <th field="SCORE" width="130" formatter="top.goldFormat">得分</th>
+            <th field="Contents" width="600" formatter="fmtContents">记录内容</th>
+        </tr>
+    </thead>
+</table>

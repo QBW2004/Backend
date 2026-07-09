@@ -1,0 +1,73 @@
+﻿
+@{
+    Layout = "~/Views/Shared/Layout/_ContentLayout.cshtml";
+    ViewBag.RouteMap = "用户账目";
+}
+
+@section include_res{
+    <script src="@Url.Content("~/Scripts/app/user.account.js?v=" + YYT.Common.ConfigHelper.Get("WebVer"))"></script>
+    <style>
+        .usr_report {
+            background: #efefef;
+            width: 100%;
+            height: 50px;
+        }
+
+        .data_area {
+            background-color: #e2e9e6;
+        }
+    </style>
+}
+@*查询条件*@
+<form id="frm_srch">
+    <table width="100%" border="0" align="center" cellpadding="0" cellspacing="0" class="titleQueBg" style="height:40px;">
+        <tr>
+            <td>
+                <div class="left Lpd5">
+                    用户类型
+                    <select class="easyui-combotree" id="selUserType" name="UserType" data-options="valueField:'id',textField:'text',data:[]" style="width:155px;"></select>
+                </div>
+                <div class="left Lpd5">
+                    直属代理
+                    <select class="easyui-combotree" id="selDirectAgency" name="DirectAgency" data-options="valueField:'id',textField:'text',data:[]" style="width:155px;"></select>
+                </div>
+                <div class="left Lmg10">
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="queryData();" data-options="plain:true,iconCls:'icon-search'">查找</a>
+                </div>
+            </td>
+        </tr>
+    </table>
+</form>
+<div class="usr_report">
+    @*查询代理的信息*@
+    <table id="tb_UserReport">
+        <thead>
+            <tr>
+                <th field="ID" width="65" align="center">ID</th>
+                <th field="COINS" width="85" align="center">金币</th>
+                <th field="RECHARGE" width="80" align="center">充值</th>
+                <th field="EXCHANGE" width="85" align="center">兑换</th>
+                <th field="COINS_BUY" width="85" align="center">购币</th>
+                <th field="COINS_BACK" width="85" align="center">退币</th>
+                <th field="RE_ENABLE" width="85" align="center">充值开关</th>
+                <th field="AGENCY_LIMIT" width="85" align="center">代理上限</th>
+            </tr>
+        </thead>
+    </table>
+</div>
+<div class="data_area">
+    @*数据列表*@
+    <table id="tb_Users">
+        <thead>
+            <tr>
+                <th field="ID" width="65" align="center">ID</th>
+                <th field="NAME" width="85" align="center">用户名</th>
+                <th field="FROZEN" width="80" align="center">冻结</th>
+                <th field="COINS" width="85" align="center">金币</th>
+                <th field="COINS_BUY" width="85" align="center">充值</th>
+                <th field="COINS_BACK" width="85" align="center">兑换</th>
+            </tr>
+        </thead>
+    </table>
+
+</div>

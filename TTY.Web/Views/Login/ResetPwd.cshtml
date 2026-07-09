@@ -1,0 +1,38 @@
+﻿@{
+    ViewBag.RouteMap = "修改密码";
+    Layout = "~/Views/Shared/Layout/_ContentLayout.cshtml";
+}
+@section include_res
+{
+    <style type="text/css">
+        ul, ul li { list-style: none; }
+        ul { width: 350px; position: absolute; left: 33%; right: auto; top: 20%; padding: 0; border: 1px solid #dfdfdf; border-radius: 4px; color: #404040 !important; }
+        ul li { padding: 10px; text-align: center; }
+        li.header { font-size: 14px; text-align: center; background-color: #eee; width: 330px; font-weight: bold; border-bottom: 1px solid #dfdfdf; border-radius: 4px 4px 0 0; }
+        td { line-height: 28px; padding-top: 5px; padding-bottom: 5px; }
+    </style>
+    <script src="@Url.Content("~/Scripts/app/user.repwd.js?v=" + ConfigHelper.Get("WebVer"))"></script>
+}
+<form id="form1">
+    <ul class="animated fadeInDown">
+        <li class="header">【修改密码】</li>
+        <li>
+            <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                <tr>
+                    <td align="right">旧密码：</td>
+                    <td><input type="password" name="OldPwd" class="easyui-textbox text wd4" maxlength="20" autocomplete="off" /></td>
+                </tr>
+                <tr>
+                    <td align="right">新密码：</td>
+                    <td><input type="password" name="NewPwd" class="easyui-textbox text wd4" maxlength="20" autocomplete="off" /></td>
+                </tr>
+                <tr>
+                    <td align="right">确认新密码：</td>
+                    <td><input type="password" name="RePwd" class="easyui-textbox text wd4" maxlength="20" autocomplete="off" /></td>
+                </tr>
+            </table>
+        </li>
+        <li><a class="easyui-linkbutton" href="javascript:void(0);" id="btnSave" data-options="plain:true,iconCls:'icon-save'">保存</a></li>
+    </ul>
+    @Html.AntiForgeryToken()
+</form>

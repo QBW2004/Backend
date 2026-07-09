@@ -1,0 +1,42 @@
+﻿
+@{
+    ViewBag.RouteMap = "登录日志";
+    Layout = "~/Views/Shared/Layout/_ContentLayout.cshtml";
+}
+
+@section include_res
+{
+    <script src="@Url.Content("~/Scripts/app/login.log.js?v=" + ConfigHelper.Get("WebVer"))"></script>
+}
+<!--查询条件-->
+<form id="frm_srch">
+    <table width="100%" border="0" align="center" cellpadding="0" cellspacing="0" class="titleQueBg" style="height:40px;">
+        <tr>
+            <td>
+                <div id="box_1" class="left">
+                    &nbsp;时间：
+                    <input class="easyui-datetimebox" id="sTime" name="sTime" style="width:158px;">
+                    至
+                    <input class="easyui-datetimebox" id="eTime" name="eTime" style="width:158px;">
+                </div>
+                <div id="box_4" class="left Lmg10">
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="queryData();" data-options="plain:true,iconCls:'icon-search'">查找</a>
+                </div>
+            </td>
+        </tr>
+    </table>
+</form>
+<!--数据列表-->
+<div id="content">
+    <table id="tb_LoginLogList">
+        <thead>
+            <tr>
+                <th field="LogID" width="45">日志ID</th>
+                <th field="Accounts" width="100">帐号</th>
+                <th field="WriteTime" width="140">登录时间</th>
+                <th field="ClientIP" width="120">登录IP</th>
+                <th field="MsgContent" width="220">登录结果</th>
+            </tr>
+        </thead>
+    </table>
+</div>

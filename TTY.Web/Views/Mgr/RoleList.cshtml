@@ -1,0 +1,64 @@
+﻿@{
+    ViewBag.RouteMap = Html.ToRoutMap("系统管理", "角色管理");
+    Layout = "~/Views/Shared/Layout/_ContentLayout.cshtml";
+}
+@section include_res{
+    <script src="@Url.Content("~/Scripts/app/role.mgr.js?v=" + ConfigHelper.Get("WebVer"))"></script>
+}
+
+<!--查询条件-->
+<form id="frm_srch">
+    <table width="100%" border="0" align="center" cellpadding="0" cellspacing="0" class="titleQueBg" style="height:40px;">
+        <tr>
+            <td>
+                <div id="box_2" class="left">
+                    &nbsp;角色名称
+                    <input type="text" class="easyui-textbox" id="txtRoleName" name="RoleName" style="width:155px;" />
+                </div>
+                <div id="box_5" class="left Lmg10">
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="queryData();" data-options="plain:true,iconCls:'icon-search'">查找</a>
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="showAddRole();" data-options="plain:true,iconCls:'icon-add'">新增角色</a>
+                </div>
+            </td>
+        </tr>
+    </table>
+</form>
+<!-- form end -->
+
+<!--数据列表-->
+<table id="tb_Roles">
+    <thead>
+        <tr>
+            <th field="RoleID" width="110" align="center">角色标识</th>
+            <th field="RoleName" width="150" align="center">角色名称</th>
+            <th field="RowIndex" width="150" align="center" formatter="formateOpt">操作</th>
+        </tr>
+    </thead>
+</table>
+<!-- table end -->
+
+<!-- 添加角色窗口 -->
+<div id="addRoleWin" class="hide">
+    <form id="form1">
+        <table cellpadding="0" cellspacing="0" border="0" width="100%">
+            <tr>
+                <td colspan="2" align="left" style="padding-left: 50px;color:#999;">
+                    <p class="pd2" style="margin-left:-35px;">温馨提示：</p>
+                    <p class="pd2" style="height: 18px;margin: 0px;">&gt; 角色添加后会立即在角色列表中展现。</p>
+                    <p class="pd2" style="max-width: 270px;letter-spacing: 0px;line-height: 19px;margin: 0;">&gt; 角色可以删除，前提是所删除角色中无用户，否则删除失败。</p>
+                </td>
+            </tr>
+            <tr>
+                <td class="pd10" align="right" width="30%" style="padding-top:20px;">角色名称：</td>
+                <td align="left" style="padding-top:20px;">
+                    <input class="easyui-textbox win-txt" name="RoleName" />
+                </td>
+            </tr>
+            <tr>
+                <td align="center" colspan="2" class="pd10">
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="addRole()" data-options="plain:true,iconCls:'icon-save'">保存</a>
+                </td>
+            </tr>
+        </table>
+    </form>
+</div>

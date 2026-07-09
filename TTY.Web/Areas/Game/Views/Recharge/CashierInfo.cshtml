@@ -1,0 +1,327 @@
+﻿
+@{
+    Layout = "~/Views/Shared/Layout/_ContentLayout.cshtml";
+    ViewBag.RouteMap = "收款人管理";
+}
+
+@section include_res{
+    <link href="@Url.Content("~/Scripts/plugins/fancybox/jquery.fancybox.css?v=" + ConfigHelper.Get("WebVer"))" rel="stylesheet" />
+    <script src="@Url.Content("~/Scripts/plugins/fancybox/jquery.fancybox.js?v=" + ConfigHelper.Get("WebVer"))"></script>
+    <script>
+        $(function () {
+            // 加载指定的模块
+            easyloader.load(['textbox', 'combobox', 'form', 'linkbutton', 'datagrid'], function () {
+                //适应窗口大小变化
+                $(window).resize(function () {
+                    if ($('body').data('grid-init')) {
+                        setGridSize();
+                    }
+                });
+                //初始化插件
+                pluginInit();
+                //初始化查询
+                queryData();
+            });
+        })
+        //重置表格大小
+        function setGridSize(param) {
+            var w = $(window).width() - 8;
+            var h = $(window).height() - 78;
+            resizeGrid('tb_CashierInfo', 'auto', h);
+        }
+        //查询数据
+        function queryData() {
+            var para = $("#frm_srch").serializeObject();
+            bindGridData(para);
+        }
+        //绑定表格数据
+        function bindGridData(para) {
+           
+            if (!$('body').data('grid-init')) {
+                $('#tb_CashierInfo').datagrid({
+                    url: "/Game/Recharge/GetCashierInfos",
+                    queryParams: $.extend({}, para),
+                    pagination: true,
+                    fitColumns: true,
+                    singleSelect: true,
+                    striped: true,
+                    rownumbers: true,
+                    //showFooter: true,
+                    height: 768,
+                    pageSize: 20,
+                    pageList: [10, 20, 50],
+                    idField: 'CID',
+                    onBeforeLoad: setGridSize,
+                    onLoadSuccess: function (data) {
+                        onLoaded(data);
+                        $("[data-fancybox]").fancybox();
+                    }
+                });
+            } else {
+                $('#tb_CashierInfo').datagrid('load', para);
+            }
+        }
+
+        //格式化
+        function fmtOpt(value, rowData, rowIndex) {
+            var arr = [];
+            arr.push('<a href="javascript:void(0)" class="blue Lpd5" onclick="showChgWin(\'' + rowData.CID + '\')">修改</a>');
+            arr.push('<a href="javascript:void(0)" class="red Lpd5" onclick="delCashierInfo(\'' + rowData.CID + '\',\'' + rowData.Name + '\')">删除</a>');
+            return arr.join('  ');
+        }
+        function fmtPayType(value, rowData, rowIndex) {
+            if (value == 1)
+                return '微信';
+            else if (value == 2)
+                return '支付宝';
+            else
+                return '--';
+        }
+        function fmtEnable(value, rowData, rowIndex) {
+            if (value == 1)
+                return '<span class="green">是</span>';
+            else
+                return '<span class="red">否</span>';
+        }
+        function fmtUseQRCodeImg(value, rowData, rowIndex) {
+            if (value == 1) {
+                return '<span class="green">是</span>';
+            } else {
+                return '<span class="red">否</span>';
+            }
+        }
+        function fmtQRCodeImg(value, rowData, rowIndex) {
+            return '<a data-fancybox="image" class="iframe" data-type="ajax" href="/Upload/' + value + '">' + value + '</a>';
+        }
+
+        function showAddWin() {
+            var para = {
+                winId: '#addWin',
+                title: '【添加收款人】',
+                iconCls: 'icon-user_add',
+                height: 380,
+                callBack: function () {
+                    resetAddForm();
+                }
+            };
+            openWin(para);
+        }
+
+        function resetAddForm() {
+            $('#addWin').form('clear');
+            $('#selEPayType').combobox('setValue', 1);
+            $('#selEEnable').combobox('setValue', 0);
+            $('#selEUseQRCodeImg').combobox('setValue', 0);
+        }
+
+        function showChgWin(id) {
+            var para = {
+                winId: '#addWin',
+                title: '【修改收款人】',
+                iconCls: 'icon-user_edit',
+                height: 380,
+                callBack: function () {
+                    var rows = $('#tb_CashierInfo').datagrid('getRows');
+                    var row;
+                    for (var i = 0; i < rows.length; i++) {
+                        if (rows[i].CID == id) {
+                            row = rows[i];
+                            break;
+                        }
+                    }
+                    if (row) {
+                        $('#txtEName').textbox('setValue', row.Name);
+                        $('#selEPayType').combobox('setValue', row.PayType);
+                        $('#selEEnable').combobox('setValue', row.Enable);
+                        $('#selEUseQRCodeImg').combobox('setValue', row.UseQRCodeImg);
+                        $('#txtEAccount').textbox('setValue', row.Account);
+                       // $('#hfOldFile').val('/Upload/' + row.QRCodeImg);
+                        $('#hfCID').val(id);
+                    } else {
+                        $('#addWin').dialog('close');
+                        alert('获取收款人信息失败！', 'warning');
+                    }
+                }
+            };
+            openWin(para);
+        }
+
+        function delCashierInfo(id, name) {
+            confirm('确认删除收款人' + name + '？', function () {
+                request('/Game/Recharge/DelCashierInfo', { CID: id }, function (data) {
+                    //提示消息
+                    showMsg(data);
+                    if (data && data.code == 1) {
+                        //queryData();//重新加载数据
+                        $('#tb_CashierInfo').datagrid('reload');
+                    }
+                });
+            });
+        }
+
+        function ValidForm() {
+            var _form = $('#form2');
+            var _name = _form.find('[textboxname="Name"]').textbox('getValue');
+            if (_name == null || $.trim(_name).length < 1) {
+                alert('请填写收款人！', 'warning')
+                return false;
+            }
+            var payType = _form.find('[textboxname="PayType"]').combobox('getValue');
+            if (payType == null || $.trim(payType).length < 1) {
+                alert('请选择收款类型！', 'warning')
+                return false;
+            }
+            var account = _form.find('[textboxname="Account"]').textbox('getValue');
+            if (account == null || $.trim(account).length < 1) {
+                alert('请填写收款账号！', 'warning')
+                return false;
+            }
+            //var file = _form.find('[textboxname="Upfile"]').textbox('getValue');
+            //if ((file == null || file.length < 1) && _form.find('[name="OldFile"]').val().length < 1) {
+            //    alert('请上传收款二维码图片！', 'warning')
+            //    return false;
+            //}
+            return true;
+        }
+        function SaveInfo() {
+            $('#form2').form('submit', {
+                url: '/Game/Recharge/SaveCashierInfo',
+                onSubmit: function () {
+                    return ValidForm();
+                },
+                success: function (data) {
+                    var msg;
+                    try {
+                        msg = JSON.parse(data);
+                        if (msg) {
+                            alert(msg.content, msg.code == 1 ? 'info' : 'error', function () {
+                                if (msg.code == 1) {
+                                    $('#addWin').dialog('close');
+                                    resetAddForm();
+                                    //重新加载数据
+                                    $('#tb_CashierInfo').datagrid('reload');
+                                }
+                            });
+                        }
+                    } catch (e) {
+                        alert('获取消息失败！', 'error');
+                    }
+                }
+            });
+        }
+    </script>
+}
+
+
+@*查询条件*@
+<form id="frm_srch">
+    <table width="100%" border="0" cellpadding="0" cellspacing="0" class="titleQueBg" style="height:40px;">
+        <tr>
+            <td>
+                <div class="left Lpd5">
+                    收款人
+                    <input type="text" class="easyui-textbox" name="Name" />
+                </div>
+                <div class="left Lpd5">
+                    收款账号
+                    <input type="text" class="easyui-textbox" name="Account" />
+                </div>
+                <div class="left Lpd5">
+                    收款类型
+                    <select class="easyui-combobox" data-options="panelHeight:130,editable:false" name="PayType" style="width:155px;">
+                        <option value="0" selected>-- 全部 --</option>
+                        <option value="1">微信</option>
+                        <option value="2">支付宝</option>
+                    </select>
+                </div>
+                <div class="left Lmg10">
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="queryData();" data-options="plain:true,iconCls:'icon-search'">查找</a>
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="showAddWin();" data-options="plain:true,iconCls:'icon-add'">添加收款人</a>
+                </div>
+            </td>
+        </tr>
+    </table>
+</form>
+
+@*查询列表信息*@
+<table id="tb_CashierInfo">
+    <thead>
+        <tr>
+            <th field="Name" width="85">收款人</th>
+            <th field="PayType" width="65" formatter="fmtPayType">收款类型</th>
+            <th field="Account" width="150">收款账号</th>
+            <th field="QRCodeImg" width="260" formatter="fmtQRCodeImg">收款码</th>
+
+            <th field="UseQRCodeImg" width="75" formatter="fmtUseQRCodeImg" align="center">作为收款码</th>
+            <th field="Enable" width="75" formatter="fmtEnable" align="center">是否启用</th>
+
+            <th field="CreateTimeStr" width="130">更新时间</th>
+            <th field="CID" width="120" formatter="fmtOpt">操作</th>
+        </tr>
+    </thead>
+</table>
+
+@*添加窗口*@
+<div id="addWin" class="hide">
+    <form id="form2" method="post" enctype="multipart/form-data">
+        <table cellpadding="0" cellspacing="0" border="0" width="100%" align="center">
+            <tr>
+                <td colspan="2" align="left" style="padding-left: 50px;color:#999;">
+                    <p style="margin-left:-35px;">温馨提示：添加成功后即时生效。</p>
+                </td>
+            </tr>
+            <tr>
+                <td align="right">收款人：</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-textbox win-txt" id="txtEName" name="Name" />
+                </td>
+            </tr>
+            <tr>
+                <td align="right">收款类型：</td>
+                <td align="left" class="pd5">
+                    <select class="easyui-combobox" id="selEPayType" data-options="panelHeight:80,editable:false" name="PayType">
+                        <option value="1" selected>微信</option>
+                        <option value="2">支付宝</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td align="right">作为收款码：</td>
+                <td align="left" class="pd5">
+                    <select class="easyui-combobox" id="selEUseQRCodeImg" data-options="panelHeight:80,editable:false" name="UseQRCodeImg">
+                        <option value="0" selected>否</option>
+                        <option value="1">是</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td align="right">是否启用：</td>
+                <td align="left" class="pd5">
+                    <select class="easyui-combobox" id="selEEnable" data-options="panelHeight:80,editable:false" name="Enable">
+                        <option value="0" selected>否</option>
+                        <option value="1">是</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td align="right">收款账号：</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-textbox win-txt" id="txtEAccount" name="Account" />
+                </td>
+            </tr>
+            @*<tr>
+                <td align="right">收款二维码：</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-filebox win-txt" name="Upfile" data-options="accept: 'image/jpeg,image/png,image/gif',buttonText:'浏览 ...'" />
+                    <input type="hidden" id="hfOldFile" name="OldFile" />
+                </td>
+            </tr>*@
+            <tr>
+                <td align="center" colspan="2" class="pd5">
+                    <input type="hidden" id="hfCID" name="CID" />
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="SaveInfo()" data-options="plain:true,iconCls:'icon-save'">保存</a>
+                </td>
+            </tr>
+        </table>
+    </form>
+</div>

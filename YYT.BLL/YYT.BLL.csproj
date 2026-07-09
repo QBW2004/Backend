@@ -1,0 +1,191 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{0F0ABC92-91B4-4371-81F8-59AA4B20EC27}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>YYT.BLL</RootNamespace>
+    <AssemblyName>YYT.BLL</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
+    <PlatformTarget>x86</PlatformTarget>
+    <OutputPath>bin\x86\Debug\</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
+    <PlatformTarget>x86</PlatformTarget>
+    <OutputPath>bin\x86\Release\</OutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="BouncyCastle.Crypto, Version=1.8.3.0, Culture=neutral, PublicKeyToken=0e99375e54769942">
+      <HintPath>..\packages\BouncyCastle.1.8.3.1\lib\BouncyCastle.Crypto.dll</HintPath>
+    </Reference>
+    <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
+      <HintPath>..\packages\EntityFramework.6.2.0\lib\net45\EntityFramework.dll</HintPath>
+    </Reference>
+    <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
+      <HintPath>..\packages\EntityFramework.6.2.0\lib\net45\EntityFramework.SqlServer.dll</HintPath>
+    </Reference>
+    <Reference Include="Google.Protobuf, Version=3.6.1.0, Culture=neutral, PublicKeyToken=a7d26565bac4d604, processorArchitecture=MSIL">
+      <HintPath>..\packages\Google.Protobuf.3.6.1\lib\net45\Google.Protobuf.dll</HintPath>
+    </Reference>
+    <Reference Include="MySql.Data, Version=8.0.32.0, Culture=neutral, PublicKeyToken=c5687fc88969c44d, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\MySql.Data.dll</HintPath>
+    </Reference>
+    <Reference Include="MySql.Data.EntityFramework, Version=8.0.16.0, Culture=neutral, PublicKeyToken=c5687fc88969c44d, processorArchitecture=MSIL">
+      <HintPath>..\packages\MySql.Data.EntityFramework.8.0.16\lib\net452\MySql.Data.EntityFramework.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.12.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.ComponentModel" />
+    <Reference Include="System.ComponentModel.DataAnnotations" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Configuration.Install" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Data.SQLite, Version=1.0.110.0, Culture=neutral, PublicKeyToken=db937bc2d44ff139, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Data.SQLite.Core.1.0.110.0\lib\net451\System.Data.SQLite.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Data.SQLite.EF6, Version=1.0.110.0, Culture=neutral, PublicKeyToken=db937bc2d44ff139, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Data.SQLite.EF6.1.0.110.0\lib\net451\System.Data.SQLite.EF6.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Data.SQLite.Linq, Version=1.0.110.0, Culture=neutral, PublicKeyToken=db937bc2d44ff139, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Data.SQLite.Linq.1.0.110.0\lib\net451\System.Data.SQLite.Linq.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Drawing.Design" />
+    <Reference Include="System.Management" />
+    <Reference Include="System.Security" />
+    <Reference Include="System.Transactions" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+    <Reference Include="Z.EntityFramework.Extensions, Version=3.19.0.0, Culture=neutral, PublicKeyToken=59b66d028979105b, processorArchitecture=MSIL">
+      <HintPath>..\packages\Z.EntityFramework.Extensions.3.19.0\lib\net45\Z.EntityFramework.Extensions.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="B_Config.cs" />
+    <Compile Include="EF\B_Activity.cs" />
+    <Compile Include="EF\B_ExChange.cs" />
+    <Compile Include="EF\B_Robot.cs" />
+    <Compile Include="EF\B_UploadsImage.cs" />
+    <Compile Include="EF\B_UserRobot.cs" />
+    <Compile Include="EF\B_GameMo.cs" />
+    <Compile Include="EF\B_SafeCoinsLog.cs" />
+    <Compile Include="EF\AgencyRules.cs" />
+    <Compile Include="EF\B_Admin.cs" />
+    <Compile Include="B_SystemInfo.cs" />
+    <Compile Include="B_UserLogin.cs" />
+    <Compile Include="EF\B_AccountLog.cs" />
+    <Compile Include="EF\B_TransferLog.cs" />
+    <Compile Include="EF\B_AgencyOptLog.cs" />
+    <Compile Include="EF\B_CashierInfo.cs" />
+    <Compile Include="EF\B_GameAccLaba.cs" />
+    <Compile Include="EF\B_GameCommandOutbox.cs" />
+    <Compile Include="EF\B_GameRecords.cs" />
+    <Compile Include="EF\B_PlatType.cs" />
+    <Compile Include="EF\B_Games.cs" />
+    <Compile Include="EF\B_LoginMissRecord.cs" />
+    <Compile Include="EF\B_ManagerOpt.cs" />
+    <Compile Include="EF\B_Notice.cs" />
+    <Compile Include="EF\B_Records_MySQL.cs" />
+    <Compile Include="EF\B_Recharge.cs" />
+    <Compile Include="EF\B_ReChargeRecords.cs" />
+    <Compile Include="EF\B_SuperRecords.cs" />
+    <Compile Include="EF\B_UserLockRecord.cs" />
+    <Compile Include="EF\B_UserRelations.cs" />
+    <Compile Include="EF\shit\B_LabaGamePara.cs" />
+    <Compile Include="EF\B_Reports.cs" />
+    <Compile Include="EF\B_UpdateAddr.cs" />
+    <Compile Include="EF\B_Users.cs" />
+    <Compile Include="EF\shit\B_SuperPara.cs" />
+    <Compile Include="EF\shit\factory\AgencyFactory.cs" />
+    <Compile Include="EF\shit\B_BetGamePara.cs" />
+    <Compile Include="EF\shit\B_CardGamePara.cs" />
+    <Compile Include="EF\shit\B_FishGamePara.cs" />
+    <Compile Include="EF\shit\EGameParaType.cs" />
+    <Compile Include="EF\shit\factory\GameParaFactory.cs" />
+    <Compile Include="EF\shit\interface\IAgencyQuery.cs" />
+    <Compile Include="EF\shit\interface\IGamePara.cs" />
+    <Compile Include="EF\shit\interface\IOptRecord.cs" />
+    <Compile Include="EF\shit\PermissionCheck.cs" />
+    <Compile Include="EF\shit\TypeGeneralAdmin.cs" />
+    <Compile Include="EF\shit\TypeNineAdmin.cs" />
+    <Compile Include="EF\shit\TypeTenAdmin.cs" />
+    <Compile Include="EF\shit\TypeZeroAdmin.cs" />
+    <Compile Include="EF\GameDbContext.cs" />
+    <Compile Include="Services\GameServer\GameCommandResult.cs" />
+    <Compile Include="Services\GameServer\GameCommandOutboxRetryService.cs" />
+    <Compile Include="Services\GameServer\GameCommandService.cs" />
+    <Compile Include="Services\GameServer\IGameServerClient.cs" />
+    <Compile Include="Services\GameServer\PipeGameServerClient.cs" />
+    <Compile Include="Services\GameServer\PlayerRuntimeState.cs" />
+    <Compile Include="Services\GameServer\PlayerStateService.cs" />
+    <Compile Include="Services\GameServer\OnlinePlayerInfo.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SupperBLL.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\YYT.Common\YYT.Common.csproj">
+      <Project>{FB2B4D0D-B951-451D-977F-1781BF2A4B8D}</Project>
+      <Name>YYT.Common</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\YYT.DbUtility\YYT.DbUtility.csproj">
+      <Project>{d8d19cca-fc0e-4bd7-a406-cdb91676bba7}</Project>
+      <Name>YYT.DbUtility</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\YYT.Entity\YYT.Entity.csproj">
+      <Project>{530a45b1-a9aa-4ea8-9313-c2ad8eb8a03b}</Project>
+      <Name>YYT.Entity</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\YYT.Remote\YYT.Remote.csproj">
+      <Project>{004EA5F3-7D9A-439E-A06D-E3D3805B6255}</Project>
+      <Name>YYT.Remote</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config" />
+    <None Include="packages.config" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Import Project="..\packages\System.Data.SQLite.Core.1.0.110.0\build\net451\System.Data.SQLite.Core.targets" Condition="Exists('..\packages\System.Data.SQLite.Core.1.0.110.0\build\net451\System.Data.SQLite.Core.targets')" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>这台计算机上缺少此项目引用的 NuGet 程序包。使用“NuGet 程序包还原”可下载这些程序包。有关更多信息，请参见 http://go.microsoft.com/fwlink/?LinkID=322105。缺少的文件是 {0}。</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\System.Data.SQLite.Core.1.0.110.0\build\net451\System.Data.SQLite.Core.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\System.Data.SQLite.Core.1.0.110.0\build\net451\System.Data.SQLite.Core.targets'))" />
+  </Target>
+</Project>

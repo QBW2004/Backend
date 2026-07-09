@@ -1,0 +1,134 @@
+﻿
+@{
+    Layout = "~/Views/Shared/Layout/_ContentLayout.cshtml";
+    ViewBag.RouteMap = "实时分数";
+    YYT.Entity.M_LoginUser loginUser = YYT.Common.WebHelper.GetLoginInfo();
+}
+
+@section include_res{
+    <script>
+        $(function () {
+            // 加载指定的模块
+            easyloader.load(['layout','textbox', 'linkbutton'], function () {
+                //适应窗口大小变化
+                $(window).resize(function () {
+                    resizeContainer();
+                });
+                //隐藏Loding
+                hideLoading();
+                //初始化插件
+                pluginInit();
+                getGames();
+                setTimeout(function () { resizeContainer(); }, 200);
+            });
+        });
+        function resizeContainer() {
+            var _h = $(window).height() - 38;
+            $('#main').layout('resize', { height: _h });
+            $('#txtContents').height(_h - 135);
+        }
+        function getGames() {
+            request('/api/Games', {}, function (data) {
+                $('body').data('games', data);
+            }, 'GET');
+        }
+        function runtimeStatusName(statusCode, statusText) {
+            if (statusText == 'NeverLoggedIn') return '未登录过游戏';
+            if (statusText == 'InGame') return '游戏中';
+            if (statusText == 'InHall') return '大厅';
+            if (statusText == 'LoggedOut') return '已登出';
+            if (statusCode == 0) return '未登录过游戏';
+            if (statusCode == 1) return '游戏中';
+            if (statusCode == 2) return '大厅';
+            if (statusCode == 3) return '已登出';
+            return '未知';
+        }
+        function getUserData() {
+            var para = $('#form1').serializeObject();
+            if (para.idType == "1" && !(/\d+/.test(para.UserID))) {
+                alert('请输入正确的用户ID！')
+                return;
+            }
+            var games = $('body').data('games');
+            request('/Game/UserInfo/OnlineCoin', para, function (data) {
+                if (data && data.code == 1 && games && games.length) {
+                    var state = data.datas || {};
+                    var protocol = state.Data || state;
+                    var runtimeStatus = state.RuntimeStatus != null ? state.RuntimeStatus : protocol.Ret;
+                    var runtimeStatusText = state.RuntimeStatusText || '';
+                    var gameId = state.GameId != null ? state.GameId : protocol.GameID;
+                    var runtimeCoins = state.RuntimeCoins != null ? state.RuntimeCoins : protocol.Coin;
+                    var gameScore = state.GameScore != null ? state.GameScore : protocol.Score;
+                    var arr = [];
+
+                    arr.push('<p>');
+                    arr.push('[ ' + TimeFormatter(new Date()) + ' ] > ');
+                    var _tip = runtimeStatusName(runtimeStatus, runtimeStatusText);
+                    if (runtimeStatus == 1) {
+                        var gameName = '';
+                        for (var i = 0; i < games.length; i++) {
+                            if (games[i] && games[i].GameId == gameId) {
+                                gameName = games[i].Name;
+                                break;
+                            }
+                        }
+                        _tip = '正在' + gameName + '游戏中，';
+                    }
+                    arr.push(_tip);
+                    if (state.AccountCoins != null) {
+                        arr.push('账面余额：' + top.goldFormat(state.AccountCoins) + '， ');
+                    }
+                    arr.push('运行时余额：' + top.goldFormat(runtimeCoins || 0) + '， ');
+                    if (runtimeStatus == 1) {
+                        arr.push('游戏分数：' + top.goldFormat(gameScore || 0));
+                    }
+                    arr.push('</p>');
+
+                    $('#txtContents').prepend(arr.join(''));
+                } else {
+                    showMsg(data);
+                }
+            });
+        }
+    </script>
+    <style>
+        ul, ul li { list-style: none; margin: 0; padding: 0; }
+        ul li { display: inline; padding: 10px; }
+        .w_90 { width: 90px; }
+        .w_200 { width: 200px; }
+        #txtContents p { padding: 5px; margin: 0; border-bottom: 1px solid #efefef; background: #ffffff; }
+        #txtContents p:hover { background: #efefef; }
+    </style>
+}
+<div id="main" class="easyui-layout" style="height:768px;width:100%;">
+    <div data-options="region:'center',title:'【内容区域】',collapsible:false">
+        @if (loginUser != null && loginUser.UserPriv == 0)
+        {
+            <div>
+                <form id="form1">
+                    <p style="padding-left: 10px;">
+                        提示：该功能用于实时查询玩家分数，只能用于总管理。
+                    </p>
+                    <ul>
+                        <li style="padding-right:0;">
+                            <select class="easyui-combobox w_90" data-options="panelHeight:120,editable:false" name="idType">
+                                <option value="0" selected>用户账号</option>
+                                <option value="1">用户ID</option>
+                            </select>
+                        </li>
+                        <li style="padding-left:0;">
+                            ：
+                            <input type="text" class="easyui-textbox w_200" name="UserID" data-options="required:true, missingMessage:'不能为空'" />
+                        </li>
+                        <li>
+                            <a href="javascript:void(0);" class="easyui-linkbutton" onclick="getUserData()" data-options="plain:true,iconCls:'icon-search'">查询</a>
+                        </li>
+                    </ul>
+                </form>
+                <div id="txtContents" style="padding:10px;overflow-y:auto;">
+
+                </div>
+            </div>
+        }
+    </div>
+</div>

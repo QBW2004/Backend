@@ -1,0 +1,544 @@
+﻿@model List<YYT.Entity.M_UpdateAddr>
+@{
+    Layout = "~/Views/Shared/Layout/_ContentLayout.cshtml";
+    ViewBag.RouteMap = "软件更新";
+}
+
+@section include_res{
+    <script>
+        $(function () {
+            //初始化插件
+            pluginInit();
+            //隐藏Loding
+            hideLoading();
+            $('div').delegate('.panel-header', 'click', function () {
+                $(this).find('.panel-tool-collapse').trigger('click');
+            });
+        })
+
+        function SaveConfig(id) {
+            var para = $('#form' + id).serializeObject();
+            para.ID = id;
+            request('/Game/AppUpdate/SaveConfig', para, function (data) {
+                //提示消息
+                showMsg(data);
+            });
+        }
+    </script>
+    <style>
+        .tabs-selected .tabs-title { color: #ff0000; }
+        .w_300 { width: 300px; }
+        .numberbox { padding-top: 5px !important; }
+        .numberbox textarea.textbox-text { height: 22px !important; }
+        .panel-header { background-color: #2f4050 !important; }
+        .panel-title { color: #666 !important; cursor: pointer; }
+        .accordion .accordion-header-selected .panel-title { color: #fff !important; }
+
+        .panel-tool a, .panel-tool a:hover { background-color: #eee !important; border-radius: 2px 2px 2px 2px !important; }
+        table tr { background-color: none; }
+        table tr:not(:last-child):hover { background-color: #efefef; }
+        table tr:last-child { text-align: center; }
+        table td { padding: 4px; }
+    </style>
+}
+
+<div class="easyui-accordion">
+
+    <div title="【Android】" style="overflow:auto;padding:10px;">
+        <form id="form1">
+            <table border="0" width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td align="right" width="150">
+                        <b>大厅</b>
+                    </td>
+                    <td width="45">
+                        <input type="text" class="easyui-numberbox" id="txt_Android_V0" name="V0"
+                               multiline="true" value="@(Model != null ? Model[0].V0 : 0)" data-options="min:0,max:1000"
+                               style="width:45px;" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-textbox" id="txt_Android_G0" name="G0"
+                               value='@(Model != null ? Model[0].G0 : "")' style="width:99%;" />
+                    </td>
+                </tr>
+                <tr>
+                    <td align="right" width="150">
+                        <b>彩金单挑</b>
+                    </td>
+                    <td width="45">
+                        <input type="text" class="easyui-numberbox" id="txt_Android_V1" name="V1"
+                               multiline="true" value="@(Model != null ? Model[0].V1 : 0)" data-options="min:0,max:1000"
+                               style="width:45px;" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-textbox" id="txt_Android_G1" name="G1"
+                               value='@(Model != null ? Model[0].G1 : "")' style="width:99%;" />
+                    </td>
+                </tr>
+                <tr>
+                    <td align="right" width="150">
+                        <b>火凤凰</b>
+                    </td>
+                    <td width="45">
+                        <input type="text" class="easyui-numberbox" id="txt_Android_V2" name="V2"
+                               multiline="true" value="@(Model != null ? Model[0].V2 : 0)" data-options="min:0,max:1000"
+                               style="width:45px;" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-textbox" id="txt_Android_G2" name="G2"
+                               value='@(Model != null ? Model[0].G2 : "")' style="width:99%;" />
+                    </td>
+                </tr>
+                <tr>
+                    <td align="right" width="150">
+                        <b>人鱼传说</b>
+                    </td>
+                    <td width="45">
+                        <input type="text" class="easyui-numberbox" id="txt_Android_V3" name="V3"
+                               multiline="true" value="@(Model != null ? Model[0].V3 : 0)" data-options="min:0,max:1000"
+                               style="width:45px;" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-textbox" id="txt_Android_G3" name="G3"
+                               value='@(Model != null ? Model[0].G3 : "")' style="width:99%;" />
+                    </td>
+                </tr>
+                <tr>
+                    <td align="right" width="150">
+                        <b>三色鳄鱼</b>
+                    </td>
+                    <td width="45">
+                        <input type="text" class="easyui-numberbox" id="txt_Android_V4" name="V4"
+                               multiline="true" value="@(Model != null ? Model[0].V4 : 0)" data-options="min:0,max:1000"
+                               style="width:45px;" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-textbox" id="txt_Android_G4" name="G4"
+                               value='@(Model != null ? Model[0].G4 : "")' style="width:99%;" />
+                    </td>
+                </tr>
+                <tr>
+                    <td align="right" width="150">
+                        <b>钻石大亨</b>
+                    </td>
+                    <td width="45">
+                        <input type="text" class="easyui-numberbox" id="txt_Android_V5" name="V5"
+                               multiline="true" value="@(Model != null ? Model[0].V5 : 0)" data-options="min:0,max:1000"
+                               style="width:45px;" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-textbox" id="txt_Android_G5" name="G5"
+                               value='@(Model != null ? Model[0].G5 : "")' style="width:99%;" />
+                    </td>
+                </tr>
+                <tr>
+                    <td align="right" width="150">
+                        <b>3D猎鸟</b>
+                    </td>
+                    <td width="45">
+                        <input type="text" class="easyui-numberbox" id="txt_Android_V6" name="V6"
+                               multiline="true" value="@(Model != null ? Model[0].V6 : 0)" data-options="min:0,max:1000"
+                               style="width:45px;" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-textbox" id="txt_Android_G6" name="G6"
+                               value='@(Model != null ? Model[0].G6 : "")' style="width:99%;" />
+                    </td>
+                </tr>
+                <tr>
+                    <td align="right" width="150">
+                        <b>金皇冠3</b>
+                    </td>
+                    <td width="45">
+                        <input type="text" class="easyui-numberbox" id="txt_Android_V7" name="V7"
+                               multiline="true" value="@(Model != null ? Model[0].V7 : 0)" data-options="min:0,max:1000"
+                               style="width:45px;" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-textbox" id="txt_Android_G7" name="G7"
+                               value='@(Model != null ? Model[0].G7 : "")' style="width:99%;" />
+                    </td>
+                </tr>
+                <tr>
+                    <td align="right" width="150">
+                        <b>斗牛</b>
+                    </td>
+                    <td width="45">
+                        <input type="text" class="easyui-numberbox" id="txt_Android_V8" name="V8"
+                               multiline="true" value="@(Model != null ? Model[0].V8 : 0)" data-options="min:0,max:1000"
+                               style="width:45px;" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-textbox" id="txt_Android_G8" name="G8"
+                               value='@(Model != null ? Model[0].G8 : "")' style="width:99%;" />
+                    </td>
+                </tr>
+                <tr>
+                    <td align="right" width="150">
+                        <b>李逵劈鱼</b>
+                    </td>
+                    <td width="45">
+                        <input type="text" class="easyui-numberbox" id="txt_Android_V9" name="V9"
+                               multiline="true" value="@(Model != null ? Model[0].V9 : 0)" data-options="min:0,max:1000"
+                               style="width:45px;" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-textbox" id="txt_Android_G9" name="G9"
+                               value='@(Model != null ? Model[0].G9 : "")' style="width:99%;" />
+                    </td>
+                </tr>
+                <tr>
+                    <td align="right" width="150">
+                        <b>西游争霸</b>
+                    </td>
+                    <td width="45">
+                        <input type="text" class="easyui-numberbox" id="txt_Android_V10" name="V10"
+                               multiline="true" value="@(Model != null ? Model[0].V10 : 0)" data-options="min:0,max:1000"
+                               style="width:45px;" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-textbox" id="txt_Android_G10" name="G10"
+                               value='@(Model != null ? Model[0].G10 : "")' style="width:99%;" />
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="3">
+                        <a href="javascript:void(0);" class="easyui-linkbutton" onclick="SaveConfig(1)" data-options="plain:true,iconCls:'icon-save'">保存</a>
+                    </td>
+                </tr>
+            </table>
+        </form>
+    </div>
+
+    <div title="【iPhone】" style="overflow:auto;padding:10px;">
+        <form id="form2">
+            <table border="0" width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td align="right" width="150">
+                        <b>大厅</b>
+                    </td>
+                    <td width="45">
+                        <input type="text" class="easyui-numberbox" id="txt_iPhone_V0" name="V0"
+                               multiline="true" value="@(Model != null ? Model[1].V0 : 0)" data-options="min:0,max:1000"
+                               style="width:45px;" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-textbox" id="txt_iPhone_G0" name="G0"
+                               value='@(Model != null ? Model[1].G0 : "")' style="width:99%;" />
+                    </td>
+                </tr>
+                <tr>
+                    <td align="right" width="150">
+                        <b>彩金单挑</b>
+                    </td>
+                    <td width="45">
+                        <input type="text" class="easyui-numberbox" id="txt_iPhone_V1" name="V1"
+                               multiline="true" value="@(Model != null ? Model[1].V1 : 0)" data-options="min:0,max:1000"
+                               style="width:45px;" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-textbox" id="txt_iPhone_G1" name="G1"
+                               value='@(Model != null ? Model[1].G1 : "")' style="width:99%;" />
+                    </td>
+                </tr>
+                <tr>
+                    <td align="right" width="150">
+                        <b>火凤凰</b>
+                    </td>
+                    <td width="45">
+                        <input type="text" class="easyui-numberbox" id="txt_iPhone_V2" name="V2"
+                               multiline="true" value="@(Model != null ? Model[1].V2 : 0)" data-options="min:0,max:1000"
+                               style="width:45px;" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-textbox" id="txt_iPhone_G2" name="G2"
+                               value='@(Model != null ? Model[1].G2 : "")' style="width:99%;" />
+                    </td>
+                </tr>
+                <tr>
+                    <td align="right" width="150">
+                        <b>人鱼传说</b>
+                    </td>
+                    <td width="45">
+                        <input type="text" class="easyui-numberbox" id="txt_iPhone_V3" name="V3"
+                               multiline="true" value="@(Model != null ? Model[1].V3 : 0)" data-options="min:0,max:1000"
+                               style="width:45px;" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-textbox" id="txt_iPhone_G3" name="G3"
+                               value='@(Model != null ? Model[1].G3 : "")' style="width:99%;" />
+                    </td>
+                </tr>
+                <tr>
+                    <td align="right" width="150">
+                        <b>三色鳄鱼</b>
+                    </td>
+                    <td width="45">
+                        <input type="text" class="easyui-numberbox" id="txt_iPhone_V4" name="V4"
+                               multiline="true" value="@(Model != null ? Model[1].V4 : 0)" data-options="min:0,max:1000"
+                               style="width:45px;" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-textbox" id="txt_iPhone_G4" name="G4"
+                               value='@(Model != null ? Model[1].G4 : "")' style="width:99%;" />
+                    </td>
+                </tr>
+                <tr>
+                    <td align="right" width="150">
+                        <b>钻石大亨</b>
+                    </td>
+                    <td width="45">
+                        <input type="text" class="easyui-numberbox" id="txt_iPhone_V5" name="V5"
+                               multiline="true" value="@(Model != null ? Model[1].V5 : 0)" data-options="min:0,max:1000"
+                               style="width:45px;" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-textbox" id="txt_iPhone_G5" name="G5"
+                               value='@(Model != null ? Model[1].G5 : "")' style="width:99%;" />
+                    </td>
+                </tr>
+                <tr>
+                    <td align="right" width="150">
+                        <b>3D猎鸟</b>
+                    </td>
+                    <td width="45">
+                        <input type="text" class="easyui-numberbox" id="txt_iPhone_V6" name="V6"
+                               multiline="true" value="@(Model != null ? Model[1].V6 : 0)" data-options="min:0,max:1000"
+                               style="width:45px;" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-textbox" id="txt_iPhone_G6" name="G6"
+                               value='@(Model != null ? Model[1].G6 : "")' style="width:99%;" />
+                    </td>
+                </tr>
+                <tr>
+                    <td align="right" width="150">
+                        <b>金皇冠3</b>
+                    </td>
+                    <td width="45">
+                        <input type="text" class="easyui-numberbox" id="txt_iPhone_V7" name="V7"
+                               multiline="true" value="@(Model != null ? Model[1].V7 : 0)" data-options="min:0,max:1000"
+                               style="width:45px;" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-textbox" id="txt_iPhone_G7" name="G7"
+                               value='@(Model != null ? Model[1].G7 : "")' style="width:99%;" />
+                    </td>
+                </tr>
+                <tr>
+                    <td align="right" width="150">
+                        <b>斗牛</b>
+                    </td>
+                    <td width="45">
+                        <input type="text" class="easyui-numberbox" id="txt_iPhone_V8" name="V8"
+                               multiline="true" value="@(Model != null ? Model[1].V8 : 0)" data-options="min:0,max:1000"
+                               style="width:45px;" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-textbox" id="txt_iPhone_G8" name="G8"
+                               value='@(Model != null ? Model[1].G8 : "")' style="width:99%;" />
+                    </td>
+                </tr>
+                <tr>
+                    <td align="right" width="150">
+                        <b>李逵劈鱼</b>
+                    </td>
+                    <td width="45">
+                        <input type="text" class="easyui-numberbox" id="txt_iPhone_V9" name="V9"
+                               multiline="true" value="@(Model != null ? Model[1].V9 : 0)" data-options="min:0,max:1000"
+                               style="width:45px;" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-textbox" id="txt_iPhone_G9" name="G9"
+                               value='@(Model != null ? Model[1].G9 : "")' style="width:99%;" />
+                    </td>
+                </tr>
+                <tr>
+                    <td align="right" width="150">
+                        <b>西游争霸</b>
+                    </td>
+                    <td width="45">
+                        <input type="text" class="easyui-numberbox" id="txt_iPhone_V10" name="V10"
+                               multiline="true" value="@(Model != null ? Model[1].V10 : 0)" data-options="min:0,max:1000"
+                               style="width:45px;" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-textbox" id="txt_iPhone_G10" name="G10"
+                               value='@(Model != null ? Model[1].G10 : "")' style="width:99%;" />
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="3">
+                        <a href="javascript:void(0);" class="easyui-linkbutton" onclick="SaveConfig(2)" data-options="plain:true,iconCls:'icon-save'">保存</a>
+                    </td>
+                </tr>
+            </table>
+        </form>
+    </div>
+
+    <div title="【PC】" style="overflow:auto;padding:10px;">
+        <form id="form3">
+            <table border="0" width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td align="right" width="150">
+                        <b>大厅</b>
+                    </td>
+                    <td width="45">
+                        <input type="text" class="easyui-numberbox" id="txt_PC_V0" name="V0"
+                               multiline="true" value="@(Model != null ? Model[2].V0 : 0)" data-options="min:0,max:1000"
+                               style="width:45px;" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-textbox" id="txt_PC_G0" name="G0"
+                               value='@(Model != null ? Model[2].G0 : "")' style="width:99%;" />
+                    </td>
+                </tr>
+                <tr>
+                    <td align="right" width="150">
+                        <b>彩金单挑</b>
+                    </td>
+                    <td width="45">
+                        <input type="text" class="easyui-numberbox" id="txt_PC_V1" name="V1"
+                               multiline="true" value="@(Model != null ? Model[2].V1 : 0)" data-options="min:0,max:1000"
+                               style="width:45px;" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-textbox" id="txt_PC_G1" name="G1"
+                               value='@(Model != null ? Model[2].G1 : "")' style="width:99%;" />
+                    </td>
+                </tr>
+                <tr>
+                    <td align="right" width="150">
+                        <b>火凤凰</b>
+                    </td>
+                    <td width="45">
+                        <input type="text" class="easyui-numberbox" id="txt_PC_V2" name="V2"
+                               multiline="true" value="@(Model != null ? Model[2].V2 : 0)" data-options="min:0,max:1000"
+                               style="width:45px;" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-textbox" id="txt_PC_G2" name="G2"
+                               value='@(Model != null ? Model[2].G2 : "")' style="width:99%;" />
+                    </td>
+                </tr>
+                <tr>
+                    <td align="right" width="150">
+                        <b>人鱼传说</b>
+                    </td>
+                    <td width="45">
+                        <input type="text" class="easyui-numberbox" id="txt_PC_V3" name="V3"
+                               multiline="true" value="@(Model != null ? Model[2].V3 : 0)" data-options="min:0,max:1000"
+                               style="width:45px;" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-textbox" id="txt_PC_G3" name="G3"
+                               value='@(Model != null ? Model[2].G3 : "")' style="width:99%;" />
+                    </td>
+                </tr>
+                <tr>
+                    <td align="right" width="150">
+                        <b>三色鳄鱼</b>
+                    </td>
+                    <td width="45">
+                        <input type="text" class="easyui-numberbox" id="txt_PC_V4" name="V4"
+                               multiline="true" value="@(Model != null ? Model[2].V4 : 0)" data-options="min:0,max:1000"
+                               style="width:45px;" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-textbox" id="txt_PC_G4" name="G4"
+                               value='@(Model != null ? Model[2].G4 : "")' style="width:99%;" />
+                    </td>
+                </tr>
+                <tr>
+                    <td align="right" width="150">
+                        <b>钻石大亨</b>
+                    </td>
+                    <td width="45">
+                        <input type="text" class="easyui-numberbox" id="txt_PC_V5" name="V5"
+                               multiline="true" value="@(Model != null ? Model[2].V5 : 0)" data-options="min:0,max:1000"
+                               style="width:45px;" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-textbox" id="txt_PC_G5" name="G5"
+                               value='@(Model != null ? Model[2].G5 : "")' style="width:99%;" />
+                    </td>
+                </tr>
+                <tr>
+                    <td align="right" width="150">
+                        <b>3D猎鸟</b>
+                    </td>
+                    <td width="45">
+                        <input type="text" class="easyui-numberbox" id="txt_PC_V6" name="V6"
+                               multiline="true" value="@(Model != null ? Model[2].V6 : 0)" data-options="min:0,max:1000"
+                               style="width:45px;" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-textbox" id="txt_PC_G6" name="G6"
+                               value='@(Model != null ? Model[2].G6 : "")' style="width:99%;" />
+                    </td>
+                </tr>
+                <tr>
+                    <td align="right" width="150">
+                        <b>金皇冠3</b>
+                    </td>
+                    <td width="45">
+                        <input type="text" class="easyui-numberbox" id="txt_PC_V7" name="V7"
+                               multiline="true" value="@(Model != null ? Model[2].V7 : 0)" data-options="min:0,max:1000"
+                               style="width:45px;" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-textbox" id="txt_PC_G7" name="G7"
+                               value='@(Model != null ? Model[2].G7 : "")' style="width:99%;" />
+                    </td>
+                </tr>
+                <tr>
+                    <td align="right" width="150">
+                        <b>斗牛</b>
+                    </td>
+                    <td width="45">
+                        <input type="text" class="easyui-numberbox" id="txt_PC_V8" name="V8"
+                               multiline="true" value="@(Model != null ? Model[2].V8 : 0)" data-options="min:0,max:1000"
+                               style="width:45px;" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-textbox" id="txt_PC_G8" name="G8"
+                               value='@(Model != null ? Model[2].G8 : "")' style="width:99%;" />
+                    </td>
+                </tr>
+                <tr>
+                    <td align="right" width="150">
+                        <b>李逵劈鱼</b>
+                    </td>
+                    <td width="45">
+                        <input type="text" class="easyui-numberbox" id="txt_PC_V9" name="V9"
+                               multiline="true" value="@(Model != null ? Model[2].V9 : 0)" data-options="min:0,max:1000"
+                               style="width:45px;" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-textbox" id="txt_PC_G9" name="G9"
+                               value='@(Model != null ? Model[2].G9 : "")' style="width:99%;" />
+                    </td>
+                </tr>
+                <tr>
+                    <td align="right" width="150">
+                        <b>西游争霸</b>
+                    </td>
+                    <td width="45">
+                        <input type="text" class="easyui-numberbox" id="txt_PC_V10" name="V10"
+                               multiline="true" value="@(Model != null ? Model[2].V10 : 0)" data-options="min:0,max:1000"
+                               style="width:45px;" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-textbox" id="txt_PC_G10" name="G10"
+                               value='@(Model != null ? Model[2].G10 : "")' style="width:99%;" />
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="3">
+                        <a href="javascript:void(0);" class="easyui-linkbutton" onclick="SaveConfig(3)" data-options="plain:true,iconCls:'icon-save'">保存</a>
+                    </td>
+                </tr>
+            </table>
+        </form>
+    </div>
+</div>

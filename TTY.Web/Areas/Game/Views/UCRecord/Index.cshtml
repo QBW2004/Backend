@@ -1,0 +1,141 @@
+﻿
+@{
+    Layout = "~/Views/Shared/Layout/_ContentLayout.cshtml";
+    ViewBag.RouteMap = "点杀记录";
+    M_LoginUser loginUser = WebHelper.GetLoginInfo();
+}
+@section include_res{
+    <script>
+        $(function () {
+            // 加载指定的模块
+                easyloader.load(['textbox', 'linkbutton', 'datagrid', 'messager'], function () {
+                //适应窗口大小变化
+                $(window).resize(function () {
+                    if ($('body').data('grid-init')) {
+                        setGridSize();
+                    }
+                });
+                //初始化插件
+                pluginInit();
+                //初始化查询
+                queryData();
+            });
+        })
+        //重置表格大小
+        function setGridSize(param) {
+            var w = $(window).width() - 8;
+            var h = $(window).height() - 78;
+            resizeGrid('tb_UCRecords', 'auto', h);
+        }
+        //查询数据
+        function queryData() {
+            var para = $("#frm_srch").serializeObject();
+            bindGridData(para);
+        }
+        //绑定表格数据
+        function bindGridData(para) {
+            if (!$('body').data('grid-init')) {
+                $('#tb_UCRecords').datagrid({
+                    url: "/Game/UCRecord/GetUCRecords",
+                    queryParams: $.extend({}, para),
+                    pagination: true,
+                    fitColumns: true,
+                    singleSelect: true,
+                    striped: true,
+                    rownumbers: true,
+                    height: 768,
+                    pageSize: 20,
+                    pageList: [10, 20, 50],
+                    idField: 'USER',
+                    onBeforeLoad: setGridSize,
+                    onLoadSuccess: onLoaded
+                });
+            } else {
+                $('#tb_UCRecords').datagrid('load', para);
+            }
+        }
+        function fmtOptCol(value, rowData, rowIndex) {
+            switch (value) {
+                case 1:
+                    return '鱼机点杀';
+                case 2:
+                    return '鱼机放水';
+                case 3:
+                    return '押分点杀';
+                case 4:
+                    return '押分放水';
+            }
+        }
+        function fmtAction(value, rowData, rowIndex) {
+            if (rowData.Opt == 1 || rowData.Opt == 3)
+                return '<a href="javascript:void(0)" class="red Lpd5" onclick="closeUserKill(\'' + rowData.UserID + '\')">关闭点杀</a>';
+            return '';
+        }
+        function closeUserKill(userId) {
+            $.messager.confirm('确认', '确定关闭该玩家点杀吗？', function (r) {
+                if (!r) return;
+                request('/Game/UCRecord/CloseUserKill', { UserID: userId }, function (data) {
+                    showMsg(data);
+                    if (data && data.code == 1) {
+                        queryData();
+                    }
+                });
+            });
+        }
+        function clearRecords() {
+            $.messager.confirm('确认', '确定要清空全部点杀记录吗？此操作不可恢复！', function (r) {
+                if (!r) return;
+                $.post('/Game/UCRecord/ClearRecords', {}, function (res) {
+                    if (res.code === 1) {
+                        $.messager.alert('提示', res.msg, 'info', function () {
+                            queryData();
+                        });
+                    } else {
+                        $.messager.alert('提示', res.msg, 'error');
+                    }
+                });
+            });
+        }
+    </script>
+}
+@*查询条件*@
+<form id="frm_srch">
+    <table width="100%" border="0" cellpadding="0" cellspacing="0" class="titleQueBg" style="height:40px;">
+        <tr>
+            <td>
+                <div class="left Lpd5">
+                    用户账号：
+                    <input type="text" class="easyui-textbox" name="ID" />
+                </div>
+                @*<div class="left Lpd5">
+                    代理：
+                    <input type="text" class="easyui-textbox" name="AGENCY" />
+                </div>*@
+                <div class="left Lmg10">
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="queryData();" data-options="plain:true,iconCls:'icon-search'">查找</a>
+                </div>
+                @if (loginUser != null && loginUser.UserPriv == 0)
+                {
+                <div class="left Lmg10">
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="clearRecords();" data-options="plain:true,iconCls:'icon-remove'">清理记录</a>
+                </div>
+                }
+            </td>
+        </tr>
+    </table>
+</form>
+
+@*点杀记录信息*@
+<table id="tb_UCRecords">
+    <thead>
+        <tr>
+            <th field="UserID" width="120">用户账号</th>
+            <th field="AGENCY" width="135">所属代理</th>
+            <th field="NAME" width="85">用户昵称</th>
+            <th field="Opt" width="85" formatter="fmtOptCol">功能</th>
+            <th field="OptValue" width="85">控值</th>
+            <th field="TIME" width="135">时间</th>
+            <th field="UserID" width="100" formatter="fmtAction">操作</th>
+        </tr>
+    </thead>
+</table>

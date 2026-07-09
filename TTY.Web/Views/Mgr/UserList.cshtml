@@ -1,0 +1,100 @@
+﻿@{
+    ViewBag.RouteMap = Html.ToRoutMap("系统管理", "用户管理");
+    Layout = "~/Views/Shared/Layout/_ContentLayout.cshtml";
+}
+
+@section include_res
+{
+    <script src="@Url.Content("~/Scripts/app/user.mgr.js?v=" + ConfigHelper.Get("WebVer"))"></script>
+}
+
+<!--查询条件-->
+<form id="frm_srch">
+    <table width="100%" border="0" align="center" cellpadding="0" cellspacing="0" class="titleQueBg" style="height:40px;">
+        <tr>
+            <td>
+                <div class="left">
+                    &nbsp;角色
+                    <select class="easyui-combotree" id="selRole" name="RoleID" data-options="valueField:'id',textField:'text',data:[]" style="width:155px;"></select>
+                </div>
+                <div class="left">
+                    &nbsp;用户名/账号
+                    <input type="text" class="easyui-textbox" id="txtUsrNameOrAccounts" name="usrNameOrAccounts" style="width:152px;" />
+                </div>
+                <div id="box_5" class="left Lmg10">
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="queryData();" data-options="plain:true,iconCls:'icon-search'">查找</a>
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="showAddUser();" data-options="plain:true,iconCls:'icon-add'">新增用户</a>
+                </div>
+            </td>
+        </tr>
+    </table>
+</form>
+<!-- form end -->
+<!--数据列表-->
+<table id="tb_Users">
+    <thead>
+        <tr>
+            <th field="RowIndex" width="65" align="center">序号</th>
+            <th field="RoleName" width="85" align="center">角色</th>
+            <th field="Accounts" width="80" align="center">账号</th>
+            <th field="UserName" width="85" align="center">名字</th>
+            <th field="IsDel" width="120" align="center" formatter="formateStatus">状态</th>
+            <th field="Remark" width="120" align="center">备注信息</th>
+            <th field="UserID" width="85" align="center" formatter="formateOpt">操作</th>
+        </tr>
+    </thead>
+</table>
+
+<!-- 添加用户窗口 -->
+<div id="addUserWin" class="hide">
+    <form id="form2">
+        <table cellpadding="0" cellspacing="0" border="0" width="100%">
+            <tr id="trTip1">
+                <td colspan="2" align="left" style="padding-left: 50px;color:#999;">
+                    <p style="margin-left:-35px;">温馨提示：请牢记用户密码。</p>
+                </td>
+            </tr>
+            <tr id="trTip2" class="hide">
+                <td colspan="2" align="left" style="padding-left: 50px;color:#999;">
+                    <p style="margin-left:-35px;">温馨提示：不填写密码时为不修改密码。</p>
+                </td>
+            </tr>
+            <tr>
+                <td align="right" width="35%">角色：</td>
+                <td align="left">
+                    <select class="easyui-combotree" id="selUserRole" name="RoleID" data-options="valueField:'id',textField:'text'"></select>
+                </td>
+            </tr>
+            <tr>
+                <td align="right">用户名：</td>
+                <td align="left">
+                    <input class="easyui-textbox win-txt" id="txtUName" name="UName" />
+                </td>
+            </tr>
+            <tr>
+                <td align="right">账号：</td>
+                <td align="left">
+                    <input class="easyui-textbox win-txt" id="txtUAccounts" name="UAccounts" />
+                </td>
+            </tr>
+            <tr>
+                <td align="right">密码：</td>
+                <td align="left">
+                    <input class="easyui-textbox win-txt" id="txtUPwd" name="UPwd" />
+                </td>
+            </tr>
+            <tr>
+                <td align="right">备注信息：</td>
+                <td align="left">
+                    <input class="easyui-textbox win-txt" id="txtRemark" name="Remark" />
+                </td>
+            </tr>
+            <tr>
+                <td align="center" colspan="2" class="pd5">
+                    <input type="hidden" id="hfUserID" name="UserID" value="0" />
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="SaveUser()" data-options="plain:true,iconCls:'icon-save'">保存</a>
+                </td>
+            </tr>
+        </table>
+    </form>
+</div>

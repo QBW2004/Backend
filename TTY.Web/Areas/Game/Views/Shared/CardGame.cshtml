@@ -1,0 +1,188 @@
+﻿<div id="type_1" class="hide">
+    <fieldset>
+        <legend>机台选择</legend>
+        <form>
+            <table border="0" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td width="52px">
+                        &nbsp;
+                    </td>
+                    <td>
+                        <select class="easyui-combobox" id="selRoomSel_1" name="RoomSel" data-options="label:'房间选择：',labelAlign:'right',valueField: 'id',textField: 'text',panelHeight:200,data: getRoomSelData(3),onChange:onRoomSelChange,editable:false" style="width:220px;"></select>
+                    </td>
+                    <td>
+                        <select class="easyui-combobox" id="selDeskSel_1" name="DeskSel" data-options="label:'机台选择：',labelAlign:'right',valueField: 'id',textField: 'text',panelHeight:200,data: getComboSelData(2,1),onChange:onDeskSelChange,editable:false" style="width:220px;"></select>
+                    </td>
+                </tr>
+            </table>
+        </form>
+    </fieldset>
+    <fieldset>
+        <legend>累积账目</legend>
+        <form>
+            <table border="0" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="CardType_12" data-options="label:'五鬼：',labelAlign:'right'" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="CardType_11" data-options="label:'大顺：',labelAlign:'right'" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="CardType_10" data-options="label:'五梅：',labelAlign:'right'" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="CardType_9" data-options="label:'小顺：',labelAlign:'right'" />
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="CardType_8" data-options="label:'大四梅：',labelAlign:'right'" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="CardType_7" data-options="label:'小四梅：',labelAlign:'right'" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="CardType_6" data-options="label:'葫芦：',labelAlign:'right'" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="CardType_5" data-options="label:'同花：',labelAlign:'right'" />
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="CardType_4" data-options="label:'顺子：',labelAlign:'right'" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="CardType_3" data-options="label:'三条：',labelAlign:'right'" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="CardType_2" data-options="label:'两对：',labelAlign:'right'" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="CardType_1" data-options="label:'一对：',labelAlign:'right'" />
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="PlayRound_0" data-options="label:'总玩：',labelAlign:'right'" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="WinRound_0" data-options="label:'总赢：',labelAlign:'right'" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="Prize_Per_0" data-options="label:'中奖率：',labelAlign:'right',precision:2" />
+                    </td>
+                    <td>
+                        &nbsp;
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="Pok_In_0" data-options="label:'扑克总入：',labelAlign:'right'" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="Pok_Out_0" data-options="label:'扑克总出：',labelAlign:'right'" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="Pok_Per_0" data-options="label:'机率：',labelAlign:'right',precision:2" />
+                    </td>
+                    <td>
+                        &nbsp;
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="Dou_In_0" data-options="label:'比倍总入：',labelAlign:'right'" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="Dou_Out_0" data-options="label:'比倍总出：',labelAlign:'right'" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="Dou_Per_0" data-options="label:'机率：',labelAlign:'right',precision:2" />
+                    </td>
+                    <td>
+                        &nbsp;
+                    </td>
+                </tr>
+            </table>
+        </form>
+    </fieldset>
+    <fieldset>
+        <legend>当期帐目</legend>
+        <form>
+            <table border="0" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="CardType_12" data-options="label:'五鬼：',labelAlign:'right'" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="CardType_11" data-options="label:'大顺：',labelAlign:'right'" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="CardType_10" data-options="label:'五梅：',labelAlign:'right'" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="CardType_9" data-options="label:'小顺：',labelAlign:'right'" />
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="CardType_8" data-options="label:'大四梅：',labelAlign:'right'" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="CardType_7" data-options="label:'小四梅：',labelAlign:'right'" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="CardType_6" data-options="label:'葫芦：',labelAlign:'right'" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="CardType_5" data-options="label:'同花：',labelAlign:'right'" />
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="CardType_4" data-options="label:'顺子：',labelAlign:'right'" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="CardType_3" data-options="label:'三条：',labelAlign:'right'" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="CardType_2" data-options="label:'两对：',labelAlign:'right'" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="CardType_1" data-options="label:'一对：',labelAlign:'right'" />
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="Pok_In_1" data-options="label:'扑克总入：',labelAlign:'right'" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="Pok_Out_1" data-options="label:'扑克总出：',labelAlign:'right'" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="Pok_Per_1" data-options="label:'机率：',labelAlign:'right',precision:2" />
+                    </td>
+                    <td>
+                        &nbsp;
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="Dou_In_1" data-options="label:'比倍总入：',labelAlign:'right'" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="Dou_Out_1" data-options="label:'比倍总出：',labelAlign:'right'" />
+                    </td>
+                    <td>
+                        <input type="text" class="easyui-numberbox w_220" name="Dou_Per_1" data-options="label:'机率：',labelAlign:'right',precision:2" />
+                    </td>
+                    <td>
+                        &nbsp;
+                    </td>
+                </tr>
+            </table>
+        </form>
+    </fieldset>
+</div>

@@ -1,0 +1,275 @@
+﻿
+@{
+    Layout = "~/Views/Shared/Layout/_ContentLayout.cshtml";
+    ViewBag.RouteMap = "在线玩家";
+    M_LoginUser loginUser = WebHelper.GetLoginInfo();
+}
+
+@section include_res{
+    <script>
+    $(function () {
+        // 加载指定的模块
+        easyloader.load(['textbox', 'linkbutton', 'datagrid'], function () {
+            //适应窗口大小变化
+            $(window).resize(function () {
+                if ($('body').data('grid-init')) {
+                    setGridSize();
+                }
+            });
+            //初始化插件
+            pluginInit();
+            //初始化查询
+            queryData();
+        });
+    })
+    //重置表格大小
+    function setGridSize(param) {
+        var w = $(window).width() - 8;
+        var h = $(window).height() - 78;
+        resizeGrid('tb_UserInfo', 'auto', h);
+    }
+    //查询数据
+    function queryData() {
+        var para = $("#frm_srch").serializeObject();
+        bindGridData(para);
+    }
+    //绑定表格数据
+    function bindGridData(para) {
+        if (!$('body').data('grid-init')) {
+            $('#tb_UserInfo').datagrid({
+                url: "/Game/UserInfo/GetOnlinePlayers",
+                queryParams: $.extend({}, para),
+                pagination: true,
+                fitColumns: true,
+                singleSelect: true,
+                striped: true,
+                rownumbers: true,
+                height: 768,
+                pageSize: 20,
+                pageList: [10, 20, 50],
+                idField: 'ID',
+                onBeforeLoad: setGridSize,
+                onLoadSuccess: onLoaded
+            });
+        } else {
+            $('#tb_UserInfo').datagrid('load', para);
+        }
+    }
+    function fmtCoins(value, rowData, rowIndex) {
+        return top.goldFormat(value || 0);
+    }
+    function fmtRoom(value, rowData, rowIndex) {
+        if (value == null || value < 0) return '--';
+        switch (parseInt(value, 10)) {
+            case 0: return '初级场';
+            case 1: return '中级场';
+            case 2: return '高级场';
+            case 3: return 'VIP场';
+            default: return value;
+        }
+    }
+    function fmtTable(value, rowData, rowIndex) {
+        if (value == null || value < 0) return '--';
+        return (parseInt(value, 10) + 1) + '号桌';
+    }
+    function fmtSeat(value, rowData, rowIndex) {
+        if (value == null || value < 0) return '--';
+        return (parseInt(value, 10) + 1) + '号位';
+    }
+    function fmtStatus(value, rowData, rowIndex) {
+        if (rowData && rowData.CurrentGameName)
+            return '<span style="color:#2e8b57;">游戏中</span>';
+        return '<span style="color:#999;">大厅</span>';
+    }
+    function fmtProfit(value, rowData, rowIndex) {
+        var v = value ?? 0;
+        var color = v > 0 ? '#c00' : (v < 0 ? '#2e8b57' : '#666');
+        return '<span style="color:' + color + ';">' + top.goldFormat(v) + '</span>';
+    }
+    //自动刷新
+    var _autoTimer = null;
+    function toggleAutoRefresh() {
+        if (_autoTimer) { clearInterval(_autoTimer); _autoTimer = null; }
+        if ($('#chkAutoRefresh').is(':checked')) {
+            var sec = parseInt($('#selRefreshSec').val(), 10) || 10;
+            _autoTimer = setInterval(queryData, sec * 1000);
+        }
+    }
+
+        function showRateCtrlWin(uid) {
+            var para = {
+                winId: '#chgRateWin',
+                title: '【概率控制】',
+                iconCls: 'icon-chart_curve',
+                callBack: function () {
+                    console.log(uid);
+                    $('#txtE_ID').textbox('setValue', uid);
+                    $('#hfID').val(uid);
+                }
+            };
+            openWin(para);
+        }
+        function actionSelData() {
+            return [
+                { id: 1, text: '鱼机点杀', selected: true },
+            @if (loginUser != null && loginUser.UserPriv == 0)
+            {
+            @Html.Raw("{ id: 2, text: '鱼机放水' },")
+            @Html.Raw("{ id: 4, text: '押分放水' },")
+            }
+                { id: 3, text: '押分点杀' },
+                { id: 5, text: '大字版控制'}
+            ];
+        }
+        function valSelData() {
+            var arr = [];
+            for (var i = 0; i < 10; i++)
+                if (i == 0)
+                    arr.push({ id: i, text: i });
+                else
+                    arr.push({ id: i, text: i });
+            return arr;
+        }
+
+    function SaveUserRate() {
+
+            @Html.Raw(@"       var para = $('#form3').serializeObject();
+                request('/Game/UserInfo/ChgUserRate', para, function (data) {
+                    //提示消息
+                    showMsg(data);
+                    if (data && data.code == 1) {
+                        $('#chgRateWin').dialog('close');
+                        $('#form3').form('reset');
+                        queryData();//重新绑定表格数据
+                    }
+                });");
+
+    }
+        function kickPlayer(id) {
+            var _tip = 'ALL', _url = '/Game/UserInfo/KickAllPlayer';
+            if (id && id.length > 0) {
+                _tip = '选择的';
+                _url = '/Game/UserInfo/KickPlayer';
+            }
+            confirm('确认踢出' + _tip + ' 用户？', function () {
+                request(_url, { UserID: id }, function (data) {
+                    showMsg(data);
+                    if (data && data.code == 1) {
+                        queryData();
+                    }
+                });
+            });
+        }
+
+         function fmtOpt(value, rowData, rowIndex) {
+        var arr = [];
+
+       @Html.Raw("arr.push('<a href=\"javascript:void(0)\" class=\"red Lpd5\" onclick=\"showRateCtrlWin(\\\'' + rowData.ID + '\\\')\">几率控制</a>');");
+        return arr.join('  ');
+    }
+
+    </script>
+}
+
+@*查询条件*@
+<form id="frm_srch">
+    <table width="100%" border="0" cellpadding="0" cellspacing="0" class="titleQueBg" style="height:40px;">
+        <tr>
+            <td>
+                <div class="left Lpd5">
+                    用户ID
+                    <input type="text" class="easyui-textbox" name="srch_UserID" />
+                </div>
+                <div class="left Lpd5">
+                    用户账号
+                    <input type="text" class="easyui-textbox" name="srch_ID" />
+                </div>
+                <div class="left Lpd5">
+                    昵称
+                    <input type="text" class="easyui-textbox" name="srch_NAME" />
+                </div>
+                <div class="left Lpd5">
+                    所属代理
+                    <input type="text" class="easyui-textbox" name="srch_Agency" />
+                </div>
+                <div class="left Lmg10">
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="queryData();" data-options="plain:true,iconCls:'icon-search'">查找</a>
+                 
+                </div>
+                <div class="left Lmg10" style="line-height:32px;">
+                    <label><input type="checkbox" id="chkAutoRefresh" onclick="toggleAutoRefresh();" /> 自动刷新</label>
+                    <select id="selRefreshSec" onchange="toggleAutoRefresh();">
+                        <option value="5">5秒</option>
+                        <option value="10" selected>10秒</option>
+                        <option value="30">30秒</option>
+                    </select>
+                </div>
+            </td>
+        </tr>
+    </table>
+</form>
+
+@*查询代理的信息*@
+<table id="tb_UserInfo">
+    <thead>
+        <tr>
+            <th field="UserID" width="68">用户ID</th>
+            <th field="ID" width="140">用户账号</th>
+            <th field="NAME" width="110">昵称</th>
+            <th field="AGENCY" width="85">所属代理</th>
+            <th field="INHALL" width="70" formatter="fmtStatus">状态</th>
+            <th field="CurrentGameName" width="120">当前游戏</th>
+            <th field="CurrentRoomId" width="90" formatter="fmtRoom">当前厅</th>
+            <th field="CurrentTableId" width="90" formatter="fmtTable">桌号</th>
+            <th field="CurrentSeatId" width="90" formatter="fmtSeat">座号</th>
+            <th field="CurrentBetCoins" width="85" formatter="fmtCoins">下注</th>
+            <th field="CurrentWinLose" width="85" formatter="fmtCoins">当前输赢</th>
+            <th field="GAME_SCORE" width="85" formatter="fmtCoins">游戏分数</th>
+            <th field="COINS" width="95" formatter="fmtCoins">账面余额</th>
+            <th field="COINS_BUY" width="90" formatter="fmtCoins">累计充值</th>
+            <th field="COINS_BACK" width="90" formatter="fmtCoins">累计兑换</th>
+            <th field="Profit" width="90" formatter="fmtProfit">累计盈亏</th>
+            <th field="PWD" width="85" formatter="fmtOpt">几率控制</th>
+        </tr>
+    </thead>
+</table>
+
+@*修改机率窗口*@
+<div id="chgRateWin" class="hide">
+    <form id="form3">
+        <table cellpadding="0" cellspacing="0" border="0" width="100%" align="center">
+            <tr>
+                <td colspan="2" align="left" style="padding-left: 50px;color:#999;">
+                    <p style="margin-left:-35px;">温馨提示:修改后即时生效</p>
+                </td>
+            </tr>
+            <tr>
+                <td align="right">用户账号</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-textbox win-txt" id="txtE_ID" disabled />
+                </td>
+            </tr>
+            <tr>
+                <td align="right">功能</td>
+                <td align="left" class="pd5">
+                    <select class="easyui-combobox win-txt" id="selE_Action" name="Action" data-options="valueField:'id',textField:'text',panelHeight:150,data:actionSelData()"></select>
+                </td>
+            </tr>
+            <tr>
+                <td align="right">控值</td>
+                <td align="left" class="pd5">
+                    <select class="easyui-combobox win-txt" id="selE_Val" name="Val" data-options="valueField:'id',textField:'text',panelHeight:150,data:valSelData()"></select>
+
+                </td>
+            </tr>
+            <tr>
+                <td align="center" colspan="2" class="pd5">
+                    <input type="hidden" id="hfID" name="ID" value="0" />
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="SaveUserRate()" data-options="plain:true,iconCls:'icon-save'">保存</a>
+                </td>
+            </tr>
+        </table>
+    </form>
+</div>
+
+

@@ -1,0 +1,700 @@
+﻿@{
+    Layout = "~/Views/Shared/Layout/_ContentLayout.cshtml";
+    ViewBag.RouteMap = "游戏配置";
+}
+@section include_res{
+    <style>
+        .gc-wrap { padding: 16px; box-sizing: border-box; }
+        .gc-tip { display: none; }
+        .gc-grid { display: flex; gap: 16px; align-items: stretch; }
+        .gc-card { background: #fff; border: 1px solid #e5e9f0; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.04); }
+        .gc-left { width: 260px; flex: 0 0 260px; display: flex; flex-direction: column; }
+        .gc-right { flex: 1 1 auto; min-width: 0; }
+        .gc-card-hd { padding: 12px 16px; border-bottom: 1px solid #eef1f6; font-size: 14px; font-weight: 600; color: #1f2d3d; display: flex; align-items: center; justify-content: space-between; }
+        .gc-card-hd .fa { color: #2f6fed; margin-right: 6px; }
+        .gc-card-bd { padding: 16px; }
+        .gc-field { margin-bottom: 14px; }
+        .gc-field > label { display: block; font-size: 13px; color: #5a6573; margin-bottom: 6px; }
+        .gc-input, .gc-select { width: 100%; height: 36px; line-height: 36px; padding: 0 12px; box-sizing: border-box; border: 1px solid #d4dae3; border-radius: 6px; font-size: 14px; color: #1f2d3d; background: #fff; transition: border-color .15s, box-shadow .15s; }
+        .gc-input:focus, .gc-select:focus { border-color: #2f6fed; box-shadow: 0 0 0 3px rgba(47,111,237,.12); outline: none; }
+        .gc-form-row { display: flex; gap: 16px; }
+        .gc-form-row > .gc-field { flex: 1 1 0; }
+        .gc-section-title { font-size: 13px; font-weight: 600; color: #2f6fed; margin: 4px 0 12px; padding-left: 8px; border-left: 3px solid #2f6fed; }
+        .gc-switch { position: relative; display: inline-block; width: 46px; height: 24px; vertical-align: middle; }
+        .gc-switch input { opacity: 0; width: 0; height: 0; }
+        .gc-slider { position: absolute; cursor: pointer; inset: 0; background: #c7ced8; border-radius: 24px; transition: .2s; }
+        .gc-slider:before { content: ""; position: absolute; height: 18px; width: 18px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: .2s; }
+        .gc-switch input:checked + .gc-slider { background: #2f6fed; }
+        .gc-switch input:checked + .gc-slider:before { transform: translateX(22px); }
+        .gc-switch-label { margin-left: 10px; font-size: 13px; color: #5a6573; }
+        .gc-tablelist { list-style: none; margin: 0; padding: 0; max-height: 540px; overflow-y: auto; }
+        .gc-tablelist li { padding: 10px 14px; border-bottom: 1px solid #f0f2f6; cursor: pointer; font-size: 13px; color: #36404a; display: flex; align-items: center; justify-content: space-between; }
+        .gc-tablelist li:hover { background: #f5f8ff; }
+        .gc-tablelist li.active { background: #ecf2ff; color: #2f6fed; font-weight: 600; }
+        .gc-pill { font-size: 11px; padding: 1px 8px; border-radius: 10px; }
+        .gc-pill-on { background: #e6f7ed; color: #1a9d57; }
+        .gc-pill-off { background: #fbe9e9; color: #d33b3b; }
+        .gc-foot { padding: 14px 16px; border-top: 1px solid #eef1f6; text-align: right; }
+        .gc-btn { height: 36px; padding: 0 20px; border-radius: 6px; border: 1px solid transparent; font-size: 14px; cursor: pointer; }
+        .gc-btn-primary { background: #2f6fed; color: #fff; }
+        .gc-btn-primary:hover { background: #2560d6; }
+        .gc-btn-default { background: #fff; color: #5a6573; border-color: #d4dae3; margin-right: 10px; }
+        .gc-btn-default:hover { border-color: #2f6fed; color: #2f6fed; }
+        .gc-empty { padding: 40px 16px; text-align: center; color: #9aa4b1; font-size: 13px; }
+        .gc-toolbar { display: flex; gap: 10px; margin-bottom: 12px; align-items: center; }
+        .gc-toolbar .gc-lbl { font-size: 13px; color: #5a6573; }
+        .gc-toolbar #gcTypeSel { width: 160px; }
+        .gc-toolbar #gcGameSel { width: 220px; }
+        .gc-hint { font-size: 12px; color: #9aa4b1; margin-top: 4px; }
+        .gc-refresh { width: 30px; height: 30px; line-height: 30px; text-align: center; border-radius: 6px; color: #5a6573; cursor: pointer; transition: background .15s, color .15s; }
+        .gc-refresh:hover { background: #ecf2ff; color: #2f6fed; }
+        .gc-refresh .fa { margin: 0; color: inherit; }
+        .gc-newbtn { font-size: 12px; font-weight: 500; color: #2f6fed; cursor: pointer; padding: 3px 10px; border: 1px solid #cdd9f7; border-radius: 14px; background: #f5f8ff; }
+        .gc-newbtn:hover { background: #2f6fed; color: #fff; border-color: #2f6fed; }
+        .gc-newbtn .fa { margin-right: 4px; color: inherit; }
+        .gc-para-empty { display: none; padding: 72px 24px; text-align: center; }
+        .gc-para-empty-icon { width: 88px; height: 88px; line-height: 88px; margin: 0 auto 20px; border-radius: 50%; background: linear-gradient(135deg, #eef3ff, #f7faff); color: #2f6fed; font-size: 42px; box-shadow: inset 0 0 0 1px #e2ebff; }
+        .gc-para-empty-title { font-size: 16px; font-weight: 600; color: #5a6573; margin-bottom: 8px; }
+        .gc-para-empty-text { font-size: 13px; color: #9aa4b1; max-width: 380px; margin: 0 auto; line-height: 1.7; }
+        .gc-switch-inline { display: flex; align-items: center; height: 36px; gap: 12px; }
+        .gc-switch-inline .gc-switch-label { margin-left: 0; }
+    </style>
+}
+<div class="gc-wrap">
+    <div id="gcEncodingNotice" class="gc-tip" data-encoding="UTF-8-BOM">本视图文件必须保存为 UTF-8 带签名(BOM) 编码，避免中文乱码与路由异常。</div>
+
+    <div class="gc-toolbar">
+        <span class="gc-lbl">游戏类型：</span>
+        <select id="gcTypeSel" class="gc-select">
+            <option value="-1">请选择类型</option>
+        </select>
+        <span class="gc-lbl">选择游戏：</span>
+        <select id="gcGameSel" class="gc-select"></select>
+    </div>
+
+    <div class="gc-grid">
+        <div class="gc-card gc-left">
+            <div class="gc-card-hd">
+                <span><i class="fa fa-th-list"></i>桌台列表</span>
+                <a href="javascript:;" id="gcNewTable" class="gc-newbtn" title="新建桌台"><i class="fa fa-plus"></i>新建桌台</a>
+            </div>
+            <div class="gc-card-bd" style="padding:0;">
+                <ul id="gcTableList" class="gc-tablelist"></ul>
+                <div id="gcTableEmpty" class="gc-empty">请选择上方游戏以加载桌台。</div>
+            </div>
+        </div>
+
+        <div class="gc-card gc-right">
+            <div class="gc-card-hd">
+                <span><i class="fa fa-sliders"></i>桌台参数</span>
+                <span style="display:flex;align-items:center;gap:6px;">
+                    <span id="gcCurTableName" style="font-size:13px;color:#9aa4b1;font-weight:400;"></span>
+                    <a href="javascript:;" id="gcRefresh" class="gc-refresh" title="刷新桌台参数"><i class="fa fa-refresh"></i></a>
+                    <a href="javascript:;" id="gcDelete" class="gc-refresh" title="彻底删除该桌台"><i class="fa fa-trash"></i></a>
+                </span>
+            </div>
+            <div class="gc-card-bd">
+                <div id="gcParaEmpty" class="gc-para-empty">
+                    <div class="gc-para-empty-icon"><i class="fa fa-gamepad"></i></div>
+                    <div class="gc-para-empty-title">尚未选择游戏</div>
+                    <div class="gc-para-empty-text">请先在上方选择「游戏类型」与「游戏」，选定后即可配置该游戏的桌台参数。</div>
+                </div>
+                <form id="gcForm">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" id="gcId" name="ID" value="-1" />
+                    <input type="hidden" id="gcGameId" name="GAME_ID" value="-1" />
+                    <input type="hidden" id="gcGameType" name="GAME_TYPE" value="-1" />
+                    <input type="hidden" id="gcScoreSwitch" name="scoreSwitch" value="0" />
+
+                    <div class="gc-common gc-base-info">
+                    <div class="gc-section-title">基础信息</div>
+                    <div class="gc-form-row">
+                        <div class="gc-field">
+                            <label>桌名</label>
+                            <input type="text" id="gcTableName" name="TableName" class="gc-input" maxlength="64" placeholder="请输入桌名" />
+                        </div>
+                        <div class="gc-field">
+                            <label>桌台开关</label>
+                            <div class="gc-switch-inline">
+                                <label class="gc-switch">
+                                    <input type="checkbox" id="gcEnabled" checked />
+                                    <span class="gc-slider"></span>
+                                </label>
+                                <span class="gc-switch-label">关闭后该桌台不再展示给玩家</span>
+                            </div>
+                            <input type="hidden" id="gcEnabledVal" name="Enabled" value="1" />
+                        </div>
+                    </div>
+                    </div>
+
+                    <div class="gc-common gc-bet-exchange">
+                    <div class="gc-section-title">下注与兑换</div>
+                    <div class="gc-form-row">
+                        <div class="gc-field">
+                            <label id="gcMinBetLbl">最小下注</label>
+                            <input type="number" id="gcMinBet" name="MinBet" class="gc-input" step="1" min="0" value="0" />
+                        </div>
+                        <div class="gc-field">
+                            <label id="gcMaxBetLbl">最大下注</label>
+                            <input type="number" id="gcMaxBet" name="MaxBet" class="gc-input" step="1" min="0" value="0" />
+                        </div>
+                    </div>
+                    <div class="gc-form-row">
+                        <div class="gc-field">
+                            <label>兑换单位</label>
+                            <input type="number" id="gcExCoin" name="EX_COIN" class="gc-input" min="1" value="1" />
+                        </div>
+                        <div class="gc-field">
+                            <label>兑换币值</label>
+                            <input type="number" id="gcCoinSc" name="COIN_SC" class="gc-input" min="1" value="1" />
+                        </div>
+                        <div class="gc-field">
+                            <label>兑换金币数</label>
+                            <input type="number" id="gcGameMo" name="Game_Mo" class="gc-input" min="0" value="0" />
+                        </div>
+                        <div class="gc-field">
+                            <label>入场金币</label>
+                            <input type="number" id="gcCoinNeed" name="COIN_NEED" class="gc-input" min="0" value="0" />
+                        </div>
+                    </div>
+                    </div>
+
+                    <div class="gc-only-0">
+                        <div class="gc-section-title">押注玩法</div>
+                        <div class="gc-form-row">
+                            <div class="gc-field">
+                                <label>押分时间（秒）</label>
+                                <input type="number" id="gcBetTime" name="BET_TIME" class="gc-input" min="0" value="0" />
+                            </div>
+                            <div class="gc-field">
+                                <label>抢庄分数</label>
+                                <input type="number" id="gcBankerScNeed" name="BANKER_SC_NEED" class="gc-input" min="0" value="0" />
+                            </div>
+                        </div>
+                        <div class="gc-form-row">
+                            <div class="gc-field">
+                                <label>庄闲最小</label>
+                                <input type="number" id="gcBetMinVice" name="BET_MIN_VICE" class="gc-input" min="0" value="0" />
+                            </div>
+                            <div class="gc-field">
+                                <label>庄闲最大</label>
+                                <input type="number" id="gcBetMaxVice" name="BET_MAX_VICE" class="gc-input" min="0" value="0" />
+                            </div>
+                            <div class="gc-field">
+                                <label>和最小</label>
+                                <input type="number" id="gcBetMinDraw" name="BET_MIN_DRAW" class="gc-input" min="0" value="0" />
+                            </div>
+                            <div class="gc-field">
+                                <label>和最大</label>
+                                <input type="number" id="gcBetMaxDraw" name="BET_MAX_DRAW" class="gc-input" min="0" value="0" />
+                            </div>
+                        </div>
+                        <div class="gc-form-row">
+                            <div class="gc-field">
+                                <label>单门限红</label>
+                                <input type="number" id="gcScLimitSing" name="SC_LIMIT_SING" class="gc-input" min="0" value="0" />
+                            </div>
+                            <div class="gc-field">
+                                <label>全台限红</label>
+                                <input type="number" id="gcScLimitAll" name="SC_LIMIT_ALL" class="gc-input" min="0" value="0" />
+                            </div>
+                        </div>
+
+                        <div class="gc-section-title">筹码档位</div>
+                        <div class="gc-form-row">
+                            <div class="gc-field">
+                                <label>默认筹码</label>
+                                <input type="number" id="gcChip0" class="gc-input gc-chip" min="0" value="0" />
+                            </div>
+                            <div class="gc-field">
+                                <label>二级筹码</label>
+                                <input type="number" id="gcChip1" class="gc-input gc-chip" min="0" value="0" />
+                            </div>
+                            <div class="gc-field">
+                                <label>三级筹码</label>
+                                <input type="number" id="gcChip2" class="gc-input gc-chip" min="0" value="0" />
+                            </div>
+                            <div class="gc-field">
+                                <label>四级筹码</label>
+                                <input type="number" id="gcChip3" class="gc-input gc-chip" min="0" value="0" />
+                            </div>
+                            <div class="gc-field">
+                                <label>五级筹码</label>
+                                <input type="number" id="gcChip4" class="gc-input gc-chip" min="0" value="0" />
+                            </div>
+                        </div>
+                        <input type="hidden" id="gcBetScores" name="BetScores" value="" />
+
+                        <div class="gc-section-title">机台设定（系统/庄家难度）</div>
+                        <div class="gc-form-row">
+                            <div class="gc-field">
+                                <label>系统难度</label>
+                                <input type="number" id="gcDif" name="DIF" class="gc-input" min="0" max="9" value="0" />
+                            </div>
+                            <div class="gc-field">
+                                <label>系统加难</label>
+                                <input type="number" id="gcHar" name="HAR" class="gc-input" min="0" max="9" value="0" />
+                            </div>
+                            <div class="gc-field">
+                                <label>系统起伏</label>
+                                <input type="number" id="gcSiteType" name="SITE_TYPE" class="gc-input" min="0" max="2" value="0" />
+                            </div>
+                        </div>
+                        <div class="gc-form-row">
+                            <div class="gc-field">
+                                <label>庄家难度</label>
+                                <input type="number" id="gcBankerDif" name="BANKER_DIF" class="gc-input" min="0" max="9" value="0" />
+                            </div>
+                            <div class="gc-field">
+                                <label>庄家加难</label>
+                                <input type="number" id="gcBankerHar" name="BANKER_HAR" class="gc-input" min="0" max="9" value="0" />
+                            </div>
+                            <div class="gc-field">
+                                <label>庄家起伏</label>
+                                <input type="number" id="gcBankerSiteType" name="BANKER_SITE_TYPE" class="gc-input" min="0" max="2" value="0" />
+                            </div>
+                            <div class="gc-field">
+                                <label>庄家抽水</label>
+                                <input type="number" id="gcBankerPer" name="BANKER_PER" class="gc-input" min="0" max="99" value="0" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="gc-only-1">
+                        <div class="gc-section-title">机台设定（牌机难度）</div>
+                        <div class="gc-form-row">
+                            <div class="gc-field">
+                                <label>炒场类型</label>
+                                <input type="number" id="gcHypeType" name="HYPE_TYPE" class="gc-input" min="0" value="0" />
+                            </div>
+                            <div class="gc-field">
+                                <label>牌机难度（16 位数字）</label>
+                                <input type="text" id="gcCardDif" name="CardDIF" class="gc-input" maxlength="16" placeholder="16 位数字，如 0000000000000000" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="gc-only-2">
+                        <div class="gc-section-title">机台设定（鱼机难度）</div>
+                        <div class="gc-form-row">
+                            <div class="gc-field">
+                                <label>鱼机难度</label>
+                                <select id="gcFishDif" name="FishDIF" class="gc-select">
+                                    <option value="0">0 级：满放水</option>
+                                    <option value="1">1 级：大放水</option>
+                                    <option value="2">2 级：中放水</option>
+                                    <option value="3">3 级：小放水</option>
+                                    <option value="4">4 级：微放水</option>
+                                    <option value="5">5 级：平衡档</option>
+                                    <option value="6">6 级：微吃分</option>
+                                    <option value="7">7 级：小吃分</option>
+                                    <option value="8">8 级：中吃分</option>
+                                    <option value="9">9 级：大吃分</option>
+                                </select>
+                            </div>
+                            <div class="gc-field">
+                                <label>场地类型</label>
+                                <select id="gcFishSiteType" name="FishSITE_TYPE" class="gc-select">
+                                    <option value="0">0 级：大场地</option>
+                                    <option value="1">1 级：中场地</option>
+                                    <option value="2">2 级：小场地</option>
+                                    <option value="3">3 级：标准场</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="gc-only-3">
+                        <div class="gc-section-title">拉霸参数</div>
+                        <div class="gc-form-row">
+                            <div class="gc-field">
+                                <label>玩家赢概率（0-10）</label>
+                                <input type="number" id="gcWinRate" name="WinRate" class="gc-input" min="0" max="10" value="0" />
+                            </div>
+                            <div class="gc-field">
+                                <label>金币兑换率</label>
+                                <input type="number" id="gcExRate" name="ExchangeRate" class="gc-input" min="1" value="1" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="gc-common">
+                    <div class="gc-section-title">玩法与踢出</div>
+                    <div class="gc-form-row">
+                        <div class="gc-field">
+                            <label>无发炮踢出时间（秒）</label>
+                            <input type="number" id="gcIdleSec" name="IdleFireTimeoutSec" class="gc-input" min="0" value="0" />
+                            <span class="gc-switch-label">默认开启：玩家长时间不发炮将被踢出，0 表示不踢出</span>
+                            <input type="hidden" id="gcIdleKickVal" name="IdleFireKickEnabled" value="1" />
+                        </div>
+                    </div>
+                    </div>
+                </form>
+            </div>
+            <div class="gc-foot" id="gcParaFoot">
+                <button type="button" id="gcReset" class="gc-btn gc-btn-default">重置</button>
+                <button type="button" id="gcSave" class="gc-btn gc-btn-primary">保存并热更新</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    var GC_URL = {
+        gameList: '@Url.Action("GetGameList", "GameConfig", new { area = "Game" })',
+        tableConfig: '@Url.Action("GetTableConfig", "GameConfig", new { area = "Game" })',
+        save: '@Url.Action("SaveTableConfig", "GameConfig", new { area = "Game" })',
+        delete: '@Url.Action("DeleteTableConfig", "GameConfig", new { area = "Game" })'
+    };
+    var GC_GAMES = [];
+    var GC_TABLES = [];
+    var GC_TYPE_META = [
+        { v: 2, t: '鱼机类型' },
+        { v: 0, t: '押注类型' },
+        { v: 1, t: '牌机类型' },
+        { v: 3, t: '拉霸类型' }
+    ];
+
+    function gcGetType() { return parseInt($('#gcGameType').val(), 10); }
+
+    // 统一反馈：成功/失败/校验用顶部自动消失的 toast；登录超时(code=-1)仍保留模态以便重新登录
+    function gcMsg(data) {
+        if (data && data.code == -1) { loginTimeoutCallback(data); return; }
+        var text = data ? (data.msg ? data.msg : data.content) : '操作失败！';
+        showToast(text, (data && data.code == 1) ? 'success' : 'error');
+    }
+
+    function gcLoadGames() {
+        request(GC_URL.gameList, {}, function (list) {
+            GC_GAMES = list || [];
+            gcBuildTypeSel();
+            gcFillGameSel();
+        });
+    }
+
+    function gcBuildTypeSel() {
+        var $sel = $('#gcTypeSel');
+        var cur = $sel.val();
+        $sel.empty();
+        $sel.append('<option value="-1">请选择类型</option>');
+        $.each(GC_TYPE_META, function (i, m) {
+            var has = $.grep(GC_GAMES, function (g) { return parseInt(g.gameType, 10) === m.v; }).length > 0;
+            if (has) $sel.append('<option value="' + m.v + '">' + m.t + '</option>');
+        });
+        if (cur !== null && $sel.find('option[value="' + cur + '"]').length > 0) $sel.val(cur);
+    }
+
+    function gcFillGameSel() {
+        var type = parseInt($('#gcTypeSel').val(), 10);
+        var $sel = $('#gcGameSel');
+        $sel.empty();
+        gcClearTables();
+        if (isNaN(type) || type < 0) {
+            $sel.append('<option value="-1">请先选择游戏类型</option>');
+            return;
+        }
+        var games = $.grep(GC_GAMES, function (g) { return parseInt(g.gameType, 10) === type; });
+        if (games.length < 1) {
+            $sel.append('<option value="-1">该类型暂无已开启游戏</option>');
+            return;
+        }
+        $sel.append('<option value="-1">请选择游戏</option>');
+        $.each(games, function (i, g) {
+            $sel.append('<option value="' + g.id + '" data-type="' + g.gameType + '">' + g.text + '</option>');
+        });
+    }
+
+    function gcClearTables() {
+        GC_TABLES = [];
+        $('#gcTableList').empty();
+        $('#gcTableEmpty').show().text('请选择上方游戏以加载桌台。');
+        $('#gcCurTableName').text('');
+        $('#gcId').val(-1);
+        gcSetParaVisible(false);
+    }
+
+    function gcSetParaVisible(visible) {
+        if (visible) {
+            $('#gcParaEmpty').hide();
+            $('#gcForm').show();
+            $('#gcParaFoot').show();
+        } else {
+            $('#gcParaEmpty').show();
+            $('#gcForm').hide();
+            $('#gcParaFoot').hide();
+            $('#gcCurTableName').text('');
+        }
+    }
+
+    function gcLatestTable() {
+        if (!GC_TABLES || GC_TABLES.length < 1) return null;
+        var latest = GC_TABLES[0];
+        $.each(GC_TABLES, function (i, t) {
+            if (parseInt(t.id, 10) > parseInt(latest.id, 10)) latest = t;
+        });
+        return latest;
+    }
+
+    function gcRenderTableList() {
+        var $list = $('#gcTableList');
+        $list.empty();
+        if (GC_TABLES.length < 1) {
+            $('#gcTableEmpty').show().text('该游戏暂无桌台，填写参数后点击右上角“新建桌台”。');
+            return;
+        }
+        $('#gcTableEmpty').hide();
+        $.each(GC_TABLES, function (i, t) {
+            var pill = t.enabled == 1
+                ? '<span class="gc-pill gc-pill-on">启用</span>'
+                : '<span class="gc-pill gc-pill-off">停用</span>';
+            $list.append('<li data-idx="' + i + '" data-id="' + t.id + '"><span>' + t.tableName + '</span>' + pill + '</li>');
+        });
+    }
+
+    function gcSelectTableById(id) {
+        var found = -1;
+        $.each(GC_TABLES, function (i, t) { if (parseInt(t.id, 10) === parseInt(id, 10)) found = i; });
+        if (found < 0) { gcNewTable(); return; }
+        $('#gcTableList li').removeClass('active');
+        $('#gcTableList li[data-idx="' + found + '"]').addClass('active');
+        gcFill(GC_TABLES[found]);
+    }
+
+    function gcApplyType() {
+        var type = gcGetType();
+        $('.gc-only-0,.gc-only-1,.gc-only-2,.gc-only-3').hide();
+        $('.gc-common').show();
+        $('.gc-base-info').show();
+        if (type >= 0 && type <= 3) {
+            $('.gc-only-' + type).show();
+            if (type === 0) {
+                $('#gcMinBetLbl').text('起押值');
+                $('#gcMaxBetLbl').text('押分限红');
+            } else {
+                $('#gcMinBetLbl').text('最小押分');
+                $('#gcMaxBetLbl').text('最大押分');
+            }
+        }
+        $('#gcNewTable').toggle(true);
+    }
+
+    function gcUpdateSaveBtn() {
+        var isNew = parseInt($('#gcId').val(), 10) < 0;
+        $('#gcSave').text(isNew ? '新建桌台' : '更新桌台');
+    }
+
+    function gcLoadTables(afterLoad) {
+        var gameId = parseInt($('#gcGameSel').val(), 10);
+        var gameType = parseInt($('#gcGameSel').find('option:selected').attr('data-type'), 10);
+        $('#gcGameId').val(isNaN(gameId) ? -1 : gameId);
+        $('#gcGameType').val(isNaN(gameType) ? -1 : gameType);
+        gcApplyType();
+        $('#gcTableList').empty();
+        GC_TABLES = [];
+        if (isNaN(gameId) || gameId < 0) {
+            $('#gcTableEmpty').show().text('请选择上方游戏以加载桌台。');
+            $('#gcCurTableName').text('');
+            $('#gcId').val(-1);
+            gcSetParaVisible(false);
+            gcUpdateSaveBtn();
+            return;
+        }
+        request(GC_URL.tableConfig, { GAME_ID: gameId, GAME_TYPE: gameType }, function (data) {
+            if (!data || data.code != 1) {
+                gcMsg(data);
+                return;
+            }
+            GC_TABLES = data.datas || [];
+            gcRenderTableList();
+            gcSetParaVisible(true);
+            if (typeof afterLoad === 'function') afterLoad();
+            else if (gameType === 3) {
+                if (GC_TABLES.length > 0) gcSelectTableById(GC_TABLES[0].id);
+            }
+            else gcNewTable();
+        });
+    }
+
+    function gcFill(t) {
+        if (!t) return;
+        var type = gcGetType();
+        $('#gcId').val(t.id);
+        $('#gcTableName').val(t.tableName);
+        $('#gcMinBet').val(t.minBet);
+        $('#gcMaxBet').val(t.maxBet);
+        $('#gcCoinSc').val(t.coinSc);
+        $('#gcExCoin').val(t.exCoin);
+        $('#gcCoinNeed').val(t.coinNeed);
+        $('#gcGameMo').val(t.gameMo);
+        $('#gcIdleSec').val(t.idleFireTimeoutSec);
+        $('#gcEnabled').prop('checked', t.enabled == 1);
+        if (type === 0) {
+            $('#gcBetTime').val(t.betTime);
+            $('#gcBankerScNeed').val(t.bankerScNeed);
+            $('#gcBetMinVice').val(t.betMinVice);
+            $('#gcBetMaxVice').val(t.betMaxVice);
+            $('#gcBetMinDraw').val(t.betMinDraw);
+            $('#gcBetMaxDraw').val(t.betMaxDraw);
+            $('#gcScLimitSing').val(t.scLimitSing);
+            $('#gcScLimitAll').val(t.scLimitAll);
+            $('#gcDif').val(t.dif);
+            $('#gcHar').val(t.har);
+            $('#gcSiteType').val(t.siteType);
+            $('#gcBankerDif').val(t.bankerDif);
+            $('#gcBankerHar').val(t.bankerHar);
+            $('#gcBankerSiteType').val(t.bankerSiteType);
+            $('#gcBankerPer').val(t.bankerPer);
+            gcFillChips(t.betScores);
+        } else if (type === 1) {
+            $('#gcHypeType').val(t.hypeType);
+            $('#gcCardDif').val(t.cardDif);
+        } else if (type === 2) {
+            $('#gcFishDif').val(t.fishDif);
+            $('#gcFishSiteType').val(t.fishSiteType);
+        } else if (type === 3) {
+            $('#gcWinRate').val(t.winRate);
+            $('#gcExRate').val(t.exchangeRate);
+        }
+        $('#gcCurTableName').text('当前编辑：' + t.tableName);
+        gcSyncSwitch();
+        gcUpdateSaveBtn();
+    }
+
+    function gcFillChips(scores) {
+        var arr = (scores || '').split(',');
+        for (var i = 0; i < 5; i++) {
+            var v = (i < arr.length && arr[i] !== '') ? arr[i] : 0;
+            $('#gcChip' + i).val(v);
+        }
+    }
+
+    function gcCollectChips() {
+        var arr = [];
+        for (var i = 0; i < 5; i++) {
+            var v = parseInt($('#gcChip' + i).val(), 10);
+            arr.push(isNaN(v) ? 0 : v);
+        }
+        $('#gcBetScores').val(arr.join(','));
+    }
+
+    function gcZeroForm() {
+        $('#gcForm input[type=number]').val(0);
+        $('#gcForm input[type=text]').val('');
+        $('#gcCardDif').val('');
+        $('#gcEnabled').prop('checked', false);
+        $('#gcBetScores').val('');
+        gcSyncSwitch();
+    }
+
+    function gcNewTable() {
+        var type = gcGetType();
+        if (type != 0 && type != 1 && type != 2 && type != 3) {
+            showToast('请先选择游戏类型与游戏！', 'warning');
+            return;
+        }
+        var gameId = parseInt($('#gcGameSel').val(), 10);
+        $('#gcTableList li').removeClass('active');
+        var src = gcLatestTable();
+        if (src) {
+            gcFill(src);
+        } else {
+            gcZeroForm();
+            $('#gcEnabled').prop('checked', true);
+        }
+        $('#gcId').val(-1);
+        $('#gcGameId').val(isNaN(gameId) ? -1 : gameId);
+        $('#gcGameType').val(type);
+        $('#gcTableName').val('');
+        gcApplyType();
+        $('#gcCurTableName').text(src ? '新建桌台（已套用最近桌台参数，填写桌名即可保存）' : '新建桌台');
+        gcSyncSwitch();
+        gcUpdateSaveBtn();
+    }
+
+    function gcSyncSwitch() {
+        $('#gcEnabledVal').val($('#gcEnabled').is(':checked') ? 1 : 0);
+    }
+
+    function gcSave() {
+        var type = gcGetType();
+        if (type != 0 && type != 1 && type != 2 && type != 3) {
+            showToast('请先选择游戏类型与对应游戏的桌台！', 'warning');
+            return;
+        }
+        if (parseInt($('#gcGameId').val(), 10) < 0) {
+            showToast('请先选择需要配置的游戏！', 'warning');
+            return;
+        }
+        var minBet = parseFloat($('#gcMinBet').val());
+        var maxBet = parseFloat($('#gcMaxBet').val());
+        if (isNaN(minBet) || isNaN(maxBet) || minBet < 0 || maxBet < 0) {
+            showToast('下注值必须为不小于 0 的数字！', 'warning');
+            return;
+        }
+        if (maxBet > 0 && minBet > maxBet) {
+            showToast('最小值不能大于最大值！', 'warning');
+            return;
+        }
+        gcSyncSwitch();
+        gcCollectChips();
+        var savedId = parseInt($('#gcId').val(), 10);
+        var wasNew = isNaN(savedId) || savedId < 0;
+        var para = $('#gcForm').serializeObject();
+        para.__RequestVerificationToken = $('#gcForm [name="__RequestVerificationToken"]').val();
+        request(GC_URL.save, para, function (data) {
+            gcMsg(data);
+            if (data && (data.code == 1 || data.datas === true)) {
+                gcLoadTables(function () {
+                    if (wasNew) gcNewTable();
+                    else gcSelectTableById(savedId);
+                });
+            }
+        });
+    }
+
+    function gcDelete() {
+        var savedId = parseInt($('#gcId').val(), 10);
+        if (isNaN(savedId) || savedId < 0) {
+            showToast('请先在左侧选择要删除的桌台！', 'warning');
+            return;
+        }
+        confirm('确定要彻底删除该桌台吗？\n此操作将从数据库永久清除，不可恢复！', function () {
+            var para = {
+                ID: savedId,
+                GAME_TYPE: gcGetType(),
+                __RequestVerificationToken: $('#gcForm [name="__RequestVerificationToken"]').val()
+            };
+            request(GC_URL.delete, para, function (data) {
+                var ok = data && (data.code == 1 || data.datas === true);
+                if (ok) {
+                    // 先本地移除已删除桌台并立即重渲染，保证 UI 即时响应，且不被任何提示异常阻断；
+                    GC_TABLES = $.grep(GC_TABLES, function (t) { return parseInt(t.id, 10) !== savedId; });
+                    gcRenderTableList();
+                    // 再向服务端拉取最新列表做一次权威校正同步。
+                    gcLoadTables();
+                }
+                gcMsg(data);
+            });
+        });
+    }
+
+    $(function () {
+        pluginInit();
+        gcLoadGames();
+        gcSetParaVisible(false);
+        $('#gcTypeSel').on('change', gcFillGameSel);
+        $('#gcGameSel').on('change', function () { gcLoadTables(); });
+        $('#gcRefresh').on('click', function () { gcLoadTables(); });
+        $('#gcDelete').on('click', gcDelete);
+        $('#gcReset').on('click', gcZeroForm);
+        $('#gcSave').on('click', gcSave);
+        $('#gcNewTable').on('click', gcNewTable);
+        $('#gcEnabled').on('change', gcSyncSwitch);
+        $('#gcTableList').on('click', 'li', function () {
+            $('#gcTableList li').removeClass('active');
+            $(this).addClass('active');
+            var idx = parseInt($(this).attr('data-idx'), 10);
+            if (!isNaN(idx)) gcFill(GC_TABLES[idx]);
+        });
+    });
+</script>

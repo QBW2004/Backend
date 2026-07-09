@@ -1,0 +1,511 @@
+﻿
+@{
+    Layout = "~/Views/Shared/Layout/_ContentLayout.cshtml";
+
+    ViewBag.RouteMap = "机器人设置";
+    M_LoginUser loginUser = WebHelper.GetLoginInfo();
+}
+<script src="~/Scripts/jquery.form.js"></script>
+@section include_res{
+    <script>
+        $(function () {
+            // 加载指定的模块
+            easyloader.load(['textbox', 'linkbutton', 'datagrid'], function () {
+                //适应窗口大小变化
+                $(window).resize(function () {
+                    if ($('body').data('grid-init')) {
+                        setGridSize();
+                    }
+                });
+                //初始化插件
+                pluginInit();
+                //初始化查询
+                queryData();
+
+            });
+        })
+        //重置表格大小
+        function setGridSize(param) {
+            var w = $(window).width() - 8;
+            var h = $(window).height() - 78;
+            resizeGrid('tb_Robot', 'auto', h);
+        }
+        //查询数据
+        function queryData() {
+            var para = $("#frm_srch").serializeObject();
+            bindGridData(para);
+        }
+        //绑定表格数据
+        function bindGridData(para) {
+            if (!$('body').data('grid-init')) {
+                $('#tb_Robot').datagrid({
+                    url: "/Game/UserRobot/GetRobot",
+                    queryParams: $.extend({}, para),
+                    checkbox: true,
+                    singleSelect: false,
+
+                    pagination: true,
+                    fitColumns: true,
+                    striped: true,
+                    rownumbers: true,
+                    height: 768,
+                    pageSize: 20,
+                    pageList: [10, 20, 50],
+                    idField: 'ID',
+
+                    onBeforeLoad: setGridSize,
+                    onLoadSuccess: onLoaded
+                });
+            } else {
+                $('#tb_Robot').datagrid('load', para);
+            }
+        }
+
+        function SaveRobot() {
+            @Html.Raw(@"var para = $('#form3').serializeObject();
+                request('/Game/UserRobot/SaveRobot', para, function (data) {
+                    //提示消息
+                    showMsg(data);
+                    if (data && data.code == 1) {
+                        $('#addWin').dialog('close');
+                        $('#form3').form('reset');
+                        queryData();//重新绑定表格数据
+                    }
+             });");
+        }
+        function SaveBatchRobot() {
+            @Html.Raw(@"var para = $('#form6').serializeObject();
+                request('/Game/UserRobot/SaveBatchRobot', para, function (data) {
+                    //提示消息
+                    showMsg(data);
+                    if (data && data.code == 1) {
+                        $('#addBatchWin').dialog('close');
+                        $('#form6').form('reset');
+                        queryData();//重新绑定表格数据
+                    }
+             });");
+        }
+
+        function deleteRobot(id) {
+           @Html.Raw(@" confirm('确认删除机器人？', function () {
+                request('/Game/UserRobot/DelRobot', { ID: id }, function (data) {
+                    //提示消息
+                    showMsg(data);
+                    if (data && data.code == 1) {
+                        queryData();//重新加载数据
+                    }
+                });
+            });");
+        }
+
+        function batchDelete() {
+            var ids = [];
+            var planObj = $('#tb_Robot').datagrid('getSelections');//获得选中行数据；
+            if (planObj.length === 0) {
+                alert("删除错误,请至少选择一条记录!");
+                return;
+            }
+            for (var i = 0; i < planObj.length; i++) {
+                request('/Game/UserRobot/DelRobot', { ID: planObj[i].ID }, function (data) {
+                    //提示消息
+                    //showMsg(data);
+                    if (data && data.code == 1) {
+                        queryData();//重新加载数据
+                    }
+                });
+            }
+            showMsg("删除成功");
+        }
+
+        function batchUpdate() {
+            var ids = [];
+            var planObj = $('#tb_Robot').datagrid('getSelections');//获得选中行数据；
+            if (planObj.length === 0) {
+                alert("修改错误,请至少选择一条记录!");
+                return;
+            }
+            for (var i = 0; i < planObj.length; i++) {
+                ids.push(planObj[i].ID);
+            }
+            batchUpdateWin();
+            $('#hfUID7').val(ids);
+        }
+
+
+        function showAddWin() {
+            var para = {
+                winId: '#addWin',
+                title: '【添加机器人】',
+                height: 330,
+                iconCls: 'icon-user_add'
+            };
+            openWin(para);
+        }
+
+        function batchUpdateWin() {
+            var para = {
+                winId: '#updateBatchWin',
+                title: '【批量修改机器人】',
+                height: 330,
+                iconCls: 'icon-user-edit',
+            };
+            openWin(para);
+        }
+
+        function batchAdd() {
+            var para = {
+                winId: '#addBatchWin',
+                title: '【批量添加机器人】',
+                height: 330,
+                iconCls: 'icon-user_add'
+            };
+            openWin(para);
+        }
+
+        function showUpdate(uid) {
+            var para = {
+                winId: '#updateWin',
+                title: '【修改机器人】',
+                height: 370,
+                iconCls: 'icon-user-edit',
+                callBack: function () {
+                    $('#txtID1').textbox('setValue', uid);
+                    $('#hfUID1').val(uid);
+                }
+            };
+            openWin(para);
+        }
+
+        function setUp(uid) {
+            var para = {
+                winId: '#setUp',
+                title: '【设置】',
+                iconCls: 'icon-user-edit',
+                callBack: function () {
+                    $('#txtID2').textbox('setValue', uid);
+                    $('#hfUID2').val(uid);
+                }
+            };
+            openWin(para);
+        }
+        function SetUpdate() {
+            @Html.Raw(@"var para = $('#form5').serializeObject();
+                request('/Game/UserRobot/SetUpdate', para, function (data) {
+                    //提示消息
+                    showMsg(data);
+                    if (data && data.code == 1) {
+                        $('#setUp').dialog('close');
+                        $('#form5').form('reset');
+                        queryData();//重新绑定表格数据
+                    }
+             });");
+        }
+        function UpdateRobot() {
+            @Html.Raw(@"var para = $('#form4').serializeObject();
+                request('/Game/UserRobot/UpdateRobot', para, function (data) {
+                    //提示消息
+                    showMsg(data);
+                    if (data && data.code == 1) {
+                        $('#updateWin').dialog('close');
+                        $('#form4').form('reset');
+                        queryData();//重新绑定表格数据
+                    }
+             });");
+        }
+        function updateBatchRobot() {
+            @Html.Raw(@"var para = $('#form7').serializeObject();
+                request('/Game/UserRobot/UpdateBatchRobot', para, function (data) {
+                    //提示消息
+                    showMsg(data);
+                    if (data && data.code == 1) {
+                        $('#updateBatchWin').dialog('close');
+                        $('#form7').form('reset');
+                        queryData();//重新绑定表格数据
+                    }
+             });");
+        }
+
+
+        function fmtOpt(value, rowData, rowIndex) {
+            var arr = [];
+            arr.push('<a href="javascript:void(0)" class="blue Lpd5" onclick="showUpdate(\'' + rowData.ID + '\')">修改</a>');
+            arr.push('<a href="javascript:void(0)" class="red Lpd5" onclick="deleteRobot(\'' + rowData.ID + '\')">删除</a>');
+            return arr.join(' ');
+        }
+
+
+
+        function valSelData() {
+            var arr = [];
+            for (var i = 0; i < 10; i++)
+                if (i == 0)
+                    arr.push({ id: i, text: i });
+                else
+                    arr.push({ id: i, text: i });
+            return arr;
+        }
+
+        function actionSelData() {
+            return [
+                { id: 0, text: '男', selected: true },
+                { id: 1, text: '女' }
+            ];
+        }
+    </script>
+}
+
+<form id="frm_srch">
+    <table width="100%" border="0" cellpadding="0" cellspacing="0" class="titleQueBg" style="height:40px;">
+        <tr>
+            <td>
+                <div class="left Lpd5">
+                    机器人账户
+                    <input type="text" class="easyui-textbox" name="UserName" id="txt_UserName" />
+                </div>
+                <div class="left Lpd5">
+                    机器人昵称
+                    <input type="text" class="easyui-textbox" name="UserNick" id="txt_UserNick" />
+                </div>
+
+                <div class="left Lmg10">
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="queryData();" data-options="plain:true,iconCls:'icon-search'">查找</a>
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="showAddWin();" data-options="plain:true,iconCls:'icon-add'">添加机器人</a>
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="batchAdd();" data-options="plain:true">批量添加</a>
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="batchUpdate();" data-options="plain:true">批量修改</a>
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="batchDelete();" data-options="plain:true">批量删除</a>
+                </div>
+            </td>
+        </tr>
+    </table>
+</form>
+<table id="tb_Robot">
+    <thead>
+        <tr>
+            <th data-options="field:'ck',checkbox:true"></th>
+            <th field="ID" width="110">机器人用户编号</th>
+            <th field="UserName" width="110">机器人账户</th>
+            <th field="UserNick" width="110">机器人昵称</th>
+            <th field="Ico" width="110">头像编号</th>
+            <th field="Lev" width="110">等级</th>
+            <th field="Sex" width="110">性别</th>
+            <th field="Gold" width="110">金币</th>
+            <th field="PWD" width="150" align="center" formatter="fmtOpt">操作</th>
+
+
+        </tr>
+    </thead>
+</table>
+
+
+@*添加机器人窗口*@
+<div id="addWin" class="hide">
+    <form id="form3">
+        <table cellpadding="0" cellspacing="0" border="0" width="100%" align="center">
+
+            <tr>
+                <td align="right">机器人账户</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-textbox win-txt" id="txtUserName" name="UserName" />
+                </td>
+            </tr>
+            <tr>
+                <td align="right">机器人昵称</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-textbox win-txt" id="txtUserNick" name="UserNick" />
+                </td>
+            </tr>
+            <tr>
+                <td align="right">头像编号</td>
+                <td align="left" class="pd5">
+                    <select class="easyui-combobox win-txt" id="selIco" name="Ico" data-options="valueField:'id',textField:'text',panelHeight:150,data:valSelData()"></select>
+                </td>
+            </tr>
+            <tr>
+                <td align="right">等级</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-textbox win-txt" id="txtLev" name="Lev" />
+                </td>
+            </tr>
+            <tr>
+                <td align="right">性别</td>
+                <td align="left" class="pd5">
+                    <select class="easyui-combobox win-txt" id="selSex" name="Sex" data-options="valueField:'id',textField:'text',panelHeight:150,data:actionSelData()"></select>
+                </td>
+            </tr>
+
+            <tr>
+                <td align="right">金币</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-textbox win-txt" id="txtGold" name="Gold" />
+                </td>
+            </tr>
+            <tr>
+                <td align="center" colspan="2" class="pd5">
+                    <input type="hidden" id="hfUID" name="ID" value="0" />
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="SaveRobot()" data-options="plain:true,iconCls:'icon-save'">保存</a>
+                </td>
+            </tr>
+        </table>
+    </form>
+</div>
+
+@*修改机器人窗口*@
+<div id="updateWin" class="hide">
+    <form id="form4">
+        <table cellpadding="0" cellspacing="0" border="0" width="100%" align="center">
+
+            <tr>
+                <td align="right">机器人用户编号</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-textbox win-txt" id="txtID1" disabled />
+                </td>
+            </tr>
+            <tr>
+                <td align="right">机器人账户</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-textbox win-txt" id="txtUserName1" name="UserName1" />
+                </td>
+            </tr>
+            @*<tr>
+                    <td align="right">机器人昵称</td>
+                    <td align="left" class="pd5">
+                        <input class="easyui-textbox win-txt" id="txtUserNick1" name="UserNick1" />
+                    </td>
+                </tr>*@
+            <tr>
+                <td align="right">头像编号</td>
+                <td align="left" class="pd5">
+                    <select class="easyui-combobox win-txt" id="selIco1" name="Ico1" data-options="valueField:'id',textField:'text',panelHeight:150,data:valSelData()"></select>
+                </td>
+            </tr>
+            <tr>
+                <td align="right">等级</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-textbox win-txt" id="txtLev1" name="Lev1" />
+                </td>
+            </tr>
+            <tr>
+                <td align="right">性别</td>
+                <td align="left" class="pd5">
+                    <select class="easyui-combobox win-txt" id="selSex1" name="Sex1" data-options="valueField:'id',textField:'text',panelHeight:150,data:actionSelData()"></select>
+                </td>
+            </tr>
+
+            <tr>
+                <td align="right">金币</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-textbox win-txt" id="txtGold1" name="Gold1" />
+                </td>
+            </tr>
+            <tr>
+                <td align="center" colspan="2" class="pd5">
+                    <input type="hidden" id="hfUID1" name="ID1" value="0" />
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="UpdateRobot()" data-options="plain:true,iconCls:'icon-save'">保存</a>
+                </td>
+            </tr>
+        </table>
+    </form>
+</div>
+
+@*设置机器人窗口*@
+<div id="setUp" class="hide">
+    <form id="form5">
+        <table cellpadding="0" cellspacing="0" border="0" width="100%" align="center">
+
+            <tr>
+                <td align="right">机器人用户编号</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-textbox win-txt" id="txtID2" disabled />
+                </td>
+            </tr>
+            <tr>
+                <td align="right">机器人数量</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-textbox win-txt" id="txtNum2" name="Num2" />
+                </td>
+            </tr>
+
+            <tr>
+                <td align="center" colspan="2" class="pd5">
+                    <input type="hidden" id="hfUID2" name="ID2" value="0" />
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="SetUpdate()" data-options="plain:true,iconCls:'icon-save'">保存</a>
+                </td>
+            </tr>
+        </table>
+    </form>
+</div>
+
+
+@*批量添加机器人窗口*@
+<div id="addBatchWin" class="hide">
+    <form id="form6">
+        <table cellpadding="0" cellspacing="0" border="0" width="100%" align="center">
+            <tr>
+                <td align="right">头像编号</td>
+                <td align="left" class="pd5">
+                    <select class="easyui-combobox win-txt" id="selIco" name="Ico" data-options="valueField:'id',textField:'text',panelHeight:150,data:valSelData()"></select>
+                </td>
+            </tr>
+            <tr>
+                <td align="right">等级</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-textbox win-txt" id="txtLev" name="Lev" />
+                </td>
+            </tr>
+            <tr>
+                <td align="right">性别</td>
+                <td align="left" class="pd5">
+                    <select class="easyui-combobox win-txt" id="selSex" name="Sex" data-options="valueField:'id',textField:'text',panelHeight:150,data:actionSelData()"></select>
+                </td>
+            </tr>
+
+            <tr>
+                <td align="right">金币</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-textbox win-txt" id="txtGold" name="Gold" />
+                </td>
+            </tr>
+
+            <tr>
+                <td align="right">批量添加机器人数量</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-textbox win-txt" id="txtNum" name="Num" />
+                </td>
+            </tr>
+            <tr>
+                <td align="center" colspan="2" class="pd5">
+                    <input type="hidden" id="hfUID" name="ID" value="0" />
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="SaveBatchRobot()" data-options="plain:true,iconCls:'icon-save'">保存</a>
+                </td>
+            </tr>
+        </table>
+    </form>
+</div>
+
+@*批量修改机器人窗口*@
+<div id="updateBatchWin" class="hide">
+    <form id="form7">
+        <table cellpadding="0" cellspacing="0" border="0" width="100%" align="center">
+            <tr>
+                <td align="right">机器人昵称</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-textbox win-txt" id="txtUserNick" name="UserNick" />
+                </td>
+            </tr>
+            <tr>
+                <td align="right">金币</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-textbox win-txt" id="txtGold" name="Gold" />
+                </td>
+            </tr>
+
+         
+            <tr>
+                <td align="center" colspan="2" class="pd5">
+                    <input type="hidden" id="hfUID7" name="ID7" value="0" />
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="updateBatchRobot()" data-options="plain:true,iconCls:'icon-save'">保存</a>
+                </td>
+            </tr>
+        </table>
+    </form>
+</div>

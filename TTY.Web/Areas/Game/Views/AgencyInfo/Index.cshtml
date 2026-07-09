@@ -1,0 +1,805 @@
+﻿
+@{
+    Layout = "~/Views/Shared/Layout/_ContentLayout.cshtml";
+    ViewBag.RouteMap = "代理管理";
+    M_LoginUser loginUser = WebHelper.GetLoginInfo();
+}
+
+@section include_res{
+    <script>
+        $(function () {
+            // 加载指定的模块
+            easyloader.load(['textbox', 'form', 'combobox', 'linkbutton', 'datagrid'], function () {
+                //适应窗口大小变化
+                $(window).resize(function () {
+                    if ($('body').data('grid-init')) {
+                        setGridSize();
+                    }
+                });
+                //初始化插件
+                pluginInit();
+                //初始化查询
+                queryData();
+            });
+        })
+        //重置表格大小
+        function setGridSize(param) {
+            var w = $(window).width() - 8;
+            var h = $(window).height() - 78;
+            resizeGrid('tb_AgencyInfo', 'auto', h);
+        }
+        //查询数据
+        function queryData() {
+            var para = $("#frm_srch").serializeObject();
+
+            bindGridData(para);
+        }
+        //绑定表格数据
+        function bindGridData(para) {
+
+            if (!$('body').data('grid-init')) {
+                $('#tb_AgencyInfo').datagrid({
+                    url: "/Game/AgencyInfo/GetAgencies",
+                    queryParams: $.extend({}, para),
+                    pagination: true,
+                    fitColumns: false,
+                    singleSelect: true,
+                    striped: false,
+                    rownumbers: true,
+                    nowrap: true,
+                    //showFooter: true,
+                    height: 768,
+                    pageSize: 20,
+                    pageList: [10, 20, 50],
+                    idField: 'ID',
+                    rowStyler: agencyRowStyler,
+                    onBeforeLoad: setGridSize,
+                    onLoadSuccess: function () {
+                        $('#tb_AgencyInfo').datagrid('getPanel').addClass('agency-info-grid');
+                        onLoaded();
+                        setTimeout(function () {
+                            autoFitAgencyColumns();
+                            bindAgencyRowNumberToggle();
+                            updateAgencyRowNumbers();
+                        }, 0);
+                    }
+                });
+            } else {
+                $('#tb_AgencyInfo').datagrid('load', para);
+            }
+        }
+        //格式化
+        function fmtRechargeSwitch(value, rowData, rowIndex) {
+            if (value == 1)
+                return '<span class="agency-state-on">开</span>';
+            else
+                return '<span class="agency-state-off">关</span>';
+        }
+        function fmtOpt(value, rowData, rowIndex) {
+            var isSelf = rowData.ID == "@(loginUser?.Accounts)";
+            var isSuperAdmin = @((loginUser?.UserPriv == 0).ToString().ToLower());
+            if (isSelf && !isSuperAdmin)
+                return "";
+
+            var features = [];
+            var states = [];
+            features.push('<a href="javascript:void(0)" class="agency-action-link agency-action-feature" onclick="showChgWin(\'' + rowData.ID + '\')">改密码</a>');
+            features.push('<a href="javascript:void(0)" class="agency-action-link agency-action-feature" onclick="showCustomerServiceUrl(\'' + rowData.ID + '\')">客服</a>');
+            if (!isSelf) {
+                features.push('<a href="javascript:void(0)" class="agency-action-link agency-action-delete" onclick="DeleteAdmin(\'' + rowData.ID + '\')">删除</a>');
+                if (rowData.RE_ENABLE == 0)
+                    states.push('<a href="javascript:void(0)" class="agency-action-link agency-action-enabled" onclick="setRecharge(\'' + rowData.ID + '\',1)">启用</a>');
+                else
+                    states.push('<a href="javascript:void(0)" class="agency-action-link agency-action-disabled" onclick="setRecharge(\'' + rowData.ID + '\',0)">禁用</a>');
+            }
+
+            if (canShowAgencyLimit(rowData)) {
+                features.push('<a href="javascript:void(0)" class="agency-action-link agency-action-feature" onclick="showLimitWin(\'' + rowData.ID + '\')">分代上限</a>');
+            }
+            @if (loginUser?.UserPriv == 0)
+            {
+                @Html.Raw("features.push('<a href=\"javascript:void(0)\" class=\"agency-action-link agency-action-feature\" onclick=\"showInviteWin(\\\'' + rowData.ID + '\\\',\\\'' + (rowData.InviteCode || '') + '\\\')\">邀请码</a>');");
+            }
+
+            return features.concat(states).join('');
+        }
+        function fmtPriv(value, rowData, rowIndex) {
+            if (value == 0)
+                return '管理员';
+            if (value > 0)
+                return value + '级代理';
+            return '--';
+        }
+        function fmtAgencyLimit(value, rowData, rowIndex) {
+            if (value == 0)
+                return '无限制';
+            return value;
+        }
+        function fmtID(value, rowData, rowIndex) {
+            if (rowData.ID == "@(loginUser?.Accounts)")
+                return value;
+            return '<a href="javascript:void(0)" onclick="quickQuery(\'' + value + '\')">' + value + '</a>';
+        }
+        function fmtCoins(value, rowData, rowIndex) {
+            return top.goldFormat(value);
+        }
+
+        function canShowAgencyLimit(rowData) {
+            if (!rowData || rowData.PRIV <= 0)
+                return false;
+            if (@((loginUser?.UserPriv == 0).ToString().ToLower()))
+                return true;
+            return rowData.CanCreateChildAgent === true || rowData.CanCreateChildAgent == 1;
+        }
+
+        function agencyRowStyler(index, rowData) {
+            var color = rowData && rowData.AgencyGroupIndex % 2 == 1 ? '#eeeeee' : '#ffffff';
+            return 'background-color:' + color + ';';
+        }
+
+        function autoFitAgencyColumns() {
+            var grid = $('#tb_AgencyInfo');
+            var fields = grid.datagrid('getColumnFields', true).concat(grid.datagrid('getColumnFields', false));
+            var panel = grid.datagrid('getPanel');
+            var rows = grid.datagrid('getRows');
+
+            for (var i = 0; i < fields.length; i++) {
+                var field = fields[i];
+                if (!field)
+                    continue;
+
+                var column = grid.datagrid('getColumnOption', field);
+                if (!column || column.hidden)
+                    continue;
+
+                grid.datagrid('autoSizeColumn', field);
+                var headerText = column.title || panel.find('.datagrid-header td[field="' + field + '"] .datagrid-cell').text();
+                var maxWidth = measureAgencyText(headerText);
+                var headerCell = panel.find('.datagrid-header td[field="' + field + '"] .datagrid-cell');
+                if (headerCell.length > 0)
+                    maxWidth = Math.max(maxWidth, headerCell[0].scrollWidth);
+
+                for (var j = 0; j < rows.length; j++) {
+                    var row = rows[j];
+                    var cellValue = row[field];
+                    if (column.formatter)
+                        cellValue = column.formatter(row[field], row, j);
+                    maxWidth = Math.max(maxWidth, measureAgencyText(stripAgencyHtml(cellValue)));
+                }
+                panel.find('.datagrid-body td[field="' + field + '"] .datagrid-cell').each(function () {
+                    maxWidth = Math.max(maxWidth, this.scrollWidth);
+                });
+
+                setAgencyColumnWidth(grid, field, Math.ceil(maxWidth + 10));
+            }
+            grid.datagrid('fixColumnSize');
+        }
+
+        function setAgencyColumnWidth(grid, field, width) {
+            var column = grid.datagrid('getColumnOption', field);
+            if (!column)
+                return;
+
+            column.width = width;
+            var panel = grid.datagrid('getPanel');
+            var selector = 'td[field="' + field + '"]';
+            panel.find('.datagrid-header ' + selector + ' .datagrid-cell').outerWidth(width);
+            panel.find('.datagrid-body ' + selector + ' .datagrid-cell').outerWidth(width);
+        }
+
+        function measureAgencyText(text) {
+            var value = text == null ? '' : String(text);
+            if (!window._agencyTextMeasure) {
+                window._agencyTextMeasure = $('<span></span>').css({
+                    position: 'absolute',
+                    top: '-9999px',
+                    left: '-9999px',
+                    visibility: 'hidden',
+                    whiteSpace: 'nowrap',
+                    fontSize: '12px',
+                    fontFamily: 'Arial, Microsoft YaHei, sans-serif'
+                }).appendTo('body');
+            }
+            window._agencyTextMeasure.text(value);
+            return window._agencyTextMeasure.outerWidth();
+        }
+
+        function stripAgencyHtml(value) {
+            if (value == null)
+                return '';
+            return $('<div></div>').html(String(value).replace(/<\/a>/gi, '</a> ')).text().replace(/\s+/g, ' ').trim();
+        }
+
+        function bindAgencyRowNumberToggle() {
+            var panel = $('#tb_AgencyInfo').datagrid('getPanel');
+            panel.find('div.datagrid-cell-rownumber').css('cursor', 'pointer').off('click.agencyTree').on('click.agencyTree', function () {
+                var rowIndex = parseInt($(this).closest('tr.datagrid-row').attr('datagrid-row-index'), 10);
+                toggleAgencyChildren(rowIndex);
+            });
+        }
+
+        function updateAgencyRowNumbers() {
+            var isSuperAdmin = @((loginUser?.UserPriv == 0).ToString().ToLower());
+            if (!isSuperAdmin)
+                return;
+
+            var grid = $('#tb_AgencyInfo');
+            var opts = grid.datagrid('options');
+            var rows = grid.datagrid('getRows');
+            var panel = grid.datagrid('getPanel');
+            var number = (opts.pageNumber - 1) * opts.pageSize + 1;
+
+            for (var i = 0; i < rows.length; i++) {
+                var cell = panel.find('tr[datagrid-row-index="' + i + '"] div.datagrid-cell-rownumber');
+                if (rows[i].ID == "@(loginUser?.Accounts)") {
+                    cell.text('');
+                    continue;
+                }
+                cell.text(number++);
+            }
+        }
+
+        function toggleAgencyChildren(rowIndex) {
+            var rows = $('#tb_AgencyInfo').datagrid('getRows');
+            var row = rows[rowIndex];
+            if (!row || !row.HasChildAgency)
+                return;
+
+            row._ChildrenCollapsed = !row._ChildrenCollapsed;
+            var baseDepth = row.AgencyTreeDepth || 0;
+            var panel = $('#tb_AgencyInfo').datagrid('getPanel');
+            for (var i = rowIndex + 1; i < rows.length; i++) {
+                var child = rows[i];
+                if ((child.AgencyTreeDepth || 0) <= baseDepth)
+                    break;
+                var tr = panel.find('tr[datagrid-row-index="' + i + '"]');
+                if (row._ChildrenCollapsed)
+                    tr.stop(true, true).slideUp(160);
+                else if (!hasCollapsedParent(rows, i))
+                    tr.stop(true, true).slideDown(160);
+            }
+        }
+
+        function hasCollapsedParent(rows, rowIndex) {
+            var depth = rows[rowIndex].AgencyTreeDepth || 0;
+            for (var i = rowIndex - 1; i >= 0; i--) {
+                var currentDepth = rows[i].AgencyTreeDepth || 0;
+                if (currentDepth < depth) {
+                    if (rows[i]._ChildrenCollapsed)
+                        return true;
+                    depth = currentDepth;
+                }
+            }
+            return false;
+        }
+
+        function quickQuery(account) {
+            $('#txtS_Agency').textbox('setValue', account);
+            queryData();
+        }
+
+        function showAgencyToast(message, type) {
+            var toast = $('#agencyToast');
+            if (toast.length < 1) {
+                toast = $('<div id="agencyToast"></div>').appendTo('body');
+            }
+            var color = '#4b89dc';
+            if (type == 'success')
+                color = '#3c9b5f';
+            else if (type == 'danger' || type == 'error')
+                color = '#d9534f';
+            else if (type == 'warning')
+                color = '#f0ad4e';
+            toast.stop(true, true)
+                .text(message)
+                .css({
+                    position: 'fixed',
+                    top: '18px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    zIndex: 99999,
+                    background: color,
+                    color: '#fff',
+                    padding: '10px 22px',
+                    borderRadius: '4px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,.18)',
+                    fontSize: '14px',
+                    lineHeight: '20px',
+                    display: 'none'
+                })
+                .fadeIn(120)
+                .delay(5000)
+                .fadeOut(180);
+        }
+
+        function showAgencyLimitToast(message) {
+            showAgencyToast(message, 'danger');
+        }
+
+        function showAgencyResult(data, dangerOnSuccess) {
+            if (!data)
+                return;
+            if (data.code == -1) {
+                loginTimeoutCallback(data);
+                return;
+            }
+            var message = data.msg ? data.msg : data.content;
+            var type = data.code < 1 ? 'danger' : (dangerOnSuccess ? 'danger' : 'success');
+            showAgencyToast(message, type);
+        }
+
+        function setRecharge(id, flag) {
+            confirm('确认' + (flag == 0 ? '禁用' : '启用') + '所选代理？', function () {
+                request('/Game/AgencyInfo/SetRecharge', { ID: id, RE_ENABLE: flag }, function (data) {
+                    //提示消息
+                    showAgencyResult(data);
+                    if (data && data.code == 1) {
+                        //queryData();//重新加载数据
+                        $('#tb_AgencyInfo').datagrid('reload');
+                    }
+                });
+            });
+        }
+
+        function DeleteAdmin(id, flag) {
+            var msg = '确认删除代理【' + id + '】？<br/><span style="color:#d9534f;">如果该代理名下存在下级代理，将同步删除整条下级代理线及相关玩家数据，删除后无法恢复。</span>';
+            confirm(msg, function () {
+                request('/Game/AgencyInfo/DeleteAdmin', { ID: id }, function (data) {
+                    //提示消息
+                    showAgencyResult(data, data && data.code == 1);
+                    if (data && data.code == 1) {
+                        //queryData();//重新加载数据
+                        $('#tb_AgencyInfo').datagrid('reload');
+                    }
+                });
+            });
+        }
+
+        function showChgWin(uid) {
+            var para = {
+                winId: '#chgWin',
+                title: '【修改密码】',
+                iconCls: 'icon-user_edit',
+                callBack: function () {
+                    $('#txtE_ID').textbox('setValue', uid);
+                    $('#hfID').val(uid);
+                }
+            };
+            openWin(para);
+        }
+        function showCustomerServiceUrl(uid) {
+            var para = {
+                winId: '#chgCustomerServiceUrl',
+                title: '【修改客服链接】',
+                iconCls: 'icon-user_edit',
+                callBack: function () {
+                    $('#txtE_ID3').textbox('setValue', uid);
+                    $('#hfID3').val(uid);
+                }
+            };
+            openWin(para);
+        }
+
+        function SaveAgencyPwd() {
+            var para = $('#form2').serializeObject();
+            request('/Game/AgencyInfo/ChgPwd', para, function (data) {
+                //提示消息
+                showAgencyResult(data);
+                if (data && data.code == 1) {
+                    $('#chgWin').dialog('close');
+                    $('#form2').form('reset');
+                    //queryData();//重新绑定表格数据
+                    $('#tb_AgencyInfo').datagrid('reload');
+                }
+            });
+        }
+        function SaveCustomerServiceUrl() {
+            var para = $('#form5').serializeObject();
+            request('/Game/AgencyInfo/ChgCustomerServiceUrl', para, function (data) {
+                //提示消息
+                showAgencyResult(data);
+                if (data && data.code == 1) {
+                    $('#chgCustomerServiceUrl').dialog('close');
+                    $('#form5').form('reset');
+                    //queryData();//重新绑定表格数据
+                    $('#tb_AgencyInfo').datagrid('reload');
+                }
+            });
+        }
+
+        function showAddWin() {
+            request('/Game/AgencyInfo/CanAddAgency', {}, function (data) {
+                if (data && data.code == 1) {
+                    $('#form3').form('reset');
+                    var para = {
+                        winId: '#addWin',
+                        title: '【添加代理】',
+                        iconCls: 'icon-user_add',
+                        callBack: function () {
+                            $('#addWin').dialog({
+                                onClose: function () {
+                                    $('#form3').form('reset');
+                                }
+                            });
+                        }
+                    };
+                    openWin(para);
+                } else if (data && data.content == '当前代理创建已达上限，请联系上级代理！') {
+                    showAgencyLimitToast(data.content);
+                } else {
+                    showAgencyResult(data);
+                }
+            });
+        }
+        function SaveAgencyInfo() {
+            var para = $('#form3').serializeObject();
+            if (para.ID.length < 3) {
+                showAgencyToast('账号ID不能少于3个字符！', 'warning');
+                return;
+            }
+            if (para.PWD.length < 6) {
+                showAgencyToast('密码不能少于6个字符！', 'warning');
+                return;
+            }
+            if (para.RE_PWD.length < 6) {
+                showAgencyToast('确认密码不能少于6个字符！', 'warning');
+                return;
+            }
+            if (para.PWD != para.RE_PWD) {
+                showAgencyToast('两次输入的密码不一致！', 'warning');
+                return;
+            }
+            request('/Game/AgencyInfo/AddAgencyInfo', para, function (data) {
+                //提示消息
+                if (data && data.code != 1 && data.content == '当前代理创建已达上限，请联系上级代理！')
+                    showAgencyLimitToast(data.content);
+                else
+                    showAgencyResult(data);
+                if (data && data.code == 1) {
+                    $('#addWin').dialog('close');
+                    $('#form3').form('reset');
+                    //queryData();//重新绑定表格数据
+                    $('#tb_AgencyInfo').datagrid('reload');
+                }
+            });
+        }
+        function showLimitWin(uid) {
+            var para = {
+                winId: '#limitWin',
+                title: '【分代上限】',
+                iconCls: 'icon-user_red',
+                callBack: function () {
+                    var datas = [];
+                    datas.push({ id: 0, text: '不限制' });
+                    for (var i = 8; i < 31; i++)
+                        datas.push({ id: i, text: i });
+                    $('#hfAgencyID').val(uid);
+                    $('#txtE_ID2').textbox('setValue', uid);
+                    $('#selE_AgencyLimit').combobox('clear').combobox('loadData', datas);
+                }
+            };
+            openWin(para);
+        }
+        function SaveAgencyLimit() {
+            var para = $('#form4').serializeObject();
+            request('/Game/AgencyInfo/SaveAgencyLimit', para, function (data) {
+                //提示消息
+                showAgencyResult(data);
+                if (data && data.code == 1) {
+                    $('#limitWin').dialog('close');
+                    $('#form4').form('reset');
+                    //queryData();//重新绑定表格数据
+                    $('#tb_AgencyInfo').datagrid('reload');
+                }
+            });
+        }
+        function showInviteWin(uid, inviteCode) {
+            var para = {
+                winId: '#inviteWin',
+                title: '【设置邀请码】',
+                iconCls: 'icon-user_red',
+                callBack: function () {
+                    $('#hfInviteID').val(uid);
+                    $('#txtE_ID4').textbox('setValue', uid);
+                    $('#txtE_InviteCode').textbox('setValue', inviteCode);
+                }
+            };
+            openWin(para);
+        }
+        function SaveInviteCode() {
+            var para = $('#form6').serializeObject();
+            request('/Game/AgencyInfo/SetInviteCode', para, function (data) {
+                showAgencyResult(data);
+                if (data && data.code == 1) {
+                    $('#inviteWin').dialog('close');
+                    $('#form6').form('reset');
+                    $('#tb_AgencyInfo').datagrid('reload');
+                }
+            });
+        }
+    </script>
+
+    <style>
+        .agency-info-grid,
+        .agency-info-grid .datagrid-cell,
+        .agency-info-grid .datagrid-cell span {
+            white-space: nowrap;
+        }
+
+        .agency-info-grid .datagrid-cell {
+            padding-left: 5px;
+            padding-right: 5px;
+            text-align: left;
+            overflow: hidden;
+            text-overflow: clip;
+        }
+
+        .agency-info-grid .datagrid-header .datagrid-cell {
+            text-align: center;
+        }
+
+        .agency-info-grid .datagrid-view,
+        .agency-info-grid .datagrid-body {
+            overflow-x: auto;
+        }
+
+        .agency-info-grid .agency-action-link {
+            display: inline-block;
+            padding: 0 5px;
+            white-space: nowrap;
+            text-decoration: none;
+        }
+
+        .agency-info-grid .agency-action-feature {
+            color: #00a2e8;
+        }
+
+        .agency-info-grid .agency-action-disabled,
+        .agency-info-grid .agency-action-delete,
+        .agency-info-grid .agency-state-off {
+            color: red;
+        }
+
+        .agency-info-grid .agency-action-enabled,
+        .agency-info-grid .agency-state-on {
+            color: #22b14c;
+        }
+    </style>
+}
+
+@*查询条件*@
+<form id="frm_srch">
+    <table width="100%" border="0" cellpadding="0" cellspacing="0" class="titleQueBg" style="height:40px;">
+        <tr>
+            <td>
+                <div class="left Lpd5">
+                    代理账号：
+                    <input type="text" class="easyui-textbox" name="ID" />
+                </div>
+                <div class="left Lpd5">
+                    所属代理：
+                    <input type="text" class="easyui-textbox" name="Agency" id="txtS_Agency" />
+                </div>
+                <div class="left Lmg10">
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="queryData();" data-options="plain:true,iconCls:'icon-search'">查找</a>
+                    @if ((bool)(ViewBag.CanCreateChildAgent ?? false))
+                    {
+                        <a href="javascript:void(0);" class="easyui-linkbutton" onclick="showAddWin();" data-options="plain:true,iconCls:'icon-add'">添加代理</a>
+                    }
+                </div>
+            </td>
+        </tr>
+    </table>
+</form>
+
+@*查询代理的信息*@
+<table id="tb_AgencyInfo">
+    <thead>
+        <tr>
+            <th field="ID" width="85" formatter="fmtID">代理账号</th>
+            <th field="PRIV" width="85" formatter="fmtPriv">代理层级</th>
+            <th field="AGENCY" width="110">所属代理</th>
+            <th field="InviteCode" width="85">邀请码</th>
+            <th field="COINS" width="85" formatter="fmtCoins">余额</th>
+            <th field="RECHARGE" width="85" formatter="fmtCoins">总充值</th>
+            <th field="EXCHANGE" width="85" formatter="fmtCoins">总兑换</th>
+            <th field="COINS_BUY" width="85" formatter="fmtCoins">购币</th>
+            <th field="COINS_BACK" width="85" formatter="fmtCoins">退币</th>
+            @if (loginUser?.UserPriv == 0)
+            {
+                <th field="CustomerServiceUrl" width="85">客服链接</th>
+                <th field="UserBalance" width="85" formatter="fmtCoins">代理总余额</th>
+            }
+            else
+            {
+                <th field="UserBalance" width="85" formatter="fmtCoins">玩家总余额</th>
+            }
+
+            <th field="Profit" width="85" formatter="fmtCoins">盈利</th>
+            <th field="RE_ENABLE" width="85" formatter="fmtRechargeSwitch">账号状态</th>
+            <th field="AGENCY_LIMIT" width="80" formatter="fmtAgencyLimit">分代上限</th>
+            <th field="OPT" width="520" formatter="fmtOpt">操作</th>
+        </tr>
+    </thead>
+</table>
+
+@*修改窗口*@
+<div id="chgWin" class="hide">
+    <form id="form2">
+        <table cellpadding="0" cellspacing="0" border="0" width="100%" align="center">
+            <tr>
+                <td colspan="2" align="left" style="padding-left: 50px;color:#999;">
+                    <p style="margin-left:-35px;">温馨提示：修改后，请及时告知用户新密码。</p>
+                </td>
+            </tr>
+            <tr>
+                <td align="right">代理ID：</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-textbox win-txt" id="txtE_ID" disabled />
+                </td>
+            </tr>
+            <tr>
+                <td align="right">新密码：</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-passwordbox win-txt" id="txtE_PWD" name="PWD" />
+                </td>
+            </tr>
+            <tr>
+                <td align="center" colspan="2" class="pd5">
+                    <input type="hidden" id="hfID" name="ID" value="0" />
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="SaveAgencyPwd()" data-options="plain:true,iconCls:'icon-save'">保存</a>
+                </td>
+            </tr>
+        </table>
+    </form>
+</div>
+
+@*添加窗口*@
+<div id="addWin" class="hide">
+    <form id="form3">
+        <table cellpadding="0" cellspacing="0" border="0" width="100%" align="center">
+            <tr>
+                <td colspan="2" align="left" style="padding-left: 50px;color:#999;">
+                    <p style="margin-left:-35px;">温馨提示：添加成功后即时生效。</p>
+                </td>
+            </tr>
+            <tr>
+                <td align="right">代理层级：</td>
+                <td align="left" class="pd5">
+                    <select class="easyui-combobox" data-options="panelHeight:80,editable:false" name="FLAG">
+                        @if (loginUser?.UserPriv == 0)
+                        {
+                            <option value="1">总代理</option>
+                        }
+                        <option value="0" selected>直属代理</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td align="right">状态：</td>
+                <td align="left" class="pd5">
+                    <select class="easyui-combobox" data-options="panelHeight:80,editable:false" name="RE_ENABLE">
+                        <option value="0" selected>禁用</option>
+                        <option value="1">启用</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td align="right">账号ID：</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-textbox win-txt" name="ID" />
+                </td>
+            </tr>
+            <tr>
+                <td align="right">密码：</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-passwordbox win-txt" name="PWD" />
+                </td>
+            </tr>
+            <tr>
+                <td align="right">确认密码：</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-passwordbox win-txt" name="RE_PWD" />
+                </td>
+            </tr>
+            <tr>
+                <td align="center" colspan="2" class="pd5">
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="SaveAgencyInfo()" data-options="plain:true,iconCls:'icon-save'">保存</a>
+                </td>
+            </tr>
+        </table>
+    </form>
+</div>
+
+@*设置分级限制*@
+<div id="limitWin" class="hide">
+    <form id="form4">
+        <table cellpadding="0" cellspacing="0" border="0" width="100%" align="center">
+            <tr>
+                <td colspan="2" align="left" style="padding-left: 50px;color:#999;">
+                    <p style="margin-left:-35px;">温馨提示：修改后，即时生效。</p>
+                </td>
+            </tr>
+            <tr>
+                <td align="right">代理ID：</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-textbox win-txt" id="txtE_ID2" disabled />
+                </td>
+            </tr>
+            <tr>
+                <td align="right">分代上限：</td>
+                <td align="left" class="pd5">
+                    <select class="easyui-combobox" id="selE_AgencyLimit" name="AGENCY_LIMIT" data-options="valueField:'id',textField:'text'"></select>
+                </td>
+            </tr>
+            <tr>
+                <td align="center" colspan="2" class="pd5">
+                    <input type="hidden" id="hfAgencyID" name="ID" />
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="SaveAgencyLimit()" data-options="plain:true,iconCls:'icon-save'">保存</a>
+                </td>
+            </tr>
+        </table>
+    </form>
+</div>
+
+@*设置邀请码*@
+<div id="inviteWin" class="hide">
+    <form id="form6">
+        <table cellpadding="0" cellspacing="0" border="0" width="100%" align="center">
+            <tr>
+                <td colspan="2" align="left" style="padding-left: 50px;color:#999;">
+                    <p style="margin-left:-35px;">温馨提示：仅总台可以自定义4-8位数字邀请码。</p>
+                </td>
+            </tr>
+            <tr>
+                <td align="right">代理ID：</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-textbox win-txt" id="txtE_ID4" disabled />
+                </td>
+            </tr>
+            <tr>
+                <td align="right">邀请码：</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-textbox win-txt" id="txtE_InviteCode" name="InviteCode" />
+                </td>
+            </tr>
+            <tr>
+                <td align="center" colspan="2" class="pd5">
+                    <input type="hidden" id="hfInviteID" name="ID" />
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="SaveInviteCode()" data-options="plain:true,iconCls:'icon-save'">保存</a>
+                </td>
+            </tr>
+        </table>
+    </form>
+</div>
+
+@*修改客服链接窗口*@
+<div id="chgCustomerServiceUrl" class="hide">
+    <form id="form5">
+        <table cellpadding="0" cellspacing="0" border="0" width="100%" align="center">
+            <tr>
+                <td colspan="2" align="left" style="padding-left: 50px;color:#999;">
+                    <p style="margin-left:-35px;">温馨提示：修改后，请及时告知用户新的客服链接。</p>
+                </td>
+            </tr>
+            <tr>
+                <td align="right">代理ID：</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-textbox win-txt" id="txtE_ID3" disabled />
+                </td>
+            </tr>
+            <tr>
+                <td align="right">客服链接：</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-textbox win-txt" id="txtE_CustomerServiceUrl" name="CustomerServiceUrl" />
+                </td>
+            </tr>
+            <tr>
+                <td align="center" colspan="2" class="pd5">
+                    <input type="hidden" id="hfID3" name="ID" value="0" />
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="SaveCustomerServiceUrl()" data-options="plain:true,iconCls:'icon-save'">保存</a>
+                </td>
+            </tr>
+        </table>
+    </form>
+</div>

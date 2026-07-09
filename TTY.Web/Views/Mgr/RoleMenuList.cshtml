@@ -1,0 +1,48 @@
+﻿@{
+    ViewBag.RouteMap = Html.ToRoutMap("系统管理", "角色菜单");
+    Layout = "~/Views/Shared/Layout/_ContentLayout.cshtml";
+}
+@section include_res
+{
+    <style type="text/css">
+
+        .l-box { width: 190px; position: absolute; left: 4px; bottom: 4px; top: 32px; border: 1px solid #dfdfdf; }
+        .l-header { width: 180px; height: 18px; position: absolute; float: left; padding: 5px; text-align: left; background-color: #fafafa; border-bottom: 1px solid #dfdfdf; z-index: 99; }
+        .l-body { width: 100%; background-color: #ffffff; color: #404040; padding: 0; margin: 0; border: 0; overflow: auto; position: absolute; float: left; top: 26px; bottom: 0px; text-align: left; }
+
+        .r-box { overflow: hidden; position: absolute; top: 32px; right: 4px; bottom: 4px; left: 195px; border: 1px solid #dfdfdf; }
+        .r-box .grid-box { padding-top: 28px; margin: 0 -1px -1px -1px; }
+        .r-header { width: 100%; height: 18px; position: absolute; float: left; padding: 5px; text-align: left; background-color: #fafafa; border-bottom: 1px solid #dfdfdf; z-index: 99; }
+    </style>
+    <script src='@Url.Content("~/Scripts/app/rolemenu.mgr.js?v=" + ConfigHelper.Get("WebVer"))'></script>
+}
+
+<div class="l-box">
+    <div class="l-header">【角色列表】<i class="fa fa-refresh right pd2 hand" onclick="refreshRole()"></i></div>
+    <div class="l-body">
+        <ul class="easyui-tree" id="tree_roles" data-options="animate:true,lines:true,formatter:formateTreeNode,onContextMenu:righClickTreeEvent,onSelect:roleSelected"></ul>
+    </div>
+</div>
+
+<div class="r-box">
+    <div class="r-header">【菜单列表】</div>
+    <div class="grid-box">
+        <!--数据列表-->
+        <table id="tb_Menus">
+            <thead>
+                <tr>
+                    <th field="RowIndex" width="65" align="center" formatter="formateRoleOpt">配置</th>
+                    <th field="ModuleID" width="55" align="center">菜单ID</th>
+                    <th field="ParentID" width="55" align="center">父级ID</th>
+                    <th field="Title" width="90" align="left">菜单名称</th>
+                    <th field="Link" width="200" align="left" formatter="formateLink">链接地址</th>
+                    <th field="Remark" width="230" align="left">备注信息</th>
+                    <th field="OrderNo" width="55" align="center">排序</th>
+                    <th field="Nullity" width="55" align="center" formatter="formateStatus">状态</th>
+                    <th field="IsMenu" width="55" align="center" formatter="formateMenuType">类型</th>
+                </tr>
+            </thead>
+        </table>
+        <!-- table end -->
+    </div>
+</div>

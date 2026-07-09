@@ -1,0 +1,159 @@
+﻿
+@{
+    Layout = "~/Views/Shared/Layout/_ContentLayout.cshtml";
+    ViewBag.RouteMap = "在线用户";
+    M_LoginUser loginUser = WebHelper.GetLoginInfo();
+}
+
+@section include_res{
+    <script>
+    $(function () {
+        easyloader.load(['textbox', 'linkbutton', 'datagrid'], function () {
+            $(window).resize(function () {
+                if ($('body').data('grid-init')) {
+                    setGridSize();
+                }
+            });
+            pluginInit();
+            loadGames();
+            initGrid();
+        });
+    })
+
+    var _gamesCache = [];
+    function loadGames() {
+        request('/api/Games', {}, function (data) {
+            if (data && data.length) _gamesCache = data;
+        }, 'GET');
+    }
+    function getGameName(gameId) {
+        if (!gameId || gameId <= 0) return '--';
+        for (var i = 0; i < _gamesCache.length; i++) {
+            if (_gamesCache[i] && _gamesCache[i].GameId == gameId)
+                return _gamesCache[i].Name;
+        }
+        return '游戏' + gameId;
+    }
+
+    function setGridSize() {
+        var w = $(window).width() - 8;
+        var h = $(window).height() - 78;
+        resizeGrid('tb_OnlineUsers', 'auto', h);
+    }
+
+    function initGrid() {
+        if (!$('body').data('grid-init')) {
+            $('#tb_OnlineUsers').datagrid({
+                fitColumns: true,
+                singleSelect: true,
+                striped: true,
+                rownumbers: true,
+                height: 768,
+                idField: 'ID',
+                onBeforeLoad: function () { setGridSize(); }
+            });
+        }
+        queryData();
+    }
+
+    function queryData() {
+        var srch = $('#frm_srch').serializeObject();
+        request('/Game/UserInfo/GetOnlineUsers', srch, function (data) {
+            if (data && data.code == 1) {
+                var rows = data.datas || [];
+                var keyword = ($('#frm_srch').find('[name="srch_ID"]').val() || '').toLowerCase();
+                var kwName = ($('#frm_srch').find('[name="srch_NAME"]').val() || '').toLowerCase();
+                var kwAgency = ($('#frm_srch').find('[name="srch_Agency"]').val() || '').toLowerCase();
+                if (keyword) rows = rows.filter(function (r) { return (r.ID || '').toLowerCase().indexOf(keyword) >= 0; });
+                if (kwName) rows = rows.filter(function (r) { return (r.NAME || '').toLowerCase().indexOf(kwName) >= 0; });
+                if (kwAgency) rows = rows.filter(function (r) { return (r.AGENCY || '').toLowerCase().indexOf(kwAgency) >= 0; });
+                $('#tb_OnlineUsers').datagrid('loadData', { total: rows.length, rows: rows });
+                $('#spCount').text('共 ' + rows.length + ' 人在线');
+            } else {
+                showMsg(data);
+            }
+        });
+    }
+
+    function fmtCoins(value) {
+        return top.goldFormat(value || 0);
+    }
+    function fmtStatus(value) {
+        if (value === 0) return '<span style="color:#2e8b57;">游戏中</span>';
+        if (value === 1) return '<span style="color:#999;">大厅</span>';
+        return '<span style="color:#aaa;">其他</span>';
+    }
+    function fmtGame(value) {
+        return getGameName(value);
+    }
+    function fmtTable(value) {
+        if (value == null || value < 0) return '--';
+        return (parseInt(value, 10) + 1) + '号桌';
+    }
+    function fmtSeat(value) {
+        if (value == null || value < 0) return '--';
+        return (parseInt(value, 10) + 1) + '号位';
+    }
+
+    var _autoTimer = null;
+    function toggleAutoRefresh() {
+        if (_autoTimer) { clearInterval(_autoTimer); _autoTimer = null; }
+        if ($('#chkAutoRefresh').is(':checked')) {
+            var sec = parseInt($('#selRefreshSec').val(), 10) || 10;
+            _autoTimer = setInterval(queryData, sec * 1000);
+        }
+    }
+    </script>
+}
+
+<form id="frm_srch">
+    <table width="100%" border="0" cellpadding="0" cellspacing="0" class="titleQueBg" style="height:40px;">
+        <tr>
+            <td>
+                <div class="left Lpd5">
+                    用户账号
+                    <input type="text" class="easyui-textbox" name="srch_ID" />
+                </div>
+                <div class="left Lpd5">
+                    昵称
+                    <input type="text" class="easyui-textbox" name="srch_NAME" />
+                </div>
+                <div class="left Lpd5">
+                    所属代理
+                    <input type="text" class="easyui-textbox" name="srch_Agency" />
+                </div>
+                <div class="left Lmg10">
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="queryData();" data-options="plain:true,iconCls:'icon-search'">查找</a>
+                </div>
+                <div class="left Lmg10" style="line-height:32px;">
+                    <label><input type="checkbox" id="chkAutoRefresh" onclick="toggleAutoRefresh();" /> 自动刷新</label>
+                    <select id="selRefreshSec" onchange="toggleAutoRefresh();">
+                        <option value="5">5秒</option>
+                        <option value="10" selected>10秒</option>
+                        <option value="30">30秒</option>
+                    </select>
+                </div>
+                <div class="left Lmg10" style="line-height:32px;color:#666;">
+                    <span id="spCount"></span>
+                </div>
+            </td>
+        </tr>
+    </table>
+</form>
+
+<table id="tb_OnlineUsers">
+    <thead>
+        <tr>
+            <th field="ID" width="140">用户账号</th>
+            <th field="NAME" width="110">昵称</th>
+            <th field="AGENCY" width="85">所属代理</th>
+            <th field="Status" width="70" formatter="fmtStatus">状态</th>
+            <th field="GameID" width="120" formatter="fmtGame">当前游戏</th>
+            <th field="TableId" width="80" formatter="fmtTable">桌号</th>
+            <th field="SeatId" width="80" formatter="fmtSeat">座号</th>
+            <th field="CurGameScore" width="90" formatter="fmtCoins">当前压分</th>
+            <th field="Coins" width="95" formatter="fmtCoins">剩余分数</th>
+            <th field="Score" width="90" formatter="fmtCoins">累计盈亏</th>
+        </tr>
+    </thead>
+</table>

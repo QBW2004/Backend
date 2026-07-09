@@ -1,0 +1,84 @@
+﻿<!--查询条件-->
+@switch ((int)ViewBag.PageType)
+{
+    case 1://时统计
+        <form id="frm_srch">
+            <table width="100%" border="0" align="center" cellpadding="0" cellspacing="0" class="titleQueBg" style="height:40px;">
+                <tr>
+                    <td>
+                        <div id="box_1" class="left">
+                            &nbsp;结束时间：
+                            <input id="sTime" name="sTime" data-options="formatter:TimeFormatter,parser:TimeParser" style="width:150px;">
+                            至
+                            <input id="eTime" name="eTime" data-options="formatter:TimeFormatter,parser:TimeParser" style="width:150px;">
+                        </div>
+                        <div id="box_5" class="left Lmg10">
+                            <a href="javascript:void(0);" class="easyui-linkbutton" onclick="queryData();" data-options="plain:true,iconCls:'icon-search'">查找</a>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </form>
+        break;
+    case 2://日统计
+        <form id="frm_srch">
+            <table width="100%" border="0" align="center" cellpadding="0" cellspacing="0" class="titleQueBg" style="height:40px;">
+                <tr>
+                    <td>
+                        <div id="box_1" class="left">
+                            &nbsp;结束时间：
+                            <input id="sTime" name="sTime" data-options="formatter:DateFormatter,parser:DateParser" style="width:90px;">
+                            至
+                            <input id="eTime" name="eTime" data-options="formatter:DateFormatter,parser:DateParser" style="width:90px;">
+                        </div>
+                        <div id="box_5" class="left Lmg10">
+                            <a href="javascript:void(0);" class="easyui-linkbutton" onclick="queryData();" data-options="plain:true,iconCls:'icon-search'">查找</a>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </form>
+        break;
+    case 3://周统计
+    <form id="frm_srch">
+        <table width="100%" border="0" align="center" cellpadding="0" cellspacing="0" class="titleQueBg" style="height:40px;">
+            <tr>
+                <td>
+                    <div id="box_1" class="left">
+                        &nbsp;年份：
+                        <select class="easyui-combobox" style="width:95px;" id="selYear" name="year" data-options="onChange:resetDateCtrl">
+                            @for (int i = (DateTime.Now.Year - 1); i <= DateTime.Now.Year; i++)
+                            {
+                                <option value="@(i)" @(i == DateTime.Now.Year ? "selected=\"selected\"" : "")>@(i)年</option>
+                            }
+                        </select>
+                        &nbsp;周数：
+                        <select class="easyui-combobox" style="width:220px;" id="selWeekRange" name="weekrang" data-options="valueField:'val',textField:'text',onSelect:selDate,onChange:selDate"></select>
+                        <input type="hidden" id="sTime" name="sTime" />
+                        <input type="hidden" id="eTime" name="eTime" />
+                    </div>
+                    <div id="box_5" class="left Lmg10">
+                        <a href="javascript:void(0);" class="easyui-linkbutton" onclick="queryData();" data-options="plain:true,iconCls:'icon-search'">查找</a>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </form>
+        break;
+    case 4://月统计
+    <form id="frm_srch">
+        <table width="100%" border="0" align="center" cellpadding="0" cellspacing="0" class="titleQueBg" style="height:40px;">
+            <tr>
+                <td>
+                    <div id="box_1" class="left">
+                        @Html.Partial("_PartialYearMonthSelPage")
+                    </div>
+                    <div id="box_5" class="left Lmg10">
+                        <a href="javascript:void(0);" class="easyui-linkbutton" onclick="queryData();" data-options="plain:true,iconCls:'icon-search'">查找</a>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </form>
+        break;
+}

@@ -1,0 +1,39 @@
+﻿@{
+    Layout = null;
+}
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title></title>
+    <link rel="shortcut icon" href="favicon.ico">
+    <link href="css/bootstrap.min.css?v=3.3.6" rel="stylesheet">
+    <link href="css/font-awesome.css?v=4.4.0" rel="stylesheet">
+    <link href="css/animate.css" rel="stylesheet">
+    <link href="css/style.css?v=4.1.0" rel="stylesheet">
+    @Styles.Render("~/res/main-common-css")
+    <style>
+        body { font-size: 13px; color: #676a6c; overflow-x: hidden;}
+        .gray-bg { background-color: #fdfdfd; }
+        ::-webkit-scrollbar { width: 6px; background-color: #F5F5F5; }
+        ::-webkit-scrollbar-thumb { background-color: #999; }
+        ::-webkit-scrollbar-track { background-color: #F5F5F5; }
+        .middle-box { max-width: 400px; z-index: 100; margin: 0 auto; padding-top: 40px; }
+        .middle-box h1 { font-size: 170px; }
+        h1, h2, h3, h4, h5, h6 { font-weight: 100; }
+        h3, h4, h5 { margin-top: 5px; font-weight: 600; }
+    </style>
+</head>
+<body class="gray-bg">
+
+    <div class="middle-box text-center animated shake">
+        <h1 style="font-weight:bold;font-size:64px;color:#676a6c;">sorry</h1>
+        <div class="error-desc" style="color:#676a6c;">
+            抱歉，没有权限访问该页面~
+        </div>
+    </div>
+    @Scripts.Render("~/res/main-common-js")
+</body>
+</html>

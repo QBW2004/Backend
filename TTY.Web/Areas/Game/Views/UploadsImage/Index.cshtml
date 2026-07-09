@@ -1,0 +1,121 @@
+﻿
+@{
+    Layout = "~/Views/Shared/Layout/_ContentLayout.cshtml";
+
+    ViewBag.RouteMap = "图片二维码管理";
+    M_LoginUser loginUser = WebHelper.GetLoginInfo();
+}
+<script src="~/Scripts/jquery.form.js"></script>
+@section include_res{
+    <script>
+        $(function () {
+            // 加载指定的模块
+            easyloader.load(['textbox', 'linkbutton', 'datagrid'], function () {
+                //适应窗口大小变化
+                $(window).resize(function () {
+                    if ($('body').data('grid-init')) {
+                        setGridSize();
+                    }
+                });
+                //初始化插件
+                pluginInit();
+                //初始化查询
+                queryData();
+            });
+        })
+        //重置表格大小
+        function setGridSize(param) {
+            var w = $(window).width() - 8;
+            var h = $(window).height() - 78;
+            resizeGrid('tb_UpdateImage', 'auto', h);
+        }
+        //查询数据
+        function queryData() {
+            var para = $("#frm_srch").serializeObject();
+            bindGridData(para);
+        }
+        //绑定表格数据
+        function bindGridData(para) {
+            if (!$('body').data('grid-init')) {
+                $('#tb_UpdateImage').datagrid({
+                    url: "/Game/UploadsImage/List",
+                    queryParams: $.extend({}, para),
+                    pagination: true,
+                    fitColumns: true,
+                    singleSelect: true,
+                    striped: true,
+                    rownumbers: true,
+                    height: 768,
+                    pageSize: 20,
+                    pageList: [10, 20, 50],
+                    idField: 'ID',
+                    onBeforeLoad: setGridSize,
+                    onLoadSuccess: onLoaded
+                });
+            } else {
+                $('#tb_AccountLog').datagrid('load', para);
+            }
+        }
+
+
+        function fmtOpt(value, rowData, rowIndex) {
+            var arr = [];
+            arr.push(' <input style="display:none" type="file" id="FileAttachment' + rowData.ID + '" name="FileAttachment' + rowData.ID + '" accept=".png,.jpg,.pdf" /><a href="javascript:void(0)" class="blue Lpd5" onclick="showChgWin(\'' + rowData.ID + '\')">修改图片</a>');
+            return arr.join('  ');
+        }
+        var imageid = 0;
+        function showChgWin(id) {
+            imageid = id;
+
+            $("#FileAttachment" + id + "").click();
+            BindUploader("FileAttachment" + id + "", imageid);
+            //BindUploader("FileAttachment1", "680", "attachmentTbody1", "attachmentFile1", "1");
+        }
+
+
+        //绑定上传栏的事件
+        function BindUploader(uploaderName, fileTypeId) {
+            $("#" + uploaderName).change(function () {
+                $("#frm_updateImage").ajaxSubmit({
+                    url: "/Game/UploadsImage/SavePicture",
+                    data: { uploaderName: uploaderName, fileTypeId: fileTypeId },
+                    dataType: "json",
+                    success: function (response) {
+                        if (response.suc == true) {
+                            alert("图片上传成功");
+                        }
+                        else {
+                            alert("提交出错：" + response.Message);
+                            return;
+                        }
+                    }
+                })
+            });
+        }
+    </script>
+}
+
+<form id="frm_srch">
+    <table width="100%" border="0" cellpadding="0" cellspacing="0" class="titleQueBg" style="height:40px;">
+        <tr>
+            <td>
+            </td>
+        </tr>
+    </table>
+</form>
+<form id="frm_updateImage" method="post" >
+    <table id="tb_UpdateImage">
+        <thead>
+            <tr>
+                <th field="ImageName" width="110">名称</th>
+                <th field="ImageType" width="220">域名路径</th>
+                <th field="ImagePath" width="330">二维码图片路径</th>
+                <th field="Id" width="110" align="center" formatter="fmtOpt">操作</th>
+            </tr>
+        </thead>
+    </table>
+</form>
+
+}
+
+

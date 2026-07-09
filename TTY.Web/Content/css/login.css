@@ -1,0 +1,46 @@
+html { height: 100% }
+body { font-family: "open sans","Helvetica Neue",Helvetica,Arial,sans-serif; font-size: 13px; color: #676a6c; overflow-x: hidden; background: #ECDBAF; height: auto; background: url(/Content/img/login-bg.jpg) no-repeat center fixed; -webkit-background-size: cover; -moz-background-size: cover; -o-background-size: cover; background-size: cover; color: rgba(255,255,255,.95) }
+img, a { cursor: pointer }
+::-webkit-scrollbar { width: 6px; background-color: #F5F5F5 }
+::-webkit-scrollbar-thumb { background-color: #999999 }
+::-webkit-scrollbar-track { background-color: #F5F5F5 }
+a:hover, a:focus, a:active { text-decoration: none }
+.form-control, .form-control:focus { border-radius: 3px; height: 35px !important }
+.btn-primary { background-color: #1ab394 !important; border-color: #1ab394 !important; color: #fff }
+.tip { color: #444; display: block; margin-right: auto; margin-left: auto; text-align: center; padding-top: 20px }
+.msg { width: 250px; position: absolute; margin: 0 auto; left: 0; right: 0; top: 10px; z-index: 999999 !important }
+.container { padding: 0 }
+.container .form-body { border-radius: 3px; padding: 20px 0; min-width: 300px; max-width: 380px; background: rgba(255,255,255,.2); border: 1px solid rgba(255,255,255,.3); -moz-box-shadow: 0 3px 0 rgba(12,12,12,.03); -webkit-box-shadow: 0 3px 0 rgba(12,12,12,.03); box-shadow: 0 3px 0 rgba(12,12,12,.03); -moz-border-radius: 3px; -webkit-border-radius: 3px }
+.main { margin: 35% auto }
+
+@media (min-width:768px) {
+    .main { margin: 20% auto }
+}
+
+.tooltip { width: 120px; color: #FFFFFF }
+.tooltip-inner { background-color: #1ab394 }
+.tooltip.right .tooltip-arrow { top: 50%; left: 0; margin-top: -5px; border-width: 5px 5px 5px 0; border-right-color: #1ab394 }
+.tooltip-arrow { position: absolute; width: 0; height: 0; border-color: transparent; border-style: solid }
+.animated { -webkit-animation-duration: 0.3s; animation-duration: 0.3s; -webkit-animation-fill-mode: both; animation-fill-mode: both; z-index: 100 }
+.fadeInDown { -webkit-animation-name: fadeInDown; animation-name: fadeInDown }
+.fadeInUp { -webkit-animation-name: fadeInUp; animation-name: fadeInUp }
+
+@-webkit-keyframes fadeInDown {
+    0% { opacity: 0; -webkit-transform: translateY(-60px); transform: translateY(-60px) }
+    100% { opacity: 1; -webkit-transform: translateY(0); transform: translateY(0) }
+}
+
+@keyframes fadeInDown {
+    0% { opacity: 0; -webkit-transform: translateY(-60px); -ms-transform: translateY(-60px); transform: translateY(-60px) }
+    100% { opacity: 1; -webkit-transform: translateY(0); -ms-transform: translateY(0); transform: translateY(0) }
+}
+
+@-webkit-keyframes fadeInUp {
+    0% { opacity: 0; -webkit-transform: translateY(60px); transform: translateY(60px) }
+    100% { opacity: 1; -webkit-transform: translateY(0); transform: translateY(0) }
+}
+
+@keyframes fadeInUp {
+    0% { opacity: 0; -webkit-transform: translateY(60px); -ms-transform: translateY(60px); transform: translateY(60px) }
+    100% { opacity: 1; -webkit-transform: translateY(0); -ms-transform: translateY(0); transform: translateY(0) }
+}

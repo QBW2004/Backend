@@ -1,0 +1,122 @@
+﻿@{
+    Layout = "~/Views/Shared/Layout/_ContentLayout.cshtml";
+    ViewBag.RouteMap = "视讯游戏开关";
+    M_LoginUser loginUser = WebHelper.GetLoginInfo();
+}
+
+@section include_res{
+    <script>
+    $(function () {
+        // 加载指定的模块
+        easyloader.load(['textbox', 'linkbutton', 'datagrid'], function () {
+            //适应窗口大小变化
+            $(window).resize(function () {
+                if ($('body').data('grid-init')) {
+                    setGridSize();
+                }
+            });
+            //初始化插件
+            pluginInit();
+            //初始化查询
+            queryData();
+        });
+    })
+    //重置表格大小
+    function setGridSize(param) {
+        var w = $(window).width() - 8;
+        var h = $(window).height() - 78;
+        resizeGrid('tb_PlatType', 'auto', h);
+    }
+    //查询数据
+    function queryData() {
+        var para = $("#frm_srch").serializeObject();
+        bindGridData(para);
+    }
+    //绑定表格数据
+    function bindGridData(para) {
+        if (!$('body').data('grid-init')) {
+            $('#tb_PlatType').datagrid({
+                url: "/Game/AccountLog/GetPlatType",
+                queryParams: $.extend({}, para),
+                pagination: true,
+                fitColumns: true,
+                singleSelect: true,
+                striped: true,
+                rownumbers: true,
+                height: 768,
+                pageSize: 20,
+                pageList: [10, 20, 50],
+                idField: 'ID',
+                onBeforeLoad: setGridSize,
+                onLoadSuccess: onLoaded
+            });
+        } else {
+            $('#tb_PlatType').datagrid('load', para);
+        }
+    }
+    //格式化
+        function fmtEnable(value, rowData, rowIndex) {
+            if (value == 1)
+                return '<span>是</span>';
+            else
+                return '<span  class="red">否</span>';
+        }
+
+        function fmtOpt(value, rowData, rowIndex) {
+            var arr = [];
+            if (rowData.Enable == 0) {
+                 @Html.Raw("arr.push('<a href=\"javascript: void(0)\" class=\"green Lpd5\" onclick=\"EnablePlatType(\\\'' + rowData.ID + '\\\',1)\">启用</a>'); ");
+            }
+            else {
+                 @Html.Raw("arr.push('<a href=\"javascript: void(0)\" class=\"green Lpd5\" onclick=\"EnablePlatType(\\\'' + rowData.ID + '\\\',0)\">禁用</a>'); ");
+            }
+            return arr.join('  ');
+        }
+        function EnablePlatType(id, flag) {
+            confirm('确认' + (flag == 1 ? '启用' : '禁用') + '选定的游戏？', function () {
+                request('/Game/AccountLog/EnablePlatType', { ID: id, Enable: flag }, function (data) {
+                    //提示消息
+                    showMsg(data);
+                    if (data && data.code == 1) {
+                        queryData();//重新加载数据
+                    }
+                });
+            });
+        }
+    </script>
+}
+
+@*查询条件*@
+<form id="frm_srch">
+    <table width="100%" border="0" cellpadding="0" cellspacing="0" class="titleQueBg" style="height:40px;">
+        <tr>
+            <td>
+
+                <div class="left Lpd5">
+                    视讯游戏类型
+                    <input type="text" class="easyui-textbox" name="Name" />
+                </div>
+
+                <div class="left Lmg10">
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="queryData();" data-options="plain:true,iconCls:'icon-search'">查找</a>
+
+                </div>
+            </td>
+        </tr>
+    </table>
+</form>
+
+@*查询代理的信息*@
+<table id="tb_PlatType">
+    <thead>
+        <tr>
+            <th field="ID" width="150">ID</th>
+            <th field="Name" width="150">视讯游戏名称</th>
+            <th field="Type" width="150">视讯游戏类型</th>
+            <th field="Enable" width="150" formatter="fmtEnable">是否启用</th>
+            <th field="PWD" width="225" formatter="fmtOpt">操作</th>
+        </tr>
+    </thead>
+</table>
+
+
