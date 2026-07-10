@@ -147,35 +147,37 @@ namespace YYT.Web.Areas.Game.Controllers
                     }
                     else if (gameType == 2)
                     {
-                        List<M_ParaRoom> rooms = ef.ParaRoom
-                            .Where(c => c.GAME_ID == gameId)
-                            .OrderBy(c => c.ID)
-                            .ToList();
-                        List<M_ParaFish> fishes = ef.ParaFishes
-                            .Where(c => c.GAME_ID == gameId)
-                            .ToList();
-                        int idx = 0;
-                        foreach (M_ParaRoom r in rooms)
+                        var cfgNames = ef.Database.SqlQuery<string>(
+                            "SELECT TableName FROM roomtableconfig WHERE GAME_ID=" + gameId + " ORDER BY TableIndex").ToList();
+                        var cfgBetMins = ef.Database.SqlQuery<int>(
+                            "SELECT BetMin FROM roomtableconfig WHERE GAME_ID=" + gameId + " ORDER BY TableIndex").ToList();
+                        var cfgBetMaxs = ef.Database.SqlQuery<int>(
+                            "SELECT BetMax FROM roomtableconfig WHERE GAME_ID=" + gameId + " ORDER BY TableIndex").ToList();
+                        var cfgCoinScores = ef.Database.SqlQuery<int>(
+                            "SELECT OneCoinScore FROM roomtableconfig WHERE GAME_ID=" + gameId + " ORDER BY TableIndex").ToList();
+                        var cfgCoinNeeds = ef.Database.SqlQuery<int>(
+                            "SELECT CoinsNeed FROM roomtableconfig WHERE GAME_ID=" + gameId + " ORDER BY TableIndex").ToList();
+                        var cfgEnableds = ef.Database.SqlQuery<int>(
+                            "SELECT Enabled FROM roomtableconfig WHERE GAME_ID=" + gameId + " ORDER BY TableIndex").ToList();
+                        for (int i = 0; i < cfgNames.Count; i++)
                         {
-                            idx++;
-                            M_ParaFish m = fishes.FirstOrDefault(c => c.ID == r.ID);
                             rows.Add(new
                             {
-                                id = r.ID,
-                                num = r.NUM,
-                                tableName = string.IsNullOrWhiteSpace(r.TableName) ? ("桌台" + idx) : r.TableName,
-                                minBet = r.BET_MIN,
-                                maxBet = r.BET_MAX,
-                                exCoin = r.EX_COIN,
-                                coinSc = r.COIN_SC,
-                                coinNeed = r.COIN_NEED,
-                                gameMo = r.Game_Mo,
-                                maxSeats = r.MaxSeats <= 0 ? 6 : r.MaxSeats,
-                                idleFireTimeoutSec = r.IdleFireTimeoutSec,
-                                idleFireKickEnabled = r.IdleFireKickEnabled ? 1 : 0,
-                                enabled = r.Enabled ? 1 : 0,
-                                fishDif = m == null ? 0 : m.DIF,
-                                fishSiteType = m == null ? 0 : m.SITE_TYPE
+                                id = gameId * 1000 + i,
+                                num = 1,
+                                tableName = string.IsNullOrWhiteSpace(cfgNames[i]) ? ("机台" + i) : cfgNames[i],
+                                minBet = i < cfgBetMins.Count ? cfgBetMins[i] : 100,
+                                maxBet = i < cfgBetMaxs.Count ? cfgBetMaxs[i] : 1000,
+                                exCoin = 10000,
+                                coinSc = i < cfgCoinScores.Count ? cfgCoinScores[i] : 1,
+                                coinNeed = i < cfgCoinNeeds.Count ? cfgCoinNeeds[i] : 10000,
+                                gameMo = 100,
+                                maxSeats = 6,
+                                idleFireTimeoutSec = 0,
+                                idleFireKickEnabled = 1,
+                                enabled = i < cfgEnableds.Count ? cfgEnableds[i] : 1,
+                                fishDif = 0,
+                                fishSiteType = 0
                             });
                         }
                     }
@@ -254,7 +256,30 @@ namespace YYT.Web.Areas.Game.Controllers
 				return Json(msg);
 			}
 
-                else if (gameType == 2) { roomTbl = "ParaRoom"; machTbl = "ParaFish"; }
+			else if (gameType == 2)
+
+			{
+
+				int fishGid = tableId / 1000;
+
+				int fishTidx = tableId % 1000;
+
+				using (var ef2 = new GameDbContext())
+
+				{
+
+					ef2.Database.ExecuteSqlCommand("DELETE FROM roomtableconfig WHERE GAME_ID=" + fishGid + " AND TableIndex=" + fishTidx);
+
+				}
+
+				msg.code = 1;
+
+				msg.content = "删除成功";
+
+				return Json(msg);
+
+			}
+
                 else
                 {
                     msg.content = "该类型不支持删除桌台！";
@@ -412,8 +437,8 @@ namespace YYT.Web.Areas.Game.Controllers
                 bool enabled = form.Q<int>("Enabled", 1) == 1;
                 int num = 0;
                 int exCoin = form.Q<int>("EX_COIN", 1);
-                int coinSc = form.Q<int>("COIN_SC", 1);
-                int coinNeed = form.Q<int>("COIN_NEED", 0);
+                int coinSc = form.Q<int>("OneCoinScore", 1);
+                int coinNeed = form.Q<int>("CoinsNeed", 0);
                 int gameMo = form.Q<int>("Game_Mo", 0);
 
                 if (gameType == 0)
@@ -472,15 +497,27 @@ namespace YYT.Web.Areas.Game.Controllers
                 }
                 else
                 {
-                    M_ParaRoom room = BuildParaRoom(tableId, gameId, num, betMin, betMax, exCoin, coinSc, coinNeed, gameMo, tableName, maxSeats, idleTimeout, idleKick, enabled);
-
-                    M_ParaFish machine = new M_ParaFish();
-                    machine.ID = tableId;
-                    machine.GAME_ID = gameId;
-                    machine.DIF = form.Q<int>("FishDIF", 0);
-                    machine.SITE_TYPE = form.Q<int>("FishSITE_TYPE", 0);
-
-                    msg = new B_FishGamePara().SaveTableFull(room, machine);
+                    int tIdx = tableId % 1000;
+                    string tName = (form.Q<string>("TableName", string.Empty) ?? "").Trim();
+                    int tblEnabled = form.Q<int>("Enabled", 1);
+                    int idleSec = form.Q<int>("IdleFireTimeoutSec", 0);
+                    int tblIdleKick = form.Q<int>("IdleFireKickEnabled", 1);
+                    int tblMaxSeats = form.Q<int>("MaxSeats", 6);
+                    using (var ef = new GameDbContext())
+                    {
+                        ef.Database.ExecuteSqlCommand(
+                            "DELETE FROM roomtableconfig WHERE GAME_ID=" + gameId + " AND TableIndex=" + tIdx);
+                        ef.Database.ExecuteSqlCommand(
+                            "INSERT INTO roomtableconfig (GAME_ID, RoomIndex, TableIndex, TableName, Enabled, OneCoinScore, BetMin, BetMax, CoinsNeed, IdleFireTimeoutSec, IdleFireKickEnabled, MaxSeats) VALUES (" +
+                            gameId + ",0," + tIdx + ",'" + tName.Replace("'", "''") + "'," + tblEnabled + "," + coinSc + "," + betMin + "," + betMax + "," + coinNeed + "," + idleSec + "," + tblIdleKick + "," + tblMaxSeats + ")");
+                    }
+                    var srv = new SConnect();
+                    msg = srv.SendReadString(EScMsgType.RP, gameId);
+                    if (msg.code == 1)
+                    {
+                        var srvTc = new SConnect();
+                        srvTc.SendTcCommand((ushort)gameId, 0, (ushort)tIdx, tName, (byte)(tblEnabled != 0 ? 1 : 0), (uint)idleSec, (byte)(tblIdleKick != 0 ? 1 : 0), (ushort)tblMaxSeats);
+                    }
                 }
 
                 // ROOM_MAX 同步已下沉到 B_SuperPara.PushHotUpdate 内(在发 RP 之前执行)，
@@ -590,28 +627,58 @@ namespace YYT.Web.Areas.Game.Controllers
             }
         }
 
-        private static int AllocTableId(int gameType, int gameId)
-        {
-            int baseId = gameId * 1000;
-            using (var ef = new GameDbContext())
-            {
-		if (gameType == 3)
-		{
-			var maxTbl = ef.GameConfigLabas.Where(c => c.GameId == gameId)
-				.Select(c => (int?)c.TableIndex).Max() ?? -1;
-			return baseId + maxTbl + 1;
-		}
-		                List<int> ids;
-                if (gameType == 0)
-                    ids = ef.ParaBetRooms.Where(c => c.GAME_ID == gameId).Select(c => c.ID).ToList();
-                else
-                    ids = ef.ParaRoom.Where(c => c.GAME_ID == gameId).Select(c => c.ID).ToList();
+	private static int AllocTableId(int gameType, int gameId)
 
-                int next = baseId;
-                if (ids.Count > 0)
-                    next = ids.Max() + 1;
-                return next;
-            }
-        }
-    }
+	{
+
+		int baseId = gameId * 1000;
+
+		using (var ef = new GameDbContext())
+
+		{
+
+			if (gameType == 3)
+
+			{
+
+				var maxTbl = ef.GameConfigLabas.Where(c => c.GameId == gameId)
+
+					.Select(c => (int?)c.TableIndex).Max() ?? -1;
+
+				return baseId + maxTbl + 1;
+
+			}
+
+			if (gameType == 2)
+
+			{
+
+				var fishMax = ef.Database.SqlQuery<int?>("SELECT MAX(TableIndex) FROM roomtableconfig WHERE GAME_ID=" + gameId).FirstOrDefault() ?? -1;
+				return baseId + fishMax + 1;
+
+			}
+
+			List<int> ids;
+
+			if (gameType == 0)
+
+				ids = ef.ParaBetRooms.Where(c => c.GAME_ID == gameId).Select(c => c.ID).ToList();
+
+			else
+
+				ids = ef.ParaRoom.Where(c => c.GAME_ID == gameId).Select(c => c.ID).ToList();
+
+			int next = baseId;
+
+			if (ids.Count > 0)
+
+				next = ids.Max() + 1;
+
+			return next;
+
+		}
+
+	}
+
+}
 }

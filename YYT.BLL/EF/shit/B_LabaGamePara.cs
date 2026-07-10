@@ -94,6 +94,7 @@ namespace YYT.BLL.EF
 
                             // 追加发送 TC(桌名) 命令：拉霸单桌台，tableId=gameId(偏移0)，roomIndex=0。
                             // 拉霸无 IdleFire/MaxSeats 概念，传默认值(不开踢出、6座)。
+
                             if (!string.IsNullOrEmpty(tableName))
                             {
                                 try
@@ -182,10 +183,14 @@ namespace YYT.BLL.EF
                     var tmpMsg = srv.SendReadString(EScMsgType.RP, gameId);
                     msg.code = tmpMsg.code;
                     msg.content = tmpMsg.content;
+		LogHelper.WriteLog(typeof(B_LabaGamePara), string.Format("SaveTableFull TC: gameId={0} tableIndex={1} tableName='{2}'", gameId, tableIndex, tableName ?? "(null)"));
+
                     if (!string.IsNullOrEmpty(tableName))
                     {
                         try
                         {
+				LogHelper.WriteLog(typeof(B_LabaGamePara), "CALLING SendTcCommand NOW");
+
                             var srv2 = new SConnect();
                             var tc = srv2.SendTcCommand((ushort)gameId, 0, (ushort)tableIndex,
                                 tableName, 1, 0u, 0, 6);
