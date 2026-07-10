@@ -149,64 +149,70 @@ namespace YYT.BLL.EF
             }
         }
 
-        public Msg SaveTableFull(int tableId, int gameId, List<M_GameConfigLaba> paras, string tableName)
+        public Msg SaveTableFull(int tableId, int gameId, List<M_GameConfigLaba> paras, string tableName, int enabled = 1)
         {
             Msg msg = new Msg(0, "保存失败！");
             int tableIndex = tableId % 1000;
             using (var ef = new GameDbContext())
             {
                 var rst = ef.GameConfigLabas.Where(c => c.GameId == gameId && c.TableIndex == tableIndex).ToList();
-                if (rst == null || rst.Count == 0)
+                foreach (var p in paras)
                 {
-                    foreach (var p in paras)
+                    var existing = rst.FirstOrDefault(r => r.OptKey == p.OptKey);
+                    if (existing != null && p.OptValue > -1)
+                    {
+                        existing.OptValue = p.OptValue;
+                        ef.Entry(existing).State = EntityState.Modified;
+                    }
+                    else if (p.OptValue > -1)
                     {
                         p.GameId = gameId;
                         p.TableIndex = tableIndex;
                         ef.GameConfigLabas.Add(p);
                     }
                 }
-                else
-                {
-                    M_GameConfigLaba tmpObj = null;
-                    foreach (var row in rst)
-                    {
-                        tmpObj = paras.Find((_list) => _list.OptKey == row.OptKey);
-                        if (tmpObj != null && tmpObj.OptValue > -1)
-                            row.OptValue = tmpObj.OptValue;
-                        ef.Entry(row).State = EntityState.Modified;
-                    }
-                }
                 int val = ef.SaveChanges();
-                if (val > 0)
+
+                bool needRp = (val > 0) || !string.IsNullOrEmpty(tableName);
+                if (needRp)
                 {
                     var srv = new SConnect();
                     var tmpMsg = srv.SendReadString(EScMsgType.RP, gameId);
-                    msg.code = tmpMsg.code;
-                    msg.content = tmpMsg.content;
-		LogHelper.WriteLog(typeof(B_LabaGamePara), string.Format("SaveTableFull TC: gameId={0} tableIndex={1} tableName='{2}'", gameId, tableIndex, tableName ?? "(null)"));
-
-                    if (!string.IsNullOrEmpty(tableName))
+                    if (val > 0 || msg.code == 0)
                     {
-                        try
-                        {
-				LogHelper.WriteLog(typeof(B_LabaGamePara), "CALLING SendTcCommand NOW");
+                        msg.code = tmpMsg.code;
+                        msg.content = tmpMsg.content;
+                    }
+                }
 
-                            var srv2 = new SConnect();
-                            var tc = srv2.SendTcCommand((ushort)gameId, 0, (ushort)tableIndex,
-                                tableName, 1, 0u, 0, 6);
-                            if (tc == null || tc.code != 1)
+                if (!string.IsNullOrEmpty(tableName))
+                {
+                    try
+                    {
+                        var srv2 = new SConnect();
+                        var tc = srv2.SendTcCommand((ushort)gameId, 0, (ushort)tableIndex,
+                            tableName, (byte)enabled, 0u, 0, 6);
+                        if (tc != null && tc.code == 1)
+                        {
+                            if (msg.code == 0 && val == 0)
                             {
-                                msg.datas = true;
-                                string tcErr = tc == null ? "服务端无响应。" : tc.content;
-                                msg.content = (string.IsNullOrEmpty(msg.content) ? "保存成功" : msg.content) + "，但桌名热更新失败：" + tcErr;
+                                msg.code = 1;
+                                msg.content = "桌名更新成功";
                             }
                         }
-                        catch (Exception exTc)
+                        else
                         {
-                            LogHelper.WriteLog(typeof(B_LabaGamePara), exTc);
                             msg.datas = true;
-                            msg.content = (string.IsNullOrEmpty(msg.content) ? "保存成功" : msg.content) + "，但桌名热更新异常：" + exTc.Message;
+                            msg.content = (string.IsNullOrEmpty(msg.content) ? "保存成功" : msg.content)
+                                       + "，但桌名热更新失败：" + (tc == null ? "服务端无响应" : tc.content);
                         }
+                    }
+                    catch (Exception exTc)
+                    {
+                        LogHelper.WriteLog(typeof(B_LabaGamePara), exTc);
+                        msg.datas = true;
+                        msg.content = (string.IsNullOrEmpty(msg.content) ? "保存成功" : msg.content)
+                                   + "，但桌名热更新异常：" + exTc.Message;
                     }
                 }
             }
@@ -227,6 +233,9 @@ namespace YYT.BLL.EF
                 }
                 ef.GameConfigLabas.RemoveRange(toDelete);
                 ef.SaveChanges();
+                ef.Database.ExecuteSqlCommand(
+                    "DELETE FROM roomtableconfig WHERE GAME_ID={0} AND RoomIndex=0 AND TableIndex={1}",
+                    gameId, tableIndex);
                 var srv = new SConnect();
                 var tmpMsg = srv.SendReadString(EScMsgType.RP, gameId);
                 msg.code = tmpMsg.code;

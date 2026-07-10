@@ -181,8 +181,9 @@ namespace YYT.Web.Areas.Game.Controllers
                             });
                         }
                     }
-                    else
+                    else  // gameType == 3 拉霸
                     {
+                        int subType = GetLabaSubType(gameId);
                         string gameName = ef.Games.Where(c => c.GameId == gameId).Select(c => c.Name).FirstOrDefault() ?? ("游戏" + gameId);
                         var labaBL = new B_LabaGamePara();
                         var tableList = labaBL.GetTableList(gameId);
@@ -191,23 +192,48 @@ namespace YYT.Web.Areas.Game.Controllers
                         {
                             int tid = gameId * 1000 + tIdx;
                             List<M_GameConfigLaba> labas = ef.GameConfigLabas.Where(c => c.GameId == gameId && c.TableIndex == tIdx).ToList();
-                            int winRate = 0, exchangeRate = 0;
-                            foreach (M_GameConfigLaba l in labas)
-                            {
-                                if (l.OptKey == "ExchangeScore") exchangeRate = l.OptValue;
-                                else if (l.OptKey == "AIWinLuckyAtA2" || l.OptKey == "PlayerWin") winRate = l.OptValue;
-                            }
-                            string labaTableName = ef.Database.SqlQuery<string>(
+                            string tableName = ef.Database.SqlQuery<string>(
                                 "SELECT TableName FROM roomtableconfig WHERE GAME_ID={0} AND RoomIndex=0 AND TableIndex={1} LIMIT 1", gameId, tIdx)
                                 .FirstOrDefault();
-                            rows.Add(new
+                            int enabled = ef.Database.SqlQuery<int?>(
+                                "SELECT Enabled FROM roomtableconfig WHERE GAME_ID={0} AND RoomIndex=0 AND TableIndex={1} LIMIT 1", gameId, tIdx)
+                                .FirstOrDefault() ?? 1;
+
+                            Dictionary<string, object> row = new Dictionary<string, object>();
+                            row["id"] = tid;
+                            row["tableName"] = string.IsNullOrWhiteSpace(tableName) ? (gameName + (tIdx > 0 ? tIdx.ToString() : "")) : tableName;
+                            row["enabled"] = enabled;
+                            row["labaSubType"] = subType;
+
+                            if (subType == 3)  // 水浒传
                             {
-                                id = tid,
-                                tableName = string.IsNullOrWhiteSpace(labaTableName) ? (gameName + (tIdx > 0 ? tIdx.ToString() : "")) : labaTableName,
-                                enabled = 1,
-                                winRate = winRate,
-                                exchangeRate = exchangeRate
-                            });
+                                var paraBet = ef.ParaBets.Where(c => c.GAME_ID == gameId && c.ID == tid).FirstOrDefault();
+                                row["dif"] = paraBet?.DIF ?? 0;
+                                row["har"] = paraBet?.HAR ?? 0;
+                                for (int p = 0; p <= 9; p++)
+                                    row["payout" + p] = GetLabaOptValue(labas, "Payout" + p);
+                            }
+                            else if (subType == 1)  // 明星97
+                            {
+                                for (int p = 0; p <= 7; p++)
+                                    row["payout" + p] = GetLabaOptValue(labas, "Payout" + p);
+                            }
+                            else if (subType == 2)  // 水果拉霸
+                            {
+                                for (int p = 0; p <= 7; p++)
+                                    row["payout" + p] = GetLabaOptValue(labas, "Payout" + p);
+                            }
+
+                            row["minBet"] = GetLabaOptValue(labas, "betMin");
+                            row["maxBet"] = GetLabaOptValue(labas, "betMax");
+                            row["coinNeed"] = GetLabaOptValue(labas, "coinsNeed");
+                            row["defaultBetIndex"] = GetLabaOptValue(labas, "defaultBetIndex");
+                            row["exCoin"] = 10000;
+                            row["coinSc"] = 1;
+                            row["gameMo"] = 100;
+                            row["idleFireTimeoutSec"] = 0;
+
+                            rows.Add(row);
                         }
                     }
                     msg.code = 1;
@@ -393,15 +419,68 @@ namespace YYT.Web.Areas.Game.Controllers
                 if (gameType == 3)
                 {
                     if (tableId < 0) tableId = AllocTableId(3, gameId);
-                    int winRate = form.Q<int>("WinRate", -1);
-                    int exchangeRate = form.Q<int>("ExchangeRate", -1);
+                    int subType = GetLabaSubType(gameId);
                     string labaTableName = (form.Q<string>("TableName", string.Empty) ?? string.Empty).Trim();
+                    int labaEnabled = form.Q<int>("Enabled", 1);
+
                     List<M_GameConfigLaba> labaList = new List<M_GameConfigLaba>();
-                    labaList.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "ExchangeScore", OptValue = exchangeRate, TIME = DateTime.Now, Type = string.Empty });
-                    string winKey = gameId == 39 ? "AIWinLuckyAtA2" : ((gameId == 40 || gameId == 41) ? "PlayerWin" : string.Empty);
-                    if (!string.IsNullOrEmpty(winKey))
-                        labaList.Add(new M_GameConfigLaba { GameId = gameId, OptKey = winKey, OptValue = winRate, TIME = DateTime.Now, Type = string.Empty });
-                    msg = new B_LabaGamePara().SaveTableFull(tableId, gameId, labaList, labaTableName);
+
+                    if (subType == 3)  // 水浒传
+                    {
+                        for (int p = 0; p <= 9; p++)
+                        {
+                            int val = form.Q<int>("Payout" + p, -1);
+                            if (val >= 0)
+                                labaList.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "Payout" + p, OptValue = val, TIME = DateTime.Now, Type = "Payout" });
+                        }
+                    }
+                    else if (subType == 1)  // 明星97
+                    {
+                        for (int p = 0; p <= 7; p++)
+                        {
+                            int val = form.Q<int>("Payout" + p, -1);
+                            if (val >= 0)
+                                labaList.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "Payout" + p, OptValue = val, TIME = DateTime.Now, Type = "Payout" });
+                        }
+                    }
+                    else if (subType == 2)  // 水果拉霸
+                    {
+                        for (int p = 0; p <= 7; p++)
+                        {
+                            int val = form.Q<int>("Payout" + p, -1);
+                            if (val >= 0)
+                                labaList.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "Payout" + p, OptValue = val, TIME = DateTime.Now, Type = "Payout" });
+                        }
+                    }
+
+                    int labaBetMin = form.Q<int>("MinBet", -1);
+                    int labaBetMax = form.Q<int>("MaxBet", -1);
+                    int labaCoinsNeed = form.Q<int>("COIN_NEED", -1);
+                    int labaDefaultBetIdx = form.Q<int>("defaultBetIndex", -1);
+                    if (labaBetMin >= 0)
+                        labaList.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "betMin", OptValue = labaBetMin, TIME = DateTime.Now, Type = "Room" });
+                    if (labaBetMax >= 0)
+                        labaList.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "betMax", OptValue = labaBetMax, TIME = DateTime.Now, Type = "Room" });
+                    if (labaCoinsNeed >= 0)
+                        labaList.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "coinsNeed", OptValue = labaCoinsNeed, TIME = DateTime.Now, Type = "Room" });
+                    if (labaDefaultBetIdx >= 0)
+                        labaList.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "defaultBetIndex", OptValue = labaDefaultBetIdx, TIME = DateTime.Now, Type = "Room" });
+
+                    int rtTableIndex = tableId % 1000;
+                    int rtBetMin = labaBetMin >= 0 ? labaBetMin : 100;
+                    int rtBetMax = labaBetMax >= 0 ? labaBetMax : 10000;
+                    int rtCoinsNeed = labaCoinsNeed >= 0 ? labaCoinsNeed : 0;
+                    using (var efRt = new GameDbContext())
+                    {
+                        efRt.Database.ExecuteSqlCommand(
+                            "DELETE FROM roomtableconfig WHERE GAME_ID=" + gameId + " AND RoomIndex=0 AND TableIndex=" + rtTableIndex);
+                        efRt.Database.ExecuteSqlCommand(
+                            "INSERT INTO roomtableconfig (GAME_ID, RoomIndex, TableIndex, TableName, Enabled, MaxSeats, OneCoinScore, BetMin, BetMax, CoinsNeed, IdleFireTimeoutSec, IdleFireKickEnabled) VALUES (" +
+                            gameId + ",0," + rtTableIndex + ",'" + labaTableName.Replace("'", "''") + "'," + labaEnabled + ",6,1," +
+                            rtBetMin + "," + rtBetMax + "," + rtCoinsNeed + ",0,0)");
+                    }
+
+                    msg = new B_LabaGamePara().SaveTableFull(tableId, gameId, labaList, labaTableName, labaEnabled);
                     return Json(msg);
                 }
                 bool isNew = tableId < 0;
@@ -677,8 +756,21 @@ namespace YYT.Web.Areas.Game.Controllers
 			return next;
 
 		}
-
 	}
+
+        private static int GetLabaSubType(int gameId)
+        {
+            if (gameId == 53) return 3;
+            if (gameId == 16) return 1;
+            if (gameId == 40) return 2;
+            return 0;
+        }
+
+        private static int GetLabaOptValue(List<M_GameConfigLaba> labas, string optKey)
+        {
+            var item = labas.FirstOrDefault(c => c.OptKey == optKey);
+            return item != null ? item.OptValue : 0;
+    }
 
 }
 }
