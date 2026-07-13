@@ -171,7 +171,8 @@ namespace YYT.BLL.EF
                 {
                     if (gameId == -1)
                         gameId = c.GAME_ID;
-                    foreach (byte item in BitConverter.GetBytes(c.scoreSwitch == 0 ? 1 : c.scoreSwitch))
+                    int scoreSwitchValue = (int)Math.Round(c.scoreSwitch == 0 ? 1 : c.scoreSwitch * 10, MidpointRounding.AwayFromZero);
+                    foreach (byte item in BitConverter.GetBytes(scoreSwitchValue))
                         sb.Append(item.ToString("X2"));
                 });
                 if (gameId > -1)

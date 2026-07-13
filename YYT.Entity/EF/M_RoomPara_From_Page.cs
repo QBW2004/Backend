@@ -321,9 +321,9 @@
         /// </summary>
         public int COIN_NEED_0 { get; set; }
         /// <summary>
-        /// 初级场_加炮幅度
+        /// 初级场_加炮幅度（支持小数0.1-0.9）
         /// </summary>
-        public int scoreSwitch_0 { get; set; }
+        public decimal scoreSwitch_0 { get; set; }
         /// <summary>
         /// 初级场_最小押分值限制
         /// </summary>
@@ -362,9 +362,9 @@
         /// </summary>
         public int COIN_NEED_1 { get; set; }
         /// <summary>
-        /// 中级场_加炮幅度
+        /// 中级场_加炮幅度（支持小数0.1-0.9）
         /// </summary>
-        public int scoreSwitch_1 { get; set; }
+        public decimal scoreSwitch_1 { get; set; }
         /// <summary>
         /// 中级场_最小押分值限制
         /// </summary>
@@ -403,9 +403,9 @@
         /// </summary>
         public int COIN_NEED_2 { get; set; }
         /// <summary>
-        /// 高级场_加炮幅度
+        /// 高级场_加炮幅度（支持小数0.1-0.9）
         /// </summary>
-        public int scoreSwitch_2 { get; set; }
+        public decimal scoreSwitch_2 { get; set; }
         /// <summary>
         /// 高级场_最小押分值限制
         /// </summary>
@@ -446,9 +446,9 @@
         /// </summary>
         public int COIN_NEED_3 { get; set; }
         /// <summary>
-        /// VIP场_加炮幅度
+        /// VIP场_加炮幅度（支持小数0.1-0.9）
         /// </summary>
-        public int scoreSwitch_3 { get; set; }
+        public decimal scoreSwitch_3 { get; set; }
         /// <summary>
         /// VIP场_最小押分值限制
         /// </summary>

@@ -45,9 +45,9 @@ namespace YYT.Entity
         /// </summary>
         public int COIN_NEED { get; set; }
         /// <summary>
-        /// 加炮幅度
+        /// 加炮幅度（支持小数0.1-0.9）
         /// </summary>
-        public int scoreSwitch { get; set; }
+        public decimal scoreSwitch { get; set; }
         /// <summary>
         /// 最小押分值限制
         /// </summary>

@@ -519,6 +519,7 @@ namespace YYT.Web.Areas.Game.Controllers
                 int coinSc = form.Q<int>("OneCoinScore", 1);
                 int coinNeed = form.Q<int>("CoinsNeed", 0);
                 int gameMo = form.Q<int>("Game_Mo", 0);
+                decimal scoreSwitch = form.Q<decimal>("scoreSwitch", 0m);
 
                 if (gameType == 0)
                 {
@@ -563,7 +564,7 @@ namespace YYT.Web.Areas.Game.Controllers
                 }
                 else if (gameType == 1)
                 {
-                    M_ParaRoom room = BuildParaRoom(tableId, gameId, num, betMin, betMax, exCoin, coinSc, coinNeed, gameMo, tableName, maxSeats, idleTimeout, idleKick, enabled);
+                    M_ParaRoom room = BuildParaRoom(tableId, gameId, num, betMin, betMax, exCoin, coinSc, coinNeed, gameMo, tableName, maxSeats, idleTimeout, idleKick, enabled, scoreSwitch);
 
                     M_ParaCard machine = new M_ParaCard();
                     machine.ID = tableId;
@@ -612,7 +613,7 @@ namespace YYT.Web.Areas.Game.Controllers
             return Json(msg);
         }
 
-        private static M_ParaRoom BuildParaRoom(int tableId, int gameId, int num, int betMin, int betMax, int exCoin, int coinSc, int coinNeed, int gameMo, string tableName, int maxSeats, int idleTimeout, bool idleKick, bool enabled)
+        private static M_ParaRoom BuildParaRoom(int tableId, int gameId, int num, int betMin, int betMax, int exCoin, int coinSc, int coinNeed, int gameMo, string tableName, int maxSeats, int idleTimeout, bool idleKick, bool enabled, decimal scoreSwitch = 0m)
         {
             M_ParaRoom room = new M_ParaRoom();
             room.ID = tableId;
@@ -625,7 +626,7 @@ namespace YYT.Web.Areas.Game.Controllers
             room.EX_COIN = exCoin;
             room.COIN_SC = coinSc;
             room.COIN_NEED = coinNeed;
-            room.scoreSwitch = betMin;
+            room.scoreSwitch = scoreSwitch > 0 ? scoreSwitch : betMin;
             room.Game_Mo = gameMo;
             room.TableName = tableName;
             room.MaxSeats = maxSeats;

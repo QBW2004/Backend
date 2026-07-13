@@ -1042,9 +1042,6 @@ namespace YYT.Web.Areas.Game.Controllers
             {
                 string id = form.Q<string>("ID1");
                 int action = form.Q<int>("Action1", -1);
-                int val = form.Q<int>("Val1");
-                int type = form.Q<int>("Type1");
-                int number = form.Q<int>("Number1");
                 if (string.IsNullOrWhiteSpace(id))
                 {
                     msg.content = "用户ID不能为空！";
@@ -1069,7 +1066,19 @@ namespace YYT.Web.Areas.Game.Controllers
                 {
                     set = 1;
                 }
-                var tmpMsg = new GameCommandService().SetUserControl(action.ToString().PadLeft(2, '0'), type.ToString().PadLeft(2, '0'), number.ToString().PadLeft(2, '0'), val.ToString().PadLeft(2, '0'),  set, id);
+                Msg tmpMsg;
+                if (action == 25 || action == 26)
+                {
+                    int killVal = form.Q<int>("KillVal");
+                    tmpMsg = new GameCommandService().SetUserControl(action.ToString().PadLeft(2, '0'), killVal.ToString().PadLeft(2, '0'), set, id);
+                }
+                else
+                {
+                    int val = form.Q<int>("Val1");
+                    int type = form.Q<int>("Type1");
+                    int number = form.Q<int>("Number1");
+                    tmpMsg = new GameCommandService().SetUserControl(action.ToString().PadLeft(2, '0'), type.ToString().PadLeft(2, '0'), number.ToString().PadLeft(2, '0'), val.ToString().PadLeft(2, '0'), set, id);
+                }
 
                 long goldLimitPaiJi = form.Q<long>("GoldLimitPaiJi", 0);
                 bool goldSavedPai = false;
@@ -1145,6 +1154,15 @@ namespace YYT.Web.Areas.Game.Controllers
                 }
 
                 Msg tmpMsg;
+                if (action == 27 || action == 28)
+                {
+                    int val = form.Q<int>("ValLaba");
+                    tmpMsg = new GameCommandService().SetUserControl(
+                        action.ToString().PadLeft(2, '0'),
+                        val.ToString().PadLeft(2, '0'),
+                        set, id);
+                }
+                else
                 {
                     int symbol = form.Q<int>("SymbolLaba", 0);
                     int number = form.Q<int>("NumberLaba", 1);
