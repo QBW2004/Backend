@@ -227,6 +227,7 @@
     <Compile Include="Areas\Game\Controllers\GameMoController.cs" />
     <Compile Include="Areas\Game\Controllers\GameRecordController.cs" />
     <Compile Include="Areas\Game\Controllers\GameSettingController.cs" />
+    <Compile Include="Areas\Game\Controllers\FishUserCtrlController.cs" />
     <Compile Include="Areas\Game\Controllers\NoticeController.cs" />
     <Compile Include="Areas\Game\Controllers\RechargeController.cs" />
     <Compile Include="Areas\Game\Controllers\ReChargeResultController.cs" />
@@ -302,6 +303,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Areas\Game\Views\UCRecord\Index.cshtml" />
+    <Content Include="Areas\Game\Views\FishUserCtrl\Index.cshtml" />
     <Content Include="Areas\Game\Views\Recharge\Records.cshtml" />
     <Content Include="Config\SiteDefine.xml" />
     <Content Include="Content\app\para.css" />

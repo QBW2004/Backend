@@ -808,6 +808,71 @@ namespace YYT.Web.Areas.Game.Controllers
         [MemberAuthorize]
         [AjaxOnly]
         [HttpPost]
+        public ActionResult GetUserGoldLimit(FormCollection form)
+        {
+            Msg msg = new Msg(0, "");
+            try
+            {
+                string id = form.Q<string>("ID");
+                if (string.IsNullOrWhiteSpace(id))
+                    return Json(msg);
+                using (var ef = new GameDbContext())
+                {
+                    var row = ef.UserControlStatuses
+                        .Where(c => c.UserID == id && c.ControlMode == (int)EControlMode.Limit && c.Status == (int)EControlStatus.Active)
+                        .OrderByDescending(c => c.ID)
+                        .FirstOrDefault();
+                    if (row != null)
+                    {
+                        msg.code = 1;
+                        msg.content = row.LimitCoins.ToString();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.UserInfoController), ex);
+            }
+            return Json(msg);
+        }
+
+        private static void SaveGoldLimitToDb(string userId, long goldLimit, string createdBy)
+        {
+            using (var ef = new GameDbContext())
+            {
+                var olds = ef.UserControlStatuses
+                    .Where(c => c.UserID == userId && c.ControlMode == (int)EControlMode.Limit && c.Status == (int)EControlStatus.Active)
+                    .ToList();
+                foreach (var old in olds)
+                {
+                    old.Status = (int)EControlStatus.Expired;
+                    old.ExpiredTime = DateTime.Now;
+                }
+                if (goldLimit > 0)
+                {
+                    ef.UserControlStatuses.Add(new M_UserControlStatus
+                    {
+                        UserID = userId,
+                        GameType = 1,
+                        GameId = 0,
+                        ControlMode = (int)EControlMode.Limit,
+                        TargetCoins = 0,
+                        ConsumedCoins = 0,
+                        GrantedCoins = 0,
+                        LimitCoins = goldLimit,
+                        KillRatio = 60,
+                        Status = (int)EControlStatus.Active,
+                        CreatedBy = createdBy,
+                        CreatedTime = DateTime.Now
+                    });
+                }
+                ef.SaveChanges();
+            }
+        }
+
+        [MemberAuthorize]
+        [AjaxOnly]
+        [HttpPost]
         public ActionResult ChgUserRate(FormCollection form)
         {
             Msg msg = new Msg(0, "鱼机修改失败！");
@@ -850,8 +915,34 @@ namespace YYT.Web.Areas.Game.Controllers
                     set = 1;
                 }
                 var tmpMsg = new GameCommandService().SetUserControl(action.ToString().PadLeft(2, '0'), val.ToString().PadLeft(2, '0'), set, id);
-                msg.code = tmpMsg.code == 1 ? 1 : 0;
-                msg.content = tmpMsg.content;
+
+                long goldLimit = form.Q<long>("GoldLimit", 0);
+                bool goldSaved = false;
+                try
+                {
+                    SaveGoldLimitToDb(id, goldLimit, loginUser?.Accounts ?? "");
+                    goldSaved = true;
+                }
+                catch (Exception exGl) { LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.UserInfoController), exGl); }
+
+                string tmpDatas = tmpMsg != null ? (tmpMsg.datas as string) : null;
+                bool ucOk = tmpMsg != null && (tmpMsg.code == 1 || tmpDatas == "UCNL" || tmpDatas == "UCOK");
+
+                if (ucOk)
+                {
+                    msg.code = 1;
+                    msg.content = "设置成功" + (goldLimit > 0 && goldSaved ? "，金币阈值已设置" : "");
+                }
+                else if (goldLimit > 0 && goldSaved)
+                {
+                    msg.code = 1;
+                    msg.content = "金币阈值已设置";
+                }
+                else
+                {
+                    msg.code = 0;
+                    msg.content = "设置失败";
+                }
             }
             catch (Exception ex)
             {
@@ -904,8 +995,34 @@ namespace YYT.Web.Areas.Game.Controllers
                     set = 1;
                 }
                 var tmpMsg = new GameCommandService().SetUserControl(action.ToString().PadLeft(2, '0'), val.ToString().PadLeft(2, '0'), set, id);
-                msg.code = tmpMsg.code == 1 ? 1 : 0;
-                msg.content = tmpMsg.content;
+
+                long goldLimitBet = form.Q<long>("GoldLimit11", 0);
+                bool goldSavedBet = false;
+                try
+                {
+                    SaveGoldLimitToDb(id, goldLimitBet, loginUser?.Accounts ?? "");
+                    goldSavedBet = true;
+                }
+                catch (Exception exGl) { LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.UserInfoController), exGl); }
+
+                string tmpDatasBet = tmpMsg != null ? (tmpMsg.datas as string) : null;
+                bool ucOkBet = tmpMsg != null && (tmpMsg.code == 1 || tmpDatasBet == "UCNL" || tmpDatasBet == "UCOK");
+
+                if (ucOkBet)
+                {
+                    msg.code = 1;
+                    msg.content = "设置成功" + (goldLimitBet > 0 && goldSavedBet ? "，金币阈值已设置" : "");
+                }
+                else if (goldLimitBet > 0 && goldSavedBet)
+                {
+                    msg.code = 1;
+                    msg.content = "金币阈值已设置";
+                }
+                else
+                {
+                    msg.code = 0;
+                    msg.content = "设置失败";
+                }
             }
             catch (Exception ex)
             {
@@ -953,8 +1070,120 @@ namespace YYT.Web.Areas.Game.Controllers
                     set = 1;
                 }
                 var tmpMsg = new GameCommandService().SetUserControl(action.ToString().PadLeft(2, '0'), type.ToString().PadLeft(2, '0'), number.ToString().PadLeft(2, '0'), val.ToString().PadLeft(2, '0'),  set, id);
-                msg.code = tmpMsg.code == 1 ? 1 : 0;
-                msg.content = tmpMsg.content;
+
+                long goldLimitPaiJi = form.Q<long>("GoldLimitPaiJi", 0);
+                bool goldSavedPai = false;
+                try
+                {
+                    SaveGoldLimitToDb(id, goldLimitPaiJi, loginUser?.Accounts ?? "");
+                    goldSavedPai = true;
+                }
+                catch (Exception exGl) { LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.UserInfoController), exGl); }
+
+                string tmpDatasPai = tmpMsg != null ? (tmpMsg.datas as string) : null;
+                bool ucOkPai = tmpMsg != null && (tmpMsg.code == 1 || tmpDatasPai == "UCNL" || tmpDatasPai == "UCOK");
+
+                if (ucOkPai)
+                {
+                    msg.code = 1;
+                    msg.content = "设置成功" + (goldLimitPaiJi > 0 && goldSavedPai ? "，金币阈值已设置" : "");
+                }
+                else if (goldLimitPaiJi > 0 && goldSavedPai)
+                {
+                    msg.code = 1;
+                    msg.content = "金币阈值已设置";
+                }
+                else
+                {
+                    msg.code = 0;
+                    msg.content = "设置失败";
+                }
+            }
+            catch (Exception ex)
+            {
+                msg.content = "服务器内部错误。";
+                LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.UserInfoController), ex);
+            }
+            return Json(msg);
+        }
+
+        [MemberAuthorize]
+        [AjaxOnly]
+        [HttpPost]
+        public ActionResult ChgUserRateLaba(FormCollection form)
+        {
+            Msg msg = new Msg(0, "拉霸修改失败！");
+            try
+            {
+                string id = form.Q<string>("IDLaba");
+                int action = form.Q<int>("ActionLaba", -1);
+                if (string.IsNullOrWhiteSpace(id))
+                {
+                    msg.content = "用户ID不能为空！";
+                    return Json(msg);
+                }
+
+                bool rst = new B_Users().Exists(new M_Users { ID = id });
+                if (!rst)
+                {
+                    msg.content = "此ID用户不存在！";
+                    return Json(msg);
+                }
+                M_LoginUser loginUser = WebHelper.GetLoginInfo();
+                if (loginUser == null || loginUser.UserPriv > 0)
+                {
+                    if ((loginUser?.IsKill ?? 0) != 1 && (loginUser?.IsProbability ?? 0) != 1)
+                    {
+                        msg.content = "没有控制权限！";
+                        return Json(msg);
+                    }
+                }
+                int set = 0;
+                if (loginUser != null && loginUser.UserName == ConfigHelper.Get("admin"))
+                {
+                    set = 1;
+                }
+
+                Msg tmpMsg;
+                {
+                    int symbol = form.Q<int>("SymbolLaba", 0);
+                    int number = form.Q<int>("NumberLaba", 1);
+                    int totalNumber = form.Q<int>("TotalLaba", 5);
+                    tmpMsg = new GameCommandService().SetUserControl(
+                        action.ToString().PadLeft(2, '0'),
+                        symbol.ToString().PadLeft(2, '0'),
+                        number.ToString().PadLeft(2, '0'),
+                        totalNumber.ToString().PadLeft(2, '0'),
+                        set, id);
+                }
+
+                long goldLimitLaba = form.Q<long>("GoldLimitLaba", 0);
+                bool goldSavedLaba = false;
+                try
+                {
+                    SaveGoldLimitToDb(id, goldLimitLaba, loginUser?.Accounts ?? "");
+                    goldSavedLaba = true;
+                }
+                catch (Exception exGl) { LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.UserInfoController), exGl); }
+
+                string tmpDatasLaba = tmpMsg != null ? (tmpMsg.datas as string) : null;
+                bool ucOkLaba = tmpMsg != null && (tmpMsg.code == 1 || tmpDatasLaba == "UCNL" || tmpDatasLaba == "UCOK");
+
+                if (ucOkLaba)
+                {
+                    msg.code = 1;
+                    msg.content = "设置成功" + (goldLimitLaba > 0 && goldSavedLaba ? "，金币阈值已设置" : "");
+                }
+                else if (goldLimitLaba > 0 && goldSavedLaba)
+                {
+                    msg.code = 1;
+                    msg.content = "金币阈值已设置";
+                }
+                else
+                {
+                    msg.code = 0;
+                    msg.content = "设置失败";
+                }
             }
             catch (Exception ex)
             {

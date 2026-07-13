@@ -1,0 +1,294 @@
+﻿
+@{
+    Layout = "~/Views/Shared/Layout/_ContentLayout.cshtml";
+    ViewBag.RouteMap = "鱼机和玩家控制";
+    M_LoginUser loginUser = WebHelper.GetLoginInfo();
+}
+@section include_res{
+    <style>
+        .fc-panel { border: 1px solid #ddd; border-radius: 4px; background: #fff; padding: 12px; }
+        .fc-panel h4 { margin: 0 0 10px 0; padding-bottom: 8px; border-bottom: 1px solid #eee; font-size: 14px; font-weight: bold; }
+        .fc-row { margin-bottom: 10px; line-height: 26px; }
+        .fc-row label { cursor: pointer; }
+        .fc-tip { color: #999; font-size: 12px; margin-left: 20px; }
+        .fc-val { margin-left: 8px; }
+        #btnApply.l-btn-disabled { opacity: .5; }
+    </style>
+    <script>
+        $(function () {
+            easyloader.load(['textbox', 'numberbox', 'combobox', 'linkbutton', 'datagrid', 'messager'], function () {
+                $(window).resize(function () {
+                    if ($('body').data('grid-init')) {
+                        setGridSize();
+                    }
+                });
+                pluginInit();
+                initFishGames();
+                bindEvents();
+                refreshApplyState();
+                queryData();
+            });
+        })
+        function setGridSize(param) {
+            var h = $(window).height() - $('#fc-setting').outerHeight(true) - 120;
+            if (h < 260) h = 260;
+            resizeGrid('tb_Controls', 'auto', h);
+        }
+        //初始化鱼机下拉
+        function initFishGames() {
+            $('#cmbGame').combobox({
+                valueField: 'GameId',
+                textField: 'Name',
+                editable: false,
+                panelHeight: 'auto',
+                width: 150
+            });
+            $.post('/Game/FishUserCtrl/GetFishGames', {}, function (rows) {
+                $('#cmbGame').combobox('loadData', rows);
+                $('#cmbGame').combobox('setValue', 0);
+            });
+        }
+        //事件绑定：左侧条件单选 + 右侧规则勾选 → 控制按钮可用状态
+        function bindEvents() {
+            $('input[name="Scope"]').change(function () {
+                var scope = $('input[name="Scope"]:checked').val();
+                $('#dvGame').toggle(scope == '1');
+                $('#dvUser').toggle(scope == '2');
+                refreshApplyState();
+            });
+            $('#ckLimit,#ckRelease,#ckKill').change(refreshApplyState);
+        }
+        //左侧条件与右侧规则必须都有选择才能点击生效
+        function refreshApplyState() {
+            var hasScope = $('input[name="Scope"]:checked').length > 0;
+            var hasRule = $('#ckLimit').is(':checked') || $('#ckRelease').is(':checked') || $('#ckKill').is(':checked');
+            if (hasScope && hasRule)
+                $('#btnApply').linkbutton('enable');
+            else
+                $('#btnApply').linkbutton('disable');
+        }
+        //应用控制
+        function applyControl() {
+            var scope = $('input[name="Scope"]:checked').val();
+            if (!scope) {
+                $.messager.alert('提示', '请先选择左侧控制条件！', 'warning');
+                return;
+            }
+            var para = { Scope: scope, GameId: 0, UserID: '' };
+            if (scope == '1') {
+                para.GameId = $('#cmbGame').combobox('getValue') || 0;
+            } else {
+                para.UserID = $.trim($('#txtUserID').textbox('getValue'));
+                if (!para.UserID) {
+                    $.messager.alert('提示', '请填写玩家账号！', 'warning');
+                    return;
+                }
+            }
+            var names = [];
+            if ($('#ckLimit').is(':checked')) {
+                para.EnableLimit = 1;
+                para.LimitVal = $('#numLimit').numberbox('getValue');
+                if (!para.LimitVal || parseInt(para.LimitVal) <= 0) {
+                    $.messager.alert('提示', '请填写正确的金币上限！', 'warning');
+                    return;
+                }
+                names.push('金币上限 ' + para.LimitVal);
+            }
+            if ($('#ckRelease').is(':checked')) {
+                para.EnableRelease = 1;
+                para.ReleaseVal = $('#numRelease').numberbox('getValue');
+                if (!para.ReleaseVal || parseInt(para.ReleaseVal) <= 0) {
+                    $.messager.alert('提示', '请填写正确的放水金额！', 'warning');
+                    return;
+                }
+                names.push('放水 ' + para.ReleaseVal);
+            }
+            if ($('#ckKill').is(':checked')) {
+                para.EnableKill = 1;
+                para.KillVal = $('#numKill').numberbox('getValue');
+                if (!para.KillVal || parseInt(para.KillVal) <= 0) {
+                    $.messager.alert('提示', '请填写正确的点杀金额！', 'warning');
+                    return;
+                }
+                names.push('点杀 ' + para.KillVal);
+            }
+            if (names.length < 1) {
+                $.messager.alert('提示', '请至少选择一个控制规则！', 'warning');
+                return;
+            }
+            var targetDesc = scope == '1' ? ('鱼机【' + $('#cmbGame').combobox('getText') + '】的所有玩家') : ('玩家【' + para.UserID + '】');
+            $.messager.confirm('确认', '确定对 ' + targetDesc + ' 生效以下规则吗？<br/>' + names.join('，'), function (r) {
+                if (!r) return;
+                request('/Game/FishUserCtrl/ApplyControl', para, function (data) {
+                    showMsg(data);
+                    if (data && data.code == 1) {
+                        queryData();
+                    }
+                });
+            });
+        }
+        //查询数据
+        function queryData() {
+            var para = $("#frm_srch").serializeObject();
+            bindGridData(para);
+        }
+        function bindGridData(para) {
+            if (!$('body').data('grid-init')) {
+                $('#tb_Controls').datagrid({
+                    url: "/Game/FishUserCtrl/GetControls",
+                    queryParams: $.extend({}, para),
+                    pagination: true,
+                    fitColumns: true,
+                    singleSelect: true,
+                    striped: true,
+                    rownumbers: true,
+                    height: 400,
+                    pageSize: 20,
+                    pageList: [10, 20, 50],
+                    idField: 'ID',
+                    onBeforeLoad: setGridSize
+                });
+            } else {
+                $('#tb_Controls').datagrid('load', para);
+            }
+        }
+        function fmtTarget(value, rowData) {
+            if (value == '*')
+                return '<span class="red">鱼机全体玩家</span>';
+            return value;
+        }
+        function fmtGame(value, rowData) {
+            if (rowData.UserID != '*')
+                return '—';
+            return rowData.GameId == 0 ? '全部鱼机' : (rowData.GameName || rowData.GameId);
+        }
+        function fmtMode(value) {
+            switch (value) {
+                case 1: return '<span class="red">点杀</span>';
+                case 2: return '<span style="color:green;">放水</span>';
+                case 3: return '<span style="color:#c90;">金币上限</span>';
+            }
+            return value;
+        }
+        function fmtValue(value, rowData) {
+            return rowData.ControlMode == 3 ? rowData.LimitCoins : rowData.TargetCoins;
+        }
+        //进度：点杀看已吃，放水看已放，上限显示已消耗
+        function fmtProgress(value, rowData) {
+            var done = rowData.ControlMode == 2 ? rowData.GrantedCoins : rowData.ConsumedCoins;
+            var total = rowData.ControlMode == 3 ? rowData.LimitCoins : rowData.TargetCoins;
+            if (rowData.ControlMode == 3)
+                return '已消耗 ' + done;
+            var pct = total > 0 ? Math.min(100, Math.round(done * 100 / total)) : 0;
+            return done + ' / ' + total + '（' + pct + '%）';
+        }
+        function fmtStatus(value) {
+            switch (value) {
+                case 0: return '<span style="color:green;">执行中</span>';
+                case 1: return '<span class="gray">已关闭</span>';
+                case 2: return '<span style="color:#c90;">已达成</span>';
+            }
+            return value;
+        }
+        function fmtAction(value, rowData) {
+            if (rowData.Status == 0)
+                return '<a href="javascript:void(0)" class="red Lpd5" onclick="closeControl(' + rowData.ID + ')">关闭</a>';
+            return '';
+        }
+        function closeControl(id) {
+            $.messager.confirm('确认', '确定关闭该条控制吗？', function (r) {
+                if (!r) return;
+                request('/Game/FishUserCtrl/CloseControl', { ID: id }, function (data) {
+                    showMsg(data);
+                    if (data && data.code == 1) {
+                        queryData();
+                    }
+                });
+            });
+        }
+    </script>
+}
+@*控制设置*@
+<div id="fc-setting" style="padding:8px;">
+    <table width="100%" border="0" cellpadding="0" cellspacing="0">
+        <tr>
+            <td width="40%" valign="top">
+                <div class="fc-panel">
+                    <h4>控制条件（二选一）</h4>
+                    <div class="fc-row">
+                        <label><input type="radio" name="Scope" value="1" /> 进入鱼机的所有玩家</label>
+                        <span id="dvGame" class="fc-val" style="display:none;">
+                            <input id="cmbGame" />
+                        </span>
+                        <div class="fc-tip">对进入所选鱼机的每一个玩家生效</div>
+                    </div>
+                    <div class="fc-row">
+                        <label><input type="radio" name="Scope" value="2" /> 精确到用户</label>
+                        <span id="dvUser" class="fc-val" style="display:none;">
+                            <input id="txtUserID" class="easyui-textbox" data-options="prompt:'玩家账号'" style="width:150px;" />
+                        </span>
+                        <div class="fc-tip">仅对指定玩家账号生效</div>
+                    </div>
+                </div>
+            </td>
+            <td width="10"></td>
+            <td valign="top">
+                <div class="fc-panel">
+                    <h4>控制规则（可多选，数值可随时修改重设）</h4>
+                    <div class="fc-row">
+                        <label><input type="checkbox" id="ckLimit" /> 金币上限</label>
+                        <span class="fc-val"><input id="numLimit" class="easyui-numberbox" data-options="min:1,precision:0,prompt:'如：500'" style="width:120px;" /></span>
+                        <span class="fc-tip">超出部分逐步消耗，玩家金币始终保持在上限以内</span>
+                    </div>
+                    <div class="fc-row">
+                        <label><input type="checkbox" id="ckRelease" /> 放水</label>
+                        <span class="fc-val"><input id="numRelease" class="easyui-numberbox" data-options="min:1,precision:0,prompt:'如：1000'" style="width:120px;" /></span>
+                        <span class="fc-tip">慢慢出分，累计赢到该金额后自动恢复正常</span>
+                    </div>
+                    <div class="fc-row">
+                        <label><input type="checkbox" id="ckKill" /> 点杀</label>
+                        <span class="fc-val"><input id="numKill" class="easyui-numberbox" data-options="min:1,precision:0,prompt:'如：1000'" style="width:120px;" /></span>
+                        <span class="fc-tip">慢慢吃分，累计吃满该金额后自动恢复正常</span>
+                    </div>
+                    <div class="fc-row" style="margin-top:14px;">
+                        <a id="btnApply" href="javascript:void(0);" class="easyui-linkbutton" onclick="applyControl();" data-options="iconCls:'icon-ok',disabled:true">生效</a>
+                        <span class="fc-tip">左侧条件与右侧规则都选择后才可点击</span>
+                    </div>
+                </div>
+            </td>
+        </tr>
+    </table>
+</div>
+@*查询条件*@
+<form id="frm_srch">
+    <table width="100%" border="0" cellpadding="0" cellspacing="0" class="titleQueBg" style="height:40px;">
+        <tr>
+            <td>
+                <div class="left Lpd5">
+                    用户账号：
+                    <input type="text" class="easyui-textbox" name="UserID" />
+                </div>
+                <div class="left Lmg10">
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="queryData();" data-options="plain:true,iconCls:'icon-search'">查找</a>
+                </div>
+            </td>
+        </tr>
+    </table>
+</form>
+@*控制记录*@
+<table id="tb_Controls">
+    <thead>
+        <tr>
+            <th field="UserID" width="110" formatter="fmtTarget">控制目标</th>
+            <th field="GameId" width="90" formatter="fmtGame">鱼机</th>
+            <th field="AGENCY" width="100">所属代理</th>
+            <th field="ControlMode" width="80" formatter="fmtMode">规则</th>
+            <th field="TargetCoins" width="90" formatter="fmtValue">设定值</th>
+            <th field="ConsumedCoins" width="140" formatter="fmtProgress">进度</th>
+            <th field="Status" width="70" formatter="fmtStatus">状态</th>
+            <th field="CreatedBy" width="90">操作人</th>
+            <th field="CreatedTime" width="130">设置时间</th>
+            <th field="ID" width="70" formatter="fmtAction">操作</th>
+        </tr>
+    </thead>
+</table>

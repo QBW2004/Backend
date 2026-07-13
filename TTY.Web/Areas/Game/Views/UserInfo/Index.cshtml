@@ -526,6 +526,15 @@
             });
         }
 
+        function loadGoldLimit(uid, inputId) {
+            $('#' + inputId).numberbox('setValue', 0);
+            if (!uid) return;
+            $.post('/Game/UserInfo/GetUserGoldLimit', { ID: uid }, function (data) {
+                if (data && data.code == 1 && data.content) {
+                    $('#' + inputId).numberbox('setValue', parseInt(data.content) || 0);
+                }
+            });
+        }
         function showRateCtrlWin(uid) {
             var para = {
                 winId: '#chgRateWin',
@@ -536,6 +545,7 @@
                     $('#hfID').val(uid);
                     $('#selE_Action1').combobox('loadData', actionSelData());
                     $('#selE_Val1').combobox('loadData', getComboValKill());
+                    loadGoldLimit(uid, 'numGoldLimit1');
                 }
             };
             openWin(para);
@@ -550,6 +560,7 @@
                     $('#hfID11').val(uid);
                     $('#selE_Action2').combobox('loadData', actionSelDataBet());
                     $('#selE_Val2').combobox('loadData', getComboValKill());
+                    loadGoldLimit(uid, 'numGoldLimit2');
                 }
             };
             openWin(para);
@@ -562,6 +573,26 @@
                 callBack: function () {
                     $('#txtE_ID1').textbox('setValue', uid);
                     $('#hfID1').val(uid);
+                    loadGoldLimit(uid, 'numGoldLimit3');
+                }
+            };
+            openWin(para);
+        }
+        function showRateCtrlWinLaba(uid) {
+            var para = {
+                winId: '#chgRateWinLaba',
+                title: '【拉霸控制】',
+                iconCls: 'icon-chart_curve',
+                callBack: function () {
+                    $('#txtE_ID_Laba').textbox('setValue', uid);
+                    $('#hfID_Laba').val(uid);
+                    $('#selE_Action_Laba').combobox({ onChange: bindLabaAction });
+                    $('#selE_Action_Laba').combobox('loadData', actionSelDataLaba());
+                    $('#selE_Symbol_Laba').combobox('loadData', valSelDataShz());
+                    $('#selE_Number_Laba').combobox('loadData', valSelData());
+                    $('#selE_Total_Laba').combobox('loadData', valSelDataPAIJI1());
+                    $('#numGoldLimitLaba').numberbox('setValue', 0);
+                    loadGoldLimit(uid, 'numGoldLimitLaba');
                 }
             };
             openWin(para);
@@ -583,6 +614,8 @@
                     if (canFish) $('#btnFishCtrl').show(); else $('#btnFishCtrl').hide();
                     if (canPaiJi) $('#btnPaiJiCtrl').show(); else $('#btnPaiJiCtrl').hide();
                     if (canBet) $('#btnBetCtrl').show(); else $('#btnBetCtrl').hide();
+                    var canLaba = canBet;
+                    if (canLaba) $('#btnLabaCtrl').show(); else $('#btnLabaCtrl').hide();
                 }
             };
             openWin(para);
@@ -593,6 +626,7 @@
             if (type == 'fish') showRateCtrlWin(uid);
             else if (type == 'paiji') showRateCtrlWinPAIJI(uid);
             else if (type == 'bet') showRateCtrlWinBet(uid);
+            else if (type == 'laba') showRateCtrlWinLaba(uid);
         }
         function actionSelData() {
             var items = [];
@@ -620,6 +654,68 @@
             }
             if (items.length > 0) items[0].selected = true;
             return items;
+        }
+
+        function actionSelDataLaba() {
+            var items = [];
+            @if (loginUser.UserPriv == 0 || loginUser.IsKill == 1 || loginUser.IsProbability == 1)
+            {
+                @Html.Raw("items.push({ id: 15, text: '水浒传', selected: true });");
+                @Html.Raw("items.push({ id: 16, text: '明星97' });");
+                @Html.Raw("items.push({ id: 17, text: '水果拉霸' });");
+            }
+            return items;
+        }
+
+        function bindLabaAction(newValue, oldValue) {
+            if (newValue == 15) $('#selE_Symbol_Laba').combobox('loadData', valSelDataShz());
+            else if (newValue == 16) $('#selE_Symbol_Laba').combobox('loadData', valSelDataMx97());
+            else if (newValue == 17) $('#selE_Symbol_Laba').combobox('loadData', valSelDataFruit());
+        }
+
+        function valSelDataLaba() {
+            return valSelDataShz();
+        }
+        function valSelDataShz() {
+            var arr = [];
+            arr.push({ id: 0, text: '符号0(2倍)' });
+            arr.push({ id: 1, text: '符号1(3倍)' });
+            arr.push({ id: 2, text: '符号2(4倍)' });
+            arr.push({ id: 3, text: '符号3(5倍)' });
+            arr.push({ id: 4, text: '符号4(8倍)' });
+            arr.push({ id: 5, text: '符号5(10倍)' });
+            arr.push({ id: 6, text: '符号6(15倍)' });
+            arr.push({ id: 7, text: '符号7(20倍)' });
+            arr.push({ id: 8, text: '散标(免费触发)' });
+            arr.push({ id: 10, text: '关闭控制' });
+            return arr;
+        }
+        function valSelDataMx97() {
+            var arr = [];
+            arr.push({ id: 0, text: '樱桃(10倍)' });
+            arr.push({ id: 1, text: '橘子(10倍)' });
+            arr.push({ id: 2, text: '蓝莓(14倍)' });
+            arr.push({ id: 3, text: '铃铛(18倍)' });
+            arr.push({ id: 4, text: '西瓜(20倍)' });
+            arr.push({ id: 5, text: '黄BAR(30倍)' });
+            arr.push({ id: 6, text: '红BAR(50倍)' });
+            arr.push({ id: 7, text: '蓝BAR(70倍)' });
+            arr.push({ id: 8, text: '七(80倍+)' });
+            arr.push({ id: 10, text: '关闭控制' });
+            return arr;
+        }
+        function valSelDataFruit() {
+            var arr = [];
+            arr.push({ id: 0, text: '符号0(2倍)' });
+            arr.push({ id: 1, text: '符号1(3倍)' });
+            arr.push({ id: 2, text: '符号2(4倍)' });
+            arr.push({ id: 3, text: '符号3(5倍)' });
+            arr.push({ id: 4, text: '符号4(8倍)' });
+            arr.push({ id: 5, text: '符号5(10倍)' });
+            arr.push({ id: 6, text: '符号6(15倍)' });
+            arr.push({ id: 7, text: '符号7(30倍)' });
+            arr.push({ id: 10, text: '关闭控制' });
+            return arr;
         }
 
         function actionSelDataPAIJI() {
@@ -732,6 +828,17 @@
                     }
                 });");
         }
+        function SaveUserRateLaba() {
+            @Html.Raw(@"       var para = $('#formLaba').serializeObject();
+                request('/Game/UserInfo/ChgUserRateLaba', para, function (data) {
+                    showUserResult(data);
+                    if (data && data.code == 1) {
+                        $('#chgRateWinLaba').dialog('close');
+                        $('#formLaba').form('reset');
+                        refreshChangedUserRow(para.IDLaba, 500);
+                    }
+                });");
+        }
         function kickPlayer(id) {
             var _tip = 'ALL', _url = '/Game/UserInfo/KickAllPlayer';
             if (id && id.length > 0) {
@@ -800,8 +907,8 @@
 
         function getComboValKill() {
             var arr = [];
-            arr.push({ id: 3, text: '小杀(3%)', selected: true });
-            arr.push({ id: 6, text: '中杀(6%)' });
+            arr.push({ id: 3, text: '小杀(3%)' });
+            arr.push({ id: 6, text: '中杀(6%)', selected: true });
             arr.push({ id: 9, text: '大杀(9%)' });
             arr.push({ id: 0, text: '关闭' });
             return arr;
@@ -975,6 +1082,8 @@
     <a id="btnPaiJiCtrl" href="javascript:void(0);" class="easyui-linkbutton" onclick="subCtrlClick('paiji')" data-options="plain:true,iconCls:'icon-chart_curve'" style="margin:8px;width:140px;">牌机控制</a>
     <br/>
     <a id="btnBetCtrl" href="javascript:void(0);" class="easyui-linkbutton" onclick="subCtrlClick('bet')" data-options="plain:true,iconCls:'icon-chart_curve'" style="margin:8px;width:140px;">注机控制</a>
+    <br/>
+    <a id="btnLabaCtrl" href="javascript:void(0);" class="easyui-linkbutton" onclick="subCtrlClick('laba')" data-options="plain:true,iconCls:'icon-chart_curve'" style="margin:8px;width:140px;">拉霸控制</a>
 </div>
 
 @*修改鱼机控制窗口*@
@@ -1003,6 +1112,13 @@
                 <td align="left" class="pd5">
                     <select class="easyui-combobox win-txt" id="selE_Val1" name="Val" data-options="valueField:'id',textField:'text',panelHeight:150,data:getComboValKill()"></select>
 
+                </td>
+            </tr>
+            <tr>
+                <td align="right">金币阈值</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-numberbox win-txt" id="numGoldLimit1" name="GoldLimit" data-options="min:0,precision:0,prompt:'0=不限制'" style="width:150px;" />
+                    <span style="color:#999;font-size:12px;">金币上限到达后恢复正常吞吐币，0=不限制</span>
                 </td>
             </tr>
             <tr>
@@ -1042,6 +1158,13 @@
                 <td align="left" class="pd5">
                     <select class="easyui-combobox win-txt" id="selE_Val2" name="Val11" data-options="valueField:'id',textField:'text',panelHeight:150,data:getComboValKill()"></select>
 
+                </td>
+            </tr>
+            <tr>
+                <td align="right">金币阈值</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-numberbox win-txt" id="numGoldLimit2" name="GoldLimit11" data-options="min:0,precision:0,prompt:'0=不限制'" style="width:150px;" />
+                    <span style="color:#999;font-size:12px;">金币上限到达后恢复正常吞吐币，0=不限制</span>
                 </td>
             </tr>
             <tr>
@@ -1101,11 +1224,75 @@
                 </td>
             </tr>
 
+            <tr>
+                <td align="right">金币阈值</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-numberbox win-txt" id="numGoldLimit3" name="GoldLimitPaiJi" data-options="min:0,precision:0,prompt:'0=不限制'" style="width:150px;" />
+                    <span style="color:#999;font-size:12px;">金币上限到达后恢复正常吞吐币，0=不限制</span>
+                </td>
+            </tr>
+
 
             <tr>
                 <td align="center" colspan="2" class="pd5">
                     <input type="hidden" id="hfID1" name="ID1" value="0" />
                     <a href="javascript:void(0);" class="easyui-linkbutton" onclick="SaveUserRatePAIJI()" data-options="plain:true,iconCls:'icon-save'">保存</a>
+                </td>
+            </tr>
+        </table>
+    </form>
+</div>
+
+@*修改拉霸控制窗口*@
+<div id="chgRateWinLaba" class="hide">
+    <form id="formLaba">
+        <table cellpadding="0" cellspacing="0" border="0" width="100%" align="center">
+            <tr>
+                <td colspan="2" align="left" style="padding-left: 50px;color:#999;">
+                    <p style="margin-left:-35px;">温馨提示:修改后即时生效</p>
+                </td>
+            </tr>
+            <tr>
+                <td align="right">用户账号</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-textbox win-txt" id="txtE_ID_Laba" disabled />
+                </td>
+            </tr>
+            <tr>
+                <td align="right">控制游戏类型</td>
+                <td align="left" class="pd5">
+                    <select class="easyui-combobox win-txt" id="selE_Action_Laba" name="ActionLaba" data-options="valueField:'id',textField:'text',panelHeight:150"></select>
+                </td>
+            </tr>
+            <tr>
+                <td align="right">控制牌类型</td>
+                <td align="left" class="pd5">
+                    <select class="easyui-combobox win-txt" id="selE_Symbol_Laba" name="SymbolLaba" data-options="valueField:'id',textField:'text',panelHeight:150"></select>
+                </td>
+            </tr>
+            <tr>
+                <td align="right">次数</td>
+                <td align="left" class="pd5">
+                    <select class="easyui-combobox win-txt" id="selE_Number_Laba" name="NumberLaba" data-options="valueField:'id',textField:'text',panelHeight:150"></select>
+                </td>
+            </tr>
+            <tr>
+                <td align="right">总次数</td>
+                <td align="left" class="pd5">
+                    <select class="easyui-combobox win-txt" id="selE_Total_Laba" name="TotalLaba" data-options="valueField:'id',textField:'text',panelHeight:150"></select>
+                </td>
+            </tr>
+            <tr>
+                <td align="right">金币阈值</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-numberbox win-txt" id="numGoldLimitLaba" name="GoldLimitLaba" data-options="min:0,precision:0,prompt:'0=不限制'" style="width:150px;" />
+                    <span style="color:#999;font-size:12px;">金币上限到达后恢复正常吞吐币，0=不限制</span>
+                </td>
+            </tr>
+            <tr>
+                <td align="center" colspan="2" class="pd5">
+                    <input type="hidden" id="hfID_Laba" name="IDLaba" value="0" />
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="SaveUserRateLaba()" data-options="plain:true,iconCls:'icon-save'">保存</a>
                 </td>
             </tr>
         </table>

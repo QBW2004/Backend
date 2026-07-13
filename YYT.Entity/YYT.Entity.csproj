@@ -116,6 +116,7 @@
     <Compile Include="EF\M_Reports.cs" />
     <Compile Include="EF\M_RoomPara_From_Page.cs" />
     <Compile Include="EF\M_TableCoinRecord.cs" />
+    <Compile Include="EF\M_UserControlStatus.cs" />
     <Compile Include="EF\M_UpdateAddr.cs" />
     <Compile Include="EF\M_UserLockRecord.cs" />
     <Compile Include="EF\M_UserRelations.cs" />

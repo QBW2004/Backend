@@ -156,6 +156,7 @@ namespace YYT.BLL.EF
         /// 活动表
         /// </summary>
         public DbSet<M_Activity> Activities { get; set; }
+        public DbSet<M_UserControlStatus> UserControlStatuses { get; set; }
         protected override DbEntityValidationResult ValidateEntity(DbEntityEntry entityEntry, IDictionary<object, object> items)
         {
             //当实体不为null且实体状态为已发生变化时执行

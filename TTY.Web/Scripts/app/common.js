@@ -393,7 +393,7 @@ function download(url, para) {
 }
 // 打开弹出窗口
 function openWin(para) {
-    easyloader.load(['dialog', 'form'], function () {
+    easyloader.load(['dialog', 'form', 'combobox', 'numberbox'], function () {
         if (!$(para.winId).hasClass('easyui-dialog')) {
             $(para.winId).dialog({
                 title: para.title,
