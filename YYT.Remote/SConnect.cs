@@ -315,17 +315,43 @@ namespace YYT.Remote
         }
 
         /// <summary>
+        /// TC 命令的押分桌台扩展字段（仅押分类游戏），字段顺序与 center 的
+        /// ts_BetRoomTableConfig 解析一致：U8 betTime + U32×7(betMin/betMax/bankerScoreNeed/
+        /// itemSingle/itemAll/coinsNeed/oneCoinScore) + Poco 字符串 betScores + U8 defaultBetIndex
+        /// + 可选 U32×4(betMinVice/betMaxVice/betMinDraw/betMaxDraw，仅 layoutTag==1 的游戏，如幸运六狮)。
+        /// </summary>
+        public class TcBetExt
+        {
+            public byte BetTime;
+            public uint BetMin;
+            public uint BetMax;
+            public uint BankerScoreNeed;
+            public uint ItemSingleScoreLimit;
+            public uint ItemAllScoreLimit;
+            public uint CoinsNeed;
+            public uint OneCoinScore;
+            public string BetScores;
+            public byte DefaultBetIndex;
+            public bool IncludeViceDraw;
+            public uint BetMinVice;
+            public uint BetMaxVice;
+            public uint BetMinDraw;
+            public uint BetMaxDraw;
+        }
+
+        /// <summary>
         /// 发送 TC(桌台配置热更新) 二进制命令，并读取 center 的文本回复(TCOK/TCER)。
         /// 报文布局见《后台桌名热更新对接说明-TC命令》§3.2：
         ///   "TC" + U16 BE gameID + U16 BE roomIndex + U16 BE tableIndex
         ///   + Poco 7-bit varint 长度前缀 + UTF-8 桌名
         ///   + U8 enabled + U32 BE idleFireTimeoutSec + U8 idleFireKickEnabled + U16 BE maxSeats
+        ///   + 可选押分扩展(TcBetExt，仅押分类游戏，center 据此写 roomtableconfig_bet)
         /// 与现有 RP/PA(文本命令)不同，TC 为纯二进制报文，不经过 MsgDefine.config 模板。
         /// </summary>
         public Msg SendTcCommand(ushort gameID, ushort roomIndex, ushort tableIndex,
                                  string tableName, byte enabled,
                                  uint idleFireTimeoutSec, byte idleFireKickEnabled,
-                                 ushort maxSeats)
+                                 ushort maxSeats, TcBetExt betExt = null)
         {
             Msg msg = new Msg(0, "服务器内部错误，消息发送失败！");
             StreamReader sr = null;
@@ -362,6 +388,28 @@ namespace YYT.Remote
                     bw.Write(HostToNetworkU32(idleFireTimeoutSec));
                     bw.Write(idleFireKickEnabled);
                     bw.Write(HostToNetworkU16(maxSeats));
+                    if (betExt != null)
+                    {
+                        bw.Write(betExt.BetTime);
+                        bw.Write(HostToNetworkU32(betExt.BetMin));
+                        bw.Write(HostToNetworkU32(betExt.BetMax));
+                        bw.Write(HostToNetworkU32(betExt.BankerScoreNeed));
+                        bw.Write(HostToNetworkU32(betExt.ItemSingleScoreLimit));
+                        bw.Write(HostToNetworkU32(betExt.ItemAllScoreLimit));
+                        bw.Write(HostToNetworkU32(betExt.CoinsNeed));
+                        bw.Write(HostToNetworkU32(betExt.OneCoinScore));
+                        byte[] scoreBytes = Encoding.UTF8.GetBytes(betExt.BetScores ?? string.Empty);
+                        Write7BitVarint(bw, (uint)scoreBytes.Length);
+                        bw.Write(scoreBytes);
+                        bw.Write(betExt.DefaultBetIndex);
+                        if (betExt.IncludeViceDraw)
+                        {
+                            bw.Write(HostToNetworkU32(betExt.BetMinVice));
+                            bw.Write(HostToNetworkU32(betExt.BetMaxVice));
+                            bw.Write(HostToNetworkU32(betExt.BetMinDraw));
+                            bw.Write(HostToNetworkU32(betExt.BetMaxDraw));
+                        }
+                    }
                     bw.Flush();
                 }
 

@@ -105,8 +105,29 @@ namespace YYT.BLL.EF
                 }
             }
             Msg hot = PushHotUpdate(room.GAME_ID, EGameType.Bet, machine);
+            // 押分扩展：随 TC 一并下发按桌押分参数，center 写入 roomtableconfig_bet 并全量重推。
+            // 字段顺序须与 center 的 TC 押分扩展解析一致；GAME_ID=10(幸运六狮)为 layoutTag==1，
+            // 需追加庄闲/和 4 个副游戏限红字段。
+            var betExt = new SConnect.TcBetExt
+            {
+                BetTime = (byte)room.BET_TIME,
+                BetMin = (uint)room.BET_MIN,
+                BetMax = (uint)room.BET_MAX,
+                BankerScoreNeed = (uint)room.BANKER_SC_NEED,
+                ItemSingleScoreLimit = (uint)room.SC_LIMIT_SING,
+                ItemAllScoreLimit = (uint)room.SC_LIMIT_ALL,
+                CoinsNeed = (uint)room.COIN_NEED,
+                OneCoinScore = (uint)room.COIN_SC,
+                BetScores = room.BetScores ?? string.Empty,
+                DefaultBetIndex = (byte)(room.DefaultBetIndex ?? 0),
+                IncludeViceDraw = room.GAME_ID == 10,
+                BetMinVice = (uint)room.BET_MIN_VICE,
+                BetMaxVice = (uint)room.BET_MAX_VICE,
+                BetMinDraw = (uint)room.BET_MIN_DRAW,
+                BetMaxDraw = (uint)room.BET_MAX_DRAW
+            };
             Msg tc = PushTableConfig(room.ID, room.GAME_ID, (int)EGameType.Bet,
-                room.TableName, room.Enabled, room.IdleFireTimeoutSec, room.IdleFireKickEnabled, room.MaxSeats);
+                room.TableName, room.Enabled, room.IdleFireTimeoutSec, room.IdleFireKickEnabled, room.MaxSeats, betExt);
             return MergeHotUpdateAndTc(hot, tc);
         }
 
