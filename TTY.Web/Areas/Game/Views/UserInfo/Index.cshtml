@@ -574,19 +574,13 @@
                     $('#txtE_ID1').textbox('setValue', uid);
                     $('#hfID1').val(uid);
                     $('#selE_Action').combobox('loadData', actionSelDataPAIJI());
+                    $('#selE_KillAction').combobox({ onChange: function(n){ if(n==25) $('#selE_KillVal').combobox('loadData', getComboValKill()); else if(n==26) $('#selE_KillVal').combobox('loadData', getComboValPut()); } });
+                    $('#selE_KillAction').combobox('loadData', [{id:25,text:'点杀',selected:true},{id:26,text:'放水'}]);
+                    $('#selE_KillVal').combobox('loadData', getComboValKill());
                     loadGoldLimit(uid, 'numGoldLimit3');
                 }
             };
             openWin(para);
-        }
-        function bindPaiJiAction(newValue, oldValue) {
-            if (newValue == 25 || newValue == 26) {
-                $('#trPaiJiCardType,#trPaiJiNumber,#trPaiJiTotal').hide();
-                $('#trPaiJiKillVal').show();
-            } else {
-                $('#trPaiJiCardType,#trPaiJiNumber,#trPaiJiTotal').show();
-                $('#trPaiJiKillVal').hide();
-            }
         }
         function showRateCtrlWinLaba(uid) {
             var para = {
@@ -601,6 +595,8 @@
                     $('#selE_Symbol_Laba').combobox('loadData', valSelDataShz());
                     $('#selE_Number_Laba').combobox('loadData', valSelData());
                     $('#selE_Total_Laba').combobox('loadData', valSelDataPAIJI1());
+                    $('#selE_KillActionLaba').combobox({ onChange: function(n){ if(n==27) $('#selE_Val_Laba').combobox('loadData', getComboValKill()); else if(n==28) $('#selE_Val_Laba').combobox('loadData', getComboValPut()); } });
+                    $('#selE_KillActionLaba').combobox('loadData', [{id:27,text:'点杀',selected:true},{id:28,text:'放水'}]);
                     $('#selE_Val_Laba').combobox('loadData', getComboValKill());
                     loadGoldLimit(uid, 'numGoldLimitLaba');
                 }
@@ -667,32 +663,17 @@
         }
 
         function actionSelDataLaba() {
-            var items = [];
-            @if (loginUser.UserPriv == 0 || loginUser.IsKill == 1)
-            {
-                @Html.Raw("items.push({ id: 15, text: '水浒传控牌', selected: true });");
-                @Html.Raw("items.push({ id: 16, text: '明星97控牌' });");
-                @Html.Raw("items.push({ id: 17, text: '水果拉霸控牌' });");
-                @Html.Raw("items.push({ id: 27, text: '拉霸点杀' });");
-            }
-            @if (loginUser.UserPriv == 0 || loginUser.IsProbability == 1)
-            {
-                @Html.Raw("items.push({ id: 28, text: '拉霸放水' });");
-            }
-            return items;
+            return [
+                { id: 15, text: '水浒传控牌', selected: true },
+                { id: 16, text: '明星97控牌' },
+                { id: 17, text: '水果拉霸控牌' }
+            ];
         }
 
         function bindLabaAction(newValue, oldValue) {
-            if (newValue == 27 || newValue == 28) {
-                $('#trLabaCardType,#trLabaNumber,#trLabaTotal').hide();
-                $('#trLabaKillVal').show();
-            } else {
-                $('#trLabaCardType,#trLabaNumber,#trLabaTotal').show();
-                $('#trLabaKillVal').hide();
-                if (newValue == 15) $('#selE_Symbol_Laba').combobox('loadData', valSelDataShz());
-                else if (newValue == 16) $('#selE_Symbol_Laba').combobox('loadData', valSelDataMx97());
-                else if (newValue == 17) $('#selE_Symbol_Laba').combobox('loadData', valSelDataFruit());
-            }
+            if (newValue == 15) $('#selE_Symbol_Laba').combobox('loadData', valSelDataShz());
+            else if (newValue == 16) $('#selE_Symbol_Laba').combobox('loadData', valSelDataMx97());
+            else if (newValue == 17) $('#selE_Symbol_Laba').combobox('loadData', valSelDataFruit());
         }
 
         function valSelDataLaba() {
@@ -741,26 +722,18 @@
         }
 
         function actionSelDataPAIJI() {
-            var items = [];
-            @if (loginUser.UserPriv == 0 || loginUser.IsKill == 1)
-            {
-                @Html.Raw("items.push({ id: 5, text: '大字版控制', selected: true  });");
-                @Html.Raw("items.push({ id: 6, text: 'ATT连环炮控制' });");
-                @Html.Raw("items.push({ id: 7, text: 'ATT3控制' });");
-                @Html.Raw("items.push({ id: 8, text: 'ATT满花版' });");
-                @Html.Raw("items.push({ id: 9, text: 'ATT超级至尊' });");
-                @Html.Raw("items.push({ id: 10, text: 'ATT至尊' });");
-                @Html.Raw("items.push({ id: 11, text: '人鱼传说' });");
-                @Html.Raw("items.push({ id: 12, text: '金皇冠' });");
-                @Html.Raw("items.push({ id: 13, text: 'NBA' });");
-                @Html.Raw("items.push({ id: 14, text: '火凤凰' });");
-                @Html.Raw("items.push({ id: 25, text: '牌机点杀' });");
-            }
-            @if (loginUser.UserPriv == 0 || loginUser.IsProbability == 1)
-            {
-                @Html.Raw("items.push({ id: 26, text: '牌机放水' });");
-            }
-            return items;
+            return [
+                { id: 5, text: '大字版控制', selected: true  },
+                { id: 6, text: 'ATT连环炮控制' },
+                { id: 7, text: 'ATT3控制' },
+                { id: 8, text: 'ATT满花版' },
+                { id: 9, text: 'ATT超级至尊' },
+                { id: 10, text: 'ATT至尊' },
+                { id: 11, text: '人鱼传说' },
+                { id: 12, text: '金皇冠' },
+                { id: 13, text: 'NBA' },
+                { id: 14, text: '火凤凰' }
+            ];
         }
         function valSelData() {
             var arr = [];
@@ -1226,35 +1199,28 @@
             <tr>
                 <td align="right">控制游戏类型</td>
                 <td align="left" class="pd5">
-                    <select class="easyui-combobox win-txt" id="selE_Action" name="Action1" data-options="valueField:'id',textField:'text',panelHeight:150,onChange:bindPaiJiAction"></select>
+                    <select class="easyui-combobox win-txt" id="selE_Action" name="Action1" data-options="valueField:'id',textField:'text',panelHeight:150"></select>
                 </td>
             </tr>
 
-            <tr id="trPaiJiCardType">
+            <tr>
                 <td align="right">控制牌类型</td>
                 <td align="left" class="pd5">
                     <select class="easyui-combobox" id="selE_Type" name="Type1" data-options="valueField:'id',textField:'text',panelHeight:150,data:valSelDataPAIJI3()"></select>
                 </td>
             </tr>
 
-            <tr id="trPaiJiNumber">
+            <tr>
                 <td align="right">次数</td>
                 <td align="left" class="pd5">
                     <select class="easyui-combobox win-txt" id="selE_Number" name="Number1" data-options="valueField:'id',textField:'text',panelHeight:150,data:valSelData()"></select>
                 </td>
             </tr>
 
-            <tr id="trPaiJiTotal">
+            <tr>
                 <td align="right">总次数</td>
                 <td align="left" class="pd5">
                     <select class="easyui-combobox win-txt" id="selE_Val" name="Val1" data-options="valueField:'id',textField:'text',panelHeight:150,data:valSelDataPAIJI1()"></select>
-                </td>
-            </tr>
-
-            <tr id="trPaiJiKillVal" style="display:none;">
-                <td align="right">控值</td>
-                <td align="left" class="pd5">
-                    <select class="easyui-combobox win-txt" id="selE_KillVal" name="KillVal" data-options="valueField:'id',textField:'text',panelHeight:150,data:getComboValKill()"></select>
                 </td>
             </tr>
 
@@ -1263,6 +1229,19 @@
                 <td align="left" class="pd5">
                     <input class="easyui-numberbox win-txt" id="numGoldLimit3" name="GoldLimitPaiJi" data-options="min:0,precision:0,prompt:'0=不限制'" style="width:150px;" />
                     <span style="color:#999;font-size:12px;">金币上限到达后恢复正常吞吐币，0=不限制</span>
+                </td>
+            </tr>
+
+            <tr>
+                <td align="right">功能</td>
+                <td align="left" class="pd5">
+                    <select class="easyui-combobox win-txt" id="selE_KillAction" name="KillAction" data-options="valueField:'id',textField:'text',panelHeight:150"></select>
+                </td>
+            </tr>
+            <tr id="trPaiJiKillVal">
+                <td align="right">控值</td>
+                <td align="left" class="pd5">
+                    <select class="easyui-combobox win-txt" id="selE_KillVal" name="KillVal" data-options="valueField:'id',textField:'text',panelHeight:150,data:getComboValKill()"></select>
                 </td>
             </tr>
 
@@ -1298,28 +1277,22 @@
                     <select class="easyui-combobox win-txt" id="selE_Action_Laba" name="ActionLaba" data-options="valueField:'id',textField:'text',panelHeight:150"></select>
                 </td>
             </tr>
-            <tr id="trLabaCardType">
+            <tr>
                 <td align="right">控制牌类型</td>
                 <td align="left" class="pd5">
                     <select class="easyui-combobox win-txt" id="selE_Symbol_Laba" name="SymbolLaba" data-options="valueField:'id',textField:'text',panelHeight:150"></select>
                 </td>
             </tr>
-            <tr id="trLabaNumber">
+            <tr>
                 <td align="right">次数</td>
                 <td align="left" class="pd5">
                     <select class="easyui-combobox win-txt" id="selE_Number_Laba" name="NumberLaba" data-options="valueField:'id',textField:'text',panelHeight:150"></select>
                 </td>
             </tr>
-            <tr id="trLabaTotal">
+            <tr>
                 <td align="right">总次数</td>
                 <td align="left" class="pd5">
                     <select class="easyui-combobox win-txt" id="selE_Total_Laba" name="TotalLaba" data-options="valueField:'id',textField:'text',panelHeight:150"></select>
-                </td>
-            </tr>
-            <tr id="trLabaKillVal" style="display:none;">
-                <td align="right">控值</td>
-                <td align="left" class="pd5">
-                    <select class="easyui-combobox win-txt" id="selE_Val_Laba" name="ValLaba" data-options="valueField:'id',textField:'text',panelHeight:150"></select>
                 </td>
             </tr>
             <tr>
@@ -1327,6 +1300,18 @@
                 <td align="left" class="pd5">
                     <input class="easyui-numberbox win-txt" id="numGoldLimitLaba" name="GoldLimitLaba" data-options="min:0,precision:0,prompt:'0=不限制'" style="width:150px;" />
                     <span style="color:#999;font-size:12px;">金币上限到达后恢复正常吞吐币，0=不限制</span>
+                </td>
+            </tr>
+            <tr>
+                <td align="right">功能</td>
+                <td align="left" class="pd5">
+                    <select class="easyui-combobox win-txt" id="selE_KillActionLaba" name="KillActionLaba" data-options="valueField:'id',textField:'text',panelHeight:150"></select>
+                </td>
+            </tr>
+            <tr>
+                <td align="right">控值</td>
+                <td align="left" class="pd5">
+                    <select class="easyui-combobox win-txt" id="selE_Val_Laba" name="ValLaba" data-options="valueField:'id',textField:'text',panelHeight:150"></select>
                 </td>
             </tr>
             <tr>

@@ -1067,17 +1067,17 @@ namespace YYT.Web.Areas.Game.Controllers
                     set = 1;
                 }
                 Msg tmpMsg;
-                if (action == 25 || action == 26)
-                {
-                    int killVal = form.Q<int>("KillVal");
-                    tmpMsg = new GameCommandService().SetUserControl(action.ToString().PadLeft(2, '0'), killVal.ToString().PadLeft(2, '0'), set, id);
-                }
-                else
                 {
                     int val = form.Q<int>("Val1");
                     int type = form.Q<int>("Type1");
                     int number = form.Q<int>("Number1");
                     tmpMsg = new GameCommandService().SetUserControl(action.ToString().PadLeft(2, '0'), type.ToString().PadLeft(2, '0'), number.ToString().PadLeft(2, '0'), val.ToString().PadLeft(2, '0'), set, id);
+                }
+
+                int killAction = form.Q<int>("KillAction", 25);
+                {
+                    int killVal = form.Q<int>("KillVal");
+                    new GameCommandService().SetUserControl(killAction.ToString().PadLeft(2, '0'), killVal.ToString().PadLeft(2, '0'), set, id);
                 }
 
                 long goldLimitPaiJi = form.Q<long>("GoldLimitPaiJi", 0);
@@ -1154,15 +1154,6 @@ namespace YYT.Web.Areas.Game.Controllers
                 }
 
                 Msg tmpMsg;
-                if (action == 27 || action == 28)
-                {
-                    int val = form.Q<int>("ValLaba");
-                    tmpMsg = new GameCommandService().SetUserControl(
-                        action.ToString().PadLeft(2, '0'),
-                        val.ToString().PadLeft(2, '0'),
-                        set, id);
-                }
-                else
                 {
                     int symbol = form.Q<int>("SymbolLaba", 0);
                     int number = form.Q<int>("NumberLaba", 1);
@@ -1173,6 +1164,12 @@ namespace YYT.Web.Areas.Game.Controllers
                         number.ToString().PadLeft(2, '0'),
                         totalNumber.ToString().PadLeft(2, '0'),
                         set, id);
+                }
+
+                int killActionLaba = form.Q<int>("KillActionLaba", 27);
+                {
+                    int valLaba = form.Q<int>("ValLaba");
+                    new GameCommandService().SetUserControl(killActionLaba.ToString().PadLeft(2, '0'), valLaba.ToString().PadLeft(2, '0'), set, id);
                 }
 
                 long goldLimitLaba = form.Q<long>("GoldLimitLaba", 0);
