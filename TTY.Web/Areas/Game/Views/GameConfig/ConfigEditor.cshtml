@@ -309,15 +309,11 @@
                     </div>
 
                     <div class="gc-only-3">
-                        <div class="gc-section-title">拉霸参数</div>
+                        <div class="gc-section-title">拉霸难度</div>
                         <div class="gc-form-row">
                             <div class="gc-field">
-                                <label>玩家赢概率（0-10）</label>
-                                <input type="number" id="gcWinRate" name="WinRate" class="gc-input" min="0" max="10" value="0" />
-                            </div>
-                            <div class="gc-field">
-                                <label>金币兑换率</label>
-                                <input type="number" id="gcExRate" name="ExchangeRate" class="gc-input" min="1" value="1" />
+                                <label>控制牌类型</label>
+                                <select id="gcWinRate" name="WinRate" class="gc-select"></select>
                             </div>
                         </div>
                     </div>
@@ -464,6 +460,56 @@
         gcFill(GC_TABLES[found]);
     }
 
+    // 与“用户管理-控制-拉霸控制”的控制牌类型保持同一套选项（按拉霸子类型区分）
+    function gcLabaSymbolData(subType) {
+        var arr = [];
+        if (subType === 1) { // 明星97
+            arr.push({ v: 0, t: '樱桃(10倍)' });
+            arr.push({ v: 1, t: '橘子(10倍)' });
+            arr.push({ v: 2, t: '蓝莓(14倍)' });
+            arr.push({ v: 3, t: '铃铛(18倍)' });
+            arr.push({ v: 4, t: '西瓜(20倍)' });
+            arr.push({ v: 5, t: '黄BAR(30倍)' });
+            arr.push({ v: 6, t: '红BAR(50倍)' });
+            arr.push({ v: 7, t: '蓝BAR(70倍)' });
+            arr.push({ v: 8, t: '七(80倍+)' });
+            arr.push({ v: 10, t: '关闭控制' });
+        } else if (subType === 2) { // 水果拉霸
+            arr.push({ v: 0, t: '符号0(2倍)' });
+            arr.push({ v: 1, t: '符号1(3倍)' });
+            arr.push({ v: 2, t: '符号2(4倍)' });
+            arr.push({ v: 3, t: '符号3(5倍)' });
+            arr.push({ v: 4, t: '符号4(8倍)' });
+            arr.push({ v: 5, t: '符号5(10倍)' });
+            arr.push({ v: 6, t: '符号6(15倍)' });
+            arr.push({ v: 7, t: '符号7(30倍)' });
+            arr.push({ v: 10, t: '关闭控制' });
+        } else { // 水浒传(3) 及默认
+            arr.push({ v: 0, t: '符号0(2倍)' });
+            arr.push({ v: 1, t: '符号1(3倍)' });
+            arr.push({ v: 2, t: '符号2(4倍)' });
+            arr.push({ v: 3, t: '符号3(5倍)' });
+            arr.push({ v: 4, t: '符号4(8倍)' });
+            arr.push({ v: 5, t: '符号5(10倍)' });
+            arr.push({ v: 6, t: '符号6(15倍)' });
+            arr.push({ v: 7, t: '符号7(20倍)' });
+            arr.push({ v: 8, t: '散标(免费触发)' });
+            arr.push({ v: 10, t: '关闭控制' });
+        }
+        return arr;
+    }
+
+    function gcFillLabaCtrlSel(subType, value) {
+        var $sel = $('#gcWinRate');
+        $sel.empty();
+        $.each(gcLabaSymbolData(parseInt(subType, 10)), function (i, o) {
+            $sel.append('<option value="' + o.v + '">' + o.t + '</option>');
+        });
+        var v = (value === undefined || value === null || value === '') ? 10 : value;
+        $sel.val(String(v));
+        if ($sel.val() === null) $sel.val('10');
+    }
+
     function gcApplyType() {
         var type = gcGetType();
         $('.gc-only-0,.gc-only-1,.gc-only-2,.gc-only-3').hide();
@@ -471,6 +517,9 @@
         $('.gc-base-info').show();
         if (type >= 0 && type <= 3) {
             $('.gc-only-' + type).show();
+            if (type === 3 && $('#gcWinRate option').length === 0) {
+                gcFillLabaCtrlSel(3, 10);
+            }
             if (type === 0) {
                 $('#gcMinBetLbl').text('起押值');
                 $('#gcMaxBetLbl').text('押分限红');
@@ -556,8 +605,7 @@
             $('#gcFishDif').val(t.fishDif);
             $('#gcFishSiteType').val(t.fishSiteType);
         } else if (type === 3) {
-            $('#gcWinRate').val(t.winRate);
-            $('#gcExRate').val(t.exchangeRate);
+            gcFillLabaCtrlSel(t.labaSubType, t.winRate);
         }
         $('#gcCurTableName').text('当前编辑：' + t.tableName);
         gcSyncSwitch();
