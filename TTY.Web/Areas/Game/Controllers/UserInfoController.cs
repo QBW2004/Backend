@@ -13,6 +13,14 @@ using YYT.Web.Controllers;
 
 namespace YYT.Web.Areas.Game.Controllers
 {
+    public class UserCtrlRow
+    {
+        public int CtrlType { get; set; }
+        public int CtrlValue { get; set; }
+        public int Number { get; set; }
+        public int TotalNumber { get; set; }
+    }
+
     public class UserInfoController : BaseController
     {
         static readonly string REG_TOKEN = "yyt_reg_token";
@@ -808,9 +816,35 @@ namespace YYT.Web.Areas.Game.Controllers
         [MemberAuthorize]
         [AjaxOnly]
         [HttpPost]
-        public ActionResult GetUserGoldLimit(FormCollection form)
+        public ActionResult GetUserCtrlConfigs(FormCollection form)
         {
             Msg msg = new Msg(0, "");
+            try
+            {
+                string id = form.Q<string>("ID");
+                if (string.IsNullOrWhiteSpace(id))
+                    return Json(msg);
+                using (var ef = new GameDbContext())
+                {
+                    var rows = ef.Database.SqlQuery<UserCtrlRow>(
+                        "SELECT CONTROL_TYPE AS CtrlType, CONTROL_VALUE AS CtrlValue, NUMBER AS Number, TOTAL_NUMBER AS TotalNumber FROM usercontrolvalue WHERE USERID={0}", id)
+                        .ToList();
+                    msg.code = 1;
+                    msg.datas = rows;
+                }
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.UserInfoController), ex);
+            }
+            return Json(msg);
+        }
+
+        [MemberAuthorize]
+        [AjaxOnly]
+        [HttpPost]
+        public ActionResult GetUserGoldLimit(FormCollection form)
+        {            Msg msg = new Msg(0, "");
             try
             {
                 string id = form.Q<string>("ID");
@@ -1041,7 +1075,6 @@ namespace YYT.Web.Areas.Game.Controllers
             try
             {
                 string id = form.Q<string>("ID1");
-                int action = form.Q<int>("Action1", -1);
                 if (string.IsNullOrWhiteSpace(id))
                 {
                     msg.content = "用户ID不能为空！";
@@ -1066,18 +1099,30 @@ namespace YYT.Web.Areas.Game.Controllers
                 {
                     set = 1;
                 }
+                int paiJiMode = form.Q<int>("PaiJiMode", 0);
                 Msg tmpMsg;
+                if (paiJiMode == 1)
                 {
+                    int killVal = form.Q<int>("KillVal");
+                    tmpMsg = new GameCommandService().SetUserControl("25", killVal.ToString().PadLeft(2, '0'), set, id);
+                }
+                else
+                {
+                    int action = form.Q<int>("Action1", -1);
                     int val = form.Q<int>("Val1");
                     int type = form.Q<int>("Type1");
                     int number = form.Q<int>("Number1");
                     tmpMsg = new GameCommandService().SetUserControl(action.ToString().PadLeft(2, '0'), type.ToString().PadLeft(2, '0'), number.ToString().PadLeft(2, '0'), val.ToString().PadLeft(2, '0'), set, id);
-                }
-
-                int killAction = form.Q<int>("KillAction", 25);
-                {
-                    int killVal = form.Q<int>("KillVal");
-                    new GameCommandService().SetUserControl(killAction.ToString().PadLeft(2, '0'), killVal.ToString().PadLeft(2, '0'), set, id);
+                    try
+                    {
+                        using (var efSave = new GameDbContext())
+                        {
+                            efSave.Database.ExecuteSqlCommand(
+                                "INSERT INTO usercontrolvalue (USERID, GAME_TYPE, CONTROL_TYPE, CONTROL_VALUE, NUMBER, TOTAL_NUMBER) VALUES ({0},1,{1},{2},{3},{4}) ON DUPLICATE KEY UPDATE GAME_TYPE=1, CONTROL_TYPE={1}, CONTROL_VALUE={2}, NUMBER={3}, TOTAL_NUMBER={4}",
+                                id, action, type, number, val);
+                        }
+                    }
+                    catch (Exception exSave) { LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.UserInfoController), exSave); }
                 }
 
                 long goldLimitPaiJi = form.Q<long>("GoldLimitPaiJi", 0);
@@ -1153,7 +1198,14 @@ namespace YYT.Web.Areas.Game.Controllers
                     set = 1;
                 }
 
+                int labaMode = form.Q<int>("LabaMode", 0);
                 Msg tmpMsg;
+                if (labaMode == 1)
+                {
+                    int valLaba = form.Q<int>("ValLaba");
+                    tmpMsg = new GameCommandService().SetUserControl("27", valLaba.ToString().PadLeft(2, '0'), set, id);
+                }
+                else
                 {
                     int symbol = form.Q<int>("SymbolLaba", 0);
                     int number = form.Q<int>("NumberLaba", 1);
@@ -1164,12 +1216,16 @@ namespace YYT.Web.Areas.Game.Controllers
                         number.ToString().PadLeft(2, '0'),
                         totalNumber.ToString().PadLeft(2, '0'),
                         set, id);
-                }
-
-                int killActionLaba = form.Q<int>("KillActionLaba", 27);
-                {
-                    int valLaba = form.Q<int>("ValLaba");
-                    new GameCommandService().SetUserControl(killActionLaba.ToString().PadLeft(2, '0'), valLaba.ToString().PadLeft(2, '0'), set, id);
+                    try
+                    {
+                        using (var efSave = new GameDbContext())
+                        {
+                            efSave.Database.ExecuteSqlCommand(
+                                "INSERT INTO usercontrolvalue (USERID, GAME_TYPE, CONTROL_TYPE, CONTROL_VALUE, NUMBER, TOTAL_NUMBER) VALUES ({0},1,{1},{2},{3},{4}) ON DUPLICATE KEY UPDATE GAME_TYPE=1, CONTROL_TYPE={1}, CONTROL_VALUE={2}, NUMBER={3}, TOTAL_NUMBER={4}",
+                                id, action, symbol, number, totalNumber);
+                        }
+                    }
+                    catch (Exception exSave) { LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.UserInfoController), exSave); }
                 }
 
                 long goldLimitLaba = form.Q<long>("GoldLimitLaba", 0);
