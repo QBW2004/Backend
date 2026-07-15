@@ -223,27 +223,29 @@ namespace YYT.Web.Areas.Game.Controllers
                                 var paraBet = ef.ParaBets.Where(c => c.GAME_ID == gameId && c.ID == tid).FirstOrDefault();
                                 row["dif"] = paraBet?.DIF ?? 0;
                                 row["har"] = paraBet?.HAR ?? 0;
-                                for (int p = 0; p <= 9; p++)
-                                    row["payout" + p] = GetLabaOptValue(labas, "Payout" + p);
                             }
-                            else if (subType == 1)  // 明星97
+                            int symMax = subType == 2 ? 7 : (subType == 1 || subType == 3 ? 8 : -1);
+                            for (int p = 0; p <= symMax; p++)
                             {
-                                for (int p = 0; p <= 7; p++)
-                                    row["payout" + p] = GetLabaOptValue(labas, "Payout" + p);
-                            }
-                            else if (subType == 2)  // 水果拉霸
-                            {
-                                for (int p = 0; p <= 7; p++)
-                                    row["payout" + p] = GetLabaOptValue(labas, "Payout" + p);
+                                row["payout" + p] = GetLabaOptValue(labas, "Payout" + p);
+                                row["prob" + p] = GetLabaOptValue(labas, "Prob" + p);
                             }
 
-                            row["minBet"] = GetLabaOptValue(labas, "betMin");
-                            row["maxBet"] = GetLabaOptValue(labas, "betMax");
+                            // 押分支持一位小数：优先用 X10 键还原，无则回退旧整数键
+                            int bMinU = GetLabaOptValue(labas, "betMinX10");
+                            int bMaxU = GetLabaOptValue(labas, "betMaxX10");
+                            row["minBet"] = bMinU > 0 ? (object)(bMinU / 10m) : GetLabaOptValue(labas, "betMin");
+                            row["maxBet"] = bMaxU > 0 ? (object)(bMaxU / 10m) : GetLabaOptValue(labas, "betMax");
                             row["coinNeed"] = GetLabaOptValue(labas, "coinsNeed");
                             row["defaultBetIndex"] = GetLabaOptValue(labas, "defaultBetIndex");
-                            row["exCoin"] = 10000;
-                            row["coinSc"] = 1;
-                            row["gameMo"] = 100;
+                            int exCoinV = GetLabaOptValue(labas, "exCoin");
+                            int coinScV = GetLabaOptValue(labas, "coinSc");
+                            int gameMoV = GetLabaOptValue(labas, "gameMo");
+                            int scoreSwU = GetLabaOptValue(labas, "scoreSwitchX10");
+                            row["exCoin"] = exCoinV > 0 ? exCoinV : 1;
+                            row["coinSc"] = coinScV > 0 ? coinScV : 1;
+                            row["gameMo"] = gameMoV > 0 ? gameMoV : 1;
+                            row["scoreSwitch"] = scoreSwU > 0 ? scoreSwU / 10m : 0.1m;
                             row["idleFireTimeoutSec"] = 0;
 
                             rows.Add(row);
@@ -448,50 +450,57 @@ namespace YYT.Web.Areas.Game.Controllers
 
                     List<M_GameConfigLaba> labaList = new List<M_GameConfigLaba>();
 
-                    if (subType == 3)  // 水浒传
+                    int labaSymMax = subType == 2 ? 7 : (subType == 1 || subType == 3 ? 8 : -1);
+                    for (int p = 0; p <= labaSymMax; p++)
                     {
-                        for (int p = 0; p <= 9; p++)
+                        int val = form.Q<int>("Payout" + p, -1);
+                        if (val >= 0)
+                            labaList.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "Payout" + p, OptValue = val, TIME = DateTime.Now, Type = "Payout" });
+                        int prob = form.Q<int>("Prob" + p, -1);
+                        if (prob > 10000)
                         {
-                            int val = form.Q<int>("Payout" + p, -1);
-                            if (val >= 0)
-                                labaList.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "Payout" + p, OptValue = val, TIME = DateTime.Now, Type = "Payout" });
+                            msg.content = "符号" + p + " 出现率不能超过 10000！";
+                            return Json(msg);
                         }
-                    }
-                    else if (subType == 1)  // 明星97
-                    {
-                        for (int p = 0; p <= 7; p++)
-                        {
-                            int val = form.Q<int>("Payout" + p, -1);
-                            if (val >= 0)
-                                labaList.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "Payout" + p, OptValue = val, TIME = DateTime.Now, Type = "Payout" });
-                        }
-                    }
-                    else if (subType == 2)  // 水果拉霸
-                    {
-                        for (int p = 0; p <= 7; p++)
-                        {
-                            int val = form.Q<int>("Payout" + p, -1);
-                            if (val >= 0)
-                                labaList.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "Payout" + p, OptValue = val, TIME = DateTime.Now, Type = "Payout" });
-                        }
+                        if (prob >= 0)
+                            labaList.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "Prob" + p, OptValue = prob, TIME = DateTime.Now, Type = "Payout" });
                     }
 
-                    int labaBetMin = form.Q<int>("MinBet", -1);
-                    int labaBetMax = form.Q<int>("MaxBet", -1);
+                    // 押分支持一位小数（715 文档最小押分 0.1）：以 X10 键存储，旧 betMin/betMax 键同步存取整供服务端兼容
+                    decimal labaBetMinD = form.Q<decimal>("MinBet", -1m);
+                    decimal labaBetMaxD = form.Q<decimal>("MaxBet", -1m);
                     int labaCoinsNeed = form.Q<int>("COIN_NEED", -1);
                     int labaDefaultBetIdx = form.Q<int>("defaultBetIndex", -1);
-                    if (labaBetMin >= 0)
-                        labaList.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "betMin", OptValue = labaBetMin, TIME = DateTime.Now, Type = "Room" });
-                    if (labaBetMax >= 0)
-                        labaList.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "betMax", OptValue = labaBetMax, TIME = DateTime.Now, Type = "Room" });
+                    int labaExCoin = form.Q<int>("EX_COIN", -1);
+                    int labaCoinSc = form.Q<int>("COIN_SC", -1);
+                    int labaGameMo = form.Q<int>("Game_Mo", -1);
+                    decimal labaScoreSw = form.Q<decimal>("scoreSwitch", -1m);
+                    if (labaBetMinD >= 0)
+                    {
+                        labaList.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "betMinX10", OptValue = (int)Math.Round(labaBetMinD * 10m), TIME = DateTime.Now, Type = "Room" });
+                        labaList.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "betMin", OptValue = (int)Math.Round(labaBetMinD), TIME = DateTime.Now, Type = "Room" });
+                    }
+                    if (labaBetMaxD >= 0)
+                    {
+                        labaList.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "betMaxX10", OptValue = (int)Math.Round(labaBetMaxD * 10m), TIME = DateTime.Now, Type = "Room" });
+                        labaList.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "betMax", OptValue = (int)Math.Round(labaBetMaxD), TIME = DateTime.Now, Type = "Room" });
+                    }
                     if (labaCoinsNeed >= 0)
                         labaList.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "coinsNeed", OptValue = labaCoinsNeed, TIME = DateTime.Now, Type = "Room" });
                     if (labaDefaultBetIdx >= 0)
                         labaList.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "defaultBetIndex", OptValue = labaDefaultBetIdx, TIME = DateTime.Now, Type = "Room" });
+                    if (labaExCoin > 0)
+                        labaList.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "exCoin", OptValue = labaExCoin, TIME = DateTime.Now, Type = "Room" });
+                    if (labaCoinSc > 0)
+                        labaList.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "coinSc", OptValue = labaCoinSc, TIME = DateTime.Now, Type = "Room" });
+                    if (labaGameMo > 0)
+                        labaList.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "gameMo", OptValue = labaGameMo, TIME = DateTime.Now, Type = "Room" });
+                    if (labaScoreSw >= 0)
+                        labaList.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "scoreSwitchX10", OptValue = (int)Math.Round(labaScoreSw * 10m), TIME = DateTime.Now, Type = "Room" });
 
                     int rtTableIndex = tableId % 1000;
-                    int rtBetMin = labaBetMin >= 0 ? labaBetMin : 100;
-                    int rtBetMax = labaBetMax >= 0 ? labaBetMax : 10000;
+                    int rtBetMin = labaBetMinD >= 0 ? (int)Math.Round(labaBetMinD) : 100;
+                    int rtBetMax = labaBetMaxD >= 0 ? (int)Math.Round(labaBetMaxD) : 10000;
                     int rtCoinsNeed = labaCoinsNeed >= 0 ? labaCoinsNeed : 0;
                     using (var efRt = new GameDbContext())
                     {

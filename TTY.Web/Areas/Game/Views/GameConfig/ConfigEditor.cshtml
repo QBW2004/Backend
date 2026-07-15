@@ -328,6 +328,20 @@
                                 <select id="gcWinRate" name="WinRate" class="gc-select"></select>
                             </div>
                         </div>
+                        <div id="gcLabaPayoutBox" style="display:none;">
+                            <div class="gc-section-title" style="margin-top:16px;">机台设定（拉霸难度/赔率设置）</div>
+                            <table style="width:100%;border-collapse:collapse;margin-bottom:6px;" id="gcLabaPayoutTable">
+                                <thead>
+                                    <tr style="background:#f5f8ff;color:#5a6573;font-size:13px;">
+                                        <th style="padding:8px;border:1px solid #e5e9f0;text-align:left;">符号</th>
+                                        <th style="padding:8px;border:1px solid #e5e9f0;">出现率（0-10000 万分比）</th>
+                                        <th style="padding:8px;border:1px solid #e5e9f0;">倍数（压分×倍数=得芬）</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                            <div id="gcLabaPayoutSum" style="font-size:12px;color:#9aa4b1;margin-bottom:14px;"></div>
+                        </div>
                     </div>
 
                     <div class="gc-common">
@@ -522,6 +536,83 @@
         if ($sel.val() === null) $sel.val('10');
     }
 
+    // 拉霸符号出现率/倍数：名称参照用户管理-控制里的拉霸控牌符号；
+    // p=715 文档默认出现率(万分比)，v=默认倍数（明星97 为机台实际倍率，其余两款按 715 文档）
+    var GC_LABA_PAYOUT_META = {
+        3: [ // 水浒传
+            { i: 0, n: '符号0', p: 6000, v: 0 },
+            { i: 1, n: '符号1', p: 2000, v: 0 },
+            { i: 2, n: '符号2', p: 1000, v: 2 },
+            { i: 3, n: '符号3', p: 500, v: 3 },
+            { i: 4, n: '符号4', p: 400, v: 5 },
+            { i: 5, n: '符号5', p: 60, v: 2 },
+            { i: 6, n: '符号6', p: 20, v: 15 },
+            { i: 7, n: '符号7', p: 10, v: 65 },
+            { i: 8, n: '散标（免费触发）', p: 0, v: 30 }
+        ],
+        1: [ // 明星97（倍数默认为机台实际倍率）
+            { i: 0, n: '樱桃', p: 6000, v: 10 },
+            { i: 1, n: '橘子', p: 2000, v: 10 },
+            { i: 2, n: '蓝莓', p: 1000, v: 14 },
+            { i: 3, n: '铃铛', p: 500, v: 18 },
+            { i: 4, n: '西瓜', p: 400, v: 20 },
+            { i: 5, n: '黄BAR', p: 60, v: 30 },
+            { i: 6, n: '红BAR', p: 20, v: 50 },
+            { i: 7, n: '蓝BAR', p: 10, v: 70 },
+            { i: 8, n: '七', p: 0, v: 80 }
+        ],
+        2: [ // 水果拉霸
+            { i: 0, n: '符号0', p: 6000, v: 0 },
+            { i: 1, n: '符号1', p: 2000, v: 0 },
+            { i: 2, n: '符号2', p: 1000, v: 2 },
+            { i: 3, n: '符号3', p: 500, v: 3 },
+            { i: 4, n: '符号4', p: 400, v: 5 },
+            { i: 5, n: '符号5', p: 60, v: 2 },
+            { i: 6, n: '符号6', p: 20, v: 15 },
+            { i: 7, n: '符号7', p: 10, v: 65 }
+        ]
+    };
+
+    function gcBuildLabaPayoutTable(subType) {
+        var meta = GC_LABA_PAYOUT_META[parseInt(subType, 10)];
+        var $tb = $('#gcLabaPayoutTable tbody');
+        $tb.empty();
+        if (!meta) { $('#gcLabaPayoutBox').hide(); return; }
+        $('#gcLabaPayoutBox').show();
+        $.each(meta, function (idx, r) {
+            $tb.append('<tr>' +
+                '<td style="padding:6px 8px;border:1px solid #e5e9f0;font-size:13px;color:#36404a;">' + r.n + '</td>' +
+                '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="number" name="Prob' + r.i + '" id="gcLabaPr' + r.i + '" class="gc-input gc-laba-p" min="0" max="10000" step="1" value="' + r.p + '" /></td>' +
+                '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="number" name="Payout' + r.i + '" id="gcLabaPo' + r.i + '" class="gc-input gc-laba-m" min="0" step="1" value="' + r.v + '" /></td>' +
+                '</tr>');
+        });
+        $tb.find('.gc-laba-p,.gc-laba-m').on('input', function () { gcUpdateLabaPayoutSum(meta); });
+        gcUpdateLabaPayoutSum(meta);
+    }
+
+    function gcUpdateLabaPayoutSum(meta) {
+        var sum = 0;
+        $.each(meta, function (idx, r) {
+            sum += parseFloat($('#gcLabaPr' + r.i).val()) || 0;
+        });
+        var $el = $('#gcLabaPayoutSum');
+        $el.text('符号出现率合计：' + sum + ' / 10000（未填/余量由未配置符号均分；全为 0 时机台按均匀随机）');
+        $el.css('color', sum > 10000 ? '#d33b3b' : '#9aa4b1');
+    }
+
+    function gcFillLabaPayout(t) {
+        gcBuildLabaPayoutTable(t.labaSubType);
+        var meta = GC_LABA_PAYOUT_META[parseInt(t.labaSubType, 10)];
+        if (!meta) return;
+        $.each(meta, function (idx, r) {
+            var v = t['payout' + r.i];
+            if (v !== undefined && v !== null && v > 0) $('#gcLabaPo' + r.i).val(v);
+            var pv = t['prob' + r.i];
+            if (pv !== undefined && pv !== null && pv > 0) $('#gcLabaPr' + r.i).val(pv);
+        });
+        gcUpdateLabaPayoutSum(meta);
+    }
+
     function gcApplyType() {
         var type = gcGetType();
         $('.gc-only-0,.gc-only-1,.gc-only-2,.gc-only-3').hide();
@@ -539,7 +630,7 @@
                 $('#gcMinBetLbl').text('最小押分');
                 $('#gcMaxBetLbl').text('最大押分');
             }
-            $('#gcScoreSwitchLbl').text(type === 1 ? '加芬幅度' : '加炮幅度（0.1-0.9）');
+            $('#gcScoreSwitchLbl').text((type === 1 || type === 3) ? '加芬幅度（点击一次加多少芬）' : '加炮幅度（0.1-0.9）');
             if (type === 1 && $('#gcPayoutTable tbody tr').length === 0) gcBuildPayoutTable();
         }
         $('#gcNewTable').toggle(true);
@@ -622,6 +713,7 @@
             $('#gcFishSiteType').val(t.fishSiteType);
         } else if (type === 3) {
             gcFillLabaCtrlSel(t.labaSubType, t.winRate);
+            gcFillLabaPayout(t);
         }
         $('#gcCurTableName').text('当前编辑：' + t.tableName);
         gcSyncSwitch();
@@ -670,7 +762,7 @@
         } else {
             gcZeroForm();
             $('#gcEnabled').prop('checked', true);
-            if (type === 1) gcApplyCardDefaults();
+            if (type === 1 || type === 3) gcApplyCardDefaults();
         }
         $('#gcId').val(-1);
         $('#gcGameId').val(isNaN(gameId) ? -1 : gameId);
@@ -682,7 +774,7 @@
         gcUpdateSaveBtn();
     }
 
-    // 牌机新桌台默认值（715Web 文档：下注与兑换）
+    // 牌机/拉霸新桌台默认值（715Web 文档：下注与兑换）
     function gcApplyCardDefaults() {
         $('#gcMinBet').val(0.1);
         $('#gcMaxBet').val(1);
