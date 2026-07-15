@@ -120,28 +120,41 @@ namespace YYT.Web.Areas.Game.Controllers
                         List<M_ParaCard> cards = ef.ParaCards
                             .Where(c => c.GAME_ID == gameId)
                             .ToList();
+                        List<CardPayoutRowDto> payoutRows = ef.Database.SqlQuery<CardPayoutRowDto>(
+                            "SELECT TableId, HandType, PayoutMultiplier, ProbabilityBasis, Enabled FROM cardpayoutprofile WHERE GAME_ID={0}", gameId).ToList();
                         int idx = 0;
                         foreach (M_ParaRoom r in rooms)
                         {
                             idx++;
                             M_ParaCard m = cards.FirstOrDefault(c => c.ID == r.ID);
+                            int tIdx = r.ID % 1000;
+                            List<CardPayoutRowDto> pr = payoutRows.Where(c => c.TableId == tIdx).ToList();
+                            Dictionary<string, int> payout = new Dictionary<string, int>();
+                            foreach (CardPayoutRowDto p in pr)
+                            {
+                                payout["p" + p.HandType] = p.ProbabilityBasis;
+                                payout["m" + p.HandType] = p.PayoutMultiplier;
+                            }
                             rows.Add(new
                             {
                                 id = r.ID,
                                 num = r.NUM,
                                 tableName = string.IsNullOrWhiteSpace(r.TableName) ? ("桌台" + idx) : r.TableName,
-                                minBet = r.BET_MIN,
-                                maxBet = r.BET_MAX,
+                                minBet = r.MinBetUnits > 0 ? r.MinBetUnits / 10m : r.BET_MIN,
+                                maxBet = r.MaxBetUnits > 0 ? r.MaxBetUnits / 10m : r.BET_MAX,
                                 exCoin = r.EX_COIN,
                                 coinSc = r.COIN_SC,
                                 coinNeed = r.COIN_NEED,
                                 gameMo = r.Game_Mo,
+                                scoreSwitch = r.scoreSwitch,
                                 maxSeats = r.MaxSeats <= 0 ? 6 : r.MaxSeats,
                                 idleFireTimeoutSec = r.IdleFireTimeoutSec,
                                 idleFireKickEnabled = r.IdleFireKickEnabled ? 1 : 0,
                                 enabled = r.Enabled ? 1 : 0,
                                 cardDif = m == null ? string.Empty : (m.DIF ?? string.Empty),
-                                hypeType = m == null ? 0 : m.HYPE_TYPE
+                                hypeType = m == null ? 0 : m.HYPE_TYPE,
+                                payoutOn = pr.Any(c => c.Enabled == 1) ? 1 : 0,
+                                payout = payout
                             });
                         }
                     }
@@ -340,6 +353,16 @@ namespace YYT.Web.Areas.Game.Controllers
                             //    导致已删除的“桌台N”反复复活。
                             RepackRoomsAfterDelete(ef, roomTbl, machTbl, gameId);
 
+                            // 牌机：同步牌型赔付配置的机台号（删除该桌行 + 高位机台号左移，与房间重排保持一致）。
+                            if (gameType == 1)
+                            {
+                                int delIdx = tableId % 1000;
+                                ef.Database.ExecuteSqlCommand(
+                                    "DELETE FROM cardpayoutprofile WHERE GAME_ID={0} AND TableId={1}", gameId, delIdx);
+                                ef.Database.ExecuteSqlCommand(
+                                    "UPDATE cardpayoutprofile SET TableId=TableId-1 WHERE GAME_ID={0} AND TableId>{1}", gameId, delIdx);
+                            }
+
                             tx.Commit();
                         }
                         catch
@@ -516,8 +539,8 @@ namespace YYT.Web.Areas.Game.Controllers
                 bool enabled = form.Q<int>("Enabled", 1) == 1;
                 int num = 0;
                 int exCoin = form.Q<int>("EX_COIN", 1);
-                int coinSc = form.Q<int>("OneCoinScore", 1);
-                int coinNeed = form.Q<int>("CoinsNeed", 0);
+                int coinSc = form.Q<int>("COIN_SC", 1);
+                int coinNeed = form.Q<int>("COIN_NEED", 0);
                 int gameMo = form.Q<int>("Game_Mo", 0);
                 decimal scoreSwitch = form.Q<decimal>("scoreSwitch", 0m);
 
@@ -564,7 +587,7 @@ namespace YYT.Web.Areas.Game.Controllers
                 }
                 else if (gameType == 1)
                 {
-                    M_ParaRoom room = BuildParaRoom(tableId, gameId, num, betMin, betMax, exCoin, coinSc, coinNeed, gameMo, tableName, maxSeats, idleTimeout, idleKick, enabled, scoreSwitch);
+                    M_ParaRoom room = BuildParaRoom(tableId, gameId, num, minBetDisplay, maxBetDisplay, exCoin, coinSc, coinNeed, gameMo, tableName, maxSeats, idleTimeout, idleKick, enabled, scoreSwitch);
 
                     M_ParaCard machine = new M_ParaCard();
                     machine.ID = tableId;
@@ -572,6 +595,59 @@ namespace YYT.Web.Areas.Game.Controllers
                     string cardDif = (form.Q<string>("CardDIF", string.Empty) ?? string.Empty).Trim();
                     machine.DIF = cardDif.Length == 16 ? cardDif : "0000000000000000";
                     machine.HYPE_TYPE = form.Q<int>("HYPE_TYPE", 0);
+
+                    // 牌型概率(万分比)/倍数：HandType 与服务端 te_CardsType 对齐；
+                    // 四条(7)同时镜像大四条(8)倍数（概率集中在 7）。
+                    int[] payoutHandTypes = new int[] { 0, 1, 2, 3, 4, 5, 6, 7, 9, 10, 11 };
+                    int payoutOn = form.Q<int>("PayoutOn", 0) == 1 ? 1 : 0;
+                    List<int[]> payoutProfiles = new List<int[]>();
+                    int probSum = 0;
+                    foreach (int ht in payoutHandTypes)
+                    {
+                        int prob = (int)Math.Round(form.Q<decimal>("hp" + ht, 0m), MidpointRounding.AwayFromZero);
+                        int mult = (int)Math.Round(form.Q<decimal>("hm" + ht, 0m), MidpointRounding.AwayFromZero);
+                        if (prob < 0 || prob > 10000 || mult < 0)
+                        {
+                            msg.content = "牌型概率须在 0-10000（万分比）之间且倍数不能为负！";
+                            return Json(msg);
+                        }
+                        if (ht != 0) probSum += prob;
+                        payoutProfiles.Add(new[] { ht, prob, mult });
+                    }
+                    if (payoutOn == 1 && probSum > 10000)
+                    {
+                        msg.content = "中奖牌型概率合计 " + probSum + " 超过 10000（万分比），请调低后再保存！";
+                        return Json(msg);
+                    }
+
+                    int tIdxCard = tableId % 1000;
+                    using (var efP = new GameDbContext())
+                    {
+                        using (var txP = efP.Database.BeginTransaction())
+                        {
+                            try
+                            {
+                                efP.Database.ExecuteSqlCommand(
+                                    "DELETE FROM cardpayoutprofile WHERE GAME_ID={0} AND TableId={1}", gameId, tIdxCard);
+                                foreach (int[] p in payoutProfiles)
+                                {
+                                    efP.Database.ExecuteSqlCommand(
+                                        "INSERT INTO cardpayoutprofile (GAME_ID, TableId, HandType, PayoutMultiplier, ProbabilityBasis, StockLimit, StockRemain, Enabled) VALUES ({0},{1},{2},{3},{4},0,0,{5})",
+                                        gameId, tIdxCard, p[0], p[2], p[1], payoutOn);
+                                    if (p[0] == 7)
+                                        efP.Database.ExecuteSqlCommand(
+                                            "INSERT INTO cardpayoutprofile (GAME_ID, TableId, HandType, PayoutMultiplier, ProbabilityBasis, StockLimit, StockRemain, Enabled) VALUES ({0},{1},8,{2},0,0,0,{3})",
+                                            gameId, tIdxCard, p[2], payoutOn);
+                                }
+                                txP.Commit();
+                            }
+                            catch
+                            {
+                                txP.Rollback();
+                                throw;
+                            }
+                        }
+                    }
 
                     msg = new B_CardGamePara().SaveTableFull(room, machine);
                 }
@@ -613,20 +689,20 @@ namespace YYT.Web.Areas.Game.Controllers
             return Json(msg);
         }
 
-        private static M_ParaRoom BuildParaRoom(int tableId, int gameId, int num, int betMin, int betMax, int exCoin, int coinSc, int coinNeed, int gameMo, string tableName, int maxSeats, int idleTimeout, bool idleKick, bool enabled, decimal scoreSwitch = 0m)
+        private static M_ParaRoom BuildParaRoom(int tableId, int gameId, int num, decimal minBetDisplay, decimal maxBetDisplay, int exCoin, int coinSc, int coinNeed, int gameMo, string tableName, int maxSeats, int idleTimeout, bool idleKick, bool enabled, decimal scoreSwitch = 0m)
         {
             M_ParaRoom room = new M_ParaRoom();
             room.ID = tableId;
             room.GAME_ID = gameId;
             room.NUM = num;
-            room.BET_MIN = betMin;
-            room.BET_MAX = betMax;
-            room.MinBetUnits = betMin * 10;
-            room.MaxBetUnits = betMax * 10;
+            room.BET_MIN = (int)Math.Round(minBetDisplay, MidpointRounding.AwayFromZero);
+            room.BET_MAX = (int)Math.Round(maxBetDisplay, MidpointRounding.AwayFromZero);
+            room.MinBetUnits = (int)Math.Round(minBetDisplay * 10m, MidpointRounding.AwayFromZero);
+            room.MaxBetUnits = (int)Math.Round(maxBetDisplay * 10m, MidpointRounding.AwayFromZero);
             room.EX_COIN = exCoin;
             room.COIN_SC = coinSc;
             room.COIN_NEED = coinNeed;
-            room.scoreSwitch = scoreSwitch > 0 ? scoreSwitch : betMin;
+            room.scoreSwitch = scoreSwitch > 0 ? scoreSwitch : minBetDisplay;
             room.Game_Mo = gameMo;
             room.TableName = tableName;
             room.MaxSeats = maxSeats;
@@ -772,6 +848,16 @@ namespace YYT.Web.Areas.Game.Controllers
             var item = labas.FirstOrDefault(c => c.OptKey == optKey);
             return item != null ? item.OptValue : 0;
     }
+
+        // cardpayoutprofile 行映射（原生 SQL 查询用）
+        public class CardPayoutRowDto
+        {
+            public int TableId { get; set; }
+            public int HandType { get; set; }
+            public int PayoutMultiplier { get; set; }
+            public int ProbabilityBasis { get; set; }
+            public int Enabled { get; set; }
+        }
 
 }
 }

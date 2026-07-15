@@ -104,7 +104,6 @@
                     <input type="hidden" id="gcId" name="ID" value="-1" />
                     <input type="hidden" id="gcGameId" name="GAME_ID" value="-1" />
                     <input type="hidden" id="gcGameType" name="GAME_TYPE" value="-1" />
-                    <input type="hidden" id="gcScoreSwitch" name="scoreSwitch" value="0" />
 
                     <div class="gc-common gc-base-info">
                     <div class="gc-section-title">基础信息</div>
@@ -132,11 +131,11 @@
                     <div class="gc-form-row">
                         <div class="gc-field">
                             <label id="gcMinBetLbl">最小下注</label>
-                            <input type="number" id="gcMinBet" name="MinBet" class="gc-input" step="1" min="0" value="0" />
+                            <input type="number" id="gcMinBet" name="MinBet" class="gc-input" step="0.1" min="0" value="0" />
                         </div>
                         <div class="gc-field">
                             <label id="gcMaxBetLbl">最大下注</label>
-                            <input type="number" id="gcMaxBet" name="MaxBet" class="gc-input" step="1" min="0" value="0" />
+                            <input type="number" id="gcMaxBet" name="MaxBet" class="gc-input" step="0.1" min="0" value="0" />
                         </div>
                     </div>
                     <div class="gc-form-row">
@@ -157,8 +156,8 @@
                             <input type="number" id="gcCoinNeed" name="COIN_NEED" class="gc-input" min="0" value="0" />
                         </div>
                         <div class="gc-field">
-                            <label>加炮幅度（0.1-0.9）</label>
-                            <input type="number" id="gcScoreSwitch" name="scoreSwitch" class="gc-input" step="0.1" min="0.1" max="0.9" value="0" />
+                            <label id="gcScoreSwitchLbl">加炮幅度（0.1-0.9）</label>
+                            <input type="number" id="gcScoreSwitch" name="scoreSwitch" class="gc-input" step="0.1" min="0" value="0" />
                         </div>
                     </div>
                     </div>
@@ -265,14 +264,27 @@
                     </div>
 
                     <div class="gc-only-1">
-                        <div class="gc-section-title">机台设定（牌机难度）</div>
-                        <div class="gc-form-row">
+                        <div class="gc-section-title">机台设定（牌型出现率与倍数）</div>
+                        <input type="hidden" id="gcPayoutOnVal" name="PayoutOn" value="1" />
+                        <table style="width:100%;border-collapse:collapse;margin-bottom:14px;" id="gcPayoutTable">
+                            <thead>
+                                <tr style="background:#f5f8ff;color:#5a6573;font-size:13px;">
+                                    <th style="padding:8px;border:1px solid #e5e9f0;text-align:left;">牌型</th>
+                                    <th style="padding:8px;border:1px solid #e5e9f0;">出现率（万分比 0-10000）</th>
+                                    <th style="padding:8px;border:1px solid #e5e9f0;">倍数（压分×倍数=得芬）</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                        <div class="gc-hint" id="gcPayoutSum"></div>
+                        <div class="gc-section-title" style="margin-top:16px;display:none;">高级（旧版兼容）</div>
+                        <div class="gc-form-row" style="display:none;">
                             <div class="gc-field">
                                 <label>炒场类型</label>
                                 <input type="number" id="gcHypeType" name="HYPE_TYPE" class="gc-input" min="0" value="0" />
                             </div>
                             <div class="gc-field">
-                                <label>牌机难度（16 位数字）</label>
+                                <label>牌机难度（16 位数字，停用上表时生效）</label>
                                 <input type="text" id="gcCardDif" name="CardDIF" class="gc-input" maxlength="16" placeholder="16 位数字，如 0000000000000000" />
                             </div>
                         </div>
@@ -527,6 +539,8 @@
                 $('#gcMinBetLbl').text('最小押分');
                 $('#gcMaxBetLbl').text('最大押分');
             }
+            $('#gcScoreSwitchLbl').text(type === 1 ? '加芬幅度' : '加炮幅度（0.1-0.9）');
+            if (type === 1 && $('#gcPayoutTable tbody tr').length === 0) gcBuildPayoutTable();
         }
         $('#gcNewTable').toggle(true);
     }
@@ -579,6 +593,7 @@
         $('#gcExCoin').val(t.exCoin);
         $('#gcCoinNeed').val(t.coinNeed);
         $('#gcGameMo').val(t.gameMo);
+        $('#gcScoreSwitch').val(t.scoreSwitch !== undefined && t.scoreSwitch !== null ? t.scoreSwitch : 0);
         $('#gcIdleSec').val(t.idleFireTimeoutSec);
         $('#gcEnabled').prop('checked', t.enabled == 1);
         if (type === 0) {
@@ -601,6 +616,7 @@
         } else if (type === 1) {
             $('#gcHypeType').val(t.hypeType);
             $('#gcCardDif').val(t.cardDif);
+            gcFillPayout(t);
         } else if (type === 2) {
             $('#gcFishDif').val(t.fishDif);
             $('#gcFishSiteType').val(t.fishSiteType);
@@ -635,6 +651,8 @@
         $('#gcCardDif').val('');
         $('#gcEnabled').prop('checked', false);
         $('#gcBetScores').val('');
+        $('#gcPayoutOn').prop('checked', false);
+        gcBuildPayoutTable();
         gcSyncSwitch();
     }
 
@@ -652,6 +670,7 @@
         } else {
             gcZeroForm();
             $('#gcEnabled').prop('checked', true);
+            if (type === 1) gcApplyCardDefaults();
         }
         $('#gcId').val(-1);
         $('#gcGameId').val(isNaN(gameId) ? -1 : gameId);
@@ -663,8 +682,74 @@
         gcUpdateSaveBtn();
     }
 
+    // 牌机新桌台默认值（715Web 文档：下注与兑换）
+    function gcApplyCardDefaults() {
+        $('#gcMinBet').val(0.1);
+        $('#gcMaxBet').val(1);
+        $('#gcExCoin').val(1);
+        $('#gcCoinSc').val(1);
+        $('#gcGameMo').val(1);
+        $('#gcCoinNeed').val(1);
+        $('#gcScoreSwitch').val(0.1);
+    }
+
     function gcSyncSwitch() {
         $('#gcEnabledVal').val($('#gcEnabled').is(':checked') ? 1 : 0);
+        $('#gcPayoutOnVal').val(1);
+    }
+
+    // 牌型行：ht=服务端牌型枚举，p/m=715 文档默认出现率(万分比)/倍数（四条含大小四条）
+    var GC_PAYOUT_ROWS = [
+        { ht: 0, name: '杂牌', p: 6000, m: 0 },
+        { ht: 1, name: '一对', p: 2000, m: 0 },
+        { ht: 2, name: '两对', p: 1000, m: 2 },
+        { ht: 3, name: '三条', p: 500, m: 3 },
+        { ht: 4, name: '顺子', p: 400, m: 5 },
+        { ht: 5, name: '同花', p: 60, m: 2 },
+        { ht: 6, name: '葫芦', p: 20, m: 15 },
+        { ht: 7, name: '四条', p: 10, m: 65 },
+        { ht: 9, name: '同花顺', p: 5, m: 150 },
+        { ht: 11, name: '同花大顺', p: 4, m: 250 },
+        { ht: 10, name: '五条', p: 2, m: 500 }
+    ];
+
+    function gcBuildPayoutTable() {
+        var $tb = $('#gcPayoutTable tbody');
+        $tb.empty();
+        $.each(GC_PAYOUT_ROWS, function (i, r) {
+            $tb.append('<tr>' +
+                '<td style="padding:6px 8px;border:1px solid #e5e9f0;font-size:13px;color:#36404a;">' + r.name + '</td>' +
+                '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="number" name="hp' + r.ht + '" id="gcHp' + r.ht + '" class="gc-input gc-payout-p" min="0" max="10000" step="1" value="' + r.p + '" /></td>' +
+                '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="number" name="hm' + r.ht + '" id="gcHm' + r.ht + '" class="gc-input" min="0" step="1" value="' + r.m + '" /></td>' +
+                '</tr>');
+        });
+        $tb.find('.gc-payout-p').on('input', gcUpdatePayoutSum);
+        gcUpdatePayoutSum();
+    }
+
+    function gcUpdatePayoutSum() {
+        var winSum = 0;
+        var rtp = 0;
+        $.each(GC_PAYOUT_ROWS, function (i, r) {
+            var p = parseFloat($('#gcHp' + r.ht).val()) || 0;
+            var m = parseFloat($('#gcHm' + r.ht).val()) || 0;
+            if (r.ht !== 0) winSum += p;
+            rtp += p / 10000 * m;
+        });
+        var $el = $('#gcPayoutSum');
+        $el.text('中奖牌型出现率合计：' + winSum + ' / 10000（余量自动落入杂牌），理论返奖率 RTP ≈ ' + (rtp * 100).toFixed(1) + '%');
+        $el.css('color', winSum > 10000 ? '#d33b3b' : '#9aa4b1');
+    }
+
+    function gcFillPayout(t) {
+        if ($('#gcPayoutTable tbody tr').length === 0) gcBuildPayoutTable();
+        $('#gcPayoutOn').prop('checked', t.payoutOn == 1);
+        var po = t.payout || {};
+        $.each(GC_PAYOUT_ROWS, function (i, r) {
+            $('#gcHp' + r.ht).val(po['p' + r.ht] !== undefined ? po['p' + r.ht] : r.p);
+            $('#gcHm' + r.ht).val(po['m' + r.ht] !== undefined ? po['m' + r.ht] : r.m);
+        });
+        gcUpdatePayoutSum();
     }
 
     function gcSave() {
@@ -742,6 +827,7 @@
         $('#gcSave').on('click', gcSave);
         $('#gcNewTable').on('click', gcNewTable);
         $('#gcEnabled').on('change', gcSyncSwitch);
+        $('#gcPayoutOn').on('change', gcSyncSwitch);
         $('#gcTableList').on('click', 'li', function () {
             $('#gcTableList li').removeClass('active');
             $(this).addClass('active');
