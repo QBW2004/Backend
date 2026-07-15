@@ -179,8 +179,8 @@ namespace YYT.Web.Areas.Game.Controllers
                                 id = gameId * 1000 + i,
                                 num = 1,
                                 tableName = string.IsNullOrWhiteSpace(cfgNames[i]) ? ("机台" + i) : cfgNames[i],
-                                minBet = i < cfgBetMins.Count ? cfgBetMins[i] : 100,
-                                maxBet = i < cfgBetMaxs.Count ? cfgBetMaxs[i] : 1000,
+                                minBet = gameId == 3 ? (i < cfgBetMins.Count ? cfgBetMins[i] / 10m : 10m) : (i < cfgBetMins.Count ? (decimal)cfgBetMins[i] : 100m),
+                                maxBet = gameId == 3 ? (i < cfgBetMaxs.Count ? cfgBetMaxs[i] / 10m : 100m) : (i < cfgBetMaxs.Count ? (decimal)cfgBetMaxs[i] : 1000m),
                                 exCoin = 10000,
                                 coinSc = i < cfgCoinScores.Count ? cfgCoinScores[i] : 1,
                                 coinNeed = i < cfgCoinNeeds.Count ? cfgCoinNeeds[i] : 10000,
@@ -672,9 +672,28 @@ namespace YYT.Web.Areas.Game.Controllers
                     {
                         ef.Database.ExecuteSqlCommand(
                             "DELETE FROM roomtableconfig WHERE GAME_ID=" + gameId + " AND TableIndex=" + tIdx);
+                        int rtBetMinSave = betMin;
+                        int rtBetMaxSave = betMax;
+                        if (gameId == 3) // E_FISH_JC pilot: internal unit = 0.1 credit
+                        {
+                            rtBetMinSave = (int)Math.Round(minBetDisplay * 10m, MidpointRounding.AwayFromZero);
+                            rtBetMaxSave = (int)Math.Round(maxBetDisplay * 10m, MidpointRounding.AwayFromZero);
+                        }
                         ef.Database.ExecuteSqlCommand(
                             "INSERT INTO roomtableconfig (GAME_ID, RoomIndex, TableIndex, TableName, Enabled, OneCoinScore, BetMin, BetMax, CoinsNeed, IdleFireTimeoutSec, IdleFireKickEnabled, MaxSeats) VALUES (" +
-                            gameId + ",0," + tIdx + ",'" + tName.Replace("'", "''") + "'," + tblEnabled + "," + coinSc + "," + betMin + "," + betMax + "," + coinNeed + "," + idleSec + "," + tblIdleKick + "," + tblMaxSeats + ")");
+                            gameId + ",0," + tIdx + ",'" + tName.Replace("'", "''") + "'," + tblEnabled + "," + coinSc + "," + rtBetMinSave + "," + rtBetMaxSave + "," + coinNeed + "," + idleSec + "," + tblIdleKick + "," + tblMaxSeats + ")");
+                        if (gameId == 3)
+                        {
+                            try
+                            {
+                                ef.Database.ExecuteSqlCommand(
+                                    "UPDATE ParaRoom SET BET_MIN=" + betMin + ",BET_MAX=" + betMax + ",MinBetUnits=" + rtBetMinSave + ",MaxBetUnits=" + rtBetMaxSave + ",COIN_SC=" + coinSc + ",COIN_NEED=" + coinNeed + " WHERE GAME_ID=" + gameId + " AND ID=" + (gameId * 1000 + tIdx));
+                            }
+                            catch (Exception exRoom)
+                            {
+                                LogHelper.WriteLog(typeof(GameConfigController), exRoom);
+                            }
+                        }
                     }
                     var srv = new SConnect();
                     msg = srv.SendReadString(EScMsgType.RP, gameId);
