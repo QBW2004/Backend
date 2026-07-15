@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>MySql.Data.EntityFramework</id>
+    <version>8.0.16</version>
+    <authors>Oracle</authors>
+    <owners>Oracle</owners>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <licenseUrl>https://downloads.mysql.com/docs/licenses/connector-net-8.0-gpl-en.pdf</licenseUrl>
+    <projectUrl>https://dev.mysql.com/downloads/</projectUrl>
+    <iconUrl>http://www.mysql.com/common/logos/logo-mysql-170x115.png</iconUrl>
+    <description>MySql.Data.EntityFramework</description>
+    <copyright>Copyright (c) 2016, 2019, Oracle and/or its affiliates. All rights reserved.</copyright>
+    <tags>MySql .NET Connector MySql Connector/NET</tags>
+    <dependencies>
+      <group targetFramework=".NETFramework4.5.2">
+        <dependency id="MySql.Data" version="8.0.16" exclude="Build,Analyzers" />
+        <dependency id="EntityFramework" version="6.2.0" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+    <frameworkAssemblies>
+      <frameworkAssembly assemblyName="Microsoft.CSharp" targetFramework=".NETFramework4.5.2" />
+      <frameworkAssembly assemblyName="System.Core" targetFramework=".NETFramework4.5.2" />
+      <frameworkAssembly assemblyName="System.Data.DataSetExtensions" targetFramework=".NETFramework4.5.2" />
+      <frameworkAssembly assemblyName="System.Data" targetFramework=".NETFramework4.5.2" />
+      <frameworkAssembly assemblyName="System" targetFramework=".NETFramework4.5.2" />
+      <frameworkAssembly assemblyName="System.Security" targetFramework=".NETFramework4.5.2" />
+      <frameworkAssembly assemblyName="System.Xml" targetFramework=".NETFramework4.5.2" />
+    </frameworkAssemblies>
+    <contentFiles>
+      <files include="any/net452/app.config.transform" buildAction="Content" />
+      <files include="any/net452/web.config.transform" buildAction="Content" />
+    </contentFiles>
+  </metadata>
+</package>

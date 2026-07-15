@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+    <metadata>
+        <id>jquery-qrcode</id>
+        <version>1.0</version>
+        <title>jquery-qrcode</title>
+        <authors>Jerome Etienne</authors>
+        <owners>Kris Ivanov</owners>
+        <licenseUrl>https://github.com/jeromeetienne/jquery-qrcode/blob/master/MIT-LICENSE.txt</licenseUrl>
+        <projectUrl>https://github.com/jeromeetienne/jquery-qrcode</projectUrl>
+        <iconUrl>http://i.imgur.com/WmHvKpU.png</iconUrl>
+        <requireLicenseAcceptance>true</requireLicenseAcceptance>
+        <description>jquery.qrcode.js is jquery plugin for a pure browser qrcode generation. It allow you to easily add qrcode to your webpages. It is standalone, less than 4k after minify+gzip, no image download. It doesnt rely on external services which go on and off, or add latency while loading. It is based on a library which build qrcode in various languages. jquery.qrcode.js wraps it to make it easy to include in your own code.</description>
+        <tags>jquery-qrcode qrcode qrcode.js</tags>
+    </metadata>
+</package>

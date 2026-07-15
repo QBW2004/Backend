@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
+  <metadata>
+    <id>BouncyCastle</id>
+    <version>1.8.3.1</version>
+    <title>Bouncy Castle</title>
+    <authors>Bouncy Castle Project Contributors</authors>
+    <owners>Teoman Soygul</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <licenseUrl>http://www.bouncycastle.org/licence.html</licenseUrl>
+    <projectUrl>http://www.bouncycastle.org/csharp/</projectUrl>
+    <description>The Bouncy Castle Crypto package is a C\# implementation of cryptographic algorithms and protocols, it was developed by the Legion of the Bouncy Castle, a registered Australian Charity, with a little help! The Legion, and the latest goings on with this package, can be found at [http://www.bouncycastle.org](http://www.bouncycastle.org). In addition to providing basic cryptography algorithms, the package also provides support for CMS, TSP, X.509 certificate generation and a variety of other standards such as OpenPGP.</description>
+    <summary>Bouncy Castle is a collection of APIs used in cryptography.</summary>
+    <releaseNotes>IMPORTANT
+In this release, the TLS library has moved to a whitelisting approach for client-side validation of server-presented Diffie-Hellman (DH) parameters. In the default configuration, if a ciphersuite using ephemeral DH is selected by the server, the client will abort the handshake if the proposed DH group is not one of those specified in RFC 3526 or RFC 7919, or if the DH prime is &lt; 2048 bits. The client therefore no longer offers DH ciphersuites by default. 
+
+Additional Features and Functionality
+Further work has been done on improving SHA-3 performance.
+EC key generation and signing now use cache-timing resistant table lookups.
+RFC 7748: Added low-level implementations of X25519 and X448.
+RFC 8032: Added low-level implementations of Ed25519 and Ed448.</releaseNotes>
+    <copyright>Legion of the Bouncy Castle Inc.</copyright>
+    <language>en-US</language>
+    <tags>bouncycastle cryptography encryption security</tags>
+  </metadata>
+</package>

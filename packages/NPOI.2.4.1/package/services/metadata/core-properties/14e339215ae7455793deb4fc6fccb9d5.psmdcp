@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<coreProperties xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://schemas.openxmlformats.org/package/2006/metadata/core-properties">
+  <dc:creator>NPOI Contributors</dc:creator>
+  <dc:description>Neuzilla is the studio behind NPOI. 
+ 
+Neuzilla provides commercial software customization and consulting service. For details, please contact support@neuzilla.com</dc:description>
+  <dc:identifier>NPOI</dc:identifier>
+  <version>2.4.1</version>
+  <keywords>npoi xlsx xls Excel Word docx</keywords>
+  <lastModifiedBy>NuGet.Packaging, Version=5.0.0.1, Culture=neutral, PublicKeyToken=null;</lastModifiedBy>
+</coreProperties>

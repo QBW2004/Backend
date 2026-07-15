@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>Microsoft.AspNet.SignalR</id>
+    <version>2.4.1</version>
+    <title>Microsoft ASP.NET SignalR</title>
+    <authors>Microsoft</authors>
+    <owners>Microsoft</owners>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <licenseUrl>https://raw.githubusercontent.com/SignalR/SignalR/2.3.0/LICENSE.txt</licenseUrl>
+    <projectUrl>https://www.asp.net/signalr</projectUrl>
+    <iconUrl>https://go.microsoft.com/fwlink/?LinkID=288859</iconUrl>
+    <description>Incredibly simple real-time web for .NET. This package pulls in the server components and JavaScript client required to use SignalR in an ASP.NET application.</description>
+    <releaseNotes>https://github.com/SignalR/SignalR/releases</releaseNotes>
+    <copyright>© Microsoft Corporation. All rights reserved.</copyright>
+    <tags>Microsoft AspNet SignalR AspNetSignalR websockets real-time realtime comet HTTP streaming</tags>
+    <serviceable>true</serviceable>
+    <repository type="git" url="https://github.com/SignalR/SignalR" branch="master" commit="61c1a688f6a4e714e43c5b82b10f6d8b7c612dd6" />
+    <dependencies>
+      <group targetFramework=".NETFramework4.5">
+        <dependency id="Microsoft.AspNet.SignalR.JS" version="2.4.1" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.AspNet.SignalR.SystemWeb" version="2.4.1" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+</package>

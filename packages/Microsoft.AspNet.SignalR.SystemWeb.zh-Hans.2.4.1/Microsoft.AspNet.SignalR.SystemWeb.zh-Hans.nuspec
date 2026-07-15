@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>Microsoft.AspNet.SignalR.SystemWeb.zh-Hans</id>
+    <version>2.4.1</version>
+    <title>Microsoft ASP.NET SignalR SystemWeb 简体中文资源</title>
+    <authors>Microsoft</authors>
+    <owners>Microsoft</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <licenseUrl>https://raw.githubusercontent.com/SignalR/SignalR/2.3.0/LICENSE.txt</licenseUrl>
+    <projectUrl>https://www.asp.net/signalr</projectUrl>
+    <description>此程序包包含适用于 ASP.NET SignalR SystemWeb 的简体中文附属程序集。</description>
+    <summary>适用于 Microsoft.AspNet.SignalR.SystemWeb 程序包的简体中文资源</summary>
+    <copyright>© Microsoft Corporation. All rights reserved.</copyright>
+    <language>zh-Hans</language>
+    <tags>Microsoft AspNet SignalR AspNetSignalR SystemWeb</tags>
+    <dependencies>
+      <dependency id="Microsoft.AspNet.SignalR.SystemWeb" version="[2.4.1]" />
+    </dependencies>
+  </metadata>
+</package>
