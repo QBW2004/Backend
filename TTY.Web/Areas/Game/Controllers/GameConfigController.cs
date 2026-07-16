@@ -303,20 +303,21 @@ namespace YYT.Web.Areas.Game.Controllers
 
 				int fishGid = tableId / 1000;
 
-				int fishTidx = tableId % 1000;
-
 				using (var ef2 = new GameDbContext())
 
 				{
 
-					ef2.Database.ExecuteSqlCommand("DELETE FROM roomtableconfig WHERE GAME_ID=" + fishGid + " AND TableIndex=" + fishTidx);
+					ef2.Database.ExecuteSqlCommand("DELETE FROM roomtableconfig WHERE GAME_ID=" + fishGid + " AND TableIndex=" + (tableId % 1000));
+					SyncFishTableNum(ef2, fishGid);
 
 				}
 
+				var srv = new SConnect();
+				Msg rp = srv.SendReadString(EScMsgType.RP, fishGid);
 				msg.code = 1;
-
-				msg.content = "删除成功";
-
+				msg.content = (rp != null && rp.code == 1)
+					? "删除成功，服务端已即时热更新！"
+					: "删除成功，但服务端热更新失败：" + (rp == null ? "服务端无响应" : rp.content);
 				return Json(msg);
 
 			}
@@ -694,6 +695,8 @@ namespace YYT.Web.Areas.Game.Controllers
                                 LogHelper.WriteLog(typeof(GameConfigController), exRoom);
                             }
                         }
+                        // 同步 pararoom.NUM = roomtableconfig 条数，保证旧房间参数口径与新按桌配置一致
+                        SyncFishTableNum(ef, gameId);
                     }
                     var srv = new SConnect();
                     msg = srv.SendReadString(EScMsgType.RP, gameId);
@@ -804,6 +807,27 @@ namespace YYT.Web.Areas.Game.Controllers
                     if (affected == 0)
                         ef.Database.ExecuteSqlCommand("INSERT INTO ParaGame(ID,ROOM_MAX,PLY_MAX) VALUES({0},{1},{2})", gameId, cnt, 1000);
                 }
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(GameConfigController), ex);
+            }
+        }
+
+        /// <summary>
+        /// 同步鱼机 pararoom.NUM = roomtableconfig 条数，保证旧房间参数与新按桌配置口径一致。
+        /// 鱼机按桌配置以 roomtableconfig 为准，但服务端 AA01 头部 roomInfo[].num 仍读 pararoom.NUM，
+        /// 必须同步使两者统一。
+        /// </summary>
+        private static void SyncFishTableNum(GameDbContext ef, int gameId)
+        {
+            try
+            {
+                int cfgCount = ef.Database.SqlQuery<int>(
+                    "SELECT COUNT(*) FROM roomtableconfig WHERE GAME_ID=" + gameId).FirstOrDefault();
+                if (cfgCount <= 0) return;
+                ef.Database.ExecuteSqlCommand(
+                    "UPDATE ParaRoom SET NUM=" + cfgCount + " WHERE GAME_ID=" + gameId + " AND ID=" + (gameId * 1000));
             }
             catch (Exception ex)
             {

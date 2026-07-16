@@ -70,7 +70,10 @@ namespace YYT.BLL.EF
                         }
 
                         ef.SaveChanges();
-                        int cnt = ef.ParaRoom.Where(c => c.GAME_ID == room.GAME_ID).Count();
+                        // 优先以 roomtableconfig 条数为准（新按桌模型），回退旧 pararoom 行数
+                        int cfgCnt = ef.Database.SqlQuery<int>(
+                            "SELECT COUNT(*) FROM roomtableconfig WHERE GAME_ID=" + room.GAME_ID).FirstOrDefault();
+                        int cnt = cfgCnt > 0 ? cfgCnt : ef.ParaRoom.Where(c => c.GAME_ID == room.GAME_ID).Count();
                         foreach (M_ParaRoom r in ef.ParaRoom.Where(c => c.GAME_ID == room.GAME_ID).ToList())
                         {
                             if (r.NUM != cnt)

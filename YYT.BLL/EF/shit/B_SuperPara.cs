@@ -225,6 +225,8 @@ namespace YYT.BLL.EF
         /// <summary>
         /// 把 paragame.ROOM_MAX 同步为该游戏当前房间总数。必须在发 RP 之前调用，
         /// 否则服务端会按旧 ROOM_MAX 加载，新增桌台因 TableIndex 越界而不可见。
+        /// 同时同步鱼机 pararoom.NUM = roomtableconfig 条数，保证旧房间参数口径
+        /// 与新按桌配置一致（服务端 AA01 头部 roomInfo[].num 仍读 pararoom.NUM）。
         /// 与 GameConfigController.SyncRoomMaxToRoomCount 逻辑一致，集中到此处确保
         /// 所有 SaveTableFull 路径(Bet/Card/Fish)在热更前 ROOM_MAX 已就绪。
         /// </summary>
@@ -245,6 +247,18 @@ namespace YYT.BLL.EF
                     int affected = ef.Database.ExecuteSqlCommand("UPDATE ParaGame SET ROOM_MAX={0} WHERE ID={1}", cnt, gameId);
                     if (affected == 0)
                         ef.Database.ExecuteSqlCommand("INSERT INTO ParaGame(ID,ROOM_MAX,PLY_MAX) VALUES({0},{1},{2})", gameId, cnt, 1000);
+
+                    // 鱼机额外同步 pararoom.NUM = roomtableconfig 条数
+                    if (eGameType == EGameType.Fish)
+                    {
+                        int cfgCnt = ef.Database.SqlQuery<int>(
+                            "SELECT COUNT(*) FROM roomtableconfig WHERE GAME_ID=" + gameId).FirstOrDefault();
+                        if (cfgCnt > 0)
+                        {
+                            ef.Database.ExecuteSqlCommand(
+                                "UPDATE ParaRoom SET NUM=" + cfgCnt + " WHERE GAME_ID=" + gameId + " AND ID=" + (gameId * 1000));
+                        }
+                    }
                 }
             }
             catch (Exception ex)
