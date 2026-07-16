@@ -179,8 +179,8 @@ namespace YYT.Web.Areas.Game.Controllers
                                 id = gameId * 1000 + i,
                                 num = 1,
                                 tableName = string.IsNullOrWhiteSpace(cfgNames[i]) ? ("机台" + i) : cfgNames[i],
-                                minBet = gameId == 3 ? (i < cfgBetMins.Count ? cfgBetMins[i] / 10m : 10m) : (i < cfgBetMins.Count ? (decimal)cfgBetMins[i] : 100m),
-                                maxBet = gameId == 3 ? (i < cfgBetMaxs.Count ? cfgBetMaxs[i] / 10m : 100m) : (i < cfgBetMaxs.Count ? (decimal)cfgBetMaxs[i] : 1000m),
+                                minBet = IsDecimalBetFish(gameId) ? (i < cfgBetMins.Count ? cfgBetMins[i] / 10m : 10m) : (i < cfgBetMins.Count ? (decimal)cfgBetMins[i] : 100m),
+                                maxBet = IsDecimalBetFish(gameId) ? (i < cfgBetMaxs.Count ? cfgBetMaxs[i] / 10m : 100m) : (i < cfgBetMaxs.Count ? (decimal)cfgBetMaxs[i] : 1000m),
                                 exCoin = 10000,
                                 coinSc = i < cfgCoinScores.Count ? cfgCoinScores[i] : 1,
                                 coinNeed = i < cfgCoinNeeds.Count ? cfgCoinNeeds[i] : 10000,
@@ -675,7 +675,7 @@ namespace YYT.Web.Areas.Game.Controllers
                             "DELETE FROM roomtableconfig WHERE GAME_ID=" + gameId + " AND TableIndex=" + tIdx);
                         int rtBetMinSave = betMin;
                         int rtBetMaxSave = betMax;
-                        if (gameId == 3) // E_FISH_JC pilot: internal unit = 0.1 credit
+                        if (IsDecimalBetFish(gameId)) // fish servers: internal unit = 0.1 credit
                         {
                             rtBetMinSave = (int)Math.Round(minBetDisplay * 10m, MidpointRounding.AwayFromZero);
                             rtBetMaxSave = (int)Math.Round(maxBetDisplay * 10m, MidpointRounding.AwayFromZero);
@@ -683,7 +683,7 @@ namespace YYT.Web.Areas.Game.Controllers
                         ef.Database.ExecuteSqlCommand(
                             "INSERT INTO roomtableconfig (GAME_ID, RoomIndex, TableIndex, TableName, Enabled, OneCoinScore, BetMin, BetMax, CoinsNeed, IdleFireTimeoutSec, IdleFireKickEnabled, MaxSeats) VALUES (" +
                             gameId + ",0," + tIdx + ",'" + tName.Replace("'", "''") + "'," + tblEnabled + "," + coinSc + "," + rtBetMinSave + "," + rtBetMaxSave + "," + coinNeed + "," + idleSec + "," + tblIdleKick + "," + tblMaxSeats + ")");
-                        if (gameId == 3)
+                        if (IsDecimalBetFish(gameId))
                         {
                             try
                             {
@@ -720,6 +720,12 @@ namespace YYT.Web.Areas.Game.Controllers
             return Json(msg);
         }
 
+        // 0.1 分炮鱼机（内部单位 = 0.1 分）：金蟾试点已推广到全部鱼机
+        private static readonly int[] DecimalBetFishGameIds = { 3, 6, 13, 19, 21, 22, 32, 33, 42, 49, 51 };
+        private static bool IsDecimalBetFish(int gameId)
+        {
+            return System.Array.IndexOf(DecimalBetFishGameIds, gameId) >= 0;
+        }
         private static M_ParaRoom BuildParaRoom(int tableId, int gameId, int num, decimal minBetDisplay, decimal maxBetDisplay, int exCoin, int coinSc, int coinNeed, int gameMo, string tableName, int maxSeats, int idleTimeout, bool idleKick, bool enabled, decimal scoreSwitch = 0m)
         {
             M_ParaRoom room = new M_ParaRoom();
