@@ -356,6 +356,16 @@ namespace YYT.Web.Areas.Game.Controllers
                             //    导致已删除的“桌台N”反复复活。
                             RepackRoomsAfterDelete(ef, roomTbl, machTbl, gameId);
 
+                            // 押分：按重排后的剩余桌台重建 roomtableconfig（清掉已删桌残留，索引与新桌台 ID 对齐）。
+                            if (gameType == 0)
+                            {
+                                ef.Database.ExecuteSqlCommand("DELETE FROM roomtableconfig WHERE GAME_ID={0}", gameId);
+                                ef.Database.ExecuteSqlCommand(
+                                    "INSERT INTO roomtableconfig (GAME_ID, RoomIndex, TableIndex, TableName, Enabled, OneCoinScore, BetMin, BetMax, CoinsNeed, IdleFireTimeoutSec, IdleFireKickEnabled, MaxSeats) " +
+                                    "SELECT GAME_ID, 0, ID - {1}, IFNULL(TableName,''), Enabled+0, IFNULL(COIN_SC,0), IFNULL(BET_MIN,0), IFNULL(BET_MAX,0), IFNULL(COIN_NEED,0), IdleFireTimeoutSec, IdleFireKickEnabled+0, MaxSeats " +
+                                    "FROM ParaBetRoom WHERE GAME_ID={0}", gameId, gameId * 1000);
+                            }
+
                             // 牌机：同步牌型赔付配置的机台号（删除该桌行 + 高位机台号左移，与房间重排保持一致）。
                             if (gameType == 1)
                             {

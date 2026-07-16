@@ -92,6 +92,18 @@ namespace YYT.BLL.EF
                             }
                         }
                         ef.SaveChanges();
+
+                        // 押分按桌配置直接落库：roomtableconfig 以数据库为准，
+                        // 不依赖 center 在线时的 TC 热更写入（center 掉线也不丢配置）。
+                        int tIdx = room.ID % 1000;
+                        ef.Database.ExecuteSqlCommand(
+                            "DELETE FROM roomtableconfig WHERE GAME_ID={0} AND TableIndex={1}", room.GAME_ID, tIdx);
+                        ef.Database.ExecuteSqlCommand(
+                            "INSERT INTO roomtableconfig (GAME_ID, RoomIndex, TableIndex, TableName, Enabled, OneCoinScore, BetMin, BetMax, CoinsNeed, IdleFireTimeoutSec, IdleFireKickEnabled, MaxSeats) VALUES ({0},0,{1},{2},{3},{4},{5},{6},{7},{8},{9},{10})",
+                            room.GAME_ID, tIdx, room.TableName ?? string.Empty, room.Enabled ? 1 : 0,
+                            room.COIN_SC, room.BET_MIN, room.BET_MAX, room.COIN_NEED,
+                            room.IdleFireTimeoutSec, room.IdleFireKickEnabled ? 1 : 0, room.MaxSeats);
+
                         trans.Commit();
                     }
                     catch (Exception ex)
