@@ -78,6 +78,15 @@
     function fmtCoins(value) {
         return top.goldFormat(value || 0);
     }
+    // 剩余分数 = 大厅金币(Coins) + 带进游戏内的分(Score)，即账号总金币
+    function fmtTotalCoins(value, row) {
+        return top.goldFormat((row.Coins || 0) + (row.Score || 0));
+    }
+    function fmtWinLoss(value) {
+        var v = value || 0;
+        var color = v > 0 ? '#2e8b57' : (v < 0 ? '#c0392b' : '#666');
+        return '<span style="color:' + color + ';">' + top.goldFormat(v) + '</span>';
+    }
     function fmtStatus(value) {
         if (value === 0) return '<span style="color:#2e8b57;">游戏中</span>';
         if (value === 1) return '<span style="color:#999;">大厅</span>';
@@ -151,9 +160,9 @@
             <th field="GameID" width="120" formatter="fmtGame">当前游戏</th>
             <th field="TableId" width="80" formatter="fmtTable">桌号</th>
             <th field="SeatId" width="80" formatter="fmtSeat">座号</th>
-            <th field="CurGameScore" width="90" formatter="fmtCoins">当前压分</th>
-            <th field="Coins" width="95" formatter="fmtCoins">剩余分数</th>
-            <th field="Score" width="90" formatter="fmtCoins">累计盈亏</th>
+            <th field="CurBet" width="90" formatter="fmtCoins">当前压分</th>
+            <th field="Coins" width="95" formatter="fmtTotalCoins">剩余分数</th>
+            <th field="TotalWinLoss" width="90" formatter="fmtWinLoss">累计盈亏</th>
         </tr>
     </thead>
 </table>

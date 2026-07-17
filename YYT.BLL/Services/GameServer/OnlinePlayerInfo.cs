@@ -40,6 +40,12 @@ namespace YYT.BLL.Services.GameServer
         [JsonProperty("CurGameScore")]
         public long CurGameScore { get; set; }
 
+        [JsonProperty("CurBet")]
+        public long CurBet { get; set; }
+
+        [JsonProperty("TotalWinLoss")]
+        public long TotalWinLoss { get; set; }
+
         /// <summary>
         /// 状态: 0=游戏中, 1=大厅, 2=其他
         /// </summary>
