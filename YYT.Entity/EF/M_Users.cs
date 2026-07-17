@@ -138,6 +138,11 @@ namespace YYT.Entity
         public long? CurrentBetCoins { get; set; }
         public long? CurrentWinLose { get; set; }
         /// <summary>
+        /// 今日盈亏
+        /// </summary>
+        [NotMapped]
+        public long? TodayWinLoss { get; set; }
+        /// <summary>
         /// 玩家盈利
         /// </summary>
         [NotMapped]
@@ -146,6 +151,12 @@ namespace YYT.Entity
         {
             return JsonConvert.SerializeObject(this);
         }
+    }
+
+    public class M_UserDailyWinLoss
+    {
+        public string UserID { get; set; }
+        public long WINLOSS { get; set; }
     }
 
     public class UserDailyAccounts

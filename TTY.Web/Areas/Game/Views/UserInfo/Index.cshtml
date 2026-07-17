@@ -142,6 +142,7 @@
             GAME_SCORE: 0,
             COINS_BUY: 0,
             COINS_BACK: 0,
+            TodayWinLoss: 0,
             Profit: 0
         };
         for (var i = 0; i < rows.length; i++) {
@@ -149,6 +150,7 @@
             footer.GAME_SCORE += Number(rows[i].GAME_SCORE || 0);
             footer.COINS_BUY += Number(rows[i].COINS_BUY || 0);
             footer.COINS_BACK += Number(rows[i].COINS_BACK || 0);
+            footer.TodayWinLoss += Number(rows[i].TodayWinLoss || 0);
             footer.Profit += Number(rows[i].Profit || 0);
         }
         $('#tb_UserInfo').datagrid('reloadFooter', [footer]);
@@ -271,6 +273,11 @@
         }
         function fmtCoins(value, rowData, rowIndex) {
             return top.goldFormat(value);
+        }
+        function fmtWinLoss(value, rowData, rowIndex) {
+            var num = Number(value || 0);
+            var color = num > 0 ? '#3c9b5f' : (num < 0 ? '#d9534f' : '#333');
+            return '<span style="color:' + color + '">' + top.goldFormat(num) + '</span>';
         }
         function showUserToast(message, type) {
             var toast = $('#userInfoToast');
@@ -1119,6 +1126,7 @@
             <th field="CurrentWinLose" width="90" formatter="fmtCoins" hidden="true">当前输赢</th>
             <th field="COINS_BUY" width="85" formatter="fmtCoins">充值</th>
             <th field="COINS_BACK" width="85" formatter="fmtCoins">兑换</th>
+            <th field="TodayWinLoss" width="85" formatter="fmtWinLoss">今日盈亏</th>
             <th field="Profit" width="85" formatter="fmtCoins">总盈利</th>
             @if (loginUser.UserPriv == 0 || loginUser.IsViewSafePwd == 1)
             {

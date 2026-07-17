@@ -477,6 +477,7 @@ namespace YYT.BLL.EF
                         .Skip(mPage.PageSize * (mPage.PageIndex - 1)).Take(mPage.PageSize)
                         .ToList();
                     FillCurrentPlayInfo(ef, users);
+                    FillTodayWinLoss(ef, users);
                     ApplySensitiveFieldPermissions(users, loginUser);
                     list.rows = users;
                     list.total = mPage.TotalCount;
@@ -535,6 +536,7 @@ namespace YYT.BLL.EF
                     user.Profit = user.COINS_BUY - user.COINS_BACK;
 
                 FillCurrentPlayInfo(ef, users);
+                FillTodayWinLoss(ef, users);
                 ApplySensitiveFieldPermissions(users, loginUser);
                 return users;
             }
@@ -657,6 +659,29 @@ namespace YYT.BLL.EF
                 string gameName;
                 if (gameNames.TryGetValue(log.GAME_TYPE, out gameName))
                     user.CurrentGameName = gameName;
+            }
+        }
+
+        private void FillTodayWinLoss(GameDbContext ef, List<M_Users_DTO> users)
+        {
+            if (users == null || users.Count < 1)
+                return;
+
+            List<string> userIds = users.Select(c => c.ID).Where(c => !string.IsNullOrWhiteSpace(c)).Distinct().ToList();
+            if (userIds.Count < 1)
+                return;
+
+            string placeholders = string.Join(",", userIds.Select((c, i) => "{" + i + "}"));
+            string sql = "SELECT UserID, WINLOSS FROM user_daily_winloss WHERE DAY = CURDATE() AND UserID IN (" + placeholders + ")";
+            Dictionary<string, long> winLossMap = ef.Database.SqlQuery<M_UserDailyWinLoss>(sql, userIds.Cast<object>().ToArray())
+                .ToList()
+                .GroupBy(c => c.UserID)
+                .ToDictionary(g => g.Key, g => g.First().WINLOSS);
+
+            foreach (M_Users_DTO user in users)
+            {
+                long winLoss;
+                user.TodayWinLoss = winLossMap.TryGetValue(user.ID, out winLoss) ? winLoss : 0;
             }
         }
 
