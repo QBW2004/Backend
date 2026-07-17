@@ -8,9 +8,14 @@
     <script>
     var canKickWholeLine = @((loginUser?.UserPriv == 0 || loginUser?.ManageScope == 2).ToString().ToLower());
     var loginAgencyAccount = "@(loginUser?.Accounts)";
+    var canDelete = @((loginUser?.UserPriv == 0 || loginUser?.IsDelete == 1).ToString().ToLower());
+    var canControl = @((loginUser?.UserPriv == 0 || loginUser?.IsKill == 1 || loginUser?.IsProbability == 1 || loginUser?.IsRelease == 1).ToString().ToLower());
+    var canKick = @((loginUser?.UserPriv == 0 || loginUser?.IsKicking == 1).ToString().ToLower());
+    var canUpDown = @((loginUser?.UserPriv == 0 || loginUser?.IsUpDown == 1).ToString().ToLower());
+    var canModifyPwd = @((loginUser?.UserPriv == 0 || loginUser?.IsModifyPwd == 1).ToString().ToLower());
     $(function () {
         // 加载指定的模块
-        easyloader.load(['textbox', 'linkbutton', 'datagrid'], function () {
+        easyloader.load(['textbox', 'linkbutton', 'datagrid', 'dialog'], function () {
             //适应窗口大小变化
             $(window).resize(function () {
                 if ($('body').data('grid-init')) {
@@ -188,7 +193,10 @@
                 //sortOrder: 'desc',
                 //remoteSort: false,
                 onBeforeLoad: setGridSize,
-                onLoadSuccess: onLoaded
+                onLoadSuccess: function (data) {
+                    if (window.onLoaded) onLoaded(data);
+                    bindRowClickMenu();
+                }
             });
         } else {
             $('#tb_UserInfo').datagrid('load', para);
@@ -966,6 +974,66 @@
             arr.push({ id: 0, text: '关闭' });
             return arr;
         }
+
+        var _menuUser = null;
+        var _menuInited = false;
+
+        function showMenuModal() {
+            var dlg = $('#menuModal');
+            if (!_menuInited) {
+                dlg.dialog({
+                    title: '【功能菜单】',
+                    width: 320,
+                    height: 440,
+                    modal: true,
+                    closed: true,
+                    collapsible: false,
+                    minimizable: false,
+                    maximizable: false,
+                    resizable: false
+                });
+                _menuInited = true;
+            }
+            dlg.dialog('open');
+        }
+
+        function closeMenu() {
+            $('#menuModal').dialog('close');
+        }
+
+        function menuDelete() { closeMenu(); deleteUser(_menuUser.ID); }
+        function menuControl() { closeMenu(); showCtrlSelect(_menuUser.ID); }
+        function menuKick() { closeMenu(); kickPlayer(_menuUser.ID); }
+        function menuRecharge() { closeMenu(); showReChange(_menuUser.ID); }
+        function menuDeduct() { closeMenu(); showDeduct(_menuUser.ID); }
+        function menuChgPwd() { closeMenu(); showChgWin(_menuUser.ID); }
+
+        function bindRowClickMenu() {
+            if (bindRowClickMenu._done) return;
+            bindRowClickMenu._done = true;
+            document.addEventListener('click', function (e) {
+                if (!e.target || !e.target.closest) return;
+                var row = e.target.closest('tr.datagrid-row');
+                if (!row) return;
+                var panel = $('#tb_UserInfo').datagrid('getPanel');
+                if (!panel.length || !panel[0].contains(row)) return;
+                if (e.target.closest('a') || e.target.closest('input[type=checkbox]')) return;
+                var idx = parseInt(row.getAttribute('datagrid-row-index'));
+                if (isNaN(idx)) return;
+                var rows = $('#tb_UserInfo').datagrid('getRows');
+                var rd = rows[idx];
+                if (rd && rd.FROZEN != 2) {
+                    _menuUser = rd;
+                    $('#menuUserAccount').text(rd.ID || '');
+                    $('#menuUserName').text(rd.NAME || '');
+                    if (canKick && (canKickWholeLine || rd.AGENCY == loginAgencyAccount))
+                        $('#menuBtnKick').show();
+                    else
+                        $('#menuBtnKick').hide();
+                    showMenuModal();
+                }
+            }, true);
+        }
     </script>
     <style>
         .dialog-coin-tip { display: block; padding-top: 6px; color: #c00; white-space: nowrap; }
@@ -974,6 +1042,16 @@
         .coin-dialog-field { text-align: left; white-space: nowrap; }
         .coin-dialog-tip { color: #999; text-align: left; }
         .coin-dialog-form { min-height: 260px; height: 100%; display: flex; align-items: center; justify-content: center; margin: 0; }
+        .menu-btn-item { display: block; width: 100%; padding: 11px 0; border: none; border-radius: 8px; font-size: 15px; font-weight: 500; cursor: pointer; margin-bottom: 10px; text-decoration: none; text-align: center; transition: opacity 0.2s; }
+        .menu-btn-item:hover { opacity: 0.85; }
+        .menu-btn-item:last-child { margin-bottom: 0; }
+        .menu-btn-control { background: #ecf5ff; color: #409eff; }
+        .menu-btn-recharge { background: #f0f9eb; color: #67c23a; }
+        .menu-btn-deduct { background: #fdf6ec; color: #e6a23c; }
+        .menu-btn-kick { background: #fef0f0; color: #f56c6c; }
+        .menu-btn-pwd { background: #f3f0ff; color: #722ed1; }
+        .menu-btn-delete { background: #fff1f0; color: #cf1322; }
+        .menu-btn-back { background: #f5f7fa; color: #606266; }
     </style>
 }
 
@@ -1041,7 +1119,7 @@
             <th field="CurrentWinLose" width="90" formatter="fmtCoins" hidden="true">当前输赢</th>
             <th field="COINS_BUY" width="85" formatter="fmtCoins">充值</th>
             <th field="COINS_BACK" width="85" formatter="fmtCoins">兑换</th>
-            <th field="Profit" width="85" formatter="fmtCoins">盈利</th>
+            <th field="Profit" width="85" formatter="fmtCoins">总盈利</th>
             @if (loginUser.UserPriv == 0 || loginUser.IsViewSafePwd == 1)
             {
                 <th field="PWD" width="110">用户密码</th>
@@ -1537,4 +1615,34 @@
             </tr>
         </table>
     </form>
+</div>
+
+@*功能菜单弹窗*@
+<div id="menuModal" class="hide" style="text-align:center;padding:20px 20px 16px;">
+    <div style="font-size:18px;font-weight:bold;color:#303133;margin-bottom:4px;">玩家账号：<span id="menuUserAccount" style="color:#409eff;"></span></div>
+    <div style="font-size:14px;color:#909399;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid #ebeef5;">名称：<span id="menuUserName"></span></div>
+    <div>
+        @if (loginUser.UserPriv == 0 || loginUser.IsDelete == 1)
+        {
+            <a href="javascript:void(0);" class="menu-btn-item menu-btn-delete" onclick="menuDelete()">删除</a>
+        }
+        @if (loginUser.UserPriv == 0 || loginUser.IsKill == 1 || loginUser.IsProbability == 1 || loginUser.IsRelease == 1)
+        {
+            <a href="javascript:void(0);" class="menu-btn-item menu-btn-control" onclick="menuControl()">控制</a>
+        }
+        @if (loginUser.UserPriv == 0 || loginUser.IsKicking == 1)
+        {
+            <a href="javascript:void(0);" id="menuBtnKick" class="menu-btn-item menu-btn-kick" onclick="menuKick()">踢人</a>
+        }
+        @if (loginUser.UserPriv == 0 || loginUser.IsUpDown == 1)
+        {
+            <a href="javascript:void(0);" class="menu-btn-item menu-btn-recharge" onclick="menuRecharge()">充值</a>
+            <a href="javascript:void(0);" class="menu-btn-item menu-btn-deduct" onclick="menuDeduct()">扣币</a>
+        }
+        @if (loginUser.UserPriv == 0 || loginUser.IsModifyPwd == 1)
+        {
+            <a href="javascript:void(0);" class="menu-btn-item menu-btn-pwd" onclick="menuChgPwd()">修改密码</a>
+        }
+        <a href="javascript:void(0);" class="menu-btn-item menu-btn-back" onclick="closeMenu()">返回</a>
+    </div>
 </div>
