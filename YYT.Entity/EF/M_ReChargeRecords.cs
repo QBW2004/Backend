@@ -54,6 +54,10 @@ namespace YYT.Entity
         /// </summary>
         public string PayNo { get; set; }
         /// <summary>
+        /// 操作人（充值给用户的代理/管理账号）
+        /// </summary>
+        public string Operator { get; set; }
+        /// <summary>
         /// 处理状态
         /// <para>0 未处理</para>
         /// <para>1 已处理</para>

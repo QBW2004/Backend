@@ -68,6 +68,9 @@
                 return '<span class="red">拒绝并扣币</span>';
         }
         function fmtOpt(value, rowData, rowIndex) {
+            if (rowData.Processed == 4) {
+                return rowData.OrderNo || '';
+            }
             var arr = [];
             if (rowData.Processed == 0) {
                 var str = rowData.OrderNo;
@@ -82,12 +85,18 @@
                         arr.push('<a class="blue" href="javascript:void(0)" onclick="ConfirmReCharge(\'' + rowData.OrderNo + '\',\'' + rowData.GameID + '\',' + rowData.Coin + ',' + rowData.RechargeType + ')">确认处理</a>');
                     }
                 } else {
-                    arr.push(' ');
+                    arr.push(fmtOperator(rowData));
                 }
             } else {
-                arr.push(' ');
+                arr.push(fmtOperator(rowData));
             }
             return arr.join(arr.length > 1 ? ' | ' : '');
+        }
+        function fmtOperator(rowData) {
+            if (rowData.Operator) {
+                return '操作人：' + rowData.Operator;
+            }
+            return ' ';
         }
         function fmtRechargeType(value, rowData, rowIndex) {
             if (value == 1)
@@ -268,8 +277,8 @@
     <thead>
         <tr>
             <th field="RechargeType" width="200" formatter="fmtRechargeType">充值类型</th>
-            <th field="OrderNo" width="240">订单编号</th>
-            <th field="PayNo" width="200">(收款)支付宝/微信号</th>
+            <th field="OrderNo" width="240" hidden="true">订单编号</th>
+            <th field="PayNo" width="200" hidden="true">(收款)支付宝/微信号</th>
             <th field="GameID" width="200">用户账号</th>
             <th field="Agency" width="200">所属代理</th>
             <th field="Coin" width="85" formatter="fmtCoins">充值数量</th>

@@ -787,6 +787,7 @@ namespace YYT.BLL.EF
                 Agency = this.DestUser.AGENCY,
                 OrderNo = Guid.NewGuid().ToString().Replace("-", ""),
                 PayNo = string.Empty,
+                Operator = this.SrcUser == null ? string.Empty : this.SrcUser.ID,
                 Processed = 1,
                 RechargeType = (this.ReChargeDataEntity.RechargeType + 20)
             };

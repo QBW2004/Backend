@@ -15,10 +15,10 @@ namespace YYT.Web.Areas.Game.Controllers
     [MemberAuthorize]
     public class FishUserCtrlController : BaseController
     {
-        // GET: Game/FishUserCtrl
+        // GET: Game/FishUserCtrl（页面已停用）
         public ActionResult Index()
         {
-            return View();
+            return HttpNotFound();
         }
 
         /// <summary>

@@ -122,9 +122,9 @@ namespace YYT.BLL.EF
                     }
                 }
                 M_ReChargeRecords footer = new M_ReChargeRecords();
-                footer.PayNo = "后台总充值：" + tatolReCharge;
-                footer.Agency = "后台总兑换："+ tatolExCharge;
-                footer.GameID = "后台总赠送："+ tatolGive;
+                footer.GameID = "后台总充值：" + tatolReCharge;
+                footer.Agency = "后台总兑换：" + tatolExCharge;
+                footer.Operator = "后台总赠送：" + tatolGive;
                 footer.OrderNo = "后台总扣币：" + tatolDelCoins;
                 footer.Processed = 4;
                 ListFooter.Add(footer);
@@ -290,6 +290,7 @@ namespace YYT.BLL.EF
                 if (rst.Coin == 0)
                 {
                     rst.Processed = 1;
+                    rst.Operator = loginUser.Accounts;
                     var val = ef.SaveChanges();
 
                     if (val > 0)
@@ -327,6 +328,7 @@ namespace YYT.BLL.EF
                 if (msg.code == 1)
                 {
                     rst.Processed = 1;
+                    rst.Operator = loginUser.Accounts;
                     var val1 = ef.SaveChanges();
                 }
                 //msg.content = "暂未开放！";
