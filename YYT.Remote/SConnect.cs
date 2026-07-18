@@ -340,18 +340,31 @@ namespace YYT.Remote
         }
 
         /// <summary>
+        /// TC 命令的桌台参数扩展字段（牌机/鱼机），紧跟 maxSeats 之后：
+        /// U32×4(betMin/betMax/oneCoinScore/coinsNeed)，字段顺序与 center 的解析一致。
+        /// </summary>
+        public class TcTableExt
+        {
+            public uint BetMin;
+            public uint BetMax;
+            public uint OneCoinScore;
+            public uint CoinsNeed;
+        }
+
+        /// <summary>
         /// 发送 TC(桌台配置热更新) 二进制命令，并读取 center 的文本回复(TCOK/TCER)。
         /// 报文布局见《后台桌名热更新对接说明-TC命令》§3.2：
         ///   "TC" + U16 BE gameID + U16 BE roomIndex + U16 BE tableIndex
         ///   + Poco 7-bit varint 长度前缀 + UTF-8 桌名
         ///   + U8 enabled + U32 BE idleFireTimeoutSec + U8 idleFireKickEnabled + U16 BE maxSeats
+        ///   + 可选桌台参数扩展(TcTableExt，牌机/鱼机，U32×4 betMin/betMax/oneCoinScore/coinsNeed)
         ///   + 可选押分扩展(TcBetExt，仅押分类游戏，center 据此写 roomtableconfig_bet)
         /// 与现有 RP/PA(文本命令)不同，TC 为纯二进制报文，不经过 MsgDefine.config 模板。
         /// </summary>
         public Msg SendTcCommand(ushort gameID, ushort roomIndex, ushort tableIndex,
                                  string tableName, byte enabled,
                                  uint idleFireTimeoutSec, byte idleFireKickEnabled,
-                                 ushort maxSeats, TcBetExt betExt = null)
+                                 ushort maxSeats, TcBetExt betExt = null, TcTableExt tableExt = null)
         {
             Msg msg = new Msg(0, "服务器内部错误，消息发送失败！");
             StreamReader sr = null;
@@ -388,6 +401,13 @@ namespace YYT.Remote
                     bw.Write(HostToNetworkU32(idleFireTimeoutSec));
                     bw.Write(idleFireKickEnabled);
                     bw.Write(HostToNetworkU16(maxSeats));
+                    if (tableExt != null)
+                    {
+                        bw.Write(HostToNetworkU32(tableExt.BetMin));
+                        bw.Write(HostToNetworkU32(tableExt.BetMax));
+                        bw.Write(HostToNetworkU32(tableExt.OneCoinScore));
+                        bw.Write(HostToNetworkU32(tableExt.CoinsNeed));
+                    }
                     if (betExt != null)
                     {
                         bw.Write(betExt.BetTime);

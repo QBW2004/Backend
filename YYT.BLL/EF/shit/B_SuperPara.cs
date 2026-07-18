@@ -65,7 +65,8 @@ namespace YYT.BLL.EF
         protected Msg PushTableConfig(int tableId, int gameId, int gameType,
                                       string tableName, bool enabled,
                                       int idleFireTimeoutSec, bool idleFireKickEnabled,
-                                      int maxSeats, SConnect.TcBetExt betExt = null)
+                                      int maxSeats, SConnect.TcBetExt betExt = null,
+                                      SConnect.TcTableExt tableExt = null)
         {
             Msg result = new Msg(1, string.Empty);
             try
@@ -87,7 +88,7 @@ namespace YYT.BLL.EF
                     (byte)(enabled ? 1 : 0),
                     (uint)idleFireTimeoutSec,
                     (byte)(idleFireKickEnabled ? 1 : 0),
-                    (ushort)maxSeats, betExt);
+                    (ushort)maxSeats, betExt, tableExt);
 
                 if (tc != null && tc.code == 1)
                 {

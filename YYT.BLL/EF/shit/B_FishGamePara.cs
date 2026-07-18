@@ -96,8 +96,18 @@ namespace YYT.BLL.EF
                 }
             }
             Msg hot = PushHotUpdate(room.GAME_ID, EGameType.Fish, machine);
+            // 鱼机按桌下发最低带入：仅携带 coinsNeed，炮值/一币分保持 0，
+            // 由 center 下发时用 ParaRoom 房间值(含小数炮值换算)回填，避免单位不一致。
+            var tableExt = new SConnect.TcTableExt
+            {
+                BetMin = 0,
+                BetMax = 0,
+                OneCoinScore = 0,
+                CoinsNeed = (uint)Math.Max(0, room.COIN_NEED),
+            };
             Msg tc = PushTableConfig(room.ID, room.GAME_ID, (int)EGameType.Fish,
-                room.TableName, room.Enabled, room.IdleFireTimeoutSec, room.IdleFireKickEnabled, room.MaxSeats);
+                room.TableName, room.Enabled, room.IdleFireTimeoutSec, room.IdleFireKickEnabled, room.MaxSeats,
+                null, tableExt);
             return MergeHotUpdateAndTc(hot, tc);
         }
 
