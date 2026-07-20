@@ -72,11 +72,23 @@ namespace YYT.Web.Areas.Game.Controllers
                         List<M_ParaBet> bets = ef.ParaBets
                             .Where(c => c.GAME_ID == gameId)
                             .ToList();
+                        // 押注赔率(复用 cardpayoutprofile)：HandType=门索引，
+                        // PayoutMultiplier=倍率x10，ProbabilityBasis=出现率(万分比)
+                        List<CardPayoutRowDto> betPayoutRows = ef.Database.SqlQuery<CardPayoutRowDto>(
+                            "SELECT TableId, HandType, PayoutMultiplier, ProbabilityBasis, Enabled FROM cardpayoutprofile WHERE GAME_ID={0}", gameId).ToList();
                         int bidx = 0;
                         foreach (M_ParaBetRoom r in betRooms)
                         {
                             bidx++;
                             M_ParaBet m = bets.FirstOrDefault(c => c.ID == r.ID);
+                            int btIdx = r.ID % 1000;
+                            List<CardPayoutRowDto> bpr = betPayoutRows.Where(c => c.TableId == btIdx).ToList();
+                            Dictionary<string, int> betPayout = new Dictionary<string, int>();
+                            foreach (CardPayoutRowDto p in bpr)
+                            {
+                                betPayout["p" + p.HandType] = p.ProbabilityBasis;
+                                betPayout["m" + p.HandType] = p.PayoutMultiplier;
+                            }
                             rows.Add(new
                             {
                                 id = r.ID,
@@ -107,7 +119,9 @@ namespace YYT.Web.Areas.Game.Controllers
                                 bankerDif = m == null ? 0 : m.BANKER_DIF,
                                 bankerHar = m == null ? 0 : m.BANKER_HAR,
                                 bankerSiteType = m == null ? 0 : m.BANKER_SITE_TYPE,
-                                bankerPer = m == null ? 0 : m.BANKER_PER
+                                bankerPer = m == null ? 0 : m.BANKER_PER,
+                                betPayoutOn = bpr.Any(c => c.Enabled == 1) ? 1 : 0,
+                                betPayout = betPayout
                             });
                         }
                     }
@@ -234,6 +248,11 @@ namespace YYT.Web.Areas.Game.Controllers
                             {
                                 row["payout" + p] = GetLabaOptValue(labas, "Payout" + p);
                                 row["prob" + p] = GetLabaOptValue(labas, "Prob" + p);
+                            }
+                            if (subType == 2)  // 水果拉霸：大转盘指向概率回显
+                            {
+                                for (int w = 0; w < 24; w++)
+                                    row["wheelProb" + w] = GetLabaOptValue(labas, "WheelProb" + w);
                             }
 
                             // 押分支持一位小数：优先用 X10 键还原，无则回退旧整数键
@@ -484,6 +503,30 @@ namespace YYT.Web.Areas.Game.Controllers
                             labaList.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "Prob" + p, OptValue = prob, TIME = DateTime.Now, Type = "Payout" });
                     }
 
+                    if (subType == 2)  // 水果拉霸：大转盘 24 面板位指向概率（倍率客户端写死不可配）
+                    {
+                        int wheelSum = 0;
+                        for (int w = 0; w < 24; w++)
+                        {
+                            int wp = form.Q<int>("WheelProb" + w, -1);
+                            if (wp > 10000)
+                            {
+                                msg.content = "面板位" + w + " 指向概率不能超过 10000！";
+                                return Json(msg);
+                            }
+                            if (wp >= 0)
+                            {
+                                wheelSum += wp;
+                                labaList.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "WheelProb" + w, OptValue = wp, TIME = DateTime.Now, Type = "Payout" });
+                            }
+                        }
+                        if (wheelSum > 10000)
+                        {
+                            msg.content = "大转盘指向概率合计不能超过 10000！";
+                            return Json(msg);
+                        }
+                    }
+
                     // 押分支持一位小数（715 文档最小押分 0.1）：以 X10 键存储，旧 betMin/betMax 键同步存取整供服务端兼容
                     decimal labaBetMinD = form.Q<decimal>("MinBet", -1m);
                     decimal labaBetMaxD = form.Q<decimal>("MaxBet", -1m);
@@ -573,23 +616,30 @@ namespace YYT.Web.Areas.Game.Controllers
 
                 if (gameType == 0)
                 {
+                    // 押注玩法旧字段已从页面移除：保存时沿用库内原值，不被表单缺省值清零
+                    M_ParaBetRoom oldRoom = null;
+                    using (var efOld = new GameDbContext())
+                    {
+                        oldRoom = efOld.ParaBetRooms.FirstOrDefault(c => c.ID == tableId);
+                    }
+
                     M_ParaBetRoom room = new M_ParaBetRoom();
                     room.ID = tableId;
                     room.GAME_ID = gameId;
-                    room.BET_TIME = form.Q<int>("BET_TIME", 0);
+                    room.BET_TIME = oldRoom == null ? form.Q<int>("BET_TIME", 0) : oldRoom.BET_TIME;
                     room.NUM = num;
                     room.BET_MIN = betMin;
                     room.BET_MAX = betMax;
-                    room.BET_MIN_VICE = form.Q<int>("BET_MIN_VICE", 0);
-                    room.BET_MAX_VICE = form.Q<int>("BET_MAX_VICE", 0);
-                    room.BET_MIN_DRAW = form.Q<int>("BET_MIN_DRAW", 0);
-                    room.BET_MAX_DRAW = form.Q<int>("BET_MAX_DRAW", 0);
+                    room.BET_MIN_VICE = oldRoom == null ? 0 : oldRoom.BET_MIN_VICE;
+                    room.BET_MAX_VICE = oldRoom == null ? 0 : oldRoom.BET_MAX_VICE;
+                    room.BET_MIN_DRAW = oldRoom == null ? 0 : oldRoom.BET_MIN_DRAW;
+                    room.BET_MAX_DRAW = oldRoom == null ? 0 : oldRoom.BET_MAX_DRAW;
                     room.EX_COIN = exCoin;
                     room.COIN_SC = coinSc;
                     room.COIN_NEED = coinNeed;
-                    room.BANKER_SC_NEED = form.Q<int>("BANKER_SC_NEED", 0);
-                    room.SC_LIMIT_SING = form.Q<int>("SC_LIMIT_SING", 0);
-                    room.SC_LIMIT_ALL = form.Q<int>("SC_LIMIT_ALL", 0);
+                    room.BANKER_SC_NEED = oldRoom == null ? 0 : oldRoom.BANKER_SC_NEED;
+                    room.SC_LIMIT_SING = oldRoom == null ? 0 : oldRoom.SC_LIMIT_SING;
+                    room.SC_LIMIT_ALL = oldRoom == null ? 0 : oldRoom.SC_LIMIT_ALL;
                     room.Game_Mo = gameMo;
                     room.BetScores = (form.Q<string>("BetScores", string.Empty) ?? string.Empty).Trim();
                     room.DefaultBetIndex = 0;
@@ -609,6 +659,59 @@ namespace YYT.Web.Areas.Game.Controllers
                     machine.BANKER_HAR = form.Q<int>("BANKER_HAR", 0);
                     machine.BANKER_SITE_TYPE = form.Q<int>("BANKER_SITE_TYPE", 0);
                     machine.BANKER_PER = form.Q<int>("BANKER_PER", 0);
+
+                    // 押注赔率（每门：出现率万分比 + 倍数），复用 cardpayoutprofile：
+                    // HandType=门索引，PayoutMultiplier=倍率x10，ProbabilityBasis=出现率(万分比)
+                    int betItemCount = GetBetItemCount(gameId);
+                    if (betItemCount > 0)
+                    {
+                        int betPayoutOn = form.Q<int>("BetPayoutOn", 0) == 1 ? 1 : 0;
+                        List<int[]> betProfiles = new List<int[]>();
+                        int betProbSum = 0;
+                        for (int bi = 0; bi < betItemCount; bi++)
+                        {
+                            int prob = (int)Math.Round(form.Q<decimal>("bp" + bi, 0m), MidpointRounding.AwayFromZero);
+                            decimal multD = form.Q<decimal>("bm" + bi, 0m);
+                            int mult = (int)Math.Round(multD * 10m, MidpointRounding.AwayFromZero);
+                            if (prob < 0 || prob > 10000 || mult < 0)
+                            {
+                                msg.content = "押注门出现率须在 0-10000（万分比）之间且倍数不能为负！";
+                                return Json(msg);
+                            }
+                            betProbSum += prob;
+                            betProfiles.Add(new[] { bi, prob, mult });
+                        }
+                        if (betPayoutOn == 1 && betProbSum > 10000)
+                        {
+                            msg.content = "押注门出现率合计 " + betProbSum + " 超过 10000（万分比），请调低后再保存！";
+                            return Json(msg);
+                        }
+
+                        int tIdxBet = tableId % 1000;
+                        using (var efP = new GameDbContext())
+                        {
+                            using (var txP = efP.Database.BeginTransaction())
+                            {
+                                try
+                                {
+                                    efP.Database.ExecuteSqlCommand(
+                                        "DELETE FROM cardpayoutprofile WHERE GAME_ID={0} AND TableId={1}", gameId, tIdxBet);
+                                    foreach (int[] p in betProfiles)
+                                    {
+                                        efP.Database.ExecuteSqlCommand(
+                                            "INSERT INTO cardpayoutprofile (GAME_ID, TableId, HandType, PayoutMultiplier, ProbabilityBasis, StockLimit, StockRemain, Enabled) VALUES ({0},{1},{2},{3},{4},0,0,{5})",
+                                            gameId, tIdxBet, p[0], p[2], p[1], betPayoutOn);
+                                    }
+                                    txP.Commit();
+                                }
+                                catch
+                                {
+                                    txP.Rollback();
+                                    throw;
+                                }
+                            }
+                        }
+                    }
 
                     msg = new B_BetGamePara().SaveTableFull(room, machine);
                 }
@@ -744,6 +847,19 @@ namespace YYT.Web.Areas.Game.Controllers
         private static bool IsDecimalBetFish(int gameId)
         {
             return System.Array.IndexOf(DecimalBetFishGameIds, gameId) >= 0;
+        }
+
+        // 押注类各游戏投注门数：2=彩金单挑(5) 10=幸运六狮(12) 29=金鲨银鲨(8) 47=奔驰宝马(8)
+        private static int GetBetItemCount(int gameId)
+        {
+            switch (gameId)
+            {
+                case 2: return 5;
+                case 10: return 12;
+                case 29: return 8;
+                case 47: return 8;
+                default: return 0;
+            }
         }
         private static M_ParaRoom BuildParaRoom(int tableId, int gameId, int num, decimal minBetDisplay, decimal maxBetDisplay, int exCoin, int coinSc, int coinNeed, int gameMo, string tableName, int maxSeats, int idleTimeout, bool idleKick, bool enabled, decimal scoreSwitch = 0m)
         {
