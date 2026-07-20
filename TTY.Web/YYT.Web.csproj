@@ -56,9 +56,6 @@
     <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
       <HintPath>..\packages\EntityFramework.6.4.4\lib\net45\EntityFramework.SqlServer.dll</HintPath>
     </Reference>
-    <Reference Include="Game.Utils">
-      <HintPath>..\..\..\Game.Utils.dll</HintPath>
-    </Reference>
     <Reference Include="Google.Protobuf, Version=3.6.1.0, Culture=neutral, PublicKeyToken=a7d26565bac4d604, processorArchitecture=MSIL">
       <HintPath>..\packages\Google.Protobuf.3.6.1\lib\net45\Google.Protobuf.dll</HintPath>
     </Reference>
@@ -1562,6 +1559,10 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Game.Utils\Game.Utils.csproj">
+      <Project>{B1A2C3D4-E5F6-7890-ABCD-EF1234567890}</Project>
+      <Name>Game.Utils</Name>
+    </ProjectReference>
     <ProjectReference Include="..\YYT.BLL\YYT.BLL.csproj">
       <Project>{0F0ABC92-91B4-4371-81F8-59AA4B20EC27}</Project>
       <Name>YYT.BLL</Name>

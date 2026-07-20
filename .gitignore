@@ -12,6 +12,13 @@ dist/
 *.dll
 *.exe
 
+# ===== .NET build outputs =====
+obj/
+*.pdb
+*.cache
+*.Up2Date
+*.CopyComplete
+
 # ===== Logs =====
 *.log
 
@@ -23,6 +30,9 @@ dist/
 # ===== OS =====
 .DS_Store
 Thumbs.db
+
+# ===== Local config =====
+apphost.config
 
 # ===== Temporary =====
 *.tmp
