@@ -160,6 +160,11 @@ namespace YYT.Web.Areas.Game.Controllers
                     }
                     else if (gameType == 2)
                     {
+                        // 先把 TableIndex 压实成 0..k-1：历史删除留下的空洞/重号会导致
+                        // 列表位置号与真实 TableIndex 错位(删错桌、删不掉、保存出重复桌)
+                        CompactFishTableIndexes(ef, gameId);
+                        var cfgIdxs = ef.Database.SqlQuery<int>(
+                            "SELECT TableIndex FROM roomtableconfig WHERE GAME_ID=" + gameId + " ORDER BY TableIndex").ToList();
                         var cfgNames = ef.Database.SqlQuery<string>(
                             "SELECT TableName FROM roomtableconfig WHERE GAME_ID=" + gameId + " ORDER BY TableIndex").ToList();
                         var cfgBetMins = ef.Database.SqlQuery<int>(
@@ -176,7 +181,7 @@ namespace YYT.Web.Areas.Game.Controllers
                         {
                             rows.Add(new
                             {
-                                id = gameId * 1000 + i,
+                                id = gameId * 1000 + (i < cfgIdxs.Count ? cfgIdxs[i] : i),
                                 num = 1,
                                 tableName = string.IsNullOrWhiteSpace(cfgNames[i]) ? ("机台" + i) : cfgNames[i],
                                 minBet = IsDecimalBetFish(gameId) ? (i < cfgBetMins.Count ? cfgBetMins[i] / 10m : 10m) : (i < cfgBetMins.Count ? (decimal)cfgBetMins[i] : 100m),
@@ -308,6 +313,8 @@ namespace YYT.Web.Areas.Game.Controllers
 				{
 
 					ef2.Database.ExecuteSqlCommand("DELETE FROM roomtableconfig WHERE GAME_ID=" + fishGid + " AND TableIndex=" + (tableId % 1000));
+					// 删后把剩余 TableIndex 压实成 0..k-1，保持与游戏服桌号连续对齐
+					CompactFishTableIndexes(ef2, fishGid);
 					SyncFishTableNum(ef2, fishGid);
 
 				}
@@ -835,6 +842,28 @@ namespace YYT.Web.Areas.Game.Controllers
         /// 鱼机按桌配置以 roomtableconfig 为准，但服务端 AA01 头部 roomInfo[].num 仍读 pararoom.NUM，
         /// 必须同步使两者统一。
         /// </summary>
+        /// <summary>
+        /// 把鱼机 roomtableconfig 的 TableIndex 重编号为 0..k-1(按 TableIndex,ID 升序)。
+        /// 逐行向下搞移，不会与未处理行冲突，重号行也能被分配到独立号。
+        /// </summary>
+        private static void CompactFishTableIndexes(GameDbContext ef, int gameId)
+        {
+            try
+            {
+                var rowIds = ef.Database.SqlQuery<int>(
+                    "SELECT ID FROM roomtableconfig WHERE GAME_ID=" + gameId + " ORDER BY TableIndex, ID").ToList();
+                for (int i = 0; i < rowIds.Count; i++)
+                {
+                    ef.Database.ExecuteSqlCommand(
+                        "UPDATE roomtableconfig SET TableIndex={0} WHERE ID={1} AND TableIndex<>{0}", i, rowIds[i]);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(GameConfigController), ex);
+            }
+        }
+
         private static void SyncFishTableNum(GameDbContext ef, int gameId)
         {
             try
