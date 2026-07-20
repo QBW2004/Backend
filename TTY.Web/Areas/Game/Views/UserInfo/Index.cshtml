@@ -738,15 +738,15 @@
         }
         function valSelDataShz() {
             var arr = [];
-            arr.push({ id: 0, text: '符号0(2倍)' });
-            arr.push({ id: 1, text: '符号1(3倍)' });
-            arr.push({ id: 2, text: '符号2(4倍)' });
-            arr.push({ id: 3, text: '符号3(5倍)' });
-            arr.push({ id: 4, text: '符号4(8倍)' });
-            arr.push({ id: 5, text: '符号5(10倍)' });
-            arr.push({ id: 6, text: '符号6(15倍)' });
-            arr.push({ id: 7, text: '符号7(20倍)' });
-            arr.push({ id: 8, text: '散标(免费触发)' });
+            arr.push({ id: 0, text: '双斧(2倍)' });
+            arr.push({ id: 1, text: '双枪(3倍)' });
+            arr.push({ id: 2, text: '大刀(4倍)' });
+            arr.push({ id: 3, text: '鲁智深(5倍)' });
+            arr.push({ id: 4, text: '林冲(8倍)' });
+            arr.push({ id: 5, text: '宋江(10倍)' });
+            arr.push({ id: 6, text: '替天行道旗(15倍)' });
+            arr.push({ id: 7, text: '忠义堂(20倍)' });
+            arr.push({ id: 8, text: '水浒传龙标·散标(30倍/免费触发)' });
             arr.push({ id: 10, text: '关闭控制' });
             return arr;
         }
@@ -765,15 +765,16 @@
             return arr;
         }
         function valSelDataFruit() {
+            @*水果拉霸控牌=强制大转盘指向面板位（与机台设定的 24 面板位一致）；id=30+面板位，10=关闭*@
+            var panels = [
+                '橘子·大(10倍)', '铃铛·大(20倍)', 'BAR·小(50倍)', 'BAR·大(120倍)', '苹果(5倍)', '苹果·小(3倍)',
+                '柠檬·大(15倍)', '西瓜·大(20倍)', '西瓜·小(3倍)', '送灯位(免费局)', '苹果(5倍)', '橘子·小(3倍)',
+                '橘子·大(10倍)', '铃铛·大(20倍)', '双7·小(3倍)', '双7·大(40倍)', '苹果(5倍)', '柠檬·小(3倍)',
+                '柠檬·大(15倍)', '星星·小(3倍)', '星星·大(30倍)', '送灯位(免费局)', '苹果(5倍)', '铃铛·小(3倍)'
+            ];
             var arr = [];
-            arr.push({ id: 0, text: '符号0(2倍)' });
-            arr.push({ id: 1, text: '符号1(3倍)' });
-            arr.push({ id: 2, text: '符号2(4倍)' });
-            arr.push({ id: 3, text: '符号3(5倍)' });
-            arr.push({ id: 4, text: '符号4(8倍)' });
-            arr.push({ id: 5, text: '符号5(10倍)' });
-            arr.push({ id: 6, text: '符号6(15倍)' });
-            arr.push({ id: 7, text: '符号7(30倍)' });
+            for (var i = 0; i < panels.length; i++)
+                arr.push({ id: 30 + i, text: '面板' + i + ' · ' + panels[i] });
             arr.push({ id: 10, text: '关闭控制' });
             return arr;
         }
