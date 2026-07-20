@@ -722,6 +722,8 @@ namespace YYT.Web.Areas.Game.Controllers
                         var srvTc = new SConnect();
                         srvTc.SendTcCommand((ushort)gameId, 0, (ushort)tIdx, tName, (byte)(tblEnabled != 0 ? 1 : 0), (uint)idleSec, (byte)(tblIdleKick != 0 ? 1 : 0), (ushort)tblMaxSeats);
                     }
+                    // 回显本次落库的按桌关键值，便于核对表单提交与库中数据是否一致
+                    msg.content = (msg.content ?? "") + " [桌" + tIdx + " 已写入: CoinsNeed=" + coinNeed + ", BetMin=" + betMin + ", BetMax=" + betMax + ", CoinSc=" + coinSc + "]";
                 }
 
                 // ROOM_MAX 同步已下沉到 B_SuperPara.PushHotUpdate 内(在发 RP 之前执行)，
