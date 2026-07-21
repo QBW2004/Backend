@@ -136,3 +136,5 @@ E:\Project\MTH\Backend\TTY.Web\obj\Debug\YYT.Web.pdb
 C:\Users\cdys\Downloads\MTH-Backend\TTY.Web\obj\Debug\YYT.Web.pdb
 C:\Users\cdys\Downloads\MTH-Backend\TTY.Web\obj\Debug\YYT.Web.csproj.AssemblyReference.cache
 C:\Users\cdys\Downloads\MTH-Backend\TTY.Web\obj\Debug\YYT.Web.csproj.CoreCompileInputs.cache
+E:\Project\MTH\Backend\TTY.Web\bin\Game.Utils.dll
+E:\Project\MTH\Backend\TTY.Web\bin\Game.Utils.pdb

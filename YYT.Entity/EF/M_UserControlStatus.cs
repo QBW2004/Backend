@@ -92,7 +92,19 @@ namespace YYT.Entity
         /// <summary>
         /// 金币上限（超出部分逐步消耗）
         /// </summary>
-        Limit = 3
+        Limit = 3,
+        /// <summary>
+        /// 总点杀（鱼机+押注+牌机+拉霸，累计吃分达到金币阈值后失效）
+        /// </summary>
+        TotalKill = 4,
+        /// <summary>
+        /// 总放水（鱼机+押注，累计放分达到金币阈值后失效）
+        /// </summary>
+        TotalRelease = 5,
+        /// <summary>
+        /// 总控牌（牌机+拉霸，累计吃分达到金币阈值后失效）
+        /// </summary>
+        TotalCard = 6
     }
 
     /// <summary>

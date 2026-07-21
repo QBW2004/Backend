@@ -904,6 +904,89 @@ namespace YYT.Web.Areas.Game.Controllers
             }
         }
 
+        /// <summary>
+        /// 设置总控（总点杀/总放水/总控牌），带金币阈值：
+        /// Mode=4 总点杀（鱼机+押注+牌机+拉霸，Strength=强度）
+        /// Mode=5 总放水（鱼机+押注，Strength=强度）
+        /// Mode=6 总控牌（牌机+拉霸，CardAction/CardValue/CardNumber/CardTotal=精确控牌参数）
+        /// GoldThreshold=金币阈值（必填>0），累计吃分/放分达到后自动失效并恢复桌台参数难度
+        /// </summary>
+        [MemberAuthorize]
+        [AjaxOnly]
+        [HttpPost]
+        public ActionResult ApplyTotalControl(FormCollection form)
+        {
+            Msg msg;
+            try
+            {
+                string id = form.Q<string>("ID");
+                int mode = form.Q<int>("Mode", -1);
+                int strength = form.Q<int>("Strength", 0);
+                long goldThreshold = form.Q<long>("GoldThreshold", 0);
+                int cardAction = form.Q<int>("CardAction", 0);
+                int cardValue = form.Q<int>("CardValue", 0);
+                int cardNumber = form.Q<int>("CardNumber", 0);
+                int cardTotal = form.Q<int>("CardTotal", 0);
+
+                M_LoginUser loginUser = WebHelper.GetLoginInfo();
+                msg = new B_UserControl().ApplyTotalControl(loginUser, id, mode, strength, goldThreshold,
+                    cardAction, cardValue, cardNumber, cardTotal);
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.UserInfoController), ex);
+                msg = new Msg(0, "设置失败！");
+            }
+            return Json(msg);
+        }
+
+        /// <summary>
+        /// 查询玩家当前总控状态（三种模式各返回最近一条执行中记录，含阈值进度）
+        /// </summary>
+        [MemberAuthorize]
+        [AjaxOnly]
+        [HttpPost]
+        public ActionResult GetTotalControlStatus(FormCollection form)
+        {
+            Msg msg;
+            try
+            {
+                string id = form.Q<string>("ID");
+                M_LoginUser loginUser = WebHelper.GetLoginInfo();
+                msg = new B_UserControl().GetTotalControlStatus(loginUser, id);
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.UserInfoController), ex);
+                msg = new Msg(0, "查询失败！");
+            }
+            return Json(msg);
+        }
+
+        /// <summary>
+        /// 手动关闭玩家某一模式的总控（Mode=4/5/6），并恢复桌台参数难度
+        /// </summary>
+        [MemberAuthorize]
+        [AjaxOnly]
+        [HttpPost]
+        public ActionResult CloseTotalControl(FormCollection form)
+        {
+            Msg msg;
+            try
+            {
+                string id = form.Q<string>("ID");
+                int mode = form.Q<int>("Mode", -1);
+                M_LoginUser loginUser = WebHelper.GetLoginInfo();
+                msg = new B_UserControl().CloseTotalControl(loginUser, id, mode);
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.UserInfoController), ex);
+                msg = new Msg(0, "关闭失败！");
+            }
+            return Json(msg);
+        }
+
         [MemberAuthorize]
         [AjaxOnly]
         [HttpPost]

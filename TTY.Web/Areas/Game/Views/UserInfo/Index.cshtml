@@ -668,7 +668,7 @@
                 title: '【控制】',
                 iconCls: 'icon-chart_curve',
                 width: 280,
-                height: 200,
+                height: 260,
                 callBack: function () {
                     $('#chgCtrlSelect').data('uid', uid);
                     var canFish = @Html.Raw((loginUser.UserPriv == 0 || loginUser.IsKill == 1 || loginUser.IsProbability == 1) ? "true" : "false");
@@ -679,6 +679,8 @@
                     if (canBet) $('#btnBetCtrl').show(); else $('#btnBetCtrl').hide();
                     var canLaba = canBet;
                     if (canLaba) $('#btnLabaCtrl').show(); else $('#btnLabaCtrl').hide();
+                    var canTotal = @Html.Raw((loginUser.UserPriv == 0 || loginUser.IsKill == 1 || loginUser.IsProbability == 1 || loginUser.IsRelease == 1) ? "true" : "false");
+                    if (canTotal) $('#btnTotalCtrl').show(); else $('#btnTotalCtrl').hide();
                 }
             };
             openWin(para);
@@ -690,6 +692,152 @@
             else if (type == 'paiji') showRateCtrlWinPAIJI(uid);
             else if (type == 'bet') showRateCtrlWinBet(uid);
             else if (type == 'laba') showRateCtrlWinLaba(uid);
+            else if (type == 'total') showTotalCtrlWin(uid);
+        }
+
+        @*总控（总点杀/总放水/总控牌），达到金币阈值后自动失效并恢复桌台参数难度*@
+        function totalModeData() {
+            var items = [];
+            @if (loginUser.UserPriv == 0 || loginUser.IsKill == 1)
+            {
+                @Html.Raw("items.push({ id: 4, text: '总点杀' });");
+            }
+            @if (loginUser.UserPriv == 0 || loginUser.IsProbability == 1)
+            {
+                @Html.Raw("items.push({ id: 5, text: '总放水' });");
+            }
+            @if (loginUser.UserPriv == 0 || loginUser.IsRelease == 1)
+            {
+                @Html.Raw("items.push({ id: 6, text: '总控牌' });");
+            }
+            if (items.length > 0) items[0].selected = true;
+            return items;
+        }
+        function totalCardActionData() {
+            return [
+                { id: 5, text: '大字版控制', selected: true },
+                { id: 6, text: 'ATT连环炮控制' },
+                { id: 7, text: 'ATT3控制' },
+                { id: 8, text: 'ATT满花版' },
+                { id: 9, text: 'ATT超级至尊' },
+                { id: 10, text: 'ATT至尊' },
+                { id: 11, text: '人鱼传说' },
+                { id: 12, text: '金皇冠' },
+                { id: 13, text: 'NBA' },
+                { id: 14, text: '火凤凰' },
+                { id: 15, text: '水浒传' },
+                { id: 16, text: '明星97' },
+                { id: 17, text: '水果拉霸' }
+            ];
+        }
+        function totalModeName(m) {
+            m = parseInt(m);
+            return m == 4 ? '总点杀' : (m == 5 ? '总放水' : (m == 6 ? '总控牌' : ''));
+        }
+        function bindTotalMode(n) {
+            n = parseInt(n);
+            if (n == 6) {
+                $('.trTotalStrength').hide();
+                $('.trTotalCard').show();
+            } else {
+                $('.trTotalCard').hide();
+                $('.trTotalStrength').show();
+                if (n == 5) $('#selE_Strength_Total').combobox('loadData', getComboValPut());
+                else $('#selE_Strength_Total').combobox('loadData', getComboValKill());
+            }
+        }
+        function bindTotalCardAction(newValue, oldValue) {
+            var n = parseInt(newValue);
+            if (n >= 5 && n <= 14) {
+                if (n == 5 || n == 12 || n == 13 || n == 14) $('#selE_Type_Total').combobox('loadData', valSelDataPAIJI3());
+                else $('#selE_Type_Total').combobox('loadData', valSelDataPAIJI2());
+            } else if (n == 15) $('#selE_Type_Total').combobox('loadData', valSelDataShz());
+            else if (n == 16) $('#selE_Type_Total').combobox('loadData', valSelDataMx97());
+            else if (n == 17) $('#selE_Type_Total').combobox('loadData', valSelDataFruit());
+        }
+        function showTotalCtrlWin(uid) {
+            var para = {
+                winId: '#chgTotalCtrlWin',
+                title: '【总控】',
+                iconCls: 'icon-chart_curve',
+                width: 430,
+                height: 460,
+                callBack: function () {
+                    $('#txtE_ID_Total').textbox('setValue', uid);
+                    $('#hfID_Total').val(uid);
+                    $('#selE_Action_Total').combobox({ onChange: bindTotalCardAction });
+                    $('#selE_Action_Total').combobox('loadData', totalCardActionData());
+                    $('#selE_Number_Total').combobox('loadData', valSelData());
+                    $('#selE_Total_Total').combobox('loadData', valSelDataPAIJI1());
+                    $('#selE_Strength_Total').combobox('loadData', getComboValKill());
+                    $('#numGold_Total').numberbox('setValue', 0);
+                    $('#selE_Mode_Total').combobox({ onChange: bindTotalMode });
+                    $('#selE_Mode_Total').combobox('loadData', totalModeData());
+                    bindTotalMode($('#selE_Mode_Total').combobox('getValue'));
+                    loadTotalCtrlStatus(uid);
+                }
+            };
+            openWin(para);
+        }
+        function loadTotalCtrlStatus(uid) {
+            $('#divTotalStatus').html('加载中...');
+            request('/Game/UserInfo/GetTotalControlStatus', { ID: uid }, function (data) {
+                if (!data || data.code != 1 || !data.datas || data.datas.length == 0) {
+                    $('#divTotalStatus').html('<span style="color:#999;">当前无执行中的总控</span>');
+                    return;
+                }
+                var html = '';
+                for (var i = 0; i < data.datas.length; i++) {
+                    var r = data.datas[i];
+                    var isRelease = (r.ControlMode == 5);
+                    var progress = isRelease ? r.GrantedCoins : r.ConsumedCoins;
+                    html += '<div style="margin:2px 0;">'
+                        + totalModeName(r.ControlMode)
+                        + '（强度/控牌值 ' + r.LimitCoins + '）'
+                        + ' 阈值 ' + r.TargetCoins
+                        + ' 已' + (isRelease ? '放' : '吃') + '分 ' + progress
+                        + '</div>';
+                }
+                $('#divTotalStatus').html(html);
+            });
+        }
+        function SaveTotalCtrl() {
+            var uid = $('#hfID_Total').val();
+            var mode = parseInt($('#selE_Mode_Total').combobox('getValue'));
+            var gold = $('#numGold_Total').numberbox('getValue');
+            if (!gold || parseInt(gold) <= 0) {
+                showUserToast('请填写大于 0 的金币阈值！', 'danger');
+                return;
+            }
+            var para = { ID: uid, Mode: mode, GoldThreshold: gold };
+            if (mode == 6) {
+                para.CardAction = $('#selE_Action_Total').combobox('getValue');
+                para.CardValue = $('#selE_Type_Total').combobox('getValue');
+                para.CardNumber = $('#selE_Number_Total').combobox('getValue');
+                para.CardTotal = $('#selE_Total_Total').combobox('getValue');
+            } else {
+                para.Strength = $('#selE_Strength_Total').combobox('getValue');
+            }
+            request('/Game/UserInfo/ApplyTotalControl', para, function (data) {
+                showUserResult(data);
+                if (data && data.code == 1) {
+                    loadTotalCtrlStatus(uid);
+                    refreshChangedUserRow(uid, 500);
+                }
+            });
+        }
+        function CloseTotalCtrl() {
+            var uid = $('#hfID_Total').val();
+            var mode = parseInt($('#selE_Mode_Total').combobox('getValue'));
+            @Html.Raw(@"confirm('确认关闭该玩家的' + totalModeName(mode) + '？', function () {
+                request('/Game/UserInfo/CloseTotalControl', { ID: uid, Mode: mode }, function (data) {
+                    showUserResult(data);
+                    if (data && data.code == 1) {
+                        loadTotalCtrlStatus(uid);
+                        refreshChangedUserRow(uid, 500);
+                    }
+                });
+            });")
         }
         function actionSelData() {
             var items = [];
@@ -1216,6 +1364,8 @@
     <a id="btnBetCtrl" href="javascript:void(0);" class="easyui-linkbutton" onclick="subCtrlClick('bet')" data-options="plain:true,iconCls:'icon-chart_curve'" style="margin:8px;width:140px;">注机控制</a>
     <br/>
     <a id="btnLabaCtrl" href="javascript:void(0);" class="easyui-linkbutton" onclick="subCtrlClick('laba')" data-options="plain:true,iconCls:'icon-chart_curve'" style="margin:8px;width:140px;">拉霸控制</a>
+    <br/>
+    <a id="btnTotalCtrl" href="javascript:void(0);" class="easyui-linkbutton" onclick="subCtrlClick('total')" data-options="plain:true,iconCls:'icon-chart_curve'" style="margin:8px;width:140px;">总控</a>
 </div>
 
 @*修改鱼机控制窗口*@
@@ -1442,6 +1592,81 @@
                     <input type="hidden" id="hfID_Laba" name="IDLaba" value="0" />
                     <input type="hidden" id="hfLabaMode" name="LabaMode" value="0" />
                     <a href="javascript:void(0);" class="easyui-linkbutton" onclick="SaveUserRateLaba()" data-options="plain:true,iconCls:'icon-save'">保存</a>
+                </td>
+            </tr>
+        </table>
+    </form>
+</div>
+
+@*总控窗口（总点杀/总放水/总控牌 + 金币阈值）*@
+<div id="chgTotalCtrlWin" class="hide">
+    <form id="formTotalCtrl">
+        <table cellpadding="0" cellspacing="0" border="0" width="100%" align="center">
+            <tr>
+                <td colspan="2" align="left" style="padding-left: 50px;color:#999;">
+                    <p style="margin-left:-35px;">温馨提示：吃分/放分累计达到金币阈值后自动失效，恢复桌台参数难度</p>
+                </td>
+            </tr>
+            <tr>
+                <td align="right" style="width:30%;">用户账号</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-textbox win-txt" id="txtE_ID_Total" disabled />
+                </td>
+            </tr>
+            <tr>
+                <td align="right">功能</td>
+                <td align="left" class="pd5">
+                    <select class="easyui-combobox win-txt" id="selE_Mode_Total" name="Mode" data-options="valueField:'id',textField:'text',panelHeight:'auto'"></select>
+                </td>
+            </tr>
+            <tr class="trTotalStrength">
+                <td align="right">控值</td>
+                <td align="left" class="pd5">
+                    <select class="easyui-combobox win-txt" id="selE_Strength_Total" name="Strength" data-options="valueField:'id',textField:'text',panelHeight:150"></select>
+                </td>
+            </tr>
+            <tr class="trTotalCard" style="display:none;">
+                <td align="right">游戏类型</td>
+                <td align="left" class="pd5">
+                    <select class="easyui-combobox win-txt" id="selE_Action_Total" name="CardAction" data-options="valueField:'id',textField:'text',panelHeight:150"></select>
+                </td>
+            </tr>
+            <tr class="trTotalCard" style="display:none;">
+                <td align="right">控制牌类型</td>
+                <td align="left" class="pd5">
+                    <select class="easyui-combobox win-txt" id="selE_Type_Total" name="CardValue" data-options="valueField:'id',textField:'text',panelHeight:150"></select>
+                </td>
+            </tr>
+            <tr class="trTotalCard" style="display:none;">
+                <td align="right">次数</td>
+                <td align="left" class="pd5">
+                    <select class="easyui-combobox win-txt" id="selE_Number_Total" name="CardNumber" data-options="valueField:'id',textField:'text',panelHeight:150"></select>
+                </td>
+            </tr>
+            <tr class="trTotalCard" style="display:none;">
+                <td align="right">总次数</td>
+                <td align="left" class="pd5">
+                    <select class="easyui-combobox win-txt" id="selE_Total_Total" name="CardTotal" data-options="valueField:'id',textField:'text',panelHeight:150"></select>
+                </td>
+            </tr>
+            <tr>
+                <td align="right">金币阈值</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-numberbox win-txt" id="numGold_Total" name="GoldThreshold" data-options="min:0,precision:0,prompt:'必填，>0'" style="width:150px;" />
+                    <span style="color:#999;font-size:12px;">吃分/放分累计到达后失效</span>
+                </td>
+            </tr>
+            <tr>
+                <td align="right" style="vertical-align:top;">当前状态</td>
+                <td align="left" class="pd5">
+                    <div id="divTotalStatus" style="font-size:12px;color:#333;min-height:20px;"></div>
+                </td>
+            </tr>
+            <tr>
+                <td align="center" colspan="2" class="pd5">
+                    <input type="hidden" id="hfID_Total" name="ID" value="0" />
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="SaveTotalCtrl()" data-options="plain:true,iconCls:'icon-save'">保存</a>
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="CloseTotalCtrl()" data-options="plain:true,iconCls:'icon-cancel'">关闭当前功能</a>
                 </td>
             </tr>
         </table>

@@ -393,8 +393,321 @@ namespace YYT.BLL.EF
                 case (int)EControlMode.Kill: return "点杀";
                 case (int)EControlMode.Release: return "放水";
                 case (int)EControlMode.Limit: return "金币上限";
+                case (int)EControlMode.TotalKill: return "总点杀";
+                case (int)EControlMode.TotalRelease: return "总放水";
+                case (int)EControlMode.TotalCard: return "总控牌";
             }
             return "未知";
+        }
+
+        /// <summary>
+        /// 总控（总点杀/总放水/总控牌）记录的 GameType 标识
+        /// </summary>
+        public const int GAMETYPE_TOTAL = 9;
+
+        private static bool IsTotalMode(int mode)
+        {
+            return mode == (int)EControlMode.TotalKill
+                || mode == (int)EControlMode.TotalRelease
+                || mode == (int)EControlMode.TotalCard;
+        }
+
+        /// <summary>
+        /// 设置总控：总点杀(4)=鱼机+押注+牌机+拉霸；总放水(5)=鱼机+押注；总控牌(6)=牌机+拉霸。
+        /// 累计吃分/放分达到金币阈值(goldThreshold)后自动失效，恢复桌台参数难度。
+        /// 总控牌时 cardAction/cardValue/cardNumber/cardTotal 为精确控牌参数（与牌机控牌一致）。
+        /// </summary>
+        public Msg ApplyTotalControl(M_LoginUser loginUser, string userId, int mode, int strength, long goldThreshold,
+            int cardAction, int cardValue, int cardNumber, int cardTotal)
+        {
+            Msg msg = new Msg(0, "设置失败！");
+            if (loginUser == null)
+            {
+                msg.content = "登录信息失效，请重新登录！";
+                return msg;
+            }
+            if (!IsTotalMode(mode))
+            {
+                msg.content = "无效的总控模式！";
+                return msg;
+            }
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                msg.content = "请填写玩家账号！";
+                return msg;
+            }
+            if (goldThreshold <= 0)
+            {
+                msg.content = "金币阈值必须大于 0！";
+                return msg;
+            }
+            if (mode == (int)EControlMode.TotalCard)
+            {
+                if (cardAction < 5 || cardAction > 17)
+                {
+                    msg.content = "无效的控牌类型！";
+                    return msg;
+                }
+                if (cardNumber < 1 || cardTotal < 5 || cardTotal > 50 || cardNumber > cardTotal)
+                {
+                    msg.content = "控牌数量/总把数无效（数量≥1，总把数 5-50，数量≤总把数）！";
+                    return msg;
+                }
+            }
+            else
+            {
+                if (strength < 0 || strength > 11)
+                {
+                    msg.content = "控制强度无效（0-11）！";
+                    return msg;
+                }
+            }
+
+            // 权限校验：总点杀需 IsKill，总放水需 IsProbability，总控牌需 IsRelease（与单游戏控制一致）
+            if (loginUser.UserPriv > 0)
+            {
+                if (mode == (int)EControlMode.TotalKill && (loginUser.IsKill ?? 0) != 1)
+                {
+                    msg.content = "没有点杀权限！";
+                    return msg;
+                }
+                if (mode == (int)EControlMode.TotalRelease && (loginUser.IsProbability ?? 0) != 1)
+                {
+                    msg.content = "没有放水权限！";
+                    return msg;
+                }
+                if (mode == (int)EControlMode.TotalCard && (loginUser.IsRelease ?? 0) != 1)
+                {
+                    msg.content = "没有控牌权限！";
+                    return msg;
+                }
+            }
+
+            string target = userId.Trim();
+            try
+            {
+                using (var ef = new GameDbContext())
+                {
+                    var user = ef.Users.FirstOrDefault(u => u.ID == target);
+                    if (user == null)
+                    {
+                        msg.content = "此账号玩家不存在！";
+                        return msg;
+                    }
+                    if (loginUser.UserPriv > 0 && !new B_Admin().IsInAgencyLine(ef, loginUser.Accounts, user.AGENCY))
+                    {
+                        msg.content = "只能控制自己代理线内的玩家！";
+                        return msg;
+                    }
+
+                    // 同玩家同模式的旧执行中总控记录置为过期
+                    var olds = ef.UserControlStatuses
+                        .Where(c => c.UserID == target && c.GameType == GAMETYPE_TOTAL && c.ControlMode == mode && c.Status == (int)EControlStatus.Active)
+                        .ToList();
+                    foreach (var old in olds)
+                    {
+                        old.Status = (int)EControlStatus.Expired;
+                        old.ExpiredTime = DateTime.Now;
+                    }
+
+                    var row = new M_UserControlStatus
+                    {
+                        UserID = target,
+                        GameType = GAMETYPE_TOTAL,
+                        GameId = 0,
+                        ControlMode = mode,
+                        TargetCoins = goldThreshold,
+                        LimitCoins = 0,
+                        ConsumedCoins = 0,
+                        GrantedCoins = 0,
+                        KillRatio = mode == (int)EControlMode.TotalCard ? cardValue : strength,
+                        Status = (int)EControlStatus.Active,
+                        CreatedBy = loginUser.Accounts,
+                        CreatedTime = DateTime.Now
+                    };
+                    ef.UserControlStatuses.Add(row);
+                    ef.SaveChanges();
+                }
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(B_UserControl), ex);
+                msg.content = "数据库写入失败！";
+                return msg;
+            }
+
+            // 下发服务器指令（DB 已落库，玩家下次进游戏时服务端也会按 DB 应用总控）
+            Msg tmpMsg = SendTotalUcCommand(mode, strength, cardAction, cardValue, cardNumber, cardTotal, loginUser, target);
+            msg.code = 1;
+            msg.content = (tmpMsg != null && tmpMsg.code == 1)
+                ? ModeName(mode) + "已生效！"
+                : ModeName(mode) + "已保存（玩家进入游戏后生效）";
+            return msg;
+        }
+
+        /// <summary>
+        /// 查询玩家当前总控状态（三种模式各取最近一条执行中记录，含阈值进度）
+        /// </summary>
+        public Msg GetTotalControlStatus(M_LoginUser loginUser, string userId)
+        {
+            Msg msg = new Msg(0, "查询失败！");
+            if (loginUser == null)
+            {
+                msg.content = "登录信息失效，请重新登录！";
+                return msg;
+            }
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                msg.content = "请填写玩家账号！";
+                return msg;
+            }
+            string target = userId.Trim();
+            try
+            {
+                using (var ef = new GameDbContext())
+                {
+                    if (loginUser.UserPriv > 0)
+                    {
+                        var user = ef.Users.FirstOrDefault(u => u.ID == target);
+                        if (user == null || !new B_Admin().IsInAgencyLine(ef, loginUser.Accounts, user.AGENCY))
+                        {
+                            msg.content = "只能查询自己代理线内的玩家！";
+                            return msg;
+                        }
+                    }
+                    var rows = ef.UserControlStatuses
+                        .Where(c => c.UserID == target && c.GameType == GAMETYPE_TOTAL && c.Status == (int)EControlStatus.Active)
+                        .OrderByDescending(c => c.ID)
+                        .ToList()
+                        .GroupBy(c => c.ControlMode)
+                        .Select(g => g.First())
+                        .Select(c => new M_UserControlStatus_DTO
+                        {
+                            ID = c.ID,
+                            UserID = c.UserID,
+                            GameType = c.GameType,
+                            GameId = c.GameId,
+                            ControlMode = c.ControlMode,
+                            TargetCoins = c.TargetCoins,
+                            ConsumedCoins = c.ConsumedCoins,
+                            GrantedCoins = c.GrantedCoins,
+                            LimitCoins = c.KillRatio, // 强度/控牌值借用 LimitCoins 字段回显
+                            Status = c.Status,
+                            CreatedBy = c.CreatedBy,
+                            CreatedTime = c.CreatedTime.ToString("yyyy-MM-dd HH:mm:ss")
+                        })
+                        .ToList();
+                    msg.code = 1;
+                    msg.content = "";
+                    msg.datas = rows;
+                }
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(B_UserControl), ex);
+            }
+            return msg;
+        }
+
+        /// <summary>
+        /// 手动关闭玩家某一模式的总控（并下发解除指令，恢复桌台参数难度）
+        /// </summary>
+        public Msg CloseTotalControl(M_LoginUser loginUser, string userId, int mode)
+        {
+            Msg msg = new Msg(0, "关闭失败！");
+            if (loginUser == null)
+            {
+                msg.content = "登录信息失效，请重新登录！";
+                return msg;
+            }
+            if (!IsTotalMode(mode))
+            {
+                msg.content = "无效的总控模式！";
+                return msg;
+            }
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                msg.content = "请填写玩家账号！";
+                return msg;
+            }
+            string target = userId.Trim();
+            try
+            {
+                using (var ef = new GameDbContext())
+                {
+                    if (loginUser.UserPriv > 0)
+                    {
+                        var user = ef.Users.FirstOrDefault(u => u.ID == target);
+                        if (user == null || !new B_Admin().IsInAgencyLine(ef, loginUser.Accounts, user.AGENCY))
+                        {
+                            msg.content = "只能关闭自己代理线内玩家的控制！";
+                            return msg;
+                        }
+                    }
+                    var olds = ef.UserControlStatuses
+                        .Where(c => c.UserID == target && c.GameType == GAMETYPE_TOTAL && c.ControlMode == mode && c.Status == (int)EControlStatus.Active)
+                        .ToList();
+                    if (olds.Count < 1)
+                    {
+                        msg.content = "该玩家没有执行中的" + ModeName(mode) + "！";
+                        return msg;
+                    }
+                    foreach (var old in olds)
+                    {
+                        old.Status = (int)EControlStatus.Expired;
+                        old.ExpiredTime = DateTime.Now;
+                    }
+                    ef.SaveChanges();
+                }
+
+                // 强度/控牌类型 0 表示解除
+                Msg tmpMsg = SendTotalUcCommand(mode, 0, 0, 0, 0, 0, loginUser, target);
+                msg.code = 1;
+                msg.content = (tmpMsg != null && tmpMsg.code == 1)
+                    ? ModeName(mode) + "已关闭！"
+                    : ModeName(mode) + "已关闭（服务器指令未确认，玩家重新进游戏后恢复桌台参数）";
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(B_UserControl), ex);
+            }
+            return msg;
+        }
+
+        /// <summary>
+        /// 总控 UC 指令：
+        /// 总点杀 UC30 + 强度(2位) + set(1位) + 玩家账号（强度 00 表示解除）
+        /// 总放水 UC31 + 强度(2位) + set(1位) + 玩家账号（强度 00 表示解除）
+        /// 总控牌 UC32 + 控牌类型(2位) + 控牌值(2位) + 数量(2位) + 总把数(2位) + set(1位) + 玩家账号（类型 00 表示解除）
+        /// </summary>
+        private Msg SendTotalUcCommand(int mode, int strength, int cardAction, int cardValue, int cardNumber, int cardTotal,
+            M_LoginUser loginUser, string userId)
+        {
+            try
+            {
+                int set = (loginUser != null && loginUser.UserName == ConfigHelper.Get("admin")) ? 1 : 0;
+                var svc = new GameCommandService();
+                switch (mode)
+                {
+                    case (int)EControlMode.TotalKill:
+                        return svc.SetUserControl("30", strength.ToString().PadLeft(2, '0'), set, userId);
+                    case (int)EControlMode.TotalRelease:
+                        return svc.SetUserControl("31", strength.ToString().PadLeft(2, '0'), set, userId);
+                    case (int)EControlMode.TotalCard:
+                        return svc.SetUserControl("32",
+                            cardAction.ToString().PadLeft(2, '0'),
+                            cardValue.ToString().PadLeft(2, '0'),
+                            cardNumber.ToString().PadLeft(2, '0'),
+                            cardTotal.ToString().PadLeft(2, '0'),
+                            set, userId);
+                }
+                return new Msg(0, "无效的总控模式！");
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(B_UserControl), ex);
+                return new Msg(0, "服务器指令发送异常：" + ex.Message);
+            }
         }
     }
 }
