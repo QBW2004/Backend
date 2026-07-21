@@ -964,6 +964,32 @@ namespace YYT.Web.Areas.Game.Controllers
         }
 
         /// <summary>
+        /// 批量查询多个玩家执行中的总控（在线用户列表"控制"列）
+        /// </summary>
+        [MemberAuthorize]
+        [AjaxOnly]
+        [HttpPost]
+        public ActionResult GetActiveTotalControls(FormCollection form)
+        {
+            Msg msg;
+            try
+            {
+                string rawIds = form.Q<string>("UserIDs");
+                List<string> userIds = string.IsNullOrWhiteSpace(rawIds)
+                    ? new List<string>()
+                    : JsonConvert.DeserializeObject<List<string>>(rawIds);
+                M_LoginUser loginUser = WebHelper.GetLoginInfo();
+                msg = new B_UserControl().GetActiveTotalControls(loginUser, userIds);
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.UserInfoController), ex);
+                msg = new Msg(0, "查询失败！");
+            }
+            return Json(msg);
+        }
+
+        /// <summary>
         /// 手动关闭玩家某一模式的总控（Mode=4/5/6），并恢复桌台参数难度
         /// </summary>
         [MemberAuthorize]

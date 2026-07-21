@@ -500,9 +500,9 @@ namespace YYT.BLL.EF
                         return msg;
                     }
 
-                    // 同玩家同模式的旧执行中总控记录置为过期
+                    // 总控互斥：同一玩家同时只允许一个总控，旧执行中总控记录（任意模式）全部置为过期
                     var olds = ef.UserControlStatuses
-                        .Where(c => c.UserID == target && c.GameType == GAMETYPE_TOTAL && c.ControlMode == mode && c.Status == (int)EControlStatus.Active)
+                        .Where(c => c.UserID == target && c.GameType == GAMETYPE_TOTAL && c.Status == (int)EControlStatus.Active)
                         .ToList();
                     foreach (var old in olds)
                     {
@@ -601,6 +601,69 @@ namespace YYT.BLL.EF
                     msg.content = "";
                     msg.datas = rows;
                 }
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(B_UserControl), ex);
+            }
+            return msg;
+        }
+
+        /// <summary>
+        /// 批量查询多个玩家当前执行中的总控（用于在线用户列表"控制"列显示，每个玩家每模式取最近一条）
+        /// </summary>
+        public Msg GetActiveTotalControls(M_LoginUser loginUser, List<string> userIds)
+        {
+            Msg msg = new Msg(0, "查询失败！");
+            if (loginUser == null)
+            {
+                msg.content = "登录信息失效，请重新登录！";
+                return msg;
+            }
+            var ids = (userIds ?? new List<string>())
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Select(s => s.Trim())
+                .Distinct()
+                .ToList();
+            var result = new List<M_UserControlStatus_DTO>();
+            if (ids.Count == 0)
+            {
+                msg.code = 1;
+                msg.content = "";
+                msg.datas = result;
+                return msg;
+            }
+            try
+            {
+                using (var ef = new GameDbContext())
+                {
+                    var rows = ef.UserControlStatuses
+                        .Where(c => c.GameType == GAMETYPE_TOTAL && c.Status == (int)EControlStatus.Active && ids.Contains(c.UserID))
+                        .OrderByDescending(c => c.ID)
+                        .ToList()
+                        .GroupBy(c => c.UserID + "_" + c.ControlMode)
+                        .Select(g => g.First())
+                        .Select(c => new M_UserControlStatus_DTO
+                        {
+                            ID = c.ID,
+                            UserID = c.UserID,
+                            GameType = c.GameType,
+                            GameId = c.GameId,
+                            ControlMode = c.ControlMode,
+                            TargetCoins = c.TargetCoins,
+                            ConsumedCoins = c.ConsumedCoins,
+                            GrantedCoins = c.GrantedCoins,
+                            LimitCoins = c.KillRatio,
+                            Status = c.Status,
+                            CreatedBy = c.CreatedBy,
+                            CreatedTime = c.CreatedTime.ToString("yyyy-MM-dd HH:mm:ss")
+                        })
+                        .ToList();
+                    result = rows;
+                }
+                msg.code = 1;
+                msg.content = "";
+                msg.datas = result;
             }
             catch (Exception ex)
             {

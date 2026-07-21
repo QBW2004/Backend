@@ -240,7 +240,7 @@
                 }
                  @if (loginUser.UserPriv == 0 || loginUser.IsKill == 1 || loginUser.IsProbability == 1 || loginUser.IsRelease == 1)
                  {
-                      @Html.Raw("arr.push('<a href=\"javascript:void(0)\" class=\"blue Lpd5\" onclick=\"showCtrlSelect(\\\'' + rowData.ID + '\\\')\">控制</a>');");
+                      @Html.Raw("arr.push('<a href=\"javascript:void(0)\" class=\"blue Lpd5\" onclick=\"showTotalCtrlWin(\\\'' + rowData.ID + '\\\')\">控制</a>');");
                  }
                 @*鱼机控制已合并到「控制」按钮*@
                 @*牌机控制已合并到「控制」按钮*@
@@ -789,7 +789,7 @@
                 var html = '';
                 for (var i = 0; i < data.datas.length; i++) {
                     var r = data.datas[i];
-                    var isRelease = (r.ControlMode == 5);
+                    var isRelease = (r.ControlMode == 5 || r.ControlMode == 6);
                     var progress = isRelease ? r.GrantedCoins : r.ConsumedCoins;
                     html += '<div style="margin:2px 0;">'
                         + totalModeName(r.ControlMode)
@@ -1158,7 +1158,7 @@
         }
 
         function menuDelete() { closeMenu(); deleteUser(_menuUser.ID); }
-        function menuControl() { closeMenu(); showCtrlSelect(_menuUser.ID); }
+        function menuControl() { closeMenu(); showTotalCtrlWin(_menuUser.ID); }
         function menuKick() { closeMenu(); kickPlayer(_menuUser.ID); }
         function menuRecharge() { closeMenu(); showReChange(_menuUser.ID); }
         function menuDeduct() { closeMenu(); showDeduct(_menuUser.ID); }

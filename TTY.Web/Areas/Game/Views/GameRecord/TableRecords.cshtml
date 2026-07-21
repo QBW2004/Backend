@@ -67,20 +67,6 @@
             })
         }
         //格式化
-        function fmtRoom(value, rowData, rowIndex) {
-            switch (value) {
-                case 3:
-                    return 'VIP场';
-                case 2:
-                    return '高级场';
-                case 1:
-                    return '中级场';
-                case 0:
-                    return '初级场';
-                default:
-                    return '--';
-            }
-        }
         function fmtOpt(value, rowData, rowIndex) {
             var arr = [];
             arr.push('<a class="red" href="javascript:void(0)" onclick="tableClear(' + rowData.GameID + ',' + rowData.RoomID + ',' + rowData.TableID + ')">库存清零</a>');
@@ -146,7 +132,6 @@
         <tr>
             <th field="CreateTimeStr" width="150">记录时间</th>
             <th field="GameName" width="110">游戏</th>
-            <th field="RoomID" width="110" formatter="fmtRoom">房间</th>
             <th field="TableID" width="110">桌子号</th>
             <th field="Coins" width="110" formatter="fmtCoins">桌子输赢</th>
             <th field="RecIndex" width="110" formatter="fmtOpt">操作</th>
