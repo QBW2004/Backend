@@ -58,7 +58,8 @@ namespace YYT.BLL.EF
                               OptValue = a.OptValue,
                               TIME = a.TIME,
                               Type = a.Type,
-                              UserID = a.UserID
+                              UserID = a.UserID,
+                              OPERATOR = a.OPERATOR
                           };
                     if (!string.IsNullOrWhiteSpace(entity.AGENCY))
                         rst = rst.Where(c => c.AGENCY.Equals(entity.AGENCY));
@@ -77,7 +78,8 @@ namespace YYT.BLL.EF
                               OptValue = a.OptValue,
                               TIME = a.TIME,
                               Type = a.Type,
-                              UserID = a.UserID
+                              UserID = a.UserID,
+                              OPERATOR = a.OPERATOR
                           };
 
                     if (rst == null || rst.Count() < 1)

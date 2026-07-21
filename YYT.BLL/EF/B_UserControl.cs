@@ -196,6 +196,7 @@ namespace YYT.BLL.EF
                 if (scope == 2 && rule.Key != (int)EControlMode.Limit)
                     SendLegacyUcCommand(rule.Key, 60, loginUser, target);
             }
+            MarkManagerOptOperator(target, loginUser.Accounts);
 
             msg.code = 1;
             msg.content = allOk
@@ -254,6 +255,7 @@ namespace YYT.BLL.EF
                 var tmpMsg = SendUcCommand(row.ControlMode, 0, row.GameId, row.UserID);
                 if (row.UserID != MACHINE_TARGET && row.ControlMode != (int)EControlMode.Limit)
                     SendLegacyUcCommand(row.ControlMode, 0, loginUser, row.UserID);
+                MarkManagerOptOperator(row.UserID, loginUser.Accounts);
                 msg.code = 1;
                 msg.content = (tmpMsg != null && tmpMsg.code == 1)
                     ? "关闭成功！"
@@ -538,6 +540,7 @@ namespace YYT.BLL.EF
 
             // 下发服务器指令（DB 已落库，玩家下次进游戏时服务端也会按 DB 应用总控）
             Msg tmpMsg = SendTotalUcCommand(mode, strength, cardAction, cardValue, cardNumber, cardTotal, loginUser, target);
+            MarkManagerOptOperator(target, loginUser.Accounts);
             msg.code = 1;
             msg.content = (tmpMsg != null && tmpMsg.code == 1)
                 ? ModeName(mode) + "已生效！"
@@ -725,6 +728,7 @@ namespace YYT.BLL.EF
 
                 // 强度/控牌类型 0 表示解除
                 Msg tmpMsg = SendTotalUcCommand(mode, 0, 0, 0, 0, 0, loginUser, target);
+                MarkManagerOptOperator(target, loginUser.Accounts);
                 msg.code = 1;
                 msg.content = (tmpMsg != null && tmpMsg.code == 1)
                     ? ModeName(mode) + "已关闭！"
@@ -743,6 +747,26 @@ namespace YYT.BLL.EF
         /// 总放水 UC31 + 强度(2位) + set(1位) + 玩家账号（强度 00 表示解除）
         /// 总控牌 UC32 + 控牌类型(2位) + 控牌值(2位) + 数量(2位) + 总把数(2位) + set(1位) + 玩家账号（类型 00 表示解除）
         /// </summary>
+        /// <summary>
+        /// 把刚写入的点杀记录标记上执行操作的代理员账号（记录由游戏服务器写入，不含操作人）
+        /// </summary>
+        private void MarkManagerOptOperator(string userId, string operatorName)
+        {
+            try
+            {
+                using (var ef = new GameDbContext())
+                {
+                    ef.Database.ExecuteSqlCommand(
+                        "UPDATE manageropt SET OPERATOR = {0} WHERE UserID = {1} AND (OPERATOR IS NULL OR OPERATOR = '') AND TIME >= NOW() - INTERVAL 1 MINUTE",
+                        operatorName, userId);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(B_UserControl), ex);
+            }
+        }
+
         private Msg SendTotalUcCommand(int mode, int strength, int cardAction, int cardValue, int cardNumber, int cardTotal,
             M_LoginUser loginUser, string userId)
         {

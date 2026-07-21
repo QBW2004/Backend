@@ -14,6 +14,7 @@ namespace YYT.Entity
         public string Type { get; set; }
         public string TIME { get; set; }
         public string AGENCY { get; set; }
+        public string OPERATOR { get; set; }
     }
     public class View_ManagerOpt_DTO
     {
@@ -24,5 +25,6 @@ namespace YYT.Entity
         public string Type { get; set; }
         public string TIME { get; set; }
         public string AGENCY { get; set; }
+        public string OPERATOR { get; set; }
     }
 }
