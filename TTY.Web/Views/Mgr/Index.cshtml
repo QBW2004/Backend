@@ -91,7 +91,10 @@
                         <span class="fa arrow"></span>
                     </a>
                     <ul class="nav nav-second-level" style="overflow-y: auto;">
-                        <li><a class="menu-item" href="/Game/UCRecord">@Resources.Language.String16</a></li>
+                        @if (loginUser?.UserPriv == 0)
+                        {
+                            <li><a class="menu-item" href="/Game/UCRecord">@Resources.Language.String16</a></li>
+                        }
                         @if (false)
                         {
                             <li><a class="menu-item" href="/Game/FishUserCtrl">鱼机和玩家控制</a></li>

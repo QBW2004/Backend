@@ -529,6 +529,13 @@ namespace YYT.BLL.EF
                     };
                     ef.UserControlStatuses.Add(row);
                     ef.SaveChanges();
+
+                    // 点杀记录由后台写入（含操作员），服务器侧不再记录，避免指令重发产生重复记录
+                    int optCode = mode == (int)EControlMode.TotalKill ? 21 : (mode == (int)EControlMode.TotalRelease ? 22 : 23);
+                    int optValue = mode == (int)EControlMode.TotalCard ? cardValue : strength;
+                    ef.Database.ExecuteSqlCommand(
+                        "INSERT INTO manageropt(UserID,NAME,Opt,OptValue,Type,OPERATOR) VALUES({0},{1},{2},{3},'UC',{4})",
+                        target, user.NAME ?? "", optCode, optValue, loginUser.Accounts);
                 }
             }
             catch (Exception ex)
@@ -540,7 +547,6 @@ namespace YYT.BLL.EF
 
             // 下发服务器指令（DB 已落库，玩家下次进游戏时服务端也会按 DB 应用总控）
             Msg tmpMsg = SendTotalUcCommand(mode, strength, cardAction, cardValue, cardNumber, cardTotal, loginUser, target);
-            MarkManagerOptOperator(target, loginUser.Accounts);
             msg.code = 1;
             msg.content = (tmpMsg != null && tmpMsg.code == 1)
                 ? ModeName(mode) + "已生效！"
@@ -728,7 +734,6 @@ namespace YYT.BLL.EF
 
                 // 强度/控牌类型 0 表示解除
                 Msg tmpMsg = SendTotalUcCommand(mode, 0, 0, 0, 0, 0, loginUser, target);
-                MarkManagerOptOperator(target, loginUser.Accounts);
                 msg.code = 1;
                 msg.content = (tmpMsg != null && tmpMsg.code == 1)
                     ? ModeName(mode) + "已关闭！"
