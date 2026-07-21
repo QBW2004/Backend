@@ -403,3 +403,5 @@ E:\Project\MTH\Backend\TTY.Web\bin\zh-Hans\System.Web.WebPages.resources.dll
 E:\Project\MTH\Backend\TTY.Web\bin\zh-Hans\System.Web.WebPages.Deployment.resources.dll
 E:\Project\MTH\Backend\TTY.Web\bin\zh-Hans\System.Web.WebPages.Razor.resources.dll
 E:\Project\MTH\Backend\TTY.Web\obj\Release\YYT.Web.csproj.Up2Date
+E:\Project\MTH\Backend\TTY.Web\bin\Game.Utils.dll
+E:\Project\MTH\Backend\TTY.Web\bin\Game.Utils.pdb
