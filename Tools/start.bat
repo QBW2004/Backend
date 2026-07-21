@@ -1,7 +1,7 @@
 @echo off
 chcp 65001 >nul
 set IIS="C:\Program Files\IIS Express\iisexpress.exe"
-set CONFIG=%~dp0apphost.config
+set CONFIG=%~dp0..\apphost.config
 
 echo Starting MTH-Backend ...
 echo   http://localhost:8080/Login/Index
