@@ -93,7 +93,7 @@
                 { id: 0, text: '押注类' },
                 { id: 1, text: '牌机类' },
                 { id: 2, text: '鱼机类' },
-                { id: 3, text: '其他类' }
+                { id: 3, text: '拉霸类' }
             ];
         }
         function fmtGameType(value, rowData, rowIndex) {
@@ -103,8 +103,10 @@
                 return '<span>牌机类</span>';
             else if (value == 2)
                 return '<span>鱼机类</span>';
+            else if (value == 3)
+                return '<span>拉霸类</span>';
             else
-                return '<span>其他类</span>';
+                return '<span>--</span>';
         }
 
         function setUp(GameId) {

@@ -54,29 +54,15 @@
                 $('#tb_UserRecords').datagrid('load', para);
             }
         }
-        function fmtOPT(value, rowData, rowIndex) {
-            switch (value) {
-                case 2:
-                    return "进入";
-                case 3:
-                    return "离开";
-                case 0:
-                    return "充值";
-                case 1:
-                    return "兑换";
-                default:
-                    return "--";
-            }
+        function isGameRec(opt) {
+            return opt == 2 || opt == 3 || opt == 7 || opt == 8;
         }
         function fmtContents(value, rowData, rowIndex) {
-            switch (rowData.OPT) {
-                case 0:
-                case 1:
-                    return getRechargeExchageMsg(rowData);
-                case 2:
-                case 3:
-                    return getLoginMgs(rowData);
-            }
+            if (rowData.OPT == 0 || rowData.OPT == 1)
+                return getRechargeExchageMsg(rowData);
+            if (isGameRec(rowData.OPT))
+                return getLoginMgs(rowData);
+            return '--';
         }
         function getRechargeExchageMsg(rowData) {
             var optStr = '';
@@ -88,51 +74,28 @@
             return '用户[ ' + rowData.UserID + ' ]' + optStr + '，余额：' + top.goldFormat(rowData.COINS);
         }
         function getLoginMgs(rowData) {
-            return (rowData.OPT == 2 ? '进入' : '离开')
-                + '[ ' + rowData.GameName + ' ]，[ ' + fmtRoom(rowData.ROOM, rowData) + ']，[ ' + fmtTableId(rowData.TABLE_ID, rowData) + ']，[ ' + fmtSeatId(rowData.SEAT_ID, rowData) + ']'
-                + '，下注：' + top.goldFormat(rowData.OPT_COINS)
-                + '，得分：' + top.goldFormat(rowData.SCORE)
-                + '，余额：' + top.goldFormat(rowData.COINS);
+            var isEnter = (rowData.OPT == 2 || rowData.OPT == 8);
+            if (isEnter) return '进入[ ' + rowData.GameName + ' ]';
+            return '本次盈亏：' + fmtWinLoss(rowData.SCORE, rowData);
         }
 
-        function fmtRoom(value, rowData, rowIndex) {
-            if (rowData.OPT == 0 || rowData.OPT == 1) {
-                return "--"; 
-            }
-            switch (value) {
-                case 0:
-                    return "初级场";
-                case 1:
-                    return "中级场";
-                case 2:
-                    return "高级场";
-                case 3:
-                    return "VIP场";
-                default:
-                    return "--";
-            }
-
-
-        }
         function fmtTableId(value, rowData, rowIndex) {
-            switch (rowData.OPT) {
-                case 0:
-                case 1:
-                    return "--";
-                case 2:
-                case 3:
-                    return value + 1 + "号桌子";
-            }
+            if (!isGameRec(rowData.OPT)) return '--';
+            return (value + 1) + '号桌子';
         }
         function fmtSeatId(value, rowData, rowIndex) {
-            switch (rowData.OPT) {
-                case 0:
-                case 1:
-                    return "--";
-                case 2:
-                case 3:
-                    return value + 1 + "号位置";
-            }
+            if (!isGameRec(rowData.OPT)) return '--';
+            return (value + 1) + '号位置';
+        }
+        function fmtBet(value, rowData, rowIndex) {
+            if (!isGameRec(rowData.OPT)) return '--';
+            return top.goldFormat(value || 0);
+        }
+        function fmtWinLoss(value, rowData, rowIndex) {
+            if (!isGameRec(rowData.OPT)) return '--';
+            var v = value || 0;
+            var color = v > 0 ? '#2e8b57' : (v < 0 ? '#c0392b' : '#666');
+            return '<span style="color:' + color + ';">' + top.goldFormat(v) + '</span>';
         }
         function clearRecords() {
             $.messager.confirm('确认', '确定要清空全部玩家记录吗？此操作不可恢复！', function (r) {
@@ -181,13 +144,11 @@
         <tr>
             <th field="UserID" width="85">用户账号</th>
             <th field="REC_TIME_Str" width="130">时间</th>
-            <th field="OPT" width="130" formatter="fmtOPT">操作类型</th>
             <th field="GameName" width="130">游戏</th>
-            <th field="ROOM" width="130" formatter="fmtRoom">房间号</th>
-            <th field="TABLE_ID" width="130" formatter="fmtTableId">桌子号</th>
+            <th field="TABLE_ID" width="130" formatter="fmtTableId">桌台号</th>
             <th field="SEAT_ID" width="130" formatter="fmtSeatId">位置号</th>
-            <th field="OPT_COINS" width="130" formatter="top.goldFormat">下注</th>
-            <th field="SCORE" width="130" formatter="top.goldFormat">得分</th>
+            <th field="OPT_COINS" width="130" formatter="fmtBet">下注</th>
+            <th field="SCORE" width="130" formatter="fmtWinLoss">得分</th>
             <th field="Contents" width="600" formatter="fmtContents">记录内容</th>
         </tr>
     </thead>
