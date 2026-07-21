@@ -487,15 +487,15 @@
         var items = [];
         @if (loginUser.UserPriv == 0 || loginUser.IsKill == 1)
         {
-            @Html.Raw("items.push({ id: 4, text: '总点杀' });");
+            @Html.Raw("items.push({ id: 4, text: '吃分' });");
         }
         @if (loginUser.UserPriv == 0 || loginUser.IsProbability == 1)
         {
-            @Html.Raw("items.push({ id: 5, text: '总放水' });");
+            @Html.Raw("items.push({ id: 5, text: '放水' });");
         }
         @if (loginUser.UserPriv == 0 || loginUser.IsRelease == 1)
         {
-            @Html.Raw("items.push({ id: 6, text: '总控牌' });");
+            @Html.Raw("items.push({ id: 6, text: '控牌' });");
         }
         if (items.length > 0) items[0].selected = true;
         return items;
@@ -519,7 +519,7 @@
     }
     function totalModeName(m) {
         m = parseInt(m);
-        return m == 4 ? '总点杀' : (m == 5 ? '总放水' : (m == 6 ? '总控牌' : ''));
+        return m == 4 ? '吃分' : (m == 5 ? '放水' : (m == 6 ? '控牌' : ''));
     }
     function bindTotalMode(n) {
         n = parseInt(n);
@@ -865,9 +865,9 @@
 
     function getComboValKill() {
         var arr = [];
-        arr.push({ id: 3, text: '小杀(3%)' });
-        arr.push({ id: 6, text: '中杀(6%)', selected: true });
-        arr.push({ id: 9, text: '大杀(9%)' });
+        arr.push({ id: 3, text: '小吃(3%)' });
+        arr.push({ id: 6, text: '中吃(6%)', selected: true });
+        arr.push({ id: 9, text: '大吃(9%)' });
         arr.push({ id: 0, text: '关闭' });
         return arr;
     }
@@ -1007,7 +1007,7 @@
             <th field="SeatId" width="80" formatter="fmtSeat">座号</th>
             <th field="CurBet" width="90" formatter="fmtCoins">当前压分</th>
             <th field="Coins" width="95" formatter="fmtTotalCoins">剩余分数</th>
-            <th field="TotalWinLoss" width="90" formatter="fmtWinLoss">累计盈亏</th>
+            <th field="Profit" width="90" formatter="fmtWinLoss">总盈亏</th>
             <th field="TotalCtrl" width="170" formatter="fmtTotalCtrl">控制</th>
         </tr>
     </thead>

@@ -105,7 +105,10 @@
                             <li><a class="menu-item" href="/Game/GameRecord/TableRecords">@Resources.Language.String18</a></li>
                         }
                         <li><a class="menu-item" href="/Game/UserRecord">@Resources.Language.String19</a></li>
-                        <li><a class="menu-item" href="/Game/AgencyRecord">@Resources.Language.String20</a></li>
+                        @if (loginUser?.UserPriv == 0)
+                        {
+                            <li><a class="menu-item" href="/Game/AgencyRecord">@Resources.Language.String20</a></li>
+                        }
                         @if (loginUser?.UserPriv == 0)
                         {
                             <li><a class="menu-item" href="/Game/UserInfo/OnlineCoin">@Resources.Language.String21</a></li>

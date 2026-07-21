@@ -53,6 +53,7 @@ namespace YYT.Web.Areas.Game.Controllers
             try
             {
                 List<OnlinePlayerInfo> players = new PlayerStateService().QueryAllOnlinePlayers();
+                FillPlayerProfits(players);
                 msg.code = 1;
                 msg.content = "查询成功！";
                 msg.datas = players;
@@ -62,6 +63,31 @@ namespace YYT.Web.Areas.Game.Controllers
                 LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.UserInfoController), $"GetOnlineUsers Err >> {ex.Message} \r\n");
             }
             return Json(msg);
+        }
+        /// <summary>
+        /// 总盈亏 = 购币 - 兑换（与用户管理页的总盈利同口径）
+        /// </summary>
+        private void FillPlayerProfits(List<OnlinePlayerInfo> players)
+        {
+            if (players == null || players.Count < 1)
+                return;
+            M_LoginUser loginUser = WebHelper.GetLoginInfo();
+            if (loginUser == null)
+                return;
+            B_Users bll = new B_Users();
+            List<string> ids = players.Where(c => !string.IsNullOrWhiteSpace(c.ID)).Select(c => c.ID).Distinct().ToList();
+            Dictionary<string, long?> profitMap = new Dictionary<string, long?>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < ids.Count; i += 100)
+            {
+                List<M_Users_DTO> users = bll.GetUserRowsByIds(ids.Skip(i).Take(100).ToList(), loginUser);
+                foreach (M_Users_DTO user in users)
+                    profitMap[user.ID] = user.Profit;
+            }
+            foreach (OnlinePlayerInfo player in players)
+            {
+                if (player.ID != null && profitMap.TryGetValue(player.ID, out long? profit))
+                    player.Profit = profit ?? 0;
+            }
         }
         [MemberAuthorize]
         [AjaxOnly]

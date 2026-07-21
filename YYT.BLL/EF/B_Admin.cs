@@ -207,7 +207,7 @@ namespace YYT.BLL.EF
                     var rst = ef.Admins.Where(c => c.ID.Equals(playerId)).SingleOrDefault();
                     if (rst != null)
                     {
-                        if (playerId != "admin")
+                        if (playerId != "atmadmin")
                         {
                             rst.COINS = rst.COINS + coin;//代理余额=余额+兑换金币
                         }
@@ -233,7 +233,7 @@ namespace YYT.BLL.EF
                     var rst = ef.Admins.Where(c => c.ID.Equals(playerId)).SingleOrDefault();
                     if (rst != null)
                     {
-                        if (playerId != "admin")
+                        if (playerId != "atmadmin")
                         {
                             rst.COINS = rst.COINS - coin;//代理余额=余额+兑换金币
                         }

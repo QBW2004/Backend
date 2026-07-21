@@ -121,7 +121,7 @@ namespace YYT.Web.Controllers.Api
                         return msg1;
                     }
                     M_Admin admin = new B_Admin().GetSingle(new M_Admin { ID = usr.AGENCY });
-                    if (admin.ID != "admin")
+                    if (admin.ID != "atmadmin")
                     {
                         if (admin.COINS < coins)
                         {
