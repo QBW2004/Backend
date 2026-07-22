@@ -1,39 +1,18 @@
-# ===== Build artifacts =====
-build/
-bin/
-out/
-dist/
-
-# ===== Object files =====
-*.o
-*.obj
-*.so
-*.a
-*.dll
-*.exe
-
-# ===== .NET build outputs =====
+# Build results
 obj/
-*.pdb
-*.cache
-*.Up2Date
-*.CopyComplete
+bin/
 
-# ===== Logs =====
-*.log
-
-# ===== IDE =====
-.vscode/
-.idea/
+# Visual Studio
 .vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
 
-# ===== OS =====
-.DS_Store
+# ReSharper
+_ReSharper*/
+
+# OS files
 Thumbs.db
-
-# ===== Local config =====
-apphost.config
-
-# ===== Temporary =====
-*.tmp
-*.swp
+Desktop.ini
+.DS_Store
