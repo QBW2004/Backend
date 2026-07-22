@@ -53,9 +53,13 @@ namespace YYT.Web
                 System.Threading.Tasks.Task.Run(() => {
                     try
                     {
-                        new B_UserLockRecord().TimerTaskRun();
-                        new GameCommandOutboxRetryService().ProcessDueCommands();
-                        new B_LoginMissRecord().ResetLoginMissRecord();
+                        // 三个任务各自独立 try-catch，避免任一任务异常/阻塞导致其它任务不执行。
+                        try { new B_UserLockRecord().TimerTaskRun(); }
+                        catch (Exception ex) { LogHelper.WriteLog(typeof(MvcApplication), "TimerTaskRun error: " + ex.Message); }
+                        try { new GameCommandOutboxRetryService().ProcessDueCommands(); }
+                        catch (Exception ex) { LogHelper.WriteLog(typeof(MvcApplication), "ProcessDueCommands error: " + ex.Message); }
+                        try { new B_LoginMissRecord().ResetLoginMissRecord(); }
+                        catch (Exception ex) { LogHelper.WriteLog(typeof(MvcApplication), "ResetLoginMissRecord error: " + ex.Message); }
                     }
                     finally
                     {

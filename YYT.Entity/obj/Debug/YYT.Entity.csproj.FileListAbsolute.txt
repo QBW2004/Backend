@@ -84,9 +84,6 @@ d:\HighLevel\178\newKJ\金玉满堂\MTH\Backend\YYT.Entity\bin\Debug\zh-Hans\Sys
 d:\HighLevel\178\newKJ\金玉满堂\MTH\Backend\YYT.Entity\obj\Debug\YYT.Entity.csproj.AssemblyReference.cache
 d:\HighLevel\178\newKJ\金玉满堂\MTH\Backend\YYT.Entity\obj\Debug\YYT.Entity.csproj.CoreCompileInputs.cache
 d:\HighLevel\178\newKJ\金玉满堂\MTH\Backend\YYT.Entity\obj\Debug\YYT.Entity.csproj.Up2Date
-E:\Project\MTH\Backend\YYT.Entity\obj\Debug\YYT.Entity.csproj.AssemblyReference.cache
-E:\Project\MTH\Backend\YYT.Entity\obj\Debug\YYT.Entity.csproj.CoreCompileInputs.cache
-E:\Project\MTH\Backend\YYT.Entity\obj\Debug\YYT.Entity.csproj.Up2Date
 C:\Users\cdys\Downloads\MTH-Backend\YYT.Entity\obj\Debug\YYT.Entity.csproj.AssemblyReference.cache
 C:\Users\cdys\Downloads\MTH-Backend\YYT.Entity\obj\Debug\YYT.Entity.csproj.CoreCompileInputs.cache
 C:\Users\cdys\Downloads\MTH-Backend\YYT.Entity\obj\Debug\YYT.Entity.pdb
@@ -103,3 +100,6 @@ C:\Users\cdys\Downloads\MTH-Backend\YYT.Entity\bin\Debug\Newtonsoft.Json.xml
 C:\Users\cdys\Downloads\MTH-Backend\YYT.Entity\bin\Debug\System.Web.Optimization.xml
 C:\Users\cdys\Downloads\MTH-Backend\YYT.Entity\obj\Debug\YYT.Entity.csproj.Up2Date
 C:\Users\cdys\Downloads\MTH-Backend\YYT.Entity\obj\Debug\YYT.Entity.dll
+E:\Project\MTH\Backend\YYT.Entity\obj\Debug\YYT.Entity.csproj.AssemblyReference.cache
+E:\Project\MTH\Backend\YYT.Entity\obj\Debug\YYT.Entity.csproj.CoreCompileInputs.cache
+E:\Project\MTH\Backend\YYT.Entity\obj\Debug\YYT.Entity.csproj.Up2Date

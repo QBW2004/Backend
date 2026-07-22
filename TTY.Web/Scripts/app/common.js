@@ -5,17 +5,12 @@ window.request = function (url, para, callBack, method) {
         data: para,
         type: (method ? method : 'POST'),
         dataType: 'json',
+        timeout: 30000,
         beforeSend: function () {
             //$("<div class=\"datagrid-mask\" style=\"background-color:#ccc !important;\></div>").css({ display: "block", width: "100%", height: $(window).height() }).appendTo("body");
-            //$("<div class=\"datagrid-mask-msg\" style=\"background-color:#fff !important;\"></div>").html("正在处理，请稍候。。。").appendTo("body").css({ display: "block", left: ($(document.body).outerWidth(true) - 190) / 2, top: ($(window).height() - 45) / 2 });
+            //$("<div class="datagrid-mask-msg" style="background-color:#fff !important;"></div>").html("正在处理，请稍候。。。").appendTo("body").css({ display: "block", left: ($(document.body).outerWidth(true) - 190) / 2, top: ($(window).height() - 45) / 2 });
             if ($('.main-loading').length < 1) {
                 $('<div class="main-loading bg"><div class="main-loading-mask">正在处理，请稍待。。。</div></div>').prependTo('.main');
-                var _t = setInterval(function () {
-                    if ($('.main-loading').length > 0) {
-                        hideLoading();
-                        clearInterval(_t);
-                    }
-                }, 5000);
             }
         },
         success: function (data) {
@@ -25,6 +20,14 @@ window.request = function (url, para, callBack, method) {
             }
             if (typeof callBack == 'function')
                 callBack(data);
+        },
+        error: function (jqXHR, textStatus, errorThrown) {
+            // 超时(textStatus==='timeout')或网络错误时给出明确提示，避免静默卡死。
+            var tip = textStatus === 'timeout' ? '请求超时，请稍后重试' : ('请求失败：' + (errorThrown || textStatus));
+            if (typeof showToast == 'function')
+                showToast(tip, 'error');
+            else if (typeof window.alert == 'function')
+                window.alert(tip);
         },
         complete: function () {
             //$(".datagrid-mask,.datagrid-mask-msg").remove();

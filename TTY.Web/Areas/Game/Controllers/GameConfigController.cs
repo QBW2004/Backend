@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Web.Mvc;
 using YYT.BLL.EF;
+using YYT.BLL.Services.GameServer;
 using YYT.Common;
 using YYT.Entity;
 using YYT.Web;
@@ -338,13 +339,12 @@ namespace YYT.Web.Areas.Game.Controllers
 
 				}
 
-				var srv = new SConnect();
-				Msg rp = srv.SendReadString(EScMsgType.RP, fishGid);
-				msg.code = 1;
-				msg.content = (rp != null && rp.code == 1)
-					? "删除成功，服务端已即时热更新！"
-					: "删除成功，但服务端热更新失败：" + (rp == null ? "服务端无响应" : rp.content);
-				return Json(msg);
+					// 删除后 RP 命令写入 outbox 异步重试，避免请求线程阻塞。
+					TableHotUpdateOutbox.EnqueueRoomRefresh(fishGid);
+					msg.code = 1;
+					msg.datas = true;
+					msg.content = "删除成功，热更新已排队，约1分钟内生效。";
+					return Json(msg);
 
 			}
 
@@ -420,24 +420,9 @@ namespace YYT.Web.Areas.Game.Controllers
 
                 if (gameId > 0)
                 {
-                    try
-                    {
-                        var srv = new SConnect();
-                        Msg rp = srv.SendReadString(EScMsgType.RP, gameId);
-                        if (rp != null && rp.code == 1)
-                        {
-                            msg.content = "彻底删除成功，且服务端已即时热更新桌台列表！";
-                        }
-                        else
-                        {
-                            msg.content = "彻底删除成功，但服务端房间热更新失败：" + (rp == null ? "服务端无响应" : rp.content);
-                        }
-                    }
-                    catch (Exception exRp)
-                    {
-                        LogHelper.WriteLog(typeof(GameConfigController), exRp);
-                        msg.content = "彻底删除成功，但服务端房间热更新异常：" + exRp.Message;
-                    }
+                    // RP 命令写入 outbox 异步重试，避免请求线程阻塞。
+                    TableHotUpdateOutbox.EnqueueRoomRefresh(gameId);
+                    msg.content = "彻底删除成功，热更新已排队，约1分钟内生效。";
                 }
             }
             catch (Exception ex)
@@ -817,16 +802,30 @@ namespace YYT.Web.Areas.Game.Controllers
                         }
                         // 同步 pararoom.NUM = roomtableconfig 条数，保证旧房间参数口径与新按桌配置一致
                         SyncFishTableNum(ef, gameId);
+                        // 同步 paragame.ROOM_MAX = roomtableconfig 计数(鱼机桌台实际存于此表)，
+                        // 确保 RP 重试时服务端按新 ROOM_MAX 加载(新桌 TableIndex 须在 0..ROOM_MAX-1
+                        // 区间内才可见)。注意：不能用 pararoom 计数，因鱼机新桌只写 roomtableconfig。
+                        int roomCnt = ef.Database.SqlQuery<int>(
+                            "SELECT COUNT(*) FROM roomtableconfig WHERE GAME_ID=" + gameId).FirstOrDefault();
+                        if (roomCnt > 0)
+                        {
+                            int aff = ef.Database.ExecuteSqlCommand(
+                                "UPDATE ParaGame SET ROOM_MAX=" + roomCnt + " WHERE ID=" + gameId);
+                            if (aff == 0)
+                                ef.Database.ExecuteSqlCommand(
+                                    "INSERT INTO ParaGame(ID,ROOM_MAX,PLY_MAX) VALUES(" + gameId + "," + roomCnt + ",1000)");
+                        }
                     }
-                    var srv = new SConnect();
-                    msg = srv.SendReadString(EScMsgType.RP, gameId);
-                    if (msg.code == 1)
-                    {
-                        var srvTc = new SConnect();
-                        srvTc.SendTcCommand((ushort)gameId, 0, (ushort)tIdx, tName, (byte)(tblEnabled != 0 ? 1 : 0), (uint)idleSec, (byte)(tblIdleKick != 0 ? 1 : 0), (ushort)tblMaxSeats);
-                    }
+                    // 热更新命令改为写入 outbox，由后台定时器异步重试发送，避免请求线程
+                    // 被命名管道 RPC 阻塞导致页面卡顿。DB 已落库即视为成功。
+                    TableHotUpdateOutbox.EnqueueRoomRefresh(gameId);
+                    TableHotUpdateOutbox.EnqueueTableConfig(
+                        gameId * 1000 + tIdx, gameId, tName, tblEnabled != 0,
+                        idleSec, tblIdleKick != 0, tblMaxSeats);
+                    msg.code = 1;
+                    msg.datas = true;
                     // 回显本次落库的按桌关键值，便于核对表单提交与库中数据是否一致
-                    msg.content = (msg.content ?? "") + " [桌" + tIdx + " 已写入: CoinsNeed=" + coinNeed + ", BetMin=" + betMin + ", BetMax=" + betMax + ", CoinSc=" + coinSc + "]";
+                    msg.content = (msg.content ?? "") + " [桌" + tIdx + " 已写入: CoinsNeed=" + coinNeed + ", BetMin=" + betMin + ", BetMax=" + betMax + ", CoinSc=" + coinSc + "] 保存成功，热更新已排队。";
                 }
 
                 // ROOM_MAX 同步已下沉到 B_SuperPara.PushHotUpdate 内(在发 RP 之前执行)，
