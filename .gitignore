@@ -12,6 +12,17 @@ bin/
 # ReSharper
 _ReSharper*/
 
+# NuGet packages (restored via nuget restore / msbuild -t:restore)
+packages/
+
+# Logs
+*.log
+Logs/
+
+# IIS Express / local server config (machine-specific)
+apphost.config
+applicationhost.config
+
 # OS files
 Thumbs.db
 Desktop.ini
