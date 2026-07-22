@@ -156,7 +156,6 @@
     <Compile Include="Services\GameServer\PlayerRuntimeState.cs" />
     <Compile Include="Services\GameServer\PlayerStateService.cs" />
     <Compile Include="Services\GameServer\OnlinePlayerInfo.cs" />
-    <Compile Include="Services\GameServer\TableHotUpdateOutbox.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SupperBLL.cs" />
   </ItemGroup>

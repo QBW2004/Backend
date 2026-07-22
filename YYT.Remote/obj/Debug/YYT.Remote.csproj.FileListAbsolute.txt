@@ -205,6 +205,11 @@ d:\HighLevel\178\newKJ\金玉满堂\MTH\Backend\YYT.Remote\bin\Debug\zh-Hans\Sys
 d:\HighLevel\178\newKJ\金玉满堂\MTH\Backend\YYT.Remote\obj\Debug\YYT.Remote.csproj.AssemblyReference.cache
 d:\HighLevel\178\newKJ\金玉满堂\MTH\Backend\YYT.Remote\obj\Debug\YYT.Remote.csproj.CoreCompileInputs.cache
 d:\HighLevel\178\newKJ\金玉满堂\MTH\Backend\YYT.Remote\obj\Debug\YYT.Remote.csproj.Up2Date
+E:\Project\MTH\Backend\YYT.Remote\bin\Debug\YYT.Common.dll.config
+E:\Project\MTH\Backend\YYT.Remote\bin\Debug\YYT.Entity.dll.config
+E:\Project\MTH\Backend\YYT.Remote\obj\Debug\YYT.Remote.csproj.AssemblyReference.cache
+E:\Project\MTH\Backend\YYT.Remote\obj\Debug\YYT.Remote.csproj.CoreCompileInputs.cache
+E:\Project\MTH\Backend\YYT.Remote\obj\Debug\YYT.Remote.csproj.Up2Date
 C:\Users\cdys\Downloads\MTH-Backend\YYT.Remote\obj\Debug\YYT.Remote.pdb
 C:\Users\cdys\Downloads\MTH-Backend\YYT.Remote\bin\Debug\YYT.Remote.dll.config
 C:\Users\cdys\Downloads\MTH-Backend\YYT.Remote\bin\Debug\YYT.Remote.dll
@@ -242,8 +247,3 @@ C:\Users\cdys\Downloads\MTH-Backend\YYT.Remote\obj\Debug\YYT.Remote.csproj.Assem
 C:\Users\cdys\Downloads\MTH-Backend\YYT.Remote\obj\Debug\YYT.Remote.csproj.CoreCompileInputs.cache
 C:\Users\cdys\Downloads\MTH-Backend\YYT.Remote\obj\Debug\YYT.Remote.csproj.Up2Date
 C:\Users\cdys\Downloads\MTH-Backend\YYT.Remote\obj\Debug\YYT.Remote.dll
-E:\Project\MTH\Backend\YYT.Remote\bin\Debug\YYT.Common.dll.config
-E:\Project\MTH\Backend\YYT.Remote\bin\Debug\YYT.Entity.dll.config
-E:\Project\MTH\Backend\YYT.Remote\obj\Debug\YYT.Remote.csproj.AssemblyReference.cache
-E:\Project\MTH\Backend\YYT.Remote\obj\Debug\YYT.Remote.csproj.CoreCompileInputs.cache
-E:\Project\MTH\Backend\YYT.Remote\obj\Debug\YYT.Remote.csproj.Up2Date

@@ -206,6 +206,10 @@ d:\HighLevel\178\newKJ\金玉满堂\MTH\Backend\YYT.Common\bin\Debug\zh-Hans\Sys
 d:\HighLevel\178\newKJ\金玉满堂\MTH\Backend\YYT.Common\obj\Debug\YYT.Common.csproj.AssemblyReference.cache
 d:\HighLevel\178\newKJ\金玉满堂\MTH\Backend\YYT.Common\obj\Debug\YYT.Common.csproj.CoreCompileInputs.cache
 d:\HighLevel\178\newKJ\金玉满堂\MTH\Backend\YYT.Common\obj\Debug\YYT.Common.csproj.Up2Date
+E:\Project\MTH\Backend\YYT.Common\bin\Debug\YYT.Entity.dll.config
+E:\Project\MTH\Backend\YYT.Common\obj\Debug\YYT.Common.csproj.AssemblyReference.cache
+E:\Project\MTH\Backend\YYT.Common\obj\Debug\YYT.Common.csproj.CoreCompileInputs.cache
+E:\Project\MTH\Backend\YYT.Common\obj\Debug\YYT.Common.csproj.Up2Date
 C:\Users\cdys\Downloads\MTH-Backend\YYT.Common\obj\Debug\YYT.Common.pdb
 C:\Users\cdys\Downloads\MTH-Backend\YYT.Common\bin\Debug\YYT.Common.dll.config
 C:\Users\cdys\Downloads\MTH-Backend\YYT.Common\bin\Debug\YYT.Common.dll
@@ -242,7 +246,3 @@ C:\Users\cdys\Downloads\MTH-Backend\YYT.Common\obj\Debug\YYT.Common.csproj.Assem
 C:\Users\cdys\Downloads\MTH-Backend\YYT.Common\obj\Debug\YYT.Common.csproj.CoreCompileInputs.cache
 C:\Users\cdys\Downloads\MTH-Backend\YYT.Common\obj\Debug\YYT.Common.csproj.Up2Date
 C:\Users\cdys\Downloads\MTH-Backend\YYT.Common\obj\Debug\YYT.Common.dll
-E:\Project\MTH\Backend\YYT.Common\bin\Debug\YYT.Entity.dll.config
-E:\Project\MTH\Backend\YYT.Common\obj\Debug\YYT.Common.csproj.AssemblyReference.cache
-E:\Project\MTH\Backend\YYT.Common\obj\Debug\YYT.Common.csproj.CoreCompileInputs.cache
-E:\Project\MTH\Backend\YYT.Common\obj\Debug\YYT.Common.csproj.Up2Date

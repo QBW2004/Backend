@@ -1,11 +1,9 @@
-using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data.Entity;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using YYT.BLL.Services.GameServer;
 using YYT.Common;
 using YYT.Entity;
 using YYT.Remote;
@@ -25,19 +23,36 @@ namespace YYT.BLL.EF
         {
             Msg result = new Msg(0, "保存失败！");
 
-            // 关键：必须在入箱 RP 之前同步 paragame.ROOM_MAX = 当前房间数。
+            // 关键：必须在发 RP 之前同步 paragame.ROOM_MAX = 当前房间数。
             // 服务端收到 RP 后按 ROOM_MAX 决定加载几张桌(TableIndex 0..ROOM_MAX-1)，
             // 若此刻 ROOM_MAX 仍是旧值，新增桌台的 TableIndex 超出区间会被忽略，
-            // 表现为"新增桌台热更失败"。先写好 ROOM_MAX 再入箱 RP 才能让新桌可见。
+            // 表现为"新增桌台热更失败"。先写好 ROOM_MAX 再发 RP 才能让新桌可见。
             SyncRoomMaxToRoomCount(eGameType, gameId);
 
-            // 热更新命令改为写入 outbox，由后台定时器异步重试发送(RP 让服务端全量
-            // 重读房间/桌台配置)，避免请求线程被命名管道 RPC 阻塞导致页面卡顿。
-            TableHotUpdateOutbox.EnqueueRoomRefresh(gameId);
+            var srv = new SConnect();
+            Msg rp = srv.SendReadString(EScMsgType.RP, gameId);
+            bool rpOk = rp != null && rp.code == 1;
 
-            result.code = 1;
-            result.datas = true;
-            result.content = "保存成功，热更新已排队，约1分钟内生效。";
+            this.msg = new Msg(1, string.Empty);
+            this.NotifyServer(eGameType, EScMsgType.PA, machine);
+            bool paOk = this.msg.code == 1 && string.IsNullOrEmpty(this.msg.content);
+
+            if (rpOk && paOk)
+            {
+                result.code = 1;
+                result.content = "保存成功，服务端已即时热更新！";
+            }
+            else if (rpOk)
+            {
+                result.code = 1;
+                result.content = "保存成功，房间已热更新；机台难度推送提示：" + this.msg.content;
+            }
+            else
+            {
+                result.code = 0;
+                result.datas = true;
+                result.content = "保存成功，但服务端房间热更新失败：" + (rp == null ? "服务端无响应，请检查中心服是否在线。" : rp.content);
+            }
             return result;
         }
 
@@ -56,20 +71,37 @@ namespace YYT.BLL.EF
             Msg result = new Msg(1, string.Empty);
             try
             {
-                // tableIndex 由 EnqueueTableConfig 内部按 tableId%1000 计算。
+                // roomIndex 恒为 0(后台已废弃初/中/高级多房间模型，扁平桌台列表)；
+                // tableIndex = 桌台在游戏内的全局偏移(ID = gameId*1000 + 偏移)。
+                // 拉霸单桌台传 tableId=gameId，偏移为 0。
+                ushort roomIndex = 0;
+                ushort tableIndex = (ushort)(tableId % 1000);
                 // maxSeats 上限 8(MAX_PHYSICAL_SEATS)，防御性夹断。
                 if (maxSeats < 0) maxSeats = 0;
                 if (maxSeats > 8) maxSeats = 8;
                 if (idleFireTimeoutSec < 0) idleFireTimeoutSec = 0;
 
-                // TC 命令改为写入 outbox，由后台定时器异步重试发送，避免请求线程阻塞。
-                TableHotUpdateOutbox.EnqueueTableConfig(
-                    tableId, gameId, tableName, enabled,
-                    idleFireTimeoutSec, idleFireKickEnabled, maxSeats, betExt, tableExt);
+                var srv = new SConnect();
+                Msg tc = srv.SendTcCommand(
+                    (ushort)gameId, roomIndex, tableIndex,
+                    tableName ?? string.Empty,
+                    (byte)(enabled ? 1 : 0),
+                    (uint)idleFireTimeoutSec,
+                    (byte)(idleFireKickEnabled ? 1 : 0),
+                    (ushort)maxSeats, betExt, tableExt);
 
-                result.code = 1;
-                result.datas = true;
-                result.content = "桌名热更新已排队。";
+                if (tc != null && tc.code == 1)
+                {
+                    result.code = 1;
+                    result.content = "桌名已热更新。";
+                }
+                else
+                {
+                    // DB 已落库，TC 失败仅提示，不回滚。
+                    result.code = 0;
+                    result.datas = true;
+                    result.content = "保存成功，但桌名热更新失败：" + (tc == null ? "服务端无响应。" : tc.content);
+                }
             }
             catch (Exception ex)
             {
@@ -202,13 +234,9 @@ namespace YYT.BLL.EF
         private static void SyncRoomMaxToRoomCount(EGameType eGameType, int gameId)
         {
             if (gameId <= 0) return;
-            // 鱼机桌台实际存于 roomtableconfig(而非 pararoom)，ROOM_MAX 须以 roomtableconfig
-            // 计数为准，否则新桌 TableIndex 超出 ROOM_MAX 区间会被服务端忽略，表现为新桌不可见。
-            // 押注/牌机仍用各自房间表计数。
             string roomTbl;
             if (eGameType == EGameType.Bet) roomTbl = "ParaBetRoom";
-            else if (eGameType == EGameType.Card) roomTbl = "ParaRoom";
-            else if (eGameType == EGameType.Fish) roomTbl = "roomtableconfig";
+            else if (eGameType == EGameType.Card || eGameType == EGameType.Fish) roomTbl = "ParaRoom";
             else return;
             try
             {
@@ -224,8 +252,13 @@ namespace YYT.BLL.EF
                     // 鱼机额外同步 pararoom.NUM = roomtableconfig 条数
                     if (eGameType == EGameType.Fish)
                     {
-                        ef.Database.ExecuteSqlCommand(
-                            "UPDATE ParaRoom SET NUM=" + cnt + " WHERE GAME_ID=" + gameId + " AND ID=" + (gameId * 1000));
+                        int cfgCnt = ef.Database.SqlQuery<int>(
+                            "SELECT COUNT(*) FROM roomtableconfig WHERE GAME_ID=" + gameId).FirstOrDefault();
+                        if (cfgCnt > 0)
+                        {
+                            ef.Database.ExecuteSqlCommand(
+                                "UPDATE ParaRoom SET NUM=" + cfgCnt + " WHERE GAME_ID=" + gameId + " AND ID=" + (gameId * 1000));
+                        }
                     }
                 }
             }

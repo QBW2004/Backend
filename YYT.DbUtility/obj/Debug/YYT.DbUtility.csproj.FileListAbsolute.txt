@@ -249,6 +249,12 @@ d:\HighLevel\178\newKJ\金玉满堂\MTH\Backend\YYT.DbUtility\obj\Debug\YYT.DbUt
 d:\HighLevel\178\newKJ\金玉满堂\MTH\Backend\YYT.DbUtility\obj\Debug\YYT.DbUt.4089D495.Up2Date
 d:\HighLevel\178\newKJ\金玉满堂\MTH\Backend\YYT.DbUtility\obj\Debug\YYT.DbUtility.dll
 d:\HighLevel\178\newKJ\金玉满堂\MTH\Backend\YYT.DbUtility\obj\Debug\YYT.DbUtility.pdb
+E:\Project\MTH\Backend\YYT.DbUtility\bin\Debug\YYT.Common.dll.config
+E:\Project\MTH\Backend\YYT.DbUtility\bin\Debug\YYT.Entity.dll.config
+E:\Project\MTH\Backend\YYT.DbUtility\bin\Debug\System.Data.SQLite.dll.config
+E:\Project\MTH\Backend\YYT.DbUtility\obj\Debug\YYT.DbUtility.csproj.AssemblyReference.cache
+E:\Project\MTH\Backend\YYT.DbUtility\obj\Debug\YYT.DbUtility.csproj.CoreCompileInputs.cache
+E:\Project\MTH\Backend\YYT.DbUtility\obj\Debug\YYT.DbUt.4089D495.Up2Date
 C:\Users\cdys\Downloads\MTH-Backend\YYT.DbUtility\bin\Debug\YYT.DbUtility.dll.config
 C:\Users\cdys\Downloads\MTH-Backend\YYT.DbUtility\bin\Debug\YYT.DbUtility.dll
 C:\Users\cdys\Downloads\MTH-Backend\YYT.DbUtility\bin\Debug\YYT.DbUtility.pdb
@@ -295,9 +301,3 @@ C:\Users\cdys\Downloads\MTH-Backend\YYT.DbUtility\obj\Debug\YYT.DbUtility.csproj
 C:\Users\cdys\Downloads\MTH-Backend\YYT.DbUtility\obj\Debug\YYT.DbUt.4089D495.Up2Date
 C:\Users\cdys\Downloads\MTH-Backend\YYT.DbUtility\obj\Debug\YYT.DbUtility.dll
 C:\Users\cdys\Downloads\MTH-Backend\YYT.DbUtility\obj\Debug\YYT.DbUtility.pdb
-E:\Project\MTH\Backend\YYT.DbUtility\bin\Debug\YYT.Common.dll.config
-E:\Project\MTH\Backend\YYT.DbUtility\bin\Debug\YYT.Entity.dll.config
-E:\Project\MTH\Backend\YYT.DbUtility\bin\Debug\System.Data.SQLite.dll.config
-E:\Project\MTH\Backend\YYT.DbUtility\obj\Debug\YYT.DbUtility.csproj.AssemblyReference.cache
-E:\Project\MTH\Backend\YYT.DbUtility\obj\Debug\YYT.DbUtility.csproj.CoreCompileInputs.cache
-E:\Project\MTH\Backend\YYT.DbUtility\obj\Debug\YYT.DbUt.4089D495.Up2Date

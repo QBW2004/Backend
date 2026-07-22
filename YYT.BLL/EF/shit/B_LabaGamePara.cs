@@ -4,7 +4,6 @@ using System.Data.Entity;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using YYT.BLL.Services.GameServer;
 using YYT.Common;
 using YYT.Entity;
 using YYT.Remote;
@@ -175,24 +174,47 @@ namespace YYT.BLL.EF
                 int val = ef.SaveChanges();
 
                 bool needRp = (val > 0) || !string.IsNullOrEmpty(tableName);
-                // 热更新命令改为写入 outbox，由后台定时器异步重试发送，避免请求线程
-                // 被命名管道 RPC 阻塞导致页面卡顿。DB 已落库即视为保存成功(datas=true)。
                 if (needRp)
                 {
-                    TableHotUpdateOutbox.EnqueueRoomRefresh(gameId);
+                    var srv = new SConnect();
+                    var tmpMsg = srv.SendReadString(EScMsgType.RP, gameId);
+                    if (val > 0 || msg.code == 0)
+                    {
+                        msg.code = tmpMsg.code;
+                        msg.content = tmpMsg.content;
+                    }
                 }
 
                 if (!string.IsNullOrEmpty(tableName))
                 {
-                    TableHotUpdateOutbox.EnqueueTableConfig(
-                        tableId, gameId, tableName, enabled != 0, 0, false, 6);
+                    try
+                    {
+                        var srv2 = new SConnect();
+                        var tc = srv2.SendTcCommand((ushort)gameId, 0, (ushort)tableIndex,
+                            tableName, (byte)enabled, 0u, 0, 6);
+                        if (tc != null && tc.code == 1)
+                        {
+                            if (msg.code == 0 && val == 0)
+                            {
+                                msg.code = 1;
+                                msg.content = "桌名更新成功";
+                            }
+                        }
+                        else
+                        {
+                            msg.datas = true;
+                            msg.content = (string.IsNullOrEmpty(msg.content) ? "保存成功" : msg.content)
+                                       + "，但桌名热更新失败：" + (tc == null ? "服务端无响应" : tc.content);
+                        }
+                    }
+                    catch (Exception exTc)
+                    {
+                        LogHelper.WriteLog(typeof(B_LabaGamePara), exTc);
+                        msg.datas = true;
+                        msg.content = (string.IsNullOrEmpty(msg.content) ? "保存成功" : msg.content)
+                                   + "，但桌名热更新异常：" + exTc.Message;
+                    }
                 }
-
-                msg.code = 1;
-                msg.datas = true;
-                msg.content = needRp || !string.IsNullOrEmpty(tableName)
-                    ? "保存成功，热更新已排队，约1分钟内生效。"
-                    : "保存成功！";
             }
             return msg;
         }
@@ -214,11 +236,10 @@ namespace YYT.BLL.EF
                 ef.Database.ExecuteSqlCommand(
                     "DELETE FROM roomtableconfig WHERE GAME_ID={0} AND RoomIndex=0 AND TableIndex={1}",
                     gameId, tableIndex);
-                // 删除后 RP 命令写入 outbox 异步重试，避免请求线程阻塞。
-                TableHotUpdateOutbox.EnqueueRoomRefresh(gameId);
-                msg.code = 1;
-                msg.datas = true;
-                msg.content = "删除成功，热更新已排队，约1分钟内生效。";
+                var srv = new SConnect();
+                var tmpMsg = srv.SendReadString(EScMsgType.RP, gameId);
+                msg.code = tmpMsg.code;
+                msg.content = tmpMsg.content;
             }
             return msg;
         }
