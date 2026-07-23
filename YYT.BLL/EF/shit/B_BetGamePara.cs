@@ -30,15 +30,44 @@ namespace YYT.BLL.EF
                 {
                     try
                     {
-                        M_ParaBetRoom rst = ef.ParaBetRooms.Where(c => c.ID == room.ID).FirstOrDefault();
+                        // 一房N桌模型：parabetroom 只保留 1 行 base 行(ID=gameId*1000)，
+                        // 存所有桌共享的专有参数(押注时长/限红/庄闲和限红/投注档位/EX_COIN/Game_Mo 等)。
+                        // room.ID = gameId*1000+tableIndex(控制器传入)，base 行 ID = room.GAME_ID*1000。
+                        int baseId = room.GAME_ID * 1000;
+                        M_ParaBetRoom rst = ef.ParaBetRooms.Where(c => c.ID == baseId).FirstOrDefault();
                         if (rst == null)
                         {
-                            M_ParaBetRoom sib = ef.ParaBetRooms.Where(c => c.GAME_ID == room.GAME_ID).FirstOrDefault();
-                            if (sib != null) room.MaxSeats = sib.MaxSeats;
-                            ef.ParaBetRooms.Add(room);
+                            // 首次建游戏：插入 base 行，NUM 先占 1，后续由 SyncRoomMaxToRoomCount 同步为桌数
+                            M_ParaBetRoom baseRoom = new M_ParaBetRoom();
+                            baseRoom.ID = baseId;
+                            baseRoom.GAME_ID = room.GAME_ID;
+                            baseRoom.BET_TIME = room.BET_TIME;
+                            baseRoom.NUM = 1;
+                            baseRoom.BET_MIN = room.BET_MIN;
+                            baseRoom.BET_MAX = room.BET_MAX;
+                            baseRoom.BET_MIN_VICE = room.BET_MIN_VICE;
+                            baseRoom.BET_MAX_VICE = room.BET_MAX_VICE;
+                            baseRoom.BET_MIN_DRAW = room.BET_MIN_DRAW;
+                            baseRoom.BET_MAX_DRAW = room.BET_MAX_DRAW;
+                            baseRoom.EX_COIN = room.EX_COIN;
+                            baseRoom.COIN_SC = room.COIN_SC;
+                            baseRoom.COIN_NEED = room.COIN_NEED;
+                            baseRoom.BANKER_SC_NEED = room.BANKER_SC_NEED;
+                            baseRoom.SC_LIMIT_SING = room.SC_LIMIT_SING;
+                            baseRoom.SC_LIMIT_ALL = room.SC_LIMIT_ALL;
+                            baseRoom.Game_Mo = room.Game_Mo;
+                            baseRoom.BetScores = room.BetScores ?? string.Empty;
+                            baseRoom.DefaultBetIndex = room.DefaultBetIndex ?? 0;
+                            baseRoom.TableName = room.TableName;
+                            baseRoom.MaxSeats = room.MaxSeats;
+                            baseRoom.IdleFireTimeoutSec = room.IdleFireTimeoutSec;
+                            baseRoom.IdleFireKickEnabled = room.IdleFireKickEnabled;
+                            baseRoom.Enabled = room.Enabled;
+                            ef.ParaBetRooms.Add(baseRoom);
                         }
                         else
                         {
+                            // 已有 base 行：更新专有参数(每桌保存时都会刷新 base 行，以最后一次为准)
                             rst.GAME_ID = room.GAME_ID;
                             rst.BET_TIME = room.BET_TIME;
                             rst.BET_MIN = room.BET_MIN;
@@ -63,6 +92,7 @@ namespace YYT.BLL.EF
                             ef.Entry(rst).State = EntityState.Modified;
                         }
 
+                        // 机台难度按桌 upsert(ID = gameId*1000+tableIndex)，保持不变
                         M_ParaBet mrst = ef.ParaBets.Where(c => c.ID == machine.ID).FirstOrDefault();
                         if (mrst == null)
                         {
@@ -82,18 +112,14 @@ namespace YYT.BLL.EF
                         }
 
                         ef.SaveChanges();
-                        int cnt = ef.ParaBetRooms.Where(c => c.GAME_ID == room.GAME_ID).Count();
-                        foreach (M_ParaBetRoom r in ef.ParaBetRooms.Where(c => c.GAME_ID == room.GAME_ID).ToList())
-                        {
-                            if (r.NUM != cnt)
-                            {
-                                r.NUM = cnt;
-                                ef.Entry(r).State = EntityState.Modified;
-                            }
-                        }
-                        ef.SaveChanges();
 
-                        // 押分按桌配置直接落库：roomtableconfig 以数据库为准，
+                        // NUM 同步：base 行 NUM = roomtableconfig 条数(桌台数)
+                        int cfgCnt = ef.Database.SqlQuery<int>(
+                            "SELECT COUNT(*) FROM roomtableconfig WHERE GAME_ID={0}", room.GAME_ID).FirstOrDefault();
+                        // roomtableconfig 尚未写入(本次保存的新桌)，cfgCnt 暂时少 1，下方先写 roomtableconfig 再补 NUM
+                        // 此处先不更新 NUM，留给 PushHotUpdate->SyncRoomMaxToRoomCount 统一同步
+
+                        // 按桌配置直接落库：roomtableconfig 以数据库为准，
                         // 不依赖 center 在线时的 TC 热更写入（center 掉线也不丢配置）。
                         int tIdx = room.ID % 1000;
                         ef.Database.ExecuteSqlCommand(
@@ -120,6 +146,7 @@ namespace YYT.BLL.EF
             // 押分扩展：随 TC 一并下发按桌押分参数，center 写入 roomtableconfig_bet 并全量重推。
             // 字段顺序须与 center 的 TC 押分扩展解析一致；GAME_ID=10(幸运六狮)为 layoutTag==1，
             // 需追加庄闲/和 4 个副游戏限红字段。
+            // 专有参数从 base 行取(所有桌共享)，room 此处携带的是本次提交的桌台值。
             var betExt = new SConnect.TcBetExt
             {
                 BetTime = (byte)room.BET_TIME,

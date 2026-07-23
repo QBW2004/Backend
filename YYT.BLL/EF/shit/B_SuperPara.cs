@@ -224,40 +224,61 @@ namespace YYT.BLL.EF
         }
 
         /// <summary>
-        /// 把 paragame.ROOM_MAX 同步为该游戏当前房间总数。必须在发 RP 之前调用，
+        /// 同步 paragame.ROOM_MAX 与房间表 NUM。必须在发 RP 之前调用，
         /// 否则服务端会按旧 ROOM_MAX 加载，新增桌台因 TableIndex 越界而不可见。
-        /// 同时同步鱼机 pararoom.NUM = roomtableconfig 条数，保证旧房间参数口径
-        /// 与新按桌配置一致（服务端 AA01 头部 roomInfo[].num 仍读 pararoom.NUM）。
+        ///
+        /// 押注类(Bet)：一房N桌模型——ROOM_MAX 恒为 1(单房间)，base 行(ID=gameId*1000)
+        /// 的 NUM = roomtableconfig 条数(桌台数)。服务端 GetBetPara 按 ROOM_MAX=1 读 1 个房间，
+        /// tableMax=NUM=N，再按 N 桌循环读 parabet。
+        /// 鱼机(Fish)/牌机(Card)：ROOM_MAX = 房间表行数；鱼机额外同步 base 行 NUM=roomtableconfig 条数。
         /// 与 GameConfigController.SyncRoomMaxToRoomCount 逻辑一致，集中到此处确保
         /// 所有 SaveTableFull 路径(Bet/Card/Fish)在热更前 ROOM_MAX 已就绪。
         /// </summary>
         private static void SyncRoomMaxToRoomCount(EGameType eGameType, int gameId)
         {
             if (gameId <= 0) return;
-            string roomTbl;
-            if (eGameType == EGameType.Bet) roomTbl = "ParaBetRoom";
-            else if (eGameType == EGameType.Card || eGameType == EGameType.Fish) roomTbl = "ParaRoom";
-            else return;
             try
             {
                 using (var ef = new GameDbContext())
                 {
-                    int cnt = ef.Database.SqlQuery<int>(
-                        "SELECT COUNT(*) FROM " + roomTbl + " WHERE GAME_ID={0}", gameId).FirstOrDefault();
-                    if (cnt <= 0) return;
-                    int affected = ef.Database.ExecuteSqlCommand("UPDATE ParaGame SET ROOM_MAX={0} WHERE ID={1}", cnt, gameId);
-                    if (affected == 0)
-                        ef.Database.ExecuteSqlCommand("INSERT INTO ParaGame(ID,ROOM_MAX,PLY_MAX) VALUES({0},{1},{2})", gameId, cnt, 1000);
-
-                    // 鱼机额外同步 pararoom.NUM = roomtableconfig 条数
-                    if (eGameType == EGameType.Fish)
+                    if (eGameType == EGameType.Bet)
                     {
+                        // 押注类：ROOM_MAX 恒为 1(一房N桌)，base 行 NUM = roomtableconfig 条数
+                        int betRoomCnt = ef.Database.SqlQuery<int>(
+                            "SELECT COUNT(*) FROM ParaBetRoom WHERE GAME_ID={0}", gameId).FirstOrDefault();
+                        if (betRoomCnt <= 0) return;  // base 行不存在，跳过(避免误建)
+                        int affected = ef.Database.ExecuteSqlCommand("UPDATE ParaGame SET ROOM_MAX=1 WHERE ID={0}", gameId);
+                        if (affected == 0)
+                            ef.Database.ExecuteSqlCommand("INSERT INTO ParaGame(ID,ROOM_MAX,PLY_MAX) VALUES({0},1,1000)", gameId);
+
                         int cfgCnt = ef.Database.SqlQuery<int>(
-                            "SELECT COUNT(*) FROM roomtableconfig WHERE GAME_ID=" + gameId).FirstOrDefault();
+                            "SELECT COUNT(*) FROM roomtableconfig WHERE GAME_ID={0}", gameId).FirstOrDefault();
                         if (cfgCnt > 0)
                         {
                             ef.Database.ExecuteSqlCommand(
-                                "UPDATE ParaRoom SET NUM=" + cfgCnt + " WHERE GAME_ID=" + gameId + " AND ID=" + (gameId * 1000));
+                                "UPDATE ParaBetRoom SET NUM={0} WHERE GAME_ID={1} AND ID={2}", cfgCnt, gameId, gameId * 1000);
+                        }
+                    }
+                    else if (eGameType == EGameType.Card || eGameType == EGameType.Fish)
+                    {
+                        string roomTbl = "ParaRoom";
+                        int cnt = ef.Database.SqlQuery<int>(
+                            "SELECT COUNT(*) FROM " + roomTbl + " WHERE GAME_ID={0}", gameId).FirstOrDefault();
+                        if (cnt <= 0) return;
+                        int affected = ef.Database.ExecuteSqlCommand("UPDATE ParaGame SET ROOM_MAX={0} WHERE ID={1}", cnt, gameId);
+                        if (affected == 0)
+                            ef.Database.ExecuteSqlCommand("INSERT INTO ParaGame(ID,ROOM_MAX,PLY_MAX) VALUES({0},{1},1000)", gameId, cnt);
+
+                        // 鱼机额外同步 pararoom.NUM = roomtableconfig 条数
+                        if (eGameType == EGameType.Fish)
+                        {
+                            int cfgCnt = ef.Database.SqlQuery<int>(
+                                "SELECT COUNT(*) FROM roomtableconfig WHERE GAME_ID=" + gameId).FirstOrDefault();
+                            if (cfgCnt > 0)
+                            {
+                                ef.Database.ExecuteSqlCommand(
+                                    "UPDATE ParaRoom SET NUM=" + cfgCnt + " WHERE GAME_ID=" + gameId + " AND ID=" + (gameId * 1000));
+                            }
                         }
                     }
                 }

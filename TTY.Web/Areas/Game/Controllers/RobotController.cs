@@ -50,28 +50,44 @@ namespace YYT.Web.Areas.Game.Controllers
         [HttpPost]
         public ActionResult GetParabetRoom(FormCollection form)
         {
-            M_ParaBetRoom user = new M_ParaBetRoom();
+            // 一房N桌模型：押注类房间已废弃，桌台列表从 roomtableconfig 读取，
+            // 直接返回 [{id=TableIndex, text=TableName}] 供前端桌台下拉使用。
+            List<object> tableList = new List<object>();
             try
             {
                 int GameId = form.Q<int>("GameId");
-                int RoomId = form.Q<int>("RoomId");
-
-                M_Games entity = new M_Games();
-                entity.Enable = 1;
-                string num = "";
                 if (GameId > 0)
-                    num = GameId.ToString();
-                if (RoomId > -1)
-                    num = GameId.ToString() + RoomId.ToString().PadLeft(3, '0');
-
-                user = new B_BetGamePara().GetSingle(new M_ParaBetRoom { ID = Convert.ToInt32(num) });
-
+                {
+                    using (var ef = new GameDbContext())
+                    {
+                        var rows = ef.Database.SqlQuery<BetTableSelRow>(
+                            "SELECT TableIndex, TableName FROM roomtableconfig WHERE GAME_ID={0} ORDER BY TableIndex", GameId).ToList();
+                        int idx = 0;
+                        foreach (BetTableSelRow r in rows)
+                        {
+                            tableList.Add(new
+                            {
+                                id = r.TableIndex,
+                                text = string.IsNullOrWhiteSpace(r.TableName) ? ("桌台" + r.TableIndex) : r.TableName,
+                                selected = idx == 0
+                            });
+                            idx++;
+                        }
+                    }
+                }
             }
             catch (Exception ex)
             {
                 LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.RobotController), ex);
             }
-            return Json(user);
+            return Json(tableList);
+        }
+
+        // roomtableconfig 桌台选择行映射（机器人页桌台下拉用）
+        public class BetTableSelRow
+        {
+            public int TableIndex { get; set; }
+            public string TableName { get; set; }
         }
 
         /// <summary>
@@ -144,6 +160,8 @@ namespace YYT.Web.Areas.Game.Controllers
                 int RoomId = form.Q<int>("RoomSel");
                 int TABLE_ID = form.Q<int>("TABLE_ID");
                 int RobotNo = form.Q<int>("RobotNo");
+                // 押注类一房N桌：ROOM_ID 恒为 0(单房间)
+                if (GameType == 0) RoomId = 0;
                 if (GameType == -1)
                 {
                     msg.content = "请选择游戏类型！";
@@ -156,7 +174,13 @@ namespace YYT.Web.Areas.Game.Controllers
                 }
                 string GameName = "";
                 string RoomName = "";
-                if (RoomId == 0)
+                // 押注类一房N桌：ROOM_ID 恒为 0(单房间)，RoomName 固定"默认场"。
+                // 鱼机/牌机保留原 4 房间(初级/中级/高级/VIP)语义。
+                if (GameType == 0)
+                {
+                    RoomName = "默认场";
+                }
+                else if (RoomId == 0)
                 {
                     RoomName = "初级场";
                 }

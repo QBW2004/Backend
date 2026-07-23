@@ -121,7 +121,11 @@
         }
         function bindGamesTree(newValue, oldValue) {
             if (oldValue && newValue > -1 && newValue != oldValue) {
-                if (newValue == "8" || newValue == "24" || newValue == "25" || newValue == "5" || newValue == "15") {
+                var gameType = $("input[name='GameType']").val();
+                if (gameType == 0) {
+                    // 押注类一房N桌：房间固定"默认场"(id=0)，不可选其它房间
+                    $('#addRoomSel').combobox('loadData', [{ id: 0, text: '默认场', selected: true }])
+                } else if (newValue == "8" || newValue == "24" || newValue == "25" || newValue == "5" || newValue == "15") {
                     $('#addRoomSel').combobox('loadData', getRoomSelData(4))
                 } else {
                     $('#addRoomSel').combobox('loadData', getRoomSelData(3))
@@ -204,9 +208,9 @@
             }
             var RoomSel = $("input[name='RoomSel']").val();
             //console.log("RoomSel：" + RoomSel);
-            if (gameType == 0) {//押分类
-                request('/Game/Robot/GetParabetRoom', { GameId: GameId, RoomId: RoomSel }, function (data) {
-                    $('#addTABLE_ID').combobox('loadData', getComboSelData(data.NUM, 0))
+            if (gameType == 0) {//押分类：一房N桌，直接从 GetParabetRoom 取桌台列表填充下拉
+                request('/Game/Robot/GetParabetRoom', { GameId: GameId }, function (data) {
+                    $('#addTABLE_ID').combobox('loadData', data)
                 })
             } else {//鱼机、牌机
                 request('/Game/Robot/GetParaRoom', { GameId: GameId, RoomId: RoomSel }, function (data) {

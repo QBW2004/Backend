@@ -48,68 +48,8 @@ namespace YYT.Web.Areas.Game.Controllers
             return Json(list);
         }
 
-        /// <summary>
-        /// 押分类房间参数
-        /// </summary>
-        /// <param name="form"></param>
-        /// <returns></returns>
-        [AjaxOnly]
-        [HttpPost]
-        public ActionResult GetParabetRoom(FormCollection form)
-        {
-            M_ParaBetRoom user = new M_ParaBetRoom();
-            try
-            {
-                int GameId = form.Q<int>("GameId");
-                int RoomId = form.Q<int>("RoomId");
-
-                M_Games entity = new M_Games();
-                entity.Enable = 1;
-                string num = "";
-                if (GameId > 0)
-                    num = GameId.ToString();
-                if (RoomId > -1)
-                    num = GameId.ToString()+ RoomId.ToString().PadLeft(3,'0');
-          
-                user = new B_BetGamePara().GetSingle(new M_ParaBetRoom { ID = Convert.ToInt32(num) });
-               
-            }
-            catch (Exception ex)
-            {
-                LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.UserRobotController), ex);
-            }
-            return Json(user);
-        }
-
-        /// <summary>
-        /// 牌机/鱼机类房间参数
-        /// </summary>
-        /// <param name="form"></param>
-        /// <returns></returns>
-        [AjaxOnly]
-        [HttpPost]
-        public ActionResult GetParaRoom(FormCollection form)
-        {
-            M_ParaRoom user = new M_ParaRoom();
-            try
-            {
-                int GameId = form.Q<int>("GameId");
-                int RoomId = form.Q<int>("RoomId");
-                string num = "";
-                if (GameId > -1)
-                    num = GameId.ToString();
-                if (RoomId > -1)
-                    num = GameId.ToString() + RoomId.ToString().PadLeft(3, '0');
-
-                user = new B_CardGamePara().GetSingle(new M_ParaRoom { ID = Convert.ToInt32(num) });
-
-            }
-            catch (Exception ex)
-            {
-                LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.UserRobotController), ex);
-            }
-            return Json(user);
-        }
+        // GetParabetRoom / GetParaRoom 已删除：全 Backend 无调用方，为冗余死代码。
+        // 押注类房间参数查询统一走 RobotController.GetParabetRoom(一房N桌模型)。
 
         [MemberAuthorize]
         [AjaxOnly]

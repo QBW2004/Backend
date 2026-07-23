@@ -65,23 +65,25 @@ namespace YYT.Web.Areas.Game.Controllers
                     List<object> rows = new List<object>();
                     if (gameType == 0)
                     {
-                        List<M_ParaBetRoom> betRooms = ef.ParaBetRooms
-                            .Where(c => c.GAME_ID == gameId)
-                            .OrderBy(c => c.ID)
-                            .ToList();
+                        // 一房N桌模型：桌台列表以 roomtableconfig 为准(按桌存)，
+                        // 专有参数(押注时长/庄闲和限红/投注档位/EX_COIN/Game_Mo 等)从 parabetroom base 行取(所有桌共享)，
+                        // 难度从 parabet 按 ID=gameId*1000+TableIndex 关联，赔率从 cardpayoutprofile 按 TableId 关联。
+                        M_ParaBetRoom baseRoom = ef.ParaBetRooms.FirstOrDefault(c => c.GAME_ID == gameId);
                         List<M_ParaBet> bets = ef.ParaBets
                             .Where(c => c.GAME_ID == gameId)
                             .ToList();
-                        // 押注赔率(复用 cardpayoutprofile)：HandType=门索引，
-                        // PayoutMultiplier=倍率x10，ProbabilityBasis=出现率(万分比)
                         List<CardPayoutRowDto> betPayoutRows = ef.Database.SqlQuery<CardPayoutRowDto>(
                             "SELECT TableId, HandType, PayoutMultiplier, ProbabilityBasis, Enabled FROM cardpayoutprofile WHERE GAME_ID={0}", gameId).ToList();
+                        // 按桌读取 roomtableconfig（桌名/启用/限红/MaxSeats/IdleFire 等桌级参数）
+                        var cfgRows = ef.Database.SqlQuery<BetTableCfgRow>(
+                            "SELECT TableIndex, TableName, Enabled, BetMin, BetMax, CoinsNeed, OneCoinScore, MaxSeats, IdleFireTimeoutSec, IdleFireKickEnabled FROM roomtableconfig WHERE GAME_ID={0} ORDER BY TableIndex", gameId).ToList();
                         int bidx = 0;
-                        foreach (M_ParaBetRoom r in betRooms)
+                        foreach (BetTableCfgRow cfg in cfgRows)
                         {
                             bidx++;
-                            M_ParaBet m = bets.FirstOrDefault(c => c.ID == r.ID);
-                            int btIdx = r.ID % 1000;
+                            int btIdx = cfg.TableIndex;
+                            int tableIdFull = gameId * 1000 + btIdx;
+                            M_ParaBet m = bets.FirstOrDefault(c => c.ID == tableIdFull);
                             List<CardPayoutRowDto> bpr = betPayoutRows.Where(c => c.TableId == btIdx).ToList();
                             Dictionary<string, int> betPayout = new Dictionary<string, int>();
                             foreach (CardPayoutRowDto p in bpr)
@@ -91,28 +93,28 @@ namespace YYT.Web.Areas.Game.Controllers
                             }
                             rows.Add(new
                             {
-                                id = r.ID,
-                                num = r.NUM,
-                                tableName = string.IsNullOrWhiteSpace(r.TableName) ? ("桌台" + bidx) : r.TableName,
-                                minBet = r.BET_MIN,
-                                maxBet = r.BET_MAX,
-                                exCoin = r.EX_COIN,
-                                coinSc = r.COIN_SC,
-                                coinNeed = r.COIN_NEED,
-                                gameMo = r.Game_Mo,
-                                maxSeats = r.MaxSeats <= 0 ? 6 : r.MaxSeats,
-                                idleFireTimeoutSec = r.IdleFireTimeoutSec,
-                                idleFireKickEnabled = r.IdleFireKickEnabled ? 1 : 0,
-                                enabled = r.Enabled ? 1 : 0,
-                                betTime = r.BET_TIME,
-                                betMinVice = r.BET_MIN_VICE,
-                                betMaxVice = r.BET_MAX_VICE,
-                                betMinDraw = r.BET_MIN_DRAW,
-                                betMaxDraw = r.BET_MAX_DRAW,
-                                bankerScNeed = r.BANKER_SC_NEED,
-                                scLimitSing = r.SC_LIMIT_SING,
-                                scLimitAll = r.SC_LIMIT_ALL,
-                                betScores = r.BetScores ?? string.Empty,
+                                id = tableIdFull,
+                                num = baseRoom == null ? 1 : baseRoom.NUM,
+                                tableName = string.IsNullOrWhiteSpace(cfg.TableName) ? ("桌台" + bidx) : cfg.TableName,
+                                minBet = cfg.BetMin,
+                                maxBet = cfg.BetMax,
+                                exCoin = baseRoom == null ? 10000 : baseRoom.EX_COIN,
+                                coinSc = cfg.OneCoinScore,
+                                coinNeed = cfg.CoinsNeed,
+                                gameMo = baseRoom == null ? 100 : baseRoom.Game_Mo,
+                                maxSeats = cfg.MaxSeats <= 0 ? 6 : cfg.MaxSeats,
+                                idleFireTimeoutSec = cfg.IdleFireTimeoutSec,
+                                idleFireKickEnabled = cfg.IdleFireKickEnabled,
+                                enabled = cfg.Enabled,
+                                betTime = baseRoom == null ? 10 : baseRoom.BET_TIME,
+                                betMinVice = baseRoom == null ? 0 : baseRoom.BET_MIN_VICE,
+                                betMaxVice = baseRoom == null ? 0 : baseRoom.BET_MAX_VICE,
+                                betMinDraw = baseRoom == null ? 0 : baseRoom.BET_MIN_DRAW,
+                                betMaxDraw = baseRoom == null ? 0 : baseRoom.BET_MAX_DRAW,
+                                bankerScNeed = baseRoom == null ? 0 : baseRoom.BANKER_SC_NEED,
+                                scLimitSing = baseRoom == null ? 0 : baseRoom.SC_LIMIT_SING,
+                                scLimitAll = baseRoom == null ? 0 : baseRoom.SC_LIMIT_ALL,
+                                betScores = baseRoom == null ? string.Empty : (baseRoom.BetScores ?? string.Empty),
                                 dif = m == null ? 0 : m.DIF,
                                 har = m == null ? 0 : m.HAR,
                                 siteType = m == null ? 0 : m.SITE_TYPE,
@@ -191,6 +193,11 @@ namespace YYT.Web.Areas.Game.Controllers
                             "SELECT CoinsNeed FROM roomtableconfig WHERE GAME_ID=" + gameId + " ORDER BY TableIndex").ToList();
                         var cfgEnableds = ef.Database.SqlQuery<int>(
                             "SELECT Enabled FROM roomtableconfig WHERE GAME_ID=" + gameId + " ORDER BY TableIndex").ToList();
+                        // 鱼机难度：从 parafish 按 TableIndex 升序读取 DIF/SITE_TYPE，供前端回显真实值。
+                        var cfgFishDifs = ef.Database.SqlQuery<int>(
+                            "SELECT DIF FROM parafish WHERE GAME_ID=" + gameId + " ORDER BY TableIndex").ToList();
+                        var cfgFishSites = ef.Database.SqlQuery<int>(
+                            "SELECT SITE_TYPE FROM parafish WHERE GAME_ID=" + gameId + " ORDER BY TableIndex").ToList();
                         for (int i = 0; i < cfgNames.Count; i++)
                         {
                             rows.Add(new
@@ -208,8 +215,8 @@ namespace YYT.Web.Areas.Game.Controllers
                                 idleFireTimeoutSec = 0,
                                 idleFireKickEnabled = 1,
                                 enabled = i < cfgEnableds.Count ? cfgEnableds[i] : 1,
-                                fishDif = 0,
-                                fishSiteType = 0
+                                fishDif = i < cfgFishDifs.Count ? cfgFishDifs[i] : 0,
+                                fishSiteType = i < cfgFishSites.Count ? cfgFishSites[i] : 0
                             });
                         }
                     }
@@ -313,40 +320,77 @@ namespace YYT.Web.Areas.Game.Controllers
                 }
 
                 string roomTbl, machTbl;
-                if (gameType == 0) { roomTbl = "ParaBetRoom"; machTbl = "ParaBet"; }
-                else if (gameType == 1) { roomTbl = "ParaRoom"; machTbl = "ParaCard"; }
+                // 押注类(gameType==0)与鱼机(gameType==2)已在上方 early return 处理；
+                // 此处仅牌机(gameType==1)走通用 RepackRoomsAfterDelete 路径。
+                if (gameType == 1) { roomTbl = "ParaRoom"; machTbl = "ParaCard"; }
 			else if (gameType == 3)
 			{
 				msg = new B_LabaGamePara().DeleteTable(tableId, tableId / 1000);
 				return Json(msg);
 			}
 
-			else if (gameType == 2)
+					else if (gameType == 2)
 
-			{
+					{
 
-				int fishGid = tableId / 1000;
+						int fishGid = tableId / 1000;
+						int delTableIdx = tableId % 1000;
 
-				using (var ef2 = new GameDbContext())
+						using (var ef2 = new GameDbContext())
 
-				{
+						{
 
-					ef2.Database.ExecuteSqlCommand("DELETE FROM roomtableconfig WHERE GAME_ID=" + fishGid + " AND TableIndex=" + (tableId % 1000));
-					// 删后把剩余 TableIndex 压实成 0..k-1，保持与游戏服桌号连续对齐
-					CompactFishTableIndexes(ef2, fishGid);
-					SyncFishTableNum(ef2, fishGid);
+							ef2.Database.ExecuteSqlCommand("DELETE FROM roomtableconfig WHERE GAME_ID=" + fishGid + " AND TableIndex=" + delTableIdx);
+							// 同步删除 parafish 对应行（按桌维度难度），避免留孤儿行。
+							ef2.Database.ExecuteSqlCommand("DELETE FROM parafish WHERE GAME_ID=" + fishGid + " AND TableIndex=" + delTableIdx);
+							// 删后把剩余 TableIndex 压实成 0..k-1，保持与游戏服桌号连续对齐
+							CompactFishTableIndexes(ef2, fishGid);
+							// parafish 同步压实：把剩余行重排为连续 ID(gameId*1000+0..k-1) 与 TableIndex(0..k-1)，
+							// 与 roomtableconfig 保持同构，否则中心服 GetFishPara 按 ID=gameId*1000+i 读会错位。
+							CompactFishParaFishIds(ef2, fishGid);
+							SyncFishTableNum(ef2, fishGid);
 
-				}
+						}
 
-				var srv = new SConnect();
-				Msg rp = srv.SendReadString(EScMsgType.RP, fishGid);
-				msg.code = 1;
-				msg.content = (rp != null && rp.code == 1)
-					? "删除成功，服务端已即时热更新！"
-					: "删除成功，但服务端热更新失败：" + (rp == null ? "服务端无响应" : rp.content);
-				return Json(msg);
+						var srv = new SConnect();
+						Msg rp = srv.SendReadString(EScMsgType.RP, fishGid);
+						msg.code = 1;
+						msg.content = (rp != null && rp.code == 1)
+							? "删除成功，服务端已即时热更新！"
+							: "删除成功，但服务端热更新失败：" + (rp == null ? "服务端无响应" : rp.content);
+						return Json(msg);
 
-			}
+					}
+
+					else if (gameType == 0)
+					{
+						// 押注类一房N桌删除：按桌删 roomtableconfig/parabet/cardpayoutprofile，
+						// 压实剩余桌台索引为 0..k-1，同步 base 行 NUM。
+						int betGid = tableId / 1000;
+						int delIdx = tableId % 1000;
+						using (var efBet = new GameDbContext())
+						{
+							efBet.Database.ExecuteSqlCommand("DELETE FROM roomtableconfig WHERE GAME_ID=" + betGid + " AND TableIndex=" + delIdx);
+							efBet.Database.ExecuteSqlCommand("DELETE FROM parabet WHERE GAME_ID=" + betGid + " AND ID=" + (betGid * 1000 + delIdx));
+							efBet.Database.ExecuteSqlCommand("DELETE FROM cardpayoutprofile WHERE GAME_ID=" + betGid + " AND TableId=" + delIdx);
+							// 压实 roomtableconfig.TableIndex 为 0..k-1
+							CompactFishTableIndexes(efBet, betGid);
+							// 压实 parabet ID 为 gameId*1000+0..k-1，与 roomtableconfig 保持同构
+							CompactBetParaIds(efBet, betGid);
+							// 压实 cardpayoutprofile.TableId 高位左移
+							efBet.Database.ExecuteSqlCommand(
+								"UPDATE cardpayoutprofile SET TableId=TableId-1 WHERE GAME_ID=" + betGid + " AND TableId>" + delIdx);
+							// 同步 base 行 NUM = 剩余桌台数
+							SyncBetTableNum(efBet, betGid);
+						}
+						var srvBet = new SConnect();
+						Msg rpBet = srvBet.SendReadString(EScMsgType.RP, betGid);
+						msg.code = 1;
+						msg.content = (rpBet != null && rpBet.code == 1)
+							? "删除成功，服务端已即时热更新！"
+							: "删除成功，但服务端热更新失败：" + (rpBet == null ? "服务端无响应" : rpBet.content);
+						return Json(msg);
+					}
 
                 else
                 {
@@ -381,16 +425,6 @@ namespace YYT.Web.Areas.Game.Controllers
                             //    paragame.ROOM_MAX。否则服务端会按 ROOM_MAX 把缺失的低位房间自动补建，
                             //    导致已删除的“桌台N”反复复活。
                             RepackRoomsAfterDelete(ef, roomTbl, machTbl, gameId);
-
-                            // 押分：按重排后的剩余桌台重建 roomtableconfig（清掉已删桌残留，索引与新桌台 ID 对齐）。
-                            if (gameType == 0)
-                            {
-                                ef.Database.ExecuteSqlCommand("DELETE FROM roomtableconfig WHERE GAME_ID={0}", gameId);
-                                ef.Database.ExecuteSqlCommand(
-                                    "INSERT INTO roomtableconfig (GAME_ID, RoomIndex, TableIndex, TableName, Enabled, OneCoinScore, BetMin, BetMax, CoinsNeed, IdleFireTimeoutSec, IdleFireKickEnabled, MaxSeats) " +
-                                    "SELECT GAME_ID, 0, ID - {1}, IFNULL(TableName,''), Enabled+0, IFNULL(COIN_SC,0), IFNULL(BET_MIN,0), IFNULL(BET_MAX,0), IFNULL(COIN_NEED,0), IdleFireTimeoutSec, IdleFireKickEnabled+0, MaxSeats " +
-                                    "FROM ParaBetRoom WHERE GAME_ID={0}", gameId, gameId * 1000);
-                            }
 
                             // 牌机：同步牌型赔付配置的机台号（删除该桌行 + 高位机台号左移，与房间重排保持一致）。
                             if (gameType == 1)
@@ -616,11 +650,12 @@ namespace YYT.Web.Areas.Game.Controllers
 
                 if (gameType == 0)
                 {
-                    // 押注玩法旧字段已从页面移除：保存时沿用库内原值，不被表单缺省值清零
+                    // 押注玩法旧字段已从页面移除：保存时沿用库内原值，不被表单缺省值清零。
+                    // 一房N桌模型：专有参数存 base 行(ID=gameId*1000)，所有桌共享，故从 base 行取旧值。
                     M_ParaBetRoom oldRoom = null;
                     using (var efOld = new GameDbContext())
                     {
-                        oldRoom = efOld.ParaBetRooms.FirstOrDefault(c => c.ID == tableId);
+                        oldRoom = efOld.ParaBetRooms.FirstOrDefault(c => c.ID == gameId * 1000);
                     }
 
                     M_ParaBetRoom room = new M_ParaBetRoom();
@@ -789,6 +824,10 @@ namespace YYT.Web.Areas.Game.Controllers
                     int idleSec = form.Q<int>("IdleFireTimeoutSec", 0);
                     int tblIdleKick = form.Q<int>("IdleFireKickEnabled", 1);
                     int tblMaxSeats = form.Q<int>("MaxSeats", 6);
+                    // 鱼机难度（机台设定）：0-9级（满放水~大吃分）；HAR 复用 DIF 值；场地类型 0-3。
+                    int fishDif = form.Q<int>("FishDIF", 6);
+                    int fishSiteType = form.Q<int>("FishSITE_TYPE", 1);
+                    int tableIdFull = gameId * 1000 + tIdx;
                     using (var ef = new GameDbContext())
                     {
                         ef.Database.ExecuteSqlCommand(
@@ -803,6 +842,13 @@ namespace YYT.Web.Areas.Game.Controllers
                         ef.Database.ExecuteSqlCommand(
                             "INSERT INTO roomtableconfig (GAME_ID, RoomIndex, TableIndex, TableName, Enabled, OneCoinScore, BetMin, BetMax, CoinsNeed, IdleFireTimeoutSec, IdleFireKickEnabled, MaxSeats) VALUES (" +
                             gameId + ",0," + tIdx + ",'" + tName.Replace("'", "''") + "'," + tblEnabled + "," + coinSc + "," + rtBetMinSave + "," + rtBetMaxSave + "," + coinNeed + "," + idleSec + "," + tblIdleKick + "," + tblMaxSeats + ")");
+                        // 同步写 parafish（按桌维度难度）：DIF/HAR/SITE_TYPE 落库，供中心服 GetFishPara 读取后下发 tablePara 块。
+                        // HAR 复用 DIF（鱼机历史数据 HAR 基本等于 DIF，前端仅暴露 FishDIF 一个控件）。
+                        ef.Database.ExecuteSqlCommand(
+                            "DELETE FROM parafish WHERE ID=" + tableIdFull);
+                        ef.Database.ExecuteSqlCommand(
+                            "INSERT INTO parafish (ID,GAME_ID,TableIndex,TableName,DIF,HAR,SITE_TYPE) VALUES (" +
+                            tableIdFull + "," + gameId + "," + tIdx + ",'" + tName.Replace("'", "''") + "'," + fishDif + "," + fishDif + "," + fishSiteType + ")");
                         if (IsDecimalBetFish(gameId))
                         {
                             try
@@ -824,9 +870,24 @@ namespace YYT.Web.Areas.Game.Controllers
                     {
                         var srvTc = new SConnect();
                         srvTc.SendTcCommand((ushort)gameId, 0, (ushort)tIdx, tName, (byte)(tblEnabled != 0 ? 1 : 0), (uint)idleSec, (byte)(tblIdleKick != 0 ? 1 : 0), (ushort)tblMaxSeats);
+                        // 鱼机难度热更：PA + gameID(2位) + tableIndex(3位) + DIF + SITE_TYPE。
+                        // 中心服 PA 分支调 SetTablePara 下发 COM_TABLE_SET 给子游戏实时生效（AlgPlayerReset_DIF），
+                        // 同时 SetTablePara 鱼机分支会调 UpsertFishTablePara 落库，保证 RP 全量重载与重启后一致。
+                        try
+                        {
+                            var srvPa = new SConnect();
+                            srvPa.SendReadString(EScMsgType.PA,
+                                gameId.ToString().PadLeft(2, '0'),
+                                tIdx.ToString().PadLeft(3, '0'),
+                                fishDif, fishSiteType);
+                        }
+                        catch (Exception exPa)
+                        {
+                            LogHelper.WriteLog(typeof(GameConfigController), exPa);
+                        }
                     }
                     // 回显本次落库的按桌关键值，便于核对表单提交与库中数据是否一致
-                    msg.content = (msg.content ?? "") + " [桌" + tIdx + " 已写入: CoinsNeed=" + coinNeed + ", BetMin=" + betMin + ", BetMax=" + betMax + ", CoinSc=" + coinSc + "]";
+                    msg.content = (msg.content ?? "") + " [桌" + tIdx + " 已写入: CoinsNeed=" + coinNeed + ", BetMin=" + betMin + ", BetMax=" + betMax + ", CoinSc=" + coinSc + ", FishDif=" + fishDif + ", FishSite=" + fishSiteType + "]";
                 }
 
                 // ROOM_MAX 同步已下沉到 B_SuperPara.PushHotUpdate 内(在发 RP 之前执行)，
@@ -982,6 +1043,42 @@ namespace YYT.Web.Areas.Game.Controllers
             }
         }
 
+        /// <summary>
+        /// 删除鱼机桌台后，把 parafish 剩余行重排为连续 ID(gameId*1000+0..k-1) 与 TableIndex(0..k-1)，
+        /// 与 roomtableconfig(经 CompactFishTableIndexes 压实后) 保持同构。
+        /// 否则中心服 GetFishPara 按 ID=gameId*1000+i 逐桌读 parafish 会与 roomtableconfig 错位。
+        /// 采用“负数临时 id”两段式重排，彻底避免主键碰撞（与 RepackRoomsAfterDelete 同思路）。
+        /// </summary>
+        private static void CompactFishParaFishIds(GameDbContext ef, int gameId)
+        {
+            try
+            {
+                int baseId = gameId * 1000;
+                // 按 TableIndex 升序取剩余行（删除后剩余的，TableIndex 可能已不连续）
+                var ids = ef.Database.SqlQuery<int>(
+                    "SELECT ID FROM parafish WHERE GAME_ID=" + gameId + " ORDER BY TableIndex, ID").ToList();
+                int k = ids.Count;
+                // 第一段：移到唯一负数临时 id，腾空正数目标区间
+                for (int i = 0; i < k; i++)
+                {
+                    int tmp = -(baseId + i + 1);
+                    ef.Database.ExecuteSqlCommand("UPDATE parafish SET ID={0} WHERE ID={1}", tmp, ids[i]);
+                }
+                // 第二段：回填为连续正数 id，同步 TableIndex
+                for (int i = 0; i < k; i++)
+                {
+                    int tmp = -(baseId + i + 1);
+                    int dst = baseId + i;
+                    ef.Database.ExecuteSqlCommand(
+                        "UPDATE parafish SET ID={0}, TableIndex={1} WHERE ID={2}", dst, i, tmp);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(GameConfigController), ex);
+            }
+        }
+
         private static void SyncFishTableNum(GameDbContext ef, int gameId)
         {
             try
@@ -991,6 +1088,66 @@ namespace YYT.Web.Areas.Game.Controllers
                 if (cfgCount <= 0) return;
                 ef.Database.ExecuteSqlCommand(
                     "UPDATE ParaRoom SET NUM=" + cfgCount + " WHERE GAME_ID=" + gameId + " AND ID=" + (gameId * 1000));
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(GameConfigController), ex);
+            }
+        }
+
+        /// <summary>
+        /// 删除押注类桌台后，把 parabet 剩余行重排为连续 ID(gameId*1000+0..k-1)，
+        /// 与 roomtableconfig(经 CompactFishTableIndexes 压实后) 保持同构。
+        /// 否则中心服 GetBetPara 按 ID=gameId*1000+i 逐桌读 parabet 会与 roomtableconfig 错位。
+        /// 采用"负数临时 id"两段式重排，彻底避免主键碰撞（与 CompactFishParaFishIds 同思路）。
+        /// </summary>
+        private static void CompactBetParaIds(GameDbContext ef, int gameId)
+        {
+            try
+            {
+                int baseId = gameId * 1000;
+                // 按 ID 升序取剩余行（删除后剩余的，ID 可能已不连续）
+                var ids = ef.Database.SqlQuery<int>(
+                    "SELECT ID FROM parabet WHERE GAME_ID=" + gameId + " ORDER BY ID").ToList();
+                int k = ids.Count;
+                // 第一段：移到唯一负数临时 id，腾空正数目标区间
+                for (int i = 0; i < k; i++)
+                {
+                    int tmp = -(baseId + i + 1);
+                    ef.Database.ExecuteSqlCommand("UPDATE parabet SET ID={0} WHERE ID={1}", tmp, ids[i]);
+                }
+                // 第二段：回填为连续正数 id
+                for (int i = 0; i < k; i++)
+                {
+                    int tmp = -(baseId + i + 1);
+                    int dst = baseId + i;
+                    ef.Database.ExecuteSqlCommand(
+                        "UPDATE parabet SET ID={0} WHERE ID={1}", dst, tmp);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(GameConfigController), ex);
+            }
+        }
+
+        /// <summary>
+        /// 同步押注类 parabetroom base 行 NUM = roomtableconfig 条数(桌台数)。
+        /// 一房N桌模型下，服务端 GetBetPara 读 1 个房间、tableMax=NUM、按 N 桌循环读 parabet。
+        /// </summary>
+        private static void SyncBetTableNum(GameDbContext ef, int gameId)
+        {
+            try
+            {
+                int cfgCount = ef.Database.SqlQuery<int>(
+                    "SELECT COUNT(*) FROM roomtableconfig WHERE GAME_ID=" + gameId).FirstOrDefault();
+                if (cfgCount <= 0) cfgCount = 0;
+                ef.Database.ExecuteSqlCommand(
+                    "UPDATE ParaBetRoom SET NUM=" + cfgCount + " WHERE GAME_ID=" + gameId + " AND ID=" + (gameId * 1000));
+                // ROOM_MAX 恒为 1（一房N桌）
+                int affected = ef.Database.ExecuteSqlCommand("UPDATE ParaGame SET ROOM_MAX=1 WHERE ID=" + gameId);
+                if (affected == 0)
+                    ef.Database.ExecuteSqlCommand("INSERT INTO ParaGame(ID,ROOM_MAX,PLY_MAX) VALUES(" + gameId + ",1,1000)");
             }
             catch (Exception ex)
             {
@@ -1032,8 +1189,11 @@ namespace YYT.Web.Areas.Game.Controllers
 			List<int> ids;
 
 			if (gameType == 0)
-
-				ids = ef.ParaBetRooms.Where(c => c.GAME_ID == gameId).Select(c => c.ID).ToList();
+			{
+				// 一房N桌：押注类桌台索引从 roomtableconfig 取 MAX(TableIndex)+1，与鱼机同思路
+				var betMax = ef.Database.SqlQuery<int?>("SELECT MAX(TableIndex) FROM roomtableconfig WHERE GAME_ID=" + gameId).FirstOrDefault() ?? -1;
+				return baseId + betMax + 1;
+			}
 
 			else
 
@@ -1072,6 +1232,21 @@ namespace YYT.Web.Areas.Game.Controllers
             public int PayoutMultiplier { get; set; }
             public int ProbabilityBasis { get; set; }
             public int Enabled { get; set; }
+        }
+
+        // roomtableconfig 押注类桌台行映射（原生 SQL 查询用）
+        public class BetTableCfgRow
+        {
+            public int TableIndex { get; set; }
+            public string TableName { get; set; }
+            public int Enabled { get; set; }
+            public int BetMin { get; set; }
+            public int BetMax { get; set; }
+            public int CoinsNeed { get; set; }
+            public int OneCoinScore { get; set; }
+            public int MaxSeats { get; set; }
+            public int IdleFireTimeoutSec { get; set; }
+            public int IdleFireKickEnabled { get; set; }
         }
 
 }

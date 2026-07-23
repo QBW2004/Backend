@@ -11,7 +11,7 @@ namespace YYT.Entity
     public class M_ParaFish
     {
         /// <summary>
-        /// 游戏房间编号
+        /// 桌台编号（gameId*1000 + tableIndex，与 roomtableconfig 同编码）
         /// </summary>
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.None)]
@@ -20,6 +20,14 @@ namespace YYT.Entity
         /// 游戏编号
         /// </summary>
         public int GAME_ID { get; set; }
+        /// <summary>
+        /// 桌号（0-based，对齐 roomtableconfig.TableIndex）
+        /// </summary>
+        public int TableIndex { get; set; }
+        /// <summary>
+        /// 桌名（冗余，便于后台查询，与 roomtableconfig.TableName 同步）
+        /// </summary>
+        public string TableName { get; set; }
         /// <summary>
         /// 鱼机难度
         /// </summary>
