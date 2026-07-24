@@ -11,7 +11,7 @@
  Target Server Version : 50744
  File Encoding         : 65001
 
- Date: 23/07/2026 16:51:10
+ Date: 24/07/2026 10:34:15
 */
 
 SET NAMES utf8mb4;
@@ -119,7 +119,7 @@ CREATE TABLE `agencyoptlog`  (
   `AFT_COINS` bigint(20) NOT NULL DEFAULT 0 COMMENT '操作后金币量',
   `WEEK` tinyint(4) NOT NULL DEFAULT 0 COMMENT '周数',
   PRIMARY KEY (`LID`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 457 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '代理日志表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 467 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '代理日志表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of agencyoptlog
@@ -323,6 +323,16 @@ INSERT INTO `agencyoptlog` VALUES (453, 'atmadmin', '超级管理', 'atmadmin', 
 INSERT INTO `agencyoptlog` VALUES (454, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-23 16:05:25', 2, 0, 0, 0, 30);
 INSERT INTO `agencyoptlog` VALUES (455, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-23 16:47:49', 2, 0, 0, 0, 30);
 INSERT INTO `agencyoptlog` VALUES (456, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-23 16:49:33', 2, 0, 0, 0, 30);
+INSERT INTO `agencyoptlog` VALUES (457, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-23 17:48:49', 2, 0, 0, 0, 30);
+INSERT INTO `agencyoptlog` VALUES (458, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-23 18:19:07', 2, 0, 0, 0, 30);
+INSERT INTO `agencyoptlog` VALUES (459, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-23 18:39:50', 2, 0, 0, 0, 30);
+INSERT INTO `agencyoptlog` VALUES (460, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-23 18:53:24', 2, 0, 0, 0, 30);
+INSERT INTO `agencyoptlog` VALUES (461, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-23 19:00:18', 2, 0, 0, 0, 30);
+INSERT INTO `agencyoptlog` VALUES (462, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-23 19:02:38', 2, 0, 0, 0, 30);
+INSERT INTO `agencyoptlog` VALUES (463, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-23 19:02:40', 2, 0, 0, 0, 30);
+INSERT INTO `agencyoptlog` VALUES (464, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-24 09:43:46', 2, 0, 0, 0, 30);
+INSERT INTO `agencyoptlog` VALUES (465, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-24 10:01:29', 2, 0, 0, 0, 30);
+INSERT INTO `agencyoptlog` VALUES (466, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-24 10:10:08', 2, 0, 0, 0, 30);
 
 -- ----------------------------
 -- Table structure for agent_hierarchy
@@ -401,50 +411,11 @@ CREATE TABLE `cardpayoutprofile`  (
   `Enabled` int(11) NOT NULL DEFAULT 1 COMMENT '是否启用此牌型',
   PRIMARY KEY (`ID`) USING BTREE,
   INDEX `idx_game_table_hand`(`GAME_ID`, `TableId`, `HandType`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 672 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '牌机出货与库存配置表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 846 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '牌机出货与库存配置表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of cardpayoutprofile
 -- ----------------------------
-INSERT INTO `cardpayoutprofile` VALUES (565, 2, 0, 0, 38, 0, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (566, 2, 0, 1, 38, 0, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (567, 2, 0, 2, 40, 0, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (568, 2, 0, 3, 40, 0, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (569, 2, 0, 4, 200, 0, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (570, 2, 1, 0, 38, 0, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (571, 2, 1, 1, 38, 0, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (572, 2, 1, 2, 40, 0, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (573, 2, 1, 3, 40, 0, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (574, 2, 1, 4, 200, 0, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (575, 2, 2, 0, 38, 500, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (576, 2, 2, 1, 38, 500, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (577, 2, 2, 2, 40, 500, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (578, 2, 2, 3, 40, 500, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (579, 2, 2, 4, 200, 500, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (580, 10, 0, 0, 0, 0, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (581, 10, 0, 1, 0, 0, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (582, 10, 0, 2, 0, 0, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (583, 10, 0, 3, 0, 0, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (584, 10, 0, 4, 0, 0, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (585, 10, 0, 5, 0, 0, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (586, 10, 0, 6, 0, 0, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (587, 10, 0, 7, 0, 0, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (588, 10, 0, 8, 0, 0, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (589, 10, 0, 9, 0, 0, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (590, 10, 0, 10, 0, 0, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (591, 10, 0, 11, 0, 0, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (592, 10, 1, 0, 20, 5000, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (593, 10, 1, 1, 20, 50, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (594, 10, 1, 2, 20, 50, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (595, 10, 1, 3, 20, 50, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (596, 10, 1, 4, 20, 50, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (597, 10, 1, 5, 20, 50, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (598, 10, 1, 6, 50, 50, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (599, 10, 1, 7, 80, 50, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (600, 10, 1, 8, 100, 50, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (601, 10, 1, 9, 100, 20, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (602, 10, 1, 10, 100, 20, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (603, 10, 1, 11, 500, 20, 0, 0, 1);
 INSERT INTO `cardpayoutprofile` VALUES (604, 10, 2, 0, 0, 0, 0, 0, 1);
 INSERT INTO `cardpayoutprofile` VALUES (605, 10, 2, 1, 0, 0, 0, 0, 1);
 INSERT INTO `cardpayoutprofile` VALUES (606, 10, 2, 2, 0, 0, 0, 0, 1);
@@ -457,14 +428,6 @@ INSERT INTO `cardpayoutprofile` VALUES (612, 10, 2, 8, 0, 0, 0, 0, 1);
 INSERT INTO `cardpayoutprofile` VALUES (613, 10, 2, 9, 0, 0, 0, 0, 1);
 INSERT INTO `cardpayoutprofile` VALUES (614, 10, 2, 10, 0, 0, 0, 0, 1);
 INSERT INTO `cardpayoutprofile` VALUES (615, 10, 2, 11, 0, 0, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (616, 29, 0, 0, 30, 5000, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (617, 29, 0, 1, 60, 1000, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (618, 29, 0, 2, 120, 200, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (619, 29, 0, 3, 240, 300, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (620, 29, 0, 4, 480, 10, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (621, 29, 0, 5, 100, 10, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (622, 29, 0, 6, 60, 10, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (623, 29, 0, 7, 40, 0, 0, 0, 1);
 INSERT INTO `cardpayoutprofile` VALUES (624, 29, 1, 0, 30, 0, 0, 0, 1);
 INSERT INTO `cardpayoutprofile` VALUES (625, 29, 1, 1, 60, 0, 0, 0, 1);
 INSERT INTO `cardpayoutprofile` VALUES (626, 29, 1, 2, 120, 0, 0, 0, 1);
@@ -481,14 +444,6 @@ INSERT INTO `cardpayoutprofile` VALUES (636, 29, 2, 4, 480, 0, 0, 0, 1);
 INSERT INTO `cardpayoutprofile` VALUES (637, 29, 2, 5, 100, 0, 0, 0, 1);
 INSERT INTO `cardpayoutprofile` VALUES (638, 29, 2, 6, 60, 0, 0, 0, 1);
 INSERT INTO `cardpayoutprofile` VALUES (639, 29, 2, 7, 40, 0, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (640, 47, 0, 0, 30, 0, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (641, 47, 0, 1, 60, 0, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (642, 47, 0, 2, 120, 0, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (643, 47, 0, 3, 240, 0, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (644, 47, 0, 4, 480, 0, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (645, 47, 0, 5, 100, 0, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (646, 47, 0, 6, 60, 0, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (647, 47, 0, 7, 40, 0, 0, 0, 1);
 INSERT INTO `cardpayoutprofile` VALUES (656, 47, 2, 0, 30, 0, 0, 0, 1);
 INSERT INTO `cardpayoutprofile` VALUES (657, 47, 2, 1, 60, 0, 0, 0, 1);
 INSERT INTO `cardpayoutprofile` VALUES (658, 47, 2, 2, 120, 0, 0, 0, 1);
@@ -505,6 +460,131 @@ INSERT INTO `cardpayoutprofile` VALUES (668, 47, 1, 4, 480, 100, 0, 0, 1);
 INSERT INTO `cardpayoutprofile` VALUES (669, 47, 1, 5, 100, 100, 0, 0, 1);
 INSERT INTO `cardpayoutprofile` VALUES (670, 47, 1, 6, 60, 10, 0, 0, 1);
 INSERT INTO `cardpayoutprofile` VALUES (671, 47, 1, 7, 40, 0, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (672, 37, 0, 0, 0, 6000, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (673, 37, 0, 1, 0, 2000, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (674, 37, 0, 2, 2, 1000, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (675, 37, 0, 3, 3, 500, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (676, 37, 0, 4, 5, 400, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (677, 37, 0, 5, 2, 60, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (678, 37, 0, 6, 15, 20, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (679, 37, 0, 7, 65, 10, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (680, 37, 0, 8, 65, 0, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (681, 37, 0, 9, 150, 5, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (682, 37, 0, 10, 500, 2, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (683, 37, 0, 11, 250, 4, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (684, 44, 0, 0, 0, 6000, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (685, 44, 0, 1, 0, 2000, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (686, 44, 0, 2, 2, 1000, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (687, 44, 0, 3, 3, 500, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (688, 44, 0, 4, 5, 400, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (689, 44, 0, 5, 2, 60, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (690, 44, 0, 6, 15, 20, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (691, 44, 0, 7, 65, 10, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (692, 44, 0, 8, 65, 0, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (693, 44, 0, 9, 150, 5, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (694, 44, 0, 10, 500, 2, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (695, 44, 0, 11, 250, 4, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (696, 5, 1, 0, 0, 6000, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (697, 5, 1, 1, 0, 2000, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (698, 5, 1, 2, 2, 1000, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (699, 5, 1, 3, 3, 500, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (700, 5, 1, 4, 5, 400, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (701, 5, 1, 5, 2, 60, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (702, 5, 1, 6, 15, 20, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (703, 5, 1, 7, 65, 10, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (704, 5, 1, 8, 65, 0, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (705, 5, 1, 9, 150, 5, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (706, 5, 1, 10, 500, 2, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (707, 5, 1, 11, 250, 4, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (723, 2, 2, 0, 38, 0, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (724, 2, 2, 1, 38, 0, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (725, 2, 2, 2, 40, 0, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (726, 2, 2, 3, 40, 0, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (727, 2, 2, 4, 200, 0, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (745, 2, 3, 0, 38, 0, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (746, 2, 3, 1, 38, 0, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (747, 2, 3, 2, 40, 0, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (748, 2, 3, 3, 40, 0, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (749, 2, 3, 4, 200, 0, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (755, 2, 1, 0, 38, 0, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (756, 2, 1, 1, 38, 0, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (757, 2, 1, 2, 40, 0, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (758, 2, 1, 3, 40, 0, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (759, 2, 1, 4, 200, 0, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (760, 2, 4, 0, 38, 500, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (761, 2, 4, 1, 38, 500, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (762, 2, 4, 2, 40, 500, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (763, 2, 4, 3, 40, 500, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (764, 2, 4, 4, 200, 50, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (765, 10, 3, 0, 26, 500, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (766, 10, 3, 1, 22, 200, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (767, 10, 3, 2, 29, 100, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (768, 10, 3, 3, 24, 100, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (769, 10, 3, 4, 33, 100, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (770, 10, 3, 5, 31, 100, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (771, 10, 3, 6, 27, 100, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (772, 10, 3, 7, 32, 10, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (773, 10, 3, 8, 17, 10, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (774, 10, 3, 9, 20, 10, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (775, 10, 3, 10, 19, 10, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (776, 10, 3, 11, 19, 10, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (789, 10, 4, 0, 0, 0, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (790, 10, 4, 1, 0, 0, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (791, 10, 4, 2, 0, 0, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (792, 10, 4, 3, 0, 0, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (793, 10, 4, 4, 0, 0, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (794, 10, 4, 5, 0, 0, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (795, 10, 4, 6, 0, 0, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (796, 10, 4, 7, 0, 0, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (797, 10, 4, 8, 0, 0, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (798, 10, 4, 9, 0, 0, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (799, 10, 4, 10, 0, 0, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (800, 10, 4, 11, 0, 0, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (801, 10, 1, 0, 20, 5000, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (802, 10, 1, 1, 20, 50, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (803, 10, 1, 2, 20, 50, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (804, 10, 1, 3, 20, 50, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (805, 10, 1, 4, 20, 50, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (806, 10, 1, 5, 20, 50, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (807, 10, 1, 6, 50, 50, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (808, 10, 1, 7, 80, 50, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (809, 10, 1, 8, 100, 50, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (810, 10, 1, 9, 100, 20, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (811, 10, 1, 10, 100, 20, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (812, 10, 1, 11, 500, 20, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (813, 2, 0, 0, 38, 20, 0, 0, 0);
+INSERT INTO `cardpayoutprofile` VALUES (814, 2, 0, 1, 38, 20, 0, 0, 0);
+INSERT INTO `cardpayoutprofile` VALUES (815, 2, 0, 2, 40, 20, 0, 0, 0);
+INSERT INTO `cardpayoutprofile` VALUES (816, 2, 0, 3, 40, 20, 0, 0, 0);
+INSERT INTO `cardpayoutprofile` VALUES (817, 2, 0, 4, 200, 20, 0, 0, 0);
+INSERT INTO `cardpayoutprofile` VALUES (818, 10, 0, 0, 200, 10, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (819, 10, 0, 1, 200, 10, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (820, 10, 0, 2, 200, 10, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (821, 10, 0, 3, 200, 10, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (822, 10, 0, 4, 200, 10, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (823, 10, 0, 5, 200, 10, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (824, 10, 0, 6, 200, 10, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (825, 10, 0, 7, 200, 10, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (826, 10, 0, 8, 200, 10, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (827, 10, 0, 9, 200, 10, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (828, 10, 0, 10, 200, 10, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (829, 10, 0, 11, 200, 10, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (830, 29, 0, 0, 30, 10, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (831, 29, 0, 1, 60, 10, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (832, 29, 0, 2, 120, 10, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (833, 29, 0, 3, 240, 10, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (834, 29, 0, 4, 480, 10, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (835, 29, 0, 5, 100, 10, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (836, 29, 0, 6, 60, 10, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (837, 29, 0, 7, 40, 10, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (838, 47, 0, 0, 30, 20, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (839, 47, 0, 1, 60, 20, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (840, 47, 0, 2, 120, 20, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (841, 47, 0, 3, 240, 22, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (842, 47, 0, 4, 480, 20, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (843, 47, 0, 5, 100, 20, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (844, 47, 0, 6, 60, 20, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (845, 47, 0, 7, 40, 20, 0, 0, 1);
 
 -- ----------------------------
 -- Table structure for cashierinfo
@@ -1034,7 +1114,7 @@ CREATE TABLE `loginmissrecord`  (
 -- ----------------------------
 -- Records of loginmissrecord
 -- ----------------------------
-INSERT INTO `loginmissrecord` VALUES (205, 'atmadmin', 1, 0, '::1', '2026-07-23 16:49:34');
+INSERT INTO `loginmissrecord` VALUES (205, 'atmadmin', 1, 0, '::1', '2026-07-24 10:10:08');
 INSERT INTO `loginmissrecord` VALUES (206, '12345', 1, 0, '112.49.240.88', '2023-08-14 15:13:08');
 INSERT INTO `loginmissrecord` VALUES (207, '00000', 1, 0, '106.6.150.32', '2023-08-14 14:47:59');
 INSERT INTO `loginmissrecord` VALUES (208, '11111', 0, 0, '106.6.150.32', '2023-08-14 12:02:26');
@@ -1158,17 +1238,9 @@ CREATE TABLE `parabet`  (
 -- Records of parabet
 -- ----------------------------
 INSERT INTO `parabet` VALUES (2000, 2, 0, 0, 0, 0, 0, 0, 0, 0);
-INSERT INTO `parabet` VALUES (2001, 2, 0, 0, 0, 0, 0, 0, 0, 0);
-INSERT INTO `parabet` VALUES (2002, 2, 0, 0, 0, 0, 0, 0, 0, 0);
 INSERT INTO `parabet` VALUES (10000, 10, 0, 0, 0, 0, 0, 0, 0, 0);
-INSERT INTO `parabet` VALUES (10001, 10, 0, 0, 0, 0, 0, 0, 0, 0);
-INSERT INTO `parabet` VALUES (10002, 10, 0, 0, 0, 0, 0, 0, 0, 0);
 INSERT INTO `parabet` VALUES (29000, 29, 0, 0, 0, 0, 0, 0, 0, 0);
-INSERT INTO `parabet` VALUES (29001, 29, 0, 0, 0, 0, 0, 0, 0, 0);
-INSERT INTO `parabet` VALUES (29002, 29, 0, 0, 0, 0, 0, 0, 0, 0);
 INSERT INTO `parabet` VALUES (47000, 47, 0, 0, 0, 0, 0, 0, 0, 0);
-INSERT INTO `parabet` VALUES (47001, 47, 0, 0, 0, 0, 0, 0, 0, 0);
-INSERT INTO `parabet` VALUES (47002, 47, 0, 0, 0, 0, 0, 0, 0, 0);
 
 -- ----------------------------
 -- Table structure for parabetroom
@@ -1204,10 +1276,10 @@ CREATE TABLE `parabetroom`  (
 -- ----------------------------
 -- Records of parabetroom
 -- ----------------------------
-INSERT INTO `parabetroom` VALUES (2000, 2, 0, 3, 100, 5, 0, 0, 0, 0, 10000, 1, 10000, 0, 0, 0, 100, '0,0,0,0,0', 0, 'cai3', 8, 0, b'1', b'1');
-INSERT INTO `parabetroom` VALUES (10000, 10, 0, 3, 100, 5, 0, 0, 0, 0, 10000, 1, 10000, 0, 0, 0, 100, '0,0,0,0,0', 0, 'shi3', 8, 0, b'1', b'1');
-INSERT INTO `parabetroom` VALUES (29000, 29, 0, 3, 100, 5, 0, 0, 0, 0, 10000, 1, 10000, 0, 0, 0, 100, '0,0,0,0,0', 0, 'jin3', 8, 0, b'1', b'1');
-INSERT INTO `parabetroom` VALUES (47000, 47, 0, 3, 100, 2, 0, 0, 0, 0, 10000, 1, 10000, 0, 0, 0, 100, '0,0,0,0,0', 0, 'bc2', 8, 0, b'1', b'1');
+INSERT INTO `parabetroom` VALUES (2000, 2, 10, 1, 100, 1, 1000, 10, 1000, 10, 10000, 1, 10000, 500000, 3000, 10000, 100, '1,5,10,15,20', 0, 'cai1', 8, 0, b'1', b'1');
+INSERT INTO `parabetroom` VALUES (10000, 10, 10, 1, 10, 1, 1000, 10, 1000, 10, 10000, 1, 10000, 500000, 3000, 10000, 100, '1,5,10,15,20', 0, 'shi1', 8, 0, b'1', b'1');
+INSERT INTO `parabetroom` VALUES (47000, 47, 10, 1, 100, 1, 1000, 10, 1000, 10, 10000, 1, 10000, 500000, 3000, 10000, 100, '1,5,10,15,20', 0, 'bc1', 6, 0, b'1', b'1');
+INSERT INTO `parabetroom` VALUES (29000, 29, 10, 1, 100, 1, 1000, 10, 1000, 10, 10000, 1, 10000, 500000, 3000, 10000, 100, '1,5,10,15,20', 0, 'jin1', 6, 0, b'1', b'1');
 
 -- ----------------------------
 -- Table structure for paracard
@@ -1255,7 +1327,6 @@ INSERT INTO `paracard` VALUES (5011, 5, '3434453555777533', 0);
 INSERT INTO `paracard` VALUES (5012, 5, '3434453555777533', 0);
 INSERT INTO `paracard` VALUES (5013, 5, '3434453555777533', 0);
 INSERT INTO `paracard` VALUES (5014, 5, '3434453555777533', 0);
-INSERT INTO `paracard` VALUES (44000, 44, '3434453555777533', 0);
 INSERT INTO `paracard` VALUES (44001, 44, '3434453555777533', 0);
 INSERT INTO `paracard` VALUES (44002, 44, '3434453555777533', 0);
 INSERT INTO `paracard` VALUES (44003, 44, '3434453555777533', 0);
@@ -1285,7 +1356,6 @@ INSERT INTO `paracard` VALUES (52011, 52, '3434453555777533', 0);
 INSERT INTO `paracard` VALUES (52012, 52, '3434453555777533', 0);
 INSERT INTO `paracard` VALUES (52013, 52, '3434453555777533', 0);
 INSERT INTO `paracard` VALUES (52014, 52, '3434453555777533', 0);
-INSERT INTO `paracard` VALUES (37000, 37, '3434453555777533', 0);
 INSERT INTO `paracard` VALUES (37001, 37, '3434453555777533', 0);
 INSERT INTO `paracard` VALUES (37002, 37, '3434453555777533', 0);
 INSERT INTO `paracard` VALUES (37003, 37, '3434453555777533', 0);
@@ -1323,6 +1393,8 @@ INSERT INTO `paracard` VALUES (15002, 15, '3434453555777533', 0);
 INSERT INTO `paracard` VALUES (15000, 15, '0000000000000000', 0);
 INSERT INTO `paracard` VALUES (5001, 5, '0000000000000000', 0);
 INSERT INTO `paracard` VALUES (5002, 5, '3434453555777533', 0);
+INSERT INTO `paracard` VALUES (37000, 37, '0000000000000000', 0);
+INSERT INTO `paracard` VALUES (44000, 44, '0000000000000000', 0);
 
 -- ----------------------------
 -- Table structure for parafish
@@ -1371,7 +1443,7 @@ CREATE TABLE `paragame`  (
 -- ----------------------------
 INSERT INTO `paragame` VALUES (2, 1, 50);
 INSERT INTO `paragame` VALUES (3, 1, 50);
-INSERT INTO `paragame` VALUES (5, 1, 50);
+INSERT INTO `paragame` VALUES (5, 2, 50);
 INSERT INTO `paragame` VALUES (6, 1, 50);
 INSERT INTO `paragame` VALUES (10, 1, 50);
 INSERT INTO `paragame` VALUES (13, 1, 50);
@@ -1425,7 +1497,8 @@ CREATE TABLE `pararoom`  (
 -- Records of pararoom
 -- ----------------------------
 INSERT INTO `pararoom` VALUES (3000, 3, 3, 1, 100, 10000, 1, 10000, 1, 0, 0, NULL, NULL, 6, 0, b'1', b'1', 10, 1000);
-INSERT INTO `pararoom` VALUES (5000, 5, 1, 1, 100, 10000, 1, 10000, 0, 0, 0, 100, 'huo1', 0, 0, b'1', b'1', 10, 1000);
+INSERT INTO `pararoom` VALUES (5000, 5, 2, 1, 100, 10000, 1, 10000, 0, 0, 0, 100, 'huo1', 0, 0, b'1', b'1', 10, 1000);
+INSERT INTO `pararoom` VALUES (5001, 5, 2, 2, 100, 10000, 1, 10000, 2, 0, 0, 100, 'huo2', 0, 0, b'1', b'1', 19, 1000);
 INSERT INTO `pararoom` VALUES (6000, 6, 2, 1, 100, 10000, 1, 10000, 1, 0, 0, NULL, NULL, 6, 0, b'1', b'1', 5, 1000);
 INSERT INTO `pararoom` VALUES (13000, 13, 1, 1, 100, 10000, 1, 10000, 1, 0, 0, NULL, NULL, 6, 0, b'1', b'1', 10, 1000);
 INSERT INTO `pararoom` VALUES (14000, 14, 1, 1, 1000, 10000, 1, 10000, 0, 0, 0, 100, 'jin1', 0, 0, b'1', b'1', 10, 10000);
@@ -1435,9 +1508,9 @@ INSERT INTO `pararoom` VALUES (21000, 21, 1, 0, 100, 10000, 1, 10000, 1, 0, 0, N
 INSERT INTO `pararoom` VALUES (22000, 22, 0, 100, 1000, 10000, 1, 10000, 100, 0, 0, 100, NULL, 6, 0, b'1', b'1', 1000, 10000);
 INSERT INTO `pararoom` VALUES (32000, 32, 1, 1, 100, 10000, 1, 10000, 1, 0, 0, NULL, NULL, 6, 0, b'1', b'1', 10, 1000);
 INSERT INTO `pararoom` VALUES (33000, 33, 1, 1, 100, 10000, 1, 10000, 1, 0, 0, NULL, NULL, 6, 0, b'1', b'1', 10, 1000);
-INSERT INTO `pararoom` VALUES (37000, 37, 5, 10, 1000, 10000, 1, 10000, 0, 0, 0, 100, NULL, 6, 0, b'1', b'1', 0, 0);
+INSERT INTO `pararoom` VALUES (37000, 37, 1, 1, 100, 10000, 1, 10000, 0, 0, 0, 100, 'ATT31', 0, 0, b'1', b'1', 10, 1000);
 INSERT INTO `pararoom` VALUES (42000, 42, 0, 100, 1000, 10000, 1, 10000, 100, 0, 0, 100, NULL, 6, 0, b'1', b'1', 1000, 10000);
-INSERT INTO `pararoom` VALUES (44000, 44, 3, 10, 1000, 10000, 1, 10000, 0, 0, 0, 100, NULL, 0, 0, b'1', b'1', 100, 10000);
+INSERT INTO `pararoom` VALUES (44000, 44, 1, 1, 100, 10000, 1, 10000, 0, 0, 0, 100, 'NBA1', 0, 0, b'1', b'1', 10, 1000);
 INSERT INTO `pararoom` VALUES (49000, 49, 1, 1, 100, 10000, 1, 10000, 1, 0, 0, NULL, NULL, 6, 0, b'1', b'1', 10, 1000);
 INSERT INTO `pararoom` VALUES (51000, 51, 0, 100, 1000, 10000, 1, 10000, 100, 0, 0, 100, NULL, 6, 0, b'1', b'1', 0, 0);
 INSERT INTO `pararoom` VALUES (52000, 52, 5, 10, 1000, 10000, 1, 10000, 0, 0, 0, 100, NULL, 6, 0, b'1', b'1', 0, 0);
@@ -1576,7 +1649,7 @@ INSERT INTO `rank` VALUES (9, 21, 2650, 0, 1777465938, 0, 0, '55555', '55555', '
 INSERT INTO `rank` VALUES (9, 22, 6000, 1, 1777402733, 0, 0, '321321', '321321', '黄金轰炸机(300倍)');
 INSERT INTO `rank` VALUES (9, 32, 36550, 2, 1777558663, 0, 0, 'ijb222', 'ijb222', '超级炸弹(731倍)');
 INSERT INTO `rank` VALUES (9, 33, 25000, 0, 1777569176, 0, 0, 'ijb222', 'ijb222', '巨鳄(500倍)');
-INSERT INTO `rank` VALUES (9, 1000, 602176, 1000, 1784623851, 1, 0, 'test01', '测试勿动', '测试勿动');
+INSERT INTO `rank` VALUES (9, 1000, 602176, 1000, 1784799046, 1, 0, 'test01', '测试勿动', '测试勿动');
 INSERT INTO `rank` VALUES (9, 1001, 1, 1001, 1777456412, 1, 0, '666666', '666666', '666666');
 INSERT INTO `rank` VALUES (10, 2, 137856, 137856, 1777313774, 0, 0, '121212', '121212', '中大奖');
 INSERT INTO `rank` VALUES (10, 6, 62240, 2, 1779517263, 0, 0, 'ijb222', 'ijb222', '超级炸弹(778倍)');
@@ -1662,7 +1735,7 @@ INSERT INTO `rank` VALUES (19, 10, 20000, 20000, 1777303833, 0, 0, '121212', '12
 INSERT INTO `rank` VALUES (19, 19, 1740000, 5, 1700079202, 0, 0, 'woshini', 'woshini', '大三元(174倍)');
 INSERT INTO `rank` VALUES (19, 32, 28600, 2, 1777557913, 0, 0, 'ijb222', 'ijb222', '超级炸弹(572倍)');
 INSERT INTO `rank` VALUES (19, 1000, 20001, 1000, 1779708184, 1, 0, '168169', '168169', '168169');
-INSERT INTO `rank` VALUES (19, 1001, 1, 1001, 1784710916, 1, 0, 'test002', '111', '111');
+INSERT INTO `rank` VALUES (19, 1001, 1, 1001, 1784802266, 1, 0, 'test002', '111', '111');
 INSERT INTO `rank` VALUES (20, 2, 137856, 137856, 1777314352, 0, 0, '121212', '121212', '中大奖');
 INSERT INTO `rank` VALUES (20, 6, 51440, 2, 1779709180, 0, 0, 'ijb222', 'ijb222', '超级炸弹(643倍)');
 INSERT INTO `rank` VALUES (20, 10, 20000, 20000, 1777474992, 0, 0, '55555', '55555', '中大奖');
@@ -1819,7 +1892,7 @@ CREATE TABLE `roomtableconfig`  (
   `CoinsNeed` int(11) NOT NULL DEFAULT 0,
   PRIMARY KEY (`ID`) USING BTREE,
   INDEX `idx_game_room_table`(`GAME_ID`, `RoomIndex`, `TableIndex`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 5300699 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '动态桌台配置表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 5300717 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '动态桌台配置表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of roomtableconfig
@@ -1835,18 +1908,10 @@ INSERT INTO `roomtableconfig` VALUES (5300672, 49, 0, 0, 'mei1', 4, '1:1', 0, 0,
 INSERT INTO `roomtableconfig` VALUES (5300673, 3, 0, 1, 'jc2', 4, '1:1', 0, 0, 0, 1, 0, 0, 1, 6, 1, 10, 1000, 10000);
 INSERT INTO `roomtableconfig` VALUES (5300674, 3, 0, 2, 'jc3', 4, '1:1', 0, 0, 0, 1, 0, 0, 1, 6, 1, 5, 1000, 100);
 INSERT INTO `roomtableconfig` VALUES (5300675, 6, 0, 1, 'niu2', 4, '1:1', 0, 0, 0, 1, 0, 0, 1, 6, 1, 10, 1000, 10000);
-INSERT INTO `roomtableconfig` VALUES (5300686, 2, 0, 0, 'cai1', 4, '1:1', 0, 0, 0, 1, 0, 0, 1, 8, 1, 1, 100, 10000);
-INSERT INTO `roomtableconfig` VALUES (5300687, 2, 0, 1, 'cai2', 4, '1:1', 0, 0, 0, 1, 0, 0, 1, 8, 1, 1, 100, 10000);
-INSERT INTO `roomtableconfig` VALUES (5300688, 2, 0, 2, 'cai3', 4, '1:1', 0, 0, 0, 1, 0, 0, 1, 8, 1, 5, 100, 10000);
-INSERT INTO `roomtableconfig` VALUES (5300689, 10, 0, 0, 'shi1', 4, '1:1', 0, 0, 0, 1, 0, 0, 1, 8, 1, 1, 100, 10000);
-INSERT INTO `roomtableconfig` VALUES (5300690, 10, 0, 1, 'shi2', 4, '1:1', 0, 0, 0, 1, 0, 0, 1, 8, 1, 2, 100, 10000);
-INSERT INTO `roomtableconfig` VALUES (5300691, 10, 0, 2, 'shi3', 4, '1:1', 0, 0, 0, 1, 0, 0, 1, 8, 1, 5, 100, 10000);
-INSERT INTO `roomtableconfig` VALUES (5300692, 29, 0, 0, 'jin1', 4, '1:1', 0, 0, 0, 1, 0, 0, 1, 8, 1, 1, 100, 10000);
-INSERT INTO `roomtableconfig` VALUES (5300693, 29, 0, 1, 'jin2', 4, '1:1', 0, 0, 0, 1, 0, 0, 1, 8, 1, 2, 100, 10000);
-INSERT INTO `roomtableconfig` VALUES (5300694, 29, 0, 2, 'jin3', 4, '1:1', 0, 0, 0, 1, 0, 0, 1, 8, 1, 5, 100, 10000);
-INSERT INTO `roomtableconfig` VALUES (5300695, 47, 0, 0, 'bc1', 4, '1:1', 0, 0, 0, 1, 0, 0, 1, 8, 1, 1, 100, 10000);
-INSERT INTO `roomtableconfig` VALUES (5300697, 47, 0, 2, 'bc3', 4, '1:1', 0, 0, 0, 1, 0, 0, 1, 8, 1, 2, 100, 10000);
-INSERT INTO `roomtableconfig` VALUES (5300698, 47, 0, 1, 'bc2', 4, '1:1', 0, 0, 0, 1, 0, 0, 1, 8, 1, 2, 100, 10000);
+INSERT INTO `roomtableconfig` VALUES (5300713, 2, 0, 0, 'cai1', 4, '1:1', 0, 0, 0, 1, 0, 0, 1, 8, 1, 1, 100, 10000);
+INSERT INTO `roomtableconfig` VALUES (5300714, 10, 0, 0, 'shi1', 4, '1:1', 0, 0, 0, 1, 0, 0, 1, 8, 1, 1, 10, 10000);
+INSERT INTO `roomtableconfig` VALUES (5300715, 29, 0, 0, 'jin1', 4, '1:1', 0, 0, 0, 1, 0, 0, 1, 8, 1, 1, 100, 10000);
+INSERT INTO `roomtableconfig` VALUES (5300716, 47, 0, 0, 'bc1', 4, '1:1', 0, 0, 0, 1, 0, 0, 1, 8, 1, 1, 100, 10000);
 
 -- ----------------------------
 -- Table structure for roomtableconfig_bet
@@ -1873,46 +1938,15 @@ CREATE TABLE `roomtableconfig_bet`  (
   `BetMaxDraw` int(11) NOT NULL DEFAULT 0 COMMENT '副玩法和最大押注(仅Animal)',
   PRIMARY KEY (`ID`) USING BTREE,
   INDEX `idx_game_table`(`GAME_ID`, `TableIndex`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 36 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '押注类桌台扩展参数表(按桌)' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 67 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '押注类桌台扩展参数表(按桌)' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of roomtableconfig_bet
 -- ----------------------------
-INSERT INTO `roomtableconfig_bet` VALUES (1, 10, 0, 0, 10, 30, 1000, 500000, 3000, 10000, 0, 1, '1,5,10,15,20', 0, 10, 1000, 10, 1000);
-INSERT INTO `roomtableconfig_bet` VALUES (2, 10, 0, 1, 10, 20, 1000, 500000, 3000, 10000, 0, 1, '1,5,10,15,20', 0, 10, 1000, 10, 1000);
-INSERT INTO `roomtableconfig_bet` VALUES (3, 10, 0, 2, 10, 29, 1000, 500000, 3000, 10000, 0, 1, '1,5,10,15,20', 0, 10, 1000, 10, 1000);
-INSERT INTO `roomtableconfig_bet` VALUES (4, 47, 0, 0, 10, 0, 1000, 500000, 3000, 10000, 0, 1, '1,5,10,15,20', 0, 10, 1000, 10, 1000);
-INSERT INTO `roomtableconfig_bet` VALUES (5, 47, 0, 1, 10, 0, 1000, 500000, 3000, 10000, 0, 1, '1,5,10,15,20', 0, 10, 1000, 10, 1000);
-INSERT INTO `roomtableconfig_bet` VALUES (6, 47, 0, 2, 10, 0, 1000, 500000, 3000, 10000, 0, 1, '1,5,10,15,20', 0, 10, 1000, 10, 1000);
-INSERT INTO `roomtableconfig_bet` VALUES (7, 2, 0, 0, 10, 0, 1000, 500000, 3000, 10000, 0, 1, '1,5,10,15,20', 0, 10, 1000, 10, 1000);
-INSERT INTO `roomtableconfig_bet` VALUES (8, 2, 0, 1, 10, 0, 1000, 500000, 3000, 10000, 0, 1, '1,5,10,15,20', 0, 10, 1000, 10, 1000);
-INSERT INTO `roomtableconfig_bet` VALUES (9, 2, 0, 2, 10, 20, 1000, 500000, 3000, 10000, 0, 1, '1,5,10,15,20', 0, 10, 1000, 10, 1000);
-INSERT INTO `roomtableconfig_bet` VALUES (10, 29, 0, 0, 10, 0, 1000, 500000, 3000, 10000, 0, 1, '1,5,10,15,20', 0, 10, 1000, 10, 1000);
-INSERT INTO `roomtableconfig_bet` VALUES (11, 29, 0, 1, 10, 1, 1000, 500000, 3000, 10000, 0, 1, '1,5,10,15,20', 0, 10, 1000, 10, 1000);
-INSERT INTO `roomtableconfig_bet` VALUES (12, 29, 0, 2, 10, 1, 1000, 500000, 3000, 10000, 0, 1, '1,5,10,15,20', 0, 10, 1000, 10, 1000);
-INSERT INTO `roomtableconfig_bet` VALUES (13, 2, 0, 3, 10, 10, 1000, 500000, 3000, 10000, 0, 1, '1,5,10,15,20', 0, 10, 1000, 10, 1000);
-INSERT INTO `roomtableconfig_bet` VALUES (14, 16, 0, 0, 10, 10, 1000, 500000, 3000, 10000, 0, 1, '1,5,10,15,20', 0, 10, 1000, 10, 1000);
-INSERT INTO `roomtableconfig_bet` VALUES (15, 16, 0, 1, 10, 10, 1000, 500000, 3000, 10000, 0, 1, '1,5,10,15,20', 0, 10, 1000, 10, 1000);
-INSERT INTO `roomtableconfig_bet` VALUES (16, 16, 0, 2, 10, 10, 1000, 500000, 3000, 10000, 0, 1, '1,5,10,15,20', 0, 10, 1000, 10, 1000);
-INSERT INTO `roomtableconfig_bet` VALUES (17, 10, 0, 3, 10, 10, 1000, 500000, 3000, 10000, 0, 1, '1,5,10,15,20', 0, 10, 1000, 10, 1000);
-INSERT INTO `roomtableconfig_bet` VALUES (18, 10, 0, 4, 10, 10, 1000, 500000, 3000, 10000, 0, 1, '1,5,10,15,20', 0, 10, 1000, 10, 1000);
-INSERT INTO `roomtableconfig_bet` VALUES (19, 15, 0, 0, 10, 10, 1000, 500000, 3000, 10000, 0, 1, '1,5,10,15,20', 0, 10, 1000, 10, 1000);
-INSERT INTO `roomtableconfig_bet` VALUES (20, 15, 0, 1, 10, 10, 1000, 500000, 3000, 10000, 0, 1, '1,5,10,15,20', 0, 10, 1000, 10, 1000);
-INSERT INTO `roomtableconfig_bet` VALUES (21, 15, 0, 2, 10, 10, 1000, 500000, 3000, 10000, 0, 1, '1,5,10,15,20', 0, 10, 1000, 10, 1000);
-INSERT INTO `roomtableconfig_bet` VALUES (22, 10, 0, 5, 10, 20, 1000, 500000, 3000, 10000, 0, 1, '1,5,10,15,20', 0, 10, 1000, 10, 1000);
-INSERT INTO `roomtableconfig_bet` VALUES (23, 10, 0, 6, 10, 20, 1000, 500000, 3000, 10000, 0, 1, '1,5,10,15,20', 0, 10, 1000, 10, 1000);
-INSERT INTO `roomtableconfig_bet` VALUES (24, 10, 0, 7, 10, 20, 1000, 500000, 3000, 10000, 0, 1, '1,5,10,15,20', 0, 10, 1000, 10, 1000);
-INSERT INTO `roomtableconfig_bet` VALUES (25, 2, 0, 4, 10, 30, 1000, 500000, 3000, 10000, 0, 1, '1,5,10,15,20', 0, 10, 1000, 10, 1000);
-INSERT INTO `roomtableconfig_bet` VALUES (26, 2, 0, 5, 10, 30, 1000, 500000, 3000, 10000, 0, 1, '1,5,10,15,20', 0, 10, 1000, 10, 1000);
-INSERT INTO `roomtableconfig_bet` VALUES (27, 2, 0, 6, 0, 100, 1000, 0, 0, 0, 10000, 1, '0,0,0,0,0', 0, 0, 0, 0, 0);
-INSERT INTO `roomtableconfig_bet` VALUES (28, 2, 0, 7, 0, 99, 1000, 0, 0, 0, 10000, 1, '0,0,0,0,0', 0, 0, 0, 0, 0);
-INSERT INTO `roomtableconfig_bet` VALUES (29, 2, 0, 8, 0, 99, 1000, 0, 0, 0, 10000, 1, '0,0,0,0,0', 0, 0, 0, 0, 0);
-INSERT INTO `roomtableconfig_bet` VALUES (30, 53, 0, 0, 10, 100, 10000, 500000, 3000, 10000, 0, 1, '100,500,1000,5000,10000', 0, 10, 1000, 10, 1000);
-INSERT INTO `roomtableconfig_bet` VALUES (31, 53, 0, 1, 10, 100, 10000, 500000, 3000, 10000, 0, 1, '100,500,1000,5000,10000', 0, 10, 1000, 10, 1000);
-INSERT INTO `roomtableconfig_bet` VALUES (32, 53, 0, 2, 10, 100, 10000, 500000, 3000, 10000, 0, 1, '100,500,1000,5000,10000', 0, 10, 1000, 10, 1000);
-INSERT INTO `roomtableconfig_bet` VALUES (33, 40, 0, 0, 10, 10, 1000, 500000, 3000, 10000, 0, 1, '1,5,10,15,20', 0, 10, 1000, 10, 1000);
-INSERT INTO `roomtableconfig_bet` VALUES (34, 40, 0, 1, 10, 10, 1000, 500000, 3000, 10000, 0, 1, '1,5,10,15,20', 0, 10, 1000, 10, 1000);
-INSERT INTO `roomtableconfig_bet` VALUES (35, 40, 0, 2, 10, 10, 1000, 500000, 3000, 10000, 0, 1, '1,5,10,15,20', 0, 10, 1000, 10, 1000);
+INSERT INTO `roomtableconfig_bet` VALUES (63, 2, 0, 0, 10, 1, 100, 500000, 3000, 10000, 10000, 1, '1,5,10,15,20', 0, 10, 1000, 10, 1000);
+INSERT INTO `roomtableconfig_bet` VALUES (64, 10, 0, 0, 10, 1, 10, 500000, 3000, 10000, 10000, 1, '1,5,10,15,20', 0, 10, 1000, 10, 1000);
+INSERT INTO `roomtableconfig_bet` VALUES (65, 29, 0, 0, 10, 1, 100, 500000, 3000, 10000, 10000, 1, '1,5,10,15,20', 0, 10, 1000, 10, 1000);
+INSERT INTO `roomtableconfig_bet` VALUES (66, 47, 0, 0, 10, 1, 100, 500000, 3000, 10000, 10000, 1, '1,5,10,15,20', 0, 10, 1000, 10, 1000);
 
 -- ----------------------------
 -- Table structure for safe_coins_log
@@ -1975,7 +2009,7 @@ CREATE TABLE `tablecoinrecord`  (
   `Coins` bigint(20) NOT NULL COMMENT '金币数量',
   `CreateTime` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP(0) COMMENT '记录时间',
   PRIMARY KEY (`RecIndex`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 66 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '桌子账目信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 68 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '桌子账目信息表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of tablecoinrecord
@@ -2014,6 +2048,8 @@ INSERT INTO `tablecoinrecord` VALUES (62, 6, 0, 1, -1, '2026-07-21 18:21:38');
 INSERT INTO `tablecoinrecord` VALUES (63, 13, 0, 1, -387, '2026-07-22 13:36:06');
 INSERT INTO `tablecoinrecord` VALUES (64, 3, 0, 2, -76, '2026-07-23 13:53:04');
 INSERT INTO `tablecoinrecord` VALUES (65, 2, 0, 1, -3, '2026-07-23 16:10:14');
+INSERT INTO `tablecoinrecord` VALUES (66, 2, 0, 2, -5, '2026-07-23 19:03:46');
+INSERT INTO `tablecoinrecord` VALUES (67, 10, 0, 1, -45, '2026-07-24 10:16:02');
 
 -- ----------------------------
 -- Table structure for transferlog
@@ -2092,7 +2128,8 @@ INSERT INTO `user_daily_winloss` VALUES ('test002', '2026-07-17', -66871);
 INSERT INTO `user_daily_winloss` VALUES ('test002', '2026-07-20', -4432);
 INSERT INTO `user_daily_winloss` VALUES ('test002', '2026-07-21', -404079);
 INSERT INTO `user_daily_winloss` VALUES ('test002', '2026-07-22', -3750);
-INSERT INTO `user_daily_winloss` VALUES ('test002', '2026-07-23', -753);
+INSERT INTO `user_daily_winloss` VALUES ('test002', '2026-07-23', -758);
+INSERT INTO `user_daily_winloss` VALUES ('test002', '2026-07-24', -45);
 INSERT INTO `user_daily_winloss` VALUES ('test01', '2026-07-18', 61396);
 INSERT INTO `user_daily_winloss` VALUES ('test01', '2026-07-20', 10);
 
@@ -2313,7 +2350,7 @@ CREATE TABLE `useroptlog`  (
   `TABLE_ID` int(11) NULL DEFAULT 0 COMMENT '桌子号',
   `SEAT_ID` int(11) NULL DEFAULT 0 COMMENT '位置号',
   PRIMARY KEY (`LID`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 764 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '用户记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 814 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '用户记录表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of useroptlog
@@ -2872,6 +2909,56 @@ INSERT INTO `useroptlog` VALUES (760, 'test002', 8, 0, 107006, 0, 1, 2, '2026-07
 INSERT INTO `useroptlog` VALUES (761, 'test002', 7, 80, 107006, 0, 1, 2, '2026-07-23 16:16:23', 0, 2, 0);
 INSERT INTO `useroptlog` VALUES (762, 'test002', 8, 0, 107006, 0, 0, 10, '2026-07-23 16:22:08', 0, 0, 5);
 INSERT INTO `useroptlog` VALUES (763, 'test002', 7, 0, 107006, 0, 0, 10, '2026-07-23 16:23:14', 0, 0, 5);
+INSERT INTO `useroptlog` VALUES (764, 'test002', 8, 0, 107006, 0, 0, 2, '2026-07-23 17:07:49', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (765, 'test002', 7, 30, 107006, 0, 0, 2, '2026-07-23 17:07:56', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (766, 'test002', 8, 0, 107006, 0, 0, 2, '2026-07-23 18:24:41', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (767, 'test002', 7, 0, 107006, 0, 0, 2, '2026-07-23 18:24:51', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (768, 'test002', 8, 0, 107006, 0, 0, 2, '2026-07-23 18:24:53', 0, 1, 0);
+INSERT INTO `useroptlog` VALUES (769, 'test002', 7, 0, 107006, 0, 0, 2, '2026-07-23 18:24:57', 0, 1, 0);
+INSERT INTO `useroptlog` VALUES (770, 'test002', 8, 0, 107006, 0, 0, 10, '2026-07-23 18:25:05', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (771, 'test002', 7, 0, 107006, 0, 0, 10, '2026-07-23 18:25:51', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (772, 'test002', 8, 0, 107006, 0, 0, 10, '2026-07-23 18:25:53', 0, 2, 4);
+INSERT INTO `useroptlog` VALUES (773, 'test002', 7, 0, 107006, 0, 0, 10, '2026-07-23 18:25:58', 0, 2, 4);
+INSERT INTO `useroptlog` VALUES (774, 'test002', 8, 0, 107006, 0, 0, 2, '2026-07-23 18:26:06', 0, 0, 2);
+INSERT INTO `useroptlog` VALUES (775, 'test002', 7, 0, 107006, 0, 0, 2, '2026-07-23 18:26:11', 0, 0, 2);
+INSERT INTO `useroptlog` VALUES (776, 'test002', 8, 0, 107006, 0, 0, 2, '2026-07-23 18:28:37', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (777, 'test002', 7, 0, 107006, 0, 0, 2, '2026-07-23 18:28:44', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (778, 'test002', 8, 0, 107006, 0, 0, 2, '2026-07-23 18:28:47', 0, 0, 3);
+INSERT INTO `useroptlog` VALUES (779, 'test002', 7, 0, 107006, 0, 0, 2, '2026-07-23 18:28:50', 0, 0, 3);
+INSERT INTO `useroptlog` VALUES (780, 'test002', 8, 0, 107006, 0, 0, 2, '2026-07-23 18:29:20', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (781, 'test002', 7, 0, 107006, 0, 0, 2, '2026-07-23 18:29:24', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (782, 'test002', 8, 0, 107006, 0, 0, 10, '2026-07-23 18:30:51', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (783, 'test002', 7, 0, 107006, 0, 0, 10, '2026-07-23 18:30:56', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (784, 'test002', 8, 0, 107006, 0, 0, 10, '2026-07-23 18:32:46', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (785, 'test002', 7, 0, 107006, 0, 0, 10, '2026-07-23 18:32:52', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (786, 'test002', 8, 0, 107006, 0, 0, 2, '2026-07-23 18:33:02', 0, 2, 1);
+INSERT INTO `useroptlog` VALUES (787, 'test002', 7, 0, 107006, 0, 0, 2, '2026-07-23 18:33:07', 0, 2, 1);
+INSERT INTO `useroptlog` VALUES (788, 'test002', 8, 0, 107006, 0, 0, 2, '2026-07-23 18:41:39', 0, 3, 0);
+INSERT INTO `useroptlog` VALUES (789, 'test002', 7, 0, 107006, 0, 0, 2, '2026-07-23 18:41:51', 0, 3, 0);
+INSERT INTO `useroptlog` VALUES (790, 'test002', 8, 0, 107006, 0, 0, 2, '2026-07-23 18:41:52', 0, 1, 4);
+INSERT INTO `useroptlog` VALUES (791, 'test002', 7, 0, 107006, 0, 0, 2, '2026-07-23 18:41:56', 0, 1, 4);
+INSERT INTO `useroptlog` VALUES (792, 'test002', 8, 0, 107006, 0, 0, 2, '2026-07-23 18:41:58', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (793, 'test002', 7, 0, 107006, 0, 0, 2, '2026-07-23 18:42:05', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (794, 'test002', 8, 0, 107006, 0, 0, 2, '2026-07-23 19:03:19', 0, 1, 0);
+INSERT INTO `useroptlog` VALUES (795, 'test002', 7, 0, 107001, -5, 0, 2, '2026-07-23 19:03:46', 0, 1, 0);
+INSERT INTO `useroptlog` VALUES (796, 'test002', 8, 0, 107001, 0, 0, 2, '2026-07-24 09:49:10', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (797, 'test002', 7, 0, 107001, 0, 0, 2, '2026-07-24 09:49:20', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (798, 'test002', 8, 0, 107001, 0, 0, 2, '2026-07-24 09:49:22', 0, 1, 0);
+INSERT INTO `useroptlog` VALUES (799, 'test002', 7, 0, 107001, 0, 0, 2, '2026-07-24 09:50:32', 0, 1, 0);
+INSERT INTO `useroptlog` VALUES (800, 'test002', 8, 0, 107001, 0, 0, 10, '2026-07-24 09:53:48', 0, 3, 0);
+INSERT INTO `useroptlog` VALUES (801, 'test002', 7, 0, 107001, 0, 0, 10, '2026-07-24 09:54:10', 0, 3, 0);
+INSERT INTO `useroptlog` VALUES (802, 'test002', 8, 0, 107001, 0, 0, 29, '2026-07-24 09:54:22', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (803, 'test002', 7, 0, 107001, 0, 0, 29, '2026-07-24 09:54:29', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (804, 'test002', 8, 0, 107001, 0, 0, 47, '2026-07-24 09:54:37', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (805, 'test002', 7, 0, 107001, 0, 0, 47, '2026-07-24 09:54:40', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (806, 'test002', 8, 0, 107001, 0, 0, 10, '2026-07-24 10:02:06', 0, 4, 4);
+INSERT INTO `useroptlog` VALUES (807, 'test002', 7, 0, 107001, 0, 0, 10, '2026-07-24 10:03:05', 0, 4, 4);
+INSERT INTO `useroptlog` VALUES (808, 'test002', 8, 0, 107001, 0, 0, 10, '2026-07-24 10:03:52', 0, 4, 1);
+INSERT INTO `useroptlog` VALUES (809, 'test002', 7, 0, 107001, 0, 0, 10, '2026-07-24 10:03:58', 0, 4, 1);
+INSERT INTO `useroptlog` VALUES (810, 'test002', 8, 0, 107001, 0, 0, 10, '2026-07-24 10:05:53', 0, 2, 1);
+INSERT INTO `useroptlog` VALUES (811, 'test002', 7, 0, 107001, 0, 0, 10, '2026-07-24 10:06:56', 0, 2, 1);
+INSERT INTO `useroptlog` VALUES (812, 'test002', 8, 0, 107001, 0, 0, 10, '2026-07-24 10:13:59', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (813, 'test002', 7, 0, 106956, -45, 0, 10, '2026-07-24 10:16:02', 0, 0, 0);
 
 -- ----------------------------
 -- Table structure for userrelations
@@ -3239,7 +3326,7 @@ CREATE TABLE `users`  (
 -- Records of users
 -- ----------------------------
 INSERT INTO `users` VALUES ('t1', '111', '123456', '8888', 0, 0, 101000, 0, 101000, 0, -1, 'nowxheadimg', 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '1', b'0', b'0', 0, '123456', 0, 1, '2026-07-17 12:04:22', '');
-INSERT INTO `users` VALUES ('test002', '111', '123456', 'atmadmin', 0, 0, 107006, 0, 1001317564, 8, -1, 'nowxheadimg', 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '1', b'1', b'0', 0, '123456', 0, 1, '2026-07-08 10:25:49', '');
+INSERT INTO `users` VALUES ('test002', '111', '123456', 'atmadmin', 0, 0, 106956, 0, 1001317564, 8, -1, 'nowxheadimg', 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '1', b'1', b'0', 0, '123456', 0, 1, '2026-07-08 10:25:49', '');
 INSERT INTO `users` VALUES ('test01', '测试勿动', '123456', 'atmadmin', 2, 0, 602176, 0, 13690406, 3157236, -1, 'nowxheadimg', 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '123', b'0', b'0', 0, '123456', 0, 1, '2026-05-22 11:46:49', '');
 INSERT INTO `users` VALUES ('test03', '1515', '123456', 'atmadmin', 0, 0, 310930, 0, 310930, 0, -1, 'nowxheadimg', 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '1', b'0', b'0', 0, '123456', 0, 1, '2026-07-09 09:46:25', '');
 
@@ -3261,7 +3348,7 @@ CREATE TABLE `userscoresnapshotledger`  (
   PRIMARY KEY (`LID`) USING BTREE,
   INDEX `IDX_UserScoreSnapshotLedger_UserID`(`UserID`) USING BTREE,
   INDEX `IDX_UserScoreSnapshotLedger_Reason`(`Reason`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 19902 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 20004 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of userscoresnapshotledger
@@ -23167,6 +23254,108 @@ INSERT INTO `userscoresnapshotledger` VALUES (19898, 'test002', 54, 0, 107006, 0
 INSERT INTO `userscoresnapshotledger` VALUES (19899, 'test002', 54, 0, 107006, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-23 16:46:35');
 INSERT INTO `userscoresnapshotledger` VALUES (19900, 'test002', 54, 0, 107006, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-23 16:46:40');
 INSERT INTO `userscoresnapshotledger` VALUES (19901, 'test002', 54, 0, 107006, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-23 16:49:20');
+INSERT INTO `userscoresnapshotledger` VALUES (19902, 'test002', 2, 73, 0, 107006, 107006, 0, 'SNAPSHOT_SAVE', '2026-07-23 17:07:50');
+INSERT INTO `userscoresnapshotledger` VALUES (19903, 'test002', 2, 73, 107006, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-23 17:07:56');
+INSERT INTO `userscoresnapshotledger` VALUES (19904, 'test002', 54, 0, 107006, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-23 17:09:26');
+INSERT INTO `userscoresnapshotledger` VALUES (19905, 'test002', 54, 0, 107006, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-23 17:14:07');
+INSERT INTO `userscoresnapshotledger` VALUES (19906, 'test01', 54, 0, 602176, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-23 17:31:09');
+INSERT INTO `userscoresnapshotledger` VALUES (19907, 'test01', 54, 0, 602176, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-23 17:47:05');
+INSERT INTO `userscoresnapshotledger` VALUES (19908, 'test002', 0, 77, 107006, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-23 18:20:51');
+INSERT INTO `userscoresnapshotledger` VALUES (19909, 'test01', 0, 84, 602176, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-23 18:20:51');
+INSERT INTO `userscoresnapshotledger` VALUES (19910, 'test002', 2, 2, 0, 107006, 107006, 0, 'SNAPSHOT_SAVE', '2026-07-23 18:24:41');
+INSERT INTO `userscoresnapshotledger` VALUES (19911, 'test002', 2, 2, 0, 107006, 107006, 0, 'SNAPSHOT_SAVE', '2026-07-23 18:24:44');
+INSERT INTO `userscoresnapshotledger` VALUES (19912, 'test002', 2, 2, 107006, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-23 18:24:51');
+INSERT INTO `userscoresnapshotledger` VALUES (19913, 'test002', 2, 3, 0, 107006, 107006, 0, 'SNAPSHOT_SAVE', '2026-07-23 18:24:53');
+INSERT INTO `userscoresnapshotledger` VALUES (19914, 'test002', 2, 3, 0, 107006, 107006, 0, 'SNAPSHOT_SAVE', '2026-07-23 18:24:55');
+INSERT INTO `userscoresnapshotledger` VALUES (19915, 'test002', 2, 3, 107006, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-23 18:24:56');
+INSERT INTO `userscoresnapshotledger` VALUES (19916, 'test002', 54, 0, 107006, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-23 18:24:58');
+INSERT INTO `userscoresnapshotledger` VALUES (19917, 'test002', 10, 6, 0, 107006, 107006, 0, 'SNAPSHOT_SAVE', '2026-07-23 18:25:05');
+INSERT INTO `userscoresnapshotledger` VALUES (19918, 'test002', 10, 6, 0, 107006, 107006, 0, 'SNAPSHOT_SAVE', '2026-07-23 18:25:08');
+INSERT INTO `userscoresnapshotledger` VALUES (19919, 'test002', 10, 6, 0, 107006, 107006, 0, 'SNAPSHOT_SAVE', '2026-07-23 18:25:49');
+INSERT INTO `userscoresnapshotledger` VALUES (19920, 'test002', 10, 6, 107006, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-23 18:25:51');
+INSERT INTO `userscoresnapshotledger` VALUES (19921, 'test002', 10, 7, 0, 107006, 107006, 0, 'SNAPSHOT_SAVE', '2026-07-23 18:25:53');
+INSERT INTO `userscoresnapshotledger` VALUES (19922, 'test002', 10, 7, 0, 107006, 107006, 0, 'SNAPSHOT_SAVE', '2026-07-23 18:25:56');
+INSERT INTO `userscoresnapshotledger` VALUES (19923, 'test002', 10, 7, 107006, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-23 18:25:58');
+INSERT INTO `userscoresnapshotledger` VALUES (19924, 'test002', 54, 0, 107006, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-23 18:26:00');
+INSERT INTO `userscoresnapshotledger` VALUES (19925, 'test002', 2, 10, 0, 107006, 107006, 0, 'SNAPSHOT_SAVE', '2026-07-23 18:26:06');
+INSERT INTO `userscoresnapshotledger` VALUES (19926, 'test002', 2, 10, 0, 107006, 107006, 0, 'SNAPSHOT_SAVE', '2026-07-23 18:26:08');
+INSERT INTO `userscoresnapshotledger` VALUES (19927, 'test002', 2, 10, 107006, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-23 18:26:11');
+INSERT INTO `userscoresnapshotledger` VALUES (19928, 'test002', 2, 11, 0, 107006, 107006, 0, 'SNAPSHOT_SAVE', '2026-07-23 18:28:37');
+INSERT INTO `userscoresnapshotledger` VALUES (19929, 'test002', 2, 11, 0, 107006, 107006, 0, 'SNAPSHOT_SAVE', '2026-07-23 18:28:39');
+INSERT INTO `userscoresnapshotledger` VALUES (19930, 'test002', 2, 11, 107006, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-23 18:28:44');
+INSERT INTO `userscoresnapshotledger` VALUES (19931, 'test002', 2, 12, 0, 107006, 107006, 0, 'SNAPSHOT_SAVE', '2026-07-23 18:28:47');
+INSERT INTO `userscoresnapshotledger` VALUES (19932, 'test002', 2, 12, 0, 107006, 107006, 0, 'SNAPSHOT_SAVE', '2026-07-23 18:28:49');
+INSERT INTO `userscoresnapshotledger` VALUES (19933, 'test002', 2, 12, 107006, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-23 18:28:50');
+INSERT INTO `userscoresnapshotledger` VALUES (19934, 'test002', 2, 13, 0, 107006, 107006, 0, 'SNAPSHOT_SAVE', '2026-07-23 18:29:20');
+INSERT INTO `userscoresnapshotledger` VALUES (19935, 'test002', 2, 13, 0, 107006, 107006, 0, 'SNAPSHOT_SAVE', '2026-07-23 18:29:22');
+INSERT INTO `userscoresnapshotledger` VALUES (19936, 'test002', 2, 13, 107006, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-23 18:29:24');
+INSERT INTO `userscoresnapshotledger` VALUES (19937, 'test002', 54, 0, 107006, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-23 18:30:47');
+INSERT INTO `userscoresnapshotledger` VALUES (19938, 'test002', 10, 16, 0, 107006, 107006, 0, 'SNAPSHOT_SAVE', '2026-07-23 18:30:51');
+INSERT INTO `userscoresnapshotledger` VALUES (19939, 'test002', 10, 16, 0, 107006, 107006, 0, 'SNAPSHOT_SAVE', '2026-07-23 18:30:54');
+INSERT INTO `userscoresnapshotledger` VALUES (19940, 'test002', 10, 16, 107006, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-23 18:30:56');
+INSERT INTO `userscoresnapshotledger` VALUES (19941, 'test002', 10, 17, 0, 107006, 107006, 0, 'SNAPSHOT_SAVE', '2026-07-23 18:32:46');
+INSERT INTO `userscoresnapshotledger` VALUES (19942, 'test002', 10, 17, 0, 107006, 107006, 0, 'SNAPSHOT_SAVE', '2026-07-23 18:32:49');
+INSERT INTO `userscoresnapshotledger` VALUES (19943, 'test002', 10, 17, 107006, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-23 18:32:52');
+INSERT INTO `userscoresnapshotledger` VALUES (19944, 'test002', 54, 0, 107006, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-23 18:32:54');
+INSERT INTO `userscoresnapshotledger` VALUES (19945, 'test002', 2, 20, 0, 107006, 107006, 0, 'SNAPSHOT_SAVE', '2026-07-23 18:33:02');
+INSERT INTO `userscoresnapshotledger` VALUES (19946, 'test002', 2, 20, 107006, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-23 18:33:07');
+INSERT INTO `userscoresnapshotledger` VALUES (19947, 'test002', 54, 0, 107006, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-23 18:33:09');
+INSERT INTO `userscoresnapshotledger` VALUES (19948, 'test002', 2, 23, 0, 107006, 107006, 0, 'SNAPSHOT_SAVE', '2026-07-23 18:41:39');
+INSERT INTO `userscoresnapshotledger` VALUES (19949, 'test002', 2, 23, 107006, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-23 18:41:50');
+INSERT INTO `userscoresnapshotledger` VALUES (19950, 'test002', 2, 24, 0, 107006, 107006, 0, 'SNAPSHOT_SAVE', '2026-07-23 18:41:52');
+INSERT INTO `userscoresnapshotledger` VALUES (19951, 'test002', 2, 24, 0, 107006, 107006, 0, 'SNAPSHOT_SAVE', '2026-07-23 18:41:55');
+INSERT INTO `userscoresnapshotledger` VALUES (19952, 'test002', 2, 24, 107006, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-23 18:41:56');
+INSERT INTO `userscoresnapshotledger` VALUES (19953, 'test002', 2, 25, 0, 107006, 107006, 0, 'SNAPSHOT_SAVE', '2026-07-23 18:41:58');
+INSERT INTO `userscoresnapshotledger` VALUES (19954, 'test002', 2, 25, 0, 107006, 107006, 0, 'SNAPSHOT_SAVE', '2026-07-23 18:42:00');
+INSERT INTO `userscoresnapshotledger` VALUES (19955, 'test002', 2, 25, 107006, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-23 18:42:05');
+INSERT INTO `userscoresnapshotledger` VALUES (19956, 'test002', 2, 26, 107006, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-23 18:43:49');
+INSERT INTO `userscoresnapshotledger` VALUES (19957, 'test002', 54, 0, 107006, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-23 18:58:39');
+INSERT INTO `userscoresnapshotledger` VALUES (19958, 'test002', 54, 0, 107006, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-23 18:58:52');
+INSERT INTO `userscoresnapshotledger` VALUES (19959, 'test002', 54, 0, 107006, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-23 19:03:14');
+INSERT INTO `userscoresnapshotledger` VALUES (19960, 'test002', 2, 12, 0, 107006, 107006, 0, 'SNAPSHOT_SAVE', '2026-07-23 19:03:19');
+INSERT INTO `userscoresnapshotledger` VALUES (19961, 'test002', 2, 12, 0, 107001, 107001, 0, 'SNAPSHOT_SAVE', '2026-07-23 19:03:32');
+INSERT INTO `userscoresnapshotledger` VALUES (19962, 'test002', 2, 12, 107001, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-23 19:03:46');
+INSERT INTO `userscoresnapshotledger` VALUES (19963, 'test002', 54, 0, 107001, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-23 19:03:47');
+INSERT INTO `userscoresnapshotledger` VALUES (19964, 'test002', 0, 13, 107001, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-23 19:03:55');
+INSERT INTO `userscoresnapshotledger` VALUES (19965, 'test002', 2, 2, 0, 107001, 107001, 0, 'SNAPSHOT_SAVE', '2026-07-24 09:49:10');
+INSERT INTO `userscoresnapshotledger` VALUES (19966, 'test002', 2, 2, 107001, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-24 09:49:20');
+INSERT INTO `userscoresnapshotledger` VALUES (19967, 'test002', 2, 3, 0, 107001, 107001, 0, 'SNAPSHOT_SAVE', '2026-07-24 09:49:22');
+INSERT INTO `userscoresnapshotledger` VALUES (19968, 'test002', 2, 3, 0, 107001, 107001, 0, 'SNAPSHOT_SAVE', '2026-07-24 09:49:35');
+INSERT INTO `userscoresnapshotledger` VALUES (19969, 'test002', 2, 3, 0, 107001, 107001, 0, 'SNAPSHOT_SAVE', '2026-07-24 09:49:56');
+INSERT INTO `userscoresnapshotledger` VALUES (19970, 'test002', 2, 3, 0, 107001, 107001, 0, 'SNAPSHOT_SAVE', '2026-07-24 09:50:17');
+INSERT INTO `userscoresnapshotledger` VALUES (19971, 'test002', 2, 3, 107001, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-24 09:50:32');
+INSERT INTO `userscoresnapshotledger` VALUES (19972, 'test002', 54, 0, 107001, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-24 09:50:35');
+INSERT INTO `userscoresnapshotledger` VALUES (19973, 'test002', 10, 6, 0, 107001, 107001, 0, 'SNAPSHOT_SAVE', '2026-07-24 09:53:48');
+INSERT INTO `userscoresnapshotledger` VALUES (19974, 'test002', 10, 6, 0, 107001, 107001, 0, 'SNAPSHOT_SAVE', '2026-07-24 09:53:51');
+INSERT INTO `userscoresnapshotledger` VALUES (19975, 'test002', 10, 6, 107001, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-24 09:54:10');
+INSERT INTO `userscoresnapshotledger` VALUES (19976, 'test002', 54, 0, 107001, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-24 09:54:12');
+INSERT INTO `userscoresnapshotledger` VALUES (19977, 'test002', 29, 9, 0, 107001, 107001, 0, 'SNAPSHOT_SAVE', '2026-07-24 09:54:22');
+INSERT INTO `userscoresnapshotledger` VALUES (19978, 'test002', 29, 9, 0, 107001, 107001, 0, 'SNAPSHOT_SAVE', '2026-07-24 09:54:24');
+INSERT INTO `userscoresnapshotledger` VALUES (19979, 'test002', 29, 9, 107001, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-24 09:54:29');
+INSERT INTO `userscoresnapshotledger` VALUES (19980, 'test002', 54, 0, 107001, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-24 09:54:33');
+INSERT INTO `userscoresnapshotledger` VALUES (19981, 'test002', 47, 12, 0, 107001, 107001, 0, 'SNAPSHOT_SAVE', '2026-07-24 09:54:37');
+INSERT INTO `userscoresnapshotledger` VALUES (19982, 'test002', 47, 12, 0, 107001, 107001, 0, 'SNAPSHOT_SAVE', '2026-07-24 09:54:39');
+INSERT INTO `userscoresnapshotledger` VALUES (19983, 'test002', 47, 12, 107001, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-24 09:54:40');
+INSERT INTO `userscoresnapshotledger` VALUES (19984, 'test002', 54, 0, 107001, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-24 10:01:19');
+INSERT INTO `userscoresnapshotledger` VALUES (19985, 'test002', 10, 15, 0, 107001, 107001, 0, 'SNAPSHOT_SAVE', '2026-07-24 10:02:06');
+INSERT INTO `userscoresnapshotledger` VALUES (19986, 'test002', 10, 15, 107001, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-24 10:03:05');
+INSERT INTO `userscoresnapshotledger` VALUES (19987, 'test002', 10, 17, 0, 107001, 107001, 0, 'SNAPSHOT_SAVE', '2026-07-24 10:03:52');
+INSERT INTO `userscoresnapshotledger` VALUES (19988, 'test002', 10, 17, 107001, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-24 10:03:58');
+INSERT INTO `userscoresnapshotledger` VALUES (19989, 'test002', 10, 19, 0, 107001, 107001, 0, 'SNAPSHOT_SAVE', '2026-07-24 10:05:53');
+INSERT INTO `userscoresnapshotledger` VALUES (19990, 'test002', 10, 19, 0, 107001, 107001, 0, 'SNAPSHOT_SAVE', '2026-07-24 10:06:06');
+INSERT INTO `userscoresnapshotledger` VALUES (19991, 'test002', 10, 19, 107001, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-24 10:06:56');
+INSERT INTO `userscoresnapshotledger` VALUES (19992, 'test002', 54, 0, 107001, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-24 10:06:58');
+INSERT INTO `userscoresnapshotledger` VALUES (19993, 'test002', 0, 21, 107001, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-24 10:07:16');
+INSERT INTO `userscoresnapshotledger` VALUES (19994, 'test002', 54, 0, 107001, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-24 10:13:35');
+INSERT INTO `userscoresnapshotledger` VALUES (19995, 'test002', 54, 0, 107001, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-24 10:13:50');
+INSERT INTO `userscoresnapshotledger` VALUES (19996, 'test002', 10, 6, 0, 107001, 107001, 0, 'SNAPSHOT_SAVE', '2026-07-24 10:13:59');
+INSERT INTO `userscoresnapshotledger` VALUES (19997, 'test002', 10, 6, 0, 106956, 106956, 0, 'SNAPSHOT_SAVE', '2026-07-24 10:14:12');
+INSERT INTO `userscoresnapshotledger` VALUES (19998, 'test002', 10, 6, 0, 106956, 106956, 0, 'SNAPSHOT_SAVE', '2026-07-24 10:15:03');
+INSERT INTO `userscoresnapshotledger` VALUES (19999, 'test002', 10, 6, 0, 106956, 106956, 0, 'SNAPSHOT_SAVE', '2026-07-24 10:15:54');
+INSERT INTO `userscoresnapshotledger` VALUES (20000, 'test002', 10, 6, 106956, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-24 10:16:02');
+INSERT INTO `userscoresnapshotledger` VALUES (20001, 'test002', 54, 0, 106956, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-24 10:16:03');
+INSERT INTO `userscoresnapshotledger` VALUES (20002, 'test002', 54, 0, 106956, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-24 10:16:15');
+INSERT INTO `userscoresnapshotledger` VALUES (20003, 'test002', 54, 0, 106956, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-24 10:19:57');
 
 -- ----------------------------
 -- Table structure for videogamecoinrecord
