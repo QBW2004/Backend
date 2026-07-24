@@ -66,8 +66,9 @@ namespace YYT.Web.Areas.Game.Controllers
                     if (gameType == 0)
                     {
                         // 一房N桌模型：桌台列表以 roomtableconfig 为准(按桌存)，
-                        // 专有参数(押注时长/庄闲和限红/投注档位/EX_COIN/Game_Mo 等)从 parabetroom base 行取(所有桌共享)，
-                        // 难度从 parabet 按 ID=gameId*1000+TableIndex 关联，赔率从 cardpayoutprofile 按 TableId 关联。
+                        // 桌级押注参数(BetTime/限红/BetScores/庄闲和)优先从 roomtableconfig_bet 按桌取，
+                        // 缺行时回退 parabetroom base 行(所有桌共享)。
+                        // EX_COIN/Game_Mo 仅 base 行有(房级共享)，难度从 parabet、赔率从 cardpayoutprofile 关联。
                         M_ParaBetRoom baseRoom = ef.ParaBetRooms.FirstOrDefault(c => c.GAME_ID == gameId);
                         List<M_ParaBet> bets = ef.ParaBets
                             .Where(c => c.GAME_ID == gameId)
@@ -77,6 +78,9 @@ namespace YYT.Web.Areas.Game.Controllers
                         // 按桌读取 roomtableconfig（桌名/启用/限红/MaxSeats/IdleFire 等桌级参数）
                         var cfgRows = ef.Database.SqlQuery<BetTableCfgRow>(
                             "SELECT TableIndex, TableName, Enabled, BetMin, BetMax, CoinsNeed, OneCoinScore, MaxSeats, IdleFireTimeoutSec, IdleFireKickEnabled FROM roomtableconfig WHERE GAME_ID={0} ORDER BY TableIndex", gameId).ToList();
+                        // 按桌读取 roomtableconfig_bet（押注时长/庄闲和限红/投注档位等桌级押注参数）
+                        var betCfgRows = ef.Database.SqlQuery<BetTableCfgBetRow>(
+                            "SELECT TableIndex, BetTime, BetMin, BetMax, BankerScoreNeed, ItemSingleScoreLimit, ItemAllScoreLimit, CoinsNeed, OneCoinScore, BetScores, DefaultBetIndex, BetMinVice, BetMaxVice, BetMinDraw, BetMaxDraw FROM roomtableconfig_bet WHERE GAME_ID={0} ORDER BY TableIndex", gameId).ToList();
                         int bidx = 0;
                         foreach (BetTableCfgRow cfg in cfgRows)
                         {
@@ -85,6 +89,17 @@ namespace YYT.Web.Areas.Game.Controllers
                             int tableIdFull = gameId * 1000 + btIdx;
                             M_ParaBet m = bets.FirstOrDefault(c => c.ID == tableIdFull);
                             List<CardPayoutRowDto> bpr = betPayoutRows.Where(c => c.TableId == btIdx).ToList();
+                            // 按桌押注参数：优先 roomtableconfig_bet，缺则回退 base 行
+                            BetTableCfgBetRow bcfg = betCfgRows.FirstOrDefault(c => c.TableIndex == btIdx);
+                            int vBetTime       = bcfg != null ? bcfg.BetTime       : (baseRoom == null ? 10 : baseRoom.BET_TIME);
+                            int vBetMinVice    = bcfg != null ? bcfg.BetMinVice    : (baseRoom == null ? 0 : baseRoom.BET_MIN_VICE);
+                            int vBetMaxVice    = bcfg != null ? bcfg.BetMaxVice    : (baseRoom == null ? 0 : baseRoom.BET_MAX_VICE);
+                            int vBetMinDraw    = bcfg != null ? bcfg.BetMinDraw    : (baseRoom == null ? 0 : baseRoom.BET_MIN_DRAW);
+                            int vBetMaxDraw    = bcfg != null ? bcfg.BetMaxDraw    : (baseRoom == null ? 0 : baseRoom.BET_MAX_DRAW);
+                            int vBankerScNeed  = bcfg != null ? bcfg.BankerScoreNeed : (baseRoom == null ? 0 : baseRoom.BANKER_SC_NEED);
+                            int vScLimitSing   = bcfg != null ? bcfg.ItemSingleScoreLimit : (baseRoom == null ? 0 : baseRoom.SC_LIMIT_SING);
+                            int vScLimitAll    = bcfg != null ? bcfg.ItemAllScoreLimit : (baseRoom == null ? 0 : baseRoom.SC_LIMIT_ALL);
+                            string vBetScores  = bcfg != null ? (bcfg.BetScores ?? string.Empty) : (baseRoom == null ? string.Empty : (baseRoom.BetScores ?? string.Empty));
                             Dictionary<string, int> betPayout = new Dictionary<string, int>();
                             foreach (CardPayoutRowDto p in bpr)
                             {
@@ -106,15 +121,15 @@ namespace YYT.Web.Areas.Game.Controllers
                                 idleFireTimeoutSec = cfg.IdleFireTimeoutSec,
                                 idleFireKickEnabled = cfg.IdleFireKickEnabled,
                                 enabled = cfg.Enabled,
-                                betTime = baseRoom == null ? 10 : baseRoom.BET_TIME,
-                                betMinVice = baseRoom == null ? 0 : baseRoom.BET_MIN_VICE,
-                                betMaxVice = baseRoom == null ? 0 : baseRoom.BET_MAX_VICE,
-                                betMinDraw = baseRoom == null ? 0 : baseRoom.BET_MIN_DRAW,
-                                betMaxDraw = baseRoom == null ? 0 : baseRoom.BET_MAX_DRAW,
-                                bankerScNeed = baseRoom == null ? 0 : baseRoom.BANKER_SC_NEED,
-                                scLimitSing = baseRoom == null ? 0 : baseRoom.SC_LIMIT_SING,
-                                scLimitAll = baseRoom == null ? 0 : baseRoom.SC_LIMIT_ALL,
-                                betScores = baseRoom == null ? string.Empty : (baseRoom.BetScores ?? string.Empty),
+                                betTime = vBetTime,
+                                betMinVice = vBetMinVice,
+                                betMaxVice = vBetMaxVice,
+                                betMinDraw = vBetMinDraw,
+                                betMaxDraw = vBetMaxDraw,
+                                bankerScNeed = vBankerScNeed,
+                                scLimitSing = vScLimitSing,
+                                scLimitAll = vScLimitAll,
+                                betScores = vBetScores,
                                 dif = m == null ? 0 : m.DIF,
                                 har = m == null ? 0 : m.HAR,
                                 siteType = m == null ? 0 : m.SITE_TYPE,
@@ -364,8 +379,10 @@ namespace YYT.Web.Areas.Game.Controllers
 
 					else if (gameType == 0)
 					{
-						// 押注类一房N桌删除：按桌删 roomtableconfig/parabet/cardpayoutprofile，
+						// 押注类一房N桌删除：按桌删 roomtableconfig/parabet/cardpayoutprofile/roomtableconfig_bet，
 						// 压实剩余桌台索引为 0..k-1，同步 base 行 NUM。
+						// 注意：roomtableconfig_bet 由 center 写入，删除桌台时必须同步清理，
+						// 否则留下孤儿行导致下次 RP 重载时 center 把残留 TableIndex 也下发给客户端。
 						int betGid = tableId / 1000;
 						int delIdx = tableId % 1000;
 						using (var efBet = new GameDbContext())
@@ -373,6 +390,7 @@ namespace YYT.Web.Areas.Game.Controllers
 							efBet.Database.ExecuteSqlCommand("DELETE FROM roomtableconfig WHERE GAME_ID=" + betGid + " AND TableIndex=" + delIdx);
 							efBet.Database.ExecuteSqlCommand("DELETE FROM parabet WHERE GAME_ID=" + betGid + " AND ID=" + (betGid * 1000 + delIdx));
 							efBet.Database.ExecuteSqlCommand("DELETE FROM cardpayoutprofile WHERE GAME_ID=" + betGid + " AND TableId=" + delIdx);
+							efBet.Database.ExecuteSqlCommand("DELETE FROM roomtableconfig_bet WHERE GAME_ID=" + betGid + " AND TableIndex=" + delIdx);
 							// 压实 roomtableconfig.TableIndex 为 0..k-1
 							CompactFishTableIndexes(efBet, betGid);
 							// 压实 parabet ID 为 gameId*1000+0..k-1，与 roomtableconfig 保持同构
@@ -380,6 +398,9 @@ namespace YYT.Web.Areas.Game.Controllers
 							// 压实 cardpayoutprofile.TableId 高位左移
 							efBet.Database.ExecuteSqlCommand(
 								"UPDATE cardpayoutprofile SET TableId=TableId-1 WHERE GAME_ID=" + betGid + " AND TableId>" + delIdx);
+							// 压实 roomtableconfig_bet.TableIndex 高位左移(与 cardpayoutprofile 同思路)
+							efBet.Database.ExecuteSqlCommand(
+								"UPDATE roomtableconfig_bet SET TableIndex=TableIndex-1 WHERE GAME_ID=" + betGid + " AND TableIndex>" + delIdx);
 							// 同步 base 行 NUM = 剩余桌台数
 							SyncBetTableNum(efBet, betGid);
 						}
@@ -652,6 +673,7 @@ namespace YYT.Web.Areas.Game.Controllers
                 {
                     // 押注玩法旧字段已从页面移除：保存时沿用库内原值，不被表单缺省值清零。
                     // 一房N桌模型：专有参数存 base 行(ID=gameId*1000)，所有桌共享，故从 base 行取旧值。
+                    // 首次建游戏(base 行不存在)时，这些参数用服务端 GetBetPara 同款默认值，避免全 0。
                     M_ParaBetRoom oldRoom = null;
                     using (var efOld = new GameDbContext())
                     {
@@ -661,22 +683,23 @@ namespace YYT.Web.Areas.Game.Controllers
                     M_ParaBetRoom room = new M_ParaBetRoom();
                     room.ID = tableId;
                     room.GAME_ID = gameId;
-                    room.BET_TIME = oldRoom == null ? form.Q<int>("BET_TIME", 0) : oldRoom.BET_TIME;
+                    room.BET_TIME = 10;
                     room.NUM = num;
                     room.BET_MIN = betMin;
                     room.BET_MAX = betMax;
-                    room.BET_MIN_VICE = oldRoom == null ? 0 : oldRoom.BET_MIN_VICE;
-                    room.BET_MAX_VICE = oldRoom == null ? 0 : oldRoom.BET_MAX_VICE;
-                    room.BET_MIN_DRAW = oldRoom == null ? 0 : oldRoom.BET_MIN_DRAW;
-                    room.BET_MAX_DRAW = oldRoom == null ? 0 : oldRoom.BET_MAX_DRAW;
+                    room.BET_MIN_VICE = oldRoom == null ? 10 : oldRoom.BET_MIN_VICE;
+                    room.BET_MAX_VICE = oldRoom == null ? 1000 : oldRoom.BET_MAX_VICE;
+                    room.BET_MIN_DRAW = oldRoom == null ? 10 : oldRoom.BET_MIN_DRAW;
+                    room.BET_MAX_DRAW = oldRoom == null ? 1000 : oldRoom.BET_MAX_DRAW;
                     room.EX_COIN = exCoin;
                     room.COIN_SC = coinSc;
                     room.COIN_NEED = coinNeed;
-                    room.BANKER_SC_NEED = oldRoom == null ? 0 : oldRoom.BANKER_SC_NEED;
-                    room.SC_LIMIT_SING = oldRoom == null ? 0 : oldRoom.SC_LIMIT_SING;
-                    room.SC_LIMIT_ALL = oldRoom == null ? 0 : oldRoom.SC_LIMIT_ALL;
+                    room.BANKER_SC_NEED = oldRoom == null ? 500000 : oldRoom.BANKER_SC_NEED;
+                    room.SC_LIMIT_SING = oldRoom == null ? 3000 : oldRoom.SC_LIMIT_SING;
+                    room.SC_LIMIT_ALL = oldRoom == null ? 10000 : oldRoom.SC_LIMIT_ALL;
                     room.Game_Mo = gameMo;
                     room.BetScores = (form.Q<string>("BetScores", string.Empty) ?? string.Empty).Trim();
+                    if (string.IsNullOrEmpty(room.BetScores)) room.BetScores = oldRoom != null && !string.IsNullOrEmpty(oldRoom.BetScores) ? oldRoom.BetScores : "1,5,10,15,20";
                     room.DefaultBetIndex = 0;
                     room.TableName = tableName;
                     room.MaxSeats = maxSeats;
@@ -1247,6 +1270,26 @@ namespace YYT.Web.Areas.Game.Controllers
             public int MaxSeats { get; set; }
             public int IdleFireTimeoutSec { get; set; }
             public int IdleFireKickEnabled { get; set; }
+        }
+
+        // roomtableconfig_bet 押注类桌台押注参数行映射（原生 SQL 查询用）
+        public class BetTableCfgBetRow
+        {
+            public int TableIndex { get; set; }
+            public int BetTime { get; set; }
+            public int BetMin { get; set; }
+            public int BetMax { get; set; }
+            public int BankerScoreNeed { get; set; }
+            public int ItemSingleScoreLimit { get; set; }
+            public int ItemAllScoreLimit { get; set; }
+            public int CoinsNeed { get; set; }
+            public int OneCoinScore { get; set; }
+            public string BetScores { get; set; }
+            public int DefaultBetIndex { get; set; }
+            public int BetMinVice { get; set; }
+            public int BetMaxVice { get; set; }
+            public int BetMinDraw { get; set; }
+            public int BetMaxDraw { get; set; }
         }
 
 }

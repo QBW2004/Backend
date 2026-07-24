@@ -130,6 +130,22 @@ namespace YYT.BLL.EF
                             room.COIN_SC, room.BET_MIN, room.BET_MAX, room.COIN_NEED,
                             room.IdleFireTimeoutSec, room.IdleFireKickEnabled ? 1 : 0, room.MaxSeats);
 
+                        // 押注类按桌押注参数直接落库 roomtableconfig_bet，不再依赖 center 收到 TC 后回写。
+                        // 历史 TC 命令因命名管道问题频繁失败(historical pipe issue)，导致 center 不写此表，
+                        // 客户端 AA01 只能收到 parabetroom base 行兜底的合成值。改为后台直接写，字段与
+                        // center UpsertBetRoomTableConfig(Database.cpp:3977) 完全一致。
+                        // 桌级参数(BetMin/BetMax/CoinsNeed/OneCoinScore)取本次提交值；房级共享参数
+                        // (BetTime/BankerScoreNeed/限红/BetScores/庄闲和)也取本次提交值(前端每桌都提交完整参数)。
+                        ef.Database.ExecuteSqlCommand(
+                            "DELETE FROM roomtableconfig_bet WHERE GAME_ID={0} AND TableIndex={1}", room.GAME_ID, tIdx);
+                        ef.Database.ExecuteSqlCommand(
+                            "INSERT INTO roomtableconfig_bet (GAME_ID, TableIndex, BetTime, BetMin, BetMax, BankerScoreNeed, ItemSingleScoreLimit, ItemAllScoreLimit, CoinsNeed, OneCoinScore, BetScores, DefaultBetIndex, BetMinVice, BetMaxVice, BetMinDraw, BetMaxDraw) VALUES ({0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15})",
+                            room.GAME_ID, tIdx, room.BET_TIME,
+                            room.BET_MIN, room.BET_MAX, room.BANKER_SC_NEED,
+                            room.SC_LIMIT_SING, room.SC_LIMIT_ALL, room.COIN_NEED, room.COIN_SC,
+                            room.BetScores ?? string.Empty, room.DefaultBetIndex ?? 0,
+                            room.BET_MIN_VICE, room.BET_MAX_VICE, room.BET_MIN_DRAW, room.BET_MAX_DRAW);
+
                         trans.Commit();
                     }
                     catch (Exception ex)
