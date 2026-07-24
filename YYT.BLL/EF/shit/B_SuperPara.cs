@@ -259,7 +259,23 @@ namespace YYT.BLL.EF
                                 "UPDATE ParaBetRoom SET NUM={0} WHERE GAME_ID={1} AND ID={2}", cfgCnt, gameId, gameId * 1000);
                         }
                     }
-                    else if (eGameType == EGameType.Card || eGameType == EGameType.Fish)
+                    else if (eGameType == EGameType.Card)
+                    {
+                        // 牌机一房N桌：ROOM_MAX 恒为 1(单房间)，base 行(ID=gameId*1000)的 NUM = roomtableconfig 条数(桌台数)。
+                        // 服务端 GetCardPara 按 ROOM_MAX=1 循环1次读 base 行(num=N)，tableMax=N 读 paracard[0..N-1]。
+                        int affected = ef.Database.ExecuteSqlCommand("UPDATE ParaGame SET ROOM_MAX=1 WHERE ID={0}", gameId);
+                        if (affected == 0)
+                            ef.Database.ExecuteSqlCommand("INSERT INTO ParaGame(ID,ROOM_MAX,PLY_MAX) VALUES({0},1,1000)", gameId);
+
+                        int cfgCnt = ef.Database.SqlQuery<int>(
+                            "SELECT COUNT(*) FROM roomtableconfig WHERE GAME_ID={0}", gameId).FirstOrDefault();
+                        if (cfgCnt > 0)
+                        {
+                            ef.Database.ExecuteSqlCommand(
+                                "UPDATE ParaRoom SET NUM={0} WHERE GAME_ID={1} AND ID={2}", cfgCnt, gameId, gameId * 1000);
+                        }
+                    }
+                    else if (eGameType == EGameType.Fish)
                     {
                         string roomTbl = "ParaRoom";
                         int cnt = ef.Database.SqlQuery<int>(
@@ -270,15 +286,12 @@ namespace YYT.BLL.EF
                             ef.Database.ExecuteSqlCommand("INSERT INTO ParaGame(ID,ROOM_MAX,PLY_MAX) VALUES({0},{1},1000)", gameId, cnt);
 
                         // 鱼机额外同步 pararoom.NUM = roomtableconfig 条数
-                        if (eGameType == EGameType.Fish)
+                        int cfgCnt = ef.Database.SqlQuery<int>(
+                            "SELECT COUNT(*) FROM roomtableconfig WHERE GAME_ID=" + gameId).FirstOrDefault();
+                        if (cfgCnt > 0)
                         {
-                            int cfgCnt = ef.Database.SqlQuery<int>(
-                                "SELECT COUNT(*) FROM roomtableconfig WHERE GAME_ID=" + gameId).FirstOrDefault();
-                            if (cfgCnt > 0)
-                            {
-                                ef.Database.ExecuteSqlCommand(
-                                    "UPDATE ParaRoom SET NUM=" + cfgCnt + " WHERE GAME_ID=" + gameId + " AND ID=" + (gameId * 1000));
-                            }
+                            ef.Database.ExecuteSqlCommand(
+                                "UPDATE ParaRoom SET NUM=" + cfgCnt + " WHERE GAME_ID=" + gameId + " AND ID=" + (gameId * 1000));
                         }
                     }
                 }
