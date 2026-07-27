@@ -11,7 +11,7 @@
  Target Server Version : 50744
  File Encoding         : 65001
 
- Date: 27/07/2026 15:39:10
+ Date: 27/07/2026 17:59:13
 */
 
 SET NAMES utf8mb4;
@@ -119,7 +119,7 @@ CREATE TABLE `agencyoptlog`  (
   `AFT_COINS` bigint(20) NOT NULL DEFAULT 0 COMMENT '操作后金币量',
   `WEEK` tinyint(4) NOT NULL DEFAULT 0 COMMENT '周数',
   PRIMARY KEY (`LID`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 485 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '代理日志表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 491 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '代理日志表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of agencyoptlog
@@ -286,6 +286,12 @@ INSERT INTO `agencyoptlog` VALUES (481, 'atmadmin', '超级管理', 'atmadmin', 
 INSERT INTO `agencyoptlog` VALUES (482, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-27 11:02:12', 2, 0, 0, 0, 31);
 INSERT INTO `agencyoptlog` VALUES (483, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-27 13:36:51', 2, 0, 0, 0, 31);
 INSERT INTO `agencyoptlog` VALUES (484, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-27 15:18:39', 2, 0, 0, 0, 31);
+INSERT INTO `agencyoptlog` VALUES (485, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-27 15:46:40', 2, 0, 0, 0, 31);
+INSERT INTO `agencyoptlog` VALUES (486, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-27 15:47:37', 2, 0, 0, 0, 31);
+INSERT INTO `agencyoptlog` VALUES (487, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-27 15:49:00', 2, 0, 0, 0, 31);
+INSERT INTO `agencyoptlog` VALUES (488, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-27 16:16:29', 2, 0, 0, 0, 31);
+INSERT INTO `agencyoptlog` VALUES (489, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-27 16:16:29', 2, 0, 0, 0, 31);
+INSERT INTO `agencyoptlog` VALUES (490, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-27 16:53:01', 2, 0, 0, 0, 31);
 
 -- ----------------------------
 -- Table structure for agent_hierarchy
@@ -364,7 +370,7 @@ CREATE TABLE `cardpayoutprofile`  (
   `Enabled` int(11) NOT NULL DEFAULT 1 COMMENT '是否启用此牌型',
   PRIMARY KEY (`ID`) USING BTREE,
   INDEX `idx_game_table_hand`(`GAME_ID`, `TableId`, `HandType`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1044 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '牌机出货与库存配置表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1052 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '牌机出货与库存配置表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of cardpayoutprofile
@@ -397,14 +403,6 @@ INSERT INTO `cardpayoutprofile` VALUES (660, 47, 2, 4, 480, 0, 0, 0, 1);
 INSERT INTO `cardpayoutprofile` VALUES (661, 47, 2, 5, 100, 0, 0, 0, 1);
 INSERT INTO `cardpayoutprofile` VALUES (662, 47, 2, 6, 60, 0, 0, 0, 1);
 INSERT INTO `cardpayoutprofile` VALUES (663, 47, 2, 7, 40, 0, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (664, 47, 1, 0, 30, 5000, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (665, 47, 1, 1, 60, 100, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (666, 47, 1, 2, 120, 100, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (667, 47, 1, 3, 240, 100, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (668, 47, 1, 4, 480, 100, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (669, 47, 1, 5, 100, 100, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (670, 47, 1, 6, 60, 10, 0, 0, 1);
-INSERT INTO `cardpayoutprofile` VALUES (671, 47, 1, 7, 40, 0, 0, 0, 1);
 INSERT INTO `cardpayoutprofile` VALUES (745, 2, 3, 0, 38, 0, 0, 0, 1);
 INSERT INTO `cardpayoutprofile` VALUES (746, 2, 3, 1, 38, 0, 0, 0, 1);
 INSERT INTO `cardpayoutprofile` VALUES (747, 2, 3, 2, 40, 0, 0, 0, 1);
@@ -646,6 +644,14 @@ INSERT INTO `cardpayoutprofile` VALUES (1040, 29, 1, 4, 480, 0, 0, 0, 1);
 INSERT INTO `cardpayoutprofile` VALUES (1041, 29, 1, 5, 100, 0, 0, 0, 1);
 INSERT INTO `cardpayoutprofile` VALUES (1042, 29, 1, 6, 60, 0, 0, 0, 1);
 INSERT INTO `cardpayoutprofile` VALUES (1043, 29, 1, 7, 40, 0, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (1044, 47, 1, 0, 30, 0, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (1045, 47, 1, 1, 60, 0, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (1046, 47, 1, 2, 120, 0, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (1047, 47, 1, 3, 240, 0, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (1048, 47, 1, 4, 480, 0, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (1049, 47, 1, 5, 100, 0, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (1050, 47, 1, 6, 60, 0, 0, 0, 1);
+INSERT INTO `cardpayoutprofile` VALUES (1051, 47, 1, 7, 40, 0, 0, 0, 1);
 
 -- ----------------------------
 -- Table structure for cashierinfo
@@ -1052,21 +1058,21 @@ CREATE TABLE `gameconfiglaba`  (
 -- ----------------------------
 INSERT INTO `gameconfiglaba` VALUES (16, 0, 'betMax', 1000, 'Room', '2026-07-24 15:43:22');
 INSERT INTO `gameconfiglaba` VALUES (16, 0, 'betMaxX10', 10000, 'Room', '2026-07-24 15:43:22');
-INSERT INTO `gameconfiglaba` VALUES (16, 0, 'betMin', 5, 'Room', '2026-07-24 15:43:22');
-INSERT INTO `gameconfiglaba` VALUES (16, 0, 'betMinX10', 50, 'Room', '2026-07-24 15:43:22');
+INSERT INTO `gameconfiglaba` VALUES (16, 0, 'betMin', 10, 'Room', '2026-07-24 15:43:22');
+INSERT INTO `gameconfiglaba` VALUES (16, 0, 'betMinX10', 100, 'Room', '2026-07-24 15:43:22');
 INSERT INTO `gameconfiglaba` VALUES (16, 0, 'coinSc', 1, 'Room', '2026-07-24 15:43:22');
 INSERT INTO `gameconfiglaba` VALUES (16, 0, 'coinsNeed', 10000, 'Room', '2026-07-24 15:43:22');
 INSERT INTO `gameconfiglaba` VALUES (16, 0, 'exCoin', 10000, 'Room', '2026-07-24 15:43:22');
 INSERT INTO `gameconfiglaba` VALUES (16, 0, 'gameMo', 100, 'Room', '2026-07-24 15:43:22');
-INSERT INTO `gameconfiglaba` VALUES (16, 0, 'Payout0', 10, 'Payout', '2026-07-24 15:43:22');
-INSERT INTO `gameconfiglaba` VALUES (16, 0, 'Payout1', 10, 'Payout', '2026-07-24 15:43:22');
-INSERT INTO `gameconfiglaba` VALUES (16, 0, 'Payout2', 14, 'Payout', '2026-07-24 15:43:22');
-INSERT INTO `gameconfiglaba` VALUES (16, 0, 'Payout3', 18, 'Payout', '2026-07-24 15:43:22');
-INSERT INTO `gameconfiglaba` VALUES (16, 0, 'Payout4', 20, 'Payout', '2026-07-24 15:43:22');
-INSERT INTO `gameconfiglaba` VALUES (16, 0, 'Payout5', 30, 'Payout', '2026-07-24 15:43:22');
-INSERT INTO `gameconfiglaba` VALUES (16, 0, 'Payout6', 50, 'Payout', '2026-07-24 15:43:22');
-INSERT INTO `gameconfiglaba` VALUES (16, 0, 'Payout7', 70, 'Payout', '2026-07-24 15:43:22');
-INSERT INTO `gameconfiglaba` VALUES (16, 0, 'Payout8', 80, 'Payout', '2026-07-24 15:43:22');
+INSERT INTO `gameconfiglaba` VALUES (16, 0, 'Payout0', 10, 'Payout', '2026-07-27 16:26:35');
+INSERT INTO `gameconfiglaba` VALUES (16, 0, 'Payout1', 10, 'Payout', '2026-07-27 16:26:35');
+INSERT INTO `gameconfiglaba` VALUES (16, 0, 'Payout2', 14, 'Payout', '2026-07-27 16:26:35');
+INSERT INTO `gameconfiglaba` VALUES (16, 0, 'Payout3', 18, 'Payout', '2026-07-27 16:26:35');
+INSERT INTO `gameconfiglaba` VALUES (16, 0, 'Payout4', 20, 'Payout', '2026-07-27 16:26:35');
+INSERT INTO `gameconfiglaba` VALUES (16, 0, 'Payout5', 30, 'Payout', '2026-07-27 16:26:35');
+INSERT INTO `gameconfiglaba` VALUES (16, 0, 'Payout6', 50, 'Payout', '2026-07-27 16:26:35');
+INSERT INTO `gameconfiglaba` VALUES (16, 0, 'Payout7', 70, 'Payout', '2026-07-27 16:26:35');
+INSERT INTO `gameconfiglaba` VALUES (16, 0, 'Payout8', 80, 'Payout', '2026-07-27 16:26:35');
 INSERT INTO `gameconfiglaba` VALUES (16, 0, 'Prob0', 6000, 'Payout', '2026-07-24 15:43:22');
 INSERT INTO `gameconfiglaba` VALUES (16, 0, 'Prob1', 2000, 'Payout', '2026-07-24 15:43:22');
 INSERT INTO `gameconfiglaba` VALUES (16, 0, 'Prob2', 1000, 'Payout', '2026-07-24 15:43:22');
@@ -1170,6 +1176,39 @@ INSERT INTO `gameconfiglaba` VALUES (40, 1, 'WheelProb6', 100, 'Payout', '2026-0
 INSERT INTO `gameconfiglaba` VALUES (40, 1, 'WheelProb7', 100, 'Payout', '2026-07-27 15:30:49');
 INSERT INTO `gameconfiglaba` VALUES (40, 1, 'WheelProb8', 100, 'Payout', '2026-07-27 15:30:49');
 INSERT INTO `gameconfiglaba` VALUES (40, 1, 'WheelProb9', 100, 'Payout', '2026-07-27 15:30:49');
+INSERT INTO `gameconfiglaba` VALUES (40, 2, 'betMax', 1000, 'Room', '2026-07-27 17:45:09');
+INSERT INTO `gameconfiglaba` VALUES (40, 2, 'betMaxX10', 10000, 'Room', '2026-07-27 17:45:09');
+INSERT INTO `gameconfiglaba` VALUES (40, 2, 'betMin', 5, 'Room', '2026-07-27 17:45:09');
+INSERT INTO `gameconfiglaba` VALUES (40, 2, 'betMinX10', 50, 'Room', '2026-07-27 17:45:09');
+INSERT INTO `gameconfiglaba` VALUES (40, 2, 'coinSc', 1, 'Room', '2026-07-27 17:45:09');
+INSERT INTO `gameconfiglaba` VALUES (40, 2, 'coinsNeed', 1000, 'Room', '2026-07-27 17:45:09');
+INSERT INTO `gameconfiglaba` VALUES (40, 2, 'exCoin', 10000, 'Room', '2026-07-27 17:45:09');
+INSERT INTO `gameconfiglaba` VALUES (40, 2, 'gameMo', 100, 'Room', '2026-07-27 17:45:09');
+INSERT INTO `gameconfiglaba` VALUES (40, 2, 'scoreSwitchX10', 1, 'Room', '2026-07-27 17:45:09');
+INSERT INTO `gameconfiglaba` VALUES (40, 2, 'WheelProb0', 100, 'Payout', '2026-07-27 17:45:09');
+INSERT INTO `gameconfiglaba` VALUES (40, 2, 'WheelProb1', 50, 'Payout', '2026-07-27 17:45:09');
+INSERT INTO `gameconfiglaba` VALUES (40, 2, 'WheelProb10', 100, 'Payout', '2026-07-27 17:45:09');
+INSERT INTO `gameconfiglaba` VALUES (40, 2, 'WheelProb11', 1000, 'Payout', '2026-07-27 17:45:09');
+INSERT INTO `gameconfiglaba` VALUES (40, 2, 'WheelProb12', 100, 'Payout', '2026-07-27 17:45:09');
+INSERT INTO `gameconfiglaba` VALUES (40, 2, 'WheelProb13', 50, 'Payout', '2026-07-27 17:45:09');
+INSERT INTO `gameconfiglaba` VALUES (40, 2, 'WheelProb14', 1000, 'Payout', '2026-07-27 17:45:09');
+INSERT INTO `gameconfiglaba` VALUES (40, 2, 'WheelProb15', 20, 'Payout', '2026-07-27 17:45:09');
+INSERT INTO `gameconfiglaba` VALUES (40, 2, 'WheelProb16', 100, 'Payout', '2026-07-27 17:45:09');
+INSERT INTO `gameconfiglaba` VALUES (40, 2, 'WheelProb17', 100, 'Payout', '2026-07-27 17:45:09');
+INSERT INTO `gameconfiglaba` VALUES (40, 2, 'WheelProb18', 20, 'Payout', '2026-07-27 17:45:09');
+INSERT INTO `gameconfiglaba` VALUES (40, 2, 'WheelProb19', 1115, 'Payout', '2026-07-27 17:45:09');
+INSERT INTO `gameconfiglaba` VALUES (40, 2, 'WheelProb2', 20, 'Payout', '2026-07-27 17:45:09');
+INSERT INTO `gameconfiglaba` VALUES (40, 2, 'WheelProb20', 20, 'Payout', '2026-07-27 17:45:09');
+INSERT INTO `gameconfiglaba` VALUES (40, 2, 'WheelProb21', 100, 'Payout', '2026-07-27 17:45:09');
+INSERT INTO `gameconfiglaba` VALUES (40, 2, 'WheelProb22', 1000, 'Payout', '2026-07-27 17:45:09');
+INSERT INTO `gameconfiglaba` VALUES (40, 2, 'WheelProb23', 1000, 'Payout', '2026-07-27 17:45:09');
+INSERT INTO `gameconfiglaba` VALUES (40, 2, 'WheelProb3', 5, 'Payout', '2026-07-27 17:45:09');
+INSERT INTO `gameconfiglaba` VALUES (40, 2, 'WheelProb4', 100, 'Payout', '2026-07-27 17:45:09');
+INSERT INTO `gameconfiglaba` VALUES (40, 2, 'WheelProb5', 2800, 'Payout', '2026-07-27 17:45:09');
+INSERT INTO `gameconfiglaba` VALUES (40, 2, 'WheelProb6', 100, 'Payout', '2026-07-27 17:45:09');
+INSERT INTO `gameconfiglaba` VALUES (40, 2, 'WheelProb7', 50, 'Payout', '2026-07-27 17:45:09');
+INSERT INTO `gameconfiglaba` VALUES (40, 2, 'WheelProb8', 1000, 'Payout', '2026-07-27 17:45:09');
+INSERT INTO `gameconfiglaba` VALUES (40, 2, 'WheelProb9', 50, 'Payout', '2026-07-27 17:45:09');
 INSERT INTO `gameconfiglaba` VALUES (53, 0, 'betMax', 100, 'Room', '2026-07-27 15:21:31');
 INSERT INTO `gameconfiglaba` VALUES (53, 0, 'betMaxX10', 1000, 'Room', '2026-07-27 15:21:31');
 INSERT INTO `gameconfiglaba` VALUES (53, 0, 'betMin', 1, 'Room', '2026-07-27 15:21:31');
@@ -1356,7 +1395,7 @@ CREATE TABLE `loginmissrecord`  (
 -- ----------------------------
 -- Records of loginmissrecord
 -- ----------------------------
-INSERT INTO `loginmissrecord` VALUES (205, 'atmadmin', 1, 0, '::1', '2026-07-27 15:18:40');
+INSERT INTO `loginmissrecord` VALUES (205, 'atmadmin', 1, 0, '::1', '2026-07-27 16:53:01');
 INSERT INTO `loginmissrecord` VALUES (206, '12345', 1, 0, '112.49.240.88', '2023-08-14 15:13:08');
 INSERT INTO `loginmissrecord` VALUES (207, '00000', 1, 0, '106.6.150.32', '2023-08-14 14:47:59');
 INSERT INTO `loginmissrecord` VALUES (208, '11111', 0, 0, '106.6.150.32', '2023-08-14 12:02:26');
@@ -1493,6 +1532,7 @@ INSERT INTO `parabet` VALUES (29000, 29, 0, 0, 0, 0, 0, 0, 0, 0);
 INSERT INTO `parabet` VALUES (29001, 29, 0, 0, 0, 0, 0, 0, 0, 0);
 INSERT INTO `parabet` VALUES (40000, 40, 4, 4, 1, 0, 0, 1, 30, 0);
 INSERT INTO `parabet` VALUES (47000, 47, 0, 0, 0, 0, 0, 0, 0, 0);
+INSERT INTO `parabet` VALUES (47001, 47, 0, 0, 0, 0, 0, 0, 0, 0);
 INSERT INTO `parabet` VALUES (53000, 53, 4, 4, 1, 0, 0, 1, 30, 0);
 
 -- ----------------------------
@@ -1531,7 +1571,7 @@ CREATE TABLE `parabetroom`  (
 -- ----------------------------
 INSERT INTO `parabetroom` VALUES (2000, 2, 10, 3, 100, 5, 1000, 10, 1000, 10, 10000, 1, 10000, 500000, 3000, 10000, 100, '1,5,10,15,20', 0, 'cai3', 8, 0, b'1', b'1');
 INSERT INTO `parabetroom` VALUES (10000, 10, 10, 2, 10, 1, 1000, 10, 1000, 10, 10000, 1, 10000, 500000, 3000, 10000, 100, '1,5,10,15,20', 0, 'shi2', 8, 0, b'1', b'1');
-INSERT INTO `parabetroom` VALUES (47000, 47, 10, 1, 100, 1, 1000, 10, 1000, 10, 10000, 1, 10000, 500000, 3000, 10000, 100, '1,5,10,15,20', 0, 'bc1', 6, 0, b'1', b'1');
+INSERT INTO `parabetroom` VALUES (47000, 47, 10, 2, 100, 10, 1000, 10, 1000, 10, 10000, 1, 10000, 500000, 3000, 10000, 100, '1,5,10,15,20', 0, 'bc2', 6, 0, b'1', b'1');
 INSERT INTO `parabetroom` VALUES (29000, 29, 10, 2, 100, 2, 1000, 10, 1000, 10, 10000, 1, 10000, 500000, 3000, 10000, 100, '1,5,10,15,20', 0, 'jin2', 6, 0, b'1', b'1');
 INSERT INTO `parabetroom` VALUES (40000, 40, 10, 1, 1000, 10, 1000, 10, 1000, 10, 10000, 1, 0, 500000, 3000, 10000, 100, '1,5,10,15,20', 0, NULL, 6, 0, b'1', b'1');
 INSERT INTO `parabetroom` VALUES (53000, 53, 10, 1, 1000, 10, 1000, 10, 1000, 10, 10000, 1, 0, 500000, 3000, 10000, 100, '1,5,10,15,20', 0, NULL, 6, 0, b'1', b'1');
@@ -1712,10 +1752,11 @@ CREATE TABLE `paralaba`  (
 -- ----------------------------
 -- Records of paralaba
 -- ----------------------------
-INSERT INTO `paralaba` VALUES (16000, 16, 0, 1, 0, 0, 10, 10, 14, 18, 20, 30, 50, 70, 80, 6000, 2000, 1000, 500, 400, 60, 20, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 50, 10000, 10000, 10000, 1, 100, 1, 0);
+INSERT INTO `paralaba` VALUES (16000, 16, 0, 1, 0, 0, 10, 10, 14, 18, 20, 30, 50, 70, 80, 6000, 2000, 1000, 500, 400, 60, 20, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100, 10000, 10000, 10000, 1, 100, 1, 0);
 INSERT INTO `paralaba` VALUES (16001, 16, 1, 1, 0, 0, 10, 10, 14, 18, 20, 30, 50, 70, 80, 6000, 2000, 1000, 500, 400, 60, 20, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 10000, 10000, 10000, 1, 100, 1, 0);
 INSERT INTO `paralaba` VALUES (40000, 40, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 1000, 100, 10, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 10, 100, 100, 100, 100, 10, 10000, 1000, 10000, 1, 100, 1, 0);
 INSERT INTO `paralaba` VALUES (40001, 40, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 1000, 100, 10, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 10, 100, 100, 100, 100, 50, 10000, 1000, 10000, 1, 100, 1, 0);
+INSERT INTO `paralaba` VALUES (40002, 40, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100, 50, 20, 5, 100, 2800, 100, 50, 1000, 50, 100, 1000, 100, 50, 1000, 20, 100, 100, 20, 1115, 20, 100, 1000, 1000, 50, 10000, 1000, 10000, 1, 100, 1, 0);
 INSERT INTO `paralaba` VALUES (53000, 53, 0, 3, 0, 0, 2, 3, 4, 5, 8, 10, 15, 20, 30, 6000, 2000, 1000, 500, 400, 60, 20, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 1000, 10, 10000, 1, 100, 1, 0);
 INSERT INTO `paralaba` VALUES (53001, 53, 1, 3, 0, 0, 2, 3, 4, 5, 8, 10, 15, 20, 30, 6000, 2000, 1000, 500, 400, 60, 20, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 50, 1000, 10, 10000, 1, 100, 1, 0);
 
@@ -1762,7 +1803,7 @@ INSERT INTO `pararoom` VALUES (22000, 22, 0, 100, 1000, 10000, 1, 10000, 100, 0,
 INSERT INTO `pararoom` VALUES (32000, 32, 2, 1, 100, 10000, 1, 10000, 1, 0, 0, NULL, NULL, 6, 0, b'1', b'1', 10, 1000);
 INSERT INTO `pararoom` VALUES (33000, 33, 1, 1, 100, 10000, 1, 10000, 1, 0, 0, NULL, NULL, 6, 0, b'1', b'1', 10, 1000);
 INSERT INTO `pararoom` VALUES (37000, 37, 2, 2, 10000, 10000, 1, 10000, 0, 0, 0, 100, 'ATT32', 6, 0, b'1', b'1', 20, 100000);
-INSERT INTO `pararoom` VALUES (40000, 40, 2, NULL, NULL, 1, 1, 0, 0, 0, 0, 1, NULL, 6, 0, b'1', b'1', 0, 0);
+INSERT INTO `pararoom` VALUES (40000, 40, 3, NULL, NULL, 1, 1, 0, 0, 0, 0, 1, NULL, 6, 0, b'1', b'1', 0, 0);
 INSERT INTO `pararoom` VALUES (42000, 42, 0, 100, 1000, 10000, 1, 10000, 100, 0, 0, 100, NULL, 6, 0, b'1', b'1', 1000, 10000);
 INSERT INTO `pararoom` VALUES (44000, 44, 2, 2, 10000, 10000, 1, 10, 0, 0, 0, 100, 'NBA2', 6, 0, b'1', b'1', 20, 100000);
 INSERT INTO `pararoom` VALUES (49000, 49, 1, 1, 100, 10000, 1, 10000, 1, 0, 0, NULL, NULL, 6, 0, b'1', b'1', 10, 1000);
@@ -1995,7 +2036,7 @@ INSERT INTO `rank` VALUES (19, 10, 20000, 20000, 1777303833, 0, 0, '121212', '12
 INSERT INTO `rank` VALUES (19, 19, 1740000, 5, 1700079202, 0, 0, 'woshini', 'woshini', '大三元(174倍)');
 INSERT INTO `rank` VALUES (19, 32, 28600, 2, 1777557913, 0, 0, 'ijb222', 'ijb222', '超级炸弹(572倍)');
 INSERT INTO `rank` VALUES (19, 1000, 20001, 1000, 1779708184, 1, 0, '168169', '168169', '168169');
-INSERT INTO `rank` VALUES (19, 1001, 1, 1001, 1785137871, 1, 2, 'test01', '测试勿动', '测试勿动');
+INSERT INTO `rank` VALUES (19, 1001, 1, 1001, 1785142649, 1, 2, 'test01', '测试勿动', '测试勿动');
 INSERT INTO `rank` VALUES (20, 2, 137856, 137856, 1777314352, 0, 0, '121212', '121212', '中大奖');
 INSERT INTO `rank` VALUES (20, 6, 52880, 1, 1779512384, 0, 0, 'plm123', 'plm123', '牛魔王(661倍)');
 INSERT INTO `rank` VALUES (20, 10, 20000, 20000, 1777474992, 0, 0, '55555', '55555', '中大奖');
@@ -2146,7 +2187,7 @@ CREATE TABLE `roomtableconfig`  (
   `CoinsNeed` int(11) NOT NULL DEFAULT 0,
   PRIMARY KEY (`ID`) USING BTREE,
   INDEX `idx_game_room_table`(`GAME_ID`, `RoomIndex`, `TableIndex`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 5300756 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '动态桌台配置表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 5300761 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '动态桌台配置表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of roomtableconfig
@@ -2189,10 +2230,12 @@ INSERT INTO `roomtableconfig` VALUES (5300744, 21, 0, 1, 'sx2', 4, '1:1', 0, 0, 
 INSERT INTO `roomtableconfig` VALUES (5300745, 3, 0, 0, 'jc1', 4, '1:1', 0, 0, 0, 1, 0, 0, 1, 6, 1, 10, 1000, 10000);
 INSERT INTO `roomtableconfig` VALUES (5300747, 53, 0, 0, 'shui1', 4, '1:1', 0, 0, 0, 0, 0, 0, 1, 6, 1, 1, 100, 10);
 INSERT INTO `roomtableconfig` VALUES (5300749, 40, 0, 0, 'sg1', 4, '1:1', 0, 0, 0, 0, 0, 0, 1, 6, 1, 1, 1000, 1000);
-INSERT INTO `roomtableconfig` VALUES (5300752, 16, 0, 0, '971', 4, '1:1', 0, 0, 0, 0, 0, 0, 1, 6, 1, 5, 1000, 10000);
 INSERT INTO `roomtableconfig` VALUES (5300753, 16, 0, 1, '972', 4, '1:1', 0, 0, 0, 0, 0, 0, 1, 6, 1, 1, 1000, 10000);
 INSERT INTO `roomtableconfig` VALUES (5300754, 40, 0, 1, 'sg2', 4, '1:1', 0, 0, 0, 0, 0, 0, 1, 6, 1, 5, 1000, 1000);
 INSERT INTO `roomtableconfig` VALUES (5300755, 53, 0, 1, 'shui2', 4, '1:1', 0, 0, 0, 0, 0, 0, 1, 6, 1, 5, 100, 10);
+INSERT INTO `roomtableconfig` VALUES (5300757, 16, 0, 0, '971', 4, '1:1', 0, 0, 0, 0, 0, 0, 1, 6, 1, 10, 1000, 10000);
+INSERT INTO `roomtableconfig` VALUES (5300759, 47, 0, 1, 'bc2', 4, '1:1', 0, 0, 0, 1, 0, 0, 1, 8, 1, 10, 100, 10000);
+INSERT INTO `roomtableconfig` VALUES (5300760, 40, 0, 2, 'sg3', 4, '1:1', 0, 0, 0, 0, 0, 0, 1, 6, 1, 5, 1000, 1000);
 
 -- ----------------------------
 -- Table structure for roomtableconfig_bet
@@ -2219,7 +2262,7 @@ CREATE TABLE `roomtableconfig_bet`  (
   `BetMaxDraw` int(11) NOT NULL DEFAULT 0 COMMENT '副玩法和最大押注(仅Animal)',
   PRIMARY KEY (`ID`) USING BTREE,
   INDEX `idx_game_table`(`GAME_ID`, `TableIndex`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 71 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '押注类桌台扩展参数表(按桌)' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 72 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '押注类桌台扩展参数表(按桌)' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of roomtableconfig_bet
@@ -2232,6 +2275,7 @@ INSERT INTO `roomtableconfig_bet` VALUES (67, 2, 0, 1, 10, 1, 100, 500000, 3000,
 INSERT INTO `roomtableconfig_bet` VALUES (68, 2, 0, 2, 10, 5, 100, 500000, 3000, 10000, 10000, 1, '1,5,10,15,20', 0, 10, 1000, 10, 1000);
 INSERT INTO `roomtableconfig_bet` VALUES (69, 10, 0, 1, 10, 1, 10, 500000, 3000, 10000, 10000, 1, '1,5,10,15,20', 0, 10, 1000, 10, 1000);
 INSERT INTO `roomtableconfig_bet` VALUES (70, 29, 0, 1, 10, 2, 100, 500000, 3000, 10000, 10000, 1, '1,5,10,15,20', 0, 10, 1000, 10, 1000);
+INSERT INTO `roomtableconfig_bet` VALUES (71, 47, 0, 1, 10, 10, 100, 500000, 3000, 10000, 10000, 1, '1,5,10,15,20', 0, 10, 1000, 10, 1000);
 
 -- ----------------------------
 -- Table structure for roomtableconfig_card
@@ -2327,7 +2371,7 @@ CREATE TABLE `tablecoinrecord`  (
   `Coins` bigint(20) NOT NULL COMMENT '金币数量',
   `CreateTime` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP(0) COMMENT '记录时间',
   PRIMARY KEY (`RecIndex`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 75 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '桌子账目信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 79 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '桌子账目信息表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of tablecoinrecord
@@ -2337,29 +2381,33 @@ INSERT INTO `tablecoinrecord` VALUES (48, 44, 0, 1, 0, '2026-07-20 13:46:32');
 INSERT INTO `tablecoinrecord` VALUES (49, 14, 0, 1, -2257, '2026-07-20 15:14:26');
 INSERT INTO `tablecoinrecord` VALUES (50, 14, 0, 2, -535, '2026-07-20 15:28:17');
 INSERT INTO `tablecoinrecord` VALUES (51, 14, 0, 3, -520, '2026-07-20 17:06:24');
-INSERT INTO `tablecoinrecord` VALUES (52, 29, 0, 0, 934, '2026-07-20 17:36:21');
+INSERT INTO `tablecoinrecord` VALUES (52, 29, 0, 0, 694, '2026-07-20 17:36:21');
 INSERT INTO `tablecoinrecord` VALUES (53, 13, 0, 2, -4, '2026-07-21 16:16:08');
 INSERT INTO `tablecoinrecord` VALUES (54, 21, 0, 1, -2, '2026-07-21 16:16:24');
 INSERT INTO `tablecoinrecord` VALUES (55, 33, 0, 1, -15, '2026-07-21 16:16:38');
 INSERT INTO `tablecoinrecord` VALUES (56, 32, 0, 1, -1700, '2026-07-21 16:16:59');
-INSERT INTO `tablecoinrecord` VALUES (57, 53, 0, 1, -4554, '2026-07-21 16:26:47');
+INSERT INTO `tablecoinrecord` VALUES (57, 53, 0, 1, -5710, '2026-07-21 16:26:47');
 INSERT INTO `tablecoinrecord` VALUES (58, 53, 0, 3, -12, '2026-07-21 16:27:13');
-INSERT INTO `tablecoinrecord` VALUES (59, 16, 0, 1, -2, '2026-07-21 16:28:04');
+INSERT INTO `tablecoinrecord` VALUES (59, 16, 0, 1, 1226, '2026-07-21 16:28:04');
 INSERT INTO `tablecoinrecord` VALUES (60, 16, 0, 2, 28, '2026-07-21 16:28:24');
-INSERT INTO `tablecoinrecord` VALUES (61, 40, 1, 1, -18, '2026-07-21 17:01:04');
+INSERT INTO `tablecoinrecord` VALUES (61, 40, 1, 1, 164, '2026-07-21 17:01:04');
 INSERT INTO `tablecoinrecord` VALUES (62, 6, 0, 1, -1, '2026-07-21 18:21:38');
 INSERT INTO `tablecoinrecord` VALUES (63, 13, 0, 1, -3720, '2026-07-22 13:36:06');
 INSERT INTO `tablecoinrecord` VALUES (64, 3, 0, 2, -21776, '2026-07-23 13:53:04');
 INSERT INTO `tablecoinrecord` VALUES (65, 2, 0, 1, 21, '2026-07-23 16:10:14');
-INSERT INTO `tablecoinrecord` VALUES (66, 2, 0, 2, -16, '2026-07-23 19:03:46');
-INSERT INTO `tablecoinrecord` VALUES (67, 10, 0, 1, -45, '2026-07-24 10:16:02');
+INSERT INTO `tablecoinrecord` VALUES (66, 2, 0, 2, -24, '2026-07-23 19:03:46');
+INSERT INTO `tablecoinrecord` VALUES (67, 10, 0, 1, -47, '2026-07-24 10:16:02');
 INSERT INTO `tablecoinrecord` VALUES (68, 15, 0, 1, -109, '2026-07-24 15:16:01');
 INSERT INTO `tablecoinrecord` VALUES (69, 44, 0, 2, -15, '2026-07-24 15:30:49');
 INSERT INTO `tablecoinrecord` VALUES (70, 2, 0, 3, 10, '2026-07-24 15:52:07');
-INSERT INTO `tablecoinrecord` VALUES (71, 10, 0, 2, -5, '2026-07-24 18:39:46');
+INSERT INTO `tablecoinrecord` VALUES (71, 10, 0, 2, -35, '2026-07-24 18:39:46');
 INSERT INTO `tablecoinrecord` VALUES (72, 19, 0, 1, 92527, '2026-07-24 18:53:21');
 INSERT INTO `tablecoinrecord` VALUES (73, 3, 0, 3, -11385, '2026-07-27 10:52:06');
 INSERT INTO `tablecoinrecord` VALUES (74, 19, 0, 2, -15200, '2026-07-27 13:58:15');
+INSERT INTO `tablecoinrecord` VALUES (75, 5, 0, 3, -140, '2026-07-27 16:46:04');
+INSERT INTO `tablecoinrecord` VALUES (76, 5, 0, 2, -232, '2026-07-27 16:50:38');
+INSERT INTO `tablecoinrecord` VALUES (77, 47, 0, 0, -100, '2026-07-27 17:11:59');
+INSERT INTO `tablecoinrecord` VALUES (78, 47, 0, 1, -400, '2026-07-27 17:13:51');
 
 -- ----------------------------
 -- Table structure for transferlog
@@ -2440,10 +2488,11 @@ INSERT INTO `user_daily_winloss` VALUES ('test002', '2026-07-21', -404079);
 INSERT INTO `user_daily_winloss` VALUES ('test002', '2026-07-22', -3750);
 INSERT INTO `user_daily_winloss` VALUES ('test002', '2026-07-23', -758);
 INSERT INTO `user_daily_winloss` VALUES ('test002', '2026-07-24', 574485);
-INSERT INTO `user_daily_winloss` VALUES ('test002', '2026-07-27', -1127652);
+INSERT INTO `user_daily_winloss` VALUES ('test002', '2026-07-27', -1127770);
 INSERT INTO `user_daily_winloss` VALUES ('test01', '2026-07-18', 61396);
 INSERT INTO `user_daily_winloss` VALUES ('test01', '2026-07-20', 10);
 INSERT INTO `user_daily_winloss` VALUES ('test01', '2026-07-24', -63);
+INSERT INTO `user_daily_winloss` VALUES ('test01', '2026-07-27', -780);
 
 -- ----------------------------
 -- Table structure for usercontrolstatus
@@ -2547,7 +2596,7 @@ INSERT INTO `usercontrolstatus` VALUES (73, 'test002', 9, 0, 4, 1000, 128201, 0,
 INSERT INTO `usercontrolstatus` VALUES (74, 'test01', 9, 0, 4, 1000, 0, 0, 0, 6, 1, 'atmadmin', '2026-07-21 17:29:23', '2026-07-21 17:49:41');
 INSERT INTO `usercontrolstatus` VALUES (75, 't1', 9, 0, 5, 1000, 0, 0, 0, 3, 1, '8888', '2026-07-21 17:29:51', '2026-07-21 17:31:07');
 INSERT INTO `usercontrolstatus` VALUES (76, 't1', 9, 0, 4, 1000, 0, 0, 0, 6, 1, '8888', '2026-07-21 17:31:07', '2026-07-21 17:50:11');
-INSERT INTO `usercontrolstatus` VALUES (77, 'test01', 9, 0, 4, 10000, 63, 0, 0, 6, 0, 'atmadmin', '2026-07-21 17:49:41', NULL);
+INSERT INTO `usercontrolstatus` VALUES (77, 'test01', 9, 0, 4, 10000, 843, 0, 0, 6, 0, 'atmadmin', '2026-07-21 17:49:41', NULL);
 INSERT INTO `usercontrolstatus` VALUES (78, 't1', 9, 0, 4, 10000, 0, 0, 0, 6, 0, '8888', '2026-07-21 17:50:11', NULL);
 INSERT INTO `usercontrolstatus` VALUES (79, 'test002', 9, 0, 4, 10000, 230000, 0, 0, 9, 2, 'atmadmin', '2026-07-24 15:55:51', '2026-07-24 15:56:44');
 INSERT INTO `usercontrolstatus` VALUES (80, 'test002', 9, 0, 4, 10000, 17000, 0, 0, 6, 2, 'atmadmin', '2026-07-24 15:57:11', '2026-07-24 15:57:19');
@@ -2666,7 +2715,7 @@ CREATE TABLE `useroptlog`  (
   `TABLE_ID` int(11) NULL DEFAULT 0 COMMENT '桌子号',
   `SEAT_ID` int(11) NULL DEFAULT 0 COMMENT '位置号',
   PRIMARY KEY (`LID`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 977 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '用户记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1015 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '用户记录表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of useroptlog
@@ -3170,6 +3219,44 @@ INSERT INTO `useroptlog` VALUES (973, 'test002', 8, 0, 1076512, 0, 0, 19, '2026-
 INSERT INTO `useroptlog` VALUES (974, 'test002', 7, 1000, 1061312, -151000, 0, 19, '2026-07-27 13:58:16', 0, 1, 0);
 INSERT INTO `useroptlog` VALUES (975, 'test002', 8, 0, 1061312, 0, 0, 16, '2026-07-27 15:36:00', 0, 2, 0);
 INSERT INTO `useroptlog` VALUES (976, 'test002', 7, 0, 1061312, 0, 0, 16, '2026-07-27 15:36:03', 0, 2, 0);
+INSERT INTO `useroptlog` VALUES (977, 'test002', 8, 0, 1061312, 0, 0, 16, '2026-07-27 16:11:56', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (978, 'test002', 7, 16, 1062540, 1228, 0, 16, '2026-07-27 16:12:24', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (979, 'test002', 8, 0, 1062540, 0, 0, 5, '2026-07-27 16:44:44', 0, 2, 0);
+INSERT INTO `useroptlog` VALUES (980, 'test002', 7, 10, 1062400, -140, 0, 5, '2026-07-27 16:46:04', 0, 2, 0);
+INSERT INTO `useroptlog` VALUES (981, 'test002', 8, 0, 1062400, 0, 0, 5, '2026-07-27 16:48:04', 0, 1, 0);
+INSERT INTO `useroptlog` VALUES (982, 'test002', 7, 8, 1062168, -232, 0, 5, '2026-07-27 16:50:38', 0, 1, 0);
+INSERT INTO `useroptlog` VALUES (983, 'test002', 8, 0, 1062168, 0, 0, 40, '2026-07-27 16:53:58', 0, 1, 0);
+INSERT INTO `useroptlog` VALUES (984, 'test002', 8, 0, 1062168, 0, 1, 40, '2026-07-27 16:53:59', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (985, 'test002', 7, 0, 1062946, 778, 1, 40, '2026-07-27 16:55:28', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (986, 'test01', 8, 0, 602113, 0, 0, 2, '2026-07-27 16:59:50', 0, 1, 6);
+INSERT INTO `useroptlog` VALUES (987, 'test01', 7, 0, 602105, -8, 0, 2, '2026-07-27 17:00:30', 0, 1, 6);
+INSERT INTO `useroptlog` VALUES (988, 'test01', 8, 0, 602105, 0, 0, 10, '2026-07-27 17:00:42', 0, 0, 5);
+INSERT INTO `useroptlog` VALUES (989, 'test01', 7, 10, 602103, -2, 0, 10, '2026-07-27 17:01:40', 0, 0, 5);
+INSERT INTO `useroptlog` VALUES (990, 'test01', 8, 0, 602103, 0, 0, 10, '2026-07-27 17:01:43', 0, 1, 5);
+INSERT INTO `useroptlog` VALUES (991, 'test01', 7, 0, 602073, -30, 0, 10, '2026-07-27 17:04:15', 0, 1, 5);
+INSERT INTO `useroptlog` VALUES (992, 'test01', 8, 0, 602073, 0, 0, 29, '2026-07-27 17:06:18', 0, 1, 0);
+INSERT INTO `useroptlog` VALUES (993, 'test01', 7, 30, 602073, 0, 0, 29, '2026-07-27 17:06:24', 0, 1, 0);
+INSERT INTO `useroptlog` VALUES (994, 'test01', 8, 0, 602073, 0, 0, 29, '2026-07-27 17:06:25', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (995, 'test01', 7, 20, 602073, 0, 0, 29, '2026-07-27 17:06:31', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (996, 'test01', 8, 0, 602073, 0, 0, 29, '2026-07-27 17:06:41', 0, 1, 0);
+INSERT INTO `useroptlog` VALUES (997, 'test01', 7, 0, 602073, 0, 0, 29, '2026-07-27 17:08:43', 0, 1, 0);
+INSERT INTO `useroptlog` VALUES (998, 'test01', 8, 0, 602073, 0, 0, 29, '2026-07-27 17:08:48', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (999, 'test01', 7, 20, 601833, -240, 0, 29, '2026-07-27 17:09:47', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (1000, 'test01', 8, 0, 601833, 0, 0, 47, '2026-07-27 17:11:21', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (1001, 'test01', 7, 100, 601733, -100, 0, 47, '2026-07-27 17:11:59', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (1002, 'test01', 8, 0, 601733, 0, 0, 47, '2026-07-27 17:12:00', 0, 1, 0);
+INSERT INTO `useroptlog` VALUES (1003, 'test01', 7, 0, 601333, -400, 0, 47, '2026-07-27 17:13:51', 0, 1, 0);
+INSERT INTO `useroptlog` VALUES (1004, 'test002', 8, 0, 1062946, 0, 0, 53, '2026-07-27 17:27:01', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (1005, 'test002', 7, 18, 1061790, -1156, 0, 53, '2026-07-27 17:45:24', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (1006, 'test002', 8, 0, 1061790, 0, 0, 40, '2026-07-27 17:45:28', 0, 2, 0);
+INSERT INTO `useroptlog` VALUES (1007, 'test002', 8, 0, 1061790, 0, 1, 40, '2026-07-27 17:45:28', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (1008, 'test002', 7, 138, 1061164, -626, 1, 40, '2026-07-27 17:51:09', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (1009, 'test002', 8, 0, 1061164, 0, 0, 40, '2026-07-27 17:51:14', 0, 2, 0);
+INSERT INTO `useroptlog` VALUES (1010, 'test002', 8, 0, 1061164, 0, 1, 40, '2026-07-27 17:51:15', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (1011, 'test002', 7, 10, 1061194, 30, 1, 40, '2026-07-27 17:52:24', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (1012, 'test002', 8, 0, 1061194, 0, 0, 40, '2026-07-27 17:55:09', 0, 2, 0);
+INSERT INTO `useroptlog` VALUES (1013, 'test002', 8, 0, 1061194, 0, 1, 40, '2026-07-27 17:55:10', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (1014, 'test002', 7, 0, 1061194, 0, 1, 40, '2026-07-27 17:57:00', 0, 0, 0);
 
 -- ----------------------------
 -- Table structure for userrelations
@@ -3537,8 +3624,8 @@ CREATE TABLE `users`  (
 -- Records of users
 -- ----------------------------
 INSERT INTO `users` VALUES ('t1', '111', '123456', '8888', 0, 0, 101000, 0, 101000, 0, -1, 'nowxheadimg', 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '1', b'0', b'0', 0, '123456', 0, 1, '2026-07-17 12:04:22', '');
-INSERT INTO `users` VALUES ('test002', '111', '123456', 'atmadmin', 0, 0, 1061312, 0, 1002317564, 8, -1, 'nowxheadimg', 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '1', b'1', b'0', 0, '123456', 0, 1, '2026-07-08 10:25:49', '');
-INSERT INTO `users` VALUES ('test01', '测试勿动', '123456', 'atmadmin', 2, 0, 602113, 0, 13690406, 3157236, -1, 'nowxheadimg', 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '123', b'0', b'0', 0, '123456', 0, 1, '2026-05-22 11:46:49', '');
+INSERT INTO `users` VALUES ('test002', '111', '123456', 'atmadmin', 4, 0, 1061194, 0, 1002317564, 8, -1, 'nowxheadimg', 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '1', b'1', b'0', 0, '123456', 0, 1, '2026-07-08 10:25:49', '');
+INSERT INTO `users` VALUES ('test01', '测试勿动', '123456', 'atmadmin', 2, 0, 601333, 0, 13690406, 3157236, -1, 'nowxheadimg', 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '123', b'0', b'0', 0, '123456', 0, 1, '2026-05-22 11:46:49', '');
 INSERT INTO `users` VALUES ('test03', '1515', '123456', 'atmadmin', 0, 0, 310930, 0, 310930, 0, -1, 'nowxheadimg', 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '1', b'0', b'0', 0, '123456', 0, 1, '2026-07-09 09:46:25', '');
 
 -- ----------------------------
@@ -3559,7 +3646,7 @@ CREATE TABLE `userscoresnapshotledger`  (
   PRIMARY KEY (`LID`) USING BTREE,
   INDEX `IDX_UserScoreSnapshotLedger_UserID`(`UserID`) USING BTREE,
   INDEX `IDX_UserScoreSnapshotLedger_Reason`(`Reason`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 36842 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 37545 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of userscoresnapshotledger
@@ -40405,6 +40492,709 @@ INSERT INTO `userscoresnapshotledger` VALUES (36838, 'test002', 40, 19, 1061312,
 INSERT INTO `userscoresnapshotledger` VALUES (36839, 'test01', 16, 22, 602113, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 15:38:20');
 INSERT INTO `userscoresnapshotledger` VALUES (36840, 'test01', 54, 0, 602113, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-27 15:38:25');
 INSERT INTO `userscoresnapshotledger` VALUES (36841, 'test01', 54, 0, 602113, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-27 15:38:30');
+INSERT INTO `userscoresnapshotledger` VALUES (36842, 'test01', 16, 28, 602113, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 15:42:55');
+INSERT INTO `userscoresnapshotledger` VALUES (36843, 'test01', 54, 0, 602113, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-27 15:42:59');
+INSERT INTO `userscoresnapshotledger` VALUES (36844, 'test002', 16, 32, 1061312, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 15:47:13');
+INSERT INTO `userscoresnapshotledger` VALUES (36845, 'test002', 16, 34, 1061312, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 15:47:17');
+INSERT INTO `userscoresnapshotledger` VALUES (36846, 'test002', 16, 36, 1061312, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 15:48:01');
+INSERT INTO `userscoresnapshotledger` VALUES (36847, 'test002', 16, 38, 1061312, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 15:48:07');
+INSERT INTO `userscoresnapshotledger` VALUES (36848, 'test002', 16, 40, 1061312, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 15:48:11');
+INSERT INTO `userscoresnapshotledger` VALUES (36849, 'test002', 54, 0, 1061312, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-27 15:48:12');
+INSERT INTO `userscoresnapshotledger` VALUES (36850, 'test002', 53, 44, 1061312, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 15:48:16');
+INSERT INTO `userscoresnapshotledger` VALUES (36851, 'test002', 40, 46, 1061312, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 15:48:19');
+INSERT INTO `userscoresnapshotledger` VALUES (36852, 'test002', 16, 48, 1061312, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 15:49:17');
+INSERT INTO `userscoresnapshotledger` VALUES (36853, 'test002', 0, 48, 1061312, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 15:57:04');
+INSERT INTO `userscoresnapshotledger` VALUES (36854, 'test01', 0, 30, 602113, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 15:57:04');
+INSERT INTO `userscoresnapshotledger` VALUES (36855, 'test002', 16, 3, 1061312, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 15:59:29');
+INSERT INTO `userscoresnapshotledger` VALUES (36856, 'test002', 0, 3, 1061312, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:00:14');
+INSERT INTO `userscoresnapshotledger` VALUES (36857, 'test002', 16, 3, 1061312, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:01:57');
+INSERT INTO `userscoresnapshotledger` VALUES (36858, 'test002', 16, 4, 1061670, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:12:01');
+INSERT INTO `userscoresnapshotledger` VALUES (36859, 'test002', 16, 4, 1061974, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:12:12');
+INSERT INTO `userscoresnapshotledger` VALUES (36860, 'test002', 16, 4, 1062266, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:12:18');
+INSERT INTO `userscoresnapshotledger` VALUES (36861, 'test002', 16, 4, 1062540, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:12:24');
+INSERT INTO `userscoresnapshotledger` VALUES (36862, 'test002', 16, 4, 1062540, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:12:24');
+INSERT INTO `userscoresnapshotledger` VALUES (36863, 'test002', 16, 4, 1062540, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:12:24');
+INSERT INTO `userscoresnapshotledger` VALUES (36864, 'test002', 54, 0, 1062540, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-27 16:12:24');
+INSERT INTO `userscoresnapshotledger` VALUES (36865, 'test002', 0, 5, 1062540, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:15:49');
+INSERT INTO `userscoresnapshotledger` VALUES (36866, 'test002', 54, 0, 1062540, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-27 16:29:51');
+INSERT INTO `userscoresnapshotledger` VALUES (36867, 'test002', 16, 5, 1062540, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:29:55');
+INSERT INTO `userscoresnapshotledger` VALUES (36868, 'test002', 54, 0, 1062540, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-27 16:29:56');
+INSERT INTO `userscoresnapshotledger` VALUES (36869, 'test002', 53, 9, 1062540, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:30:00');
+INSERT INTO `userscoresnapshotledger` VALUES (36870, 'test002', 40, 11, 1062540, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:30:03');
+INSERT INTO `userscoresnapshotledger` VALUES (36871, 'test002', 54, 0, 1062540, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-27 16:30:08');
+INSERT INTO `userscoresnapshotledger` VALUES (36872, 'test002', 54, 0, 1062540, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-27 16:30:12');
+INSERT INTO `userscoresnapshotledger` VALUES (36873, 'test002', 54, 0, 1062540, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-27 16:30:16');
+INSERT INTO `userscoresnapshotledger` VALUES (36874, 'test002', 54, 0, 1062540, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-27 16:30:19');
+INSERT INTO `userscoresnapshotledger` VALUES (36875, 'test002', 54, 0, 1062540, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-27 16:30:28');
+INSERT INTO `userscoresnapshotledger` VALUES (36876, 'test002', 54, 0, 1062540, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-27 16:35:11');
+INSERT INTO `userscoresnapshotledger` VALUES (36877, 'test002', 54, 0, 1062540, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-27 16:35:42');
+INSERT INTO `userscoresnapshotledger` VALUES (36878, 'test002', 40, 30, 1062540, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:35:51');
+INSERT INTO `userscoresnapshotledger` VALUES (36879, 'test002', 54, 0, 1062540, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-27 16:44:37');
+INSERT INTO `userscoresnapshotledger` VALUES (36880, 'test002', 5, 33, 0, 1062540, 1062540, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:44:44');
+INSERT INTO `userscoresnapshotledger` VALUES (36881, 'test002', 5, 33, 0, 1062530, 1062530, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:44:49');
+INSERT INTO `userscoresnapshotledger` VALUES (36882, 'test002', 5, 33, 0, 1062520, 1062520, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:44:52');
+INSERT INTO `userscoresnapshotledger` VALUES (36883, 'test002', 5, 33, 0, 1062510, 1062510, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:44:56');
+INSERT INTO `userscoresnapshotledger` VALUES (36884, 'test002', 5, 33, 0, 1062500, 1062500, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:44:59');
+INSERT INTO `userscoresnapshotledger` VALUES (36885, 'test002', 5, 33, 0, 1062490, 1062490, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:45:03');
+INSERT INTO `userscoresnapshotledger` VALUES (36886, 'test002', 5, 33, 0, 1062480, 1062480, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:45:06');
+INSERT INTO `userscoresnapshotledger` VALUES (36887, 'test002', 5, 33, 0, 1062470, 1062470, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:45:09');
+INSERT INTO `userscoresnapshotledger` VALUES (36888, 'test002', 5, 33, 0, 1062460, 1062460, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:45:13');
+INSERT INTO `userscoresnapshotledger` VALUES (36889, 'test002', 5, 33, 0, 1062450, 1062450, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:45:16');
+INSERT INTO `userscoresnapshotledger` VALUES (36890, 'test002', 5, 33, 0, 1062440, 1062440, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:45:19');
+INSERT INTO `userscoresnapshotledger` VALUES (36891, 'test002', 5, 33, 0, 1062430, 1062430, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:45:23');
+INSERT INTO `userscoresnapshotledger` VALUES (36892, 'test002', 5, 33, 0, 1062420, 1062420, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:45:26');
+INSERT INTO `userscoresnapshotledger` VALUES (36893, 'test002', 5, 33, 0, 1062410, 1062410, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:45:30');
+INSERT INTO `userscoresnapshotledger` VALUES (36894, 'test002', 5, 33, 0, 1062400, 1062400, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:45:34');
+INSERT INTO `userscoresnapshotledger` VALUES (36895, 'test002', 5, 33, 0, 1062390, 1062390, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:45:37');
+INSERT INTO `userscoresnapshotledger` VALUES (36896, 'test002', 5, 33, 0, 1062380, 1062380, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:45:40');
+INSERT INTO `userscoresnapshotledger` VALUES (36897, 'test002', 5, 33, 0, 1062400, 1062400, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:45:42');
+INSERT INTO `userscoresnapshotledger` VALUES (36898, 'test002', 5, 33, 0, 1062390, 1062390, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:45:42');
+INSERT INTO `userscoresnapshotledger` VALUES (36899, 'test002', 5, 33, 0, 1062380, 1062380, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:45:46');
+INSERT INTO `userscoresnapshotledger` VALUES (36900, 'test002', 5, 33, 0, 1062400, 1062400, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:45:48');
+INSERT INTO `userscoresnapshotledger` VALUES (36901, 'test002', 5, 33, 0, 1062390, 1062390, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:45:48');
+INSERT INTO `userscoresnapshotledger` VALUES (36902, 'test002', 5, 33, 0, 1062410, 1062410, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:45:50');
+INSERT INTO `userscoresnapshotledger` VALUES (36903, 'test002', 5, 33, 0, 1062400, 1062400, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:45:50');
+INSERT INTO `userscoresnapshotledger` VALUES (36904, 'test002', 5, 33, 0, 1062390, 1062390, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:45:54');
+INSERT INTO `userscoresnapshotledger` VALUES (36905, 'test002', 5, 33, 0, 1062420, 1062420, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:45:57');
+INSERT INTO `userscoresnapshotledger` VALUES (36906, 'test002', 5, 33, 0, 1062410, 1062410, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:45:57');
+INSERT INTO `userscoresnapshotledger` VALUES (36907, 'test002', 5, 33, 0, 1062400, 1062400, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:46:00');
+INSERT INTO `userscoresnapshotledger` VALUES (36908, 'test002', 5, 33, 1062400, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:46:04');
+INSERT INTO `userscoresnapshotledger` VALUES (36909, 'test002', 54, 0, 1062400, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-27 16:46:06');
+INSERT INTO `userscoresnapshotledger` VALUES (36910, 'test002', 5, 36, 0, 1062400, 1062400, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:48:04');
+INSERT INTO `userscoresnapshotledger` VALUES (36911, 'test002', 5, 36, 0, 1062392, 1062392, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:48:07');
+INSERT INTO `userscoresnapshotledger` VALUES (36912, 'test002', 5, 36, 0, 1062384, 1062384, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:48:15');
+INSERT INTO `userscoresnapshotledger` VALUES (36913, 'test002', 5, 36, 0, 1062376, 1062376, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:48:17');
+INSERT INTO `userscoresnapshotledger` VALUES (36914, 'test002', 5, 36, 0, 1062368, 1062368, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:48:21');
+INSERT INTO `userscoresnapshotledger` VALUES (36915, 'test002', 5, 36, 0, 1062360, 1062360, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:48:24');
+INSERT INTO `userscoresnapshotledger` VALUES (36916, 'test002', 5, 36, 0, 1062352, 1062352, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:48:27');
+INSERT INTO `userscoresnapshotledger` VALUES (36917, 'test002', 5, 36, 0, 1062344, 1062344, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:48:31');
+INSERT INTO `userscoresnapshotledger` VALUES (36918, 'test002', 5, 36, 0, 1062360, 1062360, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:48:33');
+INSERT INTO `userscoresnapshotledger` VALUES (36919, 'test002', 5, 36, 0, 1062352, 1062352, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:48:33');
+INSERT INTO `userscoresnapshotledger` VALUES (36920, 'test002', 5, 36, 0, 1062368, 1062368, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:48:35');
+INSERT INTO `userscoresnapshotledger` VALUES (36921, 'test002', 5, 36, 0, 1062360, 1062360, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:48:35');
+INSERT INTO `userscoresnapshotledger` VALUES (36922, 'test002', 5, 36, 0, 1062352, 1062352, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:48:39');
+INSERT INTO `userscoresnapshotledger` VALUES (36923, 'test002', 5, 36, 0, 1062344, 1062344, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:48:42');
+INSERT INTO `userscoresnapshotledger` VALUES (36924, 'test002', 5, 36, 0, 1062336, 1062336, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:48:45');
+INSERT INTO `userscoresnapshotledger` VALUES (36925, 'test002', 5, 36, 0, 1062352, 1062352, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:48:46');
+INSERT INTO `userscoresnapshotledger` VALUES (36926, 'test002', 5, 36, 0, 1062344, 1062344, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:48:47');
+INSERT INTO `userscoresnapshotledger` VALUES (36927, 'test002', 5, 36, 0, 1062336, 1062336, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:48:49');
+INSERT INTO `userscoresnapshotledger` VALUES (36928, 'test002', 5, 36, 0, 1062328, 1062328, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:48:53');
+INSERT INTO `userscoresnapshotledger` VALUES (36929, 'test002', 5, 36, 0, 1062320, 1062320, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:48:57');
+INSERT INTO `userscoresnapshotledger` VALUES (36930, 'test002', 5, 36, 0, 1062312, 1062312, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:49:00');
+INSERT INTO `userscoresnapshotledger` VALUES (36931, 'test002', 5, 36, 0, 1062304, 1062304, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:49:04');
+INSERT INTO `userscoresnapshotledger` VALUES (36932, 'test002', 5, 36, 0, 1062296, 1062296, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:49:07');
+INSERT INTO `userscoresnapshotledger` VALUES (36933, 'test002', 5, 36, 0, 1062312, 1062312, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:49:10');
+INSERT INTO `userscoresnapshotledger` VALUES (36934, 'test002', 5, 36, 0, 1062304, 1062304, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:49:10');
+INSERT INTO `userscoresnapshotledger` VALUES (36935, 'test002', 5, 36, 0, 1062296, 1062296, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:49:13');
+INSERT INTO `userscoresnapshotledger` VALUES (36936, 'test002', 5, 36, 0, 1062288, 1062288, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:49:16');
+INSERT INTO `userscoresnapshotledger` VALUES (36937, 'test002', 5, 36, 0, 1062280, 1062280, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:49:20');
+INSERT INTO `userscoresnapshotledger` VALUES (36938, 'test002', 5, 36, 0, 1062272, 1062272, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:49:23');
+INSERT INTO `userscoresnapshotledger` VALUES (36939, 'test002', 5, 36, 0, 1062264, 1062264, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:49:26');
+INSERT INTO `userscoresnapshotledger` VALUES (36940, 'test002', 5, 36, 0, 1062256, 1062256, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:49:30');
+INSERT INTO `userscoresnapshotledger` VALUES (36941, 'test002', 5, 36, 0, 1062248, 1062248, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:49:33');
+INSERT INTO `userscoresnapshotledger` VALUES (36942, 'test002', 5, 36, 0, 1062240, 1062240, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:49:36');
+INSERT INTO `userscoresnapshotledger` VALUES (36943, 'test002', 5, 36, 0, 1062232, 1062232, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:49:39');
+INSERT INTO `userscoresnapshotledger` VALUES (36944, 'test002', 5, 36, 0, 1062224, 1062224, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:49:43');
+INSERT INTO `userscoresnapshotledger` VALUES (36945, 'test002', 5, 36, 0, 1062264, 1062264, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:49:45');
+INSERT INTO `userscoresnapshotledger` VALUES (36946, 'test002', 5, 36, 0, 1062256, 1062256, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:49:45');
+INSERT INTO `userscoresnapshotledger` VALUES (36947, 'test002', 5, 36, 0, 1062248, 1062248, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:49:49');
+INSERT INTO `userscoresnapshotledger` VALUES (36948, 'test002', 5, 36, 0, 1062240, 1062240, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:49:52');
+INSERT INTO `userscoresnapshotledger` VALUES (36949, 'test002', 5, 36, 0, 1062232, 1062232, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:49:56');
+INSERT INTO `userscoresnapshotledger` VALUES (36950, 'test002', 5, 36, 0, 1062224, 1062224, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:49:59');
+INSERT INTO `userscoresnapshotledger` VALUES (36951, 'test002', 5, 36, 0, 1062240, 1062240, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:50:02');
+INSERT INTO `userscoresnapshotledger` VALUES (36952, 'test002', 5, 36, 0, 1062232, 1062232, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:50:02');
+INSERT INTO `userscoresnapshotledger` VALUES (36953, 'test002', 5, 36, 0, 1062248, 1062248, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:50:04');
+INSERT INTO `userscoresnapshotledger` VALUES (36954, 'test002', 5, 36, 0, 1062240, 1062240, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:50:05');
+INSERT INTO `userscoresnapshotledger` VALUES (36955, 'test002', 5, 36, 0, 1062232, 1062232, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:50:08');
+INSERT INTO `userscoresnapshotledger` VALUES (36956, 'test002', 5, 36, 0, 1062224, 1062224, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:50:11');
+INSERT INTO `userscoresnapshotledger` VALUES (36957, 'test002', 5, 36, 0, 1062216, 1062216, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:50:14');
+INSERT INTO `userscoresnapshotledger` VALUES (36958, 'test002', 5, 36, 0, 1062208, 1062208, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:50:18');
+INSERT INTO `userscoresnapshotledger` VALUES (36959, 'test002', 5, 36, 0, 1062200, 1062200, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:50:21');
+INSERT INTO `userscoresnapshotledger` VALUES (36960, 'test002', 5, 36, 0, 1062192, 1062192, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:50:25');
+INSERT INTO `userscoresnapshotledger` VALUES (36961, 'test002', 5, 36, 0, 1062184, 1062184, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:50:27');
+INSERT INTO `userscoresnapshotledger` VALUES (36962, 'test002', 5, 36, 0, 1062176, 1062176, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:50:31');
+INSERT INTO `userscoresnapshotledger` VALUES (36963, 'test002', 5, 36, 0, 1062168, 1062168, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:50:34');
+INSERT INTO `userscoresnapshotledger` VALUES (36964, 'test002', 5, 36, 1062168, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:50:38');
+INSERT INTO `userscoresnapshotledger` VALUES (36965, 'test002', 54, 0, 1062168, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-27 16:50:39');
+INSERT INTO `userscoresnapshotledger` VALUES (36966, 'test002', 0, 38, 1062168, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:50:46');
+INSERT INTO `userscoresnapshotledger` VALUES (36967, 'test002', 16, 3, 1062168, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:53:53');
+INSERT INTO `userscoresnapshotledger` VALUES (36968, 'test002', 53, 5, 1062168, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:53:55');
+INSERT INTO `userscoresnapshotledger` VALUES (36969, 'test002', 40, 6, 1062168, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:53:59');
+INSERT INTO `userscoresnapshotledger` VALUES (36970, 'test002', 54, 0, 1062168, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-27 16:53:59');
+INSERT INTO `userscoresnapshotledger` VALUES (36971, 'test002', 40, 7, 1062138, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:54:07');
+INSERT INTO `userscoresnapshotledger` VALUES (36972, 'test002', 40, 7, 1062200, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:54:24');
+INSERT INTO `userscoresnapshotledger` VALUES (36973, 'test002', 40, 7, 1062262, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:54:35');
+INSERT INTO `userscoresnapshotledger` VALUES (36974, 'test002', 40, 7, 1062324, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:54:43');
+INSERT INTO `userscoresnapshotledger` VALUES (36975, 'test002', 40, 7, 1062336, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:54:49');
+INSERT INTO `userscoresnapshotledger` VALUES (36976, 'test002', 40, 7, 1062288, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:55:04');
+INSERT INTO `userscoresnapshotledger` VALUES (36977, 'test002', 40, 7, 1062306, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:55:07');
+INSERT INTO `userscoresnapshotledger` VALUES (36978, 'test002', 40, 7, 1062386, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:55:11');
+INSERT INTO `userscoresnapshotledger` VALUES (36979, 'test002', 40, 7, 1062496, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:55:15');
+INSERT INTO `userscoresnapshotledger` VALUES (36980, 'test002', 40, 7, 1062836, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:55:19');
+INSERT INTO `userscoresnapshotledger` VALUES (36981, 'test002', 40, 7, 1062946, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:55:22');
+INSERT INTO `userscoresnapshotledger` VALUES (36982, 'test002', 40, 7, 1062946, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:55:28');
+INSERT INTO `userscoresnapshotledger` VALUES (36983, 'test002', 54, 0, 1062946, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-27 16:55:58');
+INSERT INTO `userscoresnapshotledger` VALUES (36984, 'test01', 54, 0, 602113, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-27 16:57:46');
+INSERT INTO `userscoresnapshotledger` VALUES (36985, 'test01', 54, 0, 602113, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-27 16:58:11');
+INSERT INTO `userscoresnapshotledger` VALUES (36986, 'test01', 2, 17, 0, 602113, 602113, 0, 'SNAPSHOT_SAVE', '2026-07-27 16:59:50');
+INSERT INTO `userscoresnapshotledger` VALUES (36987, 'test01', 2, 17, 0, 602115, 602115, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:00:04');
+INSERT INTO `userscoresnapshotledger` VALUES (36988, 'test01', 2, 17, 0, 602105, 602105, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:00:25');
+INSERT INTO `userscoresnapshotledger` VALUES (36989, 'test01', 2, 17, 602105, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:00:29');
+INSERT INTO `userscoresnapshotledger` VALUES (36990, 'test01', 54, 0, 602105, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-27 17:00:33');
+INSERT INTO `userscoresnapshotledger` VALUES (36991, 'test01', 10, 20, 0, 602105, 602105, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:00:42');
+INSERT INTO `userscoresnapshotledger` VALUES (36992, 'test01', 10, 20, 0, 602103, 602103, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:00:56');
+INSERT INTO `userscoresnapshotledger` VALUES (36993, 'test01', 10, 20, 602103, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:01:40');
+INSERT INTO `userscoresnapshotledger` VALUES (36994, 'test01', 10, 21, 0, 602103, 602103, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:01:43');
+INSERT INTO `userscoresnapshotledger` VALUES (36995, 'test01', 10, 21, 0, 602073, 602073, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:01:56');
+INSERT INTO `userscoresnapshotledger` VALUES (36996, 'test01', 10, 21, 0, 602073, 602073, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:02:47');
+INSERT INTO `userscoresnapshotledger` VALUES (36997, 'test01', 10, 21, 0, 602073, 602073, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:03:42');
+INSERT INTO `userscoresnapshotledger` VALUES (36998, 'test01', 10, 21, 602073, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:04:15');
+INSERT INTO `userscoresnapshotledger` VALUES (36999, 'test01', 54, 0, 602073, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-27 17:04:34');
+INSERT INTO `userscoresnapshotledger` VALUES (37000, 'test01', 54, 0, 602073, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-27 17:06:13');
+INSERT INTO `userscoresnapshotledger` VALUES (37001, 'test01', 29, 27, 0, 602073, 602073, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:06:18');
+INSERT INTO `userscoresnapshotledger` VALUES (37002, 'test01', 29, 27, 602073, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:06:24');
+INSERT INTO `userscoresnapshotledger` VALUES (37003, 'test01', 29, 28, 0, 602073, 602073, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:06:25');
+INSERT INTO `userscoresnapshotledger` VALUES (37004, 'test01', 29, 28, 602073, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:06:31');
+INSERT INTO `userscoresnapshotledger` VALUES (37005, 'test01', 54, 0, 602073, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-27 17:06:32');
+INSERT INTO `userscoresnapshotledger` VALUES (37006, 'test01', 54, 0, 602073, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-27 17:06:36');
+INSERT INTO `userscoresnapshotledger` VALUES (37007, 'test01', 29, 33, 0, 602073, 602073, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:06:41');
+INSERT INTO `userscoresnapshotledger` VALUES (37008, 'test01', 29, 33, 0, 602073, 602073, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:06:53');
+INSERT INTO `userscoresnapshotledger` VALUES (37009, 'test01', 29, 33, 0, 602073, 602073, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:07:21');
+INSERT INTO `userscoresnapshotledger` VALUES (37010, 'test01', 29, 33, 0, 602073, 602073, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:07:48');
+INSERT INTO `userscoresnapshotledger` VALUES (37011, 'test01', 29, 33, 0, 602073, 602073, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:08:15');
+INSERT INTO `userscoresnapshotledger` VALUES (37012, 'test01', 29, 33, 602073, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:08:43');
+INSERT INTO `userscoresnapshotledger` VALUES (37013, 'test01', 29, 34, 0, 602073, 602073, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:08:48');
+INSERT INTO `userscoresnapshotledger` VALUES (37014, 'test01', 29, 34, 0, 601953, 601953, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:09:00');
+INSERT INTO `userscoresnapshotledger` VALUES (37015, 'test01', 29, 34, 0, 601833, 601833, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:09:28');
+INSERT INTO `userscoresnapshotledger` VALUES (37016, 'test01', 29, 34, 601833, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:09:46');
+INSERT INTO `userscoresnapshotledger` VALUES (37017, 'test01', 54, 0, 601833, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-27 17:09:54');
+INSERT INTO `userscoresnapshotledger` VALUES (37018, 'test01', 47, 43, 0, 601833, 601833, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:11:21');
+INSERT INTO `userscoresnapshotledger` VALUES (37019, 'test01', 47, 43, 0, 601733, 601733, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:11:34');
+INSERT INTO `userscoresnapshotledger` VALUES (37020, 'test01', 47, 43, 601733, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:11:59');
+INSERT INTO `userscoresnapshotledger` VALUES (37021, 'test01', 47, 44, 0, 601733, 601733, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:12:00');
+INSERT INTO `userscoresnapshotledger` VALUES (37022, 'test01', 47, 44, 0, 601633, 601633, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:12:13');
+INSERT INTO `userscoresnapshotledger` VALUES (37023, 'test01', 47, 44, 0, 601633, 601633, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:12:40');
+INSERT INTO `userscoresnapshotledger` VALUES (37024, 'test01', 47, 44, 0, 601533, 601533, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:13:08');
+INSERT INTO `userscoresnapshotledger` VALUES (37025, 'test01', 47, 44, 0, 601333, 601333, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:13:35');
+INSERT INTO `userscoresnapshotledger` VALUES (37026, 'test01', 47, 44, 601333, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:13:51');
+INSERT INTO `userscoresnapshotledger` VALUES (37027, 'test01', 54, 0, 601333, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-27 17:13:53');
+INSERT INTO `userscoresnapshotledger` VALUES (37028, 'test002', 54, 0, 1062946, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-27 17:14:33');
+INSERT INTO `userscoresnapshotledger` VALUES (37029, 'test002', 53, 49, 1062952, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:27:08');
+INSERT INTO `userscoresnapshotledger` VALUES (37030, 'test002', 53, 49, 1062950, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:27:10');
+INSERT INTO `userscoresnapshotledger` VALUES (37031, 'test002', 53, 49, 1062932, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:27:11');
+INSERT INTO `userscoresnapshotledger` VALUES (37032, 'test002', 53, 49, 1062932, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:27:13');
+INSERT INTO `userscoresnapshotledger` VALUES (37033, 'test002', 53, 49, 1062914, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:27:15');
+INSERT INTO `userscoresnapshotledger` VALUES (37034, 'test002', 53, 49, 1062912, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:27:17');
+INSERT INTO `userscoresnapshotledger` VALUES (37035, 'test002', 53, 49, 1062930, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:27:18');
+INSERT INTO `userscoresnapshotledger` VALUES (37036, 'test002', 53, 49, 1062924, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:27:20');
+INSERT INTO `userscoresnapshotledger` VALUES (37037, 'test002', 53, 49, 1062926, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:27:22');
+INSERT INTO `userscoresnapshotledger` VALUES (37038, 'test002', 53, 49, 1062968, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:27:23');
+INSERT INTO `userscoresnapshotledger` VALUES (37039, 'test002', 53, 49, 1062958, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:27:25');
+INSERT INTO `userscoresnapshotledger` VALUES (37040, 'test002', 53, 49, 1062946, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:27:27');
+INSERT INTO `userscoresnapshotledger` VALUES (37041, 'test002', 53, 49, 1062936, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:27:29');
+INSERT INTO `userscoresnapshotledger` VALUES (37042, 'test002', 53, 49, 1062918, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:27:30');
+INSERT INTO `userscoresnapshotledger` VALUES (37043, 'test002', 53, 49, 1062920, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:27:32');
+INSERT INTO `userscoresnapshotledger` VALUES (37044, 'test002', 53, 49, 1062922, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:27:34');
+INSERT INTO `userscoresnapshotledger` VALUES (37045, 'test002', 53, 49, 1062916, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:27:35');
+INSERT INTO `userscoresnapshotledger` VALUES (37046, 'test002', 53, 49, 1062946, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:27:37');
+INSERT INTO `userscoresnapshotledger` VALUES (37047, 'test002', 53, 49, 1062944, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:27:39');
+INSERT INTO `userscoresnapshotledger` VALUES (37048, 'test002', 53, 49, 1062934, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:27:41');
+INSERT INTO `userscoresnapshotledger` VALUES (37049, 'test002', 53, 49, 1062960, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:27:42');
+INSERT INTO `userscoresnapshotledger` VALUES (37050, 'test002', 53, 49, 1062942, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:27:44');
+INSERT INTO `userscoresnapshotledger` VALUES (37051, 'test002', 53, 49, 1062938, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:27:46');
+INSERT INTO `userscoresnapshotledger` VALUES (37052, 'test002', 53, 49, 1062936, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:27:47');
+INSERT INTO `userscoresnapshotledger` VALUES (37053, 'test002', 53, 49, 1062918, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:27:49');
+INSERT INTO `userscoresnapshotledger` VALUES (37054, 'test002', 53, 49, 1062964, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:27:51');
+INSERT INTO `userscoresnapshotledger` VALUES (37055, 'test002', 53, 49, 1062970, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:27:53');
+INSERT INTO `userscoresnapshotledger` VALUES (37056, 'test002', 53, 49, 1062968, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:27:54');
+INSERT INTO `userscoresnapshotledger` VALUES (37057, 'test002', 53, 49, 1062974, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:27:56');
+INSERT INTO `userscoresnapshotledger` VALUES (37058, 'test002', 53, 49, 1062976, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:27:58');
+INSERT INTO `userscoresnapshotledger` VALUES (37059, 'test002', 53, 49, 1063006, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:27:59');
+INSERT INTO `userscoresnapshotledger` VALUES (37060, 'test002', 53, 49, 1062988, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:28:01');
+INSERT INTO `userscoresnapshotledger` VALUES (37061, 'test002', 53, 49, 1062970, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:28:03');
+INSERT INTO `userscoresnapshotledger` VALUES (37062, 'test002', 53, 49, 1062956, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:28:05');
+INSERT INTO `userscoresnapshotledger` VALUES (37063, 'test002', 53, 49, 1062938, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:28:06');
+INSERT INTO `userscoresnapshotledger` VALUES (37064, 'test002', 53, 49, 1062940, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:28:08');
+INSERT INTO `userscoresnapshotledger` VALUES (37065, 'test002', 53, 49, 1062922, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:28:10');
+INSERT INTO `userscoresnapshotledger` VALUES (37066, 'test002', 53, 49, 1062908, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:28:11');
+INSERT INTO `userscoresnapshotledger` VALUES (37067, 'test002', 53, 49, 1062938, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:28:13');
+INSERT INTO `userscoresnapshotledger` VALUES (37068, 'test002', 53, 49, 1062920, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:28:15');
+INSERT INTO `userscoresnapshotledger` VALUES (37069, 'test002', 53, 49, 1062934, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:28:17');
+INSERT INTO `userscoresnapshotledger` VALUES (37070, 'test002', 53, 49, 1062952, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:28:18');
+INSERT INTO `userscoresnapshotledger` VALUES (37071, 'test002', 53, 49, 1062954, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:28:20');
+INSERT INTO `userscoresnapshotledger` VALUES (37072, 'test002', 53, 49, 1062936, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:28:22');
+INSERT INTO `userscoresnapshotledger` VALUES (37073, 'test002', 53, 49, 1062924, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:28:23');
+INSERT INTO `userscoresnapshotledger` VALUES (37074, 'test002', 53, 49, 1062906, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:28:25');
+INSERT INTO `userscoresnapshotledger` VALUES (37075, 'test002', 53, 49, 1062888, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:28:27');
+INSERT INTO `userscoresnapshotledger` VALUES (37076, 'test002', 53, 49, 1062874, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:28:29');
+INSERT INTO `userscoresnapshotledger` VALUES (37077, 'test002', 53, 49, 1062864, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:28:30');
+INSERT INTO `userscoresnapshotledger` VALUES (37078, 'test002', 53, 49, 1062846, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:28:32');
+INSERT INTO `userscoresnapshotledger` VALUES (37079, 'test002', 53, 49, 1062836, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:28:34');
+INSERT INTO `userscoresnapshotledger` VALUES (37080, 'test002', 53, 49, 1062818, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:28:36');
+INSERT INTO `userscoresnapshotledger` VALUES (37081, 'test002', 53, 49, 1062812, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:28:37');
+INSERT INTO `userscoresnapshotledger` VALUES (37082, 'test002', 53, 49, 1062794, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:28:39');
+INSERT INTO `userscoresnapshotledger` VALUES (37083, 'test002', 53, 49, 1062800, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:28:41');
+INSERT INTO `userscoresnapshotledger` VALUES (37084, 'test002', 53, 49, 1062782, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:28:42');
+INSERT INTO `userscoresnapshotledger` VALUES (37085, 'test002', 53, 49, 1062792, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:28:44');
+INSERT INTO `userscoresnapshotledger` VALUES (37086, 'test002', 53, 49, 1062782, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:28:46');
+INSERT INTO `userscoresnapshotledger` VALUES (37087, 'test002', 53, 49, 1062804, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:28:47');
+INSERT INTO `userscoresnapshotledger` VALUES (37088, 'test002', 53, 49, 1062802, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:28:49');
+INSERT INTO `userscoresnapshotledger` VALUES (37089, 'test002', 53, 49, 1062812, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:28:51');
+INSERT INTO `userscoresnapshotledger` VALUES (37090, 'test002', 53, 49, 1062798, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:28:53');
+INSERT INTO `userscoresnapshotledger` VALUES (37091, 'test002', 53, 49, 1062796, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:28:54');
+INSERT INTO `userscoresnapshotledger` VALUES (37092, 'test002', 53, 49, 1062786, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:28:56');
+INSERT INTO `userscoresnapshotledger` VALUES (37093, 'test002', 53, 49, 1062792, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:28:58');
+INSERT INTO `userscoresnapshotledger` VALUES (37094, 'test002', 53, 49, 1062778, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:28:59');
+INSERT INTO `userscoresnapshotledger` VALUES (37095, 'test002', 53, 49, 1062768, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:29:01');
+INSERT INTO `userscoresnapshotledger` VALUES (37096, 'test002', 53, 49, 1062762, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:29:03');
+INSERT INTO `userscoresnapshotledger` VALUES (37097, 'test002', 53, 49, 1062780, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:29:05');
+INSERT INTO `userscoresnapshotledger` VALUES (37098, 'test002', 53, 49, 1062786, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:29:06');
+INSERT INTO `userscoresnapshotledger` VALUES (37099, 'test002', 53, 49, 1062788, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:29:08');
+INSERT INTO `userscoresnapshotledger` VALUES (37100, 'test002', 53, 49, 1062770, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:29:10');
+INSERT INTO `userscoresnapshotledger` VALUES (37101, 'test002', 53, 49, 1062752, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:29:11');
+INSERT INTO `userscoresnapshotledger` VALUES (37102, 'test002', 53, 49, 1062758, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:29:13');
+INSERT INTO `userscoresnapshotledger` VALUES (37103, 'test002', 53, 49, 1062772, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:29:15');
+INSERT INTO `userscoresnapshotledger` VALUES (37104, 'test002', 53, 49, 1062766, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:29:17');
+INSERT INTO `userscoresnapshotledger` VALUES (37105, 'test002', 53, 49, 1062754, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:29:18');
+INSERT INTO `userscoresnapshotledger` VALUES (37106, 'test002', 53, 49, 1062736, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:29:20');
+INSERT INTO `userscoresnapshotledger` VALUES (37107, 'test002', 53, 49, 1062746, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:29:22');
+INSERT INTO `userscoresnapshotledger` VALUES (37108, 'test002', 53, 49, 1062728, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:29:23');
+INSERT INTO `userscoresnapshotledger` VALUES (37109, 'test002', 53, 49, 1062742, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:29:25');
+INSERT INTO `userscoresnapshotledger` VALUES (37110, 'test002', 53, 49, 1062776, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:29:27');
+INSERT INTO `userscoresnapshotledger` VALUES (37111, 'test002', 53, 49, 1062766, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:29:29');
+INSERT INTO `userscoresnapshotledger` VALUES (37112, 'test002', 53, 49, 1062792, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:29:30');
+INSERT INTO `userscoresnapshotledger` VALUES (37113, 'test002', 53, 49, 1062780, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:29:32');
+INSERT INTO `userscoresnapshotledger` VALUES (37114, 'test002', 53, 49, 1062774, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:29:34');
+INSERT INTO `userscoresnapshotledger` VALUES (37115, 'test002', 53, 49, 1062788, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:29:36');
+INSERT INTO `userscoresnapshotledger` VALUES (37116, 'test002', 53, 49, 1062818, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:29:37');
+INSERT INTO `userscoresnapshotledger` VALUES (37117, 'test002', 53, 49, 1062800, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:29:39');
+INSERT INTO `userscoresnapshotledger` VALUES (37118, 'test002', 53, 49, 1062806, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:29:41');
+INSERT INTO `userscoresnapshotledger` VALUES (37119, 'test002', 53, 49, 1062800, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:29:42');
+INSERT INTO `userscoresnapshotledger` VALUES (37120, 'test002', 53, 49, 1062818, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:29:44');
+INSERT INTO `userscoresnapshotledger` VALUES (37121, 'test002', 53, 49, 1062804, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:29:46');
+INSERT INTO `userscoresnapshotledger` VALUES (37122, 'test002', 53, 49, 1062834, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:29:48');
+INSERT INTO `userscoresnapshotledger` VALUES (37123, 'test002', 53, 49, 1062816, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:29:49');
+INSERT INTO `userscoresnapshotledger` VALUES (37124, 'test002', 53, 49, 1062830, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:29:51');
+INSERT INTO `userscoresnapshotledger` VALUES (37125, 'test002', 53, 49, 1062832, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:29:53');
+INSERT INTO `userscoresnapshotledger` VALUES (37126, 'test002', 53, 49, 1062838, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:29:54');
+INSERT INTO `userscoresnapshotledger` VALUES (37127, 'test002', 53, 49, 1062844, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:29:56');
+INSERT INTO `userscoresnapshotledger` VALUES (37128, 'test002', 53, 49, 1062842, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:29:58');
+INSERT INTO `userscoresnapshotledger` VALUES (37129, 'test002', 53, 49, 1062824, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:30:00');
+INSERT INTO `userscoresnapshotledger` VALUES (37130, 'test002', 53, 49, 1062810, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:30:01');
+INSERT INTO `userscoresnapshotledger` VALUES (37131, 'test002', 53, 49, 1062792, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:30:03');
+INSERT INTO `userscoresnapshotledger` VALUES (37132, 'test002', 53, 49, 1062786, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:30:05');
+INSERT INTO `userscoresnapshotledger` VALUES (37133, 'test002', 53, 49, 1062780, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:30:06');
+INSERT INTO `userscoresnapshotledger` VALUES (37134, 'test002', 53, 49, 1062762, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:30:08');
+INSERT INTO `userscoresnapshotledger` VALUES (37135, 'test002', 53, 49, 1062792, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:30:10');
+INSERT INTO `userscoresnapshotledger` VALUES (37136, 'test002', 53, 49, 1062786, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:30:12');
+INSERT INTO `userscoresnapshotledger` VALUES (37137, 'test002', 53, 49, 1062804, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:30:13');
+INSERT INTO `userscoresnapshotledger` VALUES (37138, 'test002', 53, 49, 1062838, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:30:15');
+INSERT INTO `userscoresnapshotledger` VALUES (37139, 'test002', 53, 49, 1062828, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:30:17');
+INSERT INTO `userscoresnapshotledger` VALUES (37140, 'test002', 53, 49, 1062814, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:30:18');
+INSERT INTO `userscoresnapshotledger` VALUES (37141, 'test002', 53, 49, 1062804, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:30:20');
+INSERT INTO `userscoresnapshotledger` VALUES (37142, 'test002', 53, 49, 1062792, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:30:22');
+INSERT INTO `userscoresnapshotledger` VALUES (37143, 'test002', 53, 49, 1062778, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:30:24');
+INSERT INTO `userscoresnapshotledger` VALUES (37144, 'test002', 53, 49, 1062786, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:30:25');
+INSERT INTO `userscoresnapshotledger` VALUES (37145, 'test002', 53, 49, 1062784, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:30:27');
+INSERT INTO `userscoresnapshotledger` VALUES (37146, 'test002', 53, 49, 1062766, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:30:29');
+INSERT INTO `userscoresnapshotledger` VALUES (37147, 'test002', 53, 49, 1062754, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:30:30');
+INSERT INTO `userscoresnapshotledger` VALUES (37148, 'test002', 53, 49, 1062736, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:30:32');
+INSERT INTO `userscoresnapshotledger` VALUES (37149, 'test002', 53, 49, 1062742, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:30:34');
+INSERT INTO `userscoresnapshotledger` VALUES (37150, 'test002', 53, 49, 1062728, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:30:36');
+INSERT INTO `userscoresnapshotledger` VALUES (37151, 'test002', 53, 49, 1062710, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:30:37');
+INSERT INTO `userscoresnapshotledger` VALUES (37152, 'test002', 53, 49, 1062700, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:30:39');
+INSERT INTO `userscoresnapshotledger` VALUES (37153, 'test002', 53, 49, 1062686, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:30:41');
+INSERT INTO `userscoresnapshotledger` VALUES (37154, 'test002', 53, 49, 1062688, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:30:42');
+INSERT INTO `userscoresnapshotledger` VALUES (37155, 'test002', 53, 49, 1062698, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:30:44');
+INSERT INTO `userscoresnapshotledger` VALUES (37156, 'test002', 53, 49, 1062692, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:30:46');
+INSERT INTO `userscoresnapshotledger` VALUES (37157, 'test002', 53, 49, 1062686, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:30:48');
+INSERT INTO `userscoresnapshotledger` VALUES (37158, 'test002', 53, 49, 1062688, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:30:49');
+INSERT INTO `userscoresnapshotledger` VALUES (37159, 'test002', 53, 49, 1062670, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:30:51');
+INSERT INTO `userscoresnapshotledger` VALUES (37160, 'test002', 53, 49, 1062660, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:30:53');
+INSERT INTO `userscoresnapshotledger` VALUES (37161, 'test002', 53, 49, 1062658, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:30:54');
+INSERT INTO `userscoresnapshotledger` VALUES (37162, 'test002', 53, 49, 1062672, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:30:56');
+INSERT INTO `userscoresnapshotledger` VALUES (37163, 'test002', 53, 49, 1062702, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:30:58');
+INSERT INTO `userscoresnapshotledger` VALUES (37164, 'test002', 53, 49, 1062700, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:31:00');
+INSERT INTO `userscoresnapshotledger` VALUES (37165, 'test002', 53, 49, 1062682, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:31:01');
+INSERT INTO `userscoresnapshotledger` VALUES (37166, 'test002', 53, 49, 1062684, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:31:03');
+INSERT INTO `userscoresnapshotledger` VALUES (37167, 'test002', 53, 49, 1062674, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:31:05');
+INSERT INTO `userscoresnapshotledger` VALUES (37168, 'test002', 53, 49, 1062656, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:31:06');
+INSERT INTO `userscoresnapshotledger` VALUES (37169, 'test002', 53, 49, 1062650, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:31:08');
+INSERT INTO `userscoresnapshotledger` VALUES (37170, 'test002', 53, 49, 1062660, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:31:10');
+INSERT INTO `userscoresnapshotledger` VALUES (37171, 'test002', 53, 49, 1062650, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:31:12');
+INSERT INTO `userscoresnapshotledger` VALUES (37172, 'test002', 53, 49, 1062644, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:31:13');
+INSERT INTO `userscoresnapshotledger` VALUES (37173, 'test002', 53, 49, 1062626, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:31:15');
+INSERT INTO `userscoresnapshotledger` VALUES (37174, 'test002', 53, 49, 1062640, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:31:17');
+INSERT INTO `userscoresnapshotledger` VALUES (37175, 'test002', 53, 49, 1062622, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:31:18');
+INSERT INTO `userscoresnapshotledger` VALUES (37176, 'test002', 53, 49, 1062636, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:31:20');
+INSERT INTO `userscoresnapshotledger` VALUES (37177, 'test002', 53, 49, 1062658, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:31:22');
+INSERT INTO `userscoresnapshotledger` VALUES (37178, 'test002', 53, 49, 1062640, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:31:24');
+INSERT INTO `userscoresnapshotledger` VALUES (37179, 'test002', 53, 49, 1062626, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:31:25');
+INSERT INTO `userscoresnapshotledger` VALUES (37180, 'test002', 53, 49, 1062608, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:31:27');
+INSERT INTO `userscoresnapshotledger` VALUES (37181, 'test002', 53, 49, 1062638, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:31:29');
+INSERT INTO `userscoresnapshotledger` VALUES (37182, 'test002', 53, 49, 1062620, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:31:30');
+INSERT INTO `userscoresnapshotledger` VALUES (37183, 'test002', 53, 49, 1062622, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:31:32');
+INSERT INTO `userscoresnapshotledger` VALUES (37184, 'test002', 53, 49, 1062608, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:31:34');
+INSERT INTO `userscoresnapshotledger` VALUES (37185, 'test002', 53, 49, 1062590, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:31:36');
+INSERT INTO `userscoresnapshotledger` VALUES (37186, 'test002', 53, 49, 1062616, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:31:37');
+INSERT INTO `userscoresnapshotledger` VALUES (37187, 'test002', 53, 49, 1062602, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:31:39');
+INSERT INTO `userscoresnapshotledger` VALUES (37188, 'test002', 53, 49, 1062608, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:31:41');
+INSERT INTO `userscoresnapshotledger` VALUES (37189, 'test002', 53, 49, 1062590, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:31:42');
+INSERT INTO `userscoresnapshotledger` VALUES (37190, 'test002', 53, 49, 1062572, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:31:44');
+INSERT INTO `userscoresnapshotledger` VALUES (37191, 'test002', 53, 49, 1062562, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:31:46');
+INSERT INTO `userscoresnapshotledger` VALUES (37192, 'test002', 53, 49, 1062548, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:31:48');
+INSERT INTO `userscoresnapshotledger` VALUES (37193, 'test002', 53, 49, 1062538, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:31:49');
+INSERT INTO `userscoresnapshotledger` VALUES (37194, 'test002', 53, 49, 1062540, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:31:51');
+INSERT INTO `userscoresnapshotledger` VALUES (37195, 'test002', 53, 49, 1062562, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:31:53');
+INSERT INTO `userscoresnapshotledger` VALUES (37196, 'test002', 53, 49, 1062556, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:31:54');
+INSERT INTO `userscoresnapshotledger` VALUES (37197, 'test002', 53, 49, 1062542, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:31:56');
+INSERT INTO `userscoresnapshotledger` VALUES (37198, 'test002', 53, 49, 1062524, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:31:58');
+INSERT INTO `userscoresnapshotledger` VALUES (37199, 'test002', 53, 49, 1062506, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:32:00');
+INSERT INTO `userscoresnapshotledger` VALUES (37200, 'test002', 53, 49, 1062548, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:32:01');
+INSERT INTO `userscoresnapshotledger` VALUES (37201, 'test002', 53, 49, 1062552, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:32:03');
+INSERT INTO `userscoresnapshotledger` VALUES (37202, 'test002', 53, 49, 1062562, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:32:05');
+INSERT INTO `userscoresnapshotledger` VALUES (37203, 'test002', 53, 49, 1062556, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:32:07');
+INSERT INTO `userscoresnapshotledger` VALUES (37204, 'test002', 53, 49, 1062538, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:32:08');
+INSERT INTO `userscoresnapshotledger` VALUES (37205, 'test002', 53, 49, 1062528, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:32:10');
+INSERT INTO `userscoresnapshotledger` VALUES (37206, 'test002', 53, 49, 1062546, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:32:12');
+INSERT INTO `userscoresnapshotledger` VALUES (37207, 'test002', 53, 49, 1062536, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:32:13');
+INSERT INTO `userscoresnapshotledger` VALUES (37208, 'test002', 53, 49, 1062534, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:32:15');
+INSERT INTO `userscoresnapshotledger` VALUES (37209, 'test002', 53, 49, 1062516, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:32:17');
+INSERT INTO `userscoresnapshotledger` VALUES (37210, 'test002', 53, 49, 1062542, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:32:18');
+INSERT INTO `userscoresnapshotledger` VALUES (37211, 'test002', 53, 49, 1062580, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:32:20');
+INSERT INTO `userscoresnapshotledger` VALUES (37212, 'test002', 53, 49, 1062586, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:32:22');
+INSERT INTO `userscoresnapshotledger` VALUES (37213, 'test002', 53, 49, 1062568, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:32:24');
+INSERT INTO `userscoresnapshotledger` VALUES (37214, 'test002', 53, 49, 1062550, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:32:25');
+INSERT INTO `userscoresnapshotledger` VALUES (37215, 'test002', 53, 49, 1062552, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:32:27');
+INSERT INTO `userscoresnapshotledger` VALUES (37216, 'test002', 53, 49, 1062550, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:32:29');
+INSERT INTO `userscoresnapshotledger` VALUES (37217, 'test002', 53, 49, 1062540, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:32:31');
+INSERT INTO `userscoresnapshotledger` VALUES (37218, 'test002', 53, 49, 1062562, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:32:32');
+INSERT INTO `userscoresnapshotledger` VALUES (37219, 'test002', 53, 49, 1062560, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:32:34');
+INSERT INTO `userscoresnapshotledger` VALUES (37220, 'test002', 53, 49, 1062554, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:32:36');
+INSERT INTO `userscoresnapshotledger` VALUES (37221, 'test002', 53, 49, 1062548, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:32:37');
+INSERT INTO `userscoresnapshotledger` VALUES (37222, 'test002', 53, 49, 1062570, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:32:39');
+INSERT INTO `userscoresnapshotledger` VALUES (37223, 'test002', 53, 49, 1062556, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:32:41');
+INSERT INTO `userscoresnapshotledger` VALUES (37224, 'test002', 53, 49, 1062542, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:32:43');
+INSERT INTO `userscoresnapshotledger` VALUES (37225, 'test002', 53, 49, 1062524, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:32:44');
+INSERT INTO `userscoresnapshotledger` VALUES (37226, 'test002', 53, 49, 1062506, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:32:46');
+INSERT INTO `userscoresnapshotledger` VALUES (37227, 'test002', 53, 49, 1062500, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:32:48');
+INSERT INTO `userscoresnapshotledger` VALUES (37228, 'test002', 53, 49, 1062518, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:32:49');
+INSERT INTO `userscoresnapshotledger` VALUES (37229, 'test002', 53, 49, 1062512, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:32:51');
+INSERT INTO `userscoresnapshotledger` VALUES (37230, 'test002', 53, 49, 1062502, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:32:53');
+INSERT INTO `userscoresnapshotledger` VALUES (37231, 'test002', 53, 49, 1062484, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:32:55');
+INSERT INTO `userscoresnapshotledger` VALUES (37232, 'test002', 53, 49, 1062490, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:32:56');
+INSERT INTO `userscoresnapshotledger` VALUES (37233, 'test002', 53, 49, 1062512, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:32:58');
+INSERT INTO `userscoresnapshotledger` VALUES (37234, 'test002', 53, 49, 1062534, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:33:00');
+INSERT INTO `userscoresnapshotledger` VALUES (37235, 'test002', 53, 49, 1062520, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:33:01');
+INSERT INTO `userscoresnapshotledger` VALUES (37236, 'test002', 53, 49, 1062502, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:33:03');
+INSERT INTO `userscoresnapshotledger` VALUES (37237, 'test002', 53, 49, 1062532, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:33:05');
+INSERT INTO `userscoresnapshotledger` VALUES (37238, 'test002', 53, 49, 1062514, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:33:06');
+INSERT INTO `userscoresnapshotledger` VALUES (37239, 'test002', 53, 49, 1062516, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:33:08');
+INSERT INTO `userscoresnapshotledger` VALUES (37240, 'test002', 53, 49, 1062510, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:33:10');
+INSERT INTO `userscoresnapshotledger` VALUES (37241, 'test002', 53, 49, 1062492, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:33:12');
+INSERT INTO `userscoresnapshotledger` VALUES (37242, 'test002', 53, 49, 1062478, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:33:13');
+INSERT INTO `userscoresnapshotledger` VALUES (37243, 'test002', 53, 49, 1062480, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:33:15');
+INSERT INTO `userscoresnapshotledger` VALUES (37244, 'test002', 53, 49, 1062462, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:33:17');
+INSERT INTO `userscoresnapshotledger` VALUES (37245, 'test002', 53, 49, 1062462, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:33:19');
+INSERT INTO `userscoresnapshotledger` VALUES (37246, 'test002', 53, 49, 1062444, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:33:20');
+INSERT INTO `userscoresnapshotledger` VALUES (37247, 'test002', 53, 49, 1062454, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:33:22');
+INSERT INTO `userscoresnapshotledger` VALUES (37248, 'test002', 53, 49, 1062476, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:33:24');
+INSERT INTO `userscoresnapshotledger` VALUES (37249, 'test002', 53, 49, 1062478, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:33:25');
+INSERT INTO `userscoresnapshotledger` VALUES (37250, 'test002', 53, 49, 1062476, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:33:27');
+INSERT INTO `userscoresnapshotledger` VALUES (37251, 'test002', 53, 49, 1062482, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:33:29');
+INSERT INTO `userscoresnapshotledger` VALUES (37252, 'test002', 53, 49, 1062472, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:33:31');
+INSERT INTO `userscoresnapshotledger` VALUES (37253, 'test002', 53, 49, 1062454, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:33:32');
+INSERT INTO `userscoresnapshotledger` VALUES (37254, 'test002', 53, 49, 1062436, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:33:34');
+INSERT INTO `userscoresnapshotledger` VALUES (37255, 'test002', 53, 49, 1062438, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:33:36');
+INSERT INTO `userscoresnapshotledger` VALUES (37256, 'test002', 53, 49, 1062420, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:33:37');
+INSERT INTO `userscoresnapshotledger` VALUES (37257, 'test002', 53, 49, 1062418, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:33:39');
+INSERT INTO `userscoresnapshotledger` VALUES (37258, 'test002', 53, 49, 1062416, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:33:41');
+INSERT INTO `userscoresnapshotledger` VALUES (37259, 'test002', 53, 49, 1062402, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:33:43');
+INSERT INTO `userscoresnapshotledger` VALUES (37260, 'test002', 53, 49, 1062392, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:33:44');
+INSERT INTO `userscoresnapshotledger` VALUES (37261, 'test002', 53, 49, 1062374, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:33:46');
+INSERT INTO `userscoresnapshotledger` VALUES (37262, 'test002', 53, 49, 1062374, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:33:48');
+INSERT INTO `userscoresnapshotledger` VALUES (37263, 'test002', 53, 49, 1062404, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:33:49');
+INSERT INTO `userscoresnapshotledger` VALUES (37264, 'test002', 53, 49, 1062394, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:33:51');
+INSERT INTO `userscoresnapshotledger` VALUES (37265, 'test002', 53, 49, 1062404, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:33:53');
+INSERT INTO `userscoresnapshotledger` VALUES (37266, 'test002', 53, 49, 1062402, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:33:55');
+INSERT INTO `userscoresnapshotledger` VALUES (37267, 'test002', 53, 49, 1062388, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:33:56');
+INSERT INTO `userscoresnapshotledger` VALUES (37268, 'test002', 53, 49, 1062370, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:33:58');
+INSERT INTO `userscoresnapshotledger` VALUES (37269, 'test002', 53, 49, 1062352, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:34:00');
+INSERT INTO `userscoresnapshotledger` VALUES (37270, 'test002', 53, 49, 1062342, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:34:01');
+INSERT INTO `userscoresnapshotledger` VALUES (37271, 'test002', 53, 49, 1062324, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:34:03');
+INSERT INTO `userscoresnapshotledger` VALUES (37272, 'test002', 53, 49, 1062314, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:34:05');
+INSERT INTO `userscoresnapshotledger` VALUES (37273, 'test002', 53, 49, 1062328, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:34:07');
+INSERT INTO `userscoresnapshotledger` VALUES (37274, 'test002', 53, 49, 1062314, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:34:08');
+INSERT INTO `userscoresnapshotledger` VALUES (37275, 'test002', 53, 49, 1062296, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:34:10');
+INSERT INTO `userscoresnapshotledger` VALUES (37276, 'test002', 53, 49, 1062310, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:34:12');
+INSERT INTO `userscoresnapshotledger` VALUES (37277, 'test002', 53, 49, 1062308, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:34:13');
+INSERT INTO `userscoresnapshotledger` VALUES (37278, 'test002', 53, 49, 1062302, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:34:15');
+INSERT INTO `userscoresnapshotledger` VALUES (37279, 'test002', 53, 49, 1062292, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:34:17');
+INSERT INTO `userscoresnapshotledger` VALUES (37280, 'test002', 53, 49, 1062290, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:34:19');
+INSERT INTO `userscoresnapshotledger` VALUES (37281, 'test002', 53, 49, 1062272, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:34:20');
+INSERT INTO `userscoresnapshotledger` VALUES (37282, 'test002', 53, 49, 1062262, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:34:22');
+INSERT INTO `userscoresnapshotledger` VALUES (37283, 'test002', 53, 49, 1062270, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:34:24');
+INSERT INTO `userscoresnapshotledger` VALUES (37284, 'test002', 53, 49, 1062264, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:34:25');
+INSERT INTO `userscoresnapshotledger` VALUES (37285, 'test002', 53, 49, 1062246, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:34:27');
+INSERT INTO `userscoresnapshotledger` VALUES (37286, 'test002', 53, 49, 1062324, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:34:29');
+INSERT INTO `userscoresnapshotledger` VALUES (37287, 'test002', 53, 49, 1062322, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:34:31');
+INSERT INTO `userscoresnapshotledger` VALUES (37288, 'test002', 53, 49, 1062312, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:34:32');
+INSERT INTO `userscoresnapshotledger` VALUES (37289, 'test002', 53, 49, 1062304, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:34:34');
+INSERT INTO `userscoresnapshotledger` VALUES (37290, 'test002', 53, 49, 1062322, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:34:36');
+INSERT INTO `userscoresnapshotledger` VALUES (37291, 'test002', 53, 49, 1062312, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:34:37');
+INSERT INTO `userscoresnapshotledger` VALUES (37292, 'test002', 53, 49, 1062294, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:34:39');
+INSERT INTO `userscoresnapshotledger` VALUES (37293, 'test002', 53, 49, 1062284, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:34:41');
+INSERT INTO `userscoresnapshotledger` VALUES (37294, 'test002', 53, 49, 1062274, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:34:43');
+INSERT INTO `userscoresnapshotledger` VALUES (37295, 'test002', 53, 49, 1062268, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:34:44');
+INSERT INTO `userscoresnapshotledger` VALUES (37296, 'test002', 53, 49, 1062266, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:34:46');
+INSERT INTO `userscoresnapshotledger` VALUES (37297, 'test002', 53, 49, 1062252, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:34:48');
+INSERT INTO `userscoresnapshotledger` VALUES (37298, 'test002', 53, 49, 1062258, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:34:49');
+INSERT INTO `userscoresnapshotledger` VALUES (37299, 'test002', 53, 49, 1062264, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:34:51');
+INSERT INTO `userscoresnapshotledger` VALUES (37300, 'test002', 53, 49, 1062258, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:34:53');
+INSERT INTO `userscoresnapshotledger` VALUES (37301, 'test002', 53, 49, 1062244, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:34:55');
+INSERT INTO `userscoresnapshotledger` VALUES (37302, 'test002', 53, 49, 1062226, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:34:56');
+INSERT INTO `userscoresnapshotledger` VALUES (37303, 'test002', 53, 49, 1062216, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:34:58');
+INSERT INTO `userscoresnapshotledger` VALUES (37304, 'test002', 53, 49, 1062222, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:35:00');
+INSERT INTO `userscoresnapshotledger` VALUES (37305, 'test002', 53, 49, 1062224, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:35:01');
+INSERT INTO `userscoresnapshotledger` VALUES (37306, 'test002', 53, 49, 1062230, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:35:03');
+INSERT INTO `userscoresnapshotledger` VALUES (37307, 'test002', 53, 49, 1062220, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:35:05');
+INSERT INTO `userscoresnapshotledger` VALUES (37308, 'test002', 53, 49, 1062214, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:35:07');
+INSERT INTO `userscoresnapshotledger` VALUES (37309, 'test002', 53, 49, 1062236, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:35:08');
+INSERT INTO `userscoresnapshotledger` VALUES (37310, 'test002', 53, 49, 1062234, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:35:10');
+INSERT INTO `userscoresnapshotledger` VALUES (37311, 'test002', 53, 49, 1062260, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:35:12');
+INSERT INTO `userscoresnapshotledger` VALUES (37312, 'test002', 53, 49, 1062272, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:35:13');
+INSERT INTO `userscoresnapshotledger` VALUES (37313, 'test002', 53, 49, 1062314, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:35:15');
+INSERT INTO `userscoresnapshotledger` VALUES (37314, 'test002', 53, 49, 1062308, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:35:17');
+INSERT INTO `userscoresnapshotledger` VALUES (37315, 'test002', 53, 49, 1062318, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:35:19');
+INSERT INTO `userscoresnapshotledger` VALUES (37316, 'test002', 53, 49, 1062312, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:35:20');
+INSERT INTO `userscoresnapshotledger` VALUES (37317, 'test002', 53, 49, 1062294, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:35:22');
+INSERT INTO `userscoresnapshotledger` VALUES (37318, 'test002', 53, 49, 1062300, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:35:24');
+INSERT INTO `userscoresnapshotledger` VALUES (37319, 'test002', 53, 49, 1062306, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:35:25');
+INSERT INTO `userscoresnapshotledger` VALUES (37320, 'test002', 53, 49, 1062292, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:35:27');
+INSERT INTO `userscoresnapshotledger` VALUES (37321, 'test002', 53, 49, 1062274, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:35:29');
+INSERT INTO `userscoresnapshotledger` VALUES (37322, 'test002', 53, 49, 1062284, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:35:31');
+INSERT INTO `userscoresnapshotledger` VALUES (37323, 'test002', 53, 49, 1062290, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:35:32');
+INSERT INTO `userscoresnapshotledger` VALUES (37324, 'test002', 53, 49, 1062284, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:35:34');
+INSERT INTO `userscoresnapshotledger` VALUES (37325, 'test002', 53, 49, 1062286, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:35:36');
+INSERT INTO `userscoresnapshotledger` VALUES (37326, 'test002', 53, 49, 1062292, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:35:37');
+INSERT INTO `userscoresnapshotledger` VALUES (37327, 'test002', 53, 49, 1062346, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:35:39');
+INSERT INTO `userscoresnapshotledger` VALUES (37328, 'test002', 53, 49, 1062340, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:35:41');
+INSERT INTO `userscoresnapshotledger` VALUES (37329, 'test002', 53, 49, 1062342, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:35:43');
+INSERT INTO `userscoresnapshotledger` VALUES (37330, 'test002', 53, 49, 1062348, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:35:44');
+INSERT INTO `userscoresnapshotledger` VALUES (37331, 'test002', 53, 49, 1062330, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:35:46');
+INSERT INTO `userscoresnapshotledger` VALUES (37332, 'test002', 53, 49, 1062320, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:35:48');
+INSERT INTO `userscoresnapshotledger` VALUES (37333, 'test002', 53, 49, 1062302, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:35:49');
+INSERT INTO `userscoresnapshotledger` VALUES (37334, 'test002', 53, 49, 1062292, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:35:51');
+INSERT INTO `userscoresnapshotledger` VALUES (37335, 'test002', 53, 49, 1062274, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:35:53');
+INSERT INTO `userscoresnapshotledger` VALUES (37336, 'test002', 53, 49, 1062288, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:35:54');
+INSERT INTO `userscoresnapshotledger` VALUES (37337, 'test002', 53, 49, 1062270, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:35:56');
+INSERT INTO `userscoresnapshotledger` VALUES (37338, 'test002', 53, 49, 1062260, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:35:58');
+INSERT INTO `userscoresnapshotledger` VALUES (37339, 'test002', 53, 49, 1062274, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:36:00');
+INSERT INTO `userscoresnapshotledger` VALUES (37340, 'test002', 53, 49, 1062276, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:36:01');
+INSERT INTO `userscoresnapshotledger` VALUES (37341, 'test002', 53, 49, 1062282, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:36:03');
+INSERT INTO `userscoresnapshotledger` VALUES (37342, 'test002', 53, 49, 1062284, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:36:05');
+INSERT INTO `userscoresnapshotledger` VALUES (37343, 'test002', 53, 49, 1062274, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:36:06');
+INSERT INTO `userscoresnapshotledger` VALUES (37344, 'test002', 53, 49, 1062268, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:36:08');
+INSERT INTO `userscoresnapshotledger` VALUES (37345, 'test002', 53, 49, 1062250, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:36:10');
+INSERT INTO `userscoresnapshotledger` VALUES (37346, 'test002', 53, 49, 1062292, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:36:12');
+INSERT INTO `userscoresnapshotledger` VALUES (37347, 'test002', 53, 49, 1062280, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:36:13');
+INSERT INTO `userscoresnapshotledger` VALUES (37348, 'test002', 53, 49, 1062288, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:36:15');
+INSERT INTO `userscoresnapshotledger` VALUES (37349, 'test002', 53, 49, 1062290, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:36:17');
+INSERT INTO `userscoresnapshotledger` VALUES (37350, 'test002', 53, 49, 1062308, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:36:19');
+INSERT INTO `userscoresnapshotledger` VALUES (37351, 'test002', 53, 49, 1062310, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:36:20');
+INSERT INTO `userscoresnapshotledger` VALUES (37352, 'test002', 53, 49, 1062296, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:36:22');
+INSERT INTO `userscoresnapshotledger` VALUES (37353, 'test002', 53, 49, 1062294, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:36:24');
+INSERT INTO `userscoresnapshotledger` VALUES (37354, 'test002', 53, 49, 1062284, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:36:25');
+INSERT INTO `userscoresnapshotledger` VALUES (37355, 'test002', 53, 49, 1062278, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:36:27');
+INSERT INTO `userscoresnapshotledger` VALUES (37356, 'test002', 53, 49, 1062268, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:36:29');
+INSERT INTO `userscoresnapshotledger` VALUES (37357, 'test002', 53, 49, 1062270, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:36:31');
+INSERT INTO `userscoresnapshotledger` VALUES (37358, 'test002', 53, 49, 1062264, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:36:32');
+INSERT INTO `userscoresnapshotledger` VALUES (37359, 'test002', 53, 49, 1062250, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:36:34');
+INSERT INTO `userscoresnapshotledger` VALUES (37360, 'test002', 53, 49, 1062238, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:36:36');
+INSERT INTO `userscoresnapshotledger` VALUES (37361, 'test002', 53, 49, 1062224, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:36:37');
+INSERT INTO `userscoresnapshotledger` VALUES (37362, 'test002', 53, 49, 1062242, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:36:39');
+INSERT INTO `userscoresnapshotledger` VALUES (37363, 'test002', 53, 49, 1062224, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:36:41');
+INSERT INTO `userscoresnapshotledger` VALUES (37364, 'test002', 53, 49, 1062206, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:36:43');
+INSERT INTO `userscoresnapshotledger` VALUES (37365, 'test002', 53, 49, 1062188, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:36:44');
+INSERT INTO `userscoresnapshotledger` VALUES (37366, 'test002', 53, 49, 1062182, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:36:46');
+INSERT INTO `userscoresnapshotledger` VALUES (37367, 'test002', 53, 49, 1062164, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:36:48');
+INSERT INTO `userscoresnapshotledger` VALUES (37368, 'test002', 53, 49, 1062176, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:36:49');
+INSERT INTO `userscoresnapshotledger` VALUES (37369, 'test002', 53, 49, 1062158, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:36:51');
+INSERT INTO `userscoresnapshotledger` VALUES (37370, 'test002', 53, 49, 1062180, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:36:53');
+INSERT INTO `userscoresnapshotledger` VALUES (37371, 'test002', 53, 49, 1062178, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:36:55');
+INSERT INTO `userscoresnapshotledger` VALUES (37372, 'test002', 53, 49, 1062168, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:36:56');
+INSERT INTO `userscoresnapshotledger` VALUES (37373, 'test002', 53, 49, 1062162, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:36:58');
+INSERT INTO `userscoresnapshotledger` VALUES (37374, 'test002', 53, 49, 1062144, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:37:00');
+INSERT INTO `userscoresnapshotledger` VALUES (37375, 'test002', 53, 49, 1062190, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:37:01');
+INSERT INTO `userscoresnapshotledger` VALUES (37376, 'test002', 53, 49, 1062204, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:37:03');
+INSERT INTO `userscoresnapshotledger` VALUES (37377, 'test002', 53, 49, 1062218, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:37:05');
+INSERT INTO `userscoresnapshotledger` VALUES (37378, 'test002', 53, 49, 1062200, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:37:07');
+INSERT INTO `userscoresnapshotledger` VALUES (37379, 'test002', 53, 49, 1062182, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:37:08');
+INSERT INTO `userscoresnapshotledger` VALUES (37380, 'test002', 53, 49, 1062184, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:37:10');
+INSERT INTO `userscoresnapshotledger` VALUES (37381, 'test002', 53, 49, 1062174, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:37:12');
+INSERT INTO `userscoresnapshotledger` VALUES (37382, 'test002', 53, 49, 1062156, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:37:14');
+INSERT INTO `userscoresnapshotledger` VALUES (37383, 'test002', 53, 49, 1062178, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:37:15');
+INSERT INTO `userscoresnapshotledger` VALUES (37384, 'test002', 53, 49, 1062160, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:37:17');
+INSERT INTO `userscoresnapshotledger` VALUES (37385, 'test002', 53, 49, 1062146, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:37:19');
+INSERT INTO `userscoresnapshotledger` VALUES (37386, 'test002', 53, 49, 1062166, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:37:20');
+INSERT INTO `userscoresnapshotledger` VALUES (37387, 'test002', 53, 49, 1062148, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:37:22');
+INSERT INTO `userscoresnapshotledger` VALUES (37388, 'test002', 53, 49, 1062142, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:37:24');
+INSERT INTO `userscoresnapshotledger` VALUES (37389, 'test002', 53, 49, 1062132, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:37:26');
+INSERT INTO `userscoresnapshotledger` VALUES (37390, 'test002', 53, 49, 1062126, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:37:27');
+INSERT INTO `userscoresnapshotledger` VALUES (37391, 'test002', 53, 49, 1062112, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:37:29');
+INSERT INTO `userscoresnapshotledger` VALUES (37392, 'test002', 53, 49, 1062106, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:37:31');
+INSERT INTO `userscoresnapshotledger` VALUES (37393, 'test002', 53, 49, 1062102, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:37:32');
+INSERT INTO `userscoresnapshotledger` VALUES (37394, 'test002', 53, 49, 1062092, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:37:34');
+INSERT INTO `userscoresnapshotledger` VALUES (37395, 'test002', 53, 49, 1062094, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:37:36');
+INSERT INTO `userscoresnapshotledger` VALUES (37396, 'test002', 53, 49, 1062120, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:37:38');
+INSERT INTO `userscoresnapshotledger` VALUES (37397, 'test002', 53, 49, 1062102, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:37:39');
+INSERT INTO `userscoresnapshotledger` VALUES (37398, 'test002', 53, 49, 1062084, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:37:41');
+INSERT INTO `userscoresnapshotledger` VALUES (37399, 'test002', 53, 49, 1062072, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:37:43');
+INSERT INTO `userscoresnapshotledger` VALUES (37400, 'test002', 53, 49, 1062058, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:37:44');
+INSERT INTO `userscoresnapshotledger` VALUES (37401, 'test002', 53, 49, 1062048, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:37:46');
+INSERT INTO `userscoresnapshotledger` VALUES (37402, 'test002', 53, 49, 1062038, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:37:48');
+INSERT INTO `userscoresnapshotledger` VALUES (37403, 'test002', 53, 49, 1062052, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:37:50');
+INSERT INTO `userscoresnapshotledger` VALUES (37404, 'test002', 53, 49, 1062054, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:37:51');
+INSERT INTO `userscoresnapshotledger` VALUES (37405, 'test002', 53, 49, 1062056, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:37:53');
+INSERT INTO `userscoresnapshotledger` VALUES (37406, 'test002', 53, 49, 1062054, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:37:55');
+INSERT INTO `userscoresnapshotledger` VALUES (37407, 'test002', 53, 49, 1062044, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:37:56');
+INSERT INTO `userscoresnapshotledger` VALUES (37408, 'test002', 53, 49, 1062040, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:37:58');
+INSERT INTO `userscoresnapshotledger` VALUES (37409, 'test002', 53, 49, 1062022, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:38:00');
+INSERT INTO `userscoresnapshotledger` VALUES (37410, 'test002', 53, 49, 1062016, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:38:02');
+INSERT INTO `userscoresnapshotledger` VALUES (37411, 'test002', 53, 49, 1062022, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:38:03');
+INSERT INTO `userscoresnapshotledger` VALUES (37412, 'test002', 53, 49, 1062064, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:38:05');
+INSERT INTO `userscoresnapshotledger` VALUES (37413, 'test002', 53, 49, 1062102, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:38:07');
+INSERT INTO `userscoresnapshotledger` VALUES (37414, 'test002', 53, 49, 1062092, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:38:08');
+INSERT INTO `userscoresnapshotledger` VALUES (37415, 'test002', 53, 49, 1062082, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:38:10');
+INSERT INTO `userscoresnapshotledger` VALUES (37416, 'test002', 53, 49, 1062072, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:38:12');
+INSERT INTO `userscoresnapshotledger` VALUES (37417, 'test002', 53, 49, 1062066, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:38:14');
+INSERT INTO `userscoresnapshotledger` VALUES (37418, 'test002', 53, 49, 1062056, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:38:15');
+INSERT INTO `userscoresnapshotledger` VALUES (37419, 'test002', 53, 49, 1062066, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:38:17');
+INSERT INTO `userscoresnapshotledger` VALUES (37420, 'test002', 53, 49, 1062056, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:38:19');
+INSERT INTO `userscoresnapshotledger` VALUES (37421, 'test002', 53, 49, 1062038, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:38:21');
+INSERT INTO `userscoresnapshotledger` VALUES (37422, 'test002', 53, 49, 1062044, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:38:22');
+INSERT INTO `userscoresnapshotledger` VALUES (37423, 'test002', 53, 49, 1062030, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:38:24');
+INSERT INTO `userscoresnapshotledger` VALUES (37424, 'test002', 53, 49, 1062048, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:38:26');
+INSERT INTO `userscoresnapshotledger` VALUES (37425, 'test002', 53, 49, 1062050, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:38:27');
+INSERT INTO `userscoresnapshotledger` VALUES (37426, 'test002', 53, 49, 1062054, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:38:29');
+INSERT INTO `userscoresnapshotledger` VALUES (37427, 'test002', 53, 49, 1062052, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:38:31');
+INSERT INTO `userscoresnapshotledger` VALUES (37428, 'test002', 53, 49, 1062034, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:38:33');
+INSERT INTO `userscoresnapshotledger` VALUES (37429, 'test002', 53, 49, 1062040, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:38:34');
+INSERT INTO `userscoresnapshotledger` VALUES (37430, 'test002', 53, 49, 1062044, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:38:36');
+INSERT INTO `userscoresnapshotledger` VALUES (37431, 'test002', 53, 49, 1062054, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:38:38');
+INSERT INTO `userscoresnapshotledger` VALUES (37432, 'test002', 53, 49, 1062076, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:38:39');
+INSERT INTO `userscoresnapshotledger` VALUES (37433, 'test002', 53, 49, 1062082, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:38:41');
+INSERT INTO `userscoresnapshotledger` VALUES (37434, 'test002', 53, 49, 1062076, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:38:43');
+INSERT INTO `userscoresnapshotledger` VALUES (37435, 'test002', 53, 49, 1062062, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:38:44');
+INSERT INTO `userscoresnapshotledger` VALUES (37436, 'test002', 53, 49, 1062060, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:38:46');
+INSERT INTO `userscoresnapshotledger` VALUES (37437, 'test002', 53, 49, 1062042, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:38:48');
+INSERT INTO `userscoresnapshotledger` VALUES (37438, 'test002', 53, 49, 1062024, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:38:50');
+INSERT INTO `userscoresnapshotledger` VALUES (37439, 'test002', 53, 49, 1062006, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:38:51');
+INSERT INTO `userscoresnapshotledger` VALUES (37440, 'test002', 53, 49, 1062000, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:38:53');
+INSERT INTO `userscoresnapshotledger` VALUES (37441, 'test002', 53, 49, 1061990, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:38:55');
+INSERT INTO `userscoresnapshotledger` VALUES (37442, 'test002', 53, 49, 1062032, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:38:56');
+INSERT INTO `userscoresnapshotledger` VALUES (37443, 'test002', 53, 49, 1062014, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:38:58');
+INSERT INTO `userscoresnapshotledger` VALUES (37444, 'test002', 53, 49, 1061996, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:39:00');
+INSERT INTO `userscoresnapshotledger` VALUES (37445, 'test002', 53, 49, 1061998, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:39:02');
+INSERT INTO `userscoresnapshotledger` VALUES (37446, 'test002', 53, 49, 1061988, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:39:03');
+INSERT INTO `userscoresnapshotledger` VALUES (37447, 'test002', 53, 49, 1061990, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:39:05');
+INSERT INTO `userscoresnapshotledger` VALUES (37448, 'test002', 53, 49, 1061984, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:39:07');
+INSERT INTO `userscoresnapshotledger` VALUES (37449, 'test002', 53, 49, 1062018, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:39:08');
+INSERT INTO `userscoresnapshotledger` VALUES (37450, 'test002', 53, 49, 1062016, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:39:10');
+INSERT INTO `userscoresnapshotledger` VALUES (37451, 'test002', 53, 49, 1062018, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:39:12');
+INSERT INTO `userscoresnapshotledger` VALUES (37452, 'test002', 53, 49, 1062048, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:39:14');
+INSERT INTO `userscoresnapshotledger` VALUES (37453, 'test002', 53, 49, 1062034, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:39:15');
+INSERT INTO `userscoresnapshotledger` VALUES (37454, 'test002', 53, 49, 1062024, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:39:17');
+INSERT INTO `userscoresnapshotledger` VALUES (37455, 'test002', 53, 49, 1062034, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:39:19');
+INSERT INTO `userscoresnapshotledger` VALUES (37456, 'test002', 53, 49, 1062028, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:39:20');
+INSERT INTO `userscoresnapshotledger` VALUES (37457, 'test002', 53, 49, 1062014, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:39:22');
+INSERT INTO `userscoresnapshotledger` VALUES (37458, 'test002', 53, 49, 1061996, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:39:24');
+INSERT INTO `userscoresnapshotledger` VALUES (37459, 'test002', 53, 49, 1061986, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:39:26');
+INSERT INTO `userscoresnapshotledger` VALUES (37460, 'test002', 53, 49, 1061992, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:39:27');
+INSERT INTO `userscoresnapshotledger` VALUES (37461, 'test002', 53, 49, 1061994, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:39:29');
+INSERT INTO `userscoresnapshotledger` VALUES (37462, 'test002', 53, 49, 1061976, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:39:31');
+INSERT INTO `userscoresnapshotledger` VALUES (37463, 'test002', 53, 49, 1061970, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:39:32');
+INSERT INTO `userscoresnapshotledger` VALUES (37464, 'test002', 53, 49, 1061952, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:39:34');
+INSERT INTO `userscoresnapshotledger` VALUES (37465, 'test002', 53, 49, 1061950, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:39:36');
+INSERT INTO `userscoresnapshotledger` VALUES (37466, 'test002', 53, 49, 1061950, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:39:38');
+INSERT INTO `userscoresnapshotledger` VALUES (37467, 'test002', 53, 49, 1061972, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:39:39');
+INSERT INTO `userscoresnapshotledger` VALUES (37468, 'test002', 53, 49, 1061978, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:39:41');
+INSERT INTO `userscoresnapshotledger` VALUES (37469, 'test002', 53, 49, 1062012, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:39:43');
+INSERT INTO `userscoresnapshotledger` VALUES (37470, 'test002', 53, 49, 1061994, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:39:45');
+INSERT INTO `userscoresnapshotledger` VALUES (37471, 'test002', 53, 49, 1061996, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:39:46');
+INSERT INTO `userscoresnapshotledger` VALUES (37472, 'test002', 53, 49, 1061978, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:39:48');
+INSERT INTO `userscoresnapshotledger` VALUES (37473, 'test002', 53, 49, 1061960, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:39:50');
+INSERT INTO `userscoresnapshotledger` VALUES (37474, 'test002', 53, 49, 1061942, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:39:51');
+INSERT INTO `userscoresnapshotledger` VALUES (37475, 'test002', 53, 49, 1061924, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:39:53');
+INSERT INTO `userscoresnapshotledger` VALUES (37476, 'test002', 53, 49, 1061926, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:39:55');
+INSERT INTO `userscoresnapshotledger` VALUES (37477, 'test002', 53, 49, 1061908, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:39:57');
+INSERT INTO `userscoresnapshotledger` VALUES (37478, 'test002', 53, 49, 1061914, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:39:58');
+INSERT INTO `userscoresnapshotledger` VALUES (37479, 'test002', 53, 49, 1061908, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:40:00');
+INSERT INTO `userscoresnapshotledger` VALUES (37480, 'test002', 53, 49, 1061902, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:40:02');
+INSERT INTO `userscoresnapshotledger` VALUES (37481, 'test002', 53, 49, 1061884, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:40:03');
+INSERT INTO `userscoresnapshotledger` VALUES (37482, 'test002', 53, 49, 1061890, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:40:05');
+INSERT INTO `userscoresnapshotledger` VALUES (37483, 'test002', 53, 49, 1061872, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:40:07');
+INSERT INTO `userscoresnapshotledger` VALUES (37484, 'test002', 53, 49, 1061854, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:40:09');
+INSERT INTO `userscoresnapshotledger` VALUES (37485, 'test002', 53, 49, 1061844, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:40:10');
+INSERT INTO `userscoresnapshotledger` VALUES (37486, 'test002', 53, 49, 1061838, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:40:12');
+INSERT INTO `userscoresnapshotledger` VALUES (37487, 'test002', 53, 49, 1061824, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:40:14');
+INSERT INTO `userscoresnapshotledger` VALUES (37488, 'test002', 53, 49, 1061826, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:40:15');
+INSERT INTO `userscoresnapshotledger` VALUES (37489, 'test002', 53, 49, 1061808, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:40:17');
+INSERT INTO `userscoresnapshotledger` VALUES (37490, 'test002', 53, 49, 1061810, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:40:19');
+INSERT INTO `userscoresnapshotledger` VALUES (37491, 'test002', 53, 49, 1061792, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:40:21');
+INSERT INTO `userscoresnapshotledger` VALUES (37492, 'test002', 53, 49, 1061782, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:40:22');
+INSERT INTO `userscoresnapshotledger` VALUES (37493, 'test002', 53, 49, 1061764, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:40:24');
+INSERT INTO `userscoresnapshotledger` VALUES (37494, 'test002', 53, 49, 1061754, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:40:26');
+INSERT INTO `userscoresnapshotledger` VALUES (37495, 'test002', 53, 49, 1061760, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:40:27');
+INSERT INTO `userscoresnapshotledger` VALUES (37496, 'test002', 53, 49, 1061758, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:40:29');
+INSERT INTO `userscoresnapshotledger` VALUES (37497, 'test002', 53, 49, 1061756, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:40:31');
+INSERT INTO `userscoresnapshotledger` VALUES (37498, 'test002', 53, 49, 1061738, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:40:33');
+INSERT INTO `userscoresnapshotledger` VALUES (37499, 'test002', 53, 49, 1061728, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:40:34');
+INSERT INTO `userscoresnapshotledger` VALUES (37500, 'test002', 53, 49, 1061726, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:40:36');
+INSERT INTO `userscoresnapshotledger` VALUES (37501, 'test002', 53, 49, 1061716, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:40:38');
+INSERT INTO `userscoresnapshotledger` VALUES (37502, 'test002', 53, 49, 1061710, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:40:39');
+INSERT INTO `userscoresnapshotledger` VALUES (37503, 'test002', 53, 49, 1061716, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:40:41');
+INSERT INTO `userscoresnapshotledger` VALUES (37504, 'test002', 53, 49, 1061766, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:40:43');
+INSERT INTO `userscoresnapshotledger` VALUES (37505, 'test002', 53, 49, 1061768, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:40:45');
+INSERT INTO `userscoresnapshotledger` VALUES (37506, 'test002', 53, 49, 1061794, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:40:46');
+INSERT INTO `userscoresnapshotledger` VALUES (37507, 'test002', 53, 49, 1061816, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:40:48');
+INSERT INTO `userscoresnapshotledger` VALUES (37508, 'test002', 53, 49, 1061834, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:40:50');
+INSERT INTO `userscoresnapshotledger` VALUES (37509, 'test002', 53, 49, 1061816, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:40:51');
+INSERT INTO `userscoresnapshotledger` VALUES (37510, 'test002', 53, 49, 1061818, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:40:53');
+INSERT INTO `userscoresnapshotledger` VALUES (37511, 'test002', 53, 49, 1061800, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:40:55');
+INSERT INTO `userscoresnapshotledger` VALUES (37512, 'test002', 53, 49, 1061790, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:40:57');
+INSERT INTO `userscoresnapshotledger` VALUES (37513, 'test002', 53, 49, 1061790, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:45:24');
+INSERT INTO `userscoresnapshotledger` VALUES (37514, 'test002', 53, 50, 1061790, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:45:27');
+INSERT INTO `userscoresnapshotledger` VALUES (37515, 'test002', 40, 51, 1061790, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:45:28');
+INSERT INTO `userscoresnapshotledger` VALUES (37516, 'test002', 54, 0, 1061790, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-27 17:45:28');
+INSERT INTO `userscoresnapshotledger` VALUES (37517, 'test002', 40, 52, 1061740, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:45:37');
+INSERT INTO `userscoresnapshotledger` VALUES (37518, 'test002', 40, 52, 1061717, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:45:46');
+INSERT INTO `userscoresnapshotledger` VALUES (37519, 'test002', 40, 52, 1061667, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:45:58');
+INSERT INTO `userscoresnapshotledger` VALUES (37520, 'test002', 40, 52, 1061584, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:46:11');
+INSERT INTO `userscoresnapshotledger` VALUES (37521, 'test002', 40, 52, 1061701, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:46:17');
+INSERT INTO `userscoresnapshotledger` VALUES (37522, 'test002', 40, 52, 1061663, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:46:28');
+INSERT INTO `userscoresnapshotledger` VALUES (37523, 'test002', 40, 52, 1061655, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:46:35');
+INSERT INTO `userscoresnapshotledger` VALUES (37524, 'test002', 40, 52, 1061647, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:46:44');
+INSERT INTO `userscoresnapshotledger` VALUES (37525, 'test002', 40, 52, 1061609, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:46:52');
+INSERT INTO `userscoresnapshotledger` VALUES (37526, 'test002', 40, 52, 1061526, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:46:57');
+INSERT INTO `userscoresnapshotledger` VALUES (37527, 'test002', 40, 52, 1061571, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:46:57');
+INSERT INTO `userscoresnapshotledger` VALUES (37528, 'test002', 40, 52, 1061488, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:47:02');
+INSERT INTO `userscoresnapshotledger` VALUES (37529, 'test002', 40, 52, 1061506, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:47:03');
+INSERT INTO `userscoresnapshotledger` VALUES (37530, 'test002', 40, 52, 1061468, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:47:07');
+INSERT INTO `userscoresnapshotledger` VALUES (37531, 'test002', 40, 52, 1061400, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:47:35');
+INSERT INTO `userscoresnapshotledger` VALUES (37532, 'test002', 40, 52, 1061380, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:47:41');
+INSERT INTO `userscoresnapshotledger` VALUES (37533, 'test002', 40, 52, 1061317, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:48:03');
+INSERT INTO `userscoresnapshotledger` VALUES (37534, 'test002', 40, 52, 1061212, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:48:50');
+INSERT INTO `userscoresnapshotledger` VALUES (37535, 'test002', 40, 52, 1061164, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:49:10');
+INSERT INTO `userscoresnapshotledger` VALUES (37536, 'test002', 40, 52, 1061164, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:51:09');
+INSERT INTO `userscoresnapshotledger` VALUES (37537, 'test002', 40, 54, 1061164, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:51:14');
+INSERT INTO `userscoresnapshotledger` VALUES (37538, 'test002', 54, 0, 1061164, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-27 17:51:14');
+INSERT INTO `userscoresnapshotledger` VALUES (37539, 'test002', 40, 55, 1061204, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:51:20');
+INSERT INTO `userscoresnapshotledger` VALUES (37540, 'test002', 40, 55, 1061194, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:51:33');
+INSERT INTO `userscoresnapshotledger` VALUES (37541, 'test002', 40, 55, 1061194, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:52:24');
+INSERT INTO `userscoresnapshotledger` VALUES (37542, 'test002', 40, 57, 1061194, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:55:10');
+INSERT INTO `userscoresnapshotledger` VALUES (37543, 'test002', 54, 0, 1061194, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-27 17:55:10');
+INSERT INTO `userscoresnapshotledger` VALUES (37544, 'test002', 40, 58, 1061194, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 17:57:00');
 
 -- ----------------------------
 -- Table structure for videogamecoinrecord
