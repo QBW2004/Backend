@@ -167,10 +167,21 @@ namespace YYT.Web.Areas.Game.Controllers
                             List<CardPayoutRowDto> pr = payoutRows.Where(c => c.TableId == tIdx).ToList();
                             CardTableCfgCardRow cardCfg = cardCfgRows.FirstOrDefault(c => c.TableIndex == tIdx);
                             Dictionary<string, int> payout = new Dictionary<string, int>();
+                            // 鬼牌三段概率哨兵行：HandType 201/202/203 = 1/2/3 王万分比(ProbabilityBasis)
+                            int jokerOn = 0, jk1 = 0, jk2 = 0, jk3 = 0;
                             foreach (CardPayoutRowDto p in pr)
                             {
+                                if (p.HandType >= 201 && p.HandType <= 203)
+                                {
+                                    if (p.HandType == 201) jk1 = p.ProbabilityBasis;
+                                    else if (p.HandType == 202) jk2 = p.ProbabilityBasis;
+                                    else jk3 = p.ProbabilityBasis;
+                                    if (p.Enabled == 1) jokerOn = 1;
+                                    continue;
+                                }
                                 payout["p" + p.HandType] = p.ProbabilityBasis;
                                 payout["m" + p.HandType] = p.PayoutMultiplier;
+                                payout["e" + p.HandType] = p.Enabled;
                             }
                             int cardMaxBetUnits = cardCfg != null ? cardCfg.MaxBetUnits : 0;
                             rows.Add(new
@@ -191,8 +202,12 @@ namespace YYT.Web.Areas.Game.Controllers
                                 enabled = cfg.Enabled,
                                 cardDif = m == null ? string.Empty : (m.DIF ?? string.Empty),
                                 hypeType = m == null ? 0 : m.HYPE_TYPE,
-                                payoutOn = pr.Any(c => c.Enabled == 1) ? 1 : 0,
-                                payout = payout
+                                payoutOn = pr.Any(c => c.HandType < 100 && c.Enabled == 1) ? 1 : 0,
+                                payout = payout,
+                                jokerOn = jokerOn,
+                                jk1 = jk1,
+                                jk2 = jk2,
+                                jk3 = jk3
                             });
                         }
                     }
@@ -776,12 +791,34 @@ namespace YYT.Web.Areas.Game.Controllers
                             msg.content = "牌型概率须在 0-10000（万分比）之间且倍数不能为负！";
                             return Json(msg);
                         }
-                        if (ht != 0) probSum += prob;
-                        payoutProfiles.Add(new[] { ht, prob, mult });
+                        // 逐牌型启用：he{ht}（缺省 1）；杂牌行始终启用
+                        int rowOn = (ht == 0 || form.Q<int>("he" + ht, 1) == 1) ? 1 : 0;
+                        if (ht != 0 && rowOn == 1) probSum += prob;
+                        payoutProfiles.Add(new[] { ht, prob, mult, rowOn });
                     }
                     if (payoutOn == 1 && probSum > 10000)
                     {
                         msg.content = "中奖牌型概率合计 " + probSum + " 超过 10000（万分比），请调低后再保存！";
+                        return Json(msg);
+                    }
+
+                    // 鬼牌三段概率（万分比）：哨兵行 HandType 201/202/203，服务端 AlgAddJoker 可变分支消费
+                    int jokerOn = form.Q<int>("JokerOn", 0) == 1 ? 1 : 0;
+                    int[] jokerProbs = new int[3];
+                    int jokerSum = 0;
+                    for (int j = 0; j < 3; j++)
+                    {
+                        jokerProbs[j] = (int)Math.Round(form.Q<decimal>("jk" + (j + 1), 0m), MidpointRounding.AwayFromZero);
+                        if (jokerProbs[j] < 0 || jokerProbs[j] > 10000)
+                        {
+                            msg.content = "鬼牌概率须在 0-10000（万分比）之间！";
+                            return Json(msg);
+                        }
+                        jokerSum += jokerProbs[j];
+                    }
+                    if (jokerOn == 1 && jokerSum > 10000)
+                    {
+                        msg.content = "鬼牌 1/2/3 王概率合计 " + jokerSum + " 超过 10000（万分比），请调低后再保存！";
                         return Json(msg);
                     }
 
@@ -796,14 +833,20 @@ namespace YYT.Web.Areas.Game.Controllers
                                     "DELETE FROM cardpayoutprofile WHERE GAME_ID={0} AND TableId={1}", gameId, tIdx);
                                 foreach (int[] p in payoutProfiles)
                                 {
+                                    int rowEnabled = (payoutOn == 1 && p[3] == 1) ? 1 : 0;
                                     ef.Database.ExecuteSqlCommand(
                                         "INSERT INTO cardpayoutprofile (GAME_ID, TableId, HandType, PayoutMultiplier, ProbabilityBasis, StockLimit, StockRemain, Enabled) VALUES ({0},{1},{2},{3},{4},0,0,{5})",
-                                        gameId, tIdx, p[0], p[2], p[1], payoutOn);
+                                        gameId, tIdx, p[0], p[2], p[1], rowEnabled);
                                     if (p[0] == 7)
                                         ef.Database.ExecuteSqlCommand(
                                             "INSERT INTO cardpayoutprofile (GAME_ID, TableId, HandType, PayoutMultiplier, ProbabilityBasis, StockLimit, StockRemain, Enabled) VALUES ({0},{1},8,{2},0,0,0,{3})",
-                                            gameId, tIdx, p[2], payoutOn);
+                                            gameId, tIdx, p[2], rowEnabled);
                                 }
+                                // 鬼牌哨兵行：201/202/203 = 1/2/3 王万分比，服务端 GetCardPayoutSnapshot 按 HandType>=CARDS_TYPE_MAX 跳过，不影响牌型赔付
+                                for (int j = 0; j < 3; j++)
+                                    ef.Database.ExecuteSqlCommand(
+                                        "INSERT INTO cardpayoutprofile (GAME_ID, TableId, HandType, PayoutMultiplier, ProbabilityBasis, StockLimit, StockRemain, Enabled) VALUES ({0},{1},{2},0,{3},0,0,{4})",
+                                        gameId, tIdx, 201 + j, jokerProbs[j], jokerOn);
                                 txP.Commit();
                             }
                             catch
