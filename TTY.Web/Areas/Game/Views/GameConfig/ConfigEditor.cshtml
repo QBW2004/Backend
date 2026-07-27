@@ -255,11 +255,51 @@
                                     <th style="padding:8px;border:1px solid #e5e9f0;text-align:left;">牌型</th>
                                     <th style="padding:8px;border:1px solid #e5e9f0;">出现率（万分比 0-10000）</th>
                                     <th style="padding:8px;border:1px solid #e5e9f0;">倍数（压分×倍数=得芬）</th>
+                                    <th style="padding:8px;border:1px solid #e5e9f0;width:64px;">启用</th>
                                 </tr>
                             </thead>
                             <tbody></tbody>
                         </table>
                         <div class="gc-hint" id="gcPayoutSum"></div>
+
+                        <div class="gc-section-title" style="margin-top:16px;">机台设定（鬼牌三段概率）</div>
+                        <input type="hidden" id="gcJokerOnVal" name="JokerOn" value="0" />
+                        <div class="gc-form-row">
+                            <div class="gc-field">
+                                <label><input type="checkbox" id="gcJokerOn" /> 启用鬼牌三段概率（停用时按机台难度档位的原逻辑出鬼）</label>
+                            </div>
+                        </div>
+                        <div class="gc-form-row">
+                            <div class="gc-field">
+                                <label>1 王概率（万分比 0-10000）</label>
+                                <input type="number" id="gcJk1" name="jk1" class="gc-input gc-joker-p" min="0" max="10000" step="1" value="0" />
+                            </div>
+                            <div class="gc-field">
+                                <label>2 王概率（万分比 0-10000）</label>
+                                <input type="number" id="gcJk2" name="jk2" class="gc-input gc-joker-p" min="0" max="10000" step="1" value="0" />
+                            </div>
+                            <div class="gc-field">
+                                <label>3 王概率（万分比 0-10000）</label>
+                                <input type="number" id="gcJk3" name="jk3" class="gc-input gc-joker-p" min="0" max="10000" step="1" value="0" />
+                            </div>
+                        </div>
+                        <div class="gc-hint" id="gcJokerSum">说明：作用于可变分支的全局出鬼权重；各牌型硬约束不变（两对永远无鬼、五鬼固定 5 鬼、正宗大四梅无鬼、各牌型鬼数上下限自动限幅）。</div>
+
+                        <div id="gcJpBox" style="display:none;">
+                            <div class="gc-section-title" style="margin-top:16px;">彩金奖池（服务端硬编码 · 只读展示，暂不可调）</div>
+                            <div class="gc-hint" id="gcJpRule" style="margin-bottom:8px;"></div>
+                            <table style="width:100%;border-collapse:collapse;margin-bottom:14px;" id="gcJpTable">
+                                <thead>
+                                    <tr style="background:#f5f8ff;color:#5a6573;font-size:13px;">
+                                        <th style="padding:8px;border:1px solid #e5e9f0;text-align:left;">独立奖池牌型</th>
+                                        <th style="padding:8px;border:1px solid #e5e9f0;">保底分（领奖后重置下限）</th>
+                                        <th style="padding:8px;border:1px solid #e5e9f0;" id="gcJpTh3">奖池累计上限</th>
+                                        <th style="padding:8px;border:1px solid #e5e9f0;" id="gcJpTh4" class="gc-jp-nba">三王额外奖（固定倍数×押分）</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
                         <div class="gc-section-title" style="margin-top:16px;display:none;">高级（旧版兼容）</div>
                         <div class="gc-form-row" style="display:none;">
                             <div class="gc-field">
@@ -616,6 +656,7 @@
             }
             $('#gcScoreSwitchLbl').text((type === 1 || type === 3) ? '加芬幅度（点击一次加多少芬）' : '加炮幅度（0.1-0.9）');
             if (type === 1 && $('#gcPayoutTable tbody tr').length === 0) gcBuildPayoutTable();
+            if (type === 1) gcUpdateJpBox(); else $('#gcJpBox').hide();
             if (type === 0) gcBuildBetPayoutTable();
         }
         $('#gcNewTable').toggle(true);
@@ -721,7 +762,9 @@
         $('#gcEnabled').prop('checked', false);
         $('#gcBetScores').val('');
         $('#gcPayoutOn').prop('checked', false);
+        $('#gcJokerOn').prop('checked', false);
         gcBuildPayoutTable();
+        gcSyncJoker();
         gcSyncSwitch();
     }
 
@@ -852,13 +895,27 @@
         var $tb = $('#gcPayoutTable tbody');
         $tb.empty();
         $.each(GC_PAYOUT_ROWS, function (i, r) {
+            // 杂牌(ht=0)为余量行，始终启用不可勾选；其余牌型逐行启用(he{ht}，隐藏域保证序列化)
+            var enCell = r.ht === 0
+                ? '<td style="padding:4px;border:1px solid #e5e9f0;text-align:center;color:#9aa4b1;font-size:12px;">—</td>'
+                : '<td style="padding:4px;border:1px solid #e5e9f0;text-align:center;">' +
+                  '<input type="checkbox" id="gcHeChk' + r.ht + '" class="gc-payout-e" data-ht="' + r.ht + '" checked />' +
+                  '<input type="hidden" name="he' + r.ht + '" id="gcHe' + r.ht + '" value="1" /></td>';
             $tb.append('<tr>' +
                 '<td style="padding:6px 8px;border:1px solid #e5e9f0;font-size:13px;color:#36404a;">' + r.name + '</td>' +
                 '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="number" name="hp' + r.ht + '" id="gcHp' + r.ht + '" class="gc-input gc-payout-p" min="0" max="10000" step="1" value="' + r.p + '" /></td>' +
                 '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="number" name="hm' + r.ht + '" id="gcHm' + r.ht + '" class="gc-input" min="0" step="1" value="' + r.m + '" /></td>' +
+                enCell +
                 '</tr>');
         });
         $tb.find('.gc-payout-p').on('input', gcUpdatePayoutSum);
+        $tb.find('.gc-payout-e').on('change', function () {
+            var ht = $(this).attr('data-ht');
+            var on = $(this).is(':checked');
+            $('#gcHe' + ht).val(on ? 1 : 0);
+            $('#gcHp' + ht + ',#gcHm' + ht).css('opacity', on ? 1 : 0.45);
+            gcUpdatePayoutSum();
+        });
         gcUpdatePayoutSum();
     }
 
@@ -866,13 +923,14 @@
         var winSum = 0;
         var rtp = 0;
         $.each(GC_PAYOUT_ROWS, function (i, r) {
+            if (r.ht !== 0 && !$('#gcHeChk' + r.ht).is(':checked')) return; // 停用行不计入
             var p = parseFloat($('#gcHp' + r.ht).val()) || 0;
             var m = parseFloat($('#gcHm' + r.ht).val()) || 0;
             if (r.ht !== 0) winSum += p;
             rtp += p / 10000 * m;
         });
         var $el = $('#gcPayoutSum');
-        $el.text('中奖牌型出现率合计：' + winSum + ' / 10000（余量自动落入杂牌），理论返奖率 RTP ≈ ' + (rtp * 100).toFixed(1) + '%');
+        $el.text('中奖牌型出现率合计（仅启用行）：' + winSum + ' / 10000（余量自动落入杂牌），理论返奖率 RTP ≈ ' + (rtp * 100).toFixed(2) + '%');
         $el.css('color', winSum > 10000 ? '#d33b3b' : '#9aa4b1');
     }
 
@@ -883,8 +941,74 @@
         $.each(GC_PAYOUT_ROWS, function (i, r) {
             $('#gcHp' + r.ht).val(po['p' + r.ht] !== undefined ? po['p' + r.ht] : r.p);
             $('#gcHm' + r.ht).val(po['m' + r.ht] !== undefined ? po['m' + r.ht] : r.m);
+            if (r.ht !== 0) {
+                // 已保存档：总开关开启时 Enabled=0 才是逐行停用；无存档/总关时默认启用
+                var on = !(t.payoutOn == 1 && po['e' + r.ht] !== undefined && po['e' + r.ht] == 0);
+                $('#gcHeChk' + r.ht).prop('checked', on);
+                $('#gcHe' + r.ht).val(on ? 1 : 0);
+                $('#gcHp' + r.ht + ',#gcHm' + r.ht).css('opacity', on ? 1 : 0.45);
+            }
         });
+        // 鬼牌三段概率回显
+        $('#gcJokerOn').prop('checked', t.jokerOn == 1);
+        $('#gcJk1').val(t.jk1 || 0);
+        $('#gcJk2').val(t.jk2 || 0);
+        $('#gcJk3').val(t.jk3 || 0);
+        gcSyncJoker();
         gcUpdatePayoutSum();
+        gcUpdateJpBox();
+    }
+
+    function gcSyncJoker() {
+        $('#gcJokerOnVal').val($('#gcJokerOn').is(':checked') ? 1 : 0);
+        var s = 0;
+        for (var j = 1; j <= 3; j++) s += parseFloat($('#gcJk' + j).val()) || 0;
+        var $el = $('#gcJokerSum');
+        $el.text('1/2/3 王概率合计：' + s + ' / 10000（余量为无鬼）；硬约束不变：两对无鬼、五鬼固定 5 鬼、正宗大四梅无鬼、各牌型鬼数上下限自动限幅。');
+        $el.css('color', s > 10000 ? '#d33b3b' : '#9aa4b1');
+    }
+
+    // 彩金奖池只读展示：仅 ATT3/NBA（按游戏名匹配），两套规则分开展示；其余牌机隐藏
+    function gcUpdateJpBox() {
+        var name = ($('#gcGameSel').find('option:selected').text() || '');
+        var isNba = /nba/i.test(name);
+        var isAtt = /att|连环炮/i.test(name);
+        if (gcGetType() !== 1 || (!isNba && !isAtt)) {
+            $('#gcJpBox').hide();
+            return;
+        }
+        var rows;
+        if (isAtt) {
+            $('#gcJpRule').html('ATT3 规则（服务端常量）：桦台累计押分每满 <b>3000</b> 分，4 个独立池各 +1 分；领取额 = 奖池 ×（本局押分 ÷ 1000），押分 ≥1000 领取 100%；领奖后奖池降至保底。');
+            $('.gc-jp-nba').hide();
+            rows = [
+                ['五梅 5.K.', 5000, 200000, null],
+                ['同花大顺 R.S.', 2000, 100000, null],
+                ['同花顺 S.F.', 500, 20000, null],
+                ['四梅 4.K.', 200, 5000, null]
+            ];
+        } else {
+            $('#gcJpRule').html('NBA 规则（服务端常量，与 ATT3 不同）：每局按轮次轮流累计 4K→SF→RS→5K 各 +1 分（非押分节奏）；领取额 = 奖池 ×（本局押分 ÷ 80），押分 ≥80 领取 100%；中奖局含 3 张鬼牌时另按固定倍数加奖；领奖后奖池降至保底。');
+            $('.gc-jp-nba').show();
+            rows = [
+                ['五梅 5.K.', 5000, '—（轮次累计无上限控制）', '押分 ×160'],
+                ['同花大顺 R.S.', 2000, '—（轮次累计无上限控制）', '押分 ×80'],
+                ['同花顺 S.F.', 500, '—（轮次累计无上限控制）', '押分 ×40'],
+                ['四梅 4.K.', 200, '—（轮次累计无上限控制）', '押分 ×20']
+            ];
+        }
+        var $tb = $('#gcJpTable tbody');
+        $tb.empty();
+        $.each(rows, function (i, r) {
+            var html = '<tr>' +
+                '<td style="padding:6px 8px;border:1px solid #e5e9f0;font-size:13px;color:#36404a;">' + r[0] + '</td>' +
+                '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="text" class="gc-input" value="' + r[1] + '" disabled /></td>' +
+                '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="text" class="gc-input" value="' + r[2] + '" disabled /></td>';
+            if (r[3] !== null) html += '<td style="padding:4px;border:1px solid #e5e9f0;" class="gc-jp-nba"><input type="text" class="gc-input" value="' + r[3] + '" disabled /></td>';
+            html += '</tr>';
+            $tb.append(html);
+        });
+        $('#gcJpBox').show();
     }
 
     function gcSave() {
@@ -963,6 +1087,8 @@
         $('#gcNewTable').on('click', gcNewTable);
         $('#gcEnabled').on('change', gcSyncSwitch);
         $('#gcPayoutOn').on('change', gcSyncSwitch);
+        $('#gcJokerOn').on('change', gcSyncJoker);
+        $('.gc-joker-p').on('input', gcSyncJoker);
         $('#gcBetPayoutOn').on('change', gcSyncSwitch);
         $('#gcTableList').on('click', 'li', function () {
             $('#gcTableList li').removeClass('active');

@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>游戏配置-NBA篮球</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Microsoft Yahei;font-size:14px}
+body{background:#f5f7fa;padding:10px}
+.top-bar{display:flex;gap:12px;align-items:center;margin-bottom:12px}
+select{height:32px;padding:0 8px;border:1px solid #ddd;border-radius:4px}
+.wrap{display:flex;gap:12px}
+.left{width:160px;background:#fff;border:1px solid #e4e7ed;border-radius:4px}
+.left-title{background:#409eff;color:#fff;padding:6px 10px;font-weight:bold}
+.left-item{padding:8px 10px;border-bottom:1px solid #eee;display:flex;justify-content:space-between}
+.tag{background:#67c23a;color:#fff;font-size:12px;padding:1px 4px;border-radius:3px}
+.add-table{width:100%;padding:8px;background:#409eff;color:#fff;border:none;margin-top:6px}
+.right{flex:1;background:#fff;border:1px solid #e4e7ed;padding:12px;border-radius:4px}
+.title{font-size:15px;font-weight:bold;margin:18px 0 10px;border-left:3px solid #409eff;padding-left:8px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:10px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:10px}
+.row5{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:10px}
+.form-item label{display:block;font-size:13px;color:#666;margin-bottom:4px}
+.form-item input{width:100%;height:32px;border:1px solid #ddd;padding:0 8px;border-radius:4px}
+table{width:100%;border-collapse:collapse;margin:8px 0}
+th,td{border:1px solid #e4e7ed;padding:8px;text-align:center}
+th{background:#f5f7fa}
+td input{width:100%;height:28px;border:1px solid #ddd;padding:0 4px}
+.tip{font-size:12px;color:#999;margin:4px 0 12px;line-height:1.6}
+.btn-box{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}
+.btn{padding:6px 16px;border:1px solid #ddd;background:#fff;border-radius:4px}
+.btn-blue{background:#409eff;color:#fff;border-color:#409eff}
+.switch-row{display:flex;align-items:center;gap:8px}
+.switch{width:40px;height:20px;background:#409eff;border-radius:10px;position:relative}
+.switch::after{content:'';width:16px;height:16px;background:#fff;border-radius:50%;position:absolute;right:2px;top:2px}
+</style>
+</head>
+<body>
+<div class="top-bar">
+    <span>当前位置:游戏配置</span>
+    <label>游戏类型:</label>
+    <select><option>牌机类型</option></select>
+    <label>选择游戏:</label>
+    <select><option selected>NBA篮球</option></select>
+</div>
+<div class="wrap">
+    <div class="left">
+        <div class="left-title">桌台列表</div>
+        <button class="add-table">+新建桌台</button>
+        <div class="left-item"><span>桌台1</span><span class="tag">启用</span></div>
+        <div class="left-item"><span>桌台2</span><span class="tag">启用</span></div>
+        <div class="left-item"><span>桌台3</span><span class="tag">启用</span></div>
+        <div class="left-item"><span>桌台4</span><span class="tag">启用</span></div>
+    </div>
+    <div class="right">
+        <div style="display:flex;justify-content:space-between;margin-bottom:16px">
+            <h3>桌台参数</h3>
+            <span class="tip">新建桌台（已套用最近桌台参数，填写桌名即可保存）</span>
+        </div>
+
+        <!-- 基础信息 -->
+        <div class="title">基础信息</div>
+        <div class="row2">
+            <div class="form-item">
+                <label>桌名</label>
+                <input placeholder="请输入桌名">
+            </div>
+            <div class="form-item switch-row">
+                <label>桌台开关</label>
+                <div class="switch"></div>
+                <span class="tip">关闭后该桌台不再展示给玩家</span>
+            </div>
+        </div>
+
+        <!-- 下注与兑换 -->
+        <div class="title">下注与兑换</div>
+        <div class="row2">
+            <div class="form-item"><label>最小押分</label><input value="1"></div>
+            <div class="form-item"><label>最大押分</label><input value="10"></div>
+        </div>
+        <div class="row5">
+            <div class="form-item"><label>兑换单位(1金币=分)</label><input value="1"></div>
+            <div class="form-item"><label>入场金币</label><input value="1"></div>
+            <div class="form-item"><label>加芬幅度（点击一次加多少芬）</label><input value="1"></div>
+        </div>
+
+        <!-- 彩金统一配置 -->
+        <div class="title">彩金统一配置</div>
+        <p class="tip">
+        分层鬼牌概率控制逻辑：
+        1、鬼牌单位统一为千分比‰，1王、2王标签文字动态实时换算，读取输入框数值自动计算每10局平均出现次数；3王仅展示当前千分比；
+        2、权益区分：1王、2王仅手牌显示鬼牌，无奖池加分、无彩金领取资格；仅3王触发完整彩金机制（奖池加分+可中大奖领奖）；
+        3、关闭规则：3张鬼牌概率填0=永久关闭全部三王彩金功能；单类鬼牌填0则不会生成该数量鬼牌；
+        4、加分规则：仅本局生成3张鬼牌，结算后4个独立奖池统一增加下方固定分值；1/2鬼牌普通对局不加分；
+        5、三王局内大奖概率：单位同样千分‰，仅已刷出3鬼牌后生效，每行独立控制中奖难度，数值越低越难出，填0关闭对应牌型；
+        6、领奖双重条件：本局3鬼牌 + 触发该行大奖；可领取彩金 = (当前奖池总分 − 独立保底) × 领取比例；领奖后仅该行奖池重置保底。
+        </p>
+        <div class="row3">
+            <div class="form-item">
+                <label id="label1king">手牌出现1张鬼牌概率(‰)，填0不生成1王（400‰ = 每10局平均 4 次）</label>
+                <input id="input1king" value="400" oninput="updateKingLabel()">
+            </div>
+            <div class="form-item">
+                <label id="label2king">手牌出现2张鬼牌概率(‰)，填0不生成2王（80‰ = 每10局平均 0.8 次）</label>
+                <input id="input2king" value="80" oninput="updateKingLabel()">
+            </div>
+            <div class="form-item">
+                <label>手牌出现3张鬼牌概率(‰)，填0关闭全部三王彩金功能（5‰）</label>
+                <input id="input3king" value="5">
+            </div>
+        </div>
+        <div class="form-item" style="margin-bottom:10px">
+            <label>三王有效局，4个奖池统一固定加分（原厂默认）</label>
+            <input value="10">
+        </div>
+        <table>
+            <tr>
+                <th>独立大奖池牌型</th>
+                <th>该奖池独立保底分（领奖重置值）</th>
+                <th>超出保底彩金领取比例(%)</th>
+                <th>三王档位专属基础倍率</th>
+                <th>三王局内该大奖出现概率(‰)，填0关闭此牌型</th>
+            </tr>
+            <tr>
+                <td>五条 5.K.</td>
+                <td><input value="10000"></td>
+                <td><input value="100"></td>
+                <td><input value="160"></td>
+                <td><input value="1"></td>
+            </tr>
+            <tr>
+                <td>皇家同花顺 R.S.</td>
+                <td><input value="3000"></td>
+                <td><input value="70"></td>
+                <td><input value="80"></td>
+                <td><input value="2"></td>
+            </tr>
+            <tr>
+                <td>同花顺 S.F.</td>
+                <td><input value="800"></td>
+                <td><input value="40"></td>
+                <td><input value="40"></td>
+                <td><input value="3"></td>
+            </tr>
+            <tr>
+                <td>四条 4.K.</td>
+                <td><input value="200"></td>
+                <td><input value="20"></td>
+                <td><input value="20"></td>
+                <td><input value="5"></td>
+            </tr>
+        </table>
+        <p class="tip">结算示例：五条奖池15000，保底10000，浮动5000；押1分三王五条收益=1×160 + 5000×100% = 5160；领奖五条奖池重置10000，其余不变。</p>
+
+        <!-- 普通档位牌型出现率&倍率 -->
+        <div class="title">机台设定 (牌型出现率与普通档位倍数)</div>
+        <table id="rtpTable">
+            <tr>
+                <th>牌型</th>
+                <th>出现率(万分比)</th>
+                <th>普通档位基础倍数</th>
+            </tr>
+            <tr><td>杂牌</td><td><input class="rate" value="6774"></td><td><input class="mul" value="0"></td></tr>
+            <tr><td>一对</td><td><input class="rate" value="1900" oninput="calcRTP()"></td><td><input class="mul" value="1" oninput="calcRTP()"></td></tr>
+            <tr><td>两对</td><td><input class="rate" value="900" oninput="calcRTP()"></td><td><input class="mul" value="2" oninput="calcRTP()"></td></tr>
+            <tr><td>三条</td><td><input class="rate" value="350" oninput="calcRTP()"></td><td><input class="mul" value="3" oninput="calcRTP()"></td></tr>
+            <tr><td>顺子</td><td><input class="rate" value="30" oninput="calcRTP()"></td><td><input class="mul" value="5" oninput="calcRTP()"></td></tr>
+            <tr><td>同花</td><td><input class="rate" value="25" oninput="calcRTP()"></td><td><input class="mul" value="7" oninput="calcRTP()"></td></tr>
+            <tr><td>葫芦</td><td><input class="rate" value="10" oninput="calcRTP()"></td><td><input class="mul" value="15" oninput="calcRTP()"></td></tr>
+            <tr><td>四条</td><td><input class="rate" value="5" oninput="calcRTP()"></td><td><input class="mul" value="65" oninput="calcRTP()"></td></tr>
+            <tr><td>同花顺</td><td><input class="rate" value="3" oninput="calcRTP()"></td><td><input class="mul" value="150" oninput="calcRTP()"></td></tr>
+            <tr><td>同花大顺</td><td><input class="rate" value="2" oninput="calcRTP()"></td><td><input class="mul" value="250" oninput="calcRTP()"></td></tr>
+            <tr><td>五条</td><td><input class="rate" value="1" oninput="calcRTP()"></td><td><input class="mul" value="500" oninput="calcRTP()"></td></tr>
+        </table>
+        <p id="rtpTip" class="tip">
+        【动态RTP功能说明】
+        1、本表单位：万分比，杂牌出现率支持自定义手动输入，不自动覆盖；所有中奖牌型（一对～五条）数值自动求和；
+        2、实时动态计算：修改任意一行「出现率」或「普通档位倍数」，失去输入框焦点后，下方文字立刻重新计算并刷新RTP数值，非静态固定文字；
+        3、计算公式：RTP = Σ(该行出现率 ÷ 10000 × 普通档位基础倍数) × 100%；
+        4、数据边界：杂牌倍数固定0，不参与RTP计算；三王局额外浮动彩金不计入本表基础RTP；
+        动态展示：中奖牌型出现率合计：{sumRate} / 10000，实时理论返奖率 RTP = {rtpPercent}%
+        </p>
+
+        <!-- 超时踢出配置 -->
+        <div class="title">玩法与踢出</div>
+        <div class="form-item">
+            <label>无操作踢出时间(秒)</label>
+            <input value="0">
+            <p class="tip">0 = 不自动踢出</p>
+        </div>
+
+        <div class="btn-box">
+            <button class="btn">重置参数</button>
+            <button class="btn btn-blue">新建桌台</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// 动态更新1王、2王标签文字
+function updateKingLabel(){
+    let v1 = parseInt(document.getElementById('input1king').value) || 0;
+    let v2 = parseInt(document.getElementById('input2king').value) || 0;
+    let avg1 = (v1 / 100).toFixed(1);
+    let avg2 = (v2 / 100).toFixed(1);
+    document.getElementById('label1king').innerText = `手牌出现1张鬼牌概率(‰)，填0不生成1王（${v1}‰ = 每10局平均 ${avg1} 次）`;
+    document.getElementById('label2king').innerText = `手牌出现2张鬼牌概率(‰)，填0不生成2王（${v2}‰ = 每10局平均 ${avg2} 次）`;
+}
+updateKingLabel();
+
+// 实时计算RTP（不再自动修改杂牌输入框）
+function calcRTP(){
+    let rows = document.querySelectorAll('#rtpTable tr');
+    let sumRate = 0;
+    let rtp = 0;
+    // 跳过表头、杂牌第一行，从一对开始遍历
+    for(let i=2;i<rows.length;i++){
+        let rate = Number(rows[i].querySelector('.rate').value) || 0;
+        let mul = Number(rows[i].querySelector('.mul').value) || 0;
+        sumRate += rate;
+        rtp += rate / 10000 * mul;
+    }
+    let rtpPercent = (rtp * 100).toFixed(2);
+    document.getElementById('rtpTip').innerHTML = `
+        【动态RTP功能说明】
+        1、本表单位：万分比，杂牌出现率支持自定义手动输入，不自动覆盖；所有中奖牌型（一对～五条）数值自动求和；
+        2、实时动态计算：修改任意一行「出现率」或「普通档位倍数」，失去输入框焦点后，下方文字立刻重新计算并刷新RTP数值，非静态固定文字；
+        3、计算公式：RTP = Σ(该行出现率 ÷ 10000 × 普通档位基础倍数) × 100%；
+        4、数据边界：杂牌倍数固定0，不参与RTP计算；三王局额外浮动彩金不计入本表基础RTP；
+        动态展示：中奖牌型出现率合计：${sumRate} / 10000，实时理论返奖率 RTP = ${rtpPercent}%
+    `;
+}
+calcRTP();
+</script>
+</body>
+</html>
