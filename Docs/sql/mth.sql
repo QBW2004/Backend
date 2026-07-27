@@ -11,7 +11,7 @@
  Target Server Version : 50744
  File Encoding         : 65001
 
- Date: 27/07/2026 14:00:12
+ Date: 27/07/2026 15:39:10
 */
 
 SET NAMES utf8mb4;
@@ -119,7 +119,7 @@ CREATE TABLE `agencyoptlog`  (
   `AFT_COINS` bigint(20) NOT NULL DEFAULT 0 COMMENT '操作后金币量',
   `WEEK` tinyint(4) NOT NULL DEFAULT 0 COMMENT '周数',
   PRIMARY KEY (`LID`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 484 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '代理日志表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 485 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '代理日志表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of agencyoptlog
@@ -285,6 +285,7 @@ INSERT INTO `agencyoptlog` VALUES (480, 'atmadmin', '超级管理', 'atmadmin', 
 INSERT INTO `agencyoptlog` VALUES (481, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-27 10:35:04', 2, 0, 0, 0, 31);
 INSERT INTO `agencyoptlog` VALUES (482, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-27 11:02:12', 2, 0, 0, 0, 31);
 INSERT INTO `agencyoptlog` VALUES (483, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-27 13:36:51', 2, 0, 0, 0, 31);
+INSERT INTO `agencyoptlog` VALUES (484, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-27 15:18:39', 2, 0, 0, 0, 31);
 
 -- ----------------------------
 -- Table structure for agent_hierarchy
@@ -1051,8 +1052,8 @@ CREATE TABLE `gameconfiglaba`  (
 -- ----------------------------
 INSERT INTO `gameconfiglaba` VALUES (16, 0, 'betMax', 1000, 'Room', '2026-07-24 15:43:22');
 INSERT INTO `gameconfiglaba` VALUES (16, 0, 'betMaxX10', 10000, 'Room', '2026-07-24 15:43:22');
-INSERT INTO `gameconfiglaba` VALUES (16, 0, 'betMin', 1, 'Room', '2026-07-24 15:43:22');
-INSERT INTO `gameconfiglaba` VALUES (16, 0, 'betMinX10', 10, 'Room', '2026-07-24 15:43:22');
+INSERT INTO `gameconfiglaba` VALUES (16, 0, 'betMin', 5, 'Room', '2026-07-24 15:43:22');
+INSERT INTO `gameconfiglaba` VALUES (16, 0, 'betMinX10', 50, 'Room', '2026-07-24 15:43:22');
 INSERT INTO `gameconfiglaba` VALUES (16, 0, 'coinSc', 1, 'Room', '2026-07-24 15:43:22');
 INSERT INTO `gameconfiglaba` VALUES (16, 0, 'coinsNeed', 10000, 'Room', '2026-07-24 15:43:22');
 INSERT INTO `gameconfiglaba` VALUES (16, 0, 'exCoin', 10000, 'Room', '2026-07-24 15:43:22');
@@ -1076,6 +1077,153 @@ INSERT INTO `gameconfiglaba` VALUES (16, 0, 'Prob6', 20, 'Payout', '2026-07-24 1
 INSERT INTO `gameconfiglaba` VALUES (16, 0, 'Prob7', 10, 'Payout', '2026-07-24 15:43:22');
 INSERT INTO `gameconfiglaba` VALUES (16, 0, 'Prob8', 0, 'Payout', '2026-07-24 15:43:22');
 INSERT INTO `gameconfiglaba` VALUES (16, 0, 'scoreSwitchX10', 1, 'Room', '2026-07-24 15:43:22');
+INSERT INTO `gameconfiglaba` VALUES (16, 1, 'betMax', 1000, 'Room', '2026-07-27 15:29:19');
+INSERT INTO `gameconfiglaba` VALUES (16, 1, 'betMaxX10', 10000, 'Room', '2026-07-27 15:29:19');
+INSERT INTO `gameconfiglaba` VALUES (16, 1, 'betMin', 1, 'Room', '2026-07-27 15:29:19');
+INSERT INTO `gameconfiglaba` VALUES (16, 1, 'betMinX10', 10, 'Room', '2026-07-27 15:29:19');
+INSERT INTO `gameconfiglaba` VALUES (16, 1, 'coinSc', 1, 'Room', '2026-07-27 15:29:19');
+INSERT INTO `gameconfiglaba` VALUES (16, 1, 'coinsNeed', 10000, 'Room', '2026-07-27 15:29:19');
+INSERT INTO `gameconfiglaba` VALUES (16, 1, 'exCoin', 10000, 'Room', '2026-07-27 15:29:19');
+INSERT INTO `gameconfiglaba` VALUES (16, 1, 'gameMo', 100, 'Room', '2026-07-27 15:29:19');
+INSERT INTO `gameconfiglaba` VALUES (16, 1, 'Payout0', 10, 'Payout', '2026-07-27 15:29:19');
+INSERT INTO `gameconfiglaba` VALUES (16, 1, 'Payout1', 10, 'Payout', '2026-07-27 15:29:19');
+INSERT INTO `gameconfiglaba` VALUES (16, 1, 'Payout2', 14, 'Payout', '2026-07-27 15:29:19');
+INSERT INTO `gameconfiglaba` VALUES (16, 1, 'Payout3', 18, 'Payout', '2026-07-27 15:29:19');
+INSERT INTO `gameconfiglaba` VALUES (16, 1, 'Payout4', 20, 'Payout', '2026-07-27 15:29:19');
+INSERT INTO `gameconfiglaba` VALUES (16, 1, 'Payout5', 30, 'Payout', '2026-07-27 15:29:19');
+INSERT INTO `gameconfiglaba` VALUES (16, 1, 'Payout6', 50, 'Payout', '2026-07-27 15:29:19');
+INSERT INTO `gameconfiglaba` VALUES (16, 1, 'Payout7', 70, 'Payout', '2026-07-27 15:29:19');
+INSERT INTO `gameconfiglaba` VALUES (16, 1, 'Payout8', 80, 'Payout', '2026-07-27 15:29:19');
+INSERT INTO `gameconfiglaba` VALUES (16, 1, 'Prob0', 6000, 'Payout', '2026-07-27 15:29:19');
+INSERT INTO `gameconfiglaba` VALUES (16, 1, 'Prob1', 2000, 'Payout', '2026-07-27 15:29:19');
+INSERT INTO `gameconfiglaba` VALUES (16, 1, 'Prob2', 1000, 'Payout', '2026-07-27 15:29:19');
+INSERT INTO `gameconfiglaba` VALUES (16, 1, 'Prob3', 500, 'Payout', '2026-07-27 15:29:19');
+INSERT INTO `gameconfiglaba` VALUES (16, 1, 'Prob4', 400, 'Payout', '2026-07-27 15:29:19');
+INSERT INTO `gameconfiglaba` VALUES (16, 1, 'Prob5', 60, 'Payout', '2026-07-27 15:29:19');
+INSERT INTO `gameconfiglaba` VALUES (16, 1, 'Prob6', 20, 'Payout', '2026-07-27 15:29:19');
+INSERT INTO `gameconfiglaba` VALUES (16, 1, 'Prob7', 10, 'Payout', '2026-07-27 15:29:19');
+INSERT INTO `gameconfiglaba` VALUES (16, 1, 'Prob8', 0, 'Payout', '2026-07-27 15:29:19');
+INSERT INTO `gameconfiglaba` VALUES (16, 1, 'scoreSwitchX10', 1, 'Room', '2026-07-27 15:29:19');
+INSERT INTO `gameconfiglaba` VALUES (40, 0, 'betMax', 1000, 'Room', '2026-07-27 15:23:32');
+INSERT INTO `gameconfiglaba` VALUES (40, 0, 'betMaxX10', 10000, 'Room', '2026-07-27 15:23:32');
+INSERT INTO `gameconfiglaba` VALUES (40, 0, 'betMin', 1, 'Room', '2026-07-27 15:23:32');
+INSERT INTO `gameconfiglaba` VALUES (40, 0, 'betMinX10', 10, 'Room', '2026-07-27 15:23:32');
+INSERT INTO `gameconfiglaba` VALUES (40, 0, 'coinSc', 1, 'Room', '2026-07-27 15:23:32');
+INSERT INTO `gameconfiglaba` VALUES (40, 0, 'coinsNeed', 1000, 'Room', '2026-07-27 15:23:32');
+INSERT INTO `gameconfiglaba` VALUES (40, 0, 'exCoin', 10000, 'Room', '2026-07-27 15:23:32');
+INSERT INTO `gameconfiglaba` VALUES (40, 0, 'gameMo', 100, 'Room', '2026-07-27 15:23:32');
+INSERT INTO `gameconfiglaba` VALUES (40, 0, 'scoreSwitchX10', 1, 'Room', '2026-07-27 15:23:32');
+INSERT INTO `gameconfiglaba` VALUES (40, 0, 'WheelProb0', 1000, 'Payout', '2026-07-27 15:23:32');
+INSERT INTO `gameconfiglaba` VALUES (40, 0, 'WheelProb1', 1000, 'Payout', '2026-07-27 15:23:32');
+INSERT INTO `gameconfiglaba` VALUES (40, 0, 'WheelProb10', 100, 'Payout', '2026-07-27 15:23:32');
+INSERT INTO `gameconfiglaba` VALUES (40, 0, 'WheelProb11', 100, 'Payout', '2026-07-27 15:23:32');
+INSERT INTO `gameconfiglaba` VALUES (40, 0, 'WheelProb12', 100, 'Payout', '2026-07-27 15:23:32');
+INSERT INTO `gameconfiglaba` VALUES (40, 0, 'WheelProb13', 100, 'Payout', '2026-07-27 15:23:32');
+INSERT INTO `gameconfiglaba` VALUES (40, 0, 'WheelProb14', 100, 'Payout', '2026-07-27 15:23:32');
+INSERT INTO `gameconfiglaba` VALUES (40, 0, 'WheelProb15', 100, 'Payout', '2026-07-27 15:23:32');
+INSERT INTO `gameconfiglaba` VALUES (40, 0, 'WheelProb16', 100, 'Payout', '2026-07-27 15:23:32');
+INSERT INTO `gameconfiglaba` VALUES (40, 0, 'WheelProb17', 100, 'Payout', '2026-07-27 15:23:32');
+INSERT INTO `gameconfiglaba` VALUES (40, 0, 'WheelProb18', 100, 'Payout', '2026-07-27 15:23:32');
+INSERT INTO `gameconfiglaba` VALUES (40, 0, 'WheelProb19', 10, 'Payout', '2026-07-27 15:23:32');
+INSERT INTO `gameconfiglaba` VALUES (40, 0, 'WheelProb2', 100, 'Payout', '2026-07-27 15:23:32');
+INSERT INTO `gameconfiglaba` VALUES (40, 0, 'WheelProb20', 100, 'Payout', '2026-07-27 15:23:32');
+INSERT INTO `gameconfiglaba` VALUES (40, 0, 'WheelProb21', 100, 'Payout', '2026-07-27 15:23:32');
+INSERT INTO `gameconfiglaba` VALUES (40, 0, 'WheelProb22', 100, 'Payout', '2026-07-27 15:23:32');
+INSERT INTO `gameconfiglaba` VALUES (40, 0, 'WheelProb23', 100, 'Payout', '2026-07-27 15:23:32');
+INSERT INTO `gameconfiglaba` VALUES (40, 0, 'WheelProb3', 10, 'Payout', '2026-07-27 15:23:32');
+INSERT INTO `gameconfiglaba` VALUES (40, 0, 'WheelProb4', 100, 'Payout', '2026-07-27 15:23:32');
+INSERT INTO `gameconfiglaba` VALUES (40, 0, 'WheelProb5', 100, 'Payout', '2026-07-27 15:23:32');
+INSERT INTO `gameconfiglaba` VALUES (40, 0, 'WheelProb6', 100, 'Payout', '2026-07-27 15:23:32');
+INSERT INTO `gameconfiglaba` VALUES (40, 0, 'WheelProb7', 100, 'Payout', '2026-07-27 15:23:32');
+INSERT INTO `gameconfiglaba` VALUES (40, 0, 'WheelProb8', 100, 'Payout', '2026-07-27 15:23:32');
+INSERT INTO `gameconfiglaba` VALUES (40, 0, 'WheelProb9', 100, 'Payout', '2026-07-27 15:23:32');
+INSERT INTO `gameconfiglaba` VALUES (40, 1, 'betMax', 1000, 'Room', '2026-07-27 15:30:49');
+INSERT INTO `gameconfiglaba` VALUES (40, 1, 'betMaxX10', 10000, 'Room', '2026-07-27 15:30:49');
+INSERT INTO `gameconfiglaba` VALUES (40, 1, 'betMin', 5, 'Room', '2026-07-27 15:30:49');
+INSERT INTO `gameconfiglaba` VALUES (40, 1, 'betMinX10', 50, 'Room', '2026-07-27 15:30:49');
+INSERT INTO `gameconfiglaba` VALUES (40, 1, 'coinSc', 1, 'Room', '2026-07-27 15:30:49');
+INSERT INTO `gameconfiglaba` VALUES (40, 1, 'coinsNeed', 1000, 'Room', '2026-07-27 15:30:49');
+INSERT INTO `gameconfiglaba` VALUES (40, 1, 'exCoin', 10000, 'Room', '2026-07-27 15:30:49');
+INSERT INTO `gameconfiglaba` VALUES (40, 1, 'gameMo', 100, 'Room', '2026-07-27 15:30:49');
+INSERT INTO `gameconfiglaba` VALUES (40, 1, 'scoreSwitchX10', 1, 'Room', '2026-07-27 15:30:49');
+INSERT INTO `gameconfiglaba` VALUES (40, 1, 'WheelProb0', 1000, 'Payout', '2026-07-27 15:30:49');
+INSERT INTO `gameconfiglaba` VALUES (40, 1, 'WheelProb1', 1000, 'Payout', '2026-07-27 15:30:49');
+INSERT INTO `gameconfiglaba` VALUES (40, 1, 'WheelProb10', 100, 'Payout', '2026-07-27 15:30:49');
+INSERT INTO `gameconfiglaba` VALUES (40, 1, 'WheelProb11', 100, 'Payout', '2026-07-27 15:30:49');
+INSERT INTO `gameconfiglaba` VALUES (40, 1, 'WheelProb12', 100, 'Payout', '2026-07-27 15:30:49');
+INSERT INTO `gameconfiglaba` VALUES (40, 1, 'WheelProb13', 100, 'Payout', '2026-07-27 15:30:49');
+INSERT INTO `gameconfiglaba` VALUES (40, 1, 'WheelProb14', 100, 'Payout', '2026-07-27 15:30:49');
+INSERT INTO `gameconfiglaba` VALUES (40, 1, 'WheelProb15', 100, 'Payout', '2026-07-27 15:30:49');
+INSERT INTO `gameconfiglaba` VALUES (40, 1, 'WheelProb16', 100, 'Payout', '2026-07-27 15:30:49');
+INSERT INTO `gameconfiglaba` VALUES (40, 1, 'WheelProb17', 100, 'Payout', '2026-07-27 15:30:49');
+INSERT INTO `gameconfiglaba` VALUES (40, 1, 'WheelProb18', 100, 'Payout', '2026-07-27 15:30:49');
+INSERT INTO `gameconfiglaba` VALUES (40, 1, 'WheelProb19', 10, 'Payout', '2026-07-27 15:30:49');
+INSERT INTO `gameconfiglaba` VALUES (40, 1, 'WheelProb2', 100, 'Payout', '2026-07-27 15:30:49');
+INSERT INTO `gameconfiglaba` VALUES (40, 1, 'WheelProb20', 100, 'Payout', '2026-07-27 15:30:49');
+INSERT INTO `gameconfiglaba` VALUES (40, 1, 'WheelProb21', 100, 'Payout', '2026-07-27 15:30:49');
+INSERT INTO `gameconfiglaba` VALUES (40, 1, 'WheelProb22', 100, 'Payout', '2026-07-27 15:30:49');
+INSERT INTO `gameconfiglaba` VALUES (40, 1, 'WheelProb23', 100, 'Payout', '2026-07-27 15:30:49');
+INSERT INTO `gameconfiglaba` VALUES (40, 1, 'WheelProb3', 10, 'Payout', '2026-07-27 15:30:49');
+INSERT INTO `gameconfiglaba` VALUES (40, 1, 'WheelProb4', 100, 'Payout', '2026-07-27 15:30:49');
+INSERT INTO `gameconfiglaba` VALUES (40, 1, 'WheelProb5', 100, 'Payout', '2026-07-27 15:30:49');
+INSERT INTO `gameconfiglaba` VALUES (40, 1, 'WheelProb6', 100, 'Payout', '2026-07-27 15:30:49');
+INSERT INTO `gameconfiglaba` VALUES (40, 1, 'WheelProb7', 100, 'Payout', '2026-07-27 15:30:49');
+INSERT INTO `gameconfiglaba` VALUES (40, 1, 'WheelProb8', 100, 'Payout', '2026-07-27 15:30:49');
+INSERT INTO `gameconfiglaba` VALUES (40, 1, 'WheelProb9', 100, 'Payout', '2026-07-27 15:30:49');
+INSERT INTO `gameconfiglaba` VALUES (53, 0, 'betMax', 100, 'Room', '2026-07-27 15:21:31');
+INSERT INTO `gameconfiglaba` VALUES (53, 0, 'betMaxX10', 1000, 'Room', '2026-07-27 15:21:31');
+INSERT INTO `gameconfiglaba` VALUES (53, 0, 'betMin', 1, 'Room', '2026-07-27 15:21:31');
+INSERT INTO `gameconfiglaba` VALUES (53, 0, 'betMinX10', 10, 'Room', '2026-07-27 15:21:31');
+INSERT INTO `gameconfiglaba` VALUES (53, 0, 'coinSc', 1, 'Room', '2026-07-27 15:21:31');
+INSERT INTO `gameconfiglaba` VALUES (53, 0, 'coinsNeed', 10, 'Room', '2026-07-27 15:21:31');
+INSERT INTO `gameconfiglaba` VALUES (53, 0, 'exCoin', 10000, 'Room', '2026-07-27 15:21:31');
+INSERT INTO `gameconfiglaba` VALUES (53, 0, 'gameMo', 100, 'Room', '2026-07-27 15:21:31');
+INSERT INTO `gameconfiglaba` VALUES (53, 0, 'Payout0', 2, 'Payout', '2026-07-27 15:21:31');
+INSERT INTO `gameconfiglaba` VALUES (53, 0, 'Payout1', 3, 'Payout', '2026-07-27 15:21:31');
+INSERT INTO `gameconfiglaba` VALUES (53, 0, 'Payout2', 4, 'Payout', '2026-07-27 15:21:31');
+INSERT INTO `gameconfiglaba` VALUES (53, 0, 'Payout3', 5, 'Payout', '2026-07-27 15:21:31');
+INSERT INTO `gameconfiglaba` VALUES (53, 0, 'Payout4', 8, 'Payout', '2026-07-27 15:21:31');
+INSERT INTO `gameconfiglaba` VALUES (53, 0, 'Payout5', 10, 'Payout', '2026-07-27 15:21:31');
+INSERT INTO `gameconfiglaba` VALUES (53, 0, 'Payout6', 15, 'Payout', '2026-07-27 15:21:31');
+INSERT INTO `gameconfiglaba` VALUES (53, 0, 'Payout7', 20, 'Payout', '2026-07-27 15:21:31');
+INSERT INTO `gameconfiglaba` VALUES (53, 0, 'Payout8', 30, 'Payout', '2026-07-27 15:21:31');
+INSERT INTO `gameconfiglaba` VALUES (53, 0, 'Prob0', 6000, 'Payout', '2026-07-27 15:21:31');
+INSERT INTO `gameconfiglaba` VALUES (53, 0, 'Prob1', 2000, 'Payout', '2026-07-27 15:21:31');
+INSERT INTO `gameconfiglaba` VALUES (53, 0, 'Prob2', 1000, 'Payout', '2026-07-27 15:21:31');
+INSERT INTO `gameconfiglaba` VALUES (53, 0, 'Prob3', 500, 'Payout', '2026-07-27 15:21:31');
+INSERT INTO `gameconfiglaba` VALUES (53, 0, 'Prob4', 400, 'Payout', '2026-07-27 15:21:31');
+INSERT INTO `gameconfiglaba` VALUES (53, 0, 'Prob5', 60, 'Payout', '2026-07-27 15:21:31');
+INSERT INTO `gameconfiglaba` VALUES (53, 0, 'Prob6', 20, 'Payout', '2026-07-27 15:21:31');
+INSERT INTO `gameconfiglaba` VALUES (53, 0, 'Prob7', 10, 'Payout', '2026-07-27 15:21:31');
+INSERT INTO `gameconfiglaba` VALUES (53, 0, 'Prob8', 0, 'Payout', '2026-07-27 15:21:31');
+INSERT INTO `gameconfiglaba` VALUES (53, 0, 'scoreSwitchX10', 1, 'Room', '2026-07-27 15:21:31');
+INSERT INTO `gameconfiglaba` VALUES (53, 1, 'betMax', 100, 'Room', '2026-07-27 15:31:24');
+INSERT INTO `gameconfiglaba` VALUES (53, 1, 'betMaxX10', 1000, 'Room', '2026-07-27 15:31:24');
+INSERT INTO `gameconfiglaba` VALUES (53, 1, 'betMin', 5, 'Room', '2026-07-27 15:31:24');
+INSERT INTO `gameconfiglaba` VALUES (53, 1, 'betMinX10', 50, 'Room', '2026-07-27 15:31:24');
+INSERT INTO `gameconfiglaba` VALUES (53, 1, 'coinSc', 1, 'Room', '2026-07-27 15:31:24');
+INSERT INTO `gameconfiglaba` VALUES (53, 1, 'coinsNeed', 10, 'Room', '2026-07-27 15:31:24');
+INSERT INTO `gameconfiglaba` VALUES (53, 1, 'exCoin', 10000, 'Room', '2026-07-27 15:31:24');
+INSERT INTO `gameconfiglaba` VALUES (53, 1, 'gameMo', 100, 'Room', '2026-07-27 15:31:24');
+INSERT INTO `gameconfiglaba` VALUES (53, 1, 'Payout0', 2, 'Payout', '2026-07-27 15:31:24');
+INSERT INTO `gameconfiglaba` VALUES (53, 1, 'Payout1', 3, 'Payout', '2026-07-27 15:31:24');
+INSERT INTO `gameconfiglaba` VALUES (53, 1, 'Payout2', 4, 'Payout', '2026-07-27 15:31:24');
+INSERT INTO `gameconfiglaba` VALUES (53, 1, 'Payout3', 5, 'Payout', '2026-07-27 15:31:24');
+INSERT INTO `gameconfiglaba` VALUES (53, 1, 'Payout4', 8, 'Payout', '2026-07-27 15:31:24');
+INSERT INTO `gameconfiglaba` VALUES (53, 1, 'Payout5', 10, 'Payout', '2026-07-27 15:31:24');
+INSERT INTO `gameconfiglaba` VALUES (53, 1, 'Payout6', 15, 'Payout', '2026-07-27 15:31:24');
+INSERT INTO `gameconfiglaba` VALUES (53, 1, 'Payout7', 20, 'Payout', '2026-07-27 15:31:24');
+INSERT INTO `gameconfiglaba` VALUES (53, 1, 'Payout8', 30, 'Payout', '2026-07-27 15:31:24');
+INSERT INTO `gameconfiglaba` VALUES (53, 1, 'Prob0', 6000, 'Payout', '2026-07-27 15:31:24');
+INSERT INTO `gameconfiglaba` VALUES (53, 1, 'Prob1', 2000, 'Payout', '2026-07-27 15:31:24');
+INSERT INTO `gameconfiglaba` VALUES (53, 1, 'Prob2', 1000, 'Payout', '2026-07-27 15:31:24');
+INSERT INTO `gameconfiglaba` VALUES (53, 1, 'Prob3', 500, 'Payout', '2026-07-27 15:31:24');
+INSERT INTO `gameconfiglaba` VALUES (53, 1, 'Prob4', 400, 'Payout', '2026-07-27 15:31:24');
+INSERT INTO `gameconfiglaba` VALUES (53, 1, 'Prob5', 60, 'Payout', '2026-07-27 15:31:24');
+INSERT INTO `gameconfiglaba` VALUES (53, 1, 'Prob6', 20, 'Payout', '2026-07-27 15:31:24');
+INSERT INTO `gameconfiglaba` VALUES (53, 1, 'Prob7', 10, 'Payout', '2026-07-27 15:31:24');
+INSERT INTO `gameconfiglaba` VALUES (53, 1, 'Prob8', 0, 'Payout', '2026-07-27 15:31:24');
+INSERT INTO `gameconfiglaba` VALUES (53, 1, 'scoreSwitchX10', 1, 'Room', '2026-07-27 15:31:24');
 
 -- ----------------------------
 -- Table structure for gamemo
@@ -1208,7 +1356,7 @@ CREATE TABLE `loginmissrecord`  (
 -- ----------------------------
 -- Records of loginmissrecord
 -- ----------------------------
-INSERT INTO `loginmissrecord` VALUES (205, 'atmadmin', 1, 0, '::1', '2026-07-27 13:36:51');
+INSERT INTO `loginmissrecord` VALUES (205, 'atmadmin', 1, 0, '::1', '2026-07-27 15:18:40');
 INSERT INTO `loginmissrecord` VALUES (206, '12345', 1, 0, '112.49.240.88', '2023-08-14 15:13:08');
 INSERT INTO `loginmissrecord` VALUES (207, '00000', 1, 0, '106.6.150.32', '2023-08-14 14:47:59');
 INSERT INTO `loginmissrecord` VALUES (208, '11111', 0, 0, '106.6.150.32', '2023-08-14 12:02:26');
@@ -1497,6 +1645,81 @@ INSERT INTO `paragame` VALUES (52, 1, 50);
 INSERT INTO `paragame` VALUES (53, 1, 50);
 
 -- ----------------------------
+-- Table structure for paralaba
+-- ----------------------------
+DROP TABLE IF EXISTS `paralaba`;
+CREATE TABLE `paralaba`  (
+  `ID` int(11) NOT NULL COMMENT '桌台编号(gameId*1000+tableIndex)',
+  `GAME_ID` int(11) NOT NULL COMMENT '游戏ID',
+  `TableIndex` int(11) NOT NULL DEFAULT -1 COMMENT '桌号(0-based,对齐roomtableconfig)',
+  `SubType` tinyint(4) NOT NULL DEFAULT 0 COMMENT '拉霸子类型 1=明星97 2=水果拉霸 3=水浒传',
+  `DIF` int(11) NULL DEFAULT 0 COMMENT '难度',
+  `HAR` int(11) NULL DEFAULT 0 COMMENT '加难',
+  `Payout0` int(11) NULL DEFAULT 0 COMMENT '符号0赔率',
+  `Payout1` int(11) NULL DEFAULT 0 COMMENT '符号1赔率',
+  `Payout2` int(11) NULL DEFAULT 0 COMMENT '符号2赔率',
+  `Payout3` int(11) NULL DEFAULT 0 COMMENT '符号3赔率',
+  `Payout4` int(11) NULL DEFAULT 0 COMMENT '符号4赔率',
+  `Payout5` int(11) NULL DEFAULT 0 COMMENT '符号5赔率',
+  `Payout6` int(11) NULL DEFAULT 0 COMMENT '符号6赔率',
+  `Payout7` int(11) NULL DEFAULT 0 COMMENT '符号7赔率',
+  `Payout8` int(11) NULL DEFAULT 0 COMMENT '符号8赔率',
+  `Prob0` int(11) NULL DEFAULT 0 COMMENT '符号0出现率(万分比)',
+  `Prob1` int(11) NULL DEFAULT 0 COMMENT '符号1出现率(万分比)',
+  `Prob2` int(11) NULL DEFAULT 0 COMMENT '符号2出现率(万分比)',
+  `Prob3` int(11) NULL DEFAULT 0 COMMENT '符号3出现率(万分比)',
+  `Prob4` int(11) NULL DEFAULT 0 COMMENT '符号4出现率(万分比)',
+  `Prob5` int(11) NULL DEFAULT 0 COMMENT '符号5出现率(万分比)',
+  `Prob6` int(11) NULL DEFAULT 0 COMMENT '符号6出现率(万分比)',
+  `Prob7` int(11) NULL DEFAULT 0 COMMENT '符号7出现率(万分比)',
+  `Prob8` int(11) NULL DEFAULT 0 COMMENT '符号8出现率(万分比)',
+  `WheelProb0` int(11) NULL DEFAULT 0 COMMENT '大转盘面板位0指向概率(水果拉霸)',
+  `WheelProb1` int(11) NULL DEFAULT 0,
+  `WheelProb2` int(11) NULL DEFAULT 0,
+  `WheelProb3` int(11) NULL DEFAULT 0,
+  `WheelProb4` int(11) NULL DEFAULT 0,
+  `WheelProb5` int(11) NULL DEFAULT 0,
+  `WheelProb6` int(11) NULL DEFAULT 0,
+  `WheelProb7` int(11) NULL DEFAULT 0,
+  `WheelProb8` int(11) NULL DEFAULT 0,
+  `WheelProb9` int(11) NULL DEFAULT 0,
+  `WheelProb10` int(11) NULL DEFAULT 0,
+  `WheelProb11` int(11) NULL DEFAULT 0,
+  `WheelProb12` int(11) NULL DEFAULT 0,
+  `WheelProb13` int(11) NULL DEFAULT 0,
+  `WheelProb14` int(11) NULL DEFAULT 0,
+  `WheelProb15` int(11) NULL DEFAULT 0,
+  `WheelProb16` int(11) NULL DEFAULT 0,
+  `WheelProb17` int(11) NULL DEFAULT 0,
+  `WheelProb18` int(11) NULL DEFAULT 0,
+  `WheelProb19` int(11) NULL DEFAULT 0,
+  `WheelProb20` int(11) NULL DEFAULT 0,
+  `WheelProb21` int(11) NULL DEFAULT 0,
+  `WheelProb22` int(11) NULL DEFAULT 0,
+  `WheelProb23` int(11) NULL DEFAULT 0,
+  `BetMin` int(11) NULL DEFAULT 1000 COMMENT '最小押分×10',
+  `BetMax` int(11) NULL DEFAULT 10000 COMMENT '最大押分×10',
+  `CoinsNeed` int(11) NULL DEFAULT 10000 COMMENT '入场金币',
+  `ExCoin` int(11) NULL DEFAULT 10000 COMMENT '兑换单位',
+  `CoinSc` int(11) NULL DEFAULT 1 COMMENT '兑换币值',
+  `GameMo` int(11) NULL DEFAULT 100 COMMENT '游戏模式',
+  `ScoreSwitchX10` int(11) NULL DEFAULT 1 COMMENT '加芬幅度×10',
+  `DefaultBetIndex` tinyint(4) NULL DEFAULT 0 COMMENT '默认档位索引',
+  PRIMARY KEY (`ID`) USING BTREE,
+  INDEX `idx_game_table`(`GAME_ID`, `TableIndex`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '拉霸机台参数表(一桌一行)' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of paralaba
+-- ----------------------------
+INSERT INTO `paralaba` VALUES (16000, 16, 0, 1, 0, 0, 10, 10, 14, 18, 20, 30, 50, 70, 80, 6000, 2000, 1000, 500, 400, 60, 20, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 50, 10000, 10000, 10000, 1, 100, 1, 0);
+INSERT INTO `paralaba` VALUES (16001, 16, 1, 1, 0, 0, 10, 10, 14, 18, 20, 30, 50, 70, 80, 6000, 2000, 1000, 500, 400, 60, 20, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 10000, 10000, 10000, 1, 100, 1, 0);
+INSERT INTO `paralaba` VALUES (40000, 40, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 1000, 100, 10, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 10, 100, 100, 100, 100, 10, 10000, 1000, 10000, 1, 100, 1, 0);
+INSERT INTO `paralaba` VALUES (40001, 40, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 1000, 100, 10, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 10, 100, 100, 100, 100, 50, 10000, 1000, 10000, 1, 100, 1, 0);
+INSERT INTO `paralaba` VALUES (53000, 53, 0, 3, 0, 0, 2, 3, 4, 5, 8, 10, 15, 20, 30, 6000, 2000, 1000, 500, 400, 60, 20, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 1000, 10, 10000, 1, 100, 1, 0);
+INSERT INTO `paralaba` VALUES (53001, 53, 1, 3, 0, 0, 2, 3, 4, 5, 8, 10, 15, 20, 30, 6000, 2000, 1000, 500, 400, 60, 20, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 50, 1000, 10, 10000, 1, 100, 1, 0);
+
+-- ----------------------------
 -- Table structure for pararoom
 -- ----------------------------
 DROP TABLE IF EXISTS `pararoom`;
@@ -1532,17 +1755,20 @@ INSERT INTO `pararoom` VALUES (6000, 6, 2, 1, 100, 10000, 1, 10000, 1, 0, 0, NUL
 INSERT INTO `pararoom` VALUES (13000, 13, 2, 1, 100, 10000, 1, 10000, 1, 0, 0, NULL, NULL, 6, 0, b'1', b'1', 5, 1000);
 INSERT INTO `pararoom` VALUES (14000, 14, 2, 5, 100, 10000, 1, 10000, 0, 0, 0, 100, 'jin2', 6, 0, b'1', b'1', 50, 1000);
 INSERT INTO `pararoom` VALUES (15000, 15, 2, 2, 100, 10000, 1, 10000, 0, 0, 0, 100, 'daziban2', 6, 0, b'1', b'1', 20, 1000);
+INSERT INTO `pararoom` VALUES (16000, 16, 2, NULL, NULL, 1, 1, 0, 0, 0, 0, 1, NULL, 6, 0, b'1', b'1', 0, 0);
 INSERT INTO `pararoom` VALUES (19000, 19, 2, 0, 100, 10000, 1, 10000, 1, 0, 0, NULL, NULL, 6, 0, b'1', b'1', 2, 1000);
 INSERT INTO `pararoom` VALUES (21000, 21, 2, 0, 100, 10000, 1, 10000, 1, 0, 0, NULL, NULL, 6, 0, b'1', b'1', 1, 1000);
 INSERT INTO `pararoom` VALUES (22000, 22, 0, 100, 1000, 10000, 1, 10000, 100, 0, 0, 100, NULL, 6, 0, b'1', b'1', 1000, 10000);
 INSERT INTO `pararoom` VALUES (32000, 32, 2, 1, 100, 10000, 1, 10000, 1, 0, 0, NULL, NULL, 6, 0, b'1', b'1', 10, 1000);
 INSERT INTO `pararoom` VALUES (33000, 33, 1, 1, 100, 10000, 1, 10000, 1, 0, 0, NULL, NULL, 6, 0, b'1', b'1', 10, 1000);
 INSERT INTO `pararoom` VALUES (37000, 37, 2, 2, 10000, 10000, 1, 10000, 0, 0, 0, 100, 'ATT32', 6, 0, b'1', b'1', 20, 100000);
+INSERT INTO `pararoom` VALUES (40000, 40, 2, NULL, NULL, 1, 1, 0, 0, 0, 0, 1, NULL, 6, 0, b'1', b'1', 0, 0);
 INSERT INTO `pararoom` VALUES (42000, 42, 0, 100, 1000, 10000, 1, 10000, 100, 0, 0, 100, NULL, 6, 0, b'1', b'1', 1000, 10000);
 INSERT INTO `pararoom` VALUES (44000, 44, 2, 2, 10000, 10000, 1, 10, 0, 0, 0, 100, 'NBA2', 6, 0, b'1', b'1', 20, 100000);
 INSERT INTO `pararoom` VALUES (49000, 49, 1, 1, 100, 10000, 1, 10000, 1, 0, 0, NULL, NULL, 6, 0, b'1', b'1', 10, 1000);
 INSERT INTO `pararoom` VALUES (51000, 51, 0, 100, 1000, 10000, 1, 10000, 100, 0, 0, 100, NULL, 6, 0, b'1', b'1', 0, 0);
 INSERT INTO `pararoom` VALUES (52000, 52, 5, 10, 1000, 10000, 1, 10000, 0, 0, 0, 100, NULL, 6, 0, b'1', b'1', 0, 0);
+INSERT INTO `pararoom` VALUES (53000, 53, 2, NULL, NULL, 1, 1, 0, 0, 0, 0, 1, NULL, 6, 0, b'1', b'1', 0, 0);
 
 -- ----------------------------
 -- Table structure for plattype
@@ -1769,7 +1995,7 @@ INSERT INTO `rank` VALUES (19, 10, 20000, 20000, 1777303833, 0, 0, '121212', '12
 INSERT INTO `rank` VALUES (19, 19, 1740000, 5, 1700079202, 0, 0, 'woshini', 'woshini', '大三元(174倍)');
 INSERT INTO `rank` VALUES (19, 32, 28600, 2, 1777557913, 0, 0, 'ijb222', 'ijb222', '超级炸弹(572倍)');
 INSERT INTO `rank` VALUES (19, 1000, 20001, 1000, 1779708184, 1, 0, '168169', '168169', '168169');
-INSERT INTO `rank` VALUES (19, 1001, 1, 1001, 1785123776, 1, 0, 'test002', '111', '111');
+INSERT INTO `rank` VALUES (19, 1001, 1, 1001, 1785137871, 1, 2, 'test01', '测试勿动', '测试勿动');
 INSERT INTO `rank` VALUES (20, 2, 137856, 137856, 1777314352, 0, 0, '121212', '121212', '中大奖');
 INSERT INTO `rank` VALUES (20, 6, 52880, 1, 1779512384, 0, 0, 'plm123', 'plm123', '牛魔王(661倍)');
 INSERT INTO `rank` VALUES (20, 10, 20000, 20000, 1777474992, 0, 0, '55555', '55555', '中大奖');
@@ -1920,7 +2146,7 @@ CREATE TABLE `roomtableconfig`  (
   `CoinsNeed` int(11) NOT NULL DEFAULT 0,
   PRIMARY KEY (`ID`) USING BTREE,
   INDEX `idx_game_room_table`(`GAME_ID`, `RoomIndex`, `TableIndex`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 5300746 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '动态桌台配置表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 5300756 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '动态桌台配置表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of roomtableconfig
@@ -1953,7 +2179,6 @@ INSERT INTO `roomtableconfig` VALUES (5300731, 37, 0, 1, 'ATT32', 4, '1:1', 0, 0
 INSERT INTO `roomtableconfig` VALUES (5300732, 44, 0, 1, 'NBA2', 4, '1:1', 0, 0, 0, 1, 20, 0, 1, 6, 1, 2, 10000, 10);
 INSERT INTO `roomtableconfig` VALUES (5300733, 5, 0, 3, 'huo4', 4, '1:1', 0, 0, 0, 1, 100, 0, 1, 6, 1, 10, 100, 10000);
 INSERT INTO `roomtableconfig` VALUES (5300734, 29, 0, 1, 'jin2', 4, '1:1', 0, 0, 0, 1, 0, 0, 1, 8, 1, 2, 100, 10000);
-INSERT INTO `roomtableconfig` VALUES (5300735, 16, 0, 0, '971', 4, '1:1', 0, 0, 0, 0, 0, 0, 1, 6, 1, 1, 1000, 10000);
 INSERT INTO `roomtableconfig` VALUES (5300736, 13, 0, 0, 'likui2', 4, '1:1', 0, 0, 0, 1, 0, 0, 1, 6, 1, 5, 1000, 10000);
 INSERT INTO `roomtableconfig` VALUES (5300737, 13, 0, 1, 'likui3', 4, '1:1', 0, 0, 0, 1, 0, 0, 1, 6, 1, 50, 1000, 10000);
 INSERT INTO `roomtableconfig` VALUES (5300738, 32, 0, 1, 'shen2', 4, '1:1', 0, 0, 0, 1, 0, 0, 1, 6, 1, 20, 1000, 10000);
@@ -1962,6 +2187,12 @@ INSERT INTO `roomtableconfig` VALUES (5300742, 3, 0, 3, 'jc4', 4, '1:1', 0, 0, 0
 INSERT INTO `roomtableconfig` VALUES (5300743, 19, 0, 1, 'yao2', 4, '1:1', 0, 0, 0, 1, 0, 0, 1, 6, 1, 5, 1000, 10000);
 INSERT INTO `roomtableconfig` VALUES (5300744, 21, 0, 1, 'sx2', 4, '1:1', 0, 0, 0, 1, 0, 0, 1, 6, 1, 100, 1000, 10000);
 INSERT INTO `roomtableconfig` VALUES (5300745, 3, 0, 0, 'jc1', 4, '1:1', 0, 0, 0, 1, 0, 0, 1, 6, 1, 10, 1000, 10000);
+INSERT INTO `roomtableconfig` VALUES (5300747, 53, 0, 0, 'shui1', 4, '1:1', 0, 0, 0, 0, 0, 0, 1, 6, 1, 1, 100, 10);
+INSERT INTO `roomtableconfig` VALUES (5300749, 40, 0, 0, 'sg1', 4, '1:1', 0, 0, 0, 0, 0, 0, 1, 6, 1, 1, 1000, 1000);
+INSERT INTO `roomtableconfig` VALUES (5300752, 16, 0, 0, '971', 4, '1:1', 0, 0, 0, 0, 0, 0, 1, 6, 1, 5, 1000, 10000);
+INSERT INTO `roomtableconfig` VALUES (5300753, 16, 0, 1, '972', 4, '1:1', 0, 0, 0, 0, 0, 0, 1, 6, 1, 1, 1000, 10000);
+INSERT INTO `roomtableconfig` VALUES (5300754, 40, 0, 1, 'sg2', 4, '1:1', 0, 0, 0, 0, 0, 0, 1, 6, 1, 5, 1000, 1000);
+INSERT INTO `roomtableconfig` VALUES (5300755, 53, 0, 1, 'shui2', 4, '1:1', 0, 0, 0, 0, 0, 0, 1, 6, 1, 5, 100, 10);
 
 -- ----------------------------
 -- Table structure for roomtableconfig_bet
@@ -2435,7 +2666,7 @@ CREATE TABLE `useroptlog`  (
   `TABLE_ID` int(11) NULL DEFAULT 0 COMMENT '桌子号',
   `SEAT_ID` int(11) NULL DEFAULT 0 COMMENT '位置号',
   PRIMARY KEY (`LID`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 975 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '用户记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 977 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '用户记录表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of useroptlog
@@ -2937,6 +3168,8 @@ INSERT INTO `useroptlog` VALUES (971, 'test002', 8, 0, 1144690, 0, 0, 19, '2026-
 INSERT INTO `useroptlog` VALUES (972, 'test002', 7, 1000, 1076512, -678778, 0, 19, '2026-07-27 13:53:00', 0, 0, 0);
 INSERT INTO `useroptlog` VALUES (973, 'test002', 8, 0, 1076512, 0, 0, 19, '2026-07-27 13:53:02', 0, 1, 0);
 INSERT INTO `useroptlog` VALUES (974, 'test002', 7, 1000, 1061312, -151000, 0, 19, '2026-07-27 13:58:16', 0, 1, 0);
+INSERT INTO `useroptlog` VALUES (975, 'test002', 8, 0, 1061312, 0, 0, 16, '2026-07-27 15:36:00', 0, 2, 0);
+INSERT INTO `useroptlog` VALUES (976, 'test002', 7, 0, 1061312, 0, 0, 16, '2026-07-27 15:36:03', 0, 2, 0);
 
 -- ----------------------------
 -- Table structure for userrelations
@@ -3326,7 +3559,7 @@ CREATE TABLE `userscoresnapshotledger`  (
   PRIMARY KEY (`LID`) USING BTREE,
   INDEX `IDX_UserScoreSnapshotLedger_UserID`(`UserID`) USING BTREE,
   INDEX `IDX_UserScoreSnapshotLedger_Reason`(`Reason`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 36828 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 36842 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of userscoresnapshotledger
@@ -40158,6 +40391,20 @@ INSERT INTO `userscoresnapshotledger` VALUES (36824, 'test002', 19, 3, 0, 106131
 INSERT INTO `userscoresnapshotledger` VALUES (36825, 'test002', 19, 3, 1061312, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 13:58:14');
 INSERT INTO `userscoresnapshotledger` VALUES (36826, 'test002', 19, 3, 1061312, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 13:58:15');
 INSERT INTO `userscoresnapshotledger` VALUES (36827, 'test002', 54, 0, 1061312, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-27 13:58:17');
+INSERT INTO `userscoresnapshotledger` VALUES (36828, 'test002', 53, 3, 1061312, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 15:35:48');
+INSERT INTO `userscoresnapshotledger` VALUES (36829, 'test002', 16, 5, 1061312, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 15:35:52');
+INSERT INTO `userscoresnapshotledger` VALUES (36830, 'test002', 40, 7, 1061312, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 15:35:56');
+INSERT INTO `userscoresnapshotledger` VALUES (36831, 'test002', 16, 8, 1061312, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 15:36:02');
+INSERT INTO `userscoresnapshotledger` VALUES (36832, 'test002', 16, 8, 1061312, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 15:36:03');
+INSERT INTO `userscoresnapshotledger` VALUES (36833, 'test002', 54, 0, 1061312, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-27 15:36:03');
+INSERT INTO `userscoresnapshotledger` VALUES (36834, 'test002', 16, 11, 1061312, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 15:36:10');
+INSERT INTO `userscoresnapshotledger` VALUES (36835, 'test002', 16, 13, 1061312, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 15:36:46');
+INSERT INTO `userscoresnapshotledger` VALUES (36836, 'test002', 16, 15, 1061312, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 15:36:50');
+INSERT INTO `userscoresnapshotledger` VALUES (36837, 'test002', 53, 17, 1061312, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 15:36:52');
+INSERT INTO `userscoresnapshotledger` VALUES (36838, 'test002', 40, 19, 1061312, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 15:36:54');
+INSERT INTO `userscoresnapshotledger` VALUES (36839, 'test01', 16, 22, 602113, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-27 15:38:20');
+INSERT INTO `userscoresnapshotledger` VALUES (36840, 'test01', 54, 0, 602113, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-27 15:38:25');
+INSERT INTO `userscoresnapshotledger` VALUES (36841, 'test01', 54, 0, 602113, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-27 15:38:30');
 
 -- ----------------------------
 -- Table structure for videogamecoinrecord

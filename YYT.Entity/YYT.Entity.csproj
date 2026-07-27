@@ -108,6 +108,7 @@
     <Compile Include="EF\M_ParaBetRoom.cs" />
     <Compile Include="EF\M_ParaCard.cs" />
     <Compile Include="EF\M_ParaFish.cs" />
+    <Compile Include="EF\M_ParaLaba.cs" />
     <Compile Include="EF\M_ParaGame.cs" />
     <Compile Include="EF\M_ParaRoom.cs" />
     <Compile Include="EF\M_Recharge.cs" />

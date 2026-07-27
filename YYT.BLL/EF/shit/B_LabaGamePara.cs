@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data.Entity;
 using System.Linq;
@@ -140,83 +140,173 @@ namespace YYT.BLL.EF
             throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// 获取拉霸桌台索引列表（按 TableIndex 升序）
+        /// 改后：读 roomtableconfig 而非 gameconfiglaba（对齐一房N桌模型）
+        /// </summary>
         public List<int> GetTableList(int gameId)
         {
             using (var ef = new GameDbContext())
             {
-                return ef.GameConfigLabas.Where(c => c.GameId == gameId)
-                    .Select(c => c.TableIndex).Distinct().OrderBy(t => t).ToList();
+                return ef.Database.SqlQuery<int>(
+                    "SELECT TableIndex FROM roomtableconfig WHERE GAME_ID={0} ORDER BY TableIndex", gameId).ToList();
             }
         }
 
-        public Msg SaveTableFull(int tableId, int gameId, List<M_GameConfigLaba> paras, string tableName, int enabled = 1)
+        /// <summary>
+        /// 保存拉霸桌台全量参数（写 paralaba + gameconfiglaba，同步一房N桌）
+        /// </summary>
+        /// <param name="tableId">完整桌ID = gameId*1000+tableIndex</param>
+        /// <param name="gameId">游戏ID</param>
+        /// <param name="paras">gameconfiglaba 参数列表（保留写入保证 C++ 兼容）</param>
+        /// <param name="laba">paralaba 结构化参数（新表）</param>
+        /// <param name="tableName">桌名</param>
+        /// <param name="enabled">是否启用</param>
+        public Msg SaveTableFull(int tableId, int gameId, List<M_GameConfigLaba> paras, M_ParaLaba laba, string tableName, int enabled = 1)
         {
             Msg msg = new Msg(0, "保存失败！");
             int tableIndex = tableId % 1000;
             using (var ef = new GameDbContext())
             {
-                var rst = ef.GameConfigLabas.Where(c => c.GameId == gameId && c.TableIndex == tableIndex).ToList();
-                foreach (var p in paras)
-                {
-                    var existing = rst.FirstOrDefault(r => r.OptKey == p.OptKey);
-                    if (existing != null && p.OptValue > -1)
-                    {
-                        existing.OptValue = p.OptValue;
-                        ef.Entry(existing).State = EntityState.Modified;
-                    }
-                    else if (p.OptValue > -1)
-                    {
-                        p.GameId = gameId;
-                        p.TableIndex = tableIndex;
-                        ef.GameConfigLabas.Add(p);
-                    }
-                }
-                int val = ef.SaveChanges();
-
-                bool needRp = (val > 0) || !string.IsNullOrEmpty(tableName);
-                if (needRp)
-                {
-                    var srv = new SConnect();
-                    var tmpMsg = srv.SendReadString(EScMsgType.RP, gameId);
-                    if (val > 0 || msg.code == 0)
-                    {
-                        msg.code = tmpMsg.code;
-                        msg.content = tmpMsg.content;
-                    }
-                }
-
-                if (!string.IsNullOrEmpty(tableName))
+                using (var trans = ef.Database.BeginTransaction())
                 {
                     try
                     {
-                        var srv2 = new SConnect();
-                        var tc = srv2.SendTcCommand((ushort)gameId, 0, (ushort)tableIndex,
-                            tableName, (byte)enabled, 0u, 0, 6);
-                        if (tc != null && tc.code == 1)
+                        // ── 1. 写 gameconfiglaba（保留兼容）──
+                        var rst = ef.GameConfigLabas.Where(c => c.GameId == gameId && c.TableIndex == tableIndex).ToList();
+                        foreach (var p in paras)
                         {
-                            if (msg.code == 0 && val == 0)
+                            var existing = rst.FirstOrDefault(r => r.OptKey == p.OptKey);
+                            if (existing != null && p.OptValue > -1)
                             {
-                                msg.code = 1;
-                                msg.content = "桌名更新成功";
+                                existing.OptValue = p.OptValue;
+                                ef.Entry(existing).State = EntityState.Modified;
+                            }
+                            else if (p.OptValue > -1)
+                            {
+                                p.GameId = gameId;
+                                p.TableIndex = tableIndex;
+                                ef.GameConfigLabas.Add(p);
                             }
                         }
-                        else
+
+                        // ── 2. 写 paralaba（新结构化表）──
+                        if (laba != null)
                         {
-                            msg.datas = true;
-                            msg.content = (string.IsNullOrEmpty(msg.content) ? "保存成功" : msg.content)
-                                       + "，但桌名热更新失败：" + (tc == null ? "服务端无响应" : tc.content);
+                            ef.Database.ExecuteSqlCommand(
+                                "DELETE FROM paralaba WHERE GAME_ID={0} AND TableIndex={1}", gameId, tableIndex);
+                            ef.Database.ExecuteSqlCommand(
+                                "INSERT INTO paralaba(ID,GAME_ID,TableIndex,SubType,DIF,HAR," +
+                                "Payout0,Payout1,Payout2,Payout3,Payout4,Payout5,Payout6,Payout7,Payout8," +
+                                "Prob0,Prob1,Prob2,Prob3,Prob4,Prob5,Prob6,Prob7,Prob8," +
+                                "WheelProb0,WheelProb1,WheelProb2,WheelProb3,WheelProb4,WheelProb5,WheelProb6,WheelProb7," +
+                                "WheelProb8,WheelProb9,WheelProb10,WheelProb11,WheelProb12,WheelProb13,WheelProb14,WheelProb15," +
+                                "WheelProb16,WheelProb17,WheelProb18,WheelProb19,WheelProb20,WheelProb21,WheelProb22,WheelProb23," +
+                                "BetMin,BetMax,CoinsNeed,ExCoin,CoinSc,GameMo,ScoreSwitchX10,DefaultBetIndex) VALUES(" +
+                                tableId + "," + gameId + "," + tableIndex + "," +
+                                laba.SubType + "," + laba.DIF + "," + laba.HAR + "," +
+                                laba.Payout0 + "," + laba.Payout1 + "," + laba.Payout2 + "," + laba.Payout3 + "," +
+                                laba.Payout4 + "," + laba.Payout5 + "," + laba.Payout6 + "," + laba.Payout7 + "," + laba.Payout8 + "," +
+                                laba.Prob0 + "," + laba.Prob1 + "," + laba.Prob2 + "," + laba.Prob3 + "," +
+                                laba.Prob4 + "," + laba.Prob5 + "," + laba.Prob6 + "," + laba.Prob7 + "," + laba.Prob8 + "," +
+                                laba.WheelProb0 + "," + laba.WheelProb1 + "," + laba.WheelProb2 + "," + laba.WheelProb3 + "," +
+                                laba.WheelProb4 + "," + laba.WheelProb5 + "," + laba.WheelProb6 + "," + laba.WheelProb7 + "," +
+                                laba.WheelProb8 + "," + laba.WheelProb9 + "," + laba.WheelProb10 + "," + laba.WheelProb11 + "," +
+                                laba.WheelProb12 + "," + laba.WheelProb13 + "," + laba.WheelProb14 + "," + laba.WheelProb15 + "," +
+                                laba.WheelProb16 + "," + laba.WheelProb17 + "," + laba.WheelProb18 + "," + laba.WheelProb19 + "," +
+                                laba.WheelProb20 + "," + laba.WheelProb21 + "," + laba.WheelProb22 + "," + laba.WheelProb23 + "," +
+                                laba.BetMin + "," + laba.BetMax + "," + laba.CoinsNeed + "," +
+                                laba.ExCoin + "," + laba.CoinSc + "," + laba.GameMo + "," +
+                                laba.ScoreSwitchX10 + "," + laba.DefaultBetIndex + ")");
                         }
+
+                        // ── 3. 一房N桌同步：pararoom base 行 NUM = roomtableconfig 条数，ROOM_MAX=1 ──
+                        int cfgCnt = ef.Database.SqlQuery<int>(
+                            "SELECT COUNT(*) FROM roomtableconfig WHERE GAME_ID=" + gameId).FirstOrDefault();
+                        int baseId = gameId * 1000;
+                        int aff = ef.Database.ExecuteSqlCommand(
+                            "UPDATE ParaRoom SET NUM=" + cfgCnt + " WHERE GAME_ID=" + gameId + " AND ID=" + baseId);
+                        if (aff == 0)
+                        {
+                            ef.Database.ExecuteSqlCommand(
+                                "INSERT INTO ParaRoom(ID,GAME_ID,NUM,EX_COIN,COIN_SC,COIN_NEED,Game_Mo,scoreSwitch,Enabled,MaxSeats,IdleFireTimeoutSec,IdleFireKickEnabled) VALUES(" +
+                                baseId + "," + gameId + "," + cfgCnt + ",1,1,0,1,0,1,6,0,1)");
+                        }
+                        int aff2 = ef.Database.ExecuteSqlCommand(
+                            "UPDATE ParaGame SET ROOM_MAX=1 WHERE ID=" + gameId);
+                        if (aff2 == 0)
+                            ef.Database.ExecuteSqlCommand(
+                                "INSERT INTO ParaGame(ID,ROOM_MAX,PLY_MAX) VALUES(" + gameId + ",1,1000)");
+
+                        ef.SaveChanges();
+                        trans.Commit();
                     }
-                    catch (Exception exTc)
+                    catch (Exception ex)
                     {
-                        LogHelper.WriteLog(typeof(B_LabaGamePara), exTc);
-                        msg.datas = true;
-                        msg.content = (string.IsNullOrEmpty(msg.content) ? "保存成功" : msg.content)
-                                   + "，但桌名热更新异常：" + exTc.Message;
+                        trans.Rollback();
+                        LogHelper.WriteLog(typeof(B_LabaGamePara), ex);
+                        msg.code = 0;
+                        msg.content = "保存失败：" + ex.Message;
+                        return msg;
                     }
                 }
             }
+
+            // ── 4. 热更 ──
+            bool needRp = true;
+            if (needRp)
+            {
+                var srv = new SConnect();
+                var tmpMsg = srv.SendReadString(EScMsgType.RP, gameId);
+                if (msg.code == 0)
+                {
+                    msg.code = tmpMsg.code;
+                    msg.content = tmpMsg.content;
+                }
+            }
+
+            if (!string.IsNullOrEmpty(tableName))
+            {
+                try
+                {
+                    var srv2 = new SConnect();
+                    var tc = srv2.SendTcCommand((ushort)gameId, 0, (ushort)tableIndex,
+                        tableName, (byte)enabled, 0u, 0, 6);
+                    if (tc != null && tc.code == 1)
+                    {
+                        if (msg.code == 0)
+                        {
+                            msg.code = 1;
+                            msg.content = "保存成功";
+                        }
+                    }
+                    else
+                    {
+                        msg.datas = true;
+                        msg.content = (string.IsNullOrEmpty(msg.content) ? "保存成功" : msg.content)
+                                   + "，但桌名热更新失败：" + (tc == null ? "服务端无响应" : tc.content);
+                    }
+                }
+                catch (Exception exTc)
+                {
+                    LogHelper.WriteLog(typeof(B_LabaGamePara), exTc);
+                    msg.datas = true;
+                    msg.content = (string.IsNullOrEmpty(msg.content) ? "保存成功" : msg.content)
+                               + "，但桌名热更新异常：" + exTc.Message;
+                }
+            }
+
+            if (msg.code == 0) msg.code = 1;
+            if (string.IsNullOrEmpty(msg.content)) msg.content = "保存成功";
             return msg;
+        }
+
+        /// <summary>
+        /// 兼容旧接口：无 paralaba 参数时只写 gameconfiglaba（降级）
+        /// </summary>
+        public Msg SaveTableFull(int tableId, int gameId, List<M_GameConfigLaba> paras, string tableName, int enabled = 1)
+        {
+            return SaveTableFull(tableId, gameId, paras, null, tableName, enabled);
         }
 
         public Msg DeleteTable(int tableId, int gameId)
@@ -225,22 +315,78 @@ namespace YYT.BLL.EF
             int tableIndex = tableId % 1000;
             using (var ef = new GameDbContext())
             {
-                var toDelete = ef.GameConfigLabas.Where(c => c.GameId == gameId && c.TableIndex == tableIndex).ToList();
-                if (toDelete.Count == 0)
+                using (var trans = ef.Database.BeginTransaction())
                 {
-                    msg.content = "桌台不存在！";
-                    return msg;
+                    try
+                    {
+                        // 删 gameconfiglaba（保留兼容）
+                        var toDelete = ef.GameConfigLabas.Where(c => c.GameId == gameId && c.TableIndex == tableIndex).ToList();
+                        if (toDelete.Count > 0)
+                        {
+                            ef.GameConfigLabas.RemoveRange(toDelete);
+                        }
+
+                        // 删 paralaba
+                        ef.Database.ExecuteSqlCommand(
+                            "DELETE FROM paralaba WHERE GAME_ID={0} AND TableIndex={1}", gameId, tableIndex);
+
+                        // 删 roomtableconfig
+                        ef.Database.ExecuteSqlCommand(
+                            "DELETE FROM roomtableconfig WHERE GAME_ID={0} AND RoomIndex=0 AND TableIndex={1}",
+                            gameId, tableIndex);
+
+                        // 一房N桌同步：压实剩余 TableIndex 为 0..k-1
+                        var remainIds = ef.Database.SqlQuery<int>(
+                            "SELECT ID FROM roomtableconfig WHERE GAME_ID=" + gameId + " ORDER BY TableIndex, ID").ToList();
+                        for (int i = 0; i < remainIds.Count; i++)
+                        {
+                            ef.Database.ExecuteSqlCommand(
+                                "UPDATE roomtableconfig SET TableIndex={0} WHERE ID={1} AND TableIndex<>{0}", i, remainIds[i]);
+                        }
+                        // paralaba 同步压实 ID/TableIndex
+                        var labaRows = ef.Database.SqlQuery<int>(
+                            "SELECT ID FROM paralaba WHERE GAME_ID=" + gameId + " ORDER BY TableIndex, ID").ToList();
+                        for (int i = 0; i < labaRows.Count; i++)
+                        {
+                            int newId = gameId * 1000 + i;
+                            ef.Database.ExecuteSqlCommand(
+                                "UPDATE paralaba SET ID={0},TableIndex={1} WHERE ID={2} AND ID<>{0}", newId, i, labaRows[i]);
+                        }
+
+                        // 同步 pararoom base 行 NUM 与 ROOM_MAX=1
+                        int cfgCnt = ef.Database.SqlQuery<int>(
+                            "SELECT COUNT(*) FROM roomtableconfig WHERE GAME_ID=" + gameId).FirstOrDefault();
+                        if (cfgCnt > 0)
+                        {
+                            ef.Database.ExecuteSqlCommand(
+                                "UPDATE ParaRoom SET NUM=" + cfgCnt + " WHERE GAME_ID=" + gameId + " AND ID=" + (gameId * 1000));
+                        }
+                        else
+                        {
+                            // 最后一张桌被删，清空 base 行
+                            ef.Database.ExecuteSqlCommand(
+                                "DELETE FROM ParaRoom WHERE GAME_ID=" + gameId + " AND ID=" + (gameId * 1000));
+                        }
+                        ef.Database.ExecuteSqlCommand(
+                            "UPDATE ParaGame SET ROOM_MAX=1 WHERE ID=" + gameId);
+
+                        ef.SaveChanges();
+                        trans.Commit();
+                    }
+                    catch (Exception ex)
+                    {
+                        trans.Rollback();
+                        LogHelper.WriteLog(typeof(B_LabaGamePara), ex);
+                        msg.content = "删除失败：" + ex.Message;
+                        return msg;
+                    }
                 }
-                ef.GameConfigLabas.RemoveRange(toDelete);
-                ef.SaveChanges();
-                ef.Database.ExecuteSqlCommand(
-                    "DELETE FROM roomtableconfig WHERE GAME_ID={0} AND RoomIndex=0 AND TableIndex={1}",
-                    gameId, tableIndex);
-                var srv = new SConnect();
-                var tmpMsg = srv.SendReadString(EScMsgType.RP, gameId);
-                msg.code = tmpMsg.code;
-                msg.content = tmpMsg.content;
             }
+
+            var srv = new SConnect();
+            var tmpMsg = srv.SendReadString(EScMsgType.RP, gameId);
+            msg.code = tmpMsg.code;
+            msg.content = tmpMsg.content;
             return msg;
         }
     }

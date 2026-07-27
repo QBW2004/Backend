@@ -117,6 +117,10 @@ namespace YYT.BLL.EF
         /// </summary>
         public DbSet<M_GameConfigLaba> GameConfigLabas { get; set; }
         /// <summary>
+        /// 拉霸机台参数（一桌一行，对齐一房N桌模型）
+        /// </summary>
+        public DbSet<M_ParaLaba> ParaLabas { get; set; }
+        /// <summary>
         /// 拉霸库存
         /// </summary>
         public DbSet<M_GameAccLaba> GameAccLabas { get; set; }
