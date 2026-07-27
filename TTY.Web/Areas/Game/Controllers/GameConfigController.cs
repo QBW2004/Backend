@@ -923,8 +923,9 @@ namespace YYT.Web.Areas.Game.Controllers
                     int idleSec = form.Q<int>("IdleFireTimeoutSec", 0);
                     int tblIdleKick = form.Q<int>("IdleFireKickEnabled", 1);
                     int tblMaxSeats = form.Q<int>("MaxSeats", 6);
-                    // 鱼机难度（机台设定）：0-9级（满放水~大吃分）；HAR 复用 DIF 值；场地类型 0-3。
-                    int fishDif = form.Q<int>("FishDIF", 6);
+                    // 鱼机难度（机台设定）：0-9级，对应可击杀倍率上限 {0=不限,1=1000,2=300,3=200,4=100,5=40,6=30,7=25,8=20,9=18}；
+                    // 概率固定为小放水档N=3（小鱼10%/中鱼1.67%/Boss0.33%），难度仅控制倍率上限。HAR 复用 DIF 值；场地类型 0-3。
+                    int fishDif = form.Q<int>("FishDIF", 0);
                     int fishSiteType = form.Q<int>("FishSITE_TYPE", 1);
                     int tableIdFull = gameId * 1000 + tIdx;
                     using (var ef = new GameDbContext())
