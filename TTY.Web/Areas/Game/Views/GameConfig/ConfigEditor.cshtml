@@ -876,25 +876,51 @@
         gcUpdateBetPayoutSum();
     }
 
-    // 牌型行：ht=服务端牌型枚举，p/m=715 文档默认出现率(万分比)/倍数（四条含大小四条）
+    // 牌型行：ht=服务端 te_CardsType 枚举索引(0..12)，name=各服务端注释里的规范名，
+    // p=未配置时的默认出现率(万分比)建议值。倍数默认值按所选游戏取各自 gC_mag_tab(见 GC_MAG_TAB)。
     var GC_PAYOUT_ROWS = [
-        { ht: 0, name: '杂牌', p: 6000, m: 0 },
-        { ht: 1, name: '一对', p: 2000, m: 0 },
-        { ht: 2, name: '两对', p: 1000, m: 2 },
-        { ht: 3, name: '三条', p: 500, m: 3 },
-        { ht: 4, name: '顺子', p: 400, m: 5 },
-        { ht: 5, name: '同花', p: 60, m: 2 },
-        { ht: 6, name: '葫芦', p: 20, m: 15 },
-        { ht: 7, name: '四条', p: 10, m: 65 },
-        { ht: 9, name: '同花顺', p: 5, m: 150 },
-        { ht: 11, name: '同花大顺', p: 4, m: 250 },
-        { ht: 10, name: '五条', p: 2, m: 500 }
+        { ht: 0, name: '杂牌', p: 6000 },
+        { ht: 1, name: '对子', p: 2000 },
+        { ht: 2, name: '两对', p: 1000 },
+        { ht: 3, name: '三条', p: 500 },
+        { ht: 4, name: '杂顺', p: 400 },
+        { ht: 5, name: '同花', p: 60 },
+        { ht: 6, name: '葫芦', p: 20 },
+        { ht: 7, name: '小四梅', p: 10 },
+        { ht: 8, name: '大四梅', p: 3 },
+        { ht: 9, name: '同花顺', p: 5 },
+        { ht: 10, name: '五梅', p: 2 },
+        { ht: 11, name: '同花大顺', p: 4 },
+        { ht: 12, name: '五鬼', p: 1 }
     ];
+
+    // 各游戏默认倍数表(服务端 gC_mag_tab)，按牌型索引 0..12。仅作未配置时的预填建议，有存档以库值为准。
+    // ATT3/NBA 服务端按难度档有多列，此处取代表值(OEM 档三列一致)。
+    var GC_MAG_TAB = {
+        phenix: [0, 1, 2, 3, 5, 7, 15, 65, 90, 150, 350, 500, 1000],
+        king3:  [0, 1, 2, 3, 5, 7, 10, 60, 60, 120, 250, 500, 1000],
+        dazhi:  [0, 1, 2, 3, 5, 7, 15, 65, 65, 150, 350, 250, 350],
+        nba:    [0, 1, 2, 3, 5, 7, 15, 68, 68, 162, 568, 312, 1000],
+        att3:   [0, 1, 2, 3, 5, 7, 15, 68, 68, 162, 568, 312, 1000]
+    };
+
+    // 按当前所选游戏名返回对应默认倍数表(按牌型索引)
+    function gcGetMagTab() {
+        var name = ($('#gcGameSel').find('option:selected').text() || '');
+        if (/nba/i.test(name)) return GC_MAG_TAB.nba;
+        if (/att|连环炮/i.test(name)) return GC_MAG_TAB.att3;
+        if (/皇冠|king/i.test(name)) return GC_MAG_TAB.king3;
+        if (/大字|dazhi/i.test(name)) return GC_MAG_TAB.dazhi;
+        if (/凤凰|phenix|phoenix/i.test(name)) return GC_MAG_TAB.phenix;
+        return GC_MAG_TAB.phenix;
+    }
 
     function gcBuildPayoutTable() {
         var $tb = $('#gcPayoutTable tbody');
         $tb.empty();
+        var magTab = gcGetMagTab();
         $.each(GC_PAYOUT_ROWS, function (i, r) {
+            var defM = magTab[r.ht] || 0;
             // 杂牌(ht=0)为余量行，始终启用不可勾选；其余牌型逐行启用(he{ht}，隐藏域保证序列化)
             var enCell = r.ht === 0
                 ? '<td style="padding:4px;border:1px solid #e5e9f0;text-align:center;color:#9aa4b1;font-size:12px;">—</td>'
@@ -904,7 +930,7 @@
             $tb.append('<tr>' +
                 '<td style="padding:6px 8px;border:1px solid #e5e9f0;font-size:13px;color:#36404a;">' + r.name + '</td>' +
                 '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="number" name="hp' + r.ht + '" id="gcHp' + r.ht + '" class="gc-input gc-payout-p" min="0" max="10000" step="1" value="' + r.p + '" /></td>' +
-                '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="number" name="hm' + r.ht + '" id="gcHm' + r.ht + '" class="gc-input" min="0" step="1" value="' + r.m + '" /></td>' +
+                '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="number" name="hm' + r.ht + '" id="gcHm' + r.ht + '" class="gc-input" min="0" step="1" value="' + defM + '" /></td>' +
                 enCell +
                 '</tr>');
         });
@@ -938,9 +964,10 @@
         if ($('#gcPayoutTable tbody tr').length === 0) gcBuildPayoutTable();
         $('#gcPayoutOn').prop('checked', t.payoutOn == 1);
         var po = t.payout || {};
+        var magTab = gcGetMagTab();
         $.each(GC_PAYOUT_ROWS, function (i, r) {
             $('#gcHp' + r.ht).val(po['p' + r.ht] !== undefined ? po['p' + r.ht] : r.p);
-            $('#gcHm' + r.ht).val(po['m' + r.ht] !== undefined ? po['m' + r.ht] : r.m);
+            $('#gcHm' + r.ht).val(po['m' + r.ht] !== undefined ? po['m' + r.ht] : (magTab[r.ht] || 0));
             if (r.ht !== 0) {
                 // 已保存档：总开关开启时 Enabled=0 才是逐行停用；无存档/总关时默认启用
                 var on = !(t.payoutOn == 1 && po['e' + r.ht] !== undefined && po['e' + r.ht] == 0);

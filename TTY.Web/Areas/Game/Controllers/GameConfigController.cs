@@ -776,9 +776,9 @@ namespace YYT.Web.Areas.Game.Controllers
                     int cardMaxBetUnits = (int)Math.Round(maxBetDisplay * 10m, MidpointRounding.AwayFromZero);
                     int cardMinBetUnits = (int)Math.Round(minBetDisplay * 10m, MidpointRounding.AwayFromZero);
 
-                    // 牌型概率(万分比)/倍数：HandType 与服务端 te_CardsType 对齐；
-                    // 四条(7)同时镜像大四条(8)倍数（概率集中在 7）。
-                    int[] payoutHandTypes = new int[] { 0, 1, 2, 3, 4, 5, 6, 7, 9, 10, 11 };
+                    // 牌型概率(万分比)/倍数：HandType 与服务端 te_CardsType 枚举(0..12)逐一对齐。
+                    // 小四梅(7)与大四梅(8)、五鬼(12)均独立成行可配，不再镜像。
+                    int[] payoutHandTypes = new int[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
                     int payoutOn = form.Q<int>("PayoutOn", 0) == 1 ? 1 : 0;
                     List<int[]> payoutProfiles = new List<int[]>();
                     int probSum = 0;
@@ -837,10 +837,6 @@ namespace YYT.Web.Areas.Game.Controllers
                                     ef.Database.ExecuteSqlCommand(
                                         "INSERT INTO cardpayoutprofile (GAME_ID, TableId, HandType, PayoutMultiplier, ProbabilityBasis, StockLimit, StockRemain, Enabled) VALUES ({0},{1},{2},{3},{4},0,0,{5})",
                                         gameId, tIdx, p[0], p[2], p[1], rowEnabled);
-                                    if (p[0] == 7)
-                                        ef.Database.ExecuteSqlCommand(
-                                            "INSERT INTO cardpayoutprofile (GAME_ID, TableId, HandType, PayoutMultiplier, ProbabilityBasis, StockLimit, StockRemain, Enabled) VALUES ({0},{1},8,{2},0,0,0,{3})",
-                                            gameId, tIdx, p[2], rowEnabled);
                                 }
                                 // 鬼牌哨兵行：201/202/203 = 1/2/3 王万分比，服务端 GetCardPayoutSnapshot 按 HandType>=CARDS_TYPE_MAX 跳过，不影响牌型赔付
                                 for (int j = 0; j < 3; j++)
