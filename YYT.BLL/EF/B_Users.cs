@@ -680,8 +680,7 @@ namespace YYT.BLL.EF
 
             foreach (M_Users_DTO user in users)
             {
-                long winLoss;
-                user.TodayWinLoss = winLossMap.TryGetValue(user.ID, out winLoss) ? winLoss : 0;
+                user.TodayWinLoss = winLossMap.TryGetValue(user.ID, out long winLoss) ? winLoss : (long?)0;
             }
         }
 
