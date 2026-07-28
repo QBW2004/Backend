@@ -247,14 +247,14 @@
                     </div>
 
                     <div class="gc-only-1">
-                        <div class="gc-section-title">机台设定（牌型出现率与倍数）</div>
+                        <div class="gc-section-title">机台设定（牌型出现率与客户端固定倍数）</div>
                         <input type="hidden" id="gcPayoutOnVal" name="PayoutOn" value="1" />
                         <table style="width:100%;border-collapse:collapse;margin-bottom:14px;" id="gcPayoutTable">
                             <thead>
                                 <tr style="background:#f5f8ff;color:#5a6573;font-size:13px;">
                                     <th style="padding:8px;border:1px solid #e5e9f0;text-align:left;">牌型</th>
                                     <th style="padding:8px;border:1px solid #e5e9f0;">出现率（万分比 0-10000）</th>
-                                    <th style="padding:8px;border:1px solid #e5e9f0;">倍数（压分×倍数=得芬）</th>
+                                    <th style="padding:8px;border:1px solid #e5e9f0;">倍数（客户端写死 · 不可调；ATT3 为小 / 中 / 大）</th>
                                     <th style="padding:8px;border:1px solid #e5e9f0;width:64px;">启用</th>
                                 </tr>
                             </thead>
@@ -668,6 +668,8 @@
     }
 
     function gcLoadTables(afterLoad) {
+        var requestSeq = (gcLoadTables.requestSeq || 0) + 1;
+        gcLoadTables.requestSeq = requestSeq;
         var gameId = parseInt($('#gcGameSel').val(), 10);
         var gameType = parseInt($('#gcGameSel').find('option:selected').attr('data-type'), 10);
         $('#gcGameId').val(isNaN(gameId) ? -1 : gameId);
@@ -684,6 +686,11 @@
             return;
         }
         request(GC_URL.tableConfig, { GAME_ID: gameId, GAME_TYPE: gameType }, function (data) {
+            var currentGameId = parseInt($('#gcGameSel').val(), 10);
+            var currentGameType = parseInt($('#gcGameSel').find('option:selected').attr('data-type'), 10);
+            if (requestSeq !== gcLoadTables.requestSeq || currentGameId !== gameId || currentGameType !== gameType) {
+                return;
+            }
             if (!data || data.code != 1) {
                 gcMsg(data);
                 return;
@@ -877,7 +884,7 @@
     }
 
     // 牌型行：ht=服务端 te_CardsType 枚举索引(0..12)，name=各服务端注释里的规范名，
-    // p=未配置时的默认出现率(万分比)建议值。倍数默认值按所选游戏取各自 gC_mag_tab(见 GC_MAG_TAB)。
+    // p=未配置时的默认出现率(万分比)建议值；倍率由下方客户端固定表只读展示。
     var GC_PAYOUT_ROWS = [
         { ht: 0, name: '杂牌', p: 6000 },
         { ht: 1, name: '对子', p: 2000 },
@@ -894,33 +901,62 @@
         { ht: 12, name: '五鬼', p: 1 }
     ];
 
-    // 各游戏默认倍数表(服务端 gC_mag_tab)，按牌型索引 0..12。仅作未配置时的预填建议，有存档以库值为准。
-    // ATT3/NBA 服务端按难度档有多列，此处取代表值(OEM 档三列一致)。
+    // 各游戏客户端 Blueeboard.cs 写死倍率，按牌型索引 0..12。
+    // 服务端结算表与此处保持一致；后台只读展示，禁止被数据库旧值覆盖。
     var GC_MAG_TAB = {
-        phenix: [0, 1, 2, 3, 5, 7, 15, 65, 90, 150, 350, 500, 1000],
+        phenix: [0, 1, 2, 3, 5, 7, 10, 40, 80, 120, 250, 500, 1000],
         king3:  [0, 1, 2, 3, 5, 7, 10, 60, 60, 120, 250, 500, 1000],
         dazhi:  [0, 1, 2, 3, 5, 7, 15, 65, 65, 150, 350, 250, 350],
-        nba:    [0, 1, 2, 3, 5, 7, 15, 68, 68, 162, 568, 312, 1000],
-        att3:   [0, 1, 2, 3, 5, 7, 15, 68, 68, 162, 568, 312, 1000]
+        nba:    [0, 1, 2, 3, 5, 7, 10, 50, 50, 100, 400, 200, 1000],
+        att3: {
+            small:  [0, 1, 2, 3, 4, 6, 8, 40, 40, 100, 300, 150, 1000],
+            middle: [0, 1, 2, 3, 5, 7, 10, 50, 50, 120, 400, 200, 1000],
+            big:    [0, 1, 2, 3, 6, 8, 12, 60, 60, 140, 500, 250, 1000]
+        }
     };
 
-    // 按当前所选游戏名返回对应默认倍数表(按牌型索引)
-    function gcGetMagTab() {
+    function gcGetMagKey() {
         var name = ($('#gcGameSel').find('option:selected').text() || '');
-        if (/nba/i.test(name)) return GC_MAG_TAB.nba;
-        if (/att|连环炮/i.test(name)) return GC_MAG_TAB.att3;
-        if (/皇冠|king/i.test(name)) return GC_MAG_TAB.king3;
-        if (/大字|dazhi/i.test(name)) return GC_MAG_TAB.dazhi;
-        if (/凤凰|phenix|phoenix/i.test(name)) return GC_MAG_TAB.phenix;
-        return GC_MAG_TAB.phenix;
+        if (/nba/i.test(name)) return 'nba';
+        if (/att|连环炮/i.test(name)) return 'att3';
+        if (/皇冠|king/i.test(name)) return 'king3';
+        if (/大字|dazhi/i.test(name)) return 'dazhi';
+        return 'phenix';
+    }
+
+    function gcGetMagSpec(ht) {
+        var key = gcGetMagKey();
+        if (key === 'att3') {
+            var small = GC_MAG_TAB.att3.small[ht] || 0;
+            var middle = GC_MAG_TAB.att3.middle[ht] || 0;
+            var big = GC_MAG_TAB.att3.big[ht] || 0;
+            var attText = small + ' / ' + middle + ' / ' + big;
+            if (ht === 12) attText += '（客户端未展示）';
+            return { text: attText, rtp: small * 0.60 + middle * 0.25 + big * 0.15 };
+        }
+
+        var value = GC_MAG_TAB[key][ht] || 0;
+        if (key === 'phenix' && ht === 7) {
+            return { text: '40 / 50（机台档位）', rtp: 40 };
+        }
+        if ((key === 'nba' || key === 'dazhi') && ht === 12) {
+            return { text: value + '（客户端未展示）', rtp: value };
+        }
+        return { text: value.toString(), rtp: value };
+    }
+
+    function gcGetMagRtpNote() {
+        var key = gcGetMagKey();
+        if (key === 'att3') return 'ATT3 倍数按服务端 60% / 25% / 15% 抽档加权';
+        if (key === 'phenix') return '火凤凰小四梅按 40 档估算，实际结算由机台 40 / 50 档位决定';
+        return '倍数取客户端固定值';
     }
 
     function gcBuildPayoutTable() {
         var $tb = $('#gcPayoutTable tbody');
         $tb.empty();
-        var magTab = gcGetMagTab();
         $.each(GC_PAYOUT_ROWS, function (i, r) {
-            var defM = magTab[r.ht] || 0;
+            var mag = gcGetMagSpec(r.ht);
             // 杂牌(ht=0)为余量行，始终启用不可勾选；其余牌型逐行启用(he{ht}，隐藏域保证序列化)
             var enCell = r.ht === 0
                 ? '<td style="padding:4px;border:1px solid #e5e9f0;text-align:center;color:#9aa4b1;font-size:12px;">—</td>'
@@ -930,7 +966,8 @@
             $tb.append('<tr>' +
                 '<td style="padding:6px 8px;border:1px solid #e5e9f0;font-size:13px;color:#36404a;">' + r.name + '</td>' +
                 '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="number" name="hp' + r.ht + '" id="gcHp' + r.ht + '" class="gc-input gc-payout-p" min="0" max="10000" step="1" value="' + r.p + '" /></td>' +
-                '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="number" name="hm' + r.ht + '" id="gcHm' + r.ht + '" class="gc-input" min="0" step="1" value="' + defM + '" /></td>' +
+                '<td style="padding:6px 8px;border:1px solid #e5e9f0;background:#f7f9fc;color:#5a6573;text-align:center;">' +
+                    '<span id="gcHm' + r.ht + '" data-rtp-m="' + mag.rtp + '" title="客户端 Blueeboard.cs 写死，后台不可修改">' + mag.text + '</span></td>' +
                 enCell +
                 '</tr>');
         });
@@ -951,23 +988,23 @@
         $.each(GC_PAYOUT_ROWS, function (i, r) {
             if (r.ht !== 0 && !$('#gcHeChk' + r.ht).is(':checked')) return; // 停用行不计入
             var p = parseFloat($('#gcHp' + r.ht).val()) || 0;
-            var m = parseFloat($('#gcHm' + r.ht).val()) || 0;
+            var m = parseFloat($('#gcHm' + r.ht).attr('data-rtp-m')) || 0;
             if (r.ht !== 0) winSum += p;
             rtp += p / 10000 * m;
         });
         var $el = $('#gcPayoutSum');
-        $el.text('中奖牌型出现率合计（仅启用行）：' + winSum + ' / 10000（余量自动落入杂牌），理论返奖率 RTP ≈ ' + (rtp * 100).toFixed(2) + '%');
+        $el.text('中奖牌型出现率合计（仅启用行）：' + winSum + ' / 10000（余量自动落入杂牌）；' +
+            gcGetMagRtpNote() + '，理论返奖率 RTP ≈ ' + (rtp * 100).toFixed(2) + '%');
         $el.css('color', winSum > 10000 ? '#d33b3b' : '#9aa4b1');
     }
 
     function gcFillPayout(t) {
-        if ($('#gcPayoutTable tbody tr').length === 0) gcBuildPayoutTable();
+        // 每次切换牌机都重建，确保只读倍率来自当前游戏的客户端固定表，而非上一个游戏或数据库旧值。
+        gcBuildPayoutTable();
         $('#gcPayoutOn').prop('checked', t.payoutOn == 1);
         var po = t.payout || {};
-        var magTab = gcGetMagTab();
         $.each(GC_PAYOUT_ROWS, function (i, r) {
             $('#gcHp' + r.ht).val(po['p' + r.ht] !== undefined ? po['p' + r.ht] : r.p);
-            $('#gcHm' + r.ht).val(po['m' + r.ht] !== undefined ? po['m' + r.ht] : (magTab[r.ht] || 0));
             if (r.ht !== 0) {
                 // 已保存档：总开关开启时 Enabled=0 才是逐行停用；无存档/总关时默认启用
                 var on = !(t.payoutOn == 1 && po['e' + r.ht] !== undefined && po['e' + r.ht] == 0);

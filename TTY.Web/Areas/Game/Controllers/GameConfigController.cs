@@ -180,7 +180,6 @@ namespace YYT.Web.Areas.Game.Controllers
                                     continue;
                                 }
                                 payout["p" + p.HandType] = p.ProbabilityBasis;
-                                payout["m" + p.HandType] = p.PayoutMultiplier;
                                 payout["e" + p.HandType] = p.Enabled;
                             }
                             int cardMaxBetUnits = cardCfg != null ? cardCfg.MaxBetUnits : 0;
@@ -544,6 +543,11 @@ namespace YYT.Web.Areas.Game.Controllers
                     msg.content = "未知的游戏类型！";
                     return Json(msg);
                 }
+                if (tableId >= 0 && tableId / 1000 != gameId)
+                {
+                    msg.content = "桌台不属于当前游戏，请刷新页面后重试！";
+                    return Json(msg);
+                }
 
                 if (gameType == 3)
                 {
@@ -844,8 +848,8 @@ namespace YYT.Web.Areas.Game.Controllers
                     int cardMaxBetUnits = (int)Math.Round(maxBetDisplay * 10m, MidpointRounding.AwayFromZero);
                     int cardMinBetUnits = (int)Math.Round(minBetDisplay * 10m, MidpointRounding.AwayFromZero);
 
-                    // 牌型概率(万分比)/倍数：HandType 与服务端 te_CardsType 枚举(0..12)逐一对齐。
-                    // 小四梅(7)与大四梅(8)、五鬼(12)均独立成行可配，不再镜像。
+                    // 牌型概率(万分比)/启用：HandType 与服务端 te_CardsType 枚举(0..12)逐一对齐。
+                    // 倍数以客户端 Blueeboard.cs 为唯一权威，后台既不接收也不保存。
                     int[] payoutHandTypes = new int[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
                     int payoutOn = form.Q<int>("PayoutOn", 0) == 1 ? 1 : 0;
                     List<int[]> payoutProfiles = new List<int[]>();
@@ -853,16 +857,15 @@ namespace YYT.Web.Areas.Game.Controllers
                     foreach (int ht in payoutHandTypes)
                     {
                         int prob = (int)Math.Round(form.Q<decimal>("hp" + ht, 0m), MidpointRounding.AwayFromZero);
-                        int mult = (int)Math.Round(form.Q<decimal>("hm" + ht, 0m), MidpointRounding.AwayFromZero);
-                        if (prob < 0 || prob > 10000 || mult < 0)
+                        if (prob < 0 || prob > 10000)
                         {
-                            msg.content = "牌型概率须在 0-10000（万分比）之间且倍数不能为负！";
+                            msg.content = "牌型概率须在 0-10000（万分比）之间！";
                             return Json(msg);
                         }
                         // 逐牌型启用：he{ht}（缺省 1）；杂牌行始终启用
                         int rowOn = (ht == 0 || form.Q<int>("he" + ht, 1) == 1) ? 1 : 0;
                         if (ht != 0 && rowOn == 1) probSum += prob;
-                        payoutProfiles.Add(new[] { ht, prob, mult, rowOn });
+                        payoutProfiles.Add(new[] { ht, prob, rowOn });
                     }
                     if (payoutOn == 1 && probSum > 10000)
                     {
@@ -892,7 +895,7 @@ namespace YYT.Web.Areas.Game.Controllers
 
                     using (var ef = new GameDbContext())
                     {
-                        // 牌型赔率(按桌)：cardpayoutprofile
+                        // 牌型概率/启用(按桌)：cardpayoutprofile；PayoutMultiplier 使用数据库默认值 0，后台不写倍率。
                         using (var txP = ef.Database.BeginTransaction())
                         {
                             try
@@ -901,15 +904,15 @@ namespace YYT.Web.Areas.Game.Controllers
                                     "DELETE FROM cardpayoutprofile WHERE GAME_ID={0} AND TableId={1}", gameId, tIdx);
                                 foreach (int[] p in payoutProfiles)
                                 {
-                                    int rowEnabled = (payoutOn == 1 && p[3] == 1) ? 1 : 0;
+                                    int rowEnabled = (payoutOn == 1 && p[2] == 1) ? 1 : 0;
                                     ef.Database.ExecuteSqlCommand(
-                                        "INSERT INTO cardpayoutprofile (GAME_ID, TableId, HandType, PayoutMultiplier, ProbabilityBasis, StockLimit, StockRemain, Enabled) VALUES ({0},{1},{2},{3},{4},0,0,{5})",
-                                        gameId, tIdx, p[0], p[2], p[1], rowEnabled);
+                                        "INSERT INTO cardpayoutprofile (GAME_ID, TableId, HandType, ProbabilityBasis, StockLimit, StockRemain, Enabled) VALUES ({0},{1},{2},{3},0,0,{4})",
+                                        gameId, tIdx, p[0], p[1], rowEnabled);
                                 }
                                 // 鬼牌哨兵行：201/202/203 = 1/2/3 王万分比，服务端 GetCardPayoutSnapshot 按 HandType>=CARDS_TYPE_MAX 跳过，不影响牌型赔付
                                 for (int j = 0; j < 3; j++)
                                     ef.Database.ExecuteSqlCommand(
-                                        "INSERT INTO cardpayoutprofile (GAME_ID, TableId, HandType, PayoutMultiplier, ProbabilityBasis, StockLimit, StockRemain, Enabled) VALUES ({0},{1},{2},0,{3},0,0,{4})",
+                                        "INSERT INTO cardpayoutprofile (GAME_ID, TableId, HandType, ProbabilityBasis, StockLimit, StockRemain, Enabled) VALUES ({0},{1},{2},{3},0,0,{4})",
                                         gameId, tIdx, 201 + j, jokerProbs[j], jokerOn);
                                 txP.Commit();
                             }
