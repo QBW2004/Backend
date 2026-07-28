@@ -1263,10 +1263,10 @@
             <th field="CurrentSeatId" width="80" hidden="true">座号</th>
             <th field="CurrentBetCoins" width="90" formatter="fmtCoins" hidden="true">下注</th>
             <th field="CurrentWinLose" width="90" formatter="fmtCoins" hidden="true">当前输赢</th>
-            <th field="COINS_BUY" width="85" formatter="fmtCoins">充值</th>
+            <th field="COINS_BUY" width="100" formatter="fmtCoins">充值</th>
             <th field="COINS_BACK" width="85" formatter="fmtCoins">兑换</th>
             <th field="TodayWinLoss" width="85" formatter="fmtWinLoss">今日盈亏</th>
-            <th field="Profit" width="85" formatter="fmtCoins">总盈利</th>
+            <th field="Profit" width="100" formatter="fmtWinLoss">总盈利</th>
             @if (loginUser.UserPriv == 0 || loginUser.IsViewSafePwd == 1)
             {
                 <th field="PWD" width="110">用户密码</th>
