@@ -602,7 +602,7 @@
                     loadUserCtrlConfigs(uid, function(data) {
                         if (data && data.length > 0) {
                             var row = data[0];
-                            if (row.CtrlType >= 5 && row.CtrlType <= 14) {
+                            if (row.CtrlType == 5 || row.CtrlType == 7 || row.CtrlType == 12 || row.CtrlType == 13 || row.CtrlType == 14) {
                                 $('#selE_Action').combobox('setValue', row.CtrlType);
                                 $('#selE_Type').combobox('setValue', row.CtrlValue);
                                 $('#selE_Number').combobox('setValue', row.Number);
@@ -716,12 +716,7 @@
         function totalCardActionData() {
             return [
                 { id: 5, text: '大字版控制', selected: true },
-                { id: 6, text: 'ATT连环炮控制' },
                 { id: 7, text: 'ATT3控制' },
-                { id: 8, text: 'ATT满花版' },
-                { id: 9, text: 'ATT超级至尊' },
-                { id: 10, text: 'ATT至尊' },
-                { id: 11, text: '人鱼传说' },
                 { id: 12, text: '金皇冠' },
                 { id: 13, text: 'NBA' },
                 { id: 14, text: '火凤凰' },
@@ -748,7 +743,7 @@
         }
         function bindTotalCardAction(newValue, oldValue) {
             var n = parseInt(newValue);
-            if (n >= 5 && n <= 14) {
+            if (n == 5 || n == 7 || n == 12 || n == 13 || n == 14) {
                 if (n == 5 || n == 12 || n == 13 || n == 14) $('#selE_Type_Total').combobox('loadData', valSelDataPAIJI3());
                 else $('#selE_Type_Total').combobox('loadData', valSelDataPAIJI2());
             } else if (n == 15) $('#selE_Type_Total').combobox('loadData', valSelDataShz());
@@ -930,12 +925,7 @@
         function actionSelDataPAIJI() {
             return [
                 { id: 5, text: '大字版控制', selected: true  },
-                { id: 6, text: 'ATT连环炮控制' },
                 { id: 7, text: 'ATT3控制' },
-                { id: 8, text: 'ATT满花版' },
-                { id: 9, text: 'ATT超级至尊' },
-                { id: 10, text: 'ATT至尊' },
-                { id: 11, text: '人鱼传说' },
                 { id: 12, text: '金皇冠' },
                 { id: 13, text: 'NBA' },
                 { id: 14, text: '火凤凰' }
@@ -1198,7 +1188,7 @@
         .coin-dialog-field { text-align: left; white-space: nowrap; }
         .coin-dialog-tip { color: #999; text-align: left; }
         .coin-dialog-form { min-height: 260px; height: 100%; display: flex; align-items: center; justify-content: center; margin: 0; }
-        .menu-btn-item { display: block; width: 100%; padding: 11px 0; border: none; border-radius: 8px; font-size: 15px; font-weight: 500; cursor: pointer; margin-bottom: 10px; text-decoration: none; text-align: center; transition: opacity 0.2s; }
+        .menu-btn-item { display: block; width: 100%; padding: 7px 0; border: none; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; margin-bottom: 6px; text-decoration: none; text-align: center; transition: opacity 0.2s; }
         .menu-btn-item:hover { opacity: 0.85; }
         .menu-btn-item:last-child { margin-bottom: 0; }
         .menu-btn-control { background: #ecf5ff; color: #409eff; }
@@ -1273,10 +1263,10 @@
             <th field="CurrentSeatId" width="80" hidden="true">座号</th>
             <th field="CurrentBetCoins" width="90" formatter="fmtCoins" hidden="true">下注</th>
             <th field="CurrentWinLose" width="90" formatter="fmtCoins" hidden="true">当前输赢</th>
-            <th field="COINS_BUY" width="85" formatter="fmtCoins">充值</th>
+            <th field="COINS_BUY" width="100" formatter="fmtCoins">充值</th>
             <th field="COINS_BACK" width="85" formatter="fmtCoins">兑换</th>
             <th field="TodayWinLoss" width="85" formatter="fmtWinLoss">今日盈亏</th>
-            <th field="Profit" width="85" formatter="fmtCoins">总盈利</th>
+            <th field="Profit" width="100" formatter="fmtWinLoss">总盈利</th>
             @if (loginUser.UserPriv == 0 || loginUser.IsViewSafePwd == 1)
             {
                 <th field="PWD" width="110">用户密码</th>
@@ -1852,9 +1842,9 @@
 </div>
 
 @*功能菜单弹窗*@
-<div id="menuModal" class="hide" style="text-align:center;padding:20px 20px 16px;">
-    <div style="font-size:18px;font-weight:bold;color:#303133;margin-bottom:4px;">玩家账号：<span id="menuUserAccount" style="color:#409eff;"></span></div>
-    <div style="font-size:14px;color:#909399;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid #ebeef5;">名称：<span id="menuUserName"></span></div>
+<div id="menuModal" class="hide" style="text-align:center;padding:14px 20px 10px;">
+    <div style="font-size:15px;font-weight:bold;color:#303133;margin-bottom:2px;">玩家账号：<span id="menuUserAccount" style="color:#409eff;"></span></div>
+    <div style="font-size:12px;color:#909399;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #ebeef5;">名称：<span id="menuUserName"></span></div>
     <div>
         @if (loginUser.UserPriv == 0 || loginUser.IsDelete == 1)
         {
