@@ -744,8 +744,8 @@
         function bindTotalCardAction(newValue, oldValue) {
             var n = parseInt(newValue);
             if (n == 5 || n == 7 || n == 12 || n == 13 || n == 14) {
-                if (n == 5 || n == 12 || n == 13 || n == 14) $('#selE_Type_Total').combobox('loadData', valSelDataPAIJI3());
-                else $('#selE_Type_Total').combobox('loadData', valSelDataPAIJI2());
+                // 牌机型：按所选游戏动态生成0-12牌型+关闭(99)，倍率与台机设定一致
+                $('#selE_Type_Total').combobox('loadData', valSelDataPAIJI(n));
             } else if (n == 15) $('#selE_Type_Total').combobox('loadData', valSelDataShz());
             else if (n == 16) $('#selE_Type_Total').combobox('loadData', valSelDataMx97());
             else if (n == 17) $('#selE_Type_Total').combobox('loadData', valSelDataFruit());
@@ -947,6 +947,42 @@
             return arr;
         }
 
+        // 牌机型13种牌型（与服务端 te_CardsType 枚举 0..12 一致，与台机设定 GC_PAYOUT_ROWS 同口径）
+        var TC_CARD_TYPES = [
+            { ht: 0, name: '杂牌' }, { ht: 1, name: '对子' }, { ht: 2, name: '两对' },
+            { ht: 3, name: '三条' }, { ht: 4, name: '杂顺' }, { ht: 5, name: '同花' },
+            { ht: 6, name: '葫芦' }, { ht: 7, name: '小四梅' }, { ht: 8, name: '大四梅' },
+            { ht: 9, name: '同花顺' }, { ht: 10, name: '五梅' }, { ht: 11, name: '同花大顺' },
+            { ht: 12, name: '五鬼' }
+        ];
+        // 各牌机游戏倍率（与台机设定 GC_MAG_TAB 一致，客户端固定值只读；ATT3 取 middle 档）
+        var TC_MAG_TAB = {
+            phenix: [0, 1, 2, 3, 5, 7, 10, 40, 80, 120, 250, 500, 1000],
+            king3:  [0, 1, 2, 3, 5, 7, 10, 60, 60, 120, 250, 500, 1000],
+            dazhi:  [0, 1, 2, 3, 5, 7, 15, 65, 65, 150, 350, 250, 350],
+            nba:    [0, 1, 2, 3, 5, 7, 10, 50, 50, 100, 400, 200, 1000],
+            att3:   [0, 1, 2, 3, 5, 7, 10, 50, 50, 120, 400, 200, 1000]
+        };
+        // cardAction -> 倍率key：5大字版/7ATT3/12金皇冠/13NBA/14火凤凰
+        function tcMagKey(action) {
+            if (action == 5) return 'dazhi';
+            if (action == 7) return 'att3';
+            if (action == 12) return 'king3';
+            if (action == 13) return 'nba';
+            return 'phenix';
+        }
+        // 按 cardAction 动态生成牌机型牌型下拉：0-12 完整13种 + 99关闭控制（倍率随游戏类型变化）
+        function valSelDataPAIJI(cardAction) {
+            var mags = TC_MAG_TAB[tcMagKey(cardAction)];
+            var arr = [];
+            for (var i = 0; i < TC_CARD_TYPES.length; i++) {
+                var t = TC_CARD_TYPES[i];
+                arr.push({ id: t.ht, text: t.name + '(' + mags[t.ht] + '倍)' });
+            }
+            arr.push({ id: 99, text: '关闭控制' });
+            return arr;
+        }
+
         function valSelDataPAIJI2() {
             var arr = [];
             arr.push({ id: 0, text: '杂牌(0倍)' });
@@ -983,10 +1019,9 @@
             console.log("oldValue:" + oldValue);
           
             if (oldValue && newValue > -1 && newValue != oldValue) {
-                if (newValue == 5 || newValue == 12 || newValue == 13 || newValue == 14) {
-                    $('#selE_Type').combobox('loadData', valSelDataPAIJI3())
-                } else {
-                    $('#selE_Type').combobox('loadData', valSelDataPAIJI2())
+                if (newValue == 5 || newValue == 7 || newValue == 12 || newValue == 13 || newValue == 14) {
+                    // 牌机型：按所选游戏动态生成0-12牌型+关闭(99)，倍率与台机设定一致
+                    $('#selE_Type').combobox('loadData', valSelDataPAIJI(newValue));
                 }
             }
         }
@@ -1480,7 +1515,7 @@
             <tr class="trPaiJiCtrl">
                 <td align="right">控制牌类型</td>
                 <td align="left" class="pd5">
-                    <select class="easyui-combobox" id="selE_Type" name="Type1" data-options="valueField:'id',textField:'text',panelHeight:150,data:valSelDataPAIJI3()"></select>
+                    <select class="easyui-combobox" id="selE_Type" name="Type1" data-options="valueField:'id',textField:'text',panelHeight:150,data:valSelDataPAIJI(14)"></select>
                 </td>
             </tr>
             <tr class="trPaiJiCtrl">

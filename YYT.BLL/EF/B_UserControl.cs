@@ -450,6 +450,13 @@ namespace YYT.BLL.EF
                     msg.content = "无效的控牌类型！";
                     return msg;
                 }
+                // 牌机型(5-14)牌型值 0-12（与服务端 te_CardsType 枚举一致），99=关闭控制；
+                // 拉霸型(15-17)为符号/面板位体系，值范围不同，保持宽松校验
+                if (cardAction >= 5 && cardAction <= 14 && cardValue != 99 && (cardValue < 0 || cardValue > 12))
+                {
+                    msg.content = "无效的控牌牌型（0-12 或 99 关闭）！";
+                    return msg;
+                }
                 if (cardNumber < 1 || cardTotal < 5 || cardTotal > 50 || cardNumber > cardTotal)
                 {
                     msg.content = "控牌数量/总把数无效（数量≥1，总把数 5-50，数量≤总把数）！";
