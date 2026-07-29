@@ -438,7 +438,8 @@ namespace YYT.BLL.EF
                 msg.content = "请填写玩家账号！";
                 return msg;
             }
-            if (goldThreshold <= 0)
+            // 控牌按次数控制，不需要金币阈值；仅吃分/放分需要金币阈值
+            if (mode != (int)EControlMode.TotalCard && goldThreshold <= 0)
             {
                 msg.content = "金币阈值必须大于 0！";
                 return msg;
@@ -543,6 +544,14 @@ namespace YYT.BLL.EF
                     ef.Database.ExecuteSqlCommand(
                         "INSERT INTO manageropt(UserID,NAME,Opt,OptValue,Type,OPERATOR) VALUES({0},{1},{2},{3},'UC',{4})",
                         target, user.NAME ?? "", optCode, optValue, loginUser.Accounts);
+
+                    // 控牌模式：同步写入 usercontrolvalue（控牌类型/控牌值/次数/总次数），供状态回显次数
+                    if (mode == (int)EControlMode.TotalCard)
+                    {
+                        ef.Database.ExecuteSqlCommand(
+                            "INSERT INTO usercontrolvalue (USERID,GAME_TYPE,CONTROL_TYPE,CONTROL_VALUE,NUMBER,TOTAL_NUMBER) VALUES({0},1,{1},{2},{3},{4}) ON DUPLICATE KEY UPDATE GAME_TYPE=1, CONTROL_TYPE={1}, CONTROL_VALUE={2}, NUMBER={3}, TOTAL_NUMBER={4}",
+                            target, cardAction, cardValue, cardNumber, cardTotal);
+                    }
                 }
             }
             catch (Exception ex)
@@ -613,6 +622,21 @@ namespace YYT.BLL.EF
                             CreatedTime = c.CreatedTime.ToString("yyyy-MM-dd HH:mm:ss")
                         })
                         .ToList();
+
+                    // 控牌模式(mode=6)：联查 usercontrolvalue 表回显次数/总次数（牌机服务器消耗后未回写，此处显示的是下发时的配置值）
+                    var cardRow = rows.FirstOrDefault(c => c.ControlMode == (int)EControlMode.TotalCard);
+                    if (cardRow != null)
+                    {
+                        var ucRow = ef.Database.SqlQuery<M_UserControlValueRow>(
+                            "SELECT CONTROL_TYPE AS CtrlType, CONTROL_VALUE AS CtrlValue, NUMBER AS Number, TOTAL_NUMBER AS TotalNumber FROM usercontrolvalue WHERE USERID={0} AND CONTROL_TYPE>=5 AND CONTROL_TYPE<=24 ORDER BY CONTROL_TYPE DESC LIMIT 1",
+                            target).FirstOrDefault();
+                        if (ucRow != null)
+                        {
+                            cardRow.CardNumber = ucRow.Number;
+                            cardRow.CardTotal = ucRow.TotalNumber;
+                        }
+                    }
+
                     msg.code = 1;
                     msg.content = "";
                     msg.datas = rows;
@@ -808,5 +832,16 @@ namespace YYT.BLL.EF
                 return new Msg(0, "服务器指令发送异常：" + ex.Message);
             }
         }
+    }
+
+    /// <summary>
+    /// usercontrolvalue 表查询映射（仅用于总控牌状态回显次数/总次数）
+    /// </summary>
+    public class M_UserControlValueRow
+    {
+        public int CtrlType { get; set; }
+        public int CtrlValue { get; set; }
+        public int Number { get; set; }
+        public int TotalNumber { get; set; }
     }
 }

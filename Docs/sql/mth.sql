@@ -11,7 +11,7 @@
  Target Server Version : 50744
  File Encoding         : 65001
 
- Date: 28/07/2026 18:47:27
+ Date: 29/07/2026 16:04:51
 */
 
 SET NAMES utf8mb4;
@@ -100,7 +100,7 @@ INSERT INTO `admin` VALUES ('10086', '123456', 2, '1688', 19958999, 41001, 0, 20
 INSERT INTO `admin` VALUES ('1688', 'zxc1.2.3.', 1, 'atmadmin', 199996500, 9000, 5500, 200000000, 0, 1, 0, 1, 1, 1, 1, 2, 1, 0, 0, 0, 1, 0, 2, '8188', 0.00, NULL, '2026-05-21 20:07:32', '2026-07-21 18:02:32', 1, 1, 0, 0, 1, 1);
 INSERT INTO `admin` VALUES ('55555555', '1.2.3.', 1, 'atmadmin', 0, 0, 0, 2, 2, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, '1000', 0.00, NULL, '2026-04-30 17:29:15', '2026-07-21 18:02:32', 0, 0, 0, 0, 0, 0);
 INSERT INTO `admin` VALUES ('8888', '123456', 2, '1688', 49000, 1000, 0, 50000, 0, 1, 0, 1, 1, 1, 1, 2, 0, 0, 1, 0, 0, 0, 2, '88888', 0.00, NULL, '2026-05-21 20:08:34', '2026-07-21 17:33:40', 1, 0, 0, 0, 1, 1);
-INSERT INTO `admin` VALUES ('atmadmin', '123456', 0, '', 0, 3687418090, 111021894, 0, 0, 1, 6, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, NULL, 0.00, 'www.baidu.com', '2026-04-15 16:49:42', '2026-07-24 16:30:47', 0, 0, 0, 0, 1, 1);
+INSERT INTO `admin` VALUES ('atmadmin', '123456', 0, '', 0, 3687418190, 111021894, 0, 0, 1, 6, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, NULL, 0.00, 'www.baidu.com', '2026-04-15 16:49:42', '2026-07-29 13:56:06', 0, 0, 0, 0, 1, 1);
 
 -- ----------------------------
 -- Table structure for agencyoptlog
@@ -119,86 +119,11 @@ CREATE TABLE `agencyoptlog`  (
   `AFT_COINS` bigint(20) NOT NULL DEFAULT 0 COMMENT '操作后金币量',
   `WEEK` tinyint(4) NOT NULL DEFAULT 0 COMMENT '周数',
   PRIMARY KEY (`LID`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 512 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '代理日志表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 527 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '代理日志表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of agencyoptlog
 -- ----------------------------
-INSERT INTO `agencyoptlog` VALUES (368, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-21 10:55:17', 2, 0, 0, 0, 30);
-INSERT INTO `agencyoptlog` VALUES (369, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-21 11:43:29', 3, 0, 0, 0, 30);
-INSERT INTO `agencyoptlog` VALUES (370, '8888', '代理', '8888', '代理', '2026-07-21 11:43:32', 2, 49000, 49000, 49000, 30);
-INSERT INTO `agencyoptlog` VALUES (371, '8888', '代理', '8888', '代理', '2026-07-21 11:44:00', 3, 49000, 49000, 49000, 30);
-INSERT INTO `agencyoptlog` VALUES (372, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-21 11:44:02', 2, 0, 0, 0, 30);
-INSERT INTO `agencyoptlog` VALUES (373, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-21 11:44:09', 3, 0, 0, 0, 30);
-INSERT INTO `agencyoptlog` VALUES (374, '8888', '代理', '8888', '代理', '2026-07-21 11:44:12', 2, 49000, 49000, 49000, 30);
-INSERT INTO `agencyoptlog` VALUES (375, '8888', '代理', '8888', '代理', '2026-07-21 11:44:35', 3, 49000, 49000, 49000, 30);
-INSERT INTO `agencyoptlog` VALUES (376, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-21 11:44:36', 2, 0, 0, 0, 30);
-INSERT INTO `agencyoptlog` VALUES (377, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-21 13:41:57', 2, 0, 0, 0, 30);
-INSERT INTO `agencyoptlog` VALUES (378, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-21 14:27:33', 2, 0, 0, 0, 30);
-INSERT INTO `agencyoptlog` VALUES (379, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-21 14:51:42', 2, 0, 0, 0, 30);
-INSERT INTO `agencyoptlog` VALUES (380, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-21 15:14:27', 2, 0, 0, 0, 30);
-INSERT INTO `agencyoptlog` VALUES (381, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-21 15:17:29', 2, 0, 0, 0, 30);
-INSERT INTO `agencyoptlog` VALUES (382, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-21 15:36:10', 2, 0, 0, 0, 30);
-INSERT INTO `agencyoptlog` VALUES (383, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-21 15:45:30', 2, 0, 0, 0, 30);
-INSERT INTO `agencyoptlog` VALUES (384, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-21 15:50:12', 2, 0, 0, 0, 30);
-INSERT INTO `agencyoptlog` VALUES (385, 'atmadmin', '超级管理', 'test002', '用户', '2026-07-21 15:53:24', 20, 1000000000, 0, 1000000000, 30);
-INSERT INTO `agencyoptlog` VALUES (386, 'atmadmin', '超级管理', 'test002', '用户', '2026-07-21 15:53:54', 20, 500000, 0, 500000, 30);
-INSERT INTO `agencyoptlog` VALUES (387, 'atmadmin', '超级管理', 'test002', '用户', '2026-07-21 16:05:30', 20, 1000, 0, 1000, 30);
-INSERT INTO `agencyoptlog` VALUES (388, 'atmadmin', '超级管理', 'test002', '用户', '2026-07-21 16:05:36', 20, 50000, 1000, 51000, 30);
-INSERT INTO `agencyoptlog` VALUES (389, 'atmadmin', '超级管理', 'test002', '用户', '2026-07-21 16:10:15', 20, 100000, 0, 100000, 30);
-INSERT INTO `agencyoptlog` VALUES (390, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-21 16:25:18', 2, 0, 0, 0, 30);
-INSERT INTO `agencyoptlog` VALUES (391, 'atmadmin', '超级管理', 'test002', '用户', '2026-07-21 16:26:03', 20, 100000, 0, 100000, 30);
-INSERT INTO `agencyoptlog` VALUES (392, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-21 17:08:25', 2, 0, 0, 0, 30);
-INSERT INTO `agencyoptlog` VALUES (393, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-21 17:19:13', 2, 0, 0, 0, 30);
-INSERT INTO `agencyoptlog` VALUES (394, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-21 17:28:57', 2, 0, 0, 0, 30);
-INSERT INTO `agencyoptlog` VALUES (395, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-21 17:29:33', 3, 0, 0, 0, 30);
-INSERT INTO `agencyoptlog` VALUES (396, '8888', '代理', '8888', '代理', '2026-07-21 17:29:35', 2, 49000, 49000, 49000, 30);
-INSERT INTO `agencyoptlog` VALUES (397, '8888', '代理', '8888', '代理', '2026-07-21 17:29:56', 3, 49000, 49000, 49000, 30);
-INSERT INTO `agencyoptlog` VALUES (398, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-21 17:29:57', 2, 0, 0, 0, 30);
-INSERT INTO `agencyoptlog` VALUES (399, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-21 17:30:44', 3, 0, 0, 0, 30);
-INSERT INTO `agencyoptlog` VALUES (400, '8888', '代理', '8888', '代理', '2026-07-21 17:30:46', 2, 49000, 49000, 49000, 30);
-INSERT INTO `agencyoptlog` VALUES (401, '8888', '代理', '8888', '代理', '2026-07-21 17:30:49', 3, 49000, 49000, 49000, 30);
-INSERT INTO `agencyoptlog` VALUES (402, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-21 17:30:50', 2, 0, 0, 0, 30);
-INSERT INTO `agencyoptlog` VALUES (403, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-21 17:30:59', 3, 0, 0, 0, 30);
-INSERT INTO `agencyoptlog` VALUES (404, '8888', '代理', '8888', '代理', '2026-07-21 17:31:01', 2, 49000, 49000, 49000, 30);
-INSERT INTO `agencyoptlog` VALUES (405, '8888', '代理', '8888', '代理', '2026-07-21 17:31:13', 3, 49000, 49000, 49000, 30);
-INSERT INTO `agencyoptlog` VALUES (406, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-21 17:31:14', 2, 0, 0, 0, 30);
-INSERT INTO `agencyoptlog` VALUES (407, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-21 17:33:42', 3, 0, 0, 0, 30);
-INSERT INTO `agencyoptlog` VALUES (408, '8888', '代理', '8888', '代理', '2026-07-21 17:33:45', 2, 49000, 49000, 49000, 30);
-INSERT INTO `agencyoptlog` VALUES (409, '8888', '代理', '8888', '代理', '2026-07-21 17:34:02', 3, 49000, 49000, 49000, 30);
-INSERT INTO `agencyoptlog` VALUES (410, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-21 17:34:03', 2, 0, 0, 0, 30);
-INSERT INTO `agencyoptlog` VALUES (411, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-21 17:37:04', 3, 0, 0, 0, 30);
-INSERT INTO `agencyoptlog` VALUES (412, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-21 17:37:05', 2, 0, 0, 0, 30);
-INSERT INTO `agencyoptlog` VALUES (413, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-21 17:37:11', 3, 0, 0, 0, 30);
-INSERT INTO `agencyoptlog` VALUES (414, '8888', '代理', '8888', '代理', '2026-07-21 17:37:13', 2, 49000, 49000, 49000, 30);
-INSERT INTO `agencyoptlog` VALUES (415, '8888', '代理', '8888', '代理', '2026-07-21 17:37:16', 3, 49000, 49000, 49000, 30);
-INSERT INTO `agencyoptlog` VALUES (416, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-21 17:37:17', 2, 0, 0, 0, 30);
-INSERT INTO `agencyoptlog` VALUES (417, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-21 17:39:48', 3, 0, 0, 0, 30);
-INSERT INTO `agencyoptlog` VALUES (418, '8888', '代理', '8888', '代理', '2026-07-21 17:39:55', 2, 49000, 49000, 49000, 30);
-INSERT INTO `agencyoptlog` VALUES (419, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-21 17:49:10', 2, 0, 0, 0, 30);
-INSERT INTO `agencyoptlog` VALUES (420, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-21 17:49:13', 2, 0, 0, 0, 30);
-INSERT INTO `agencyoptlog` VALUES (421, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-21 17:49:59', 3, 0, 0, 0, 30);
-INSERT INTO `agencyoptlog` VALUES (422, '8888', '代理', '8888', '代理', '2026-07-21 17:50:02', 2, 49000, 49000, 49000, 30);
-INSERT INTO `agencyoptlog` VALUES (423, '8888', '代理', '8888', '代理', '2026-07-21 17:50:18', 3, 49000, 49000, 49000, 30);
-INSERT INTO `agencyoptlog` VALUES (424, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-21 17:50:19', 2, 0, 0, 0, 30);
-INSERT INTO `agencyoptlog` VALUES (425, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-21 17:51:14', 3, 0, 0, 0, 30);
-INSERT INTO `agencyoptlog` VALUES (426, '8888', '代理', '8888', '代理', '2026-07-21 17:51:16', 2, 49000, 49000, 49000, 30);
-INSERT INTO `agencyoptlog` VALUES (427, '8888', '代理', '8888', '代理', '2026-07-21 17:51:20', 3, 49000, 49000, 49000, 30);
-INSERT INTO `agencyoptlog` VALUES (428, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-21 17:51:21', 2, 0, 0, 0, 30);
-INSERT INTO `agencyoptlog` VALUES (429, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-21 17:52:32', 3, 0, 0, 0, 30);
-INSERT INTO `agencyoptlog` VALUES (430, '8888', '代理', '8888', '代理', '2026-07-21 17:52:34', 2, 49000, 49000, 49000, 30);
-INSERT INTO `agencyoptlog` VALUES (431, '8888', '代理', '8888', '代理', '2026-07-21 17:52:40', 3, 49000, 49000, 49000, 30);
-INSERT INTO `agencyoptlog` VALUES (432, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-21 17:52:42', 2, 0, 0, 0, 30);
-INSERT INTO `agencyoptlog` VALUES (433, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-21 18:05:10', 2, 0, 0, 0, 30);
-INSERT INTO `agencyoptlog` VALUES (434, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-21 18:09:05', 2, 0, 0, 0, 30);
-INSERT INTO `agencyoptlog` VALUES (435, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-21 18:11:39', 2, 0, 0, 0, 30);
-INSERT INTO `agencyoptlog` VALUES (436, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-21 18:17:24', 2, 0, 0, 0, 30);
-INSERT INTO `agencyoptlog` VALUES (437, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-21 18:19:26', 2, 0, 0, 0, 30);
-INSERT INTO `agencyoptlog` VALUES (438, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-21 18:30:53', 2, 0, 0, 0, 30);
-INSERT INTO `agencyoptlog` VALUES (439, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-21 18:49:31', 2, 0, 0, 0, 30);
-INSERT INTO `agencyoptlog` VALUES (440, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-22 10:31:52', 2, 0, 0, 0, 30);
-INSERT INTO `agencyoptlog` VALUES (441, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-22 11:32:52', 2, 0, 0, 0, 30);
-INSERT INTO `agencyoptlog` VALUES (442, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-22 13:33:46', 2, 0, 0, 0, 30);
 INSERT INTO `agencyoptlog` VALUES (443, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-22 13:56:20', 2, 0, 0, 0, 30);
 INSERT INTO `agencyoptlog` VALUES (444, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-22 13:56:20', 2, 0, 0, 0, 30);
 INSERT INTO `agencyoptlog` VALUES (445, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-22 14:49:10', 2, 0, 0, 0, 30);
@@ -268,6 +193,21 @@ INSERT INTO `agencyoptlog` VALUES (508, 'atmadmin', '超级管理', 'atmadmin', 
 INSERT INTO `agencyoptlog` VALUES (509, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-28 13:45:59', 2, 0, 0, 0, 31);
 INSERT INTO `agencyoptlog` VALUES (510, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-28 15:09:54', 2, 0, 0, 0, 31);
 INSERT INTO `agencyoptlog` VALUES (511, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-28 17:59:11', 2, 0, 0, 0, 31);
+INSERT INTO `agencyoptlog` VALUES (512, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-29 10:14:56', 2, 0, 0, 0, 31);
+INSERT INTO `agencyoptlog` VALUES (513, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-29 10:51:25', 2, 0, 0, 0, 31);
+INSERT INTO `agencyoptlog` VALUES (514, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-29 10:52:28', 2, 0, 0, 0, 31);
+INSERT INTO `agencyoptlog` VALUES (515, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-29 10:57:07', 2, 0, 0, 0, 31);
+INSERT INTO `agencyoptlog` VALUES (516, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-29 11:00:14', 2, 0, 0, 0, 31);
+INSERT INTO `agencyoptlog` VALUES (517, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-29 11:03:53', 2, 0, 0, 0, 31);
+INSERT INTO `agencyoptlog` VALUES (518, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-29 11:13:58', 2, 0, 0, 0, 31);
+INSERT INTO `agencyoptlog` VALUES (519, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-29 11:20:17', 2, 0, 0, 0, 31);
+INSERT INTO `agencyoptlog` VALUES (520, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-29 13:51:28', 2, 0, 0, 0, 31);
+INSERT INTO `agencyoptlog` VALUES (521, 'atmadmin', '超级管理', 't1', '用户', '2026-07-29 13:56:06', 20, 100, 105594, 105694, 31);
+INSERT INTO `agencyoptlog` VALUES (522, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-29 14:29:35', 2, 0, 0, 0, 31);
+INSERT INTO `agencyoptlog` VALUES (523, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-29 14:41:25', 2, 0, 0, 0, 31);
+INSERT INTO `agencyoptlog` VALUES (524, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-29 14:48:36', 2, 0, 0, 0, 31);
+INSERT INTO `agencyoptlog` VALUES (525, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-29 14:50:53', 2, 0, 0, 0, 31);
+INSERT INTO `agencyoptlog` VALUES (526, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-07-29 15:40:58', 2, 0, 0, 0, 31);
 
 -- ----------------------------
 -- Table structure for agent_hierarchy
@@ -767,6 +707,7 @@ INSERT INTO `gamecommandoutbox` VALUES ('101e4a136acd44b7bac7c6872d82bd19', 'UC'
 INSERT INTO `gamecommandoutbox` VALUES ('1190e9cadbd04ab3ae7b3630ada6521f', 'UC', 'test002', '{\"Args\":[\"01\",\"03\",0,\"test002\"]}', 3, 'UCNL', '设定成功！玩家现在不在线，玩家下次登陆后生效。(UCNL)', 5, '2026-07-13 11:52:12', '2026-07-13 11:59:48', '2026-07-13 11:59:48', '2026-07-13 12:03:58', '2026-07-13 11:59:48');
 INSERT INTO `gamecommandoutbox` VALUES ('11ad027c3bab4dc0a88762bd0d3e71ad', 'TC', '10', '{\"GameId\":10,\"TableIndex\":0,\"TableName\":\"桌台1\",\"Enabled\":true,\"IdleFireTimeoutSec\":120,\"IdleFireKickEnabled\":true,\"MaxSeats\":8,\"TableExt\":null,\"BetExt\":{\"BetTime\":10,\"BetMin\":1,\"BetMax\":1000,\"BankerScoreNeed\":500000,\"ItemSingleScoreLimit\":3000,\"ItemAllScoreLimit\":10000,\"CoinsNeed\":0,\"OneCoinScore\":1,\"BetScores\":\"1,5,10,15,20\",\"DefaultBetIndex\":0,\"IncludeViceDraw\":true,\"BetMinVice\":10,\"BetMaxVice\":1000,\"BetMinDraw\":10,\"BetMaxDraw\":1000}}', 2, 'TC historical failure - skipped', 'TC数据发送失败！管道尚未连接。', 4, '2026-07-22 11:42:46', '2026-07-22 14:01:38', '2026-07-22 14:01:48', NULL, '2026-07-22 14:02:23');
 INSERT INTO `gamecommandoutbox` VALUES ('11c3f4dce4b4433eb2436987f7c91aff', 'TC', '13', '{\"GameId\":13,\"TableIndex\":3,\"TableName\":\"003\",\"Enabled\":true,\"IdleFireTimeoutSec\":0,\"IdleFireKickEnabled\":true,\"MaxSeats\":6,\"TableExt\":null,\"BetExt\":null}', 2, 'TC timeout - skipped (historical pipe issue)', NULL, 0, '2026-07-22 15:06:48', '2026-07-22 15:07:27', '2026-07-22 15:07:27', NULL, '2026-07-22 15:07:33');
+INSERT INTO `gamecommandoutbox` VALUES ('12092f57b0ac40cabbce6ec1e931219a', 'UL', 't1', '{\"RechargeType\":0,\"Result\":1,\"Coins\":100,\"UserAccount\":\"t1\"}', 2, 'ULOK', NULL, 0, '2026-07-29 13:56:06', '2026-07-29 13:56:06', '2026-07-29 13:56:06', NULL, '2026-07-29 13:56:07');
 INSERT INTO `gamecommandoutbox` VALUES ('1253ed729f5141d9acce21c7d61c8ec8', 'UC', 'test002', '{\"Args\":[\"07\",\"000000001000\",\"0000\",\"test002\"]}', 3, 'UCER', '服务器内部错误。(UCER)', 5, '2026-07-13 11:50:26', '2026-07-13 11:59:48', '2026-07-13 11:59:48', '2026-07-13 12:03:58', '2026-07-13 11:59:48');
 INSERT INTO `gamecommandoutbox` VALUES ('1264fb253825415aba41bc9d5e1f46ae', 'RP', '29', '{\"GameId\":29}', 3, NULL, '数据发送失败！管道尚未连接。', 5, '2026-07-22 11:43:36', '2026-07-22 14:16:47', '2026-07-22 14:16:57', '2026-07-22 14:21:07', '2026-07-22 14:16:57');
 INSERT INTO `gamecommandoutbox` VALUES ('151ab173e1764861b35734945fd41978', 'RP', '32', '{\"GameId\":32}', 2, '房间设定成功。(RPOK)', NULL, 0, '2026-07-22 15:10:16', '2026-07-22 15:10:38', '2026-07-22 15:10:38', NULL, '2026-07-22 15:10:38');
@@ -902,6 +843,7 @@ INSERT INTO `gamecommandoutbox` VALUES ('96de9594ef5d4fd59134bf7cfb2b6230', 'RP'
 INSERT INTO `gamecommandoutbox` VALUES ('97d17297ddf34732ad7d8d656fc91c59', 'UL', 't1', '{\"RechargeType\":0,\"Result\":1,\"Coins\":100000,\"UserAccount\":\"t1\"}', 2, 'ULER', NULL, 0, '2026-07-17 14:18:23', '2026-07-17 14:18:26', '2026-07-17 14:18:26', NULL, '2026-07-17 14:18:26');
 INSERT INTO `gamecommandoutbox` VALUES ('9851c2756a154b3498eb5d089150f649', 'RP', '6', '{\"GameId\":6}', 2, '房间设定成功。(RPOK)', NULL, 0, '2026-07-22 11:39:42', '2026-07-22 11:39:55', '2026-07-22 11:39:55', NULL, '2026-07-22 11:39:55');
 INSERT INTO `gamecommandoutbox` VALUES ('987e343d1c80408d860e8c5331e2abfb', 'TC', '6', '{\"GameId\":6,\"TableIndex\":3,\"TableName\":\"004\",\"Enabled\":true,\"IdleFireTimeoutSec\":0,\"IdleFireKickEnabled\":true,\"MaxSeats\":6,\"TableExt\":null,\"BetExt\":null}', 2, 'TC timeout - skipped (historical pipe issue)', NULL, 0, '2026-07-22 14:50:42', '2026-07-22 14:50:57', '2026-07-22 14:50:57', NULL, '2026-07-22 14:51:02');
+INSERT INTO `gamecommandoutbox` VALUES ('99e75f50088447bf9bd7d0546ca5f755', 'LK', 't1', '{\"UserAccount\":\"t1\"}', 2, 'LKOK', NULL, 0, '2026-07-29 13:56:06', '2026-07-29 13:56:06', '2026-07-29 13:56:06', NULL, '2026-07-29 13:56:06');
 INSERT INTO `gamecommandoutbox` VALUES ('9b29c0829c5a47569438a243fa621744', 'LK', 'test002', '{\"UserAccount\":\"test002\"}', 2, 'LKOK', NULL, 0, '2026-07-17 18:08:19', '2026-07-17 18:08:19', '2026-07-17 18:08:19', NULL, '2026-07-17 18:08:19');
 INSERT INTO `gamecommandoutbox` VALUES ('9b4fe63e5a9b4cdaab742ae7ed76691e', 'TC', '15', '{\"GameId\":15,\"TableIndex\":4,\"TableName\":\"005\",\"Enabled\":true,\"IdleFireTimeoutSec\":0,\"IdleFireKickEnabled\":true,\"MaxSeats\":0,\"TableExt\":null,\"BetExt\":null}', 2, 'TC timeout - skipped (historical pipe issue)', NULL, 0, '2026-07-22 15:25:17', '2026-07-22 15:25:33', '2026-07-22 15:25:33', NULL, '2026-07-22 15:25:38');
 INSERT INTO `gamecommandoutbox` VALUES ('9c69463f9e3c4b9186665f8669e48011', 'RP', '6', '{\"GameId\":6}', 2, '房间设定成功。(RPOK)', NULL, 0, '2026-07-22 14:49:24', '2026-07-22 14:49:56', '2026-07-22 14:49:56', NULL, '2026-07-22 14:49:56');
@@ -1371,7 +1313,7 @@ CREATE TABLE `loginmissrecord`  (
 -- ----------------------------
 -- Records of loginmissrecord
 -- ----------------------------
-INSERT INTO `loginmissrecord` VALUES (205, 'atmadmin', 1, 0, '::1', '2026-07-28 17:59:11');
+INSERT INTO `loginmissrecord` VALUES (205, 'atmadmin', 1, 0, '::1', '2026-07-29 15:40:58');
 INSERT INTO `loginmissrecord` VALUES (206, '12345', 1, 0, '112.49.240.88', '2023-08-14 15:13:08');
 INSERT INTO `loginmissrecord` VALUES (207, '00000', 1, 0, '106.6.150.32', '2023-08-14 14:47:59');
 INSERT INTO `loginmissrecord` VALUES (208, '11111', 0, 0, '106.6.150.32', '2023-08-14 12:02:26');
@@ -1438,8 +1380,6 @@ CREATE TABLE `manageropt`  (
 -- ----------------------------
 -- Records of manageropt
 -- ----------------------------
-INSERT INTO `manageropt` VALUES ('test01', '测试勿动', 21, 6, 'UC', '2026-07-21 17:49:40', 'atmadmin');
-INSERT INTO `manageropt` VALUES ('t1', '111', 21, 6, 'UC', '2026-07-21 17:50:11', '8888');
 INSERT INTO `manageropt` VALUES ('test002', '111', 21, 9, 'UC', '2026-07-24 15:55:51', 'atmadmin');
 INSERT INTO `manageropt` VALUES ('test002', '111', 21, 6, 'UC', '2026-07-24 15:57:11', 'atmadmin');
 INSERT INTO `manageropt` VALUES ('test002', '111', 21, 6, 'UC', '2026-07-24 15:58:14', 'atmadmin');
@@ -1967,7 +1907,7 @@ INSERT INTO `rank` VALUES (13, 19, 3120000, 2, 1777371056, 0, 0, '123123', '1231
 INSERT INTO `rank` VALUES (13, 22, 1480, 0, 1777402362, 0, 0, '321321', '321321', '武装轰炸机(74倍)');
 INSERT INTO `rank` VALUES (13, 32, 35700, 2, 1777557184, 0, 0, 'ijb222', 'ijb222', '超级炸弹(714倍)');
 INSERT INTO `rank` VALUES (13, 33, 25000, 0, 1777569314, 0, 0, 'ijb222', 'ijb222', '巨鳄(500倍)');
-INSERT INTO `rank` VALUES (13, 1000, 101000, 1000, 1785208555, 1, 0, 't1', '111', '111');
+INSERT INTO `rank` VALUES (13, 1000, 105597, 1000, 1785295978, 1, 0, 't1', '111', '111');
 INSERT INTO `rank` VALUES (13, 1001, 1, 1001, 1777464775, 1, 0, '18879090617', '18879090617', '18879090617');
 INSERT INTO `rank` VALUES (14, 2, 137856, 137856, 1777313939, 0, 0, '121212', '121212', '中大奖');
 INSERT INTO `rank` VALUES (14, 6, 57760, 1, 1779709021, 0, 0, 'ijb222', 'ijb222', '牛魔王(722倍)');
@@ -2045,13 +1985,8 @@ CREATE TABLE `rechargerecords`  (
 -- ----------------------------
 -- Records of rechargerecords
 -- ----------------------------
-INSERT INTO `rechargerecords` VALUES ('0fb50c95018a409bbbe2785b39446a36', 20, 1000000000, 0, 1000000000, 'test002', 0, 'atmadmin', '', 1, '2026-07-21 15:53:24', 'atmadmin');
-INSERT INTO `rechargerecords` VALUES ('167b3742e9684b97b37e1cd7769a2e4c', 20, 100000, 0, 100000, 'test002', 0, 'atmadmin', '', 1, '2026-07-21 16:10:15', 'atmadmin');
-INSERT INTO `rechargerecords` VALUES ('38f8a9888054460582b9d3e8b5a18c92', 20, 500000, 0, 500000, 'test002', 0, 'atmadmin', '', 1, '2026-07-21 15:53:54', 'atmadmin');
-INSERT INTO `rechargerecords` VALUES ('4d6f43f692d64dec9b926353a6ecb202', 20, 100000, 0, 100000, 'test002', 0, 'atmadmin', '', 1, '2026-07-21 16:26:03', 'atmadmin');
-INSERT INTO `rechargerecords` VALUES ('dda12b20f6104423a674ba12d25c325c', 20, 1000, 0, 1000, 'test002', 0, 'atmadmin', '', 1, '2026-07-21 16:05:30', 'atmadmin');
+INSERT INTO `rechargerecords` VALUES ('d8681cc579b840b2ad746c0863d41e67', 20, 100, 105594, 105694, 't1', 0, '8888', '', 1, '2026-07-29 13:56:06', 'atmadmin');
 INSERT INTO `rechargerecords` VALUES ('e0800cef9835478d98c5e3466ad857b8', 20, 1000000, 0, 1000000, 'test002', 0, 'atmadmin', '', 1, '2026-07-24 16:30:48', 'atmadmin');
-INSERT INTO `rechargerecords` VALUES ('e85144d145434daaaca049f32f74c62a', 20, 50000, 1000, 51000, 'test002', 0, 'atmadmin', '', 1, '2026-07-21 16:05:36', 'atmadmin');
 
 -- ----------------------------
 -- Table structure for robot_seat
@@ -2347,22 +2282,11 @@ CREATE TABLE `tablecoinrecord`  (
   `Coins` bigint(20) NOT NULL COMMENT '金币数量',
   `CreateTime` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP(0) COMMENT '记录时间',
   PRIMARY KEY (`RecIndex`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 82 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '桌子账目信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 83 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '桌子账目信息表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of tablecoinrecord
 -- ----------------------------
-INSERT INTO `tablecoinrecord` VALUES (53, 13, 0, 2, -4, '2026-07-21 16:16:08');
-INSERT INTO `tablecoinrecord` VALUES (54, 21, 0, 1, -2, '2026-07-21 16:16:24');
-INSERT INTO `tablecoinrecord` VALUES (55, 33, 0, 1, -15, '2026-07-21 16:16:38');
-INSERT INTO `tablecoinrecord` VALUES (56, 32, 0, 1, -1700, '2026-07-21 16:16:59');
-INSERT INTO `tablecoinrecord` VALUES (57, 53, 0, 1, -5712, '2026-07-21 16:26:47');
-INSERT INTO `tablecoinrecord` VALUES (58, 53, 0, 3, -12, '2026-07-21 16:27:13');
-INSERT INTO `tablecoinrecord` VALUES (59, 16, 0, 1, 7941, '2026-07-21 16:28:04');
-INSERT INTO `tablecoinrecord` VALUES (60, 16, 0, 2, 28, '2026-07-21 16:28:24');
-INSERT INTO `tablecoinrecord` VALUES (61, 40, 1, 1, 163, '2026-07-21 17:01:04');
-INSERT INTO `tablecoinrecord` VALUES (62, 6, 0, 1, -6, '2026-07-21 18:21:38');
-INSERT INTO `tablecoinrecord` VALUES (63, 13, 0, 1, -5932, '2026-07-22 13:36:06');
 INSERT INTO `tablecoinrecord` VALUES (64, 3, 0, 2, -21776, '2026-07-23 13:53:04');
 INSERT INTO `tablecoinrecord` VALUES (65, 2, 0, 1, 20, '2026-07-23 16:10:14');
 INSERT INTO `tablecoinrecord` VALUES (66, 2, 0, 2, -24, '2026-07-23 19:03:46');
@@ -2371,16 +2295,17 @@ INSERT INTO `tablecoinrecord` VALUES (68, 15, 0, 1, -109, '2026-07-24 15:16:01')
 INSERT INTO `tablecoinrecord` VALUES (69, 44, 0, 2, -57, '2026-07-24 15:30:49');
 INSERT INTO `tablecoinrecord` VALUES (70, 2, 0, 3, 10, '2026-07-24 15:52:07');
 INSERT INTO `tablecoinrecord` VALUES (71, 10, 0, 2, -35, '2026-07-24 18:39:46');
-INSERT INTO `tablecoinrecord` VALUES (72, 19, 0, 1, 92516, '2026-07-24 18:53:21');
+INSERT INTO `tablecoinrecord` VALUES (72, 19, 0, 1, 92608, '2026-07-24 18:53:21');
 INSERT INTO `tablecoinrecord` VALUES (73, 3, 0, 3, -11385, '2026-07-27 10:52:06');
-INSERT INTO `tablecoinrecord` VALUES (74, 19, 0, 2, -15357, '2026-07-27 13:58:15');
+INSERT INTO `tablecoinrecord` VALUES (74, 19, 0, 2, -15361, '2026-07-27 13:58:15');
 INSERT INTO `tablecoinrecord` VALUES (75, 5, 0, 3, -140, '2026-07-27 16:46:04');
 INSERT INTO `tablecoinrecord` VALUES (76, 5, 0, 2, -232, '2026-07-27 16:50:38');
 INSERT INTO `tablecoinrecord` VALUES (77, 47, 0, 0, -100, '2026-07-27 17:11:59');
 INSERT INTO `tablecoinrecord` VALUES (78, 47, 0, 1, -400, '2026-07-27 17:13:51');
 INSERT INTO `tablecoinrecord` VALUES (79, 6, 0, 2, -3, '2026-07-28 10:52:29');
-INSERT INTO `tablecoinrecord` VALUES (80, 5, 0, 1, -1, '2026-07-28 10:53:10');
+INSERT INTO `tablecoinrecord` VALUES (80, 5, 0, 1, -6, '2026-07-28 10:53:10');
 INSERT INTO `tablecoinrecord` VALUES (81, 14, 0, 1, -481, '2026-07-28 14:16:16');
+INSERT INTO `tablecoinrecord` VALUES (82, 6, 0, 1, -1, '2026-07-29 14:10:01');
 
 -- ----------------------------
 -- Table structure for transferlog
@@ -2456,6 +2381,7 @@ CREATE TABLE `user_daily_winloss`  (
 -- Records of user_daily_winloss
 -- ----------------------------
 INSERT INTO `user_daily_winloss` VALUES ('t1', '2026-07-28', -12166);
+INSERT INTO `user_daily_winloss` VALUES ('t1', '2026-07-29', -34);
 INSERT INTO `user_daily_winloss` VALUES ('test002', '2026-07-17', -66871);
 INSERT INTO `user_daily_winloss` VALUES ('test002', '2026-07-20', -4432);
 INSERT INTO `user_daily_winloss` VALUES ('test002', '2026-07-21', -404079);
@@ -2690,115 +2616,11 @@ CREATE TABLE `useroptlog`  (
   `TABLE_ID` int(11) NULL DEFAULT 0 COMMENT '桌子号',
   `SEAT_ID` int(11) NULL DEFAULT 0 COMMENT '位置号',
   PRIMARY KEY (`LID`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1101 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '用户记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1144 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '用户记录表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of useroptlog
 -- ----------------------------
-INSERT INTO `useroptlog` VALUES (630, 'test002', 8, 0, 15714857, 0, 0, 40, '2026-07-21 10:56:32', 0, 0, 0);
-INSERT INTO `useroptlog` VALUES (631, 'test002', 8, 0, 15714857, 0, 1, 40, '2026-07-21 10:56:33', 0, 0, 0);
-INSERT INTO `useroptlog` VALUES (632, 'test002', 7, 0, 15719543, 0, 1, 40, '2026-07-21 10:57:56', 0, 0, 0);
-INSERT INTO `useroptlog` VALUES (633, 'test002', 8, 0, 15719543, 0, 0, 16, '2026-07-21 10:59:52', 0, 0, 0);
-INSERT INTO `useroptlog` VALUES (634, 'test002', 7, 0, 15719813, 0, 0, 16, '2026-07-21 11:01:41', 0, 0, 0);
-INSERT INTO `useroptlog` VALUES (635, 'test002', 8, 0, 15719813, 0, 0, 14, '2026-07-21 11:07:25', 0, 0, 0);
-INSERT INTO `useroptlog` VALUES (636, 'test002', 7, 0, 15719693, 0, 0, 14, '2026-07-21 11:08:31', 0, 0, 0);
-INSERT INTO `useroptlog` VALUES (637, 'test002', 8, 0, 15719693, 0, 0, 10, '2026-07-21 11:08:43', 0, 0, 5);
-INSERT INTO `useroptlog` VALUES (638, 'test002', 7, 0, 15719693, 0, 0, 10, '2026-07-21 11:09:12', 0, 0, 5);
-INSERT INTO `useroptlog` VALUES (639, 'test002', 8, 0, 15719693, 0, 0, 10, '2026-07-21 11:09:16', 0, 0, 0);
-INSERT INTO `useroptlog` VALUES (640, 'test002', 7, 0, 15719693, 0, 0, 10, '2026-07-21 11:09:24', 0, 0, 0);
-INSERT INTO `useroptlog` VALUES (641, 'test002', 8, 0, 15719693, 0, 0, 10, '2026-07-21 11:09:29', 0, 3, 5);
-INSERT INTO `useroptlog` VALUES (642, 'test002', 7, 0, 15719623, 0, 0, 10, '2026-07-21 11:10:45', 0, 3, 5);
-INSERT INTO `useroptlog` VALUES (643, 'test002', 8, 0, 15719623, 0, 0, 2, '2026-07-21 11:10:57', 0, 0, 0);
-INSERT INTO `useroptlog` VALUES (644, 'test002', 7, 0, 15719623, 0, 0, 2, '2026-07-21 11:11:14', 0, 0, 0);
-INSERT INTO `useroptlog` VALUES (645, 'test002', 8, 0, 15719623, 0, 0, 2, '2026-07-21 11:11:18', 0, 0, 1);
-INSERT INTO `useroptlog` VALUES (646, 'test002', 7, 0, 15719623, 0, 0, 2, '2026-07-21 11:11:29', 0, 0, 1);
-INSERT INTO `useroptlog` VALUES (647, 'test002', 8, 0, 15719623, 0, 0, 29, '2026-07-21 11:11:35', 0, 0, 0);
-INSERT INTO `useroptlog` VALUES (648, 'test002', 7, 0, 15719521, 0, 0, 29, '2026-07-21 11:12:27', 0, 0, 0);
-INSERT INTO `useroptlog` VALUES (649, 'test002', 8, 0, 15719521, 0, 0, 10, '2026-07-21 11:33:05', 0, 3, 0);
-INSERT INTO `useroptlog` VALUES (650, 'test002', 7, 0, 15719381, 0, 0, 10, '2026-07-21 11:34:12', 0, 3, 0);
-INSERT INTO `useroptlog` VALUES (651, 'test002', 8, 0, 15719381, 0, 0, 53, '2026-07-21 11:36:56', 0, 0, 0);
-INSERT INTO `useroptlog` VALUES (652, 'test002', 7, 0, 15706781, 0, 0, 53, '2026-07-21 11:37:50', 0, 0, 0);
-INSERT INTO `useroptlog` VALUES (653, 'test002', 8, 0, 15706781, 0, 0, 19, '2026-07-21 15:06:53', 0, 0, 4);
-INSERT INTO `useroptlog` VALUES (654, 'test002', 7, 0, 15702581, 0, 0, 19, '2026-07-21 15:07:09', 0, 0, 4);
-INSERT INTO `useroptlog` VALUES (655, 'test002', 8, 0, 15702581, 0, 0, 19, '2026-07-21 15:10:29', 0, 0, 1);
-INSERT INTO `useroptlog` VALUES (656, 'test002', 7, 0, 15705901, 0, 0, 19, '2026-07-21 15:11:02', 0, 0, 1);
-INSERT INTO `useroptlog` VALUES (657, 'test002', 8, 0, 15705901, 0, 0, 19, '2026-07-21 15:11:53', 0, 0, 4);
-INSERT INTO `useroptlog` VALUES (658, 'test002', 7, 0, 15709056, 0, 0, 19, '2026-07-21 15:12:12', 0, 0, 4);
-INSERT INTO `useroptlog` VALUES (659, 'test002', 8, 0, 15709056, 0, 0, 19, '2026-07-21 15:12:48', 0, 0, 4);
-INSERT INTO `useroptlog` VALUES (660, 'test002', 7, 0, 15708616, 0, 0, 19, '2026-07-21 15:13:09', 0, 0, 4);
-INSERT INTO `useroptlog` VALUES (661, 'test002', 8, 0, 15708616, 0, 0, 53, '2026-07-21 15:18:22', 0, 0, 0);
-INSERT INTO `useroptlog` VALUES (662, 'test002', 7, 0, 15705016, 0, 0, 53, '2026-07-21 15:20:49', 0, 0, 0);
-INSERT INTO `useroptlog` VALUES (663, 'test002', 8, 0, 15705016, 0, 0, 6, '2026-07-21 15:53:00', 0, 0, 5);
-INSERT INTO `useroptlog` VALUES (664, 'test002', 7, 0, 0, 0, 0, 6, '2026-07-21 15:53:08', 0, 0, 5);
-INSERT INTO `useroptlog` VALUES (665, 'test002', 0, 0, 1000000000, 0, 0, 0, '2026-07-21 15:53:24', 0, 0, 5);
-INSERT INTO `useroptlog` VALUES (666, 'test002', 8, 0, 1000000000, 0, 0, 6, '2026-07-21 15:53:37', 0, 0, 3);
-INSERT INTO `useroptlog` VALUES (667, 'test002', 7, 0, 0, 0, 0, 6, '2026-07-21 15:53:43', 0, 0, 3);
-INSERT INTO `useroptlog` VALUES (668, 'test002', 0, 0, 500000, 0, 0, 0, '2026-07-21 15:53:54', 0, 0, 3);
-INSERT INTO `useroptlog` VALUES (669, 'test002', 8, 0, 500000, 0, 0, 19, '2026-07-21 15:54:00', 0, 0, 4);
-INSERT INTO `useroptlog` VALUES (670, 'test002', 7, 0, 499905, 0, 0, 19, '2026-07-21 15:54:15', 0, 0, 4);
-INSERT INTO `useroptlog` VALUES (671, 'test002', 8, 0, 499905, 0, 0, 19, '2026-07-21 15:54:31', 0, 0, 3);
-INSERT INTO `useroptlog` VALUES (672, 'test002', 7, 0, 499335, 0, 0, 19, '2026-07-21 15:55:09', 0, 0, 3);
-INSERT INTO `useroptlog` VALUES (673, 'test002', 8, 0, 499335, 0, 0, 6, '2026-07-21 16:04:57', 0, 0, 1);
-INSERT INTO `useroptlog` VALUES (674, 'test002', 7, 0, 0, 0, 0, 6, '2026-07-21 16:05:03', 0, 0, 1);
-INSERT INTO `useroptlog` VALUES (675, 'test002', 0, 0, 1000, 0, 0, 0, '2026-07-21 16:05:30', 0, 0, 1);
-INSERT INTO `useroptlog` VALUES (676, 'test002', 0, 0, 51000, 0, 0, 0, '2026-07-21 16:05:36', 0, 0, 1);
-INSERT INTO `useroptlog` VALUES (677, 'test002', 8, 0, 51000, 0, 0, 3, '2026-07-21 16:05:47', 0, 3, 4);
-INSERT INTO `useroptlog` VALUES (678, 'test002', 7, 0, 48242, 0, 0, 3, '2026-07-21 16:06:50', 0, 3, 4);
-INSERT INTO `useroptlog` VALUES (679, 'test002', 8, 0, 48242, 0, 0, 49, '2026-07-21 16:07:12', 0, 0, 1);
-INSERT INTO `useroptlog` VALUES (680, 'test002', 7, 0, 48233, 0, 0, 49, '2026-07-21 16:07:18', 0, 0, 1);
-INSERT INTO `useroptlog` VALUES (681, 'test002', 8, 0, 48233, 0, 0, 6, '2026-07-21 16:09:35', 0, 0, 0);
-INSERT INTO `useroptlog` VALUES (682, 'test002', 7, 0, 0, 0, 0, 6, '2026-07-21 16:10:00', 0, 0, 0);
-INSERT INTO `useroptlog` VALUES (683, 'test002', 0, 0, 100000, 0, 0, 0, '2026-07-21 16:10:14', 0, 0, 0);
-INSERT INTO `useroptlog` VALUES (684, 'test002', 8, 0, 100000, 0, 0, 3, '2026-07-21 16:15:24', 0, 0, 5);
-INSERT INTO `useroptlog` VALUES (685, 'test002', 7, 0, 98982, 0, 0, 3, '2026-07-21 16:15:33', 0, 0, 5);
-INSERT INTO `useroptlog` VALUES (686, 'test002', 8, 0, 98982, 0, 0, 49, '2026-07-21 16:15:41', 0, 0, 0);
-INSERT INTO `useroptlog` VALUES (687, 'test002', 7, 0, 98976, 0, 0, 49, '2026-07-21 16:15:51', 0, 0, 0);
-INSERT INTO `useroptlog` VALUES (688, 'test002', 8, 0, 98976, 0, 0, 13, '2026-07-21 16:15:59', 0, 1, 4);
-INSERT INTO `useroptlog` VALUES (689, 'test002', 7, 0, 98972, 0, 0, 13, '2026-07-21 16:16:08', 0, 1, 4);
-INSERT INTO `useroptlog` VALUES (690, 'test002', 8, 0, 98972, 0, 0, 21, '2026-07-21 16:16:18', 0, 0, 2);
-INSERT INTO `useroptlog` VALUES (691, 'test002', 7, 0, 98970, 0, 0, 21, '2026-07-21 16:16:24', 0, 0, 2);
-INSERT INTO `useroptlog` VALUES (692, 'test002', 8, 0, 98970, 0, 0, 33, '2026-07-21 16:16:33', 0, 0, 1);
-INSERT INTO `useroptlog` VALUES (693, 'test002', 7, 0, 98964, 0, 0, 33, '2026-07-21 16:16:39', 0, 0, 1);
-INSERT INTO `useroptlog` VALUES (694, 'test002', 8, 0, 98964, 0, 0, 32, '2026-07-21 16:16:45', 0, 0, 2);
-INSERT INTO `useroptlog` VALUES (695, 'test002', 7, 0, 97264, 0, 0, 32, '2026-07-21 16:16:59', 0, 0, 2);
-INSERT INTO `useroptlog` VALUES (696, 'test002', 8, 0, 97264, 0, 0, 33, '2026-07-21 16:17:13', 0, 0, 0);
-INSERT INTO `useroptlog` VALUES (697, 'test002', 7, 0, 97255, 0, 0, 33, '2026-07-21 16:17:23', 0, 0, 0);
-INSERT INTO `useroptlog` VALUES (698, 'test002', 8, 0, 97255, 0, 0, 6, '2026-07-21 16:17:49', 0, 0, 2);
-INSERT INTO `useroptlog` VALUES (699, 'test002', 7, 0, 0, 0, 0, 6, '2026-07-21 16:17:57', 0, 0, 2);
-INSERT INTO `useroptlog` VALUES (700, 'test002', 0, 0, 100000, 0, 0, 0, '2026-07-21 16:26:05', 0, 0, 0);
-INSERT INTO `useroptlog` VALUES (701, 'test002', 8, 0, 100000, 0, 0, 53, '2026-07-21 16:26:20', 0, 0, 0);
-INSERT INTO `useroptlog` VALUES (702, 'test002', 7, 0, 95950, 0, 0, 53, '2026-07-21 16:26:47', 0, 0, 0);
-INSERT INTO `useroptlog` VALUES (703, 'test002', 8, 0, 95950, 0, 0, 53, '2026-07-21 16:27:00', 0, 2, 0);
-INSERT INTO `useroptlog` VALUES (704, 'test002', 7, 0, 95938, 0, 0, 53, '2026-07-21 16:27:13', 0, 2, 0);
-INSERT INTO `useroptlog` VALUES (705, 'test002', 8, 0, 95938, 0, 0, 53, '2026-07-21 16:27:25', 0, 0, 0);
-INSERT INTO `useroptlog` VALUES (706, 'test002', 7, 0, 95934, 0, 0, 53, '2026-07-21 16:27:35', 0, 0, 0);
-INSERT INTO `useroptlog` VALUES (707, 'test002', 8, 0, 95934, 0, 0, 16, '2026-07-21 16:27:57', 0, 0, 0);
-INSERT INTO `useroptlog` VALUES (708, 'test002', 7, 0, 95932, 0, 0, 16, '2026-07-21 16:28:04', 0, 0, 0);
-INSERT INTO `useroptlog` VALUES (709, 'test002', 8, 0, 95932, 0, 0, 16, '2026-07-21 16:28:17', 0, 1, 0);
-INSERT INTO `useroptlog` VALUES (710, 'test002', 7, 0, 95952, 0, 0, 16, '2026-07-21 16:28:25', 0, 1, 0);
-INSERT INTO `useroptlog` VALUES (711, 'test002', 8, 0, 95952, 0, 1, 29, '2026-07-21 16:34:15', 0, 3, 0);
-INSERT INTO `useroptlog` VALUES (712, 'test002', 7, 0, 95952, 0, 1, 29, '2026-07-21 16:34:34', 0, 3, 0);
-INSERT INTO `useroptlog` VALUES (713, 'test002', 8, 0, 95952, 0, 0, 3, '2026-07-21 17:00:08', 0, 0, 2);
-INSERT INTO `useroptlog` VALUES (714, 'test002', 7, 3392, 91881, -108544, 0, 3, '2026-07-21 17:00:22', 0, 0, 2);
-INSERT INTO `useroptlog` VALUES (715, 'test002', 8, 0, 91881, 0, 0, 40, '2026-07-21 17:00:54', 0, 1, 0);
-INSERT INTO `useroptlog` VALUES (716, 'test002', 8, 0, 91881, 0, 1, 40, '2026-07-21 17:00:55', 0, 0, 0);
-INSERT INTO `useroptlog` VALUES (717, 'test002', 7, 48, 91863, -18, 1, 40, '2026-07-21 17:01:04', 0, 0, 0);
-INSERT INTO `useroptlog` VALUES (718, 'test002', 8, 0, 91863, 0, 0, 16, '2026-07-21 17:01:31', 0, 0, 0);
-INSERT INTO `useroptlog` VALUES (719, 'test002', 8, 0, 91863, 0, 0, 16, '2026-07-21 17:01:35', 0, 1, 0);
-INSERT INTO `useroptlog` VALUES (720, 'test002', 7, 16, 91871, 8, 0, 16, '2026-07-21 17:01:42', 0, 1, 0);
-INSERT INTO `useroptlog` VALUES (721, 'test002', 8, 0, 91871, 0, 0, 6, '2026-07-21 18:21:33', 0, 0, 0);
-INSERT INTO `useroptlog` VALUES (722, 'test002', 7, 1, 91870, -1, 0, 6, '2026-07-21 18:21:39', 0, 0, 0);
-INSERT INTO `useroptlog` VALUES (723, 'test002', 8, 0, 91870, 0, 0, 19, '2026-07-21 18:31:13', 0, 0, 2);
-INSERT INTO `useroptlog` VALUES (724, 'test002', 7, 1000, 78850, -128200, 0, 19, '2026-07-21 18:31:45', 0, 0, 2);
-INSERT INTO `useroptlog` VALUES (725, 'test002', 8, 0, 78850, 0, 0, 2, '2026-07-22 11:55:36', 0, 0, 0);
-INSERT INTO `useroptlog` VALUES (726, 'test002', 7, 0, 78850, 0, 0, 2, '2026-07-22 11:55:52', 0, 0, 0);
-INSERT INTO `useroptlog` VALUES (727, 'test002', 8, 0, 78850, 0, 0, 2, '2026-07-22 11:55:54', 0, 0, 3);
-INSERT INTO `useroptlog` VALUES (728, 'test002', 7, 22, 78850, 0, 0, 2, '2026-07-22 11:56:05', 0, 0, 3);
-INSERT INTO `useroptlog` VALUES (729, 'test002', 8, 0, 78850, 0, 0, 10, '2026-07-22 11:56:36', 0, 2, 4);
-INSERT INTO `useroptlog` VALUES (730, 'test002', 7, 0, 78850, 0, 0, 10, '2026-07-22 11:56:50', 0, 2, 4);
-INSERT INTO `useroptlog` VALUES (731, 'test002', 8, 0, 78850, 0, 0, 13, '2026-07-22 13:35:10', 0, 0, 0);
-INSERT INTO `useroptlog` VALUES (732, 'test002', 7, 30, 78463, -3750, 0, 13, '2026-07-22 13:36:07', 0, 0, 0);
-INSERT INTO `useroptlog` VALUES (733, 'test002', 8, 0, 78463, 0, 0, 13, '2026-07-22 13:50:01', 0, 0, 0);
 INSERT INTO `useroptlog` VALUES (734, 'test002', 8, 0, 107085, 0, 0, 44, '2026-07-22 14:23:55', 0, 0, 0);
 INSERT INTO `useroptlog` VALUES (735, 'test002', 7, 0, 107085, 0, 0, 44, '2026-07-22 14:23:58', 0, 0, 0);
 INSERT INTO `useroptlog` VALUES (736, 'test002', 8, 0, 107085, 0, 0, 15, '2026-07-22 15:27:11', 0, 0, 0);
@@ -3166,6 +2988,49 @@ INSERT INTO `useroptlog` VALUES (1097, 't1', 8, 0, 98893, 0, 0, 16, '2026-07-28 
 INSERT INTO `useroptlog` VALUES (1098, 't1', 7, 16, 105731, 6838, 0, 16, '2026-07-28 18:11:39', 0, 0, 0);
 INSERT INTO `useroptlog` VALUES (1099, 't1', 8, 0, 105731, 0, 0, 16, '2026-07-28 18:39:13', 0, 0, 0);
 INSERT INTO `useroptlog` VALUES (1100, 't1', 7, 24, 105608, -123, 0, 16, '2026-07-28 18:41:54', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (1101, 't1', 8, 0, 105608, 0, 0, 5, '2026-07-29 10:20:55', 0, 1, 0);
+INSERT INTO `useroptlog` VALUES (1102, 't1', 7, 0, 105608, 0, 0, 5, '2026-07-29 10:26:43', 0, 1, 0);
+INSERT INTO `useroptlog` VALUES (1103, 't1', 8, 0, 105608, 0, 0, 5, '2026-07-29 10:27:46', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (1104, 't1', 7, 1, 105603, -5, 0, 5, '2026-07-29 10:28:43', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (1105, 't1', 8, 0, 105603, 0, 0, 14, '2026-07-29 10:29:48', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (1106, 't1', 7, 0, 105603, 0, 0, 14, '2026-07-29 10:30:52', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (1107, 't1', 8, 0, 105603, 0, 0, 44, '2026-07-29 10:31:04', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (1108, 't1', 7, 0, 105603, 0, 0, 44, '2026-07-29 10:31:10', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (1109, 't1', 8, 0, 105603, 0, 0, 44, '2026-07-29 10:32:24', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (1110, 't1', 7, 0, 105603, 0, 0, 44, '2026-07-29 10:35:25', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (1111, 't1', 8, 0, 105603, 0, 0, 15, '2026-07-29 10:35:59', 0, 1, 0);
+INSERT INTO `useroptlog` VALUES (1112, 't1', 7, 0, 105603, 0, 0, 15, '2026-07-29 10:36:03', 0, 1, 0);
+INSERT INTO `useroptlog` VALUES (1113, 't1', 8, 0, 105603, 0, 0, 40, '2026-07-29 10:40:50', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (1114, 't1', 8, 0, 105603, 0, 1, 40, '2026-07-29 10:40:51', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (1115, 't1', 7, 0, 105603, 0, 1, 40, '2026-07-29 10:40:55', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (1116, 't1', 8, 0, 105603, 0, 0, 15, '2026-07-29 10:41:09', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (1117, 't1', 7, 0, 105603, 0, 0, 15, '2026-07-29 10:41:12', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (1118, 't1', 8, 0, 105603, 0, 0, 19, '2026-07-29 11:04:16', 0, 0, 5);
+INSERT INTO `useroptlog` VALUES (1119, 't1', 7, 2, 105601, -12, 0, 19, '2026-07-29 11:04:44', 0, 0, 5);
+INSERT INTO `useroptlog` VALUES (1120, 't1', 8, 0, 105601, 0, 0, 19, '2026-07-29 11:04:51', 0, 1, 5);
+INSERT INTO `useroptlog` VALUES (1121, 't1', 7, 5, 105600, -5, 0, 19, '2026-07-29 11:05:07', 0, 1, 5);
+INSERT INTO `useroptlog` VALUES (1122, 't1', 8, 0, 105600, 0, 0, 19, '2026-07-29 11:20:32', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (1123, 't1', 7, 2, 105599, -2, 0, 19, '2026-07-29 11:20:39', 0, 0, 0);
+INSERT INTO `useroptlog` VALUES (1124, 't1', 8, 0, 105599, 0, 0, 19, '2026-07-29 11:31:30', 0, 0, 5);
+INSERT INTO `useroptlog` VALUES (1125, 't1', 7, 2, 105598, -4, 0, 19, '2026-07-29 11:31:45', 0, 0, 5);
+INSERT INTO `useroptlog` VALUES (1126, 't1', 8, 0, 105598, 0, 0, 19, '2026-07-29 11:32:48', 0, 0, 4);
+INSERT INTO `useroptlog` VALUES (1127, 't1', 7, 2, 105597, -2, 0, 19, '2026-07-29 11:32:55', 0, 0, 4);
+INSERT INTO `useroptlog` VALUES (1128, 't1', 8, 0, 105597, 0, 0, 19, '2026-07-29 12:02:58', 0, 0, 1);
+INSERT INTO `useroptlog` VALUES (1129, 't1', 7, 2, 105596, -2, 0, 19, '2026-07-29 12:03:04', 0, 0, 1);
+INSERT INTO `useroptlog` VALUES (1130, 't1', 8, 0, 105596, 0, 0, 19, '2026-07-29 13:53:14', 0, 1, 1);
+INSERT INTO `useroptlog` VALUES (1131, 't1', 7, 10, 105595, -10, 0, 19, '2026-07-29 13:53:21', 0, 1, 1);
+INSERT INTO `useroptlog` VALUES (1132, 't1', 8, 0, 105595, 0, 0, 19, '2026-07-29 13:53:25', 0, 1, 0);
+INSERT INTO `useroptlog` VALUES (1133, 't1', 7, 5, 105594, -5, 0, 19, '2026-07-29 13:53:39', 0, 1, 0);
+INSERT INTO `useroptlog` VALUES (1134, 't1', 0, 0, 105694, 0, 0, 0, '2026-07-29 13:56:06', 0, 1, 0);
+INSERT INTO `useroptlog` VALUES (1135, 't1', 8, 0, 105694, 0, 0, 19, '2026-07-29 13:58:15', 0, 0, 1);
+INSERT INTO `useroptlog` VALUES (1136, 't1', 7, 2, 105693, -2, 0, 19, '2026-07-29 13:58:28', 0, 0, 1);
+INSERT INTO `useroptlog` VALUES (1137, 't1', 8, 0, 105693, 0, 0, 19, '2026-07-29 14:08:49', 0, 0, 1);
+INSERT INTO `useroptlog` VALUES (1138, 't1', 7, 2, 105692, -2, 0, 19, '2026-07-29 14:08:56', 0, 0, 1);
+INSERT INTO `useroptlog` VALUES (1139, 't1', 8, 0, 105692, 0, 0, 19, '2026-07-29 14:08:58', 0, 1, 3);
+INSERT INTO `useroptlog` VALUES (1140, 't1', 7, 5, 105691, -5, 0, 19, '2026-07-29 14:09:02', 0, 1, 3);
+INSERT INTO `useroptlog` VALUES (1141, 't1', 8, 0, 105691, 0, 0, 6, '2026-07-29 14:09:47', 0, 0, 3);
+INSERT INTO `useroptlog` VALUES (1142, 't1', 7, 5, 105690, -5, 0, 6, '2026-07-29 14:10:01', 0, 0, 3);
+INSERT INTO `useroptlog` VALUES (1143, 't1', 8, 0, 105690, 0, 0, 16, '2026-07-29 15:03:20', 0, 0, 0);
 
 -- ----------------------------
 -- Table structure for userrelations
@@ -3532,7 +3397,7 @@ CREATE TABLE `users`  (
 -- ----------------------------
 -- Records of users
 -- ----------------------------
-INSERT INTO `users` VALUES ('t1', '111', '123456', '8888', 0, 0, 105608, 0, 101000, 0, -1, 'nowxheadimg', 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '1', b'0', b'0', 0, '123456', 0, 1, '2026-07-17 12:04:22', '');
+INSERT INTO `users` VALUES ('t1', '111', '123456', '8888', 7, 0, 105653, 0, 101100, 0, -1, 'nowxheadimg', 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '1', b'0', b'0', 0, '123456', 0, 1, '2026-07-17 12:04:22', '');
 INSERT INTO `users` VALUES ('test002', '111', '123456', 'atmadmin', 4, 0, 1061030, 0, 1002317564, 8, -1, 'nowxheadimg', 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '1', b'0', b'0', 0, '123456', 0, 1, '2026-07-08 10:25:49', '');
 INSERT INTO `users` VALUES ('test01', '测试勿动', '123456', 'atmadmin', 2, 0, 601332, 0, 13690406, 3157236, -1, 'nowxheadimg', 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '123', b'0', b'0', 0, '123456', 0, 1, '2026-05-22 11:46:49', '');
 INSERT INTO `users` VALUES ('test03', '1515', '123456', 'atmadmin', 0, 0, 310930, 0, 310930, 0, -1, 'nowxheadimg', 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '1', b'0', b'0', 0, '123456', 0, 1, '2026-07-09 09:46:25', '');
@@ -3555,7 +3420,7 @@ CREATE TABLE `userscoresnapshotledger`  (
   PRIMARY KEY (`LID`) USING BTREE,
   INDEX `IDX_UserScoreSnapshotLedger_UserID`(`UserID`) USING BTREE,
   INDEX `IDX_UserScoreSnapshotLedger_Reason`(`Reason`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 39249 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 39371 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of userscoresnapshotledger
@@ -42808,6 +42673,128 @@ INSERT INTO `userscoresnapshotledger` VALUES (39245, 't1', 16, 2, 105608, 0, 0, 
 INSERT INTO `userscoresnapshotledger` VALUES (39246, 't1', 16, 2, 105608, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-28 18:41:54');
 INSERT INTO `userscoresnapshotledger` VALUES (39247, 't1', 54, 0, 105608, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-28 18:41:54');
 INSERT INTO `userscoresnapshotledger` VALUES (39248, 't1', 0, 3, 105608, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-28 18:43:01');
+INSERT INTO `userscoresnapshotledger` VALUES (39249, 't1', 5, 3, 0, 105608, 105608, 0, 'SNAPSHOT_SAVE', '2026-07-29 10:20:55');
+INSERT INTO `userscoresnapshotledger` VALUES (39250, 't1', 5, 3, 105608, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 10:26:43');
+INSERT INTO `userscoresnapshotledger` VALUES (39251, 't1', 5, 4, 0, 105608, 105608, 0, 'SNAPSHOT_SAVE', '2026-07-29 10:27:46');
+INSERT INTO `userscoresnapshotledger` VALUES (39252, 't1', 5, 4, 0, 105607, 105607, 0, 'SNAPSHOT_SAVE', '2026-07-29 10:27:51');
+INSERT INTO `userscoresnapshotledger` VALUES (39253, 't1', 5, 4, 0, 105606, 105606, 0, 'SNAPSHOT_SAVE', '2026-07-29 10:27:54');
+INSERT INTO `userscoresnapshotledger` VALUES (39254, 't1', 5, 4, 0, 105605, 105605, 0, 'SNAPSHOT_SAVE', '2026-07-29 10:27:58');
+INSERT INTO `userscoresnapshotledger` VALUES (39255, 't1', 5, 4, 0, 105604, 105604, 0, 'SNAPSHOT_SAVE', '2026-07-29 10:28:01');
+INSERT INTO `userscoresnapshotledger` VALUES (39256, 't1', 5, 4, 0, 105603, 105603, 0, 'SNAPSHOT_SAVE', '2026-07-29 10:28:04');
+INSERT INTO `userscoresnapshotledger` VALUES (39257, 't1', 5, 4, 0, 105602, 105602, 0, 'SNAPSHOT_SAVE', '2026-07-29 10:28:08');
+INSERT INTO `userscoresnapshotledger` VALUES (39258, 't1', 5, 4, 0, 105601, 105601, 0, 'SNAPSHOT_SAVE', '2026-07-29 10:28:12');
+INSERT INTO `userscoresnapshotledger` VALUES (39259, 't1', 5, 4, 0, 105600, 105600, 0, 'SNAPSHOT_SAVE', '2026-07-29 10:28:15');
+INSERT INTO `userscoresnapshotledger` VALUES (39260, 't1', 5, 4, 0, 105599, 105599, 0, 'SNAPSHOT_SAVE', '2026-07-29 10:28:18');
+INSERT INTO `userscoresnapshotledger` VALUES (39261, 't1', 5, 4, 0, 105601, 105601, 0, 'SNAPSHOT_SAVE', '2026-07-29 10:28:21');
+INSERT INTO `userscoresnapshotledger` VALUES (39262, 't1', 5, 4, 0, 105600, 105600, 0, 'SNAPSHOT_SAVE', '2026-07-29 10:28:21');
+INSERT INTO `userscoresnapshotledger` VALUES (39263, 't1', 5, 4, 0, 105602, 105602, 0, 'SNAPSHOT_SAVE', '2026-07-29 10:28:23');
+INSERT INTO `userscoresnapshotledger` VALUES (39264, 't1', 5, 4, 0, 105601, 105601, 0, 'SNAPSHOT_SAVE', '2026-07-29 10:28:23');
+INSERT INTO `userscoresnapshotledger` VALUES (39265, 't1', 5, 4, 0, 105600, 105600, 0, 'SNAPSHOT_SAVE', '2026-07-29 10:28:26');
+INSERT INTO `userscoresnapshotledger` VALUES (39266, 't1', 5, 4, 0, 105605, 105605, 0, 'SNAPSHOT_SAVE', '2026-07-29 10:28:28');
+INSERT INTO `userscoresnapshotledger` VALUES (39267, 't1', 5, 4, 0, 105604, 105604, 0, 'SNAPSHOT_SAVE', '2026-07-29 10:28:28');
+INSERT INTO `userscoresnapshotledger` VALUES (39268, 't1', 5, 4, 0, 105606, 105606, 0, 'SNAPSHOT_SAVE', '2026-07-29 10:28:31');
+INSERT INTO `userscoresnapshotledger` VALUES (39269, 't1', 5, 4, 0, 105605, 105605, 0, 'SNAPSHOT_SAVE', '2026-07-29 10:28:31');
+INSERT INTO `userscoresnapshotledger` VALUES (39270, 't1', 5, 4, 0, 105604, 105604, 0, 'SNAPSHOT_SAVE', '2026-07-29 10:28:34');
+INSERT INTO `userscoresnapshotledger` VALUES (39271, 't1', 5, 4, 0, 105603, 105603, 0, 'SNAPSHOT_SAVE', '2026-07-29 10:28:37');
+INSERT INTO `userscoresnapshotledger` VALUES (39272, 't1', 5, 4, 105603, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 10:28:43');
+INSERT INTO `userscoresnapshotledger` VALUES (39273, 't1', 54, 0, 105603, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-29 10:28:45');
+INSERT INTO `userscoresnapshotledger` VALUES (39274, 't1', 54, 0, 105603, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-29 10:29:43');
+INSERT INTO `userscoresnapshotledger` VALUES (39275, 't1', 14, 9, 0, 105603, 105603, 0, 'SNAPSHOT_SAVE', '2026-07-29 10:29:48');
+INSERT INTO `userscoresnapshotledger` VALUES (39276, 't1', 14, 9, 105603, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 10:30:52');
+INSERT INTO `userscoresnapshotledger` VALUES (39277, 't1', 54, 0, 105603, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-29 10:30:54');
+INSERT INTO `userscoresnapshotledger` VALUES (39278, 't1', 44, 13, 0, 105603, 105603, 0, 'SNAPSHOT_SAVE', '2026-07-29 10:31:04');
+INSERT INTO `userscoresnapshotledger` VALUES (39279, 't1', 44, 13, 105603, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 10:31:10');
+INSERT INTO `userscoresnapshotledger` VALUES (39280, 't1', 54, 0, 105603, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-29 10:31:13');
+INSERT INTO `userscoresnapshotledger` VALUES (39281, 't1', 44, 19, 0, 105603, 105603, 0, 'SNAPSHOT_SAVE', '2026-07-29 10:32:25');
+INSERT INTO `userscoresnapshotledger` VALUES (39282, 't1', 44, 19, 105603, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 10:35:25');
+INSERT INTO `userscoresnapshotledger` VALUES (39283, 't1', 54, 0, 105603, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-29 10:35:53');
+INSERT INTO `userscoresnapshotledger` VALUES (39284, 't1', 15, 22, 0, 105603, 105603, 0, 'SNAPSHOT_SAVE', '2026-07-29 10:35:59');
+INSERT INTO `userscoresnapshotledger` VALUES (39285, 't1', 15, 22, 105603, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 10:36:03');
+INSERT INTO `userscoresnapshotledger` VALUES (39286, 't1', 54, 0, 105603, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-29 10:36:04');
+INSERT INTO `userscoresnapshotledger` VALUES (39287, 't1', 16, 26, 105603, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 10:40:48');
+INSERT INTO `userscoresnapshotledger` VALUES (39288, 't1', 40, 27, 105603, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 10:40:51');
+INSERT INTO `userscoresnapshotledger` VALUES (39289, 't1', 54, 0, 105603, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-29 10:40:51');
+INSERT INTO `userscoresnapshotledger` VALUES (39290, 't1', 40, 28, 105603, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 10:40:54');
+INSERT INTO `userscoresnapshotledger` VALUES (39291, 't1', 15, 31, 0, 105603, 105603, 0, 'SNAPSHOT_SAVE', '2026-07-29 10:41:09');
+INSERT INTO `userscoresnapshotledger` VALUES (39292, 't1', 15, 31, 105603, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 10:41:12');
+INSERT INTO `userscoresnapshotledger` VALUES (39293, 't1', 54, 0, 105603, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-29 10:41:14');
+INSERT INTO `userscoresnapshotledger` VALUES (39294, 't1', 19, 34, 0, 105603, 105603, 0, 'SNAPSHOT_SAVE', '2026-07-29 11:04:16');
+INSERT INTO `userscoresnapshotledger` VALUES (39295, 't1', 19, 34, 0, 105602, 105602, 0, 'SNAPSHOT_SAVE', '2026-07-29 11:04:19');
+INSERT INTO `userscoresnapshotledger` VALUES (39296, 't1', 19, 34, 0, 105602, 105602, 0, 'SNAPSHOT_SAVE', '2026-07-29 11:04:27');
+INSERT INTO `userscoresnapshotledger` VALUES (39297, 't1', 19, 34, 0, 105602, 105602, 0, 'SNAPSHOT_SAVE', '2026-07-29 11:04:27');
+INSERT INTO `userscoresnapshotledger` VALUES (39298, 't1', 19, 34, 0, 105602, 105602, 0, 'SNAPSHOT_SAVE', '2026-07-29 11:04:27');
+INSERT INTO `userscoresnapshotledger` VALUES (39299, 't1', 19, 34, 0, 105602, 105602, 0, 'SNAPSHOT_SAVE', '2026-07-29 11:04:27');
+INSERT INTO `userscoresnapshotledger` VALUES (39300, 't1', 19, 34, 0, 105601, 105601, 0, 'SNAPSHOT_SAVE', '2026-07-29 11:04:28');
+INSERT INTO `userscoresnapshotledger` VALUES (39301, 't1', 19, 34, 105601, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 11:04:42');
+INSERT INTO `userscoresnapshotledger` VALUES (39302, 't1', 19, 34, 105601, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 11:04:44');
+INSERT INTO `userscoresnapshotledger` VALUES (39303, 't1', 19, 35, 0, 105601, 105601, 0, 'SNAPSHOT_SAVE', '2026-07-29 11:04:51');
+INSERT INTO `userscoresnapshotledger` VALUES (39304, 't1', 19, 35, 0, 105600, 105600, 0, 'SNAPSHOT_SAVE', '2026-07-29 11:04:53');
+INSERT INTO `userscoresnapshotledger` VALUES (39305, 't1', 19, 35, 105600, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 11:05:05');
+INSERT INTO `userscoresnapshotledger` VALUES (39306, 't1', 19, 35, 105600, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 11:05:07');
+INSERT INTO `userscoresnapshotledger` VALUES (39307, 't1', 54, 0, 105600, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-29 11:06:15');
+INSERT INTO `userscoresnapshotledger` VALUES (39308, 't1', 19, 38, 0, 105600, 105600, 0, 'SNAPSHOT_SAVE', '2026-07-29 11:20:32');
+INSERT INTO `userscoresnapshotledger` VALUES (39309, 't1', 19, 38, 0, 105599, 105599, 0, 'SNAPSHOT_SAVE', '2026-07-29 11:20:33');
+INSERT INTO `userscoresnapshotledger` VALUES (39310, 't1', 19, 38, 105599, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 11:20:38');
+INSERT INTO `userscoresnapshotledger` VALUES (39311, 't1', 19, 38, 105599, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 11:20:39');
+INSERT INTO `userscoresnapshotledger` VALUES (39312, 't1', 19, 39, 0, 105599, 105599, 0, 'SNAPSHOT_SAVE', '2026-07-29 11:31:30');
+INSERT INTO `userscoresnapshotledger` VALUES (39313, 't1', 19, 39, 0, 105598, 105598, 0, 'SNAPSHOT_SAVE', '2026-07-29 11:31:31');
+INSERT INTO `userscoresnapshotledger` VALUES (39314, 't1', 19, 39, 0, 105598, 105598, 0, 'SNAPSHOT_SAVE', '2026-07-29 11:31:39');
+INSERT INTO `userscoresnapshotledger` VALUES (39315, 't1', 19, 39, 105598, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 11:31:43');
+INSERT INTO `userscoresnapshotledger` VALUES (39316, 't1', 19, 39, 105598, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 11:31:44');
+INSERT INTO `userscoresnapshotledger` VALUES (39317, 't1', 19, 40, 0, 105598, 105598, 0, 'SNAPSHOT_SAVE', '2026-07-29 11:32:49');
+INSERT INTO `userscoresnapshotledger` VALUES (39318, 't1', 19, 40, 0, 105597, 105597, 0, 'SNAPSHOT_SAVE', '2026-07-29 11:32:50');
+INSERT INTO `userscoresnapshotledger` VALUES (39319, 't1', 19, 40, 105597, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 11:32:53');
+INSERT INTO `userscoresnapshotledger` VALUES (39320, 't1', 19, 40, 105597, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 11:32:54');
+INSERT INTO `userscoresnapshotledger` VALUES (39321, 't1', 54, 0, 105597, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-29 11:32:58');
+INSERT INTO `userscoresnapshotledger` VALUES (39322, 't1', 0, 42, 105597, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 11:56:25');
+INSERT INTO `userscoresnapshotledger` VALUES (39323, 't1', 19, 2, 0, 105597, 105597, 0, 'SNAPSHOT_SAVE', '2026-07-29 12:02:58');
+INSERT INTO `userscoresnapshotledger` VALUES (39324, 't1', 19, 2, 0, 105596, 105596, 0, 'SNAPSHOT_SAVE', '2026-07-29 12:02:59');
+INSERT INTO `userscoresnapshotledger` VALUES (39325, 't1', 19, 2, 105596, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 12:03:02');
+INSERT INTO `userscoresnapshotledger` VALUES (39326, 't1', 19, 2, 105596, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 12:03:03');
+INSERT INTO `userscoresnapshotledger` VALUES (39327, 't1', 54, 0, 105596, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-29 13:42:14');
+INSERT INTO `userscoresnapshotledger` VALUES (39328, 't1', 19, 5, 0, 105596, 105596, 0, 'SNAPSHOT_SAVE', '2026-07-29 13:53:14');
+INSERT INTO `userscoresnapshotledger` VALUES (39329, 't1', 19, 5, 0, 105595, 105595, 0, 'SNAPSHOT_SAVE', '2026-07-29 13:53:17');
+INSERT INTO `userscoresnapshotledger` VALUES (39330, 't1', 19, 5, 105595, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 13:53:20');
+INSERT INTO `userscoresnapshotledger` VALUES (39331, 't1', 19, 5, 105595, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 13:53:21');
+INSERT INTO `userscoresnapshotledger` VALUES (39332, 't1', 19, 6, 0, 105595, 105595, 0, 'SNAPSHOT_SAVE', '2026-07-29 13:53:26');
+INSERT INTO `userscoresnapshotledger` VALUES (39333, 't1', 19, 6, 0, 105594, 105594, 0, 'SNAPSHOT_SAVE', '2026-07-29 13:53:34');
+INSERT INTO `userscoresnapshotledger` VALUES (39334, 't1', 19, 6, 105594, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 13:53:38');
+INSERT INTO `userscoresnapshotledger` VALUES (39335, 't1', 19, 6, 105594, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 13:53:39');
+INSERT INTO `userscoresnapshotledger` VALUES (39336, 't1', 19, 7, 0, 105694, 105694, 0, 'SNAPSHOT_SAVE', '2026-07-29 13:58:16');
+INSERT INTO `userscoresnapshotledger` VALUES (39337, 't1', 19, 7, 0, 105693, 105693, 0, 'SNAPSHOT_SAVE', '2026-07-29 13:58:18');
+INSERT INTO `userscoresnapshotledger` VALUES (39338, 't1', 19, 7, 105693, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 13:58:27');
+INSERT INTO `userscoresnapshotledger` VALUES (39339, 't1', 19, 7, 105693, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 13:58:28');
+INSERT INTO `userscoresnapshotledger` VALUES (39340, 't1', 19, 8, 105693, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 14:06:16');
+INSERT INTO `userscoresnapshotledger` VALUES (39341, 't1', 19, 2, 0, 105693, 105693, 0, 'SNAPSHOT_SAVE', '2026-07-29 14:08:49');
+INSERT INTO `userscoresnapshotledger` VALUES (39342, 't1', 19, 2, 0, 105692, 105692, 0, 'SNAPSHOT_SAVE', '2026-07-29 14:08:50');
+INSERT INTO `userscoresnapshotledger` VALUES (39343, 't1', 19, 2, 105692, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 14:08:55');
+INSERT INTO `userscoresnapshotledger` VALUES (39344, 't1', 19, 2, 105692, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 14:08:56');
+INSERT INTO `userscoresnapshotledger` VALUES (39345, 't1', 19, 3, 0, 105692, 105692, 0, 'SNAPSHOT_SAVE', '2026-07-29 14:08:58');
+INSERT INTO `userscoresnapshotledger` VALUES (39346, 't1', 19, 3, 0, 105691, 105691, 0, 'SNAPSHOT_SAVE', '2026-07-29 14:08:59');
+INSERT INTO `userscoresnapshotledger` VALUES (39347, 't1', 19, 3, 105691, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 14:09:01');
+INSERT INTO `userscoresnapshotledger` VALUES (39348, 't1', 19, 3, 105691, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 14:09:02');
+INSERT INTO `userscoresnapshotledger` VALUES (39349, 't1', 54, 0, 105691, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-29 14:09:42');
+INSERT INTO `userscoresnapshotledger` VALUES (39350, 't1', 6, 6, 0, 105691, 105691, 0, 'SNAPSHOT_SAVE', '2026-07-29 14:09:47');
+INSERT INTO `userscoresnapshotledger` VALUES (39351, 't1', 6, 6, 0, 105690, 105690, 0, 'SNAPSHOT_SAVE', '2026-07-29 14:09:48');
+INSERT INTO `userscoresnapshotledger` VALUES (39352, 't1', 6, 6, 105690, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 14:10:00');
+INSERT INTO `userscoresnapshotledger` VALUES (39353, 't1', 6, 6, 105690, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 14:10:01');
+INSERT INTO `userscoresnapshotledger` VALUES (39354, 't1', 54, 0, 105690, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-07-29 14:10:03');
+INSERT INTO `userscoresnapshotledger` VALUES (39355, 't1', 0, 8, 105690, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 14:11:53');
+INSERT INTO `userscoresnapshotledger` VALUES (39356, 't1', 16, 2, 105686, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 15:03:44');
+INSERT INTO `userscoresnapshotledger` VALUES (39357, 't1', 16, 2, 105674, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 15:03:59');
+INSERT INTO `userscoresnapshotledger` VALUES (39358, 't1', 16, 2, 105662, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 15:04:06');
+INSERT INTO `userscoresnapshotledger` VALUES (39359, 't1', 16, 2, 105646, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 15:04:12');
+INSERT INTO `userscoresnapshotledger` VALUES (39360, 't1', 16, 2, 105648, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 15:04:17');
+INSERT INTO `userscoresnapshotledger` VALUES (39361, 't1', 16, 2, 105652, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 15:12:06');
+INSERT INTO `userscoresnapshotledger` VALUES (39362, 't1', 16, 2, 105644, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 15:12:12');
+INSERT INTO `userscoresnapshotledger` VALUES (39363, 't1', 16, 2, 105628, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 15:12:18');
+INSERT INTO `userscoresnapshotledger` VALUES (39364, 't1', 16, 2, 105672, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 15:12:21');
+INSERT INTO `userscoresnapshotledger` VALUES (39365, 't1', 16, 2, 105656, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 15:12:27');
+INSERT INTO `userscoresnapshotledger` VALUES (39366, 't1', 16, 2, 105655, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 15:12:40');
+INSERT INTO `userscoresnapshotledger` VALUES (39367, 't1', 16, 2, 105654, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 15:12:47');
+INSERT INTO `userscoresnapshotledger` VALUES (39368, 't1', 16, 2, 105653, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 15:12:53');
+INSERT INTO `userscoresnapshotledger` VALUES (39369, 't1', 54, 0, 105653, 0, 0, 0, 'SNAPSHOT_RECOVER:GAME_LOST', '2026-07-29 15:28:55');
+INSERT INTO `userscoresnapshotledger` VALUES (39370, 't1', 0, 2, 105653, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-07-29 15:28:55');
 
 -- ----------------------------
 -- Table structure for videogamecoinrecord

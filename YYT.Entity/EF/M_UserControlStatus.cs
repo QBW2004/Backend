@@ -144,6 +144,14 @@ namespace YYT.Entity
         public int Status { get; set; }
         public string CreatedBy { get; set; }
         /// <summary>
+        /// 控牌次数（来自 usercontrolvalue.NUMBER，控牌模式回显）
+        /// </summary>
+        public int CardNumber { get; set; }
+        /// <summary>
+        /// 控牌总次数（来自 usercontrolvalue.TOTAL_NUMBER，控牌模式回显）
+        /// </summary>
+        public int CardTotal { get; set; }
+        /// <summary>
         /// 设置时间（已格式化）
         /// </summary>
         public string CreatedTime { get; set; }

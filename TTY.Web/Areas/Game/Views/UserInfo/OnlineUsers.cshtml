@@ -520,9 +520,14 @@
         if (n == 6) {
             $('.trTotalStrength').hide();
             $('.trTotalCard').show();
+            // 控牌按次数控制，不需要金币阈值
+            $('.trTotalGold').hide();
+            $('#numGold_Total').numberbox('setValue', 0);
         } else {
             $('.trTotalCard').hide();
             $('.trTotalStrength').show();
+            // 吃分/放分需要金币阈值
+            $('.trTotalGold').show();
             if (n == 5) $('#selE_Strength_Total').combobox('loadData', getComboValPut());
             else $('#selE_Strength_Total').combobox('loadData', getComboValKill());
         }
@@ -570,14 +575,23 @@
             var html = '';
             for (var i = 0; i < data.datas.length; i++) {
                 var r = data.datas[i];
-                var isRelease = (r.ControlMode == 5 || r.ControlMode == 6);
-                var progress = isRelease ? r.GrantedCoins : r.ConsumedCoins;
-                html += '<div style="margin:2px 0;">'
-                    + totalModeName(r.ControlMode)
-                    + '（强度/控牌值 ' + r.LimitCoins + '）'
-                    + ' 阈值 ' + r.TargetCoins
-                    + ' 已' + (isRelease ? '放' : '吃') + '分 ' + progress
-                    + '</div>';
+                if (r.ControlMode == 6) {
+                    // 控牌：显示控牌值 + 次数/总次数（牌机消耗后未回写，此处为下发时的配置值）
+                    html += '<div style="margin:2px 0;">'
+                        + totalModeName(r.ControlMode)
+                        + '（控牌值 ' + r.LimitCoins + '）'
+                        + ' 次数 ' + r.CardNumber + '/' + r.CardTotal
+                        + '</div>';
+                } else {
+                    var isRelease = (r.ControlMode == 5);
+                    var progress = isRelease ? r.GrantedCoins : r.ConsumedCoins;
+                    html += '<div style="margin:2px 0;">'
+                        + totalModeName(r.ControlMode)
+                        + '（强度 ' + r.LimitCoins + '）'
+                        + ' 阈值 ' + r.TargetCoins
+                        + ' 已' + (isRelease ? '放' : '吃') + '分 ' + progress
+                        + '</div>';
+                }
             }
             $('#divTotalStatus').html(html);
         });
@@ -585,18 +599,22 @@
     function SaveTotalCtrl() {
         var uid = $('#hfID_Total').val();
         var mode = parseInt($('#selE_Mode_Total').combobox('getValue'));
-        var gold = $('#numGold_Total').numberbox('getValue');
-        if (!gold || parseInt(gold) <= 0) {
-            showUserToast('请填写大于 0 的金币阈值！', 'danger');
-            return;
-        }
-        var para = { ID: uid, Mode: mode, GoldThreshold: gold };
+        var para = { ID: uid, Mode: mode };
         if (mode == 6) {
+            // 控牌按次数控制，不需要金币阈值
+            para.GoldThreshold = 0;
             para.CardAction = $('#selE_Action_Total').combobox('getValue');
             para.CardValue = $('#selE_Type_Total').combobox('getValue');
             para.CardNumber = $('#selE_Number_Total').combobox('getValue');
             para.CardTotal = $('#selE_Total_Total').combobox('getValue');
         } else {
+            // 吃分/放分需要金币阈值
+            var gold = $('#numGold_Total').numberbox('getValue');
+            if (!gold || parseInt(gold) <= 0) {
+                showUserToast('请填写大于 0 的金币阈值！', 'danger');
+                return;
+            }
+            para.GoldThreshold = gold;
             para.Strength = $('#selE_Strength_Total').combobox('getValue');
         }
         request('/Game/UserInfo/ApplyTotalControl', para, function (data) {
@@ -1362,11 +1380,10 @@
                     <select class="easyui-combobox win-txt" id="selE_Total_Total" name="CardTotal" data-options="valueField:'id',textField:'text',panelHeight:150"></select>
                 </td>
             </tr>
-            <tr>
+            <tr class="trTotalGold">
                 <td align="right">金币阈值</td>
                 <td align="left" class="pd5">
                     <input class="easyui-numberbox win-txt" id="numGold_Total" name="GoldThreshold" data-options="min:0,precision:0,prompt:'必填，>0'" style="width:150px;" />
-                    <span style="color:#999;font-size:12px;">吃分/放分累计到达后失效</span>
                 </td>
             </tr>
             <tr>
