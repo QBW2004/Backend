@@ -15,9 +15,66 @@
         window.isRMB = @Html.Raw(isRMB ? "true":"false");
         window.ExchangeRate = @Html.Raw(ExchangeRate);
     </script>
+    <style>
+        /* 全局缩放滑块 */
+        .zoom-wrap {
+            position: fixed;
+            top: 12px;
+            left: 12px;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255,255,255,0.92);
+            padding: 5px 10px;
+            border: 1px solid #e5e6eb;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+            font-size: 12px;
+            color: #555;
+            cursor: move;
+            user-select: none;
+        }
+        .zoom-wrap input[type="range"] {
+            width: 100px;
+            height: 6px;
+            cursor: pointer;
+            -webkit-appearance: none;
+            background: #dcdfe6;
+            border-radius: 3px;
+            outline: none;
+        }
+        .zoom-wrap input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #409eff;
+            cursor: pointer;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+        }
+        .zoom-percent {
+            min-width: 38px;
+            text-align: right;
+            font-size: 13px;
+            font-weight: 500;
+            color: #303133;
+        }
+        .zoom-wrap .zoom-label {
+            font-size: 12px;
+            color: #909399;
+        }
+    </style>
     @Styles.Render("~/res/frame-css")
 </head>
 <body class="fixed-sidebar full-height-layout gray-bg">
+    <!-- 缩放滑块（固定在 wrapper 外部，避免被缩放影响） -->
+    <div class="zoom-wrap" id="zoomWrap">
+        <span class="zoom-label">缩放</span>
+        <input type="range" id="zoomSlider" min="50" max="150" value="100" step="1">
+        <span class="zoom-percent" id="zoomText">100%</span>
+    </div>
+
     <div id="wrapper">
         <!--左侧导航开始-->
         <nav class="navbar-default navbar-static-side" role="navigation">
@@ -181,6 +238,7 @@
                 <a href="@Url.Action("LoginOut","Login")" class="roll-nav menu-item r-btn-4"><i class="fa fa fa-sign-out"></i>&nbsp;退出系统</a>
                 @*<a href="javascript:void(0);" onclick="CHEN()" class="roll-nav menu-item r-btn-4"><i class="fa fa fa-sign-out"></i>&nbsp;切换英文</a>*@
                 <!-- 右侧操作按钮结束 -->
+
                 <!--右侧边栏开始-->
                 <div class="dropdown-menu animated flipInY skin-box">
                     <div class="panel panel-primary">
@@ -316,6 +374,89 @@
             }
             alert(value);
         }
+
+        // ========== 全局缩放功能 ==========
+        (function () {
+            var wrapper = document.getElementById('wrapper');
+            var slider = document.getElementById('zoomSlider');
+            var zoomText = document.getElementById('zoomText');
+            var zoomWrap = document.getElementById('zoomWrap');
+            var iframe = document.querySelector('.J_iframe');
+            var zoomKey = 'backend_zoom';
+
+            // 恢复上次缩放值
+            var saved = localStorage.getItem(zoomKey);
+            if (saved && !isNaN(saved)) {
+                slider.value = saved;
+                applyZoom(parseInt(saved));
+            } else {
+                applyZoom(100);
+            }
+
+            function applyZoom(percent) {
+                var scale = percent / 100;
+                if (wrapper) {
+                    wrapper.style.transform = 'scale(' + scale + ')';
+                    wrapper.style.transformOrigin = 'top left';
+                    wrapper.style.width = (100 / scale) + '%';
+                    // 缩放时隐藏 wrapper 溢出滚动条，避免双滚动条
+                    wrapper.style.overflow = percent !== 100 ? 'hidden' : '';
+                }
+
+                zoomText.textContent = percent + '%';
+                localStorage.setItem(zoomKey, percent);
+
+                // 通知iframe内的页面
+                try {
+                    if (iframe && iframe.contentWindow) {
+                        iframe.contentWindow.postMessage({ zoom: percent }, '*');
+                    }
+                } catch (e) {}
+            }
+
+            slider.addEventListener('input', function () {
+                applyZoom(parseInt(this.value));
+            });
+
+            // 可拖拽 reposition（排除对滑块的操作）
+            var isDragging = false, dragX, dragY, origX, origY;
+            zoomWrap.addEventListener('mousedown', function (e) {
+                // 如果点击的是 input[type=range] 或其内部元素，不启动拖拽
+                if (e.target.tagName === 'INPUT' || e.target.type === 'range' || slider.contains(e.target)) return;
+                isDragging = true;
+                dragX = e.clientX;
+                dragY = e.clientY;
+                var rect = zoomWrap.getBoundingClientRect();
+                origX = rect.left;
+                origY = rect.top;
+                zoomWrap.style.cursor = 'grabbing';
+                e.preventDefault();
+            });
+            document.addEventListener('mousemove', function (e) {
+                if (!isDragging) return;
+                var dx = e.clientX - dragX;
+                var dy = e.clientY - dragY;
+                zoomWrap.style.left = (origX + dx) + 'px';
+                zoomWrap.style.top = (origY + dy) + 'px';
+                zoomWrap.style.right = 'auto';
+            });
+            document.addEventListener('mouseup', function () {
+                isDragging = false;
+                zoomWrap.style.cursor = 'move';
+            });
+
+            // 监听iframe加载完成，重新发送缩放
+            if (iframe) {
+                iframe.addEventListener('load', function () {
+                    var cur = parseInt(localStorage.getItem(zoomKey)) || 100;
+                    try {
+                        if (iframe.contentWindow) {
+                            iframe.contentWindow.postMessage({ zoom: cur }, '*');
+                        }
+                    } catch (e) {}
+                });
+            }
+        })();
     </script>
 </body>
 </html>

@@ -14,17 +14,67 @@
     <link href="@Url.Content("~/Content/css/layout.css?v=" + ConfigHelper.Get("WebVer"))" rel="stylesheet" />
     <script src="~/Scripts/jquery-2.1.4.js"></script>
 
+    <style>
+        /* 页面缩放支持 */
+        .zoomable-body {
+            transform-origin: top left;
+        }
+    </style>
+
 
 
     @Scripts.Render("~/res/jquery-js")
-    @RenderSection("include_res", required: false)
+        @RenderSection("include_res", required: false)
 </head>
-<body>
+<body class="zoomable-body">
     <div class="title-map"><span>当前位置</span><span>@Html.Raw(ConstStr.FONT_SIGN_DB_GT) @ViewBag.RouteMap</span> </div>
     <div class="main">
         <div class="main-loading bg"><div class="main-loading-mask">正在处理;请稍待。。。</div></div>
         @RenderBody()
     </div>
-   
+
+    <script>
+        // 从父窗口同步缩放比例
+        (function () {
+            var zoomKey = 'backend_zoom';
+
+            function applyZoom(percent) {
+                if (!percent || isNaN(percent)) percent = 100;
+                var scale = percent / 100;
+                document.body.style.transform = 'scale(' + scale + ')';
+                document.body.style.width = (100 / scale) + '%';
+                // 调整main区域高度
+                var main = document.querySelector('.main');
+                if (main) {
+                    main.style.minHeight = (100 / scale) + '%';
+                }
+            }
+
+            // 加载时读取localStorage
+            var saved = localStorage.getItem(zoomKey);
+            if (saved && !isNaN(saved)) {
+                applyZoom(parseInt(saved));
+            }
+
+            // 监听来自父窗口的缩放消息
+            window.addEventListener('message', function (e) {
+                if (e.data && e.data.zoom) {
+                    applyZoom(parseInt(e.data.zoom));
+                }
+            });
+
+            // 兜底：定时检查localStorage变化（兼容部分场景）
+            var lastZoom = localStorage.getItem(zoomKey);
+            setInterval(function () {
+                var cur = localStorage.getItem(zoomKey);
+                if (cur !== lastZoom) {
+                    lastZoom = cur;
+                    if (cur && !isNaN(cur)) {
+                        applyZoom(parseInt(cur));
+                    }
+                }
+            }, 1000);
+        })();
+    </script>
 </body>
 </html>
