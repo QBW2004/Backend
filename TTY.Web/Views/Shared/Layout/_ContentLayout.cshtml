@@ -14,11 +14,7 @@
     <link href="@Url.Content("~/Content/css/layout.css?v=" + ConfigHelper.Get("WebVer"))" rel="stylesheet" />
     <script src="~/Scripts/jquery-2.1.4.js"></script>
 
-    <style>
-        /* 页面缩放支持 */
-        .zoomable-body {
-            transform-origin: top left;
-        }
+
     </style>
 
 
@@ -26,7 +22,7 @@
     @Scripts.Render("~/res/jquery-js")
         @RenderSection("include_res", required: false)
 </head>
-<body class="zoomable-body">
+<body>
     <div class="title-map"><span>当前位置</span><span>@Html.Raw(ConstStr.FONT_SIGN_DB_GT) @ViewBag.RouteMap</span> </div>
     <div class="main">
         <div class="main-loading bg"><div class="main-loading-mask">正在处理;请稍待。。。</div></div>
@@ -41,13 +37,9 @@
             function applyZoom(percent) {
                 if (!percent || isNaN(percent)) percent = 100;
                 var scale = percent / 100;
-                document.body.style.transform = 'scale(' + scale + ')';
-                document.body.style.width = (100 / scale) + '%';
-                // 调整main区域高度
-                var main = document.querySelector('.main');
-                if (main) {
-                    main.style.minHeight = (100 / scale) + '%';
-                }
+                // 使用 CSS zoom 缩放内容页（比 transform scale 更稳定）
+                document.body.style.zoom = scale;
+                document.body.style.transform = 'none';
             }
 
             // 加载时读取localStorage

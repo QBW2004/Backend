@@ -396,11 +396,9 @@
             function applyZoom(percent) {
                 var scale = percent / 100;
                 if (wrapper) {
-                    wrapper.style.transform = 'scale(' + scale + ')';
-                    wrapper.style.transformOrigin = 'top left';
-                    wrapper.style.width = (100 / scale) + '%';
-                    // 缩放时隐藏 wrapper 溢出滚动条，避免双滚动条
-                    wrapper.style.overflow = percent !== 100 ? 'hidden' : '';
+                    // 使用 CSS zoom（比 transform scale 更稳定，不影响布局尺寸）
+                    wrapper.style.zoom = scale;
+                    wrapper.style.transform = 'none';
                 }
 
                 zoomText.textContent = percent + '%';
