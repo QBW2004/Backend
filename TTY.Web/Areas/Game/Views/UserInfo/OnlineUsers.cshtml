@@ -92,10 +92,18 @@
             if (data && data.code == 1 && data.datas) {
                 for (var j = 0; j < data.datas.length; j++) {
                     var r = data.datas[j];
-                    var isRelease = (r.ControlMode == 5 || r.ControlMode == 6);
-                    var progress = isRelease ? r.GrantedCoins : r.ConsumedCoins;
-                    var txt = totalModeName(r.ControlMode)
-                        + '<br/>已' + (isRelease ? '放' : '吃') + '分 ' + progress + '/' + r.TargetCoins;
+                    var txt;
+                    if (r.ControlMode == 6) {
+                        // 控牌：显示控牌值 + 次数/总次数
+                        txt = totalModeName(r.ControlMode)
+                            + '<br/>控牌值 ' + r.LimitCoins
+                            + ' 次数 ' + r.CardNumber + '/' + r.CardTotal;
+                    } else {
+                        var isRelease = (r.ControlMode == 5);
+                        var progress = isRelease ? r.GrantedCoins : r.ConsumedCoins;
+                        txt = totalModeName(r.ControlMode)
+                            + '<br/>已' + (isRelease ? '放' : '吃') + '分 ' + progress + '/' + r.TargetCoins;
+                    }
                     if (!map[r.UserID]) map[r.UserID] = [];
                     map[r.UserID].push(txt);
                 }

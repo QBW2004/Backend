@@ -628,7 +628,7 @@ namespace YYT.BLL.EF
                     if (cardRow != null)
                     {
                         var ucRow = ef.Database.SqlQuery<M_UserControlValueRow>(
-                            "SELECT CONTROL_TYPE AS CtrlType, CONTROL_VALUE AS CtrlValue, NUMBER AS Number, TOTAL_NUMBER AS TotalNumber FROM usercontrolvalue WHERE USERID={0} AND CONTROL_TYPE>=5 AND CONTROL_TYPE<=24 ORDER BY CONTROL_TYPE DESC LIMIT 1",
+                            "SELECT USERID AS UserID, CONTROL_TYPE AS CtrlType, CONTROL_VALUE AS CtrlValue, NUMBER AS Number, TOTAL_NUMBER AS TotalNumber FROM usercontrolvalue WHERE USERID={0} AND CONTROL_TYPE>=5 AND CONTROL_TYPE<=24 ORDER BY CONTROL_TYPE DESC LIMIT 1",
                             target).FirstOrDefault();
                         if (ucRow != null)
                         {
@@ -700,6 +700,25 @@ namespace YYT.BLL.EF
                         })
                         .ToList();
                     result = rows;
+
+                    // 控牌模式(mode=6)：联查 usercontrolvalue 回显次数/总次数（与 GetTotalControlStatus 一致）
+                    var cardUserIds = rows.Where(c => c.ControlMode == (int)EControlMode.TotalCard).Select(c => c.UserID).Distinct().ToList();
+                    if (cardUserIds.Count > 0)
+                    {
+                        var inClause = string.Join(",", cardUserIds.Select(s => "'" + s.Replace("'", "''") + "'"));
+                        var cardRows = ef.Database.SqlQuery<M_UserControlValueRow>(
+                            "SELECT USERID AS UserID, CONTROL_TYPE AS CtrlType, CONTROL_VALUE AS CtrlValue, NUMBER AS Number, TOTAL_NUMBER AS TotalNumber FROM usercontrolvalue WHERE CONTROL_TYPE>=5 AND CONTROL_TYPE<=24 AND USERID IN (" + inClause + ")").ToList();
+                        var cardMap = cardRows.GroupBy(r => r.UserID).ToDictionary(g => g.Key, g => g.First());
+                        foreach (var cr in rows.Where(c => c.ControlMode == (int)EControlMode.TotalCard))
+                        {
+                            M_UserControlValueRow uc;
+                            if (cardMap.TryGetValue(cr.UserID, out uc))
+                            {
+                                cr.CardNumber = uc.Number;
+                                cr.CardTotal = uc.TotalNumber;
+                            }
+                        }
+                    }
                 }
                 msg.code = 1;
                 msg.content = "";
@@ -839,6 +858,7 @@ namespace YYT.BLL.EF
     /// </summary>
     public class M_UserControlValueRow
     {
+        public string UserID { get; set; }
         public int CtrlType { get; set; }
         public int CtrlValue { get; set; }
         public int Number { get; set; }
