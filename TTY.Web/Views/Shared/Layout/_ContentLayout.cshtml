@@ -29,44 +29,7 @@
         @RenderBody()
     </div>
 
-    <script>
-        // 从父窗口同步缩放比例
-        (function () {
-            var zoomKey = 'backend_zoom';
-
-            function applyZoom(percent) {
-                if (!percent || isNaN(percent)) percent = 100;
-                var scale = percent / 100;
-                // 使用 CSS zoom 缩放内容页（比 transform scale 更稳定）
-                document.body.style.zoom = scale;
-                document.body.style.transform = 'none';
-            }
-
-            // 加载时读取localStorage
-            var saved = localStorage.getItem(zoomKey);
-            if (saved && !isNaN(saved)) {
-                applyZoom(parseInt(saved));
-            }
-
-            // 监听来自父窗口的缩放消息
-            window.addEventListener('message', function (e) {
-                if (e.data && e.data.zoom) {
-                    applyZoom(parseInt(e.data.zoom));
-                }
-            });
-
-            // 兜底：定时检查localStorage变化（兼容部分场景）
-            var lastZoom = localStorage.getItem(zoomKey);
-            setInterval(function () {
-                var cur = localStorage.getItem(zoomKey);
-                if (cur !== lastZoom) {
-                    lastZoom = cur;
-                    if (cur && !isNaN(cur)) {
-                        applyZoom(parseInt(cur));
-                    }
-                }
-            }, 1000);
-        })();
-    </script>
+    <!-- 注：内容页缩放由父框架 #wrapper 的 CSS zoom 统一处理，此处无需再次缩放，
+         否则会与父级缩放叠加导致双重缩放。 -->
 </body>
 </html>

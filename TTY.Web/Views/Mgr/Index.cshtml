@@ -64,6 +64,10 @@
             font-size: 12px;
             color: #909399;
         }
+        /* 缩放时 #wrapper 需允许 transform 缩放，不裁剪溢出 */
+        #wrapper.zoomed {
+            overflow-x: visible !important;
+        }
     </style>
     @Styles.Render("~/res/frame-css")
 </head>
@@ -376,6 +380,13 @@
         }
 
         // ========== 全局缩放功能 ==========
+        // 使用 transform: scale，以左上角为原点整体缩放。
+        // 关键点：
+        //   1. transform-origin: top left -- 以左上角为缩放原点
+        //   2. transform: scale() -- 上下左右整体按比例缩放，右侧/下方自然留白
+        //   3. position:fixed 的侧边栏在 transform 容器内会随容器缩放，
+        //      与 #page-wrapper 的 margin-left 同步对齐
+        // 缩放控件放在 #wrapper 外部(body 直接子元素)，自身不被缩放。
         (function () {
             var wrapper = document.getElementById('wrapper');
             var slider = document.getElementById('zoomSlider');
@@ -384,6 +395,29 @@
             var iframe = document.querySelector('.J_iframe');
             var zoomKey = 'backend_zoom';
 
+            function applyZoom(percent) {
+                var scale = percent / 100;
+                if (wrapper) {
+                    wrapper.style.transformOrigin = 'top left';
+                    wrapper.style.transform = 'scale(' + scale + ')';
+                    // 缩放时关闭 overflow-x 裁剪，避免内容被截
+                    if (percent !== 100) {
+                        wrapper.classList.add('zoomed');
+                    } else {
+                        wrapper.classList.remove('zoomed');
+                    }
+                }
+                zoomText.textContent = percent + '%';
+                localStorage.setItem(zoomKey, percent);
+
+                // 通知iframe内的页面同步缩放
+                try {
+                    if (iframe && iframe.contentWindow) {
+                        iframe.contentWindow.postMessage({ zoom: percent }, '*');
+                    }
+                } catch (e) {}
+            }
+
             // 恢复上次缩放值
             var saved = localStorage.getItem(zoomKey);
             if (saved && !isNaN(saved)) {
@@ -391,25 +425,6 @@
                 applyZoom(parseInt(saved));
             } else {
                 applyZoom(100);
-            }
-
-            function applyZoom(percent) {
-                var scale = percent / 100;
-                if (wrapper) {
-                    // 使用 CSS zoom（比 transform scale 更稳定，不影响布局尺寸）
-                    wrapper.style.zoom = scale;
-                    wrapper.style.transform = 'none';
-                }
-
-                zoomText.textContent = percent + '%';
-                localStorage.setItem(zoomKey, percent);
-
-                // 通知iframe内的页面
-                try {
-                    if (iframe && iframe.contentWindow) {
-                        iframe.contentWindow.postMessage({ zoom: percent }, '*');
-                    }
-                } catch (e) {}
             }
 
             slider.addEventListener('input', function () {
