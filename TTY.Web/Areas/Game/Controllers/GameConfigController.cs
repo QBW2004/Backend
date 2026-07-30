@@ -718,6 +718,24 @@ namespace YYT.Web.Areas.Game.Controllers
                 int gameMo = form.Q<int>("Game_Mo", 0);
                 decimal scoreSwitch = form.Q<decimal>("scoreSwitch", 0m);
 
+                // gcScoreSwitchRule: 加芬幅度禁止为 0 —— 鱼机(2) 最小 0.1, 牌机(1)/拉霸(3) 最小 1 且必须整数
+                if (gameType == 2)
+                {
+                    if (scoreSwitch < 0.1m)
+                    {
+                        msg.content = "加芬幅度必须大于 0，鱼机最小 0.1!";
+                        return Json(msg);
+                    }
+                }
+                else if (gameType == 1 || gameType == 3)
+                {
+                    if (scoreSwitch < 1m || scoreSwitch != decimal.Truncate(scoreSwitch))
+                    {
+                        msg.content = "加芬幅度必须为大于等于 1 的整数!";
+                        return Json(msg);
+                    }
+                }
+
                 if (gameType == 0)
                 {
                     // 押注玩法旧字段已从页面移除：保存时沿用库内原值，不被表单缺省值清零。
@@ -843,7 +861,17 @@ namespace YYT.Web.Areas.Game.Controllers
                     int tableIdFull = gameId * 1000 + tIdx;
                     // 牌机专属按桌参数(扩展表)
                     int cardExCoin = form.Q<int>("EX_COIN", 10000);
+                    if (scoreSwitch != decimal.Truncate(scoreSwitch))
+                    {
+                        msg.content = "牌机加芬幅度必须为整数!";
+                        return Json(msg);
+                    }
                     int cardScoreSwitch = (int)Math.Round(scoreSwitch, MidpointRounding.AwayFromZero);
+                    if (cardScoreSwitch < 1)
+                    {
+                        msg.content = "牌机加芬幅度必须为大于等于 1 的整数!";
+                        return Json(msg);
+                    }
                     int cardGameMo = gameMo;
                     int cardMaxBetUnits = (int)Math.Round(maxBetDisplay * 10m, MidpointRounding.AwayFromZero);
                     int cardMinBetUnits = (int)Math.Round(minBetDisplay * 10m, MidpointRounding.AwayFromZero);

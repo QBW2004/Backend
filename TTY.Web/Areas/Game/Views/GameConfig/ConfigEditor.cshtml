@@ -399,6 +399,18 @@
 
     function gcGetType() { return parseInt($('#gcGameType').val(), 10); }
 
+    // 加芬幅度归一化: 鱼机(2) 最小 0.1, 其它类型最小 1 且必须整数
+    function gcNormSs(val, type) {
+        var v = parseFloat(val);
+        if (type === 2) {
+            if (isNaN(v) || v < 0.1) v = 0.1;
+            return Math.round(v * 10) / 10;
+        }
+        v = Math.round(v);
+        if (isNaN(v) || v < 1) v = 1;
+        return v;
+    }
+
     // 统一反馈：成功/失败/校验用顶部自动消失的 toast；登录超时(code=-1)仍保留模态以便重新登录
     function gcMsg(data) {
         if (data && data.code == -1) { loginTimeoutCallback(data); return; }
@@ -655,6 +667,10 @@
                 $('#gcMaxBetLbl').text('最大押分');
             }
             $('#gcScoreSwitchLbl').text((type === 1 || type === 3) ? '加芬幅度（点击一次加多少芬）' : '加炮幅度（0.1-0.9）');
+            var gcSsMin = (type === 2) ? 0.1 : 1;
+            $('#gcScoreSwitch').attr('step', (type === 2) ? '0.1' : '1');
+            $('#gcScoreSwitch').attr('min', (type === 2) ? '0.1' : '1');
+            $('#gcScoreSwitch').val(gcNormSs($('#gcScoreSwitch').val(), type));
             if (type === 1 && $('#gcPayoutTable tbody tr').length === 0) gcBuildPayoutTable();
             if (type === 1) gcUpdateJpBox(); else $('#gcJpBox').hide();
             if (type === 0) gcBuildBetPayoutTable();
@@ -717,7 +733,9 @@
         $('#gcExCoin').val(t.exCoin);
         $('#gcCoinNeed').val(t.coinNeed);
         $('#gcGameMo').val(t.gameMo);
-        $('#gcScoreSwitch').val(t.scoreSwitch !== undefined && t.scoreSwitch !== null ? t.scoreSwitch : 0);
+        var gcFillSs = (t.scoreSwitch !== undefined && t.scoreSwitch !== null) ? t.scoreSwitch : 0;
+        gcFillSs = gcNormSs(gcFillSs, type);
+        $('#gcScoreSwitch').val(gcFillSs);
         $('#gcIdleSec').val(t.idleFireTimeoutSec);
         $('#gcEnabled').prop('checked', t.enabled == 1);
         if (type === 0) {
@@ -809,7 +827,7 @@
         $('#gcCoinSc').val(1);
         $('#gcGameMo').val(1);
         $('#gcCoinNeed').val(1);
-        $('#gcScoreSwitch').val(0.1);
+        $('#gcScoreSwitch').val(1);
     }
 
     function gcSyncSwitch() {
@@ -1094,6 +1112,14 @@
         if (maxBet > 0 && minBet > maxBet) {
             showToast('最小值不能大于最大值！', 'warning');
             return;
+        }
+        if (type === 1 || type === 2 || type === 3) { // gcCardStepInvalid
+            var gcSs = parseFloat($('#gcScoreSwitch').val());
+            var gcSsBad = (type === 2) ? (isNaN(gcSs) || gcSs < 0.1) : (isNaN(gcSs) || gcSs < 1 || Math.floor(gcSs) !== gcSs);
+            if (gcSsBad) {
+                showToast((type === 2) ? '加芬幅度必须大于 0，鱼机最小 0.1!' : '加芬幅度必须为大于等于 1 的整数!', 'warning');
+                return;
+            }
         }
         gcSyncSwitch();
         gcCollectChips();
