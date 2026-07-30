@@ -53,6 +53,8 @@ function bindGridData(para) {
             onBeforeLoad: setGridSize,
             onLoadSuccess: onLoaded
         });
+        //隐藏操作列（需要时去掉此行即可恢复显示）
+        $('#tb_Users').datagrid('hideColumn', 'UserID');
     } else {
         $('#tb_Users').datagrid('load', para);
     }

@@ -619,7 +619,7 @@
             // 吃分/放分需要金币阈值
             var gold = $('#numGold_Total').numberbox('getValue');
             if (!gold || parseInt(gold) <= 0) {
-                showUserToast('请填写大于 0 的金币阈值！', 'danger');
+                showUserToast('请填写大于 0 的目标！', 'danger');
                 return;
             }
             para.GoldThreshold = gold;
@@ -1136,7 +1136,7 @@
                 </td>
             </tr>
             <tr>
-                <td align="right">金币阈值</td>
+                <td align="right">目标</td>
                 <td align="left" class="pd5">
                     <input class="easyui-numberbox win-txt" id="numGoldLimit1" name="GoldLimit" data-options="min:0,precision:0,prompt:'0=不限制'" style="width:150px;" />
                     <span style="color:#999;font-size:12px;">金币上限到达后恢复正常吞吐币，0=不限制</span>
@@ -1182,7 +1182,7 @@
                 </td>
             </tr>
             <tr>
-                <td align="right">金币阈值</td>
+                <td align="right">目标</td>
                 <td align="left" class="pd5">
                     <input class="easyui-numberbox win-txt" id="numGoldLimit2" name="GoldLimit11" data-options="min:0,precision:0,prompt:'0=不限制'" style="width:150px;" />
                     <span style="color:#999;font-size:12px;">金币上限到达后恢复正常吞吐币，0=不限制</span>
@@ -1251,7 +1251,7 @@
                 </td>
             </tr>
             <tr class="trPaiJiKill" style="display:none;">
-                <td align="right">金币阈值</td>
+                <td align="right">目标</td>
                 <td align="left" class="pd5">
                     <input class="easyui-numberbox win-txt" id="numGoldLimit3" name="GoldLimitPaiJi" data-options="min:0,precision:0,prompt:'0=不限制'" style="width:150px;" />
                     <span style="color:#999;font-size:12px;">金币上限到达后恢复正常吞吐币，0=不限制</span>
@@ -1320,7 +1320,7 @@
                 </td>
             </tr>
             <tr class="trLabaKill" style="display:none;">
-                <td align="right">金币阈值</td>
+                <td align="right">目标</td>
                 <td align="left" class="pd5">
                     <input class="easyui-numberbox win-txt" id="numGoldLimitLaba" name="GoldLimitLaba" data-options="min:0,precision:0,prompt:'0=不限制'" style="width:150px;" />
                     <span style="color:#999;font-size:12px;">金币上限到达后恢复正常吞吐币，0=不限制</span>
@@ -1343,7 +1343,7 @@
         <table cellpadding="0" cellspacing="0" border="0" width="100%" align="center">
             <tr>
                 <td colspan="2" align="left" style="padding-left: 50px;color:#999;">
-                    <p style="margin-left:-35px;">温馨提示：吃分/放分累计达到金币阈值后自动失效，恢复桌台参数难度</p>
+                    <p style="margin-left:-35px;">温馨提示：吃分/放分累计达到目标后自动失效，恢复桌台参数难度</p>
                 </td>
             </tr>
             <tr>
@@ -1389,7 +1389,7 @@
                 </td>
             </tr>
             <tr class="trTotalGold">
-                <td align="right">金币阈值</td>
+                <td align="right">目标</td>
                 <td align="left" class="pd5">
                     <input class="easyui-numberbox win-txt" id="numGold_Total" name="GoldThreshold" data-options="min:0,precision:0,prompt:'必填，>0'" style="width:150px;" />
                 </td>

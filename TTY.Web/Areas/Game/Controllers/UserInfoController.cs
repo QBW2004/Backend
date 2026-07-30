@@ -1100,12 +1100,12 @@ namespace YYT.Web.Areas.Game.Controllers
                 if (ucOk)
                 {
                     msg.code = 1;
-                    msg.content = "设置成功" + (goldLimit > 0 && goldSaved ? "，金币阈值已设置" : "");
+                    msg.content = "设置成功" + (goldLimit > 0 && goldSaved ? "，目标已设置" : "");
                 }
                 else if (goldLimit > 0 && goldSaved)
                 {
                     msg.code = 1;
-                    msg.content = "金币阈值已设置";
+                    msg.content = "目标已设置";
                 }
                 else
                 {
@@ -1180,12 +1180,12 @@ namespace YYT.Web.Areas.Game.Controllers
                 if (ucOkBet)
                 {
                     msg.code = 1;
-                    msg.content = "设置成功" + (goldLimitBet > 0 && goldSavedBet ? "，金币阈值已设置" : "");
+                    msg.content = "设置成功" + (goldLimitBet > 0 && goldSavedBet ? "，目标已设置" : "");
                 }
                 else if (goldLimitBet > 0 && goldSavedBet)
                 {
                     msg.code = 1;
-                    msg.content = "金币阈值已设置";
+                    msg.content = "目标已设置";
                 }
                 else
                 {
@@ -1275,12 +1275,12 @@ namespace YYT.Web.Areas.Game.Controllers
                 if (ucOkPai)
                 {
                     msg.code = 1;
-                    msg.content = "设置成功" + (goldLimitPaiJi > 0 && goldSavedPai ? "，金币阈值已设置" : "");
+                    msg.content = "设置成功" + (goldLimitPaiJi > 0 && goldSavedPai ? "，目标已设置" : "");
                 }
                 else if (goldLimitPaiJi > 0 && goldSavedPai)
                 {
                     msg.code = 1;
-                    msg.content = "金币阈值已设置";
+                    msg.content = "目标已设置";
                 }
                 else
                 {
@@ -1378,12 +1378,12 @@ namespace YYT.Web.Areas.Game.Controllers
                 if (ucOkLaba)
                 {
                     msg.code = 1;
-                    msg.content = "设置成功" + (goldLimitLaba > 0 && goldSavedLaba ? "，金币阈值已设置" : "");
+                    msg.content = "设置成功" + (goldLimitLaba > 0 && goldSavedLaba ? "，目标已设置" : "");
                 }
                 else if (goldLimitLaba > 0 && goldSavedLaba)
                 {
                     msg.code = 1;
-                    msg.content = "金币阈值已设置";
+                    msg.content = "目标已设置";
                 }
                 else
                 {

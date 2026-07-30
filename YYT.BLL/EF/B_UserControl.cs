@@ -441,7 +441,7 @@ namespace YYT.BLL.EF
             // 控牌按次数控制，不需要金币阈值；仅吃分/放分需要金币阈值
             if (mode != (int)EControlMode.TotalCard && goldThreshold <= 0)
             {
-                msg.content = "金币阈值必须大于 0！";
+                msg.content = "目标必须大于 0！";
                 return msg;
             }
             if (mode == (int)EControlMode.TotalCard)
