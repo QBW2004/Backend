@@ -331,11 +331,11 @@
                                     <option value="9">9 级：上限 18</option>
                                 </select>
                             </div>
-                            <div class="gc-field">
+                            <div class="gc-field" style="display:none;">
                                 <label>场地类型</label>
                                 <select id="gcFishSiteType" name="FishSITE_TYPE" class="gc-select">
                                     <option value="0">0 级：大场地</option>
-                                    <option value="1">1 级：中场地</option>
+                                    <option value="1" selected>1 级：中场地</option>
                                     <option value="2">2 级：小场地</option>
                                     <option value="3">3 级：标准场</option>
                                 </select>
@@ -736,7 +736,7 @@
             gcFillPayout(t);
         } else if (type === 2) {
             $('#gcFishDif').val(t.fishDif);
-            $('#gcFishSiteType').val(t.fishSiteType);
+            $('#gcFishSiteType').val(1); // 场地类型已隐藏，固定中场地(1)
         } else if (type === 3) {
             gcFillLabaPayout(t);
         }

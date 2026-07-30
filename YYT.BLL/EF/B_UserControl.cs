@@ -329,8 +329,8 @@ namespace YYT.BLL.EF
                             GameName = c.GameName,
                             ControlMode = c.ControlMode,
                             TargetCoins = c.TargetCoins,
-                            ConsumedCoins = c.ConsumedCoins,
-                            GrantedCoins = c.GrantedCoins,
+                            ConsumedCoins = c.ConsumedCoins > 0 ? c.ConsumedCoins : 0, // 净盈亏口径下进度可能回退为负，显示按0封底
+                            GrantedCoins = c.GrantedCoins > 0 ? c.GrantedCoins : 0,
                             LimitCoins = c.LimitCoins,
                             Status = c.Status,
                             CreatedBy = c.CreatedBy,
@@ -614,8 +614,8 @@ namespace YYT.BLL.EF
                             GameId = c.GameId,
                             ControlMode = c.ControlMode,
                             TargetCoins = c.TargetCoins,
-                            ConsumedCoins = c.ConsumedCoins,
-                            GrantedCoins = c.GrantedCoins,
+                            ConsumedCoins = c.ConsumedCoins > 0 ? c.ConsumedCoins : 0, // 净盈亏口径下进度可能回退为负，显示按0封底
+                            GrantedCoins = c.GrantedCoins > 0 ? c.GrantedCoins : 0,
                             LimitCoins = c.KillRatio, // 强度/控牌值借用 LimitCoins 字段回显
                             Status = c.Status,
                             CreatedBy = c.CreatedBy,
@@ -691,8 +691,8 @@ namespace YYT.BLL.EF
                             GameId = c.GameId,
                             ControlMode = c.ControlMode,
                             TargetCoins = c.TargetCoins,
-                            ConsumedCoins = c.ConsumedCoins,
-                            GrantedCoins = c.GrantedCoins,
+                            ConsumedCoins = c.ConsumedCoins > 0 ? c.ConsumedCoins : 0, // 净盈亏口径下进度可能回退为负，显示按0封底
+                            GrantedCoins = c.GrantedCoins > 0 ? c.GrantedCoins : 0,
                             LimitCoins = c.KillRatio,
                             Status = c.Status,
                             CreatedBy = c.CreatedBy,
