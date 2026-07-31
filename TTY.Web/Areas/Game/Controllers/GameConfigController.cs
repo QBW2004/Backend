@@ -983,6 +983,9 @@ namespace YYT.Web.Areas.Game.Controllers
                             LogHelper.WriteLog(typeof(GameConfigController), exPa);
                         }
                     }
+                    // 写库成功即标记已落库：即使 RP/TC/PA 热更管道失败也刷新前端列表，
+                    // 避免"DB 已写、Web 列表不刷新"（对齐 B_SuperPara.PushHotUpdate 的 datas=true 约定）。
+                    msg.datas = true;
                     // 回显本次落库的按桌关键值，便于核对表单提交与库中数据是否一致
                     msg.content = (msg.content ?? "") + " [桌" + tIdx + " 已写入: BetMin=" + betMin + ", BetMax=" + betMax + ", CoinSc=" + coinSc + ", CoinNeed=" + coinNeed + ", CardDif=" + cardDif + ", HypeType=" + hypeType + "]";
                 }
@@ -998,19 +1001,18 @@ namespace YYT.Web.Areas.Game.Controllers
                     // 概率固定为小放水档N=3（小鱼10%/中鱼1.67%/Boss0.33%），难度仅控制倍率上限。HAR 复用 DIF 值；场地类型 0-3。
                     int fishDif = form.Q<int>("FishDIF", 0);
                     int fishSiteType = form.Q<int>("FishSITE_TYPE", 1);
-                    int tableIdFull = gameId * 1000 + tIdx;
-                    using (var ef = new GameDbContext())
-                    {
-                        ef.Database.ExecuteSqlCommand(
-                            "DELETE FROM roomtableconfig WHERE GAME_ID=" + gameId + " AND TableIndex=" + tIdx);
-                        int rtBetMinSave = betMin;
-                        int rtBetMaxSave = betMax;
-                        if (IsDecimalBetFish(gameId)) // fish servers: internal unit = 0.1 credit
-                        {
-                            rtBetMinSave = (int)Math.Round(minBetDisplay * 10m, MidpointRounding.AwayFromZero);
-                            rtBetMaxSave = (int)Math.Round(maxBetDisplay * 10m, MidpointRounding.AwayFromZero);
-                        }
-                        ef.Database.ExecuteSqlCommand(
+	                    int tableIdFull = gameId * 1000 + tIdx;
+	                    int rtBetMinSave = betMin, rtBetMaxSave = betMax; // 提至 using 外，供后续 TC tableExt 使用
+	                    using (var ef = new GameDbContext())
+	                    {
+	                        ef.Database.ExecuteSqlCommand(
+	                            "DELETE FROM roomtableconfig WHERE GAME_ID=" + gameId + " AND TableIndex=" + tIdx);
+	                        if (IsDecimalBetFish(gameId)) // fish servers: internal unit = 0.1 credit
+	                        {
+	                            rtBetMinSave = (int)Math.Round(minBetDisplay * 10m, MidpointRounding.AwayFromZero);
+	                            rtBetMaxSave = (int)Math.Round(maxBetDisplay * 10m, MidpointRounding.AwayFromZero);
+	                        }
+	                        ef.Database.ExecuteSqlCommand(
                             "INSERT INTO roomtableconfig (GAME_ID, RoomIndex, TableIndex, TableName, Enabled, OneCoinScore, BetMin, BetMax, CoinsNeed, IdleFireTimeoutSec, IdleFireKickEnabled, MaxSeats) VALUES (" +
                             gameId + ",0," + tIdx + ",'" + tName.Replace("'", "''") + "'," + tblEnabled + "," + coinSc + "," + rtBetMinSave + "," + rtBetMaxSave + "," + coinNeed + "," + idleSec + "," + tblIdleKick + "," + tblMaxSeats + ")");
                         // 同步写 parafish（按桌维度难度）：DIF/HAR/SITE_TYPE 落库，供中心服 GetFishPara 读取后下发 tablePara 块。
@@ -1020,43 +1022,74 @@ namespace YYT.Web.Areas.Game.Controllers
                         ef.Database.ExecuteSqlCommand(
                             "INSERT INTO parafish (ID,GAME_ID,TableIndex,TableName,DIF,HAR,SITE_TYPE) VALUES (" +
                             tableIdFull + "," + gameId + "," + tIdx + ",'" + tName.Replace("'", "''") + "'," + fishDif + "," + fishDif + "," + fishSiteType + ")");
-                        if (IsDecimalBetFish(gameId))
+                        // 一房N桌模型：服务端 GetFishPara 按 roomMax=1 只读 base 行(ID=gameId*1000)，
+                        // 房间级公共参数(底注/兑换/入场)必须同步 base 行，否则新建/编辑桌台后
+                        // 子游戏收到的房间底注仍是旧值(如内部 2-1000 而非 10-1000)，需重启才刷新。
+                        // decimal 鱼机存 Units(显示值×10)，非 decimal 鱼机存原始 BET_MIN/BET_MAX。
+                        try
                         {
-                            try
+                            // 兼容旧多房间模型：按桌行(存在时)仍写一份
+                            if (IsDecimalBetFish(gameId))
                             {
                                 ef.Database.ExecuteSqlCommand(
                                     "UPDATE ParaRoom SET BET_MIN=" + betMin + ",BET_MAX=" + betMax + ",MinBetUnits=" + rtBetMinSave + ",MaxBetUnits=" + rtBetMaxSave + ",COIN_SC=" + coinSc + ",COIN_NEED=" + coinNeed + " WHERE GAME_ID=" + gameId + " AND ID=" + (gameId * 1000 + tIdx));
                             }
-                            catch (Exception exRoom)
-                            {
-                                LogHelper.WriteLog(typeof(GameConfigController), exRoom);
-                            }
+                            string baseRowSql = IsDecimalBetFish(gameId)
+                                ? ("UPDATE ParaRoom SET BET_MIN=" + betMin + ",BET_MAX=" + betMax + ",MinBetUnits=" + rtBetMinSave + ",MaxBetUnits=" + rtBetMaxSave + ",EX_COIN=" + exCoin + ",COIN_SC=" + coinSc + ",COIN_NEED=" + coinNeed + " WHERE GAME_ID=" + gameId + " AND ID=" + (gameId * 1000))
+                                : ("UPDATE ParaRoom SET BET_MIN=" + betMin + ",BET_MAX=" + betMax + ",EX_COIN=" + exCoin + ",COIN_SC=" + coinSc + ",COIN_NEED=" + coinNeed + " WHERE GAME_ID=" + gameId + " AND ID=" + (gameId * 1000));
+                            ef.Database.ExecuteSqlCommand(baseRowSql);
+                        }
+                        catch (Exception exRoom)
+                        {
+                            LogHelper.WriteLog(typeof(GameConfigController), exRoom);
                         }
                         // 同步 pararoom.NUM = roomtableconfig 条数，保证旧房间参数口径与新按桌配置一致
                         SyncFishTableNum(ef, gameId);
                     }
-                    var srv = new SConnect();
+                    var srv = new SConnect();   // RP/TC/PA 共用同一连接，减少管道竞争
                     msg = srv.SendReadString(EScMsgType.RP, gameId);
                     if (msg.code == 1)
                     {
-                        var srvTc = new SConnect();
-                        srvTc.SendTcCommand((ushort)gameId, 0, (ushort)tIdx, tName, (byte)(tblEnabled != 0 ? 1 : 0), (uint)idleSec, (byte)(tblIdleKick != 0 ? 1 : 0), (ushort)tblMaxSeats);
+                        // TC 热更（桌台基础配置 + tableExt 押注参数）
+                        // 鱼机补传 tableExt(BetMin/BetMax/OneCoinScore/CoinsNeed),使押注参数有单条热更通道,
+                        // 不再仅依赖 RP 全量重载(避免新建桌台后未重启时押注对不上)。
+                        if (IsDecimalBetFish(gameId))
+                        {
+                            var tExt = new SConnect.TcTableExt
+                            {
+                                BetMin = (uint)rtBetMinSave,
+                                BetMax = (uint)rtBetMaxSave,
+                                OneCoinScore = (uint)coinSc,
+                                CoinsNeed = (uint)coinNeed
+                            };
+                            srv.SendTcCommand((ushort)gameId, 0, (ushort)tIdx, tName, (byte)(tblEnabled != 0 ? 1 : 0), (uint)idleSec, (byte)(tblIdleKick != 0 ? 1 : 0), (ushort)tblMaxSeats, null, tExt);
+                        }
+                        else
+                        {
+                            srv.SendTcCommand((ushort)gameId, 0, (ushort)tIdx, tName, (byte)(tblEnabled != 0 ? 1 : 0), (uint)idleSec, (byte)(tblIdleKick != 0 ? 1 : 0), (ushort)tblMaxSeats);
+                        }
                         // 鱼机难度热更：PA + gameID(2位) + tableIndex(3位) + DIF + SITE_TYPE。
                         // 中心服 PA 分支调 SetTablePara 下发 COM_TABLE_SET 给子游戏实时生效（AlgPlayerReset_DIF），
                         // 同时 SetTablePara 鱼机分支会调 UpsertFishTablePara 落库，保证 RP 全量重载与重启后一致。
                         try
                         {
-                            var srvPa = new SConnect();
-                            srvPa.SendReadString(EScMsgType.PA,
+                            var paMsg = srv.SendReadString(EScMsgType.PA,
                                 gameId.ToString().PadLeft(2, '0'),
                                 tIdx.ToString().PadLeft(3, '0'),
                                 fishDif, fishSiteType);
+                            if (paMsg.code != 1)
+                            {
+                                LogHelper.WriteLog(typeof(GameConfigController), "鱼机难度热更失败：" + (paMsg.content ?? ""));
+                            }
                         }
                         catch (Exception exPa)
                         {
                             LogHelper.WriteLog(typeof(GameConfigController), exPa);
                         }
                     }
+                    // 写库成功即标记已落库：即使 RP/TC/PA 热更管道失败也刷新前端列表，
+                    // 避免"DB 已写、Web 列表不刷新"（对齐 B_SuperPara.PushHotUpdate 的 datas=true 约定）。
+                    msg.datas = true;
                     // 回显本次落库的按桌关键值，便于核对表单提交与库中数据是否一致
                     msg.content = (msg.content ?? "") + " [桌" + tIdx + " 已写入: CoinsNeed=" + coinNeed + ", BetMin=" + betMin + ", BetMax=" + betMax + ", CoinSc=" + coinSc + ", FishDif=" + fishDif + ", FishSite=" + fishSiteType + "]";
                 }

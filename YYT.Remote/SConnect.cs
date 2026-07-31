@@ -383,55 +383,65 @@ namespace YYT.Remote
                 if (this.PipeClient.IsConnected == false)
                     this.InitPipe();
 
-                // 直接写底层流，按大端序逐字段组包。
-                using (var bw = new BinaryWriter(this.PipeClient, Encoding.UTF8, leaveOpen: true))
+                // 整包组包后一次性写入管道：中心服管道为 PIPE_TYPE_MESSAGE 消息模式，
+                // 每次 WriteFile 即一条消息；旧实现把 BinaryWriter 直接挂在管道流上，
+                // 每个字段变成 1-4 字节的小消息，中心服逐条读取后不匹配任何命令、
+                // 不回复 TCOK，TC 热更静默失败（后台日志表现为 TC 指令读回复超时）。
+                byte[] payload;
+                using (var ms = new MemoryStream())
                 {
-                    // 命令头 "TC"
-                    bw.Write((byte)'T');
-                    bw.Write((byte)'C');
-                    // U16 BE ×3
-                    bw.Write(HostToNetworkU16(gameID));
-                    bw.Write(HostToNetworkU16(roomIndex));
-                    bw.Write(HostToNetworkU16(tableIndex));
-                    // Poco 7-bit varint 长度前缀 + UTF-8 桌名
-                    Write7BitVarint(bw, (uint)nameBytes.Length);
-                    bw.Write(nameBytes);
-                    // U8 / U32 BE / U8 / U16 BE
-                    bw.Write(enabled);
-                    bw.Write(HostToNetworkU32(idleFireTimeoutSec));
-                    bw.Write(idleFireKickEnabled);
-                    bw.Write(HostToNetworkU16(maxSeats));
-                    if (tableExt != null)
+                    using (var bw = new BinaryWriter(ms, Encoding.UTF8, true))
                     {
-                        bw.Write(HostToNetworkU32(tableExt.BetMin));
-                        bw.Write(HostToNetworkU32(tableExt.BetMax));
-                        bw.Write(HostToNetworkU32(tableExt.OneCoinScore));
-                        bw.Write(HostToNetworkU32(tableExt.CoinsNeed));
-                    }
-                    if (betExt != null)
-                    {
-                        bw.Write(betExt.BetTime);
-                        bw.Write(HostToNetworkU32(betExt.BetMin));
-                        bw.Write(HostToNetworkU32(betExt.BetMax));
-                        bw.Write(HostToNetworkU32(betExt.BankerScoreNeed));
-                        bw.Write(HostToNetworkU32(betExt.ItemSingleScoreLimit));
-                        bw.Write(HostToNetworkU32(betExt.ItemAllScoreLimit));
-                        bw.Write(HostToNetworkU32(betExt.CoinsNeed));
-                        bw.Write(HostToNetworkU32(betExt.OneCoinScore));
-                        byte[] scoreBytes = Encoding.UTF8.GetBytes(betExt.BetScores ?? string.Empty);
-                        Write7BitVarint(bw, (uint)scoreBytes.Length);
-                        bw.Write(scoreBytes);
-                        bw.Write(betExt.DefaultBetIndex);
-                        if (betExt.IncludeViceDraw)
+                        // 命令头 "TC"
+                        bw.Write((byte)'T');
+                        bw.Write((byte)'C');
+                        // U16 BE ×3
+                        bw.Write(HostToNetworkU16(gameID));
+                        bw.Write(HostToNetworkU16(roomIndex));
+                        bw.Write(HostToNetworkU16(tableIndex));
+                        // Poco 7-bit varint 长度前缀 + UTF-8 桌名
+                        Write7BitVarint(bw, (uint)nameBytes.Length);
+                        bw.Write(nameBytes);
+                        // U8 / U32 BE / U8 / U16 BE
+                        bw.Write(enabled);
+                        bw.Write(HostToNetworkU32(idleFireTimeoutSec));
+                        bw.Write(idleFireKickEnabled);
+                        bw.Write(HostToNetworkU16(maxSeats));
+                        if (tableExt != null)
                         {
-                            bw.Write(HostToNetworkU32(betExt.BetMinVice));
-                            bw.Write(HostToNetworkU32(betExt.BetMaxVice));
-                            bw.Write(HostToNetworkU32(betExt.BetMinDraw));
-                            bw.Write(HostToNetworkU32(betExt.BetMaxDraw));
+                            bw.Write(HostToNetworkU32(tableExt.BetMin));
+                            bw.Write(HostToNetworkU32(tableExt.BetMax));
+                            bw.Write(HostToNetworkU32(tableExt.OneCoinScore));
+                            bw.Write(HostToNetworkU32(tableExt.CoinsNeed));
                         }
+                        if (betExt != null)
+                        {
+                            bw.Write(betExt.BetTime);
+                            bw.Write(HostToNetworkU32(betExt.BetMin));
+                            bw.Write(HostToNetworkU32(betExt.BetMax));
+                            bw.Write(HostToNetworkU32(betExt.BankerScoreNeed));
+                            bw.Write(HostToNetworkU32(betExt.ItemSingleScoreLimit));
+                            bw.Write(HostToNetworkU32(betExt.ItemAllScoreLimit));
+                            bw.Write(HostToNetworkU32(betExt.CoinsNeed));
+                            bw.Write(HostToNetworkU32(betExt.OneCoinScore));
+                            byte[] scoreBytes = Encoding.UTF8.GetBytes(betExt.BetScores ?? string.Empty);
+                            Write7BitVarint(bw, (uint)scoreBytes.Length);
+                            bw.Write(scoreBytes);
+                            bw.Write(betExt.DefaultBetIndex);
+                            if (betExt.IncludeViceDraw)
+                            {
+                                bw.Write(HostToNetworkU32(betExt.BetMinVice));
+                                bw.Write(HostToNetworkU32(betExt.BetMaxVice));
+                                bw.Write(HostToNetworkU32(betExt.BetMinDraw));
+                                bw.Write(HostToNetworkU32(betExt.BetMaxDraw));
+                            }
+                        }
+                        bw.Flush();
                     }
-                    bw.Flush();
+                    payload = ms.ToArray();
                 }
+                // 一次性 WriteFile：保证整条 TC 作为一条消息到达中心服
+                this.PipeClient.Write(payload, 0, payload.Length);
 
                 // 读取 center 文本回复(TCOK\n / TCER\n)，与 RP/PA 风格一致。
                 sr = new StreamReader(this.PipeClient);
