@@ -559,9 +559,12 @@
             callBack: function () {
                 $('#txtE_ID_Total').textbox('setValue', uid);
                 $('#hfID_Total').val(uid);
-                $('#selE_Action_Total').combobox({ onChange: bindTotalCardAction });
-                $('#selE_Action_Total').combobox('loadData', totalCardActionData());
-                $('#selE_Number_Total').combobox('loadData', valSelData());
+                    $('#selE_Action_Total').combobox({ onChange: bindTotalCardAction });
+                    $('#selE_Action_Total').combobox('loadData', totalCardActionData());
+                    // loadData 默认选中第一项(id=5)但不会触发 onChange，需显式初始化控制牌类型下拉，
+                    // 否则 #selE_Type_Total 为空，提交时 CardValue="" 被解析为 0(杂牌)，导致送牌型失败。
+                    bindTotalCardAction($('#selE_Action_Total').combobox('getValue'));
+                    $('#selE_Number_Total').combobox('loadData', valSelData());
                 $('#selE_Total_Total').combobox('loadData', valSelDataPAIJI1());
                 $('#selE_Strength_Total').combobox('loadData', getComboValKill());
                 $('#numGold_Total').numberbox('setValue', 0);
