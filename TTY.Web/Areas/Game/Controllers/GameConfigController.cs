@@ -260,6 +260,17 @@ namespace YYT.Web.Areas.Game.Controllers
                     {
                         int subType = GetLabaSubType(gameId);
                         string gameName = ef.Games.Where(c => c.GameId == gameId).Select(c => c.Name).FirstOrDefault() ?? ("游戏" + gameId);
+                        // 明星97(GameId=16) RTP/Combo 配置为游戏级（存 TableIndex=0），
+                        // 先一次性读入，供每桌行回显（服务端 GetGameConfigParams 按 GameId 全量合并）。
+                        Dictionary<string, int> mx97Rtp = null;
+                        if (subType == 1)
+                        {
+                            mx97Rtp = ef.GameConfigLabas
+                                .Where(c => c.GameId == gameId && (c.OptKey.StartsWith("Rtp") || c.OptKey.StartsWith("Combo")))
+                                .AsEnumerable()
+                                .GroupBy(c => c.OptKey)
+                                .ToDictionary(g => g.Key, g => g.First().OptValue);
+                        }
                         // 从 roomtableconfig 获取桌台列表（对齐一房N桌模型）
                         var tableIdxs = ef.Database.SqlQuery<int>(
                             "SELECT TableIndex FROM roomtableconfig WHERE GAME_ID=" + gameId + " ORDER BY TableIndex").ToList();
@@ -349,6 +360,10 @@ namespace YYT.Web.Areas.Game.Controllers
                                 row["scoreSwitch"] = scoreSwU > 0 ? scoreSwU / 10m : 0.1m;
                             }
                             row["idleFireTimeoutSec"] = 0;
+
+                            // 明星97：追加 RTP/Combo 配置回显（游戏级，仅 subType==1 有）
+                            if (subType == 1 && mx97Rtp != null)
+                                AddMx97RtpRowFields(row, mx97Rtp);
 
                             rows.Add(row);
                         }
@@ -677,7 +692,39 @@ namespace YYT.Web.Areas.Game.Controllers
                             rtBetMin + "," + rtBetMax + "," + rtCoinsNeed + ",0,0)");
                     }
 
+                    // ── 明星97(GameId=16) RTP 控制配置：游戏级参数写 GameConfigLaba(TableIndex=0)，
+                    // 留空即删除该 OptKey（服务端整包先清空再套用，缺项回内置默认）。
+                    // 校验/落库失败则中断本次保存，避免桌台已存而 RTP 未生效的观感问题。
+                    if (subType == 1)
+                    {
+                        Msg rtpMsg = SaveMx97RtpConfig(form, gameId);
+                        if (rtpMsg.code != 1)
+                        {
+                            return Json(rtpMsg);
+                        }
+                    }
+
                     msg = new B_LabaGamePara().SaveTableFull(tableId, gameId, labaList, labaPara, labaTableName, labaEnabled);
+
+                    // ── 明星97 保存成功后补发 PC 热更：center UpdateGameConfig → SendExtendedPara，
+                    // 游戏服 ResetConfig + ApplyProfile，下一局立即生效（无需重启）。
+                    if (subType == 1 && msg.code == 1)
+                    {
+                        try
+                        {
+                            var srvPc = new SConnect();
+                            var pcMsg = srvPc.SendPcCommand((ushort)gameId);
+                            if (pcMsg.code == 1)
+                                msg.content = (msg.content ?? "") + "；RTP 配置已触发游戏服热更，下一局生效";
+                            else
+                                msg.content = (msg.content ?? "") + "；RTP 配置热更指令发送失败：" + pcMsg.content;
+                        }
+                        catch (Exception exPc)
+                        {
+                            LogHelper.WriteLog(typeof(GameConfigController), exPc);
+                            msg.content = (msg.content ?? "") + "；RTP 配置热更指令发送异常：" + exPc.Message;
+                        }
+                    }
                     return Json(msg);
                 }
                 bool isNew = tableId < 0;
@@ -717,6 +764,24 @@ namespace YYT.Web.Areas.Game.Controllers
                 int coinNeed = form.Q<int>("COIN_NEED", 0);
                 int gameMo = form.Q<int>("Game_Mo", 0);
                 decimal scoreSwitch = form.Q<decimal>("scoreSwitch", 0m);
+
+                // gcScoreSwitchRule: 加芬幅度禁止为 0 —— 鱼机(2) 最小 0.1, 牌机(1)/拉霸(3) 最小 1 且必须整数
+                if (gameType == 2)
+                {
+                    if (scoreSwitch < 0.1m)
+                    {
+                        msg.content = "加芬幅度必须大于 0，鱼机最小 0.1!";
+                        return Json(msg);
+                    }
+                }
+                else if (gameType == 1 || gameType == 3)
+                {
+                    if (scoreSwitch < 1m || scoreSwitch != decimal.Truncate(scoreSwitch))
+                    {
+                        msg.content = "加芬幅度必须为大于等于 1 的整数!";
+                        return Json(msg);
+                    }
+                }
 
                 if (gameType == 0)
                 {
@@ -843,7 +908,17 @@ namespace YYT.Web.Areas.Game.Controllers
                     int tableIdFull = gameId * 1000 + tIdx;
                     // 牌机专属按桌参数(扩展表)
                     int cardExCoin = form.Q<int>("EX_COIN", 10000);
+                    if (scoreSwitch != decimal.Truncate(scoreSwitch))
+                    {
+                        msg.content = "牌机加芬幅度必须为整数!";
+                        return Json(msg);
+                    }
                     int cardScoreSwitch = (int)Math.Round(scoreSwitch, MidpointRounding.AwayFromZero);
+                    if (cardScoreSwitch < 1)
+                    {
+                        msg.content = "牌机加芬幅度必须为大于等于 1 的整数!";
+                        return Json(msg);
+                    }
                     int cardGameMo = gameMo;
                     int cardMaxBetUnits = (int)Math.Round(maxBetDisplay * 10m, MidpointRounding.AwayFromZero);
                     int cardMinBetUnits = (int)Math.Round(minBetDisplay * 10m, MidpointRounding.AwayFromZero);
@@ -1526,6 +1601,138 @@ namespace YYT.Web.Areas.Game.Controllers
             if (prop == null) return 0;
             var val = prop.GetValue(laba);
             return val != null ? (int)val : 0;
+        }
+
+        // ── 明星97(GameId=16) RTP 控制配置（游戏级，存 GameConfigLaba TableIndex=0）──
+        // 见《明星97-RTP控制-后台对接文档》：OptValue 为 int，小数用整数放大表示；
+        // 服务端收到整包配置先清空再套用，后台删掉某 OptKey 即回内置默认值。
+        private static readonly string[] Mx97RtpKeys =
+        {
+            "RtpTargetX100", "RtpKp", "RtpDeadband", "RtpDeltaMax",
+            "RtpStockThreshold", "UseOutcomeFirst", "RtpWindow"
+        };
+        private static readonly string[] Mx97RtpLabels =
+        {
+            "目标返奖率", "闭环比例系数", "死区", "单步偏置上限",
+            "大奖库存阈值", "结果优先生成开关", "RTP 统计窗口"
+        };
+        private static readonly string[] Mx97RtpRanges =
+        {
+            "5000-12000（9000=90.00%）", "1-500（越大回调越快、波动越大）", "0-200（±0.10% 内不干预）", "1-200（单局最多拉动 0.40）",
+            "≥1（赔率≥该值视为大奖）", "0/1（0=回退旧开奖逻辑）", "≥100000（累计下注量）"
+        };
+
+        /// <summary>
+        /// 保存明星97 RTP 控制配置：校验 + 写 GameConfigLaba(GameId=16, TableIndex=0)。
+        /// 留空的 RTP/Combo 项删除对应 OptKey（回内置默认/不限）；
+        /// UseOutcomeFirst=0（回退旧逻辑）、ComboStock=0（当天禁出）为合法显式值。
+        /// </summary>
+        private static Msg SaveMx97RtpConfig(FormCollection form, int gameId)
+        {
+            Msg msg = new Msg(1, "RTP 配置保存成功！");
+            List<M_GameConfigLaba> toWrite = new List<M_GameConfigLaba>();
+
+            // RTP 闭环参数（7 项）：留空(-1)删除；UseOutcomeFirst 开关恒有值(0/1)
+            for (int i = 0; i < Mx97RtpKeys.Length; i++)
+            {
+                string key = Mx97RtpKeys[i];
+                int v = form.Q<int>(key, -1);
+                if (key == "UseOutcomeFirst")
+                {
+                    if (v != 0 && v != 1)
+                    {
+                        msg.code = 0;
+                        msg.content = "「结果优先生成开关」取值不合法（0=回退旧开奖逻辑 / 1=结果优先生成）！";
+                        return msg;
+                    }
+                    toWrite.Add(new M_GameConfigLaba { GameId = gameId, OptKey = key, OptValue = v, Type = "RTP" });
+                    continue;
+                }
+                if (v < 0) continue;   // 留空：删除该 OptKey，回内置默认
+                bool ok = true;
+                switch (key)
+                {
+                    case "RtpTargetX100": ok = v >= 5000 && v <= 12000; break;
+                    case "RtpKp": ok = v >= 1 && v <= 500; break;
+                    case "RtpDeadband": ok = v >= 0 && v <= 200; break;
+                    case "RtpDeltaMax": ok = v >= 1 && v <= 200; break;
+                    case "RtpStockThreshold": ok = v >= 1; break;
+                    case "RtpWindow": ok = v >= 100000; break;
+                }
+                if (!ok)
+                {
+                    msg.code = 0;
+                    msg.content = "RTP 参数「" + Mx97RtpLabels[i] + "」取值不合法，应为 " + Mx97RtpRanges[i] + "！";
+                    return msg;
+                }
+                toWrite.Add(new M_GameConfigLaba { GameId = gameId, OptKey = key, OptValue = v, Type = "RTP" });
+            }
+
+            // 组合结果配置（300-359）：Combo<code> 赔率>0 / ComboProb<code> 出现率1-10000 / ComboStock<code> 库存≥0
+            for (int code = 300; code <= 359; code++)
+            {
+                int pay = form.Q<int>("Combo" + code, -1);
+                int prob = form.Q<int>("ComboProb" + code, -1);
+                int stock = form.Q<int>("ComboStock" + code, -1);
+                if (pay > 0)
+                    toWrite.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "Combo" + code, OptValue = pay, Type = "Combo" });
+                else if (pay != -1)
+                {
+                    msg.code = 0;
+                    msg.content = "结果类 " + code + " 赔率必须大于 0（留空表示用内置默认赔率）！";
+                    return msg;
+                }
+                if (prob > 0 && prob <= 10000)
+                    toWrite.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "ComboProb" + code, OptValue = prob, Type = "Combo" });
+                else if (prob != -1)
+                {
+                    msg.code = 0;
+                    msg.content = "结果类 " + code + " 目标出现率须在 1-10000（万分比），留空表示用内置默认出现率！";
+                    return msg;
+                }
+                if (stock >= 0)   // 0=当天禁出，合法
+                    toWrite.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "ComboStock" + code, OptValue = stock, Type = "Combo" });
+            }
+
+            // 落库：删除该游戏全部被管理 OptKey（含历史遗留的其它 TableIndex 行），
+            // 再按本次配置写入 TableIndex=0（服务端按 GameId 合并读取，TableIndex 不影响语义）。
+            // 被管理命名空间为 Rtp*/Combo*（明星97 专用），LIKE 前缀匹配避免大 IN 参数列表。
+            using (var ef = new GameDbContext())
+            {
+                List<M_GameConfigLaba> olds = ef.GameConfigLabas
+                    .Where(c => c.GameId == gameId && (c.OptKey.StartsWith("Rtp") || c.OptKey.StartsWith("Combo")))
+                    .ToList();
+                ef.GameConfigLabas.RemoveRange(olds);
+                foreach (M_GameConfigLaba row in toWrite)
+                {
+                    row.GameId = gameId;
+                    row.TableIndex = 0;
+                    row.TIME = DateTime.Now;
+                    ef.GameConfigLabas.Add(row);
+                }
+                ef.SaveChanges();
+            }
+            return msg;
+        }
+
+        /// <summary>
+        /// 把明星97 RTP/Combo 配置回显到桌台行（键名供 ConfigEditor 的 gcFillMx97 读取）
+        /// </summary>
+        private static void AddMx97RtpRowFields(Dictionary<string, object> row, Dictionary<string, int> cfg)
+        {
+            string[] rtpRowKeys = { "rtpTargetX100", "rtpKp", "rtpDeadband", "rtpDeltaMax", "rtpStockThreshold", "useOutcomeFirst", "rtpWindow" };
+            for (int i = 0; i < Mx97RtpKeys.Length; i++)
+            {
+                int v;
+                row[rtpRowKeys[i]] = cfg.TryGetValue(Mx97RtpKeys[i], out v) ? (int?)v : null;
+            }
+            for (int code = 300; code <= 359; code++)
+            {
+                int v;
+                row["combo" + code] = cfg.TryGetValue("Combo" + code, out v) ? (int?)v : null;
+                row["comboProb" + code] = cfg.TryGetValue("ComboProb" + code, out v) ? (int?)v : null;
+                row["comboStock" + code] = cfg.TryGetValue("ComboStock" + code, out v) ? (int?)v : null;
+            }
         }
 
         // cardpayoutprofile 行映射（原生 SQL 查询用）

@@ -476,6 +476,48 @@ namespace YYT.Remote
             return msg;
         }
 
+        /// <summary>
+        /// 发送 PC(更新拉霸游戏配置) 二进制命令：报文 = "PC" + U16 BE gameID。
+        /// 触发 center 的 UpdateGameConfig → GetGamePara + SendExtendedPara，
+        /// 拉霸子游戏服收到后 ResetConfig + 逐条 ApplyProfile（明星97 RTP 控制即时生效，无需重启）。
+        /// 注意：center 的 PC 分支不写回复（replyFalg 保持 FALSE），故发送后不读应答，直接关闭管道。
+        /// </summary>
+        public Msg SendPcCommand(ushort gameID)
+        {
+            Msg msg = new Msg(0, "服务器内部错误，消息发送失败！");
+            try
+            {
+                if (this.PipeClient.IsConnected == false)
+                    this.InitPipe();
+
+                using (var bw = new BinaryWriter(this.PipeClient, Encoding.UTF8, leaveOpen: true))
+                {
+                    // 命令头 "PC"
+                    bw.Write((byte)'P');
+                    bw.Write((byte)'C');
+                    // U16 BE gameID
+                    bw.Write(HostToNetworkU16(gameID));
+                    bw.Flush();
+                }
+
+                LogHelper.WriteLog(typeof(SConnect),
+                    $"PC指令：gameID={gameID}");
+                msg.code = 1;
+                msg.content = "拉霸游戏配置热更新指令已发送。";
+            }
+            catch (Exception ex)
+            {
+                msg.content = "PC数据发送失败！" + ex.Message;
+                LogHelper.WriteLog(typeof(SConnect), ex);
+            }
+            finally
+            {
+                // 服务器消息下发后已经关闭了管道，所以客户端也直接关闭并释放
+                this.Close();
+            }
+            return msg;
+        }
+
         /// <summary>U16 转大端字节（Windows 为小端，须手动转网络字节序）。</summary>
         private static byte[] HostToNetworkU16(ushort v)
         {
