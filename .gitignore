@@ -27,3 +27,10 @@ applicationhost.config
 Thumbs.db
 Desktop.ini
 .DS_Store
+
+# Node
+node_modules/
+
+# Backups / archives
+*.zip
+*.bak_*
