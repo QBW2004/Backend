@@ -801,7 +801,7 @@
                             + '</div>';
                     } else {
                         var isRelease = (r.ControlMode == 5);
-                        var progress = isRelease ? r.GrantedCoins : r.ConsumedCoins;
+                        var progress = isRelease ? -r.GrantedCoins : r.ConsumedCoins;
                         html += '<div style="margin:2px 0;">'
                             + totalModeName(r.ControlMode)
                             + '（强度 ' + r.LimitCoins + '）'
