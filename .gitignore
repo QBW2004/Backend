@@ -34,3 +34,6 @@ node_modules/
 # Backups / archives
 *.zip
 *.bak_*
+
+# DB dumps (Tools/export-db.ps1 产物)
+Tools/*.sql

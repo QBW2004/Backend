@@ -125,7 +125,7 @@ namespace YYT.BLL.EF
                         ef.Database.ExecuteSqlCommand(
                             "DELETE FROM roomtableconfig WHERE GAME_ID={0} AND TableIndex={1}", room.GAME_ID, tIdx);
                         ef.Database.ExecuteSqlCommand(
-                            "INSERT INTO roomtableconfig (GAME_ID, RoomIndex, TableIndex, TableName, Enabled, OneCoinScore, BetMin, BetMax, CoinsNeed, IdleFireTimeoutSec, IdleFireKickEnabled, MaxSeats) VALUES ({0},0,{1},{2},{3},{4},{5},{6},{7},{8},{9},{10})",
+                            "INSERT INTO roomtableconfig (GAME_ID, RoomIndex, TableIndex, TableName, Enabled, OneCoinScore, BetMin, BetMax, CoinsNeed, IdleFireTimeoutSec, IdleFireKickEnabled, MaxSeats, GunPowerStep) VALUES ({0},0,{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},0)",
                             room.GAME_ID, tIdx, room.TableName ?? string.Empty, room.Enabled ? 1 : 0,
                             room.COIN_SC, room.BET_MIN, room.BET_MAX, room.COIN_NEED,
                             room.IdleFireTimeoutSec, room.IdleFireKickEnabled ? 1 : 0, room.MaxSeats);

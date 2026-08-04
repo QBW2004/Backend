@@ -234,6 +234,11 @@ namespace YYT.Web.Areas.Game.Controllers
                             "SELECT DIF FROM parafish WHERE GAME_ID=" + gameId + " ORDER BY TableIndex").ToList();
                         var cfgFishSites = ef.Database.SqlQuery<int>(
                             "SELECT SITE_TYPE FROM parafish WHERE GAME_ID=" + gameId + " ORDER BY TableIndex").ToList();
+                        // 房间加炮幅度(pararoom.scoreSwitch 存显示值×10)，供前端加炮幅度输入框回显；
+                        // 用 SqlQuery 直读标量：EF 实体映射 pararoom 会因 Game_Mo 等 NULL 列抛异常
+                        int fishScoreSwRaw = ef.Database.SqlQuery<int>(
+                            "SELECT IFNULL(scoreSwitch,0) FROM pararoom WHERE GAME_ID=" + gameId + " LIMIT 1").FirstOrDefault();
+                        decimal fishScoreSwitch = fishScoreSwRaw <= 0 ? 0.1m : fishScoreSwRaw / 10m;
                         for (int i = 0; i < cfgNames.Count; i++)
                         {
                             rows.Add(new
@@ -252,7 +257,8 @@ namespace YYT.Web.Areas.Game.Controllers
                                 idleFireKickEnabled = 1,
                                 enabled = i < cfgEnableds.Count ? cfgEnableds[i] : 1,
                                 fishDif = i < cfgFishDifs.Count ? cfgFishDifs[i] : 0,
-                                fishSiteType = i < cfgFishSites.Count ? cfgFishSites[i] : 0
+                                fishSiteType = i < cfgFishSites.Count ? cfgFishSites[i] : 0,
+                                scoreSwitch = fishScoreSwitch
                             });
                         }
                     }
@@ -682,14 +688,16 @@ namespace YYT.Web.Areas.Game.Controllers
                     int rtBetMin = labaBetMinD >= 0 ? (int)Math.Round(labaBetMinD) : 100;
                     int rtBetMax = labaBetMaxD >= 0 ? (int)Math.Round(labaBetMaxD) : 10000;
                     int rtCoinsNeed = labaCoinsNeed >= 0 ? labaCoinsNeed : 0;
+                    // 按桌加炮幅度×10：与 ScoreSwitchX10 同口径(拉霸表单 scoreSwitch 为显示值)
+                    int rtGunStep = labaScoreSw >= 0 ? (int)Math.Round(labaScoreSw * 10m) : 1;
                     using (var efRt = new GameDbContext())
                     {
                         efRt.Database.ExecuteSqlCommand(
                             "DELETE FROM roomtableconfig WHERE GAME_ID=" + gameId + " AND RoomIndex=0 AND TableIndex=" + rtTableIndex);
                         efRt.Database.ExecuteSqlCommand(
-                            "INSERT INTO roomtableconfig (GAME_ID, RoomIndex, TableIndex, TableName, Enabled, MaxSeats, OneCoinScore, BetMin, BetMax, CoinsNeed, IdleFireTimeoutSec, IdleFireKickEnabled) VALUES (" +
+                            "INSERT INTO roomtableconfig (GAME_ID, RoomIndex, TableIndex, TableName, Enabled, MaxSeats, OneCoinScore, BetMin, BetMax, CoinsNeed, IdleFireTimeoutSec, IdleFireKickEnabled, GunPowerStep) VALUES (" +
                             gameId + ",0," + rtTableIndex + ",'" + labaTableName.Replace("'", "''") + "'," + labaEnabled + ",6,1," +
-                            rtBetMin + "," + rtBetMax + "," + rtCoinsNeed + ",0,0)");
+                            rtBetMin + "," + rtBetMax + "," + rtCoinsNeed + ",0,0," + rtGunStep + ")");
                     }
 
                     // ── 明星97(GameId=16) RTP 控制配置：游戏级参数写 GameConfigLaba(TableIndex=0)，
@@ -1002,8 +1010,8 @@ namespace YYT.Web.Areas.Game.Controllers
                         ef.Database.ExecuteSqlCommand(
                             "DELETE FROM roomtableconfig WHERE GAME_ID=" + gameId + " AND TableIndex=" + tIdx);
                         ef.Database.ExecuteSqlCommand(
-                            "INSERT INTO roomtableconfig (GAME_ID, RoomIndex, TableIndex, TableName, Enabled, OneCoinScore, BetMin, BetMax, CoinsNeed, IdleFireTimeoutSec, IdleFireKickEnabled, MaxSeats, MinBetUnits) VALUES (" +
-                            gameId + ",0," + tIdx + ",'" + tName.Replace("'", "''") + "'," + tblEnabled + "," + coinSc + "," + betMin + "," + betMax + "," + coinNeed + "," + idleSec + "," + tblIdleKick + "," + tblMaxSeats + "," + cardMinBetUnits + ")");
+                            "INSERT INTO roomtableconfig (GAME_ID, RoomIndex, TableIndex, TableName, Enabled, OneCoinScore, BetMin, BetMax, CoinsNeed, IdleFireTimeoutSec, IdleFireKickEnabled, MaxSeats, MinBetUnits, GunPowerStep) VALUES (" +
+                            gameId + ",0," + tIdx + ",'" + tName.Replace("'", "''") + "'," + tblEnabled + "," + coinSc + "," + betMin + "," + betMax + "," + coinNeed + "," + idleSec + "," + tblIdleKick + "," + tblMaxSeats + "," + cardMinBetUnits + "," + (cardScoreSwitch * 10) + ")");
                         // 牌机专属按桌参数：roomtableconfig_card
                         ef.Database.ExecuteSqlCommand(
                             "DELETE FROM roomtableconfig_card WHERE GAME_ID=" + gameId + " AND TableIndex=" + tIdx);
@@ -1078,18 +1086,21 @@ namespace YYT.Web.Areas.Game.Controllers
                     int fishSiteType = form.Q<int>("FishSITE_TYPE", 1);
 	                    int tableIdFull = gameId * 1000 + tIdx;
 	                    int rtBetMinSave = betMin, rtBetMaxSave = betMax; // 提至 using 外，供后续 TC tableExt 使用
+	                    // 按桌加炮幅度×10(提至 using 外，供保存回显)：表单 scoreSwitch 为显示值(鱼机≥0.1)，客户端 GunPowerStep 同口径(0=未配置回退房间)
+	                    int rtGunStep = (int)Math.Round(scoreSwitch * 10m, MidpointRounding.AwayFromZero);
 	                    using (var ef = new GameDbContext())
 	                    {
-	                        ef.Database.ExecuteSqlCommand(
-	                            "DELETE FROM roomtableconfig WHERE GAME_ID=" + gameId + " AND TableIndex=" + tIdx);
-	                        if (IsDecimalBetFish(gameId)) // fish servers: internal unit = 0.1 credit
-	                        {
-	                            rtBetMinSave = (int)Math.Round(minBetDisplay * 10m, MidpointRounding.AwayFromZero);
-	                            rtBetMaxSave = (int)Math.Round(maxBetDisplay * 10m, MidpointRounding.AwayFromZero);
-	                        }
-	                        ef.Database.ExecuteSqlCommand(
-                            "INSERT INTO roomtableconfig (GAME_ID, RoomIndex, TableIndex, TableName, Enabled, OneCoinScore, BetMin, BetMax, CoinsNeed, IdleFireTimeoutSec, IdleFireKickEnabled, MaxSeats) VALUES (" +
-                            gameId + ",0," + tIdx + ",'" + tName.Replace("'", "''") + "'," + tblEnabled + "," + coinSc + "," + rtBetMinSave + "," + rtBetMaxSave + "," + coinNeed + "," + idleSec + "," + tblIdleKick + "," + tblMaxSeats + ")");
+		                        ef.Database.ExecuteSqlCommand(
+		                            "DELETE FROM roomtableconfig WHERE GAME_ID=" + gameId + " AND TableIndex=" + tIdx);
+		                        if (IsDecimalBetFish(gameId)) // fish servers: internal unit = 0.1 credit
+		                        {
+		                            rtBetMinSave = (int)Math.Round(minBetDisplay * 10m, MidpointRounding.AwayFromZero);
+		                            rtBetMaxSave = (int)Math.Round(maxBetDisplay * 10m, MidpointRounding.AwayFromZero);
+		                        }
+		                        // 按桌加炮幅度×10：表单 scoreSwitch 为显示值(鱼机≥0.1)，客户端 GunPowerStep 同口径(0=未配置回退房间)
+		                        ef.Database.ExecuteSqlCommand(
+	                            "INSERT INTO roomtableconfig (GAME_ID, RoomIndex, TableIndex, TableName, Enabled, OneCoinScore, BetMin, BetMax, CoinsNeed, IdleFireTimeoutSec, IdleFireKickEnabled, MaxSeats, GunPowerStep) VALUES (" +
+	                            gameId + ",0," + tIdx + ",'" + tName.Replace("'", "''") + "'," + tblEnabled + "," + coinSc + "," + rtBetMinSave + "," + rtBetMaxSave + "," + coinNeed + "," + idleSec + "," + tblIdleKick + "," + tblMaxSeats + "," + rtGunStep + ")");
                         // 同步写 parafish（按桌维度难度）：DIF/HAR/SITE_TYPE 落库，供中心服 GetFishPara 读取后下发 tablePara 块。
                         // HAR 复用 DIF（鱼机历史数据 HAR 基本等于 DIF，前端仅暴露 FishDIF 一个控件）。
                         ef.Database.ExecuteSqlCommand(
@@ -1107,11 +1118,11 @@ namespace YYT.Web.Areas.Game.Controllers
                             if (IsDecimalBetFish(gameId))
                             {
                                 ef.Database.ExecuteSqlCommand(
-                                    "UPDATE ParaRoom SET BET_MIN=" + betMin + ",BET_MAX=" + betMax + ",MinBetUnits=" + rtBetMinSave + ",MaxBetUnits=" + rtBetMaxSave + ",COIN_SC=" + coinSc + ",COIN_NEED=" + coinNeed + " WHERE GAME_ID=" + gameId + " AND ID=" + (gameId * 1000 + tIdx));
+                                    "UPDATE ParaRoom SET BET_MIN=" + betMin + ",BET_MAX=" + betMax + ",MinBetUnits=" + rtBetMinSave + ",MaxBetUnits=" + rtBetMaxSave + ",COIN_SC=" + coinSc + ",COIN_NEED=" + coinNeed + ",scoreSwitch=" + rtGunStep + " WHERE GAME_ID=" + gameId + " AND ID=" + (gameId * 1000 + tIdx));
                             }
                             string baseRowSql = IsDecimalBetFish(gameId)
-                                ? ("UPDATE ParaRoom SET BET_MIN=" + betMin + ",BET_MAX=" + betMax + ",MinBetUnits=" + rtBetMinSave + ",MaxBetUnits=" + rtBetMaxSave + ",EX_COIN=" + exCoin + ",COIN_SC=" + coinSc + ",COIN_NEED=" + coinNeed + " WHERE GAME_ID=" + gameId + " AND ID=" + (gameId * 1000))
-                                : ("UPDATE ParaRoom SET BET_MIN=" + betMin + ",BET_MAX=" + betMax + ",EX_COIN=" + exCoin + ",COIN_SC=" + coinSc + ",COIN_NEED=" + coinNeed + " WHERE GAME_ID=" + gameId + " AND ID=" + (gameId * 1000));
+                                ? ("UPDATE ParaRoom SET BET_MIN=" + betMin + ",BET_MAX=" + betMax + ",MinBetUnits=" + rtBetMinSave + ",MaxBetUnits=" + rtBetMaxSave + ",EX_COIN=" + exCoin + ",COIN_SC=" + coinSc + ",COIN_NEED=" + coinNeed + ",scoreSwitch=" + rtGunStep + " WHERE GAME_ID=" + gameId + " AND ID=" + (gameId * 1000))
+                                : ("UPDATE ParaRoom SET BET_MIN=" + betMin + ",BET_MAX=" + betMax + ",EX_COIN=" + exCoin + ",COIN_SC=" + coinSc + ",COIN_NEED=" + coinNeed + ",scoreSwitch=" + rtGunStep + " WHERE GAME_ID=" + gameId + " AND ID=" + (gameId * 1000));
                             ef.Database.ExecuteSqlCommand(baseRowSql);
                         }
                         catch (Exception exRoom)
@@ -1166,7 +1177,7 @@ namespace YYT.Web.Areas.Game.Controllers
                     // 避免"DB 已写、Web 列表不刷新"（对齐 B_SuperPara.PushHotUpdate 的 datas=true 约定）。
                     msg.datas = true;
                     // 回显本次落库的按桌关键值，便于核对表单提交与库中数据是否一致
-                    msg.content = (msg.content ?? "") + " [桌" + tIdx + " 已写入: CoinsNeed=" + coinNeed + ", BetMin=" + betMin + ", BetMax=" + betMax + ", CoinSc=" + coinSc + ", FishDif=" + fishDif + ", FishSite=" + fishSiteType + "]";
+                    msg.content = (msg.content ?? "") + " [桌" + tIdx + " 已写入: CoinsNeed=" + coinNeed + ", BetMin=" + betMin + ", BetMax=" + betMax + ", CoinSc=" + coinSc + ", FishDif=" + fishDif + ", FishSite=" + fishSiteType + ", GunStep=" + rtGunStep + "]";
                 }
 
                 // ROOM_MAX 同步已下沉到 B_SuperPara.PushHotUpdate 内(在发 RP 之前执行)，

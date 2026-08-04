@@ -20,5 +20,6 @@ namespace YYT.Entity
         public int CoinsNeed { get; set; }
         public int IdleFireTimeoutSec { get; set; }
         public int IdleFireKickEnabled { get; set; }
+        public int GunPowerStep { get; set; }   // 按桌加炮幅度(×10, 0=未配置, 客户端回退房间)
     }
 }

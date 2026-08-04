@@ -8,14 +8,24 @@ window.request = function (url, para, callBack, method) {
         beforeSend: function () {
             //$("<div class=\"datagrid-mask\" style=\"background-color:#ccc !important;\></div>").css({ display: "block", width: "100%", height: $(window).height() }).appendTo("body");
             //$("<div class=\"datagrid-mask-msg\" style=\"background-color:#fff !important;\"></div>").html("正在处理，请稍候。。。").appendTo("body").css({ display: "block", left: ($(document.body).outerWidth(true) - 190) / 2, top: ($(window).height() - 45) / 2 });
+            // 进行中请求计数：多个请求并发(如保存后紧跟列表刷新)时，
+            // 遮罩/进度条等最后一个请求完成才隐藏，保证"加载完成时间"与"列表实际刷新时间"一致。
+            window.__mlReq = (window.__mlReq || 0) + 1;
+            // 进度条动画 keyframes（全局只注入一次）
+            if ($('#mlProgressStyle').length < 1) {
+                $('<style id="mlProgressStyle">@keyframes mlProgressSlide{0%{left:-40%}100%{left:100%}}@-webkit-keyframes mlProgressSlide{0%{left:-40%}100%{left:100%}}</style>').appendTo('head');
+            }
+            // 遮罩 + 不定进度条。原实现带 5 秒定时器会提前隐藏遮罩(请求超过 5 秒时
+            // 遮罩先消失、列表后刷新，时间对不上)，已移除，只在请求真正结束时隐藏。
             if ($('.main-loading').length < 1) {
                 $('<div class="main-loading bg"><div class="main-loading-mask">正在处理，请稍待。。。</div></div>').prependTo('.main');
-                var _t = setInterval(function () {
-                    if ($('.main-loading').length > 0) {
-                        hideLoading();
-                        clearInterval(_t);
-                    }
-                }, 5000);
+            }
+            var $mask = $('.main-loading .main-loading-mask');
+            if ($mask.find('.ml-progress').length < 1) {
+                $mask.css({ height: 'auto', padding: '10px 12px' }).append(
+                    '<div class="ml-progress" style="position:relative;width:200px;height:4px;margin:8px auto 0;background:#eef1f6;border-radius:2px;overflow:hidden;">' +
+                    '<i style="position:absolute;top:0;left:-40%;width:40%;height:100%;border-radius:2px;background:linear-gradient(90deg,#2f6fed,#7ab0ff);-webkit-animation:mlProgressSlide 1.2s ease-in-out infinite;animation:mlProgressSlide 1.2s ease-in-out infinite;"></i></div>'
+                );
             }
         },
         success: function (data) {
@@ -28,8 +38,11 @@ window.request = function (url, para, callBack, method) {
         },
         complete: function () {
             //$(".datagrid-mask,.datagrid-mask-msg").remove();
-            //隐藏Loding
-            hideLoading();
+            // 所有进行中的请求都结束才隐藏遮罩与进度条（与回调里的列表刷新同步）
+            window.__mlReq = Math.max(0, (window.__mlReq || 1) - 1);
+            if (window.__mlReq === 0) {
+                hideLoading();
+            }
         }
     });
 }
