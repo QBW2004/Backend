@@ -526,7 +526,7 @@ namespace YYT.BLL.EF
                         GameType = GAMETYPE_TOTAL,
                         GameId = 0,
                         ControlMode = mode,
-                        TargetCoins = goldThreshold,
+                        TargetCoins = mode == (int)EControlMode.TotalCard ? cardNumber : goldThreshold,
                         LimitCoins = 0,
                         ConsumedCoins = 0,
                         GrantedCoins = 0,
@@ -636,6 +636,8 @@ namespace YYT.BLL.EF
                             cardRow.CardTotal = ucRow.TotalNumber;
                         }
                     }
+                    // 过滤掉控牌次数已消耗完的记录
+                    rows = rows.Where(r => !(r.ControlMode == (int)EControlMode.TotalCard && r.CardNumber == 0)).ToList();
 
                     msg.code = 1;
                     msg.content = "";
@@ -718,6 +720,8 @@ namespace YYT.BLL.EF
                                 cr.CardTotal = uc.TotalNumber;
                             }
                         }
+                        // 过滤掉控牌次数已消耗完的记录（服务器已回写 NUMBER=0，Status 尚未更新为 Completed）
+                        result = result.Where(r => !(r.ControlMode == (int)EControlMode.TotalCard && r.CardNumber == 0)).ToList();
                     }
                 }
                 msg.code = 1;
