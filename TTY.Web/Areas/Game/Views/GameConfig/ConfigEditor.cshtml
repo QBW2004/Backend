@@ -155,6 +155,10 @@
                             <label>入场金币</label>
                             <input type="number" id="gcCoinNeed" name="COIN_NEED" class="gc-input" min="0" value="0" />
                         </div>
+                        <div class="gc-field gc-only-1">
+                            <label title="未配置入场金币(0)的桌台回退到该房间级兜底值，不随单桌保存覆盖">房间入场金币（兜底）</label>
+                            <input type="number" id="gcRoomCoinNeed" name="ROOM_COIN_NEED" class="gc-input" min="0" value="0" />
+                        </div>
                         <div class="gc-field gc-only-1 gc-only-2 gc-only-3">
                             <label id="gcScoreSwitchLbl">加炮幅度（0.1-0.9）</label>
                             <input type="number" id="gcScoreSwitch" name="scoreSwitch" class="gc-input" step="0.1" min="0" value="0" />
@@ -878,6 +882,7 @@
         $('#gcCoinSc').val(t.coinSc);
         $('#gcExCoin').val(t.exCoin);
         $('#gcCoinNeed').val(t.coinNeed);
+        $('#gcRoomCoinNeed').val(t.roomCoinNeed);
         $('#gcGameMo').val(t.gameMo);
         var gcFillSs = (t.scoreSwitch !== undefined && t.scoreSwitch !== null) ? t.scoreSwitch : 0;
         gcFillSs = gcNormSs(gcFillSs, type);

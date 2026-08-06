@@ -148,6 +148,8 @@ namespace YYT.Web.Areas.Game.Controllers
                         // 共享参数(ExCoin/GameMo/ScoreSwitch)从 pararoom base 行取，难度从 paracard 按 ID=gameId*1000+TableIndex 关联，
                         // 赔率从 cardpayoutprofile 按 TableId 关联。
                         M_ParaRoom baseRoom = ef.ParaRoom.FirstOrDefault(c => c.GAME_ID == gameId);
+                        // 房间级入场金币(未配置桌的兜底值)：取 pararoom base 行 COIN_NEED，供表单"房间入场金币"框回显
+                        int roomCoinNeed = baseRoom == null ? 0 : baseRoom.COIN_NEED;
                         List<M_ParaCard> cards = ef.ParaCards
                             .Where(c => c.GAME_ID == gameId)
                             .ToList();
@@ -193,6 +195,7 @@ namespace YYT.Web.Areas.Game.Controllers
                                 exCoin = cardCfg != null ? cardCfg.ExCoin : (baseRoom == null ? 10000 : baseRoom.EX_COIN),
                                 coinSc = cfg.OneCoinScore,
                                 coinNeed = cfg.CoinsNeed,
+                                roomCoinNeed = roomCoinNeed,
                                 gameMo = cardCfg != null ? cardCfg.GameMo : (baseRoom == null ? 0 : baseRoom.Game_Mo),
                                 scoreSwitch = cardCfg != null ? cardCfg.ScoreSwitch : (baseRoom == null ? 0 : baseRoom.scoreSwitch),
                                 maxSeats = cfg.MaxSeats <= 0 ? 6 : cfg.MaxSeats,
@@ -1024,18 +1027,30 @@ namespace YYT.Web.Areas.Game.Controllers
                         ef.Database.ExecuteSqlCommand(
                             "INSERT INTO paracard (ID,GAME_ID,DIF,HYPE_TYPE) VALUES (" +
                             tableIdFull + "," + gameId + ",'" + cardDif.Replace("'", "''") + "'," + hypeType + ")");
-                        // 同步 pararoom base 行的共享参数(EX_COIN/COIN_SC/COIN_NEED/Game_Mo/scoreSwitch/BET_MIN/BET_MAX)，
+                        // 同步 pararoom base 行的共享参数(EX_COIN/COIN_SC/Game_Mo/scoreSwitch/BET_MIN/BET_MAX)，
                         // 服务端 GetCardPara 按 roomMax=1 只读 base 行(ID=gameId*1000)的这些字段，
                         // 必须与本次提交值一致，否则服务端读到的是旧值或自动补建的默认值。
+                        // 注意：COIN_NEED 不再随单桌保存同步——入场金币按桌存 roomtableconfig.CoinsNeed，
+                        // 0 值由服务端回退房间级兜底值；房间级兜底仅当表单显式提交 ROOM_COIN_NEED 时更新，
+                        // 避免"保存某张桌导致全部桌子的入场金币变成该桌的值"。
                         int baseIdCard = gameId * 1000;
                         int affBase = ef.Database.ExecuteSqlCommand(
-                            "UPDATE ParaRoom SET EX_COIN=" + cardExCoin + ",COIN_SC=" + coinSc + ",COIN_NEED=" + coinNeed +
+                            "UPDATE ParaRoom SET EX_COIN=" + cardExCoin + ",COIN_SC=" + coinSc +
                             ",Game_Mo=" + cardGameMo + ",scoreSwitch=" + cardScoreSwitch +
                             ",BET_MIN=" + betMin + ",BET_MAX=" + betMax +
                             ",MinBetUnits=" + cardMinBetUnits + ",MaxBetUnits=" + cardMaxBetUnits +
                             ",MaxSeats=" + tblMaxSeats + ",IdleFireTimeoutSec=" + idleSec +
                             ",IdleFireKickEnabled=" + (tblIdleKick != 0 ? 1 : 0) + ",Enabled=" + (tblEnabled != 0 ? 1 : 0) +
                             ",TableName='" + tName.Replace("'", "''") + "' WHERE GAME_ID=" + gameId + " AND ID=" + baseIdCard);
+                        // 房间级入场金币(未配置桌的兜底值)：仅显式提交 ROOM_COIN_NEED 时更新，
+                        // base 行不存在(首张桌台)时由 SyncCardTableNum 自动 INSERT(COIN_NEED 默认 10000)
+                        int roomCoinNeed = form.Q<int>("ROOM_COIN_NEED", -1);
+                        if (roomCoinNeed >= 0)
+                        {
+                            ef.Database.ExecuteSqlCommand(
+                                "UPDATE ParaRoom SET COIN_NEED=" + roomCoinNeed +
+                                " WHERE GAME_ID=" + gameId + " AND ID=" + baseIdCard);
+                        }
                         if (affBase == 0)
                         {
                             // base 行不存在(首张桌台)时由 SyncCardTableNum 自动 INSERT，此处无需重复
