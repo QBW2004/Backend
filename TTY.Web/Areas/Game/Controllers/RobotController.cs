@@ -42,16 +42,15 @@ namespace YYT.Web.Areas.Game.Controllers
         }
 
         /// <summary>
-        /// 押分类房间参数
+        /// 桌台名称列表：全游戏类型统一从 roomtableconfig 读取(玩家/机器人已锁定第一房间)，
+        /// TableName 为空时保底"桌台"+TableIndex。
         /// </summary>
         /// <param name="form"></param>
         /// <returns></returns>
         [AjaxOnly]
         [HttpPost]
-        public ActionResult GetParabetRoom(FormCollection form)
+        public ActionResult GetRobotTableList(FormCollection form)
         {
-            // 一房N桌模型：押注类房间已废弃，桌台列表从 roomtableconfig 读取，
-            // 直接返回 [{id=TableIndex, text=TableName}] 供前端桌台下拉使用。
             List<object> tableList = new List<object>();
             try
             {
@@ -61,7 +60,7 @@ namespace YYT.Web.Areas.Game.Controllers
                     using (var ef = new GameDbContext())
                     {
                         var rows = ef.Database.SqlQuery<BetTableSelRow>(
-                            "SELECT TableIndex, TableName FROM roomtableconfig WHERE GAME_ID={0} ORDER BY TableIndex", GameId).ToList();
+                            "SELECT TableIndex, TableName FROM roomtableconfig WHERE GAME_ID={0} AND RoomIndex=0 ORDER BY TableIndex", GameId).ToList();
                         int idx = 0;
                         foreach (BetTableSelRow r in rows)
                         {
@@ -91,7 +90,7 @@ namespace YYT.Web.Areas.Game.Controllers
         }
 
         /// <summary>
-        /// 牌机/鱼机类房间参数
+        /// 牌机/鱼机类房间参数(已废弃：机器人页桌台统一走 GetRobotTableList)
         /// </summary>
         /// <param name="form"></param>
         /// <returns></returns>
@@ -127,16 +126,17 @@ namespace YYT.Web.Areas.Game.Controllers
             try
             {
                 string GameName = form.Q<string>("GameName");
-                int RoomId = form.Q<int>("RoomId", -1);
-                int TABLE_ID = form.Q<int>("TABLE_ID", -1);
+                string TableName = form.Q<string>("TABLE_NAME");
                 int pageIndex = form.Q<int>("page", 1);
                 int pageSize = form.Q<int>("rows", 10);
                 M_Page mPage = new M_Page(pageIndex, pageSize);
                 M_Robot entity = new M_Robot
                 {
                     GAME_NAME = GameName,
-                    ROOM_ID = RoomId,
-                    TABLE_ID = TABLE_ID
+                    TABLE_NAME = TableName,
+                    // 房间/机台搜索已移除：显式 -1 跳过 BLL 的 ROOM_ID/TABLE_ID 过滤(int 默认 0 会误过滤成只显示第一张桌)
+                    ROOM_ID = -1,
+                    TABLE_ID = -1
                 };
                 list = new B_Robot().getRobots(mPage, entity);
             }
@@ -157,11 +157,10 @@ namespace YYT.Web.Areas.Game.Controllers
             {
                 int GameType = form.Q<int>("GameType");
                 int GameId = form.Q<int>("GameId");
-                int RoomId = form.Q<int>("RoomSel");
                 int TABLE_ID = form.Q<int>("TABLE_ID");
                 int RobotNo = form.Q<int>("RobotNo");
-                // 押注类一房N桌：ROOM_ID 恒为 0(单房间)
-                if (GameType == 0) RoomId = 0;
+                // 玩家/机器人已锁定只能进入第一房间：ROOM_ID 恒为 0(押注类一房N桌亦为0)
+                int RoomId = 0;
                 if (GameType == -1)
                 {
                     msg.content = "请选择游戏类型！";
@@ -173,29 +172,8 @@ namespace YYT.Web.Areas.Game.Controllers
                     return Json(msg);
                 }
                 string GameName = "";
-                string RoomName = "";
-                // 押注类一房N桌：ROOM_ID 恒为 0(单房间)，RoomName 固定"默认场"。
-                // 鱼机/牌机保留原 4 房间(初级/中级/高级/VIP)语义。
-                if (GameType == 0)
-                {
-                    RoomName = "默认场";
-                }
-                else if (RoomId == 0)
-                {
-                    RoomName = "初级场";
-                }
-                else if (RoomId == 1)
-                {
-                    RoomName = "中级场";
-                }
-                else if (RoomId == 2)
-                {
-                    RoomName = "高级场";
-                }
-                else if (RoomId == 3)
-                {
-                    RoomName = "VIP场";
-                }
+                // 押注类单房间固定"默认场"；鱼机/牌机锁定第一房间"初级场"。
+                string RoomName = GameType == 0 ? "默认场" : "初级场";
                 M_Games game = new B_Games().GetSingle(new M_Games { GameId = GameId });
                 if (game != null)
                 {

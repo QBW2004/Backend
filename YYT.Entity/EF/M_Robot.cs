@@ -38,6 +38,11 @@ namespace YYT.Entity
         /// </summary>
         public int TABLE_ID { get; set; }
         /// <summary>
+        /// 桌子名称(联 roomtableconfig 显示用，不落库；名称为空时保底"桌台"+TableIndex)
+        /// </summary>
+        [NotMapped]
+        public string TABLE_NAME { get; set; }
+        /// <summary>
         /// 机器人 人数
         /// </summary>
         public int ROBOT_NO { get; set; }

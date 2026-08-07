@@ -49,7 +49,7 @@ namespace YYT.Web.Areas.Game.Controllers
         }
 
         // GetParabetRoom / GetParaRoom 已删除：全 Backend 无调用方，为冗余死代码。
-        // 押注类房间参数查询统一走 RobotController.GetParabetRoom(一房N桌模型)。
+        // 机器人页桌台列表统一走 RobotController.GetRobotTableList(roomtableconfig 桌名，空名保底"桌台n")。
 
         [MemberAuthorize]
         [AjaxOnly]
