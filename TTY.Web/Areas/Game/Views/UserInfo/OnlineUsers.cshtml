@@ -94,10 +94,11 @@
                     var r = data.datas[j];
                     var txt;
                     if (r.ControlMode == 6) {
-                        // 控牌：显示控牌值 + 次数/总次数
-                        txt = totalModeName(r.ControlMode)
-                            + '<br/>控牌值 ' + r.LimitCoins
-                            + ' 次数 ' + r.CardNumber + '/' + r.CardTotal;
+                        // 控牌：显示控牌值 + 消耗次数/总次数
+                        // CardNumber = 剩余次数（服务器回写），TargetCoins = 初始配置次数
+                        var consumed = r.TargetCoins - r.CardNumber;
+                        txt = '控牌值 ' + r.LimitCoins
+                            + '<br/>次数 ' + consumed + '/' + r.TargetCoins;
                     } else {
                         var isRelease = (r.ControlMode == 5);
                         var progress = isRelease ? -r.GrantedCoins : r.ConsumedCoins;
@@ -587,11 +588,13 @@
             for (var i = 0; i < data.datas.length; i++) {
                 var r = data.datas[i];
                 if (r.ControlMode == 6) {
-                    // 控牌：显示控牌值 + 次数/总次数（牌机消耗后未回写，此处为下发时的配置值）
+                    // 控牌：显示控牌值 + 消耗次数/总次数
+                    // CardNumber = 剩余次数（服务器回写），TargetCoins = 初始配置次数
+                    var consumed = r.TargetCoins - r.CardNumber;
                     html += '<div style="margin:2px 0;">'
                         + totalModeName(r.ControlMode)
                         + '（控牌值 ' + r.LimitCoins + '）'
-                        + ' 次数 ' + r.CardNumber + '/' + r.CardTotal
+                        + ' 次数 ' + consumed + '/' + r.TargetCoins
                         + '</div>';
                 } else {
                     var isRelease = (r.ControlMode == 5);
