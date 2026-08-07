@@ -537,8 +537,8 @@
             $('.trTotalStrength').show();
             // 吃分/放分需要金币阈值
             $('.trTotalGold').show();
-            if (n == 5) $('#selE_Strength_Total').combobox('loadData', getComboValPut());
-            else $('#selE_Strength_Total').combobox('loadData', getComboValKill());
+            if (n == 5) $('#selE_Strength_Total').combobox('loadData', getComboValPut_Total());
+            else $('#selE_Strength_Total').combobox('loadData', getComboValKill_Total());
         }
     }
     function bindTotalCardAction(newValue, oldValue) {
@@ -567,7 +567,7 @@
                     bindTotalCardAction($('#selE_Action_Total').combobox('getValue'));
                     $('#selE_Number_Total').combobox('loadData', valSelData());
                 $('#selE_Total_Total').combobox('loadData', valSelDataPAIJI1());
-                $('#selE_Strength_Total').combobox('loadData', getComboValKill());
+                $('#selE_Strength_Total').combobox('loadData', getComboValKill_Total());
                 $('#numGold_Total').numberbox('setValue', 0);
                 $('#selE_Mode_Total').combobox({ onChange: bindTotalMode });
                 $('#selE_Mode_Total').combobox('loadData', totalModeData());
@@ -932,6 +932,22 @@
         arr.push({ id: 3, text: '小放(3%)', selected: true });
         arr.push({ id: 6, text: '中放(6%)' });
         arr.push({ id: 9, text: '大放(9%)' });
+        arr.push({ id: 0, text: '关闭' });
+        return arr;
+    }
+    @*总控专用 - 吃分只显示吃分，默认吃分*@
+    function getComboValKill_Total() {
+        var arr = [];
+        //arr.push({ id: 3, text: '小吃(3%)', selected: true });
+        arr.push({ id: 3, text: '吃分', selected: true });
+        arr.push({ id: 0, text: '关闭' });
+        return arr;
+    }
+    @*总控专用 - 放水只显示放水，默认放水*@
+    function getComboValPut_Total() {
+        var arr = [];
+        //arr.push({ id: 3, text: '小放(3%)', selected: true });
+        arr.push({ id: 3, text: '放水', selected: true });
         arr.push({ id: 0, text: '关闭' });
         return arr;
     }
