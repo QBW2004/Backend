@@ -524,7 +524,7 @@ namespace YYT.BLL.EF
                     {
                         UserID = target,
                         GameType = GAMETYPE_TOTAL,
-                        GameId = 0,
+                        GameId = mode == (int)EControlMode.TotalCard ? cardAction : 0, // 控牌模式存 cardAction，供次数回显精确关联
                         ControlMode = mode,
                         TargetCoins = mode == (int)EControlMode.TotalCard ? cardNumber : goldThreshold,
                         LimitCoins = 0,
@@ -546,10 +546,14 @@ namespace YYT.BLL.EF
                         target, user.NAME ?? "", optCode, optValue, loginUser.Accounts);
 
                     // 控牌模式：同步写入 usercontrolvalue（控牌类型/控牌值/次数/总次数），供状态回显次数
+                    // 按 (USERID, CONTROL_TYPE) 区分游戏：金皇冠(12)和火凤凰(14)各自独立一行
                     if (mode == (int)EControlMode.TotalCard)
                     {
                         ef.Database.ExecuteSqlCommand(
-                            "INSERT INTO usercontrolvalue (USERID,GAME_TYPE,CONTROL_TYPE,CONTROL_VALUE,NUMBER,TOTAL_NUMBER) VALUES({0},1,{1},{2},{3},{4}) ON DUPLICATE KEY UPDATE GAME_TYPE=1, CONTROL_TYPE={1}, CONTROL_VALUE={2}, NUMBER={3}, TOTAL_NUMBER={4}",
+                            "DELETE FROM usercontrolvalue WHERE USERID={0} AND CONTROL_TYPE={1}",
+                            target, cardAction);
+                        ef.Database.ExecuteSqlCommand(
+                            "INSERT INTO usercontrolvalue (USERID,GAME_TYPE,CONTROL_TYPE,CONTROL_VALUE,NUMBER,TOTAL_NUMBER) VALUES({0},1,{1},{2},{3},{4})",
                             target, cardAction, cardValue, cardNumber, cardTotal);
                     }
                 }
@@ -623,13 +627,14 @@ namespace YYT.BLL.EF
                         })
                         .ToList();
 
-                    // 控牌模式(mode=6)：联查 usercontrolvalue 表回显次数/总次数（牌机服务器消耗后未回写，此处显示的是下发时的配置值）
+                    // 控牌模式(mode=6)：联查 usercontrolvalue 表回显次数/总次数
+                    // 按 usercontrolstatus.GameId(=cardAction) 精确关联该游戏的行，避免取到其他游戏行导致次数错乱
                     var cardRow = rows.FirstOrDefault(c => c.ControlMode == (int)EControlMode.TotalCard);
                     if (cardRow != null)
                     {
                         var ucRow = ef.Database.SqlQuery<M_UserControlValueRow>(
-                            "SELECT USERID AS UserID, CONTROL_TYPE AS CtrlType, CONTROL_VALUE AS CtrlValue, NUMBER AS Number, TOTAL_NUMBER AS TotalNumber FROM usercontrolvalue WHERE USERID={0} AND CONTROL_TYPE>=5 AND CONTROL_TYPE<=24 ORDER BY CONTROL_TYPE DESC LIMIT 1",
-                            target).FirstOrDefault();
+                            "SELECT ID AS ID, USERID AS UserID, CONTROL_TYPE AS CtrlType, CONTROL_VALUE AS CtrlValue, NUMBER AS Number, TOTAL_NUMBER AS TotalNumber FROM usercontrolvalue WHERE USERID={0} AND CONTROL_TYPE={1} AND NUMBER>0 ORDER BY ID DESC LIMIT 1",
+                            target, cardRow.GameId).FirstOrDefault();
                         if (ucRow != null)
                         {
                             cardRow.CardNumber = ucRow.Number;
@@ -704,18 +709,20 @@ namespace YYT.BLL.EF
                     result = rows;
 
                     // 控牌模式(mode=6)：联查 usercontrolvalue 回显次数/总次数（与 GetTotalControlStatus 一致）
+                    // 按 usercontrolstatus.GameId(=cardAction) 精确关联该游戏的行，避免取到其他游戏行导致次数错乱
                     var cardUserIds = rows.Where(c => c.ControlMode == (int)EControlMode.TotalCard).Select(c => c.UserID).Distinct().ToList();
                     if (cardUserIds.Count > 0)
                     {
                         var inClause = string.Join(",", cardUserIds.Select(s => "'" + s.Replace("'", "''") + "'"));
                         var cardRows = ef.Database.SqlQuery<M_UserControlValueRow>(
-                            "SELECT USERID AS UserID, CONTROL_TYPE AS CtrlType, CONTROL_VALUE AS CtrlValue, NUMBER AS Number, TOTAL_NUMBER AS TotalNumber FROM usercontrolvalue WHERE CONTROL_TYPE>=5 AND CONTROL_TYPE<=24 AND USERID IN (" + inClause + ")").ToList();
-                        var cardMap = cardRows.GroupBy(r => r.UserID).ToDictionary(g => g.Key, g => g.First());
+                            "SELECT ID AS ID, USERID AS UserID, CONTROL_TYPE AS CtrlType, CONTROL_VALUE AS CtrlValue, NUMBER AS Number, TOTAL_NUMBER AS TotalNumber FROM usercontrolvalue WHERE CONTROL_TYPE>=5 AND CONTROL_TYPE<=24 AND NUMBER>0 AND USERID IN (" + inClause + ")").ToList();
                         foreach (var cr in rows.Where(c => c.ControlMode == (int)EControlMode.TotalCard))
                         {
-                            M_UserControlValueRow uc;
-                            if (cardMap.TryGetValue(cr.UserID, out uc))
+                            // 按该总控记录存的 cardAction(GameId) 精确匹配对应游戏行
+                            var userCards = cardRows.Where(r => r.UserID == cr.UserID && (cr.GameId <= 0 || r.CtrlType == cr.GameId)).OrderByDescending(r => r.ID).ToList();
+                            if (userCards.Count > 0)
                             {
+                                var uc = userCards.First();
                                 cr.CardNumber = uc.Number;
                                 cr.CardTotal = uc.TotalNumber;
                             }
@@ -862,6 +869,7 @@ namespace YYT.BLL.EF
     /// </summary>
     public class M_UserControlValueRow
     {
+        public long ID { get; set; }
         public string UserID { get; set; }
         public int CtrlType { get; set; }
         public int CtrlValue { get; set; }
