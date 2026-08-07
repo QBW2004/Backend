@@ -126,7 +126,8 @@
                     } else if (newValue == 1) {
                         $('#addRobotNo').combobox('loadData', getComboSelData(2,1))
                     } else {
-                        $('#addRobotNo').combobox('loadData', getComboSelData(5,1))
+                        // 鱼机一桌6个座位，机器人数可选范围 1~6
+                        $('#addRobotNo').combobox('loadData', getComboSelData(7,1))
                     }
                 })
             }
