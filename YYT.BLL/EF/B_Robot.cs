@@ -59,6 +59,12 @@ namespace YYT.BLL.EF
             M_EasyuiGridData<M_Robot> list = new M_EasyuiGridData<M_Robot>();
             using (var ef = new GameDbContext())
             {
+                // 桌台显示名映射：roomtableconfig 为空名时保底"桌台"+TableIndex
+                Dictionary<string, string> tableNameMap = ef.Database.SqlQuery<RobotTableNameRow>(
+                        "SELECT GAME_ID, TableIndex, TableName FROM roomtableconfig").ToList()
+                    .ToDictionary(r => r.GAME_ID + "_" + r.TableIndex,
+                                  r => string.IsNullOrWhiteSpace(r.TableName) ? ("桌台" + r.TableIndex) : r.TableName.Trim());
+
                 IEnumerable<M_Robot> rst = ef.Robots;
                 if (!string.IsNullOrWhiteSpace(entity.GAME_NAME))
                     rst = rst.Where(c => c.GAME_NAME.Contains(entity.GAME_NAME));
@@ -66,25 +72,31 @@ namespace YYT.BLL.EF
                     rst = rst.Where(c => c.ROOM_ID.Equals(entity.ROOM_ID));
                 if (entity.TABLE_ID >= 0)
                     rst = rst.Where(c => c.TABLE_ID.Equals(entity.TABLE_ID));
-                // 分页
-                List<M_Robot> ListFooter = new List<M_Robot>();
-                int tatolRobotNo = 0;
-             
-                List<M_Robot> ListRobot = new List<M_Robot>();
-                ListRobot = rst.ToList();
+
+                List<M_Robot> ListRobot = rst.ToList();
+                // 填充桌子名称(缺配置或空名一律保底"桌台n")
                 foreach (var item in ListRobot)
                 {
-                    tatolRobotNo += item.ROBOT_NO;
+                    string key = item.GAME_ID + "_" + item.TABLE_ID;
+                    string name;
+                    item.TABLE_NAME = tableNameMap.TryGetValue(key, out name) ? name : ("桌台" + item.TABLE_ID);
                 }
+                // 桌子名称模糊搜索(含保底名"桌台n")
+                if (!string.IsNullOrWhiteSpace(entity.TABLE_NAME))
+                    ListRobot = ListRobot.Where(c => c.TABLE_NAME.Contains(entity.TABLE_NAME.Trim())).ToList();
+
+                // 分页
+                List<M_Robot> ListFooter = new List<M_Robot>();
+                int tatolRobotNo = ListRobot.Sum(c => c.ROBOT_NO);
                 M_Robot footer = new M_Robot();
                 footer.ROBOT_NO = tatolRobotNo;
                 footer.GAME_TYPE = 5;
                 footer.TABLE_ID = -1;
                 ListFooter.Add(footer);
-                if (rst != null)
+                if (ListRobot != null)
                 {
-                    mPage.SetTotalCount(rst.Count());
-                    var users = rst.AsEnumerable()
+                    mPage.SetTotalCount(ListRobot.Count);
+                    var users = ListRobot.AsEnumerable()
                         .OrderByDescending(c => c.GAME_ID)
                         .Skip(mPage.PageSize * (mPage.PageIndex - 1)).Take(mPage.PageSize)
                         .ToList();
@@ -94,6 +106,16 @@ namespace YYT.BLL.EF
                 }
             }
             return list;
+        }
+
+        /// <summary>
+        /// roomtableconfig 桌台显示名查询行(机器人列表桌子名称映射用)
+        /// </summary>
+        public class RobotTableNameRow
+        {
+            public int GAME_ID { get; set; }
+            public int TableIndex { get; set; }
+            public string TableName { get; set; }
         }
 
         public int DelRobot(M_Robot entity)

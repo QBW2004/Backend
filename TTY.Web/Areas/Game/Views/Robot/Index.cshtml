@@ -89,7 +89,7 @@
             var para = {
                 winId: '#addWin',
                 title: '【添加机器人】',
-                height: 380,
+                height: 345,
                 iconCls: 'icon-user_add',
                 callBack: function () {
                     $('#addGameType').combobox('loadData', actionSelData1());
@@ -121,18 +121,9 @@
         }
         function bindGamesTree(newValue, oldValue) {
             if (oldValue && newValue > -1 && newValue != oldValue) {
-                var gameType = $("input[name='GameType']").val();
-                if (gameType == 0) {
-                    // 押注类一房N桌：房间固定"默认场"(id=0)，不可选其它房间
-                    $('#addRoomSel').combobox('loadData', [{ id: 0, text: '默认场', selected: true }])
-                } else if (newValue == "8" || newValue == "24" || newValue == "25" || newValue == "5" || newValue == "15") {
-                    $('#addRoomSel').combobox('loadData', getRoomSelData(4))
-                } else {
-                    $('#addRoomSel').combobox('loadData', getRoomSelData(3))
-                }
-               
+                // 玩家/机器人已锁定第一房间，桌台下拉直接取 roomtableconfig 桌名列表
+                getRoom();
             }
-            getRoom();
         }
         function actionSelData1() {
             return [
@@ -151,74 +142,25 @@
                 return '<span>鱼机类</span>';
         }
 
-        function fmtTableID(value, rowData, rowIndex) {
-            if (value == -1)
-                return '';
-            else
-                return value;
-        }
-
         function fmtRobotNo(value, rowData, rowIndex) {
             if (rowData.GAME_TYPE != 5)
                 return value;
             else
                 return '机器人总数量:' +value;
         }
-        // 获取房间选项数据
-        function getRoomSelData(len) {
-            var arr = [];
-            for (var i = 0; i < len; i++) {
-                if (i == 0)
-                    arr.push({ id: i, text: '初级场', selected: true });
-                else if (i == 1)
-                    arr.push({ id: i, text: '中级场' });
-                else if (i == 2)
-                    arr.push({ id: i, text: '高级场' });
-                else if (i == 3)
-                    arr.push({ id: i, text: 'VIP 场' });
-            }
-            return arr;
-        }
-
-        // 获取房间选项数据
-        function getRoomName(len) {
-            var arr = [];
-            arr.push({ id: -1, text: '请选择房间', selected: true });
-            for (var i = 0; i < len; i++) {
-                if (i == 0)
-                    arr.push({ id: i, text: '初级场' });
-                else if (i == 1)
-                    arr.push({ id: i, text: '中级场' });
-                else if (i == 2)
-                    arr.push({ id: i, text: '高级场' });
-                else if (i == 3)
-                    arr.push({ id: i, text: 'VIP 场' });
-            }
-            return arr;
-        }
-
+        // 获取桌台列表(所有游戏类型统一从 roomtableconfig 读取，空名保底"桌台n")
         function getRoom() {
-            var gameType = $("input[name='GameType']").val()
-            //console.log("游戏类型：" + gameType);
             var GameId = $("input[name='GameId']").val();
             //console.log("游戏名称：" + GameId);
             if (GameId == -1 || GameId=='') {
               //alert("请选择游戏");
                 return;
             }
-            var RoomSel = $("input[name='RoomSel']").val();
-            //console.log("RoomSel：" + RoomSel);
-            if (gameType == 0) {//押分类：一房N桌，直接从 GetParabetRoom 取桌台列表填充下拉
-                request('/Game/Robot/GetParabetRoom', { GameId: GameId }, function (data) {
-                    $('#addTABLE_ID').combobox('loadData', data)
-                })
-            } else {//鱼机、牌机
-                request('/Game/Robot/GetParaRoom', { GameId: GameId, RoomId: RoomSel }, function (data) {
-                    $('#addTABLE_ID').combobox('loadData', getComboSelData(data.NUM, 0))
-                })
-            }
+            request('/Game/Robot/GetRobotTableList', { GameId: GameId }, function (data) {
+                $('#addTABLE_ID').combobox('loadData', data)
+            })
         }
-        //获取机台数据
+        //获取下拉数字序列数据(机器人数)数据
         function getComboSelData(len, minVal) {
             var arr = [];
             var _minVal = (typeof minVal == "number" ? minVal : 0)
@@ -251,13 +193,8 @@
                     <input type="text" class="easyui-textbox" name="GameName" id="txtS_GameName" />
                 </div>
                 <div class="left Lpd5">
-                    房间名称
-                    <select class="easyui-combobox" id="txtS_RoomName" name="RoomId" data-options="valueField:'id',textField:'text',panelHeight:260,editable:false,data:getRoomName(4)" style="width:135px"></select>
-
-                </div>
-                <div class="left Lpd5">
-                    机台
-                    <input type="text" class="easyui-textbox" name="TABLE_ID" id="txtS_TABLE_ID" />
+                    桌子名称
+                    <input type="text" class="easyui-textbox" name="TABLE_NAME" id="txtS_TABLE_NAME" />
                 </div>
                 <div class="left Lmg10">
                     <a href="javascript:void(0);" class="easyui-linkbutton" onclick="queryData();" data-options="plain:true,iconCls:'icon-search'">查找</a>
@@ -272,8 +209,7 @@
         <tr>
             <th field="GAME_TYPE" width="110" formatter="fmtGameType">游戏类型</th>
             <th field="GAME_NAME" width="110">游戏名称</th>
-            <th field="ROOM_NAME" width="110">房间名称</th>
-            <th field="TABLE_ID" width="110"  formatter="fmtTableID">机台</th>
+            <th field="TABLE_NAME" width="150">桌子名称</th>
             <th field="ROBOT_NO" width="110"  formatter="fmtRobotNo">机器人数</th>
             <th field="ID" width="110" align="center" formatter="fmtOpt">操作</th>
         </tr>
@@ -304,14 +240,7 @@
                 </td>
             </tr>
             <tr>
-                <td align="right">选择房间</td>
-                <td align="left" class="pd5">
-                    <select class="easyui-combobox" id="addRoomSel" data-options="valueField:'id',textField:'text',panelHeight:150,data:getRoomSelData(3),onChange:getRoom" name="RoomSel">
-                    </select>
-                </td>
-            </tr>
-            <tr>
-                <td align="right">选择机台</td>
+                <td align="right">选择桌子</td>
                 <td align="left" class="pd5">
                     <select class="easyui-combobox" id="addTABLE_ID" data-options="valueField:'id',textField:'text',panelHeight:150" name="TABLE_ID">
                     </select>
