@@ -243,6 +243,64 @@ namespace YYT.Remote
             }
             return msg;
         }
+        /// <summary>
+        /// 机器人配置热更：写库后发送 RT 命令给 ServerRobot(独立管道 robotPipeName)，
+        /// 服务端免重启全量重载 robot_seat 并重连机器人；强校验回复 RTOK。
+        /// </summary>
+        public Msg SendRobotReload()
+        {
+            Msg msg = new Msg(0, "机器人热更命令发送失败！");
+            NamedPipeClientStream pipe = null;
+            string srv_code = string.Empty;
+            try
+            {
+                string pipeName = ConfigHelper.Get("robotPipeName");
+                if (string.IsNullOrWhiteSpace(pipeName))
+                    pipeName = "MTH_RobotPipe";
+                pipe = new NamedPipeClientStream(this.ServerName, pipeName, PipeDirection.InOut, PipeOptions.Asynchronous, TokenImpersonationLevel.None);
+                pipe.Connect(10000);
+                // 发送 RT 命令(以 '\0' 结尾，与 ServerRobot 管道协议一致；裸字节 I/O 避免文本包装层问题)
+                byte[] cmd = Encoding.UTF8.GetBytes("RT\0");
+                pipe.Write(cmd, 0, cmd.Length);
+                pipe.Flush();
+                LogHelper.WriteLog(typeof(YYT.Remote.SConnect), "机器人热更指令内容：\nRT");
+                // 读取回复(以 \n 结尾)：带截止时间，避免服务端异常时无限阻塞。
+                // 全量重载耗时随机器人数量增长(限速 2/s 重连)，给足 120s。
+                byte[] buf = new byte[256];
+                var readTask = pipe.ReadAsync(buf, 0, buf.Length);
+                if (!readTask.Wait(TimeSpan.FromSeconds(120)))
+                {
+                    msg.content = "机器人热更失败：等待服务端回复超时";
+                    return msg;
+                }
+                srv_code = Encoding.UTF8.GetString(buf, 0, readTask.Result).Trim('\r', '\n', '\0');
+                // 消息翻译
+                var tmpMsg = this.GetSrvMsg(srv_code);
+                if (tmpMsg == null)
+                    tmpMsg = new Msg(0, $"机器人热更失败：服务器返回未知状态({srv_code})");
+                if (tmpMsg.code != 1)
+                {
+                    tmpMsg.code = 0;
+                    LogHelper.WriteLog(typeof(YYT.Remote.SConnect), $"机器人热更指令返回：{srv_code}");
+                }
+                msg = tmpMsg;
+            }
+            catch (Exception ex)
+            {
+                msg.content = "机器人热更失败：" + ex.Message;
+                LogHelper.WriteLog(typeof(YYT.Remote.SConnect), ex);
+            }
+            finally
+            {
+                try
+                {
+                    if (pipe != null)
+                        pipe.Dispose();
+                }
+                catch { }
+            }
+            return msg;
+        }
         public byte[] SendReadBytes(EScMsgType eScMsgType, params object[] para)
         {
             StreamWriter sw = null;

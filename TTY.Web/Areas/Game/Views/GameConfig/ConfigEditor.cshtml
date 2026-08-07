@@ -1127,8 +1127,10 @@
 
     function gcBuildPayoutTable() {
         var $tb = $('#gcPayoutTable tbody');
+        var dazhiNoBars = gcGetMagKey() === 'dazhi'; // 大字板五鬼已下线: 机台设定不显示五鬼行
         $tb.empty();
         $.each(GC_PAYOUT_ROWS, function (i, r) {
+            if (dazhiNoBars && r.ht === 12) return; // 大字板五鬼已下线
             var mag = gcGetMagSpec(r.ht);
             // 杂牌(ht=0)为余量行，始终启用不可勾选；其余牌型逐行启用(he{ht}，隐藏域保证序列化)
             var enCell = r.ht === 0

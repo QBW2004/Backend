@@ -789,11 +789,13 @@
         return 'phenix';
     }
     // 按 cardAction 动态生成牌机型牌型下拉：0-12 完整13种 + 99关闭控制（倍率随游戏类型变化）
+    // 大字板(5)五鬼已下线：不提供五鬼选项，与服务端 AlgProb 控制通道封死一致
     function valSelDataPAIJI(cardAction) {
         var mags = TC_MAG_TAB[tcMagKey(cardAction)];
         var arr = [];
         for (var i = 0; i < TC_CARD_TYPES.length; i++) {
             var t = TC_CARD_TYPES[i];
+            if (cardAction == 5 && t.ht == 12) continue; // 大字板五鬼已下线
             arr.push({ id: t.ht, text: t.name + '(' + mags[t.ht] + '倍)' });
         }
         arr.push({ id: 99, text: '关闭控制' });

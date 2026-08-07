@@ -190,6 +190,10 @@ namespace YYT.Web.Areas.Game.Controllers
                     ROBOT_NO = RobotNo,
                 };
                 msg = new B_Robot().AddRobot(entity);
+                if (msg.code == 1)
+                {
+                    RobotReloadAfterChange(ref msg, "机器人已保存");
+                }
             }
             catch (Exception ex)
             {
@@ -216,6 +220,7 @@ namespace YYT.Web.Areas.Game.Controllers
                     {
                         msg.code = 1;
                         msg.content = "删除成功！";
+                        RobotReloadAfterChange(ref msg, "机器人已删除");
                     }
                 }
             }
@@ -224,6 +229,53 @@ namespace YYT.Web.Areas.Game.Controllers
                 LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.RobotController), ex);
             }
             return Json(msg);
+        }
+
+        [MemberAuthorize]
+        [AjaxOnly]
+        [HttpPost]
+        public ActionResult DelAllRobot(FormCollection form)
+        {
+            Msg msg = new Msg(0, "删除失败！");
+            try
+            {
+                int val = new B_Robot().DelAllRobot();
+                if (val >= 0)
+                {
+                    msg.code = 1;
+                    msg.content = "删除成功！";
+                    RobotReloadAfterChange(ref msg, "机器人已删除");
+                }
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.RobotController), ex);
+            }
+            return Json(msg);
+        }
+
+        /// <summary>
+        /// 机器人写库成功后推送 RT 热更命令(ServerRobot 免重启全量重载)，强校验：失败则明确报错。
+        /// </summary>
+        /// <param name="msg">写库结果(成功时 code=1)，热更失败时改为 code=0 并附原因</param>
+        /// <param name="savedDesc">写库成功文案前缀，如"机器人已保存"</param>
+        private void RobotReloadAfterChange(ref Msg msg, string savedDesc)
+        {
+            try
+            {
+                Msg rt = new SConnect().SendRobotReload();
+                if (rt.code != 1)
+                {
+                    msg.code = 0;
+                    msg.content = savedDesc + "，但服务端热更新失败：" + rt.content;
+                }
+            }
+            catch (Exception ex)
+            {
+                msg.code = 0;
+                msg.content = savedDesc + "，但服务端热更新失败：" + ex.Message;
+                LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.RobotController), ex);
+            }
         }
 
     }
