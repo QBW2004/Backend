@@ -936,7 +936,13 @@ namespace YYT.Web.Areas.Game.Controllers
 
                     // 牌型概率(万分比)/启用：HandType 与服务端 te_CardsType 枚举(0..12)逐一对齐。
                     // 倍数以客户端 Blueeboard.cs 为唯一权威，后台既不接收也不保存。
-                    int[] payoutHandTypes = new int[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
+                    // 大字板(gameId=15)五鬼已下线：不保存五鬼(12)行，与服务端 AlgProb 封死一致（DELETE 全删后不再 INSERT，DB 残留随下次保存自动清理）
+                    List<int> payoutHandTypes = new List<int>();
+                    for (int ht = 0; ht <= 12; ht++)
+                    {
+                        if (gameId == 15 && ht == 12) continue;
+                        payoutHandTypes.Add(ht);
+                    }
                     int payoutOn = form.Q<int>("PayoutOn", 0) == 1 ? 1 : 0;
                     List<int[]> payoutProfiles = new List<int[]>();
                     int probSum = 0;

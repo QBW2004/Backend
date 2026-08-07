@@ -458,6 +458,12 @@ namespace YYT.BLL.EF
                     msg.content = "无效的控牌牌型（0-12 或 99 关闭）！";
                     return msg;
                 }
+                // 大字板(5)五鬼已下线：控牌牌型 12(五鬼) 与服务端 AlgProb 控制通道封死保持一致
+                if (cardAction == 5 && cardValue == 12)
+                {
+                    msg.content = "大字板五鬼已下线，无法控牌五鬼！";
+                    return msg;
+                }
                 if (cardNumber < 1 || cardTotal < 5 || cardTotal > 50 || cardNumber > cardTotal)
                 {
                     msg.content = "控牌数量/总把数无效（数量≥1，总把数 5-50，数量≤总把数）！";
