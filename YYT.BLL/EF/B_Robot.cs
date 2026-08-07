@@ -141,5 +141,30 @@ namespace YYT.BLL.EF
             }
             return val;
         }
+
+        /// <summary>
+        /// 删除全部机器人(清空 robot_seat，C++ center 直接读表生效)
+        /// </summary>
+        public int DelAllRobot()
+        {
+            int val = 0;
+            using (var ef = new GameDbContext())
+            {
+                using (var trans = ef.Database.BeginTransaction())
+                {
+                    try
+                    {
+                        val = ef.Database.ExecuteSqlCommand("DELETE FROM robot_seat");
+                        trans.Commit();
+                    }
+                    catch (Exception ex)
+                    {
+                        trans.Rollback();
+                        LogHelper.WriteLog(typeof(YYT.BLL.EF.B_Robot), ex);
+                    }
+                }
+            }
+            return val;
+        }
     }
 }

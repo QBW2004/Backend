@@ -85,6 +85,18 @@
             });");
         }
 
+        function deleteAllRobot() {
+            @Html.Raw(@" confirm('确认删除全部机器人？删除后不可恢复！', function () {
+                request('/Game/Robot/DelAllRobot', {}, function (data) {
+                    //提示消息
+                    showMsg(data);
+                    if (data && data.code == 1) {
+                        queryData();//重新加载数据
+                    }
+                });
+            });");
+        }
+
         function showAddWin() {
             var para = {
                 winId: '#addWin',
@@ -199,6 +211,7 @@
                 <div class="left Lmg10">
                     <a href="javascript:void(0);" class="easyui-linkbutton" onclick="queryData();" data-options="plain:true,iconCls:'icon-search'">查找</a>
                     <a href="javascript:void(0);" class="easyui-linkbutton" onclick="showAddWin();" data-options="plain:true,iconCls:'icon-add'">添加机器人</a>
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="deleteAllRobot();" data-options="plain:true,iconCls:'icon-remove'">删除全部机器人</a>
                 </div>
             </td>
         </tr>
