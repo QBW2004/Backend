@@ -342,7 +342,11 @@ function applyAdaptiveGridColumns(id) {
     if (grid.length < 1 || !grid.data('datagrid'))
         return;
 
-    grid.datagrid('options').fitColumns = true;
+    // 尊重各网格自身的 fitColumns 配置：仅当配置为 true 时才强制铺满；
+    // 显式配置 fitColumns:false 的网格（如用户管理页隐藏操作列后）不再被覆盖为 true。
+    if (grid.datagrid('options').fitColumns !== true)
+        return;
+
     grid.datagrid('fitColumns');
 }
 

@@ -53,9 +53,9 @@
     //}
     //重置表格大小
     function setGridSize(param) {
-        var w = $(window).width() - 8;
+        var w = 840; // 固定表宽（与在线用户页一致），不再占满整屏
         var h = $(window).height() - 78;
-        resizeGrid('tb_UserInfo', 'auto', h);
+        resizeGrid('tb_UserInfo', w, h);
     }
     //查询数据
     function queryData() {
@@ -801,7 +801,7 @@
                             + '</div>';
                     } else {
                         var isRelease = (r.ControlMode == 5);
-                        var progress = isRelease ? -r.GrantedCoins : r.ConsumedCoins;
+                        var progress = isRelease ? r.GrantedCoins : -r.ConsumedCoins;
                         html += '<div style="margin:2px 0;">'
                             + totalModeName(r.ControlMode)
                             + '（强度 ' + r.LimitCoins + '）'
@@ -1202,10 +1202,10 @@
             var dlg = $('#menuModal');
             if (!_menuInited) {
                 dlg.dialog({
-                    title: '【功能菜单】',
-                    width: 320,
-                    height: 440,
-                    modal: true,
+                title: '【功能菜单】',
+                width: 320,
+                height: 'auto', // 高度自适应内容，完整显示所有按钮、不出现滚动条
+                modal: true,
                     closed: true,
                     collapsible: false,
                     minimizable: false,
@@ -1227,6 +1227,7 @@
         function menuRecharge() { closeMenu(); showReChange(_menuUser.ID); }
         function menuDeduct() { closeMenu(); showDeduct(_menuUser.ID); }
         function menuChgPwd() { closeMenu(); showChgWin(_menuUser.ID); }
+        function menuFrozen() { closeMenu(); frozenUser(_menuUser.ID, (_menuUser.FROZEN == 1 ? 0 : 1)); }
 
         function bindRowClickMenu() {
             if (bindRowClickMenu._done) return;
@@ -1246,6 +1247,16 @@
                     _menuUser = rd;
                     $('#menuUserAccount').text(rd.ID || '');
                     $('#menuUserName').text(rd.NAME || '');
+                    // 冻结按钮：按用户当前状态显示 冻结/解冻，并按权限显隐
+                    $('#menuBtnFrozen').text(rd.FROZEN == 1 ? '解冻' : '冻结');
+                    @if (loginUser.UserPriv == 0 || loginUser.IsFrozen == 1)
+                    {
+                        <text>$('#menuBtnFrozen').show();</text>
+                    }
+                    else
+                    {
+                        <text>$('#menuBtnFrozen').hide();</text>
+                    }
                     if (canKick && (canKickWholeLine || rd.AGENCY == loginAgencyAccount))
                         $('#menuBtnKick').show();
                     else
@@ -1262,7 +1273,7 @@
         .coin-dialog-field { text-align: left; white-space: nowrap; }
         .coin-dialog-tip { color: #999; text-align: left; }
         .coin-dialog-form { min-height: 260px; height: 100%; display: flex; align-items: center; justify-content: center; margin: 0; }
-        .menu-btn-item { display: block; width: 100%; padding: 7px 0; border: none; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; margin-bottom: 6px; text-decoration: none; text-align: center; transition: opacity 0.2s; }
+        .menu-btn-item { display: block; width: 100%; padding: 12px 0; border: none; border-radius: 6px; font-size: 18px; font-weight: 600; cursor: pointer; margin-bottom: 8px; text-decoration: none; text-align: center; transition: opacity 0.2s; box-sizing: border-box; }
         .menu-btn-item:hover { opacity: 0.85; }
         .menu-btn-item:last-child { margin-bottom: 0; }
         .menu-btn-control { background: #ecf5ff; color: #409eff; }
@@ -1270,6 +1281,7 @@
         .menu-btn-deduct { background: #fdf6ec; color: #e6a23c; }
         .menu-btn-kick { background: #fef0f0; color: #f56c6c; }
         .menu-btn-pwd { background: #f3f0ff; color: #722ed1; }
+        .menu-btn-frozen { background: #e6f7ff; color: #1890ff; }
         .menu-btn-delete { background: #fff1f0; color: #cf1322; }
         .menu-btn-back { background: #f5f7fa; color: #606266; }
     </style>
@@ -1324,26 +1336,26 @@
     <thead>
         <tr>
             <th data-options="field:'ck',checkbox:true"></th>
-            <th field="ID" width="110">用户账号</th>
-            <th field="NAME" width="110">昵称</th>
-            <th field="AGENCY" width="85">所属代理</th>
-            <th field="FROZEN" width="65" formatter="fmtForzen">是否冻结</th>
-            <th field="INHALL" width="65" formatter="fmtForzen">是否在线</th>
-            <th field="COINS" width="95" formatter="fmtCoins" sortable="true">账面余额</th>
-            <th field="GAME_SCORE" width="95" formatter="fmtCoins" sortable="true">账面游戏分</th>
+            <th field="ID" width="75">用户账号</th>
+            <th field="NAME" width="75">昵称</th>
+            <th field="AGENCY" width="60">所属代理</th>
+            <th field="FROZEN" width="45" formatter="fmtForzen">是否冻结</th>
+            <th field="INHALL" width="45" formatter="fmtForzen">是否在线</th>
+            <th field="COINS" width="65" formatter="fmtCoins" sortable="true">账面余额</th>
+            <th field="GAME_SCORE" width="65" formatter="fmtCoins" sortable="true">账面游戏分</th>
             <th field="CurrentGameName" width="120" hidden="true">当前游戏</th>
             <th field="CurrentRoomId" width="80" hidden="true">当前厅</th>
             <th field="CurrentTableId" width="80" hidden="true">桌号</th>
             <th field="CurrentSeatId" width="80" hidden="true">座号</th>
             <th field="CurrentBetCoins" width="90" formatter="fmtCoins" hidden="true">下注</th>
             <th field="CurrentWinLose" width="90" formatter="fmtCoins" hidden="true">当前输赢</th>
-            <th field="COINS_BUY" width="100" formatter="fmtCoins">充值</th>
-            <th field="COINS_BACK" width="85" formatter="fmtCoins">兑换</th>
-            <th field="TodayWinLoss" width="85" formatter="fmtWinLoss">今日盈亏</th>
-            <th field="Profit" width="100" formatter="fmtWinLoss">总盈利</th>
+            <th field="COINS_BUY" width="70" formatter="fmtCoins">充值</th>
+            <th field="COINS_BACK" width="60" formatter="fmtCoins">兑换</th>
+            <th field="TodayWinLoss" width="60" formatter="fmtWinLoss">今日盈亏</th>
+            <th field="Profit" width="70" formatter="fmtWinLoss">总盈利</th>
             @if (loginUser.UserPriv == 0 || loginUser.IsViewSafePwd == 1)
             {
-                <th field="PWD" width="110">用户密码</th>
+                <th field="PWD" width="75">用户密码</th>
                 <!-- 保险柜密码已隐藏 -->
             }
             <!-- 保险柜余额已隐藏 -->
@@ -1351,7 +1363,7 @@
                 {
                     <th field="TELEPHONE" width="110">手机号</th>
                 }*@
-            <th field="OPT" width="700" formatter="fmtOpt">操作</th>
+            <th field="OPT" width="700" formatter="fmtOpt" hidden="true">操作</th>
 
         </tr>
     </thead>
@@ -1919,26 +1931,30 @@
     <div style="font-size:15px;font-weight:bold;color:#303133;margin-bottom:2px;">玩家账号：<span id="menuUserAccount" style="color:#409eff;"></span></div>
     <div style="font-size:12px;color:#909399;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #ebeef5;">名称：<span id="menuUserName"></span></div>
     <div>
-        @if (loginUser.UserPriv == 0 || loginUser.IsDelete == 1)
-        {
-            <a href="javascript:void(0);" class="menu-btn-item menu-btn-delete" onclick="menuDelete()">删除</a>
-        }
         @if (loginUser.UserPriv == 0 || loginUser.IsKill == 1 || loginUser.IsProbability == 1 || loginUser.IsRelease == 1)
         {
             <a href="javascript:void(0);" class="menu-btn-item menu-btn-control" onclick="menuControl()">控制</a>
-        }
-        @if (loginUser.UserPriv == 0 || loginUser.IsKicking == 1)
-        {
-            <a href="javascript:void(0);" id="menuBtnKick" class="menu-btn-item menu-btn-kick" onclick="menuKick()">踢人</a>
         }
         @if (loginUser.UserPriv == 0 || loginUser.IsUpDown == 1)
         {
             <a href="javascript:void(0);" class="menu-btn-item menu-btn-recharge" onclick="menuRecharge()">充值</a>
             <a href="javascript:void(0);" class="menu-btn-item menu-btn-deduct" onclick="menuDeduct()">扣币</a>
         }
+        @if (loginUser.UserPriv == 0 || loginUser.IsKicking == 1)
+        {
+            <a href="javascript:void(0);" id="menuBtnKick" class="menu-btn-item menu-btn-kick" onclick="menuKick()">踢人</a>
+        }
+        @if (loginUser.UserPriv == 0 || loginUser.IsFrozen == 1)
+        {
+            <a href="javascript:void(0);" id="menuBtnFrozen" class="menu-btn-item menu-btn-frozen" onclick="menuFrozen()">冻结</a>
+        }
         @if (loginUser.UserPriv == 0 || loginUser.IsModifyPwd == 1)
         {
             <a href="javascript:void(0);" class="menu-btn-item menu-btn-pwd" onclick="menuChgPwd()">修改密码</a>
+        }
+        @if (loginUser.UserPriv == 0 || loginUser.IsDelete == 1)
+        {
+            <a href="javascript:void(0);" class="menu-btn-item menu-btn-delete" onclick="menuDelete()">删除</a>
         }
         <a href="javascript:void(0);" class="menu-btn-item menu-btn-back" onclick="closeMenu()">返回</a>
     </div>
