@@ -139,7 +139,7 @@
                         </div>
                     </div>
                     <div class="gc-form-row">
-                        <div class="gc-field">
+                        <div class="gc-field gc-hide-12">
                             <label>兑换单位</label>
                             <input type="number" id="gcExCoin" name="EX_COIN" class="gc-input" min="1" value="1" />
                         </div>
@@ -147,7 +147,7 @@
                             <label>兑换币值</label>
                             <input type="number" id="gcCoinSc" name="COIN_SC" class="gc-input" min="1" value="1" />
                         </div>
-                        <div class="gc-field">
+                        <div class="gc-field gc-hide-12">
                             <label>兑换金币数</label>
                             <input type="number" id="gcGameMo" name="Game_Mo" class="gc-input" min="0" value="0" />
                         </div>
@@ -805,6 +805,8 @@
         $('.gc-base-info').show();
         if (type >= 0 && type <= 3) {
             $('.gc-only-' + type).show();
+            // 鱼机(2)/牌机(1)：隐藏 兑换单位、兑换金币数（仅不展示，仍随表单提交，功能保留）
+            $('.gc-hide-12').toggle(!(type === 1 || type === 2));
             if (type === 0) {
                 $('#gcMinBetLbl').text('起押值');
                 $('#gcMaxBetLbl').text('押分限红');
