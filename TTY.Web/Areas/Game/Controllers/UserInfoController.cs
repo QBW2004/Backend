@@ -54,6 +54,7 @@ namespace YYT.Web.Areas.Game.Controllers
             {
                 List<OnlinePlayerInfo> players = new PlayerStateService().QueryAllOnlinePlayers();
                 FillPlayerProfits(players);
+                FillPlayerTodayWinLoss(players);
                 msg.code = 1;
                 msg.content = "查询成功！";
                 msg.datas = players;
@@ -87,6 +88,39 @@ namespace YYT.Web.Areas.Game.Controllers
             {
                 if (player.ID != null && profitMap.TryGetValue(player.ID, out long? profit))
                     player.Profit = profit ?? 0;
+            }
+        }
+
+        /// <summary>
+        /// 今日盈亏（与用户管理页同口径：user_daily_winloss 当日数据）
+        /// </summary>
+        private void FillPlayerTodayWinLoss(List<OnlinePlayerInfo> players)
+        {
+            if (players == null || players.Count < 1)
+                return;
+            List<string> ids = players.Where(c => !string.IsNullOrWhiteSpace(c.ID)).Select(c => c.ID).Distinct().ToList();
+            if (ids.Count < 1)
+                return;
+            try
+            {
+                using (var ef = new GameDbContext())
+                {
+                    string placeholders = string.Join(",", ids.Select((c, i) => "{" + i + "}"));
+                    string sql = "SELECT UserID, WINLOSS FROM user_daily_winloss WHERE DAY = CURDATE() AND UserID IN (" + placeholders + ")";
+                    Dictionary<string, long> winLossMap = ef.Database.SqlQuery<M_UserDailyWinLoss>(sql, ids.Cast<object>().ToArray())
+                        .ToList()
+                        .GroupBy(c => c.UserID)
+                        .ToDictionary(g => g.Key, g => g.First().WINLOSS);
+                    foreach (OnlinePlayerInfo player in players)
+                    {
+                        if (player.ID != null && winLossMap.TryGetValue(player.ID, out long winLoss))
+                            player.TodayWinLoss = winLoss;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.UserInfoController), $"FillPlayerTodayWinLoss Err >> {ex.Message}");
             }
         }
         [MemberAuthorize]

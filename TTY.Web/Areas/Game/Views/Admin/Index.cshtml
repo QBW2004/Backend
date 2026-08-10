@@ -82,13 +82,13 @@
             else
                 arr.push('<a href="javascript:void(0)" class="red Lpd5" onclick="setIsKicking(\'' + rowData.ID + '\',0)">禁用踢人</a>');
             if (rowData.IsRelease == 0)
-                arr.push('<a href="javascript:void(0)" class="green Lpd5" onclick="setIsRelease(\'' + rowData.ID + '\',1)">启用牌机</a>');
+                arr.push('<a href="javascript:void(0)" class="green Lpd5" onclick="setIsRelease(\'' + rowData.ID + '\',1)">启用控牌</a>');
             else
-                arr.push('<a href="javascript:void(0)" class="red Lpd5" onclick="setIsRelease(\'' + rowData.ID + '\',0)">禁用牌机</a>');
+                arr.push('<a href="javascript:void(0)" class="red Lpd5" onclick="setIsRelease(\'' + rowData.ID + '\',0)">禁用控牌</a>');
             if (rowData.IsKill == 0)
-                arr.push('<a href="javascript:void(0)" class="green Lpd5" onclick="setIsKill(\'' + rowData.ID + '\',1)">启用点杀</a>');
+                arr.push('<a href="javascript:void(0)" class="green Lpd5" onclick="setIsKill(\'' + rowData.ID + '\',1)">启用吃分</a>');
             else
-                arr.push('<a href="javascript:void(0)" class="red Lpd5" onclick="setIsKill(\'' + rowData.ID + '\',0)">禁用点杀</a>');
+                arr.push('<a href="javascript:void(0)" class="red Lpd5" onclick="setIsKill(\'' + rowData.ID + '\',0)">禁用吃分</a>');
             if (rowData.IsProbability == 0)
                 arr.push('<a href="javascript:void(0)" class="green Lpd5" onclick="setProbability(\'' + rowData.ID + '\',1)">启用放水</a>');
             else
@@ -172,7 +172,7 @@
             });
         }
 
-        //启用/禁用放水控制
+        //启用/禁用放水控制（对应总控 Mode=5 放水）
         function setProbability(id, flag) {
             confirm('确认' + (flag == 0 ? '禁用放水' : '启用放水') + '所选代理的权限？', function () {
                 request('/Game/Admin/SetIsProbability', { ID: id, IsProbability: flag }, function (data) {
@@ -198,9 +198,9 @@
                 });
             });
         }
-        // 启用/禁用点杀控制权限
+        // 启用/禁用吃分控制权限（对应总控 Mode=4 吃分）
         function setIsKill(id, flag) {
-            confirm('确认' + (flag == 0 ? '禁用点杀' : '启用点杀') + '所选代理的权限？', function () {
+            confirm('确认' + (flag == 0 ? '禁用吃分' : '启用吃分') + '所选代理的权限？', function () {
                 request('/Game/Admin/SetIsKill', { ID: id, IsKill: flag }, function (data) {
                     showAdminResult(data);
                     if (data && data.code == 1) {
@@ -210,9 +210,9 @@
             });
         }
 
-        // 启用/禁用牌机控制权限
+        // 启用/禁用控牌控制权限（对应总控 Mode=6 控牌）
         function setIsRelease(id, flag) {
-            confirm('确认' + (flag == 0 ? '禁用牌机' : '启用牌机') + '所选代理的权限？', function () {
+            confirm('确认' + (flag == 0 ? '禁用控牌' : '启用控牌') + '所选代理的权限？', function () {
                 request('/Game/Admin/SetIsRelease', { ID: id, IsRelease: flag }, function (data) {
                     showAdminResult(data);
                     if (data && data.code == 1) {

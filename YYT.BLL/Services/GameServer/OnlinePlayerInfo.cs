@@ -53,6 +53,12 @@ namespace YYT.BLL.Services.GameServer
         public long Profit { get; set; }
 
         /// <summary>
+        /// 今日盈亏（后台补充，取 user_daily_winloss 当日数据，与用户管理页今日盈亏同口径）
+        /// </summary>
+        [JsonProperty("TodayWinLoss")]
+        public long TodayWinLoss { get; set; }
+
+        /// <summary>
         /// 状态: 0=游戏中, 1=大厅, 2=其他
         /// </summary>
         [JsonProperty("Status")]
