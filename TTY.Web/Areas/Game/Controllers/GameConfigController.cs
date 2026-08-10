@@ -237,7 +237,11 @@ namespace YYT.Web.Areas.Game.Controllers
                             "SELECT DIF FROM parafish WHERE GAME_ID=" + gameId + " ORDER BY TableIndex").ToList();
                         var cfgFishSites = ef.Database.SqlQuery<int>(
                             "SELECT SITE_TYPE FROM parafish WHERE GAME_ID=" + gameId + " ORDER BY TableIndex").ToList();
-                        // 房间加炮幅度(pararoom.scoreSwitch 存显示值×10)，供前端加炮幅度输入框回显；
+                        // 按桌加炮幅度(roomtableconfig.GunPowerStep 存显示值×10，0=未配置回退房间)，
+                        // 一房多桌：每张桌独立读取，与服务端 GetRoomTableConfigs 逐行口径一致。
+                        var cfgGunSteps = ef.Database.SqlQuery<int>(
+                            "SELECT IFNULL(GunPowerStep,0) FROM roomtableconfig WHERE GAME_ID=" + gameId + " ORDER BY TableIndex").ToList();
+                        // 房间加炮幅度(pararoom.scoreSwitch 存显示值×10)：仅当某桌 GunPowerStep=0(未配置)时兜底回显；
                         // 用 SqlQuery 直读标量：EF 实体映射 pararoom 会因 Game_Mo 等 NULL 列抛异常
                         int fishScoreSwRaw = ef.Database.SqlQuery<int>(
                             "SELECT IFNULL(scoreSwitch,0) FROM pararoom WHERE GAME_ID=" + gameId + " LIMIT 1").FirstOrDefault();
@@ -261,7 +265,7 @@ namespace YYT.Web.Areas.Game.Controllers
                                 enabled = i < cfgEnableds.Count ? cfgEnableds[i] : 1,
                                 fishDif = i < cfgFishDifs.Count ? cfgFishDifs[i] : 0,
                                 fishSiteType = i < cfgFishSites.Count ? cfgFishSites[i] : 0,
-                                scoreSwitch = fishScoreSwitch
+                                scoreSwitch = (i < cfgGunSteps.Count && cfgGunSteps[i] > 0) ? cfgGunSteps[i] / 10m : fishScoreSwitch
                             });
                         }
                     }
@@ -1136,14 +1140,16 @@ namespace YYT.Web.Areas.Game.Controllers
                         try
                         {
                             // 兼容旧多房间模型：按桌行(存在时)仍写一份
+                            // 注意：单桌保存不再写 pararoom.scoreSwitch——一房多桌下它是房间级兜底值，
+                            // 若随某张桌一起改，会导致未配置(GunPowerStep=0)的桌回退值被这张桌污染。
                             if (IsDecimalBetFish(gameId))
                             {
                                 ef.Database.ExecuteSqlCommand(
-                                    "UPDATE ParaRoom SET BET_MIN=" + betMin + ",BET_MAX=" + betMax + ",MinBetUnits=" + rtBetMinSave + ",MaxBetUnits=" + rtBetMaxSave + ",COIN_SC=" + coinSc + ",COIN_NEED=" + coinNeed + ",scoreSwitch=" + rtGunStep + " WHERE GAME_ID=" + gameId + " AND ID=" + (gameId * 1000 + tIdx));
+                                    "UPDATE ParaRoom SET BET_MIN=" + betMin + ",BET_MAX=" + betMax + ",MinBetUnits=" + rtBetMinSave + ",MaxBetUnits=" + rtBetMaxSave + ",COIN_SC=" + coinSc + ",COIN_NEED=" + coinNeed + " WHERE GAME_ID=" + gameId + " AND ID=" + (gameId * 1000 + tIdx));
                             }
                             string baseRowSql = IsDecimalBetFish(gameId)
-                                ? ("UPDATE ParaRoom SET BET_MIN=" + betMin + ",BET_MAX=" + betMax + ",MinBetUnits=" + rtBetMinSave + ",MaxBetUnits=" + rtBetMaxSave + ",EX_COIN=" + exCoin + ",COIN_SC=" + coinSc + ",COIN_NEED=" + coinNeed + ",scoreSwitch=" + rtGunStep + " WHERE GAME_ID=" + gameId + " AND ID=" + (gameId * 1000))
-                                : ("UPDATE ParaRoom SET BET_MIN=" + betMin + ",BET_MAX=" + betMax + ",EX_COIN=" + exCoin + ",COIN_SC=" + coinSc + ",COIN_NEED=" + coinNeed + ",scoreSwitch=" + rtGunStep + " WHERE GAME_ID=" + gameId + " AND ID=" + (gameId * 1000));
+                                ? ("UPDATE ParaRoom SET BET_MIN=" + betMin + ",BET_MAX=" + betMax + ",MinBetUnits=" + rtBetMinSave + ",MaxBetUnits=" + rtBetMaxSave + ",EX_COIN=" + exCoin + ",COIN_SC=" + coinSc + ",COIN_NEED=" + coinNeed + " WHERE GAME_ID=" + gameId + " AND ID=" + (gameId * 1000))
+                                : ("UPDATE ParaRoom SET BET_MIN=" + betMin + ",BET_MAX=" + betMax + ",EX_COIN=" + exCoin + ",COIN_SC=" + coinSc + ",COIN_NEED=" + coinNeed + " WHERE GAME_ID=" + gameId + " AND ID=" + (gameId * 1000));
                             ef.Database.ExecuteSqlCommand(baseRowSql);
                         }
                         catch (Exception exRoom)
