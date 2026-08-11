@@ -156,8 +156,10 @@ namespace YYT.BLL.EF
 
                 if (rst != null)
                 {
-                    mPage.SetTotalCount(rst.Count());
-                    var users = rst
+                    List<M_UserOptLog> all = rst.ToList();
+                    FillEnterLeave(all);
+                    mPage.SetTotalCount(all.Count);
+                    var users = all
                         .OrderByDescending(c => c.LID)
                         .Skip(mPage.PageSize * (mPage.PageIndex - 1)).Take(mPage.PageSize)
                         .ToList();
@@ -166,6 +168,34 @@ namespace YYT.BLL.EF
                 }
             }
             return list;
+        }
+
+        /// <summary>
+        /// 为“离开”记录配对本次盈亏：进入余额取同一用户/游戏/桌台最近一条进入记录的余额，
+        /// 离开余额取该记录自身余额，本次盈亏 = 进入 - 离开（玩家亏钱为正，赢钱为负）。
+        /// </summary>
+        private void FillEnterLeave(List<M_UserOptLog> all)
+        {
+            if (all == null || all.Count < 1)
+                return;
+            var enterBalance = new Dictionary<Tuple<string, int, long>, long>();
+            foreach (var r in all.OrderBy(c => c.LID))
+            {
+                if (r.OPT == 2 || r.OPT == 8) // 进入记录
+                {
+                    enterBalance[Tuple.Create(r.UserID, r.GAME_TYPE, r.TABLE_ID)] = r.COINS;
+                }
+                else if (r.OPT == 3 || r.OPT == 7) // 离开记录
+                {
+                    r.LeaveCoins = r.COINS;
+                    long ent;
+                    if (enterBalance.TryGetValue(Tuple.Create(r.UserID, r.GAME_TYPE, r.TABLE_ID), out ent))
+                    {
+                        r.EnterCoins = ent;
+                        r.SessionProfit = ent - r.COINS;
+                    }
+                }
+            }
         }
     }
 }
