@@ -132,8 +132,9 @@ namespace YYT.Remote
                 if (string.IsNullOrWhiteSpace(cmd))
                     return srv_code;
 
-                if (this.PipeClient.IsConnected == false)
-                    this.InitPipe();
+                // 重连后仍不可用则直接返回，避免 Write 抛出"管道尚未连接"裸异常（复用已关闭连接时常见）
+                if (!EnsurePipeReady())
+                    return "数据发送失败！无法连接中心服管道（管道尚未连接）。";
 
                 // 发送数据
                 sw = new StreamWriter(this.PipeClient);
@@ -189,8 +190,12 @@ namespace YYT.Remote
                 string cmd = BuildCommand(eScMsgType, para);
                 if (string.IsNullOrWhiteSpace(cmd))
                     return msg;
-                if (this.PipeClient.IsConnected == false)
-                    this.InitPipe();
+                // 重连后仍不可用则直接返回，避免 Write 抛出"管道尚未连接"裸异常（复用已关闭连接时常见）
+                if (!EnsurePipeReady())
+                {
+                    msg.content = "数据发送失败！无法连接中心服管道（管道尚未连接）。";
+                    return msg;
+                }
                 // 发送数据
                 sw = new StreamWriter(this.PipeClient);
                 sw.AutoFlush = true;
@@ -373,6 +378,34 @@ namespace YYT.Remote
         }
 
         /// <summary>
+        /// 确保管道可用：PipeClient 被 Close/Dispose 后其 IsConnected getter 会抛
+        /// ObjectDisposedException，不能直接访问。此方法统一处理"已释放→重建、
+        /// 未连接→重连"，返回是否最终可用。复用已关闭连接时依赖此方法兜底。
+        /// </summary>
+        private bool EnsurePipeReady()
+        {
+            bool alive = false;
+            try
+            {
+                alive = this.PipeClient != null && this.PipeClient.IsConnected;
+            }
+            catch (ObjectDisposedException)
+            {
+                alive = false;
+            }
+            if (!alive)
+                this.InitPipe();
+            try
+            {
+                return this.PipeClient != null && this.PipeClient.IsConnected;
+            }
+            catch (ObjectDisposedException)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
         /// TC 命令的押分桌台扩展字段（仅押分类游戏），字段顺序与 center 的
         /// ts_BetRoomTableConfig 解析一致：U8 betTime + U32×7(betMin/betMax/bankerScoreNeed/
         /// itemSingle/itemAll/coinsNeed/oneCoinScore) + Poco 字符串 betScores + U8 defaultBetIndex
@@ -438,8 +471,13 @@ namespace YYT.Remote
                     Array.Resize(ref nameBytes, cut);
                 }
 
-                if (this.PipeClient.IsConnected == false)
-                    this.InitPipe();
+                // 重连后仍不可用则直接返回，避免 Write 抛出"管道尚未连接"裸异常（复用已关闭连接时常见）
+                if (!EnsurePipeReady())
+                {
+                    msg.content = "TC数据发送失败！无法连接中心服管道（管道尚未连接）。";
+                    LogHelper.WriteLog(typeof(SConnect), "TC指令未发送：中心服管道重连失败");
+                    return msg;
+                }
 
                 // 整包组包后一次性写入管道：中心服管道为 PIPE_TYPE_MESSAGE 消息模式，
                 // 每次 WriteFile 即一条消息；旧实现把 BinaryWriter 直接挂在管道流上，
@@ -545,8 +583,13 @@ namespace YYT.Remote
             Msg msg = new Msg(0, "服务器内部错误，消息发送失败！");
             try
             {
-                if (this.PipeClient.IsConnected == false)
-                    this.InitPipe();
+                // 重连后仍不可用则直接返回，避免 Write 抛出"管道尚未连接"裸异常（复用已关闭连接时常见）
+                if (!EnsurePipeReady())
+                {
+                    msg.content = "PC数据发送失败！无法连接中心服管道（管道尚未连接）。";
+                    LogHelper.WriteLog(typeof(SConnect), "PC指令未发送：中心服管道重连失败");
+                    return msg;
+                }
 
                 using (var bw = new BinaryWriter(this.PipeClient, Encoding.UTF8, leaveOpen: true))
                 {
