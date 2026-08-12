@@ -772,6 +772,9 @@
                     bindTotalCardAction($('#selE_Action_Total').combobox('getValue'));
                     $('#selE_Number_Total').combobox('loadData', valSelData());
                     $('#selE_Total_Total').combobox('loadData', valSelDataPAIJI1());
+                    // 次数/总次数默认值：次数=1，总次数=五把之内(id5)。loadData 未必自动选中首项，故显式指定。
+                    $('#selE_Number_Total').combobox('setValue', 1);
+                    $('#selE_Total_Total').combobox('setValue', 5);
                     $('#selE_Strength_Total').combobox('loadData', getComboValKill_Total());
                     $('#numGold_Total').numberbox('setValue', 0);
                     $('#selE_Mode_Total').combobox({ onChange: bindTotalMode });
@@ -801,7 +804,7 @@
                             + '</div>';
                     } else {
                         var isRelease = (r.ControlMode == 5);
-                        var progress = isRelease ? r.GrantedCoins : -r.ConsumedCoins;
+                        var progress = isRelease ? r.GrantedCoins : r.ConsumedCoins;
                         html += '<div style="margin:2px 0;">'
                             + totalModeName(r.ControlMode)
                             + '（强度 ' + r.LimitCoins + '）'

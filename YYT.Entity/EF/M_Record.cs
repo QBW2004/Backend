@@ -158,6 +158,22 @@ namespace YYT.Entity
         public string REC_TIME_Str { get { return REC_TIME.ToString("yyyy-MM-dd HH:mm:ss"); } }
         public int REC_WEEK { get; set; }
 
+        /// <summary>
+        /// 进入桌台前总余额（后台按同一用户/游戏/桌台的前一条进入记录配对补充，仅离开记录有效）
+        /// </summary>
+        [NotMapped]
+        public long EnterCoins { get; set; }
+        /// <summary>
+        /// 离开桌台后总余额（仅离开记录有效）
+        /// </summary>
+        [NotMapped]
+        public long LeaveCoins { get; set; }
+        /// <summary>
+        /// 本次盈亏 = 进入 - 离开（玩家亏钱为正，赢钱为负）
+        /// </summary>
+        [NotMapped]
+        public long SessionProfit { get; set; }
+
         public override string ToString()
         {
             return JsonConvert.SerializeObject(this);

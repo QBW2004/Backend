@@ -53,7 +53,7 @@ namespace YYT.Web.Areas.Game.Controllers
             try
             {
                 List<OnlinePlayerInfo> players = new PlayerStateService().QueryAllOnlinePlayers();
-                FillPlayerProfits(players);
+                FillPlayerTotalWinLoss(players);
                 FillPlayerTodayWinLoss(players);
                 msg.code = 1;
                 msg.content = "查询成功！";
@@ -66,28 +66,35 @@ namespace YYT.Web.Areas.Game.Controllers
             return Json(msg);
         }
         /// <summary>
-        /// 总盈亏 = 购币 - 兑换（与用户管理页的总盈利同口径）
+        /// 总盈亏 = 用户注册以来每天「今日盈亏」之和（SUM user_daily_winloss 全量，与用户管理页总盈利无关）
         /// </summary>
-        private void FillPlayerProfits(List<OnlinePlayerInfo> players)
+        private void FillPlayerTotalWinLoss(List<OnlinePlayerInfo> players)
         {
             if (players == null || players.Count < 1)
                 return;
-            M_LoginUser loginUser = WebHelper.GetLoginInfo();
-            if (loginUser == null)
-                return;
-            B_Users bll = new B_Users();
             List<string> ids = players.Where(c => !string.IsNullOrWhiteSpace(c.ID)).Select(c => c.ID).Distinct().ToList();
-            Dictionary<string, long?> profitMap = new Dictionary<string, long?>(StringComparer.OrdinalIgnoreCase);
-            for (int i = 0; i < ids.Count; i += 100)
+            if (ids.Count < 1)
+                return;
+            try
             {
-                List<M_Users_DTO> users = bll.GetUserRowsByIds(ids.Skip(i).Take(100).ToList(), loginUser);
-                foreach (M_Users_DTO user in users)
-                    profitMap[user.ID] = user.Profit;
+                using (var ef = new GameDbContext())
+                {
+                    string placeholders = string.Join(",", ids.Select((c, i) => "{" + i + "}"));
+                    string sql = "SELECT UserID, SUM(WINLOSS) AS WINLOSS FROM user_daily_winloss WHERE UserID IN (" + placeholders + ") GROUP BY UserID";
+                    Dictionary<string, long> winLossMap = ef.Database.SqlQuery<M_UserDailyWinLoss>(sql, ids.Cast<object>().ToArray())
+                        .ToList()
+                        .GroupBy(c => c.UserID)
+                        .ToDictionary(g => g.Key, g => g.First().WINLOSS);
+                    foreach (OnlinePlayerInfo player in players)
+                    {
+                        if (player.ID != null && winLossMap.TryGetValue(player.ID, out long total))
+                            player.Profit = total;
+                    }
+                }
             }
-            foreach (OnlinePlayerInfo player in players)
+            catch (Exception ex)
             {
-                if (player.ID != null && profitMap.TryGetValue(player.ID, out long? profit))
-                    player.Profit = profit ?? 0;
+                LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.UserInfoController), $"FillPlayerTotalWinLoss Err >> {ex.Message}");
             }
         }
 

@@ -76,7 +76,10 @@
         function getLoginMgs(rowData) {
             var isEnter = (rowData.OPT == 2 || rowData.OPT == 8);
             if (isEnter) return '进入[ ' + rowData.GameName + ' ]';
-            return '本次盈亏：' + fmtWinLoss(rowData.SCORE, rowData);
+            // 离开记录：本次盈亏(进入-离开) + 进入余额 + 离开余额
+            return '本次盈亏：' + fmtWinLoss(rowData.SessionProfit, rowData)
+                + '，进入：' + top.goldFormat(rowData.EnterCoins || 0)
+                + '，离开：' + top.goldFormat(rowData.LeaveCoins || 0);
         }
 
         function fmtTableId(value, rowData, rowIndex) {
@@ -94,6 +97,14 @@
         function fmtWinLoss(value, rowData, rowIndex) {
             if (!isGameRec(rowData.OPT)) return '--';
             var v = value || 0;
+            var color = v > 0 ? '#2e8b57' : (v < 0 ? '#c0392b' : '#666');
+            return '<span style="color:' + color + ';">' + top.goldFormat(v) + '</span>';
+        }
+        @*得分列：得分 = 离开余额 - 进入余额（赢为正、亏为负；仅离开记录有进入/离开余额，进入记录显示 --）*@
+        function fmtScore(value, rowData, rowIndex) {
+            if (!isGameRec(rowData.OPT)) return '--';
+            if (rowData.OPT == 2 || rowData.OPT == 8) return '--';
+            var v = Number(rowData.LeaveCoins || 0) - Number(rowData.EnterCoins || 0);
             var color = v > 0 ? '#2e8b57' : (v < 0 ? '#c0392b' : '#666');
             return '<span style="color:' + color + ';">' + top.goldFormat(v) + '</span>';
         }
@@ -148,7 +159,7 @@
             <th field="TABLE_ID" width="130" formatter="fmtTableId">桌台号</th>
             <th field="SEAT_ID" width="130" formatter="fmtSeatId">位置号</th>
             <th field="OPT_COINS" width="130" formatter="fmtBet">下注</th>
-            <th field="SCORE" width="130" formatter="fmtWinLoss">得分</th>
+            <th field="SCORE" width="130" formatter="fmtScore">得分</th>
             <th field="Contents" width="600" formatter="fmtContents">记录内容</th>
         </tr>
     </thead>
