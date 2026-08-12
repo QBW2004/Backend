@@ -37,3 +37,7 @@ node_modules/
 
 # DB dumps (Tools/export-db.ps1 产物)
 Tools/*.sql
+
+# 构建工具本地缓存(build.bat 按需下载: .NET 4.8 引用程序集 / VS Web targets)
+.build/
+

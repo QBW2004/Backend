@@ -7,12 +7,28 @@
 <head>
     <meta charset="utf-8" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="format-detection" content="telephone=no" />
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <script type="text/javascript">if (top.window.location.href != window.location.href) top.window.location.href = "/Login/Index";</script>
 
     @Styles.Render("~/res/login-css")
+    <style>
+        /* 手机端登录适配：放大点击区域，输入框 16px 避免 iOS 自动缩放 */
+        @@media (max-width: 767px) {
+            .main { margin: 22% auto; }
+            .container .form-body { min-width: 0; padding: 24px 0; }
+            .active-h3 h3 { font-size: 20px; }
+            .form-control, .form-control:focus { height: 44px !important; font-size: 16px; }
+            .input-group-addon { font-size: 16px; }
+            #btnSubmit { width: 100% !important; margin-left: 0 !important; height: 44px; font-size: 16px; }
+            #btnSubmit.col-xs-offset-3 { margin-left: 0 !important; }
+            .msg { width: 90%; }
+            .navbar-collapse.collapse { padding: 0 8px; }
+            .navbar-collapse.collapse .nav.navbar-nav > li { display: inline-block; margin-right: 8px; }
+        }
+    </style>
 <script>
         var _msg = '@srvMsg';
 </script>

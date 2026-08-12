@@ -1,0 +1,3 @@
+# docker/mysql/init 下的 SQL 均由仓库已有文件复制生成, 不入库
+init/*.sql
+!init/README.md

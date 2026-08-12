@@ -1,0 +1,90 @@
+@{
+    Layout = "~/Views/Shared/Layout/_MobileLayout.cshtml";
+    string webVer = ConfigHelper.Get("WebVer");
+    bool isSuper = ViewBag.IsSuper == true;
+}
+
+<div class="m-container">
+    <div class="m-card m-card-pad">
+        <div class="m-section-title">代理账号创建</div>
+
+        <form id="mAddAgentForm" autocomplete="off">
+            @if (isSuper)
+            {
+                <div class="m-form-group">
+                    <label class="m-label">代理层级</label>
+                    <div class="m-segment" id="mFlagGroup">
+                        <div class="m-segment-item active" data-val="0">直属代理</div>
+                        <div class="m-segment-item" data-val="1">总代理</div>
+                    </div>
+                    <input type="hidden" name="FLAG" id="mFlag" value="0" />
+                </div>
+            }
+            else
+            {
+                <input type="hidden" name="FLAG" id="mFlag" value="0" />
+            }
+
+            <div class="m-form-group">
+                <label class="m-label">账号</label>
+                <input type="text" class="m-input" name="ID" id="mAgId" placeholder="至少 3 位，字母或数字" autocomplete="off" />
+            </div>
+
+            <div class="m-form-group">
+                <label class="m-label">密码</label>
+                <input type="password" class="m-input" name="PWD" id="mAgPwd" placeholder="至少 6 位，字母或数字" autocomplete="new-password" />
+            </div>
+
+            <div class="m-form-group">
+                <label class="m-label">确认密码</label>
+                <input type="password" class="m-input" name="RE_PWD" id="mAgRePwd" placeholder="请再次输入密码" autocomplete="new-password" />
+            </div>
+
+            @if (isSuper)
+            {
+                <div class="m-form-group">
+                    <label class="m-label">邀请码（可选，4-8 位数字）</label>
+                    <input type="text" class="m-input" name="InviteCode" id="mAgInvite" inputmode="numeric" placeholder="留空则自动生成" autocomplete="off" />
+                </div>
+            }
+
+            <div class="m-switch-row">
+                <label class="m-label">开启充值功能</label>
+                <label class="m-switch">
+                    <input type="checkbox" id="mAgEnable" checked />
+                    <span class="m-slider"></span>
+                </label>
+            </div>
+            <input type="hidden" name="RE_ENABLE" id="mAgEnableVal" value="1" />
+
+            <div class="m-switch-row">
+                <label class="m-label">允许其创建下级代理</label>
+                <label class="m-switch">
+                    <input type="checkbox" id="mAgCreate" checked />
+                    <span class="m-slider"></span>
+                </label>
+            </div>
+            <input type="hidden" name="IsCreateAgent" id="mAgCreateVal" value="1" />
+
+            <div class="m-switch-row">
+                <label class="m-label">允许其上下分</label>
+                <label class="m-switch">
+                    <input type="checkbox" id="mAgUpDown" checked />
+                    <span class="m-slider"></span>
+                </label>
+            </div>
+            <input type="hidden" name="IsUpDown" id="mAgUpDownVal" value="1" />
+
+            <div class="m-hint">@Html.Raw("&#9432;") 创建成功后立即生效，其余权限可在电脑版「代理管理」中细化调整。</div>
+
+            <button type="submit" class="m-btn m-btn-primary m-btn-block" id="mAddAgentBtn" style="margin-top:16px;">创建代理</button>
+        </form>
+    </div>
+</div>
+
+@section scripts {
+    <script>
+        window.MPage = { isSuper: @Html.Raw(isSuper ? "true" : "false") };
+    </script>
+    <script src="@Url.Content("~/Scripts/app/mobile/mobile.addagent.js?v=" + webVer)"></script>
+}

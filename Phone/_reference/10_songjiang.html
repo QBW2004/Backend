@@ -1,0 +1,1266 @@
+<html lang="zh-CN"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>送奖管理</title>
+    <script src="https://cdn.jsdelivr.net/npm/js-base64@3.7.5/base64.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        html, body {
+            background-color: #f5f7fa;
+            color: #333;
+            min-height: 100vh;
+        }
+        
+        .header {
+            background-color: #007aff;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 80px;
+        }
+        
+        .header-content {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+        }
+        
+        h1 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            box-sizing: border-box;
+        }
+        
+        .record-container {
+            max-width: 600px;
+            margin: 0 auto 20px;
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+        
+        .record-title {
+            font-size: 15px; /* 减小移动端标题字体大小 */
+            margin-bottom: 15px;
+            color: #333;
+            display: flex;
+            align-items: center;
+        }
+        
+        .record-title span {
+            font-size: 14px; /* 缩小字体 */
+            white-space: nowrap; /* 确保不会换行 */
+        }
+        
+        .record-actions {
+            display: flex;
+            align-items: center;
+            width: 100%; /* 占据整行空间 */
+        }
+        
+        .date-filter {
+            display: flex;
+            gap: 5px;
+            margin-right: 10px;
+        }
+        
+        .date-btn {
+            font-size: 12px;
+            padding: 4px 10px;
+            background-color: #f5f5f7;
+            color: #666;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .date-btn:hover {
+            background-color: #e5e5ea;
+        }
+        
+        .date-btn.active {
+            background-color: #007aff;
+            color: white;
+        }
+        
+        .record-refresh {
+            font-size: 14px;
+            color: #007aff;
+            background: none;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .record-refresh svg {
+            width: 14px;
+            height: 14px;
+            fill: currentColor;
+        }
+        
+        .table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .record-table {
+            width: 100%;
+            min-width: 900px; /* 增加最小宽度，确保各列有足够空间 */
+            border-collapse: collapse;
+            font-size: 14px; /* 恢复原来的字体大小 */
+            table-layout: fixed; /* 使用固定表格布局 */
+        }
+        
+        .record-table th {
+            text-align: left;
+            padding: 10px 8px; /* 增加左右内边距 */
+            border-bottom: 1px solid #eee;
+            color: #888; /* 修改为更浅的颜色 */
+            font-weight: 500;
+            white-space: nowrap; /* 防止标题换行 */
+        }
+        
+        .record-table td {
+            padding: 10px 8px; /* 增加左右内边距 */
+            border-bottom: 1px solid #f5f5f5;
+            vertical-align: middle; /* 垂直居中 */
+            white-space: nowrap; /* 确保所有单元格内容不换行 */
+            overflow: hidden;
+            text-overflow: ellipsis; /* 内容溢出显示省略号 */
+        }
+        
+        /* 对于所有单元格的默认处理，除了时间列与状态列（状态列需完整显示约三字） */
+        .record-table td:not(:nth-child(10)):not(:nth-child(2)) {
+            overflow: hidden;
+            text-overflow: ellipsis; /* 内容溢出显示省略号 */
+            white-space: nowrap; /* 防止内容换行 */
+        }
+        
+        /* 设置各列宽度比例 - 调整以保持充足间距 */
+        .record-table th:nth-child(1), .record-table td:nth-child(1) { width: 10%; } /* 送奖账号 */
+        .record-table th:nth-child(2), .record-table td:nth-child(2) { width: 7.5%; } /* 状态，约三字宽 */
+        .record-table th:nth-child(3), .record-table td:nth-child(3) { width: 7.5%; } /* 场次 */
+        .record-table th:nth-child(4), .record-table td:nth-child(4) { width: 5%; } /* 机台 */
+        .record-table th:nth-child(5), .record-table td:nth-child(5) { width: 12%; } /* 送奖牌型 */
+        .record-table th:nth-child(6), .record-table td:nth-child(6) { width: 12%; } /* 开奖牌型 */
+        .record-table th:nth-child(7), .record-table td:nth-child(7) { width: 8%; } /* 送奖金额 */
+        .record-table th:nth-child(8), .record-table td:nth-child(8) { width: 8%; } /* 开奖金额 */
+        .record-table th:nth-child(9), .record-table td:nth-child(9) { width: 7.5%; } /* 游戏 */
+        .record-table th:nth-child(10), .record-table td:nth-child(10) { 
+            width: 18%; /* 开奖时间 */
+            white-space: nowrap; /* 防止时间换行 */
+            min-width: 100px; /* 保证最小宽度 */
+            overflow: visible; /* 允许内容溢出 */
+            text-overflow: clip; /* 不使用省略号 */
+            max-width: none; /* 不限制最大宽度 */
+        }
+        
+        .record-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .record-empty {
+            text-align: center;
+            padding: 30px 0;
+            color: #999;
+            font-size: 14px;
+        }
+
+        /* ------ MJHL「送奖-开奖跨档」视觉标识：仅文字染橙色 ------ */
+        /* 仅当 isMjhlAchievementMismatch(record) 为真时，在开奖牌型 cell 上加这个类 */
+        .mjhl-result-mismatch {
+            color: #e67e22;
+        }
+
+        /* ------ 送奖牌型 / 开奖牌型 cell：点击在 cell 上方弹出 tooltip ------ */
+        /* 表格 td 被 overflow:hidden + text-overflow:ellipsis 截断，
+           点击时用 JS 计算 cell 位置，把 tooltip 贴着 cell 上方显示，
+           点击其他地方 / 按 ESC 关闭。 */
+        .expandable-cell {
+            cursor: pointer;
+        }
+        .cell-popover {
+            position: fixed;
+            background-color: rgba(40, 40, 40, 0.95);
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            max-width: 320px;
+            min-width: 80px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+            font-size: 13px;
+            line-height: 1.6;
+            word-break: break-all;
+            white-space: normal;
+            text-align: center;
+            z-index: 2000;
+            animation: cellPopoverFadeIn 0.12s ease-out;
+        }
+        /* 默认箭头朝下（tooltip 位于 cell 上方） */
+        .cell-popover::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-top-color: rgba(40, 40, 40, 0.95);
+        }
+        /* 上方空间不足时 fallback 到下方，箭头翻转指向上 */
+        .cell-popover.below::after {
+            top: auto;
+            bottom: 100%;
+            border-top-color: transparent;
+            border-bottom-color: rgba(40, 40, 40, 0.95);
+        }
+        @keyframes cellPopoverFadeIn {
+            from { opacity: 0; transform: translateY(2px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .hall-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            background-color: #f0f0f0;
+            color: #666;
+        }
+        
+        .hall-1 { background-color: #e8f5e9; color: #2e7d32; }
+        .hall-2 { background-color: #e3f2fd; color: #1565c0; }
+        .hall-3 { background-color: #e0f7fa; color: #00838f; }
+        .hall-4 { background-color: #fff8e1; color: #ff8f00; }
+        .hall-5 { background-color: #fbe9e7; color: #d84315; }
+        .hall-6 { background-color: #f3e5f5; color: #6a1b9a; }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group.horizontal {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .form-group.horizontal .form-control {
+            flex: 1;
+        }
+        
+        .form-group.horizontal .btn {
+            flex-shrink: 0;
+            margin-bottom: 0;
+            white-space: nowrap;
+            min-width: 80px;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+            background-color: #f8f9fa;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: #007aff;
+            background-color: white;
+        }
+        
+        .form-control:disabled {
+            background-color: #f5f5f5;
+            color: #999;
+            cursor: not-allowed;
+        }
+        
+        .balance-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        
+        .balance-item {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            position: relative;
+        }
+        
+        .balance-item:first-child {
+            border-right: 1px solid #e5e5e5;
+            padding-right: 15px;
+        }
+        
+        .balance-item:last-child {
+            padding-left: 15px;
+        }
+        
+        .balance-label {
+            font-size: 14px;
+            color: #666;
+            white-space: nowrap;
+        }
+        
+        .balance-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: #007aff;
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            margin-bottom: 12px;
+        }
+        
+        .btn-primary {
+            background-color: #007aff;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        
+        .btn-secondary {
+            background-color: #f5f5f7;
+            color: #007aff;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #e5e5ea;
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .btn.loading {
+            position: relative;
+            color: transparent;
+        }
+        
+        .btn.loading::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 2px solid currentColor;
+            border-radius: 50%;
+            border-right-color: transparent;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .error-message {
+            color: #ff3b30;
+            font-size: 14px;
+            margin-top: 4px;
+            display: none;
+        }
+        
+        .success-message {
+            color: #34c759;
+            font-size: 14px;
+            margin-top: 4px;
+            display: none;
+        }
+        
+        /* 弹窗提示样式 */
+        .toast-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
+            width: 90%;
+            max-width: 320px;
+            pointer-events: none;
+        }
+        
+        .toast {
+            padding: 16px 20px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+            display: flex;
+            align-items: center;
+            opacity: 0;
+            animation: fadeInScale 0.3s forwards;
+            font-size: 16px;
+            font-weight: 500;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        
+        .toast-success {
+            background-color: rgba(52, 199, 89, 0.95);
+            color: white;
+            border-left: 4px solid #2db149;
+        }
+        
+        .toast-error {
+            background-color: rgba(255, 59, 48, 0.95);
+            color: white;
+            border-left: 4px solid #e12d1c;
+        }
+        
+        .toast-icon {
+            margin-right: 12px;
+            flex-shrink: 0;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            padding: 5px;
+        }
+        
+        .toast-content {
+            flex: 1;
+            line-height: 1.4;
+        }
+        
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+            }
+        }
+
+        .header-recharge-btn {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none; /* 透明背景 */
+            border: none;
+            color: white; /* 白色文字 */
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 6px;
+            transition: background-color 0.3s;
+        }
+        
+        .header-recharge-btn:hover {
+            background-color: rgba(255, 255, 255, 0.15); /* 鼠标悬停时显示轻微的背景 */
+        }
+        
+        .back-btn {
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+        
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .back-btn:active {
+            transform: translateY(-50%) scale(0.96);
+        }
+        
+        .back-btn svg {
+            width: 24px;
+            height: 24px;
+        }
+        
+        /* 游戏选择下拉框样式 */
+        select.form-control {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 16px;
+            padding-right: 40px;
+        }
+        
+        /* 响应式调整 */
+        @media (max-width: 480px) {
+            body {
+                padding: 0;
+                margin: 0;
+                width: 100%;
+                overflow-x: hidden;
+            }
+            
+            .container {
+                padding: 16px;
+                margin-left: auto;
+                margin-right: auto;
+                width: calc(100% - 20px);
+                max-width: calc(100% - 20px);
+            }
+            
+            .record-container {
+                width: calc(100% - 20px);
+                max-width: calc(100% - 20px);
+                margin-left: auto;
+                margin-right: auto;
+                padding: 16px; /* 统一内边距 */
+            }
+            
+            .record-title {
+                font-size: 15px; /* 减小移动端标题字体大小 */
+                margin-bottom: 12px;
+            }
+            
+            .date-filter .date-btn {
+                padding: 3px 8px; /* 缩小按钮大小 */
+                font-size: 11px; /* 减小字体 */
+            }
+            
+            .record-refresh {
+                font-size: 12px;
+            }
+            
+            .balance-info {
+                padding: 12px;
+            }
+            
+            .balance-item:first-child {
+                padding-right: 10px;
+            }
+            
+            .balance-item:last-child {
+                padding-left: 10px;
+            }
+            
+            .balance-value {
+                font-size: 16px;
+            }
+        }
+        
+        .btn-recharge {
+            width: auto;
+            padding: 12px 20px;
+            margin-bottom: 0;
+            font-size: 14px;
+        }
+        
+        .remove-btn {
+            padding: 4px 8px;
+            background-color: #ff3b30;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            display: inline-block;
+            min-width: 40px;
+            text-align: center;
+        }
+        
+        .remove-btn:hover {
+            background-color: #d63530;
+        }
+        
+        /* 状态列：不截断省略，至少容纳三个汉字（进行中 / 已出等） */
+        .record-table td:nth-child(2) {
+            text-align: left;
+            min-width: 58px;
+            overflow: visible;
+            text-overflow: clip;
+        }
+        
+        .record-table th:nth-child(2) {
+            text-align: left;
+            overflow: visible;
+            text-overflow: clip;
+        }
+        
+        .status-completed {
+            color: #34c759;
+            font-weight: 500;
+        }
+        
+        .status-pending-free {
+            color: #007aff;
+            font-weight: 500;
+        }
+        
+        .record-table th:last-child,
+        .record-table td:last-child {
+            text-align: center;
+        }
+        
+        /* 添加横向滚动提示 */
+        @media (max-width: 600px) {
+            .swipe-hint {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 8px;
+                margin-bottom: 10px;
+                background-color: rgba(0, 122, 255, 0.1);
+                border-radius: 8px;
+                color: #007aff;
+                font-size: 12px;
+                gap: 8px;
+            }
+            
+            .swipe-hint svg {
+                width: 16px;
+                height: 16px;
+                fill: currentColor;
+            }
+            
+            .swipe-hint.hide {
+                display: none;
+            }
+        }
+        
+        @media (min-width: 601px) {
+            .swipe-hint {
+                display: none;
+            }
+        }
+        
+        .diamond-statistics {
+            margin: 0 0 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .diamond-statistics-inner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .diamond-statistics-text {
+            font-size: 13px;
+            color: #666;
+        }
+        
+        #refreshRecordsBtn {
+            padding: 8px 16px;
+            font-size: 13px;
+            margin: 0;
+            flex-shrink: 0;
+        }
+        
+        .diamond-value {
+            color: #ff9500;
+            font-weight: 600;
+        }
+        
+        .positive {
+            color: #34c759;
+        }
+        
+        .negative {
+            color: #ff3b30;
+        }
+        
+        /* 媒体查询确保在移动设备上也能正确显示全宽 */
+        @media screen and (max-width: 768px) {
+            html, body {
+                margin: 0;
+                padding: 0;
+                width: 100%;
+                overflow-x: hidden;
+            }
+            
+            .header {
+                width: 100%;
+                padding: 20px;
+                max-width: 100%;
+            }
+            
+            .header-content {
+                width: 100%;
+                max-width: 100%;
+            }
+            
+            .back-btn {
+                left: 0;
+            }
+            
+            .container, .record-container {
+                width: calc(100% - 20px);
+                margin-left: auto;
+                margin-right: auto;
+            }
+        }
+
+        /* 新增弹窗样式 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+            opacity: 1;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            width: 90%;
+            max-width: 360px;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.show .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            text-align: center;
+            color: #333;
+        }
+
+        .modal-close-btn {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #aaa;
+            cursor: pointer;
+            padding: 5px;
+            line-height: 1;
+        }
+         .modal-close-btn:hover {
+             color: #666;
+         }
+
+        .modal-body .form-group {
+            margin-bottom: 20px;
+        }
+         .modal-body .form-control {
+             background-color: white;
+         }
+         .modal-body .btn {
+             margin-top: 10px;
+         }
+         .modal-error {
+            color: #ff3b30;
+            font-size: 13px;
+            margin-top: -10px;
+            margin-bottom: 15px;
+            text-align: center;
+            min-height: 18px;
+            display: block;
+            visibility: hidden;
+         }
+         .modal-error.show {
+             visibility: visible;
+         }
+
+        /* 优化移动端表格显示 */
+        @media (max-width: 600px) {
+            .table-wrapper {
+                margin: 0 -10px; /* 增加水平滚动区域，减少边距挤压 */
+            }
+            
+            .record-table {
+                min-width: 850px; /* 针对手机端稍微减少最小宽度 */
+            }
+            
+            .swipe-hint {
+                margin: 0 10px 10px; /* 调整滑动提示的边距 */
+                padding: 10px;
+            }
+        }
+
+        /* 日期时间选择器样式 */
+        .date-range-picker {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: nowrap; /* 防止换行 */
+            width: 100%; /* 占据全部可用空间 */
+        }
+        
+        .date-picker {
+            padding: 6px 8px;
+            border: 1px solid #e5e5e5;
+            border-radius: 4px;
+            font-size: 12px;
+            background-color: #f8f9fa;
+            min-width: 0; /* 移除最小宽度限制 */
+            color: #333;
+            flex: 1; /* 占据可用空间 */
+            height: 36px; /* 确保高度与按钮一致 */
+            box-sizing: border-box; /* 确保padding不会增加元素总高度 */
+            white-space: nowrap; /* 防止内容换行 */
+            overflow: hidden; /* 隐藏溢出内容 */
+            text-overflow: ellipsis; /* 显示省略号 */
+        }
+        
+        /* iOS特定样式 */
+        @supports (-webkit-touch-callout: none) {
+            /* 只在iOS设备上应用 */
+            .date-range-picker {
+                display: flex;
+                flex-wrap: nowrap;
+                align-items: center;
+                justify-content: space-between;
+            }
+            
+            .date-picker {
+                padding: 0 8px; /* 减小内边距 */
+                height: 36px; /* 固定高度与按钮一致 */
+                line-height: 36px; /* 保证文本垂直居中 */
+                font-size: 15px; /* 缩小字体 */
+                background-color: #f2f2f7; /* iOS日期选择器的背景色 */
+                border-color: transparent; /* 移除边框 */
+                border-radius: 10px; /* 圆角 */
+                -webkit-appearance: none; /* 重设为无样式 */
+                appearance: none;
+                color: #000; /* 确保文本可见 */
+                flex: 1; /* 占据可用空间 */
+                min-width: 0; /* 防止溢出 */
+                margin: 0 2px; /* 保持间距紧凑 */
+                text-align: left; /* 靠左对齐文本 */
+                box-shadow: none; /* 移除任何阴影 */
+                white-space: nowrap; /* 防止文本换行 */
+                overflow: hidden; /* 隐藏溢出内容 */
+                text-overflow: ellipsis; /* 显示省略号 */
+            }
+            
+            /* iOS日期选择器的视觉指示组件样式 */
+            .date-picker::-webkit-datetime-edit {
+                padding: 0;
+                font-size: 15px; /* 缩小字体大小 */
+                width: 100%; /* 确保完整显示 */
+            }
+            
+            .date-picker::-webkit-datetime-edit-fields-wrapper {
+                padding: 0;
+                white-space: nowrap; /* 强制单行 */
+            }
+            
+            .date-picker::-webkit-datetime-edit-text {
+                color: #8e8e93;
+                padding: 0 1px; /* 减小间距 */
+                font-size: 15px; /* 缩小字体 */
+            }
+            
+            .date-picker::-webkit-datetime-edit-hour-field,
+            .date-picker::-webkit-datetime-edit-minute-field,
+            .date-picker::-webkit-datetime-edit-day-field,
+            .date-picker::-webkit-datetime-edit-month-field,
+            .date-picker::-webkit-datetime-edit-year-field {
+                color: #000;
+                padding: 0;
+                font-size: 15px; /* 调整字体大小 */
+            }
+            
+            .date-picker::-webkit-calendar-picker-indicator {
+                width: 14px; /* 减小日历图标大小 */
+                height: 14px;
+                margin-left: 2px; /* 减小左边距 */
+                background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%238e8e93' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2' ry='2'%3E%3C/rect%3E%3Cline x1='16' y1='2' x2='16' y2='6'%3E%3C/line%3E%3Cline x1='8' y1='2' x2='8' y2='6'%3E%3C/line%3E%3Cline x1='3' y1='10' x2='21' y2='10'%3E%3C/line%3E%3C/svg%3E");
+                background-size: contain;
+                opacity: 0.7;
+            }
+            
+            .date-separator {
+                font-size: 13px;
+                margin: 0 1px; /* 减小间距 */
+                flex-shrink: 0;
+            }
+            
+            /* iOS日期选择器的暗模式支持 */
+            @media (prefers-color-scheme: dark) {
+                .date-picker {
+                    background-color: #1c1c1e;
+                    color: white;
+                    border-color: #3a3a3c;
+                }
+                
+                .date-picker:focus {
+                    background-color: #2c2c2e;
+                }
+                
+                .date-picker::-webkit-datetime-edit-text {
+                    color: #8e8e93;
+                }
+                
+                .date-picker::-webkit-datetime-edit-hour-field,
+                .date-picker::-webkit-datetime-edit-minute-field,
+                .date-picker::-webkit-datetime-edit-day-field,
+                .date-picker::-webkit-datetime-edit-month-field,
+                .date-picker::-webkit-datetime-edit-year-field {
+                    color: #fff;
+                }
+                
+                .date-picker::-webkit-calendar-picker-indicator {
+                    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23cccccc' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2' ry='2'%3E%3C/rect%3E%3Cline x1='16' y1='2' x2='16' y2='6'%3E%3C/line%3E%3Cline x1='8' y1='2' x2='8' y2='6'%3E%3C/line%3E%3Cline x1='3' y1='10' x2='21' y2='10'%3E%3C/line%3E%3C/svg%3E");
+                    filter: invert(0.8);
+                }
+                
+            }
+        }
+        
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            .date-range-picker {
+                flex-wrap: nowrap; /* 防止换行，保持一行 */
+                gap: 4px; /* 减小间距 */
+            }
+            
+            .date-picker {
+                font-size: 11px; /* 更小的字体 */
+                padding: 0 5px; /* 更小的内边距 */
+            }
+            
+            .date-separator {
+                font-size: 11px;
+                margin: 0;
+            }
+            
+        }
+
+        /* 针对430px宽度的小屏幕手机特别优化 */
+        @media (max-width: 450px) {
+            .record-table {
+                min-width: 750px; /* 进一步减少最小宽度，但保持足够的列宽 */
+            }
+            
+            .record-table td,
+            .record-table th {
+                padding: 8px 6px; /* 小屏幕上减小内边距，但保持足够间距 */
+            }
+            
+            .date-range-picker {
+                gap: 3px; /* 进一步减小间距 */
+                align-items: center;
+                padding: 0 3px; /* 减小左右内边距 */
+            }
+            
+            .date-picker {
+                min-width: 0; /* 移除最小宽度限制 */
+                font-size: 12px; /* 更大的字体 */
+                padding: 0 3px; /* 更小的内边距 */
+                flex: 1; /* 占据可用空间 */
+            }
+            
+            .date-separator {
+                font-size: 12px; /* 更大的字体 */
+                margin: 0;
+                padding: 0;
+            }
+            
+            /* 为iOS特别优化 */
+            @supports (-webkit-touch-callout: none) {
+                .date-picker::-webkit-datetime-edit {
+                    font-size: 12px; /* 更大的字体 */
+                }
+                
+                .date-picker::-webkit-datetime-edit-text {
+                    font-size: 12px;
+                }
+                
+                .date-picker::-webkit-datetime-edit-hour-field,
+                .date-picker::-webkit-datetime-edit-minute-field,
+                .date-picker::-webkit-datetime-edit-day-field,
+                .date-picker::-webkit-datetime-edit-month-field,
+                .date-picker::-webkit-datetime-edit-year-field {
+                    font-size: 12px;
+                }
+                
+                .date-picker::-webkit-calendar-picker-indicator {
+                    width: 12px; /* 更小的图标 */
+                    height: 12px;
+                    margin-left: 1px;
+                }
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <button class="back-btn" id="backBtn">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="currentColor"></path>
+                </svg>
+            </button>
+            <h1>送奖管理</h1>
+            <button class="header-recharge-btn" id="headerRechargeBtn">充值奖池</button>
+            <div class="subtitle">设置奖池余额和发放奖励</div>
+        </div>
+    </div>
+    
+    <div class="container" style="margin-top: 20px;">
+        <div class="form-group">
+            <label class="form-label">送奖账号</label>
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <input type="text" class="form-control" id="accountInput" placeholder="请输入玩家账号" style="flex: 1;">
+                <button class="btn btn-secondary" id="queryBtn" style="width: auto; margin: 0; padding: 12px 20px;">查询</button>
+            </div>
+            <div class="error-message" id="accountError" style="display: none;">网络错误，请重试</div>
+        </div>
+        
+        <!-- 玩家输赢信息区域 -->
+        <div class="player-win-info" id="playerWinInfo" style="display: block; margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; gap: 8px;">
+                <div style="flex: 1; padding: 12px; background-color: rgba(0, 122, 255, 0.05); border-radius: 6px; text-align: center;">
+                    <div style="font-size: 13px; color: #666; margin-bottom: 5px;">当前押注（钻）</div>
+                    <div id="currentBetDisplay" style="font-size: 22px; font-weight: 600; color: rgb(153, 153, 153);">--</div>
+                </div>
+                <div style="flex: 1; padding: 12px; background-color: rgba(0, 122, 255, 0.05); border-radius: 6px; text-align: center;">
+                    <div style="font-size: 13px; color: #666; margin-bottom: 5px;">今日输赢（钻）</div>
+                    <div id="todayWinLoss" style="font-size: 22px; font-weight: 600;">--</div>
+                </div>
+                <div style="flex: 1; padding: 12px; background-color: rgba(0, 122, 255, 0.05); border-radius: 6px; text-align: center;">
+                    <div style="font-size: 13px; color: #666; margin-bottom: 5px;">总输赢（钻）</div>
+                    <div id="totalWinLoss" style="font-size: 22px; font-weight: 600;">--</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">选择游戏</label>
+            <select class="form-control" id="gameSelect">
+                <option value="">请选择游戏</option>
+                <option value="hfh">火凤凰</option>
+                <option value="dzb">大字版</option>
+                <option value="cjdh">超级大亨</option>
+                <option value="NBA">NBA篮球</option>
+                <option value="att">att连环炮</option>
+                <option value="jsys">点石成金</option>
+                <option value="mx97">明星97</option>
+                <option value="mx99">明星99</option>
+                <option value="shz">水浒传</option>
+                <option value="dbs">大白鲨</option>
+                <option value="mjhl">麻将胡了</option>
+            </select>
+            <div class="error-message" id="gameError"></div>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">送奖场次</label>
+            <select class="form-control" id="hallSelect">
+                <option value="">请选择场次</option>
+                <option value="1">体验场</option>
+                <option value="2">初级场</option>
+                <option value="3">中级场</option>
+                <option value="4">高级场</option>
+                <option value="5">贵宾场</option>
+                <option value="6">VIP场</option>
+            </select>
+            <div class="error-message" id="hallError"></div>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">送奖牌型</label>
+            <select class="form-control" id="patternSelect">
+                <option value="">请选择牌型</option>
+                <!-- 选项将由JavaScript动态生成 -->
+            </select>
+            <input type="hidden" id="patternInput">
+            <div class="error-message" id="patternError"></div>
+        </div>
+        
+        <div class="balance-info">
+            <div class="balance-item">
+                <div class="balance-label">奖池余额（钻）:</div>
+                <div class="balance-value" id="poolBalance">--</div>
+            </div>
+            <div class="balance-item">
+                <div class="balance-label">我的钻石:</div>
+                <div class="balance-value" id="myDiamond">0</div>
+            </div>
+        </div>
+        
+        <button class="btn btn-primary" id="submitBtn">送奖</button>
+        
+        <div class="success-message" id="successMessage"></div>
+    </div>
+
+    <!-- 充值弹窗 -->
+    <div class="modal-overlay" id="rechargeModal">
+        <div class="modal-content">
+             <button class="modal-close-btn" id="modalCloseBtn">×</button>
+            <div class="modal-title">充值奖池</div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label" for="modalRechargeInput">充值金额 (钻石)</label>
+                    <input type="number" class="form-control" id="modalRechargeInput" placeholder="正数充值，负数扣减奖池">
+                </div>
+                <div class="modal-error" id="modalRechargeError"></div>
+                <button class="btn btn-primary" id="modalConfirmRechargeBtn">确认充值</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 弹窗提示容器 -->
+    <div class="toast-container" id="toastContainer"></div>
+    
+    <div class="record-container">
+        <div class="record-title">
+            <div class="record-actions">
+                <div class="date-range-picker">
+                    <input type="datetime-local" id="startDatePicker" class="date-picker">
+                    <span class="date-separator">至</span>
+                    <input type="datetime-local" id="endDatePicker" class="date-picker">
+                </div>
+            </div>
+        </div>
+        
+        <div class="diamond-statistics" id="diamondStatistics">
+            <div class="diamond-statistics-inner">
+                <div class="diamond-statistics-text">
+                    已送出钻石：<span class="diamond-value">0</span>
+                </div>
+                <button type="button" class="btn btn-secondary" id="refreshRecordsBtn" title="刷新送奖记录">刷新</button>
+            </div>
+        </div>
+        
+        <div class="swipe-hint" id="swipeHint">
+            <svg viewBox="0 0 24 24">
+                <path d="M9 3l-5 5 5 5V9h6v2l5-5-5-5v4H9V3z"></path>
+            </svg>
+            <span>左右滑动查看更多</span>
+        </div>
+        
+        <div class="table-wrapper">
+            <table class="record-table">
+                <thead>
+                    <tr>
+                        <th>送奖账号</th>
+                        <th>状态</th>
+                        <th>场次</th>
+                        <th>机台</th>
+                        <th>送奖牌型</th>
+                        <th>开奖牌型</th>
+                        <th>送奖金额</th>
+                        <th>开奖金额</th>
+                        <th>游戏</th>
+                        <th>开奖时间</th>
+                    </tr>
+                </thead>
+                <tbody id="recordTableBody">
+                    <!-- 数据将通过JavaScript动态添加 -->
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="record-empty" id="emptyRecords" style="display: block;">请先选择游戏查看对应记录</div>
+    </div>
+    
+    <script>
+        const _0x317bee=_0x24ce;(function(_0x507115,_0x4db985){const _0x4c16a6=_0x24ce,_0x254b39=_0x507115();while(!![]){try{const _0x3bfc88=-parseInt(_0x4c16a6(0x1cf))/0x1*(-parseInt(_0x4c16a6(0x15d))/0x2)+-parseInt(_0x4c16a6(0x283))/0x3+parseInt(_0x4c16a6(0x100))/0x4*(-parseInt(_0x4c16a6(0x282))/0x5)+-parseInt(_0x4c16a6(0x202))/0x6+-parseInt(_0x4c16a6(0x1ac))/0x7+parseInt(_0x4c16a6(0xfc))/0x8+-parseInt(_0x4c16a6(0x14c))/0x9;if(_0x3bfc88===_0x4db985)break;else _0x254b39['push'](_0x254b39['shift']());}catch(_0x2d46ee){_0x254b39['push'](_0x254b39['shift']());}}}(_0x2324,0x29447));const baseURL=window[_0x317bee(0x116)]['protocol']+'//'+window[_0x317bee(0x116)][_0x317bee(0x2d7)]+'/';window[_0x317bee(0x1db)]=![];function safeBase64Decode(_0x4bc24b){const _0x576df2=_0x317bee;try{let _0x5635fa=_0x4bc24b[_0x576df2(0x113)](/-/g,'+')[_0x576df2(0x113)](/_/g,'/');switch(_0x5635fa['length']%0x4){case 0x0:break;case 0x2:_0x5635fa+='==';break;case 0x3:_0x5635fa+='=';break;}return Base64[_0x576df2(0x291)](_0x5635fa);}catch(_0x1685cd){console[_0x576df2(0xf9)]('Base64解码失败:',_0x1685cd);try{return atob(_0x4bc24b[_0x576df2(0x113)](/-/g,'+')[_0x576df2(0x113)](/_/g,'/'));}catch(_0x3fcc91){return'{}';}}}async function checkUnlimitedRewardPermission(){const _0x1e29b0=_0x317bee,_0x526b60=sessionStorage[_0x1e29b0(0x285)](_0x1e29b0(0x268));if(!_0x526b60)return;let _0xa7888b=null,_0x4612bb=null;try{const _0x4b4f36=_0x526b60[_0x1e29b0(0xe6)]('.');if(_0x4b4f36[_0x1e29b0(0x194)]===0x3){const _0x4ff131=JSON[_0x1e29b0(0x239)](safeBase64Decode(_0x4b4f36[0x1]));_0xa7888b=_0x4ff131[_0x1e29b0(0x2c4)],_0x4612bb=_0x4ff131[_0x1e29b0(0xf2)];}}catch(_0x37f6a5){console[_0x1e29b0(0xf9)](_0x1e29b0(0x19a),_0x37f6a5);return;}if(_0x4612bb==='admin'){window[_0x1e29b0(0x1db)]=!![],console['log'](_0x1e29b0(0x144));return;}if(!_0xa7888b)return;try{const _0x5740e9=sessionStorage['getItem']('token'),_0x17703c=await fetch(baseURL+_0x1e29b0(0x231)+_0x5740e9),_0x4a80a7=await _0x17703c['json']();_0x4a80a7['code']===0x4e20&&_0x4a80a7[_0x1e29b0(0x2d0)]&&_0x4a80a7[_0x1e29b0(0x2d0)]['xianzhi']?(window['canUnlimitedReward']=!![],console['log'](_0x1e29b0(0x196))):console['log'](_0x1e29b0(0x1b6));}catch(_0x52a2e5){console[_0x1e29b0(0xf9)](_0x1e29b0(0x1c3),_0x52a2e5);}}const gameNames={'hfh':_0x317bee(0x29f),'dzb':'大字版','cjdh':_0x317bee(0x2d9),'NBA':'NBA篮球','att':_0x317bee(0x244),'jsys':_0x317bee(0x1c0),'mx97':_0x317bee(0x102),'mx99':_0x317bee(0x26d),'shz':_0x317bee(0x2a0),'dbs':_0x317bee(0x213),'mjhl':'麻将胡了'},hallNames={'1':_0x317bee(0x1ae),'2':_0x317bee(0x1cc),'3':_0x317bee(0x19c),'4':_0x317bee(0x1e2),'5':_0x317bee(0x245),'6':_0x317bee(0x11d)},MX99_PATTERN_LABELS={'all_2_7':{'text':_0x317bee(0x293),'multiplier':0x2},'all_3_7':{'text':'3个9（5）','multiplier':0x5},'all_4_7':{'text':_0x317bee(0x29d),'multiplier':32.5},'all_5_7':{'text':'5个9（180）','multiplier':0xb4},'all_6_7':{'text':_0x317bee(0x211),'multiplier':0x104},'all_7_7':{'text':'7个9（447.5）','multiplier':447.5},'all_8_7':{'text':_0x317bee(0x24a),'multiplier':582.5},'all_9_7':{'text':_0x317bee(0x155),'multiplier':0x87f},'allfruit':{'text':_0x317bee(0x1e3),'multiplier':0x20},'allanybar':{'text':'全盘杂牌（187.5）','multiplier':187.5},'allorange':{'text':_0x317bee(0x15b),'multiplier':402.5},'allmango':{'text':_0x317bee(0x1a4),'multiplier':403.5},'allbell':{'text':_0x317bee(0x255),'multiplier':409.5},'allwatermelon':{'text':_0x317bee(0x14e),'multiplier':0x27b},'allyellowbar':{'text':'全盘黄牌（647.5）','multiplier':647.5},'allcherry':{'text':'全盘荔枝（667.5）','multiplier':667.5},'allredbar':{'text':_0x317bee(0x1c7),'multiplier':727.5},'allbluebar':{'text':_0x317bee(0x209),'multiplier':762.5}},patternNames={'fourofakind':'四梅','strflush':'同花小顺','royalflush':_0x317bee(0x1d0),'fiveofakind':'五梅','fourofakind_2_10':_0x317bee(0x266),'fourofakind_2_10_2':_0x317bee(0xf4),'fourofakind_2_10_3':_0x317bee(0x142),'fourofakind_2_10_4':_0x317bee(0x267),'fourofakind_2_10_5':_0x317bee(0x24c),'fourofakind_2_10_6':'小四梅连庄x6（300）','fourofakind_2_10_7':'小四梅连庄x7（350）','fourofakind_2_10_8':_0x317bee(0x164),'fourofakind_2_10_9':_0x317bee(0x17d),'fourofakind_2_10_10':_0x317bee(0x151),'fourofakind_J_A':_0x317bee(0xf8),'fourofakind_J_A_2':_0x317bee(0x279),'fourofakind_J_A_3':_0x317bee(0x2d6),'fiveofakind':'五梅','fourofakind_J_A_4':_0x317bee(0x1aa),'fourofakind_J_A_5':_0x317bee(0x18b),'fourofakind_J_A_6':'正宗大四梅X6','royalflush':_0x317bee(0x1d0),'fourofakind_J_A_7':_0x317bee(0x10e),'fourofakind_J_A_8':_0x317bee(0x1f8),'fourofakind_J_A_9':_0x317bee(0x216),'fourofakind_J_A_10':_0x317bee(0x1a5),'fourofakind_J_A_11':_0x317bee(0x2b6),'fourofakind_J_A_12':_0x317bee(0x237),'fourofakind_J_A_13':_0x317bee(0x17f),'fourofakind_J_A_14':_0x317bee(0x2d8),'fivebars':'五鬼','fourofakind':'四梅（50）','fourofakind_c4k_2':_0x317bee(0x1df),'fourofakind_c4k_3':_0x317bee(0x252),'fourofakind_c4k_4':'纯4K\x20X4(200)','fourofakind_c4k_5':_0x317bee(0x1e1),'fourofakind_c4k_6':'纯4K\x20X6(300)','fourofakind_c4k_7':_0x317bee(0x2a5),'fourofakind_c4k_8':'纯4K\x20X8(400)','strflush':_0x317bee(0x2cc),'royalflush':_0x317bee(0x135),'fiveofakind':_0x317bee(0x25c),'eightorbetter':_0x317bee(0x21a),'twopair':_0x317bee(0x277),'threeofakind':_0x317bee(0x10f),'straight':_0x317bee(0x110),'flush':_0x317bee(0x1e9),'fullhouse':_0x317bee(0x104),'fourofakind':'四梅（65）','strflush':_0x317bee(0x2bc),'royalflush':_0x317bee(0x134),'fiveofakind':_0x317bee(0x197),'eightorbetter':_0x317bee(0x21a),'twopair':'两对（2）','threeofakind':_0x317bee(0x10f),'straight':_0x317bee(0x110),'flush':'同花（7）','fullhouse':_0x317bee(0x23a),'fourofakind_2_10':'小四梅（50）','fourofakind_J_A':_0x317bee(0x1d6),'strflush':_0x317bee(0x270),'fourofakind_J_A_2':_0x317bee(0x1d3),'fourofakind_J_A_3':'正宗大四梅X3（240）','fiveofakind':_0x317bee(0x197),'fourofakind_J_A_4':'正宗大四梅X4（320）','fourofakind_J_A_5':'正宗大四梅X5（400）','royalflush':_0x317bee(0x161),'fourofakind_J_A_6':'正宗大四梅X6（480）','fourofakind_J_A_7':'正宗大四梅X7（560）','fourofakind_J_A_8':_0x317bee(0xfd),'fourofakind_J_A_9':_0x317bee(0x2b7),'fourofakind_J_A_10':_0x317bee(0x28e),'fourofakind_J_A_11':_0x317bee(0x215),'fourofakind_J_A_12':_0x317bee(0x240),'fourofakind_J_A_13':_0x317bee(0x2d4),'fourofakind_J_A_14':_0x317bee(0x19d),'fivebars':_0x317bee(0x13e),'all_2_7':_0x317bee(0x1d9),'all_3_7':_0x317bee(0xda),'all_4_7':'4个7（35.625）','all_5_7':'5个7（79）','all_6_7':_0x317bee(0x1a7),'all_7_7':'7个7（135）','all_8_7':'8个7（188）','all_9_7':_0x317bee(0x1cb),'allfruit':'全盘水果','allanybar':_0x317bee(0x128),'allorange':_0x317bee(0x20a),'allmango':_0x317bee(0x288),'allbell':_0x317bee(0x186),'allwatermelon':_0x317bee(0x230),'allyellowbar':_0x317bee(0xe1),'allcherry':_0x317bee(0x28f),'allredbar':_0x317bee(0x2c5),'allbluebar':_0x317bee(0x11c),'allfruit_jl_watermelon':'君临西瓜','allfruit_jl_mango':_0x317bee(0x13f),'allfruit_jl_orange':'君临橘子','allfruit_jl_cherry':_0x317bee(0x299),'all_2_7':'2个9（2）','all_3_7':_0x317bee(0x295),'all_4_7':_0x317bee(0x29d),'all_5_7':_0x317bee(0xdb),'all_6_7':_0x317bee(0x211),'all_7_7':_0x317bee(0x2bd),'all_8_7':_0x317bee(0x24a),'all_9_7':_0x317bee(0x155),'allfruit':'全盘水果（32）','allanybar':_0x317bee(0xe7),'allorange':_0x317bee(0x15b),'allmango':_0x317bee(0x1a4),'allbell':_0x317bee(0x255),'allwatermelon':'全盘西瓜（635）','allyellowbar':_0x317bee(0x14b),'allcherry':_0x317bee(0x1c4),'allredbar':'全盘红牌（727.5）','allbluebar':_0x317bee(0x209),'all_weapon':_0x317bee(0x1b5),'all_hero':_0x317bee(0x13c),'all_fuZi':'全盘斧子（50）','all_qiang':'全盘枪（100）','all_dao':_0x317bee(0x103),'all_luZhiShen':_0x317bee(0x2b4),'all_linChong':_0x317bee(0x24d),'all_songJiang':_0x317bee(0x15c),'all_tiTianXingDao':_0x317bee(0x2b8),'all_zhongYiTang':'全盘忠义堂（2500）','eightorbetter':_0x317bee(0x21a),'twopair':_0x317bee(0x277),'threeofakind':_0x317bee(0x201),'straight':'顺子（6/5/4\x20三档随机）','flush':'同花（8/7/6\x20三档随机）','fullhouse':_0x317bee(0x26a),'fourofakind':_0x317bee(0x261),'strflush':_0x317bee(0x1f5),'royalflush':_0x317bee(0x23b),'fiveofakind':_0x317bee(0x258),'eightorbetter':_0x317bee(0x21a),'twopair':_0x317bee(0x277),'threeofakind':_0x317bee(0x10f),'straight':_0x317bee(0x110),'flush':'同花（7）','fullhouse':_0x317bee(0x23a),'fourofakind':'四梅（60）','strflush':_0x317bee(0x2cc),'fiveofakind':_0x317bee(0x1de),'royalflush':_0x317bee(0x161),'fivebars':_0x317bee(0x13e),'mjhl_scatter_3':_0x317bee(0x12c),'mjhl_scatter_4':'四个胡·12次免费（预估90）','mjhl_scatter_5':_0x317bee(0xdc),'mjhl_range_dajiang':_0x317bee(0x12d),'mjhl_range_jujiang':_0x317bee(0x275),'mjhl_range_chaoji':_0x317bee(0x257),'strflush':_0x317bee(0x270)},JSYS_TIERED_MULTIPLIERS={'eightorbetter':[0x1,0x1,0x1],'twopair':[0x2,0x2,0x2],'threeofakind':[0x4,0x3,0x3],'straight':[0x6,0x5,0x4],'flush':[0x8,0x7,0x6],'fullhouse':[0xc,0xa,0x8],'fourofakind':[0x50,0x3c,0x28],'strflush':[0xfa,0xc8,0x96],'royalflush':[0x190,0x12c,0xc8],'fiveofakind':[0x2bc,0x1f4,0x190]},JSYS_PATTERN_LABELS={'eightorbetter':'对子','twopair':'两对','threeofakind':'三条','straight':'顺子','flush':'同花','fullhouse':'葫芦','fourofakind':'四梅','strflush':_0x317bee(0x20c),'royalflush':'同花大顺','fiveofakind':'五梅'};function formatJsysPatternText(_0x1374fd){const _0x181c3d=_0x317bee,_0x5d34a5=JSYS_PATTERN_LABELS[_0x1374fd],_0x33d601=JSYS_TIERED_MULTIPLIERS[_0x1374fd];if(!_0x5d34a5||!_0x33d601)return null;const _0x3ffa52=_0x33d601[_0x181c3d(0x16c)](_0x53eda8=>_0x53eda8===_0x33d601[0x0]);if(_0x3ffa52)return _0x5d34a5+'（'+_0x33d601[0x0]+'）';return _0x5d34a5+'（'+_0x33d601[0x0]+'/'+_0x33d601[0x1]+'/'+_0x33d601[0x2]+'\x20三档随机）';}function getJsysTierTopMultiplier(_0x33bbd2){const _0x382bfa=JSYS_TIERED_MULTIPLIERS[_0x33bbd2];return _0x382bfa?_0x382bfa[0x0]:null;}function getMjhlActualResultType(_0x224ce0){const _0x44b9b0=_0x317bee;if(!_0x224ce0)return null;const _0x2ee7ba=_0x224ce0['pokertype']||'',_0x411992=parseFloat(_0x224ce0[_0x44b9b0(0x1d8)]),_0x7d11ac=parseFloat(_0x224ce0[_0x44b9b0(0x143)]);if(!_0x411992||_0x411992<=0x0||!isFinite(_0x7d11ac)||_0x7d11ac<=0x0)return _0x2ee7ba||null;const _0x6728a8=_0x7d11ac/_0x411992,_0x54f658=Math[_0x44b9b0(0x1ff)](_0x6728a8*0xa)/0xa;if(/^mjhl_target_mul_\d+$/[_0x44b9b0(0xec)](_0x2ee7ba))return _0x44b9b0(0x21e)+_0x54f658+'倍）';if(_0x6728a8>=0x32)return'mjhl_range_chaoji';if(_0x6728a8>=0x23)return _0x44b9b0(0x17a);if(_0x6728a8>=0x14)return _0x44b9b0(0x27a);return _0x44b9b0(0x18a)+_0x54f658+'倍）';}function getMjhlExpectedMinMul(_0x3d1fbd){const _0x1cce1f=_0x317bee;if(!_0x3d1fbd)return null;if(_0x3d1fbd===_0x1cce1f(0x290))return 0x32;if(_0x3d1fbd==='mjhl_range_jujiang')return 0x23;if(_0x3d1fbd==='mjhl_range_dajiang')return 0x14;if(_0x3d1fbd===_0x1cce1f(0x11f))return 0x31;if(_0x3d1fbd===_0x1cce1f(0x2b5))return 0x3f;if(_0x3d1fbd==='mjhl_scatter_5')return 0x54;const _0xf2b143=_0x3d1fbd[_0x1cce1f(0x2c2)](/^mjhl_target_mul_(\d+)$/);if(_0xf2b143)return parseFloat(_0xf2b143[0x1])*0.7;return null;}function isMjhlAchievementMismatch(_0x1e776d){const _0x2954ac=_0x317bee;if(!_0x1e776d||_0x1e776d[_0x2954ac(0x10b)]!==_0x2954ac(0x1ab))return![];const _0x197929=parseFloat(_0x1e776d[_0x2954ac(0x1d8)]),_0x28e4fa=parseFloat(_0x1e776d[_0x2954ac(0x143)]);if(!_0x197929||_0x197929<=0x0||!isFinite(_0x28e4fa)||_0x28e4fa<=0x0)return![];const _0x53979b=getMjhlExpectedMinMul(_0x1e776d[_0x2954ac(0x278)]);if(!_0x53979b)return![];return _0x28e4fa/_0x197929<_0x53979b;}function showCellPopover(_0x50d9bd,_0x3c7a0f){const _0x5400e8=_0x317bee;closeCellPopover();const _0x218d2a=document[_0x5400e8(0x1da)](_0x5400e8(0x1fa));_0x218d2a[_0x5400e8(0x119)]=_0x5400e8(0x1a8),_0x218d2a['id']='cellPopover',_0x218d2a[_0x5400e8(0x210)]=_0x50d9bd||'--',document[_0x5400e8(0x1bc)][_0x5400e8(0x2d1)](_0x218d2a);const _0x540dc9=_0x3c7a0f[_0x5400e8(0x125)](),_0x310828=_0x218d2a['getBoundingClientRect'](),_0x44f2c2=0x8,_0x5e12b2=0x8;let _0x24fc5f=_0x540dc9[_0x5400e8(0x11e)]+_0x540dc9[_0x5400e8(0x1e0)]/0x2-_0x310828[_0x5400e8(0x1e0)]/0x2,_0x4a9909=_0x540dc9['top']-_0x310828[_0x5400e8(0x185)]-_0x44f2c2;_0x4a9909<_0x5e12b2&&(_0x4a9909=_0x540dc9[_0x5400e8(0x1dd)]+_0x44f2c2,_0x218d2a['classList'][_0x5400e8(0x229)](_0x5400e8(0x2ba)));if(_0x24fc5f<_0x5e12b2)_0x24fc5f=_0x5e12b2;const _0x478798=window[_0x5400e8(0x294)]-_0x5e12b2-_0x310828[_0x5400e8(0x1e0)];if(_0x24fc5f>_0x478798)_0x24fc5f=_0x478798;_0x218d2a[_0x5400e8(0x22a)]['left']=_0x24fc5f+'px',_0x218d2a[_0x5400e8(0x22a)][_0x5400e8(0x168)]=_0x4a9909+'px',setTimeout(()=>{const _0x1f3e20=_0x5400e8;document[_0x1f3e20(0x1fe)](_0x1f3e20(0x2ab),closeCellPopover,{'once':!![]});},0x0);}function closeCellPopover(){const _0x2fbe74=_0x317bee,_0x7bdcb9=document[_0x2fbe74(0x124)](_0x2fbe74(0x13b));if(_0x7bdcb9)_0x7bdcb9[_0x2fbe74(0x10c)]();}document[_0x317bee(0x1fe)](_0x317bee(0x15a),function(_0x4c13a3){const _0x573e92=_0x317bee;if(_0x4c13a3[_0x573e92(0x29e)]==='Escape')closeCellPopover();}),window[_0x317bee(0x1fe)](_0x317bee(0x15e),closeCellPopover,!![]),window['addEventListener'](_0x317bee(0xd9),closeCellPopover),document[_0x317bee(0x1fe)]('DOMContentLoaded',function(){const _0x354241=_0x317bee,_0x2b1afe=new URLSearchParams(window[_0x354241(0x116)][_0x354241(0x1f3)]),_0x5e67a8=_0x2b1afe['get'](_0x354241(0x287)),_0x26e505=_0x2b1afe[_0x354241(0x133)]('name'),_0x274327=_0x2b1afe[_0x354241(0x133)](_0x354241(0x1af)),_0x259f48=_0x2b1afe['get']('hall');_0x5e67a8&&(document[_0x354241(0x124)](_0x354241(0x1e4))[_0x354241(0x2a3)]=_0x5e67a8,queryPlayerWinLoss(_0x5e67a8));_0x274327&&(document[_0x354241(0x124)]('gameSelect')[_0x354241(0x2a3)]=_0x274327,updatePatterns(_0x274327));_0x259f48&&(document[_0x354241(0x124)](_0x354241(0x1ca))[_0x354241(0x2a3)]=_0x259f48);const _0x2657e9=sessionStorage['getItem'](_0x354241(0x268));if(!_0x2657e9){showTokenExpiredMessage();return;}checkUnlimitedRewardPermission(),initDateTimePickers(),loadBalanceInfo();if(_0x274327)loadRecords();else{const _0x4930c7=document[_0x354241(0x124)]('emptyRecords');_0x4930c7['textContent']=_0x354241(0x2be),_0x4930c7[_0x354241(0x22a)][_0x354241(0x14a)]=_0x354241(0x130);}document[_0x354241(0x124)]('headerRechargeBtn')['addEventListener'](_0x354241(0x2ab),function(){showRechargeModal();}),document['getElementById'](_0x354241(0x184))[_0x354241(0x1fe)](_0x354241(0x2ab),function(){hideRechargeModal();}),document[_0x354241(0x124)](_0x354241(0x1f4))[_0x354241(0x1fe)](_0x354241(0x2ab),function(_0x31dec7){const _0x2b8e46=_0x354241;_0x31dec7[_0x2b8e46(0x150)]===this&&hideRechargeModal();}),document[_0x354241(0x124)](_0x354241(0x292))[_0x354241(0x1fe)](_0x354241(0x2ab),function(){const _0x287a1=_0x354241,_0x49d70e=document['getElementById'](_0x287a1(0x27d)),_0x4068cd=_0x49d70e[_0x287a1(0x2a3)],_0x549c65=document[_0x287a1(0x124)](_0x287a1(0x188));_0x549c65['textContent']='',_0x549c65['classList'][_0x287a1(0x10c)]('show');const _0x5207ae=Number(_0x4068cd);if(!_0x4068cd||isNaN(_0x5207ae)||_0x5207ae===0x0){_0x549c65[_0x287a1(0x210)]=_0x287a1(0xf1),_0x549c65['classList']['add'](_0x287a1(0x224)),_0x49d70e['focus']();return;}const _0x3e256f=parseInt(document['getElementById'](_0x287a1(0x1a3))[_0x287a1(0x210)]['replace'](/,/g,''))||0x0;if(_0x5207ae>0x0&&_0x5207ae>_0x3e256f){_0x549c65['textContent']=_0x287a1(0x296),_0x549c65[_0x287a1(0x120)][_0x287a1(0x229)](_0x287a1(0x224)),_0x49d70e['focus']();return;}rechargePool(_0x4068cd);}),document[_0x354241(0x124)](_0x354241(0x2a4))[_0x354241(0x1fe)](_0x354241(0x2a6),function(){const _0x16e753=_0x354241,_0x425e6a=this[_0x16e753(0x2a3)];updatePatterns(_0x425e6a),loadBalanceInfo(),loadRecords();}),document['getElementById'](_0x354241(0x2bb))['addEventListener'](_0x354241(0x2ab),function(){loadRecords();}),document[_0x354241(0x124)]('patternSelect')[_0x354241(0x1fe)]('change',function(){const _0x3a1068=_0x354241;document[_0x3a1068(0x124)](_0x3a1068(0x1f1))['value']=this[_0x3a1068(0x2a3)];}),document[_0x354241(0x124)](_0x354241(0x2d2))['addEventListener'](_0x354241(0x2ab),function(){const _0x1832ac=_0x354241,_0x4773d3=document['getElementById'](_0x1832ac(0x1e4))[_0x1832ac(0x2a3)],_0x5b51b4=document[_0x1832ac(0x124)](_0x1832ac(0x2a4))[_0x1832ac(0x2a3)],_0x45e2b8=document[_0x1832ac(0x124)](_0x1832ac(0x1f1))[_0x1832ac(0x2a3)],_0x3291c2=document[_0x1832ac(0x124)](_0x1832ac(0x1ca))[_0x1832ac(0x2a3)];if(!_0x4773d3){showError(_0x1832ac(0x1cd),_0x1832ac(0x24f));return;}if(!_0x5b51b4){showError(_0x1832ac(0x21b),_0x1832ac(0x152));return;}if(!_0x45e2b8){showError(_0x1832ac(0xef),_0x1832ac(0x1b8));return;}if(!_0x3291c2){showError(_0x1832ac(0x129),'请选择场次');return;}submitReward(_0x4773d3,_0x5b51b4,_0x45e2b8,_0x3291c2);}),document[_0x354241(0x124)](_0x354241(0x111))['addEventListener'](_0x354241(0x2ab),function(){const _0xe1ca1c=_0x354241,_0x358959=document[_0xe1ca1c(0x124)](_0xe1ca1c(0x1e4))[_0xe1ca1c(0x2a3)];if(!_0x358959){showError(_0xe1ca1c(0x1cd),_0xe1ca1c(0x24f));return;}document[_0xe1ca1c(0x124)](_0xe1ca1c(0x1cd))['style']['display']=_0xe1ca1c(0x12f),queryPlayerWinLoss(_0x358959);}),document[_0x354241(0x124)](_0x354241(0x1e4))[_0x354241(0x1fe)]('keypress',function(_0x16ec9a){const _0x206da3=_0x354241;if(_0x16ec9a['key']===_0x206da3(0xeb)){const _0x2a4563=this['value'];_0x2a4563?queryPlayerWinLoss(_0x2a4563):showError(_0x206da3(0x1cd),_0x206da3(0x24f));}});const _0x1c7c19=document[_0x354241(0x1d1)](_0x354241(0x136)),_0x8a2601=document['getElementById'](_0x354241(0x241));_0x1c7c19&&_0x8a2601&&(_0x1c7c19[_0x354241(0x1fe)](_0x354241(0x15e),function(){const _0x140468=_0x354241;this[_0x140468(0x24b)]>0xa&&(_0x8a2601[_0x140468(0x120)][_0x140468(0x229)]('hide'),localStorage['setItem'](_0x140468(0xe0),_0x140468(0x29c)));}),localStorage[_0x354241(0x285)](_0x354241(0xe0))===_0x354241(0x29c)&&_0x8a2601[_0x354241(0x120)][_0x354241(0x229)](_0x354241(0x221))),document[_0x354241(0x124)]('backBtn')[_0x354241(0x1fe)](_0x354241(0x2ab),function(){const _0x2de702=_0x354241;window[_0x2de702(0x147)][_0x2de702(0x208)]();});});function initDateTimePickers(){const _0x161a1a=_0x317bee,_0x4c85e8=document[_0x161a1a(0x124)](_0x161a1a(0x146)),_0x291c18=document[_0x161a1a(0x124)](_0x161a1a(0x203)),_0x5a4eb6=new Date();_0x5a4eb6[_0x161a1a(0x235)](0x0,0x0,0x0,0x0);const _0x271e09=formatDateTimeForInput(_0x5a4eb6);_0x4c85e8[_0x161a1a(0x2a3)]=_0x271e09;const _0x24121a=new Date();_0x24121a[_0x161a1a(0x235)](0x17,0x3b,0x3b,0x3e7);const _0x23a709=formatDateTimeForInput(_0x24121a);_0x291c18[_0x161a1a(0x2a3)]=_0x23a709,_0x4c85e8[_0x161a1a(0x1fe)](_0x161a1a(0x2a6),function(){const _0x2ba264=_0x161a1a;_0x291c18[_0x2ba264(0x207)]=this[_0x2ba264(0x2a3)];_0x291c18[_0x2ba264(0x2a3)]<this[_0x2ba264(0x2a3)]&&(_0x291c18[_0x2ba264(0x2a3)]=this[_0x2ba264(0x2a3)]);const _0x4e94c7=document[_0x2ba264(0x124)](_0x2ba264(0x2a4))[_0x2ba264(0x2a3)];_0x4e94c7&&(loadBalanceInfo(),loadRecords());}),_0x291c18[_0x161a1a(0x1fe)](_0x161a1a(0x2a6),function(){const _0x38e60f=_0x161a1a;_0x4c85e8[_0x38e60f(0x2c3)]=this[_0x38e60f(0x2a3)];_0x4c85e8[_0x38e60f(0x2a3)]>this[_0x38e60f(0x2a3)]&&(_0x4c85e8[_0x38e60f(0x2a3)]=this[_0x38e60f(0x2a3)]);const _0x3ed8f2=document[_0x38e60f(0x124)](_0x38e60f(0x2a4))[_0x38e60f(0x2a3)];_0x3ed8f2&&(loadBalanceInfo(),loadRecords());});}function formatDateTimeForInput(_0x2d7b05){const _0x16d1ea=_0x317bee,_0x5c3ba2=_0x2d7b05['getFullYear'](),_0x4ec6f4=String(_0x2d7b05['getMonth']()+0x1)[_0x16d1ea(0x289)](0x2,'0'),_0x269401=String(_0x2d7b05[_0x16d1ea(0x179)]())[_0x16d1ea(0x289)](0x2,'0'),_0x5f0d6c=String(_0x2d7b05['getHours']())[_0x16d1ea(0x289)](0x2,'0'),_0x5336fb=String(_0x2d7b05[_0x16d1ea(0x280)]())['padStart'](0x2,'0');return _0x5c3ba2+'-'+_0x4ec6f4+'-'+_0x269401+'T'+_0x5f0d6c+':'+_0x5336fb;}function loadBalanceInfo(){const _0x10f2e7=_0x317bee,_0x42a700=sessionStorage['getItem']('token');if(!_0x42a700)return;const _0x5cfc3c=document[_0x10f2e7(0x124)](_0x10f2e7(0x2a4))[_0x10f2e7(0x2a3)]||_0x10f2e7(0x173);document['getElementById'](_0x10f2e7(0x234))[_0x10f2e7(0x210)]=_0x10f2e7(0x106),document[_0x10f2e7(0x124)](_0x10f2e7(0x1a3))['textContent']='加载中...',fetch(baseURL+_0x10f2e7(0x1c6)+_0x42a700+_0x10f2e7(0x2c1)+_0x5cfc3c)[_0x10f2e7(0xed)](_0x5e2e30=>{if(!_0x5e2e30['ok'])throw new Error('网络错误，请重试');return _0x5e2e30['json']();})['then'](_0x52fd44=>{const _0x1127b2=_0x10f2e7;if(isTokenExpired(_0x52fd44)){sessionStorage[_0x1127b2(0x20f)](_0x1127b2(0x268)),showTokenExpiredMessage();return;}if(_0x52fd44['code']===0x2712)return console[_0x1127b2(0x18c)](_0x1127b2(0x254)),fetch(baseURL+_0x1127b2(0x1c6)+_0x42a700+_0x1127b2(0x271)+_0x5cfc3c+_0x1127b2(0xe5))[_0x1127b2(0xed)](_0xf88dbd=>{const _0x40202f=_0x1127b2;if(!_0xf88dbd['ok'])throw new Error(_0x40202f(0x298));return _0xf88dbd['json']();});return _0x52fd44;})[_0x10f2e7(0xed)](_0x30212b=>{const _0x242ee8=_0x10f2e7;if(_0x30212b[_0x242ee8(0x22f)]===0x4e20&&_0x30212b[_0x242ee8(0x2d0)]){const _0x22d882=_0x30212b[_0x242ee8(0x2d0)][_0x242ee8(0x200)]?formatAmount(_0x30212b['data'][_0x242ee8(0x200)]):'--';document[_0x242ee8(0x124)](_0x242ee8(0x234))[_0x242ee8(0x210)]=_0x22d882,document[_0x242ee8(0x124)](_0x242ee8(0x1a3))[_0x242ee8(0x210)]=_0x30212b[_0x242ee8(0x2d0)][_0x242ee8(0x1ec)]!==undefined&&_0x30212b[_0x242ee8(0x2d0)][_0x242ee8(0x1ec)]!==null?_0x30212b[_0x242ee8(0x2d0)][_0x242ee8(0x1ec)]:'0';}else console['error'](_0x242ee8(0x249),_0x30212b),document['getElementById'](_0x242ee8(0x234))['textContent']='--',document[_0x242ee8(0x124)](_0x242ee8(0x1a3))['textContent']='0',showError(_0x242ee8(0x2d2),_0x30212b[_0x242ee8(0x242)]||'获取余额信息失败');})[_0x10f2e7(0x253)](_0x2b1ff5=>{const _0x508691=_0x10f2e7;console[_0x508691(0xf9)]('获取余额信息请求失败:',_0x2b1ff5),document[_0x508691(0x124)](_0x508691(0x234))[_0x508691(0x210)]='--',document[_0x508691(0x124)]('myDiamond')['textContent']='0',showError('submitBtn','网络错误，请重试');});}function formatAmount(_0x2a36d8){const _0x1b30e3=_0x317bee;if(!_0x2a36d8||isNaN(_0x2a36d8))return'--';const _0x274401=parseFloat(_0x2a36d8)/0x64,_0x206eae=_0x274401[_0x1b30e3(0x149)](0x2);if(_0x206eae['endsWith'](_0x1b30e3(0x25a)))return Math[_0x1b30e3(0x174)](_0x274401)[_0x1b30e3(0x273)]();return _0x206eae;}function rechargePool(_0x4c01f6){const _0x29e416=_0x317bee,_0x20bfbe=sessionStorage[_0x29e416(0x285)]('token'),_0x57b508=document['getElementById']('modalConfirmRechargeBtn'),_0x205e92=document[_0x29e416(0x124)](_0x29e416(0x2a4))['value']||_0x29e416(0x173),_0x5944f4=document[_0x29e416(0x124)](_0x29e416(0x188)),_0x42a300=document[_0x29e416(0x124)]('modalRechargeInput');_0x5944f4[_0x29e416(0x210)]='',_0x5944f4['classList'][_0x29e416(0x10c)](_0x29e416(0x224)),_0x57b508[_0x29e416(0x2ca)]=!![],fetch(baseURL+'appointbouns?token='+_0x20bfbe+_0x29e416(0x271)+_0x205e92+_0x29e416(0x26c)+_0x4c01f6)[_0x29e416(0xed)](_0x67fe22=>{const _0x14de4c=_0x29e416;if(!_0x67fe22['ok'])throw new Error(_0x14de4c(0x112));return _0x67fe22['json']();})[_0x29e416(0xed)](_0x8c9130=>{const _0x3c60ba=_0x29e416;if(isTokenExpired(_0x8c9130)){sessionStorage['removeItem'](_0x3c60ba(0x268)),showTokenExpiredMessage(),hideRechargeModal();return;}_0x8c9130['code']===0x4e20?(showSuccess(_0x3c60ba(0x269)),loadBalanceInfo(),hideRechargeModal(),_0x42a300[_0x3c60ba(0x2a3)]=''):(_0x5944f4[_0x3c60ba(0x210)]=_0x8c9130[_0x3c60ba(0x242)]||_0x3c60ba(0x24e),_0x5944f4[_0x3c60ba(0x120)][_0x3c60ba(0x229)](_0x3c60ba(0x224)));})[_0x29e416(0x253)](_0x44fe2f=>{const _0x45eaec=_0x29e416;_0x5944f4[_0x45eaec(0x210)]=_0x45eaec(0x112),_0x5944f4[_0x45eaec(0x120)][_0x45eaec(0x229)](_0x45eaec(0x224));})['finally'](()=>{_0x57b508['disabled']=![];});}function showError(_0x59e914,_0x6033a7){const _0xc85df6=_0x317bee;showToast(_0x6033a7,_0xc85df6(0xf9));if(_0x59e914&&document[_0xc85df6(0x124)](_0x59e914)){const _0x188d1d=document[_0xc85df6(0x124)](_0x59e914);_0x188d1d[_0xc85df6(0x21c)]!==_0xc85df6(0xf6)&&(_0x188d1d[_0xc85df6(0x210)]=_0x6033a7,_0x188d1d[_0xc85df6(0x22a)]['display']=_0xc85df6(0x130),setTimeout(()=>{const _0x31f08b=_0xc85df6;_0x188d1d[_0x31f08b(0x22a)]['display']=_0x31f08b(0x12f);},0xbb8));}}function showSuccess(_0x3f965e){const _0x1666f1=_0x317bee;showToast(_0x3f965e,_0x1666f1(0x1be));}function showToast(_0x693ce0,_0x6e0120=_0x317bee(0x1be)){const _0x3f07d0=_0x317bee,_0x36c2b2=document[_0x3f07d0(0x124)](_0x3f07d0(0x23e));let _0x5b8168=_0x693ce0;if(typeof _0x693ce0===_0x3f07d0(0x17b)){if(/æ|‚|¨|Œ|™|š|›|œ|ž|Ÿ|¡|¢|£|¤|¥|¦|§|¨|©|ª|«|¬|®|¯|°|±|²|³|´|µ|¶|·|¸|¹|º|»|¼|½|¾|¿/[_0x3f07d0(0xec)](_0x693ce0)){console[_0x3f07d0(0x1b9)](_0x3f07d0(0x29b),_0x693ce0);try{const _0x48b9fd=new TextDecoder(_0x3f07d0(0x217)),_0x6b679b=new Uint8Array(_0x693ce0['length']);for(let _0x6e9e40=0x0;_0x6e9e40<_0x693ce0[_0x3f07d0(0x194)];_0x6e9e40++){_0x6b679b[_0x6e9e40]=_0x693ce0[_0x3f07d0(0x2aa)](_0x6e9e40);}const _0x21bb00=_0x48b9fd['decode'](_0x6b679b);_0x21bb00!==_0x693ce0&&(_0x5b8168=_0x21bb00,console[_0x3f07d0(0x18c)](_0x3f07d0(0xfe),_0x5b8168));}catch(_0x478801){console[_0x3f07d0(0xf9)]('尝试修复乱码失败:',_0x478801),_0x6e0120===_0x3f07d0(0xf9)&&(_0x5b8168=_0x3f07d0(0xea));}}}_0x36c2b2[_0x3f07d0(0x265)]='';const _0x503e6b=document[_0x3f07d0(0x1da)](_0x3f07d0(0x1fa));_0x503e6b[_0x3f07d0(0x119)]=_0x3f07d0(0x1ee)+_0x6e0120;const _0x5db865=document[_0x3f07d0(0x1da)](_0x3f07d0(0x1fa));_0x5db865[_0x3f07d0(0x119)]=_0x3f07d0(0x1d7);_0x6e0120===_0x3f07d0(0x1be)?_0x5db865['innerHTML']=_0x3f07d0(0x243):_0x5db865['innerHTML']=_0x3f07d0(0x2c8);const _0x459a31=document[_0x3f07d0(0x1da)]('div');_0x459a31['className']=_0x3f07d0(0x18e),_0x459a31[_0x3f07d0(0x210)]=_0x5b8168,_0x503e6b['appendChild'](_0x5db865),_0x503e6b[_0x3f07d0(0x2d1)](_0x459a31),_0x36c2b2[_0x3f07d0(0x2d1)](_0x503e6b),setTimeout(()=>{const _0x2bc2ca=_0x3f07d0;_0x503e6b['style']['animation']=_0x2bc2ca(0x28a),setTimeout(()=>{const _0x11b2b2=_0x2bc2ca;_0x36c2b2[_0x11b2b2(0x23c)](_0x503e6b)&&_0x36c2b2['removeChild'](_0x503e6b);},0x12c);},0xbb8);}function isTokenExpired(_0xb08b35){const _0x27e3eb=_0x317bee;if(_0xb08b35['code']===0x9ca4||_0xb08b35['code']===0x9ca5||_0xb08b35[_0x27e3eb(0x22f)]===0x9d6c||_0xb08b35[_0x27e3eb(0x22f)]===0xc35e)return!![];if(_0xb08b35[_0x27e3eb(0x242)]&&typeof _0xb08b35[_0x27e3eb(0x242)]===_0x27e3eb(0x17b)){const _0x595653=_0xb08b35[_0x27e3eb(0x242)]['toLowerCase']();if(_0x595653[_0x27e3eb(0x117)]('token')||_0x595653[_0x27e3eb(0x117)]('登录')||_0x595653['includes']('认证')||_0x595653['includes']('授权')||_0x595653[_0x27e3eb(0x117)]('过期'))return!![];}return![];}function showTokenExpiredMessage(){const _0x4da8f1=_0x317bee,_0x30da8e=document[_0x4da8f1(0x1da)]('div');_0x30da8e['style'][_0x4da8f1(0x2b1)]='fixed',_0x30da8e[_0x4da8f1(0x22a)][_0x4da8f1(0x168)]='50%',_0x30da8e[_0x4da8f1(0x22a)][_0x4da8f1(0x11e)]=_0x4da8f1(0x1b4),_0x30da8e[_0x4da8f1(0x22a)][_0x4da8f1(0x25d)]=_0x4da8f1(0x2c0),_0x30da8e[_0x4da8f1(0x22a)][_0x4da8f1(0x153)]='rgba(0,\x200,\x200,\x200.8)',_0x30da8e[_0x4da8f1(0x22a)][_0x4da8f1(0xde)]=_0x4da8f1(0x222),_0x30da8e[_0x4da8f1(0x22a)][_0x4da8f1(0xee)]=_0x4da8f1(0x1eb),_0x30da8e[_0x4da8f1(0x22a)][_0x4da8f1(0x127)]=_0x4da8f1(0x13d),_0x30da8e[_0x4da8f1(0x22a)][_0x4da8f1(0x23f)]='9999',_0x30da8e[_0x4da8f1(0x22a)]['textAlign']=_0x4da8f1(0x264),_0x30da8e[_0x4da8f1(0x265)]=_0x4da8f1(0x1b3),document[_0x4da8f1(0x1bc)][_0x4da8f1(0x2d1)](_0x30da8e),setTimeout(()=>{const _0x3d3974=_0x4da8f1;window['location'][_0x3d3974(0x228)]=_0x3d3974(0x25e);},0x3e8);}function fetchPatternsFromAPI(_0x5d2e2d,_0x2b54ca){const _0x59fc9d=_0x317bee,_0x4bc13a=sessionStorage[_0x59fc9d(0x285)](_0x59fc9d(0x268));if(!_0x4bc13a){console[_0x59fc9d(0x1b9)]('未登录，使用本地牌型配置'),_0x2b54ca(null);return;}fetch(baseURL+'getgamepatterns?token='+_0x4bc13a+_0x59fc9d(0x145)+_0x5d2e2d)[_0x59fc9d(0xed)](_0x345c92=>{if(!_0x345c92['ok'])throw new Error('API请求失败');return _0x345c92['json']();})[_0x59fc9d(0xed)](_0x33cb81=>{const _0x28586c=_0x59fc9d;_0x33cb81[_0x28586c(0x22f)]===0x4e20&&_0x33cb81[_0x28586c(0x2d0)]&&_0x33cb81[_0x28586c(0x2d0)]['patterns']?(console[_0x28586c(0x18c)]('成功从后端获取'+_0x5d2e2d+_0x28586c(0x187),_0x33cb81[_0x28586c(0x2d0)]['patterns']),_0x2b54ca(_0x33cb81[_0x28586c(0x2d0)]['patterns'])):(console[_0x28586c(0x1b9)]('后端返回的牌型数据格式不正确，使用本地配置'),_0x2b54ca(null));})['catch'](_0x52949c=>{const _0x136f87=_0x59fc9d;console['warn'](_0x136f87(0x154),_0x52949c),_0x2b54ca(null);});}function updatePatterns(_0x4b1e95){const _0x393a6c=_0x317bee,_0xc41aec=document[_0x393a6c(0x124)](_0x393a6c(0x14f)),_0x1e06bd=document['getElementById'](_0x393a6c(0x1f1));_0xc41aec['innerHTML']=_0x393a6c(0x1c5),_0x1e06bd[_0x393a6c(0x2a3)]='',fetchPatternsFromAPI(_0x4b1e95,function(_0x1e69d3){const _0x2b1eee=_0x393a6c;_0x1e69d3&&_0x1e69d3[_0x2b1eee(0x194)]>0x0?(_0x1e69d3[_0x2b1eee(0x17c)](_0x539542=>{const _0x3ec0c0=_0x2b1eee,_0x45cbcd=_0x539542['name']+'（'+_0x539542[_0x3ec0c0(0x2b9)]+'）';addPatternOption(_0xc41aec,_0x539542[_0x3ec0c0(0x22f)],_0x45cbcd,_0x539542[_0x3ec0c0(0x2b9)]);}),console[_0x2b1eee(0x18c)]('已加载'+_0x4b1e95+_0x2b1eee(0xe4))):loadLocalPatterns(_0x4b1e95,_0xc41aec);});}function _0x2324(){const _0x1bc3e1=['last_coin','keys','getMonth','getSeconds','keydown','全盘橙子（402.5）','全盘宋江（500）','4KArEPs','scroll','jsys','status','同花大顺（500）','appointbounsuserlist?token=','全盘枪（100）','小四梅连庄x8（400）','getFullYear','allfruit_jl_cherry','all_9_7','top','fourofakind_2_10_10','status-completed','all_linChong','every','find','sort','stopPropagation','royalflush','all_zhongYiTang','送奖失败:','hfh','floor','button','fourofakind_J_A_4','fourofakind_J_A_8','（估算值）','getDate','mjhl_range_jujiang','string','forEach','小四梅连庄x9（450）','&giveWay=1&now_time=','正宗大四梅X13','setAttribute','finally','送奖成功','free_spinning','modalCloseBtn','height','全盘铃铛（245.5）','的牌型配置:','modalRechargeError','dzb','小奖（约','正宗大四梅X5','log','来源文本:','toast-content','fourofakind_c4k_5','all','全盘水果','all_fuZi','loading','length','result','权限检查通过：该账号拥有无限制送奖权限','五梅（500）','straight','从data属性获取倍率:','解析token失败:','fourofakind_J_A_9','中级场','正宗大四梅X14（1120）','mjhl-result-mismatch',':00Z','allanybar','completed','fourofakind_J_A_12','myDiamond','全盘芒果（403.5）','正宗大四梅X10','all_tiTianXingDao','6个7（91.875）','cell-popover','.diamond-value','正宗大四梅X4','mjhl','377517RZePxo','正宗大四梅X4（320）','体验场','game','正宗大四梅X5（400）','fivebars','玩家没有押注，稍后再送吧','登录已过期，1秒后自动跳转到登录页面...','50%','全盘武器（15）','权限检查：该账号受送奖金额限制','allfruit','请选择送奖牌型','warn','正宗大四梅X3（240）','NBA','body','endsWith','success','title','点石成金','&account=','fiveofakind','权限检查过程出错:','全盘荔枝（667.5）','<option\x20value=\x22\x22>请选择牌型</option>','appointbouns?token=','全盘红牌（727.5）','纯4K\x20X2（100）','resultpoker','hallSelect','9个7（555）','初级场','accountError','未获取到玩家实时押注金额，玩家可能不在游戏中','155317qOUufL','同花大顺','querySelector','allcherry','正宗大四梅X2（160）','all_4_7','getAttribute','大四梅（80）','toast-icon','bet','2个7（2.25）','createElement','canUnlimitedReward','fourofakind_J_A_14','bottom','五梅（200）','纯4K\x20X2(100)','width','纯4K\x20X5(250)','高级场','全盘水果（32）','accountInput','dbs','expandable-cell','todayWinLoss','纯4K\x20X3（150）','同花（7）','hall-tag\x20hall-','20px','zuanshi','获取到玩家实时押注:','toast\x20toast-','shz','从文本提取倍率:','patternInput','appointlist','search','rechargeModal','同花小顺（250/200/150\x20三档随机）','fourofakind_2_10_5','送奖金额超过玩家输赢金额，无法送奖！','正宗大四梅X8','四梅（60）','div','strflush','diamondStatistics','fourofakind_c4k_2','addEventListener','round','appointbouns','三条（4/3/3\x20三档随机）','924042ApTiTD','endDatePicker','all_hero','&pokertype=','cjdh','min','back','全盘蓝牌（762.5）','全盘橙子（237.5）','<tr><td\x20colspan=\x2210\x22\x20style=\x22text-align:center;\x22>加载中...</td></tr>','同花小顺','君临西瓜','win','removeItem','textContent','6个9（260）','hallkey','大白鲨','纯4K\x20X8（400）','正宗大四梅X11（880）','正宗大四梅X9','utf-8','无法解析输赢数据','纯4K\x20X4（200）','对子（1）','gameError','tagName','fourofakind_2_10_8','定点倍率（实际','（实时押注）','daili_jiang','hide','white','fourofakind_c4k_6','show','negative','all_dao','fourofakind_J_A_11','href','add','style','四梅（65）','allbluebar','fourofakind_J_A_5','getplayerdetails?token=','code','全盘西瓜（330）','get_permission?token=','处理中...','小四梅（50）','poolBalance','setHours','fourofakind_J_A_13','正宗大四梅X12','pending','parse','葫芦（10）','同花大顺（400/300/200\x20三档随机）','contains','data-multiplier','toastContainer','zIndex','正宗大四梅X12（960）','swipeHint','tip','<svg\x20viewBox=\x220\x200\x2024\x2024\x22\x20width=\x2224\x22\x20height=\x2224\x22\x20fill=\x22none\x22\x20stroke=\x22white\x22\x20stroke-width=\x222\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<path\x20d=\x22M9\x2012l2\x202\x204-4m6\x202a9\x209\x200\x2011-18\x200\x209\x209\x200\x200118\x200z\x22></path>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>','att连环炮','贵宾场','totalWinLoss','threeofakind','time','获取余额信息失败:','8个9（582.5）','scrollLeft','小四梅连庄x5（250）','全盘林冲（400）','充值失败','请输入玩家账号','4个7（35.625）','allmango','纯4K\x20X3(150)','catch','奖池不存在，正在创建新奖池...','全盘铃铛（409.5）','getTime','超级巨奖（50～70倍）','五梅（700/500/400\x20三档随机）','获取玩家押注信息失败:','.00','all_luZhiShen','五梅（400）','transform','/houtai.html','push','positive','四梅（80/60/40\x20三档随机）','#007aff','text','center','innerHTML','小四梅','小四梅连庄x4（200）','token','充值成功','葫芦（12/10/8\x20三档随机）','您暂未有权限进行送奖操作','&addcoin=','明星99','全盘斧子（50）','四梅（50）','同花小顺（120）','&options=add&gametype=','recordTableBody','toString','random','巨奖（35～49倍）','back_bonus','两对（2）','pokertype','正宗大四梅X2','mjhl_range_dajiang','fourofakind_J_A_7','all_6_7','modalRechargeInput','获取玩家信息失败:','进行中','getMinutes','span','3075MpBTxk','229818XjdQbH','fourofakind','getItem','移除失败','account','全盘芒果（241.5）','padStart','淡出\x200.3s\x20forwards','selectedOptions','values','del_score','正宗大四梅X10（800）','全盘荔枝（340）','mjhl_range_chaoji','decode','modalConfirmRechargeBtn','2个9（2）','innerWidth','3个9（5）','充值金额大于您的钻石余额','&end_time=','创建奖池失败，请重试','君临荔枝','now','检测到可能的乱码消息:','true','4个9（32.5）','key','火凤凰','水浒传','玩家不在线，无法送奖','fourofakind_2_10_7','value','gameSelect','纯4K\x20X7(350)','change','all_2_7','&giveWay=1&is_activ=null&activ_id=null&random_value=','att','charCodeAt','click','全盘忠义堂（2500）','\x20的送奖记录吗？','送奖请求出错:','songjiangloglist','fourofakind_c4k_7','position','emptyRecords','all_5_7','全盘鲁智深（250）','mjhl_scatter_4','正宗大四梅X11','正宗大四梅X9（720）','全盘替天行道（1000）','multiplier','below','refreshRecordsBtn','同花小顺（150）','7个9（447.5）','请先选择游戏查看对应记录','正宗大四梅X7（560）','translate(-50%,\x20-50%)','&options=get&gametype=','match','max','uid','全盘红牌（490）','abs','&hallkey=','<svg\x20viewBox=\x220\x200\x2024\x2024\x22\x20width=\x2224\x22\x20height=\x2224\x22\x20fill=\x22none\x22\x20stroke=\x22white\x22\x20stroke-width=\x222\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<path\x20d=\x22M12\x208v4m0\x204h.01M21\x2012a9\x209\x200\x2011-18\x200\x209\x209\x200\x200118\x200z\x22></path>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>','风控检查:','disabled','获取送奖记录失败:','同花小顺（100）','eightorbetter','option','确定要移除玩家\x20','data','appendChild','submitBtn','获取玩家信息失败','正宗大四梅X13（1040）','请先查询玩家输赢信息','正宗大四梅X3','host','正宗大四梅X14','超级大亨','resize','3个7（5.5）','5个9（180）','五个胡·14次免费（预估120）','君临橘子','color','roomkey','sawSwipeHint','全盘黄牌（340）','同花（8）','fullhouse','的牌型配置（来自后端）','&addcoin=0','split','全盘杂牌（187.5）','allwatermelon','fourofakind_c4k_3','操作失败：权限不足或参数错误','Enter','test','then','padding','patternError','playerWinInfo','金额不正确，不能为0','role','&uid=','小四梅连庄x2（100）','fourofakind_J_A','BUTTON','fourofakind_2_10','大四梅','error','currentBetDisplay','小四梅连庄x6（300）','2646848vejrnf','正宗大四梅X8（640）','乱码已修复:','json','140GJZrBF','allfruit_jl_watermelon','明星97','全盘刀（150）','葫芦（15）','fourofakind_2_10_4','加载中...','玩家输赢数据异常，请重新查询','twopair','mx99','小四梅连庄x7（350）','gametype','remove','appoint_mjhl_phase','正宗大四梅X7','三条（3）','顺子（5）','queryBtn','网络错误，请重试','replace','onclick','fourofakind_2_10_6','location','includes','拥有无限制送奖权限，跳过金额风控限制','className','#999','奖池不存在，请先创建奖池','全盘蓝牌（520）','VIP场','left','mjhl_scatter_3','classList','fourofakind_2_10_2','<option\x20value=\x22\x22>请先选择游戏</option>','get_online\x20请求失败','getElementById','getBoundingClientRect','正宗大四梅X6（480）','borderRadius','全盘杂牌','hallError','参数错误，请检查输入','四个胡·12次免费（预估90）','三个胡·10次免费（预估70）','大奖（20～34倍）','flush','none','block','fourofakind_J_A_3','&player_bet=','get','同花大顺（250）','同花大顺（200）','.table-wrapper','fourofakind_J_A_6','无法获取奖项倍率，请重新选择牌型','&start_time=','allfruit_jl_orange','cellPopover','全盘英雄（50）','10px','五鬼（1000）','君临木瓜','allyellowbar','isArray','小四梅连庄x3（150）','actual_deducted_score','当前用户为超级管理员，拥有无限制送奖权限','&gametype=','startDatePicker','history','getHours','toFixed','display','全盘黄牌（647.5）','1497510ensoXH','fourofakind_2_10_9','全盘西瓜（635）','patternSelect','target','小四梅连庄x10（500）','请选择游戏','background','获取牌型配置失败，使用本地配置:','9个9（2175）'];_0x2324=function(){return _0x1bc3e1;};return _0x2324();}function loadLocalPatterns(_0x3202de,_0x37d884){const _0x42dc91=_0x317bee;console['log']('加载'+_0x3202de+'的牌型配置（来自本地）');if(_0x3202de===_0x42dc91(0x189))addPatternOption(_0x37d884,_0x42dc91(0x2cd),_0x42dc91(0x21a),0x1),addPatternOption(_0x37d884,'twopair',_0x42dc91(0x277),0x2),addPatternOption(_0x37d884,_0x42dc91(0x247),_0x42dc91(0x10f),0x3),addPatternOption(_0x37d884,_0x42dc91(0x198),_0x42dc91(0x110),0x5),addPatternOption(_0x37d884,'flush',_0x42dc91(0x1e9),0x7),addPatternOption(_0x37d884,_0x42dc91(0xe3),_0x42dc91(0x104),0xf),addPatternOption(_0x37d884,_0x42dc91(0x284),_0x42dc91(0x22b),0x41),addPatternOption(_0x37d884,_0x42dc91(0x1fb),_0x42dc91(0x2bc),0x96),addPatternOption(_0x37d884,'royalflush',_0x42dc91(0x134),0xfa),addPatternOption(_0x37d884,_0x42dc91(0x1c2),_0x42dc91(0x197),0x1f4);else{if(_0x3202de===_0x42dc91(0x173))addPatternOption(_0x37d884,_0x42dc91(0x2cd),_0x42dc91(0x21a),0x1),addPatternOption(_0x37d884,_0x42dc91(0x108),_0x42dc91(0x277),0x2),addPatternOption(_0x37d884,_0x42dc91(0x247),_0x42dc91(0x10f),0x3),addPatternOption(_0x37d884,'straight',_0x42dc91(0x110),0x5),addPatternOption(_0x37d884,'flush',_0x42dc91(0x1e9),0x7),addPatternOption(_0x37d884,_0x42dc91(0xe3),_0x42dc91(0x23a),0xa),addPatternOption(_0x37d884,_0x42dc91(0xf7),_0x42dc91(0x233),0x32),addPatternOption(_0x37d884,_0x42dc91(0x121),_0x42dc91(0xf4),0x64),addPatternOption(_0x37d884,'fourofakind_2_10_3','小四梅连庄x3（150）',0x96),addPatternOption(_0x37d884,_0x42dc91(0x105),_0x42dc91(0x267),0xc8),addPatternOption(_0x37d884,_0x42dc91(0x1f6),'小四梅连庄x5（250）',0xfa),addPatternOption(_0x37d884,_0x42dc91(0x115),_0x42dc91(0xfb),0x12c),addPatternOption(_0x37d884,_0x42dc91(0x2a2),_0x42dc91(0x10a),0x15e),addPatternOption(_0x37d884,_0x42dc91(0x21d),_0x42dc91(0x164),0x190),addPatternOption(_0x37d884,_0x42dc91(0x14d),_0x42dc91(0x17d),0x1c2),addPatternOption(_0x37d884,_0x42dc91(0x169),_0x42dc91(0x151),0x1f4),addPatternOption(_0x37d884,_0x42dc91(0xf5),_0x42dc91(0x1d6),0x50),addPatternOption(_0x37d884,_0x42dc91(0x1fb),_0x42dc91(0x270),0x78),addPatternOption(_0x37d884,'fourofakind_J_A_2',_0x42dc91(0x1d3),0xa0),addPatternOption(_0x37d884,'fourofakind_J_A_3',_0x42dc91(0x1ba),0xf0),addPatternOption(_0x37d884,_0x42dc91(0x1c2),'五梅（250）',0xfa),addPatternOption(_0x37d884,_0x42dc91(0x176),_0x42dc91(0x1ad),0x140),addPatternOption(_0x37d884,_0x42dc91(0x22d),'正宗大四梅X5（400）',0x190),addPatternOption(_0x37d884,_0x42dc91(0x137),'正宗大四梅X6（480）',0x1e0),addPatternOption(_0x37d884,_0x42dc91(0x170),'同花大顺（500）',0x1f4),addPatternOption(_0x37d884,_0x42dc91(0x27b),_0x42dc91(0x2bf),0x230),addPatternOption(_0x37d884,_0x42dc91(0x177),'正宗大四梅X8（640）',0x280),addPatternOption(_0x37d884,_0x42dc91(0x19b),'正宗大四梅X9（720）',0x2d0),addPatternOption(_0x37d884,'fourofakind_J_A_10','正宗大四梅X10（800）',0x320),addPatternOption(_0x37d884,'fourofakind_J_A_11',_0x42dc91(0x215),0x370),addPatternOption(_0x37d884,_0x42dc91(0x1a2),'正宗大四梅X12（960）',0x3c0),addPatternOption(_0x37d884,'fourofakind_J_A_13',_0x42dc91(0x2d4),0x410),addPatternOption(_0x37d884,_0x42dc91(0x1dc),_0x42dc91(0x19d),0x460),addPatternOption(_0x37d884,'fivebars',_0x42dc91(0x13e),0x3e8);else{if(_0x3202de===_0x42dc91(0x1bb))addPatternOption(_0x37d884,_0x42dc91(0x2cd),_0x42dc91(0x21a),0x1),addPatternOption(_0x37d884,'twopair','两对（2）',0x2),addPatternOption(_0x37d884,_0x42dc91(0x247),'三条（3）',0x3),addPatternOption(_0x37d884,_0x42dc91(0x198),_0x42dc91(0x110),0x5),addPatternOption(_0x37d884,'flush',_0x42dc91(0xe2),0x8),addPatternOption(_0x37d884,_0x42dc91(0xe3),_0x42dc91(0x104),0xf),addPatternOption(_0x37d884,_0x42dc91(0x284),_0x42dc91(0x26f),0x32),addPatternOption(_0x37d884,_0x42dc91(0x1fd),_0x42dc91(0x1c8),0x64),addPatternOption(_0x37d884,_0x42dc91(0xe9),_0x42dc91(0x1e8),0x96),addPatternOption(_0x37d884,'fourofakind_c4k_4',_0x42dc91(0x219),0xc8),addPatternOption(_0x37d884,_0x42dc91(0x18f),'纯4K\x20X5（250）',0xfa),addPatternOption(_0x37d884,_0x42dc91(0x223),'纯4K\x20X6（300）',0x12c),addPatternOption(_0x37d884,_0x42dc91(0x2b0),'纯4K\x20X7（350）',0x15e),addPatternOption(_0x37d884,'fourofakind_c4k_8',_0x42dc91(0x214),0x190),addPatternOption(_0x37d884,_0x42dc91(0x1fb),_0x42dc91(0x2cc),0x64),addPatternOption(_0x37d884,_0x42dc91(0x170),_0x42dc91(0x135),0xc8),addPatternOption(_0x37d884,_0x42dc91(0x1c2),_0x42dc91(0x25c),0x190);else{if(_0x3202de===_0x42dc91(0x2a9))addPatternOption(_0x37d884,_0x42dc91(0x2cd),'对子（1）',0x1),addPatternOption(_0x37d884,_0x42dc91(0x108),'两对（2）',0x2),addPatternOption(_0x37d884,_0x42dc91(0x247),'三条（3）',0x3),addPatternOption(_0x37d884,_0x42dc91(0x198),_0x42dc91(0x110),0x5),addPatternOption(_0x37d884,_0x42dc91(0x12e),'同花（7）',0x7),addPatternOption(_0x37d884,_0x42dc91(0xe3),'葫芦（15）',0xf),addPatternOption(_0x37d884,_0x42dc91(0x284),_0x42dc91(0x22b),0x41),addPatternOption(_0x37d884,_0x42dc91(0x1fb),_0x42dc91(0x2bc),0x96),addPatternOption(_0x37d884,'royalflush',_0x42dc91(0x134),0xfa),addPatternOption(_0x37d884,_0x42dc91(0x1c2),_0x42dc91(0x197),0x1f4);else{if(_0x3202de===_0x42dc91(0x1e5))addPatternOption(_0x37d884,_0x42dc91(0x2cd),'对子（1）'),addPatternOption(_0x37d884,_0x42dc91(0x108),'两对（2）'),addPatternOption(_0x37d884,'threeofakind',_0x42dc91(0x10f)),addPatternOption(_0x37d884,_0x42dc91(0x198),_0x42dc91(0x110)),addPatternOption(_0x37d884,'flush','同花（7）'),addPatternOption(_0x37d884,_0x42dc91(0xe3),_0x42dc91(0x23a)),addPatternOption(_0x37d884,'fourofakind_2_10',_0x42dc91(0x233)),addPatternOption(_0x37d884,'fourofakind_J_A',_0x42dc91(0x1d6)),addPatternOption(_0x37d884,'strflush',_0x42dc91(0x270)),addPatternOption(_0x37d884,'fourofakind_J_A_2',_0x42dc91(0x1d3)),addPatternOption(_0x37d884,_0x42dc91(0x131),_0x42dc91(0x1ba)),addPatternOption(_0x37d884,_0x42dc91(0x1c2),'五梅（500）'),addPatternOption(_0x37d884,_0x42dc91(0x176),'正宗大四梅X4（320）'),addPatternOption(_0x37d884,_0x42dc91(0x22d),_0x42dc91(0x1b0)),addPatternOption(_0x37d884,'royalflush','同花大顺（500）'),addPatternOption(_0x37d884,_0x42dc91(0x137),_0x42dc91(0x126)),addPatternOption(_0x37d884,_0x42dc91(0x27b),_0x42dc91(0x2bf)),addPatternOption(_0x37d884,'fourofakind_J_A_8',_0x42dc91(0xfd)),addPatternOption(_0x37d884,_0x42dc91(0x19b),_0x42dc91(0x2b7)),addPatternOption(_0x37d884,'fourofakind_J_A_10','正宗大四梅X10（800）'),addPatternOption(_0x37d884,_0x42dc91(0x227),_0x42dc91(0x215)),addPatternOption(_0x37d884,'fourofakind_J_A_12',_0x42dc91(0x240)),addPatternOption(_0x37d884,_0x42dc91(0x236),_0x42dc91(0x2d4)),addPatternOption(_0x37d884,'fourofakind_J_A_14',_0x42dc91(0x19d)),addPatternOption(_0x37d884,_0x42dc91(0x1b1),_0x42dc91(0x13e));else{if(_0x3202de==='mx97')addPatternOption(_0x37d884,_0x42dc91(0x2a7),_0x42dc91(0x1d9)),addPatternOption(_0x37d884,'all_3_7','3个7（5.5）'),addPatternOption(_0x37d884,_0x42dc91(0x1d4),_0x42dc91(0x250)),addPatternOption(_0x37d884,_0x42dc91(0x2b3),'5个7（79）'),addPatternOption(_0x37d884,_0x42dc91(0x27c),_0x42dc91(0x1a7)),addPatternOption(_0x37d884,'all_7_7','7个7（135）'),addPatternOption(_0x37d884,'all_8_7','8个7（188）'),addPatternOption(_0x37d884,_0x42dc91(0x167),_0x42dc91(0x1cb)),addPatternOption(_0x37d884,_0x42dc91(0x1b7),_0x42dc91(0x191)),addPatternOption(_0x37d884,_0x42dc91(0x1a0),_0x42dc91(0x128)),addPatternOption(_0x37d884,'allorange','全盘橙子（237.5）'),addPatternOption(_0x37d884,_0x42dc91(0x251),'全盘芒果（241.5）'),addPatternOption(_0x37d884,'allbell','全盘铃铛（245.5）'),addPatternOption(_0x37d884,_0x42dc91(0xe8),_0x42dc91(0x230)),addPatternOption(_0x37d884,_0x42dc91(0x140),_0x42dc91(0xe1)),addPatternOption(_0x37d884,_0x42dc91(0x1d2),_0x42dc91(0x28f)),addPatternOption(_0x37d884,'allredbar',_0x42dc91(0x2c5)),addPatternOption(_0x37d884,_0x42dc91(0x22c),'全盘蓝牌（520）'),addPatternOption(_0x37d884,_0x42dc91(0x101),_0x42dc91(0x20d)),addPatternOption(_0x37d884,'allfruit_jl_mango',_0x42dc91(0x13f)),addPatternOption(_0x37d884,_0x42dc91(0x13a),_0x42dc91(0xdd)),addPatternOption(_0x37d884,_0x42dc91(0x166),'君临荔枝');else{if(_0x3202de===_0x42dc91(0x109))Object[_0x42dc91(0x157)](MX99_PATTERN_LABELS)[_0x42dc91(0x17c)](_0x53899e=>{const _0x1dc352=_0x42dc91,_0x3c2d26=MX99_PATTERN_LABELS[_0x53899e];addPatternOption(_0x37d884,_0x53899e,_0x3c2d26[_0x1dc352(0x263)],_0x3c2d26[_0x1dc352(0x2b9)]);});else{if(_0x3202de===_0x42dc91(0x1ef))addPatternOption(_0x37d884,'all_weapon','全盘武器（15）'),addPatternOption(_0x37d884,_0x42dc91(0x204),'全盘英雄（50）'),addPatternOption(_0x37d884,_0x42dc91(0x192),_0x42dc91(0x26e)),addPatternOption(_0x37d884,'all_qiang',_0x42dc91(0x163)),addPatternOption(_0x37d884,_0x42dc91(0x226),_0x42dc91(0x103)),addPatternOption(_0x37d884,_0x42dc91(0x25b),_0x42dc91(0x2b4)),addPatternOption(_0x37d884,_0x42dc91(0x16b),_0x42dc91(0x24d)),addPatternOption(_0x37d884,'all_songJiang',_0x42dc91(0x15c)),addPatternOption(_0x37d884,_0x42dc91(0x1a6),_0x42dc91(0x2b8)),addPatternOption(_0x37d884,_0x42dc91(0x171),_0x42dc91(0x2ac));else{if(_0x3202de===_0x42dc91(0x15f))Object[_0x42dc91(0x157)](JSYS_PATTERN_LABELS)[_0x42dc91(0x17c)](_0x3253e3=>{addPatternOption(_0x37d884,_0x3253e3,formatJsysPatternText(_0x3253e3),getJsysTierTopMultiplier(_0x3253e3));});else{if(_0x3202de===_0x42dc91(0x1ab))addPatternOption(_0x37d884,_0x42dc91(0x27a),_0x42dc91(0x12d),0x22),addPatternOption(_0x37d884,_0x42dc91(0x17a),_0x42dc91(0x275),0x31),addPatternOption(_0x37d884,_0x42dc91(0x290),_0x42dc91(0x257),0x46),addPatternOption(_0x37d884,'mjhl_scatter_3',_0x42dc91(0x12c),0x46),addPatternOption(_0x37d884,_0x42dc91(0x2b5),_0x42dc91(0x12b),0x5a),addPatternOption(_0x37d884,'mjhl_scatter_5',_0x42dc91(0xdc),0x78);else _0x3202de==='cjdh'?(addPatternOption(_0x37d884,_0x42dc91(0x2cd),_0x42dc91(0x21a)),addPatternOption(_0x37d884,_0x42dc91(0x108),_0x42dc91(0x277)),addPatternOption(_0x37d884,_0x42dc91(0x247),_0x42dc91(0x10f)),addPatternOption(_0x37d884,_0x42dc91(0x198),_0x42dc91(0x110)),addPatternOption(_0x37d884,'flush','同花（7）'),addPatternOption(_0x37d884,_0x42dc91(0xe3),'葫芦（10）'),addPatternOption(_0x37d884,_0x42dc91(0x284),_0x42dc91(0x1f9)),addPatternOption(_0x37d884,'strflush',_0x42dc91(0x2cc)),addPatternOption(_0x37d884,_0x42dc91(0x1c2),'五梅（200）'),addPatternOption(_0x37d884,_0x42dc91(0x170),_0x42dc91(0x161)),addPatternOption(_0x37d884,_0x42dc91(0x1b1),'五鬼（1000）')):_0x37d884[_0x42dc91(0x265)]=_0x42dc91(0x122);}}}}}}}}}}function addPatternOption(_0x17273f,_0x106634,_0x36d3db,_0x35e0c8){const _0x6833b9=_0x317bee,_0xed7f8f=document[_0x6833b9(0x1da)](_0x6833b9(0x2ce));_0xed7f8f[_0x6833b9(0x2a3)]=_0x106634,_0xed7f8f['textContent']=_0x36d3db,_0x35e0c8!==undefined&&_0x35e0c8!==null&&_0xed7f8f['setAttribute'](_0x6833b9(0x23d),_0x35e0c8),_0x17273f[_0x6833b9(0x2d1)](_0xed7f8f);}function formatDiamondAmount(_0x9f4e44){const _0x59f35e=_0x317bee;if(!_0x9f4e44||isNaN(_0x9f4e44))return'0';const _0x3008ce=parseFloat(_0x9f4e44)/0x64,_0x2f14bb=_0x3008ce[_0x59f35e(0x149)](0x2);if(_0x2f14bb['endsWith'](_0x59f35e(0x25a)))return Math[_0x59f35e(0x174)](_0x3008ce)[_0x59f35e(0x273)]();return _0x2f14bb;}function formatDateTime(_0x25bbf3){const _0x175f18=_0x317bee;if(!_0x25bbf3)return'--';const _0x143d4d=new Date(_0x25bbf3*0x3e8),_0x154357=_0x143d4d[_0x175f18(0x165)](),_0x31aca6=String(_0x143d4d[_0x175f18(0x158)]()+0x1)['padStart'](0x2,'0'),_0x52b937=String(_0x143d4d[_0x175f18(0x179)]())[_0x175f18(0x289)](0x2,'0'),_0x355dd1=String(_0x143d4d[_0x175f18(0x148)]())['padStart'](0x2,'0'),_0x534fb9=String(_0x143d4d[_0x175f18(0x280)]())[_0x175f18(0x289)](0x2,'0'),_0x55c624=String(_0x143d4d[_0x175f18(0x159)]())[_0x175f18(0x289)](0x2,'0');return _0x154357+'-'+_0x31aca6+'-'+_0x52b937+'\x20'+_0x355dd1+':'+_0x534fb9+':'+_0x55c624;}function _0x24ce(_0x1f4bab,_0x4726e0){_0x1f4bab=_0x1f4bab-0xd9;const _0x2324b2=_0x2324();let _0x24cecc=_0x2324b2[_0x1f4bab];return _0x24cecc;}function normalizeOnlinePlayerList(_0x33cfe){const _0xa57a05=_0x317bee;if(!_0x33cfe||_0x33cfe[_0xa57a05(0x22f)]!==0x4e20||!_0x33cfe[_0xa57a05(0x2d0)])return[];const _0x205fb7=_0x33cfe[_0xa57a05(0x2d0)][_0xa57a05(0x2d0)];if(Array[_0xa57a05(0x141)](_0x205fb7))return _0x205fb7;if(_0x205fb7&&typeof _0x205fb7==='object')return Object[_0xa57a05(0x28c)](_0x205fb7);return[];}function findOnlinePlayerByAccount(_0x4b0253,_0x567c98){const _0x18d5d5=_0x317bee,_0x27bfe7=normalizeOnlinePlayerList(_0x4b0253),_0x42dec7=String(_0x567c98);return _0x27bfe7[_0x18d5d5(0x16d)](_0x5b08ae=>_0x5b08ae&&String(_0x5b08ae[_0x18d5d5(0x2c4)])===_0x42dec7)||null;}async function fetchGetOnlineSafe(_0x1e8a1c){const _0x43c4c5=_0x317bee,_0x298b2a=baseURL+'get_online?token='+_0x1e8a1c;try{const _0x21b064=await fetch(_0x298b2a);if(!_0x21b064['ok'])return console[_0x43c4c5(0x1b9)]('get_online\x20HTTP',_0x21b064[_0x43c4c5(0x160)],_0x298b2a),{'code':-0x1,'_httpStatus':_0x21b064[_0x43c4c5(0x160)]};return await _0x21b064[_0x43c4c5(0xff)]();}catch(_0x4109dd){return console[_0x43c4c5(0x1b9)](_0x43c4c5(0x123),_0x4109dd),{'code':-0x1,'_networkError':!![]};}}function queryPlayerWinLoss(_0x4f41fa){const _0x4d4cd1=_0x317bee,_0x5dfcbb=sessionStorage[_0x4d4cd1(0x285)](_0x4d4cd1(0x268));if(!_0x5dfcbb)return;const _0x147704=document[_0x4d4cd1(0x124)](_0x4d4cd1(0xf0));_0x147704[_0x4d4cd1(0x22a)][_0x4d4cd1(0x14a)]=_0x4d4cd1(0x130),document[_0x4d4cd1(0x124)](_0x4d4cd1(0x1e7))['textContent']=_0x4d4cd1(0x106),document[_0x4d4cd1(0x124)](_0x4d4cd1(0x246))['textContent']='加载中...';const _0x913c8a=document['getElementById'](_0x4d4cd1(0xfa));_0x913c8a['textContent']=_0x4d4cd1(0x106),_0x913c8a[_0x4d4cd1(0x22a)][_0x4d4cd1(0xde)]=_0x4d4cd1(0x11a);const _0x5d5977=baseURL+_0x4d4cd1(0x22e)+_0x5dfcbb+_0x4d4cd1(0x1c1)+_0x4f41fa;function _0xe4cbbb(_0x5e37be){const _0x10901e=_0x4d4cd1,_0x192959=findOnlinePlayerByAccount(_0x5e37be,_0x4f41fa);if(_0x192959&&_0x192959[_0x10901e(0x156)]){_0x913c8a['textContent']=formatDiamondAmount(_0x192959[_0x10901e(0x156)]),_0x913c8a['style']['color']=_0x10901e(0x262);return;}_0x913c8a['textContent']='--',_0x913c8a[_0x10901e(0x22a)][_0x10901e(0xde)]=_0x10901e(0x11a);}Promise[_0x4d4cd1(0x190)]([fetch(_0x5d5977)[_0x4d4cd1(0xed)](_0x1a0240=>_0x1a0240[_0x4d4cd1(0xff)]()),fetchGetOnlineSafe(_0x5dfcbb)])['then'](([_0x156eff,_0x3729a9])=>{const _0x911700=_0x4d4cd1;if(isTokenExpired(_0x156eff)||isTokenExpired(_0x3729a9)){sessionStorage['removeItem'](_0x911700(0x268)),showTokenExpiredMessage();return;}_0xe4cbbb(_0x3729a9);if(_0x156eff['code']===0x4e20&&_0x156eff[_0x911700(0x2d0)]){const _0x1fac35=_0x156eff[_0x911700(0x2d0)]['today_win']?parseFloat(_0x156eff[_0x911700(0x2d0)]['today_win'])/0x64:0x0,_0x2229e9=document['getElementById']('todayWinLoss');_0x2229e9[_0x911700(0x210)]=formatWinLoss(_0x1fac35),_0x2229e9['className']=_0x1fac35>0x0?_0x911700(0x260):_0x1fac35<0x0?_0x911700(0x225):'';const _0x2394bb=_0x156eff[_0x911700(0x2d0)][_0x911700(0x20e)]?parseFloat(_0x156eff[_0x911700(0x2d0)][_0x911700(0x20e)])/0x64:0x0,_0x36e571=document[_0x911700(0x124)](_0x911700(0x246));_0x36e571[_0x911700(0x210)]=formatWinLoss(_0x2394bb),_0x36e571[_0x911700(0x119)]=_0x2394bb>0x0?_0x911700(0x260):_0x2394bb<0x0?_0x911700(0x225):'';}else document['getElementById'](_0x911700(0x1e7))['textContent']='--',document[_0x911700(0x124)](_0x911700(0x246))['textContent']='--',showError(_0x911700(0x1cd),_0x156eff['tip']||_0x911700(0x2d3));})[_0x4d4cd1(0x253)](_0x41ce6f=>{const _0x15bd37=_0x4d4cd1;console[_0x15bd37(0xf9)](_0x15bd37(0x27e),_0x41ce6f),document[_0x15bd37(0x124)]('todayWinLoss')[_0x15bd37(0x210)]='--',document[_0x15bd37(0x124)](_0x15bd37(0x246))['textContent']='--',_0x913c8a[_0x15bd37(0x210)]='--',_0x913c8a[_0x15bd37(0x22a)][_0x15bd37(0xde)]=_0x15bd37(0x11a),showError(_0x15bd37(0x1cd),_0x15bd37(0x112));});}function formatWinLoss(_0x775a3b){const _0x5f085d=_0x317bee;if(isNaN(_0x775a3b))return'0';const _0x17ede9=Math[_0x5f085d(0x2c6)](_0x775a3b)[_0x5f085d(0x149)](0x2);let _0xb3d6f;_0x17ede9[_0x5f085d(0x1bd)]('.00')?_0xb3d6f=Math[_0x5f085d(0x174)](Math[_0x5f085d(0x2c6)](_0x775a3b))[_0x5f085d(0x273)]():_0xb3d6f=_0x17ede9;const _0x462baa=_0x775a3b>0x0?'+':_0x775a3b<0x0?'-':'';return _0x462baa+_0xb3d6f;}function submitReward(_0x2b0643,_0x5bc6aa,_0x41f23a,_0x24e35c){const _0x3e8fc3=_0x317bee,_0x1e24d9=sessionStorage[_0x3e8fc3(0x285)](_0x3e8fc3(0x268)),_0x43b507=document['getElementById'](_0x3e8fc3(0x2d2)),_0x4ed476=document[_0x3e8fc3(0x124)](_0x3e8fc3(0x246)),_0x2fb0ee=_0x4ed476[_0x3e8fc3(0x210)];if(!_0x2fb0ee||_0x2fb0ee===_0x3e8fc3(0x106)||_0x2fb0ee==='--'){showToast(_0x3e8fc3(0x2d5),'error');return;}let _0x2c8edb=0x0;try{const _0x7a8411=_0x2fb0ee['replace'](/[+,]/g,'');_0x2c8edb=parseFloat(_0x7a8411);if(isNaN(_0x2c8edb))throw new Error(_0x3e8fc3(0x218));}catch(_0x425d47){console[_0x3e8fc3(0xf9)]('解析玩家输赢数据失败:',_0x425d47),showToast(_0x3e8fc3(0x107),'error');return;}_0x43b507['classList'][_0x3e8fc3(0x229)]('loading'),_0x43b507['disabled']=!![],fetchGetOnlineSafe(_0x1e24d9)[_0x3e8fc3(0xed)](_0x536de5=>{const _0x2523ad=_0x3e8fc3;if(isTokenExpired(_0x536de5)){sessionStorage['removeItem'](_0x2523ad(0x268)),showTokenExpiredMessage();return;}let _0x148665=0x0,_0x4e444f=_0x2523ad(0x178),_0x1aecd0=findOnlinePlayerByAccount(_0x536de5,_0x2b0643);_0x1aecd0&&_0x1aecd0['last_coin']&&(_0x148665=(_0x1aecd0[_0x2523ad(0x156)]||0x0)/0x64,_0x4e444f=_0x2523ad(0x21f),console[_0x2523ad(0x18c)](_0x2523ad(0x1ed),{'account':_0x2b0643,'betRaw':_0x1aecd0[_0x2523ad(0x156)],'betDiamond':_0x148665,'game':_0x1aecd0['gametype'],'hall':_0x1aecd0[_0x2523ad(0x212)]}));if(_0x148665===0x0){console[_0x2523ad(0x1b9)](_0x2523ad(0x1ce)),_0x43b507[_0x2523ad(0x120)][_0x2523ad(0x10c)]('loading'),_0x43b507['disabled']=![],showToast(_0x2523ad(0x1b2),_0x2523ad(0xf9));return;}else console[_0x2523ad(0x18c)]('使用玩家实时押注金额:',_0x148665);const _0x1e478f=document[_0x2523ad(0x124)](_0x2523ad(0x14f))[_0x2523ad(0x28b)][0x0];let _0x5d9112=0x0;const _0x2b11be=_0x1e478f?.[_0x2523ad(0x1d5)](_0x2523ad(0x23d));if(_0x2b11be)_0x5d9112=parseFloat(_0x2b11be),console[_0x2523ad(0x18c)](_0x2523ad(0x199),_0x5d9112);else{const _0x44d936=_0x1e478f?.['text']||'',_0x45a2e8=_0x44d936[_0x2523ad(0x2c2)](/[（(](\d+(?:\.\d+)?)/);_0x45a2e8&&(_0x5d9112=parseFloat(_0x45a2e8[0x1]),console[_0x2523ad(0x18c)](_0x2523ad(0x1f0),_0x5d9112,_0x2523ad(0x18d),_0x44d936));}if(!_0x5d9112||_0x5d9112<=0x0){_0x43b507[_0x2523ad(0x120)][_0x2523ad(0x10c)](_0x2523ad(0x193)),_0x43b507[_0x2523ad(0x2ca)]=![],showToast(_0x2523ad(0x138),'error');return;}if(!_0x148665||_0x148665<=0x0){_0x43b507[_0x2523ad(0x120)][_0x2523ad(0x10c)](_0x2523ad(0x193)),_0x43b507[_0x2523ad(0x2ca)]=![],showToast('无法获取玩家押注金额',_0x2523ad(0xf9));return;}const _0x1338cf=_0x5d9112*_0x148665;console['log'](_0x2523ad(0x2c9),{'account':_0x2b0643,'totalWinLoss':_0x2c8edb,'baseAmount':_0x148665,'prizeMultiplier':_0x5d9112,'estimatedPrizeAmount':_0x1338cf,'afterPrize':_0x2c8edb+_0x1338cf,'canUnlimitedReward':window[_0x2523ad(0x1db)]});const _0x12436b=0x64;if(window[_0x2523ad(0x1db)])console[_0x2523ad(0x18c)](_0x2523ad(0x118));else{if(_0x2c8edb+_0x1338cf>_0x12436b){_0x43b507[_0x2523ad(0x120)][_0x2523ad(0x10c)](_0x2523ad(0x193)),_0x43b507['disabled']=![],showToast(_0x2523ad(0x1f7),'error');return;}}const _0xbcc51d=Math['floor'](Date[_0x2523ad(0x29a)]()/0x3e8),_0xd5923c=Math[_0x2523ad(0x174)](new Date()[_0x2523ad(0x235)](0x0,0x0,0x0,0x0)/0x3e8),_0x4b3933=Math[_0x2523ad(0x174)](new Date()[_0x2523ad(0x235)](0x17,0x3b,0x3b,0x3e7)/0x3e8),_0x4c43e1=Date[_0x2523ad(0x29a)]()+Math['random'](),_0x12f0da=_0x1aecd0&&_0x1aecd0[_0x2523ad(0x156)]?_0x1aecd0[_0x2523ad(0x156)]:0x0;executeSendReward(_0x2b0643,_0x5bc6aa,_0x41f23a,_0x24e35c,_0x1e24d9,_0x43b507,_0xbcc51d,_0xd5923c,_0x4b3933,_0x4c43e1,_0x12f0da);})['catch'](_0x312abe=>{const _0xbb5f26=_0x3e8fc3;console[_0xbb5f26(0xf9)](_0xbb5f26(0x259),_0x312abe),_0x43b507[_0xbb5f26(0x120)][_0xbb5f26(0x10c)](_0xbb5f26(0x193)),_0x43b507['disabled']=![],showToast(_0xbb5f26(0x2a1),_0xbb5f26(0xf9));});}function executeSendReward(_0x59c926,_0x54e0e2,_0xb99b77,_0x44c06f,_0x4a57e5,_0x3b7026,_0x101bb4,_0x3b6546,_0x1796fb,_0x535726,_0x14e1ed){const _0x38a086=_0x317bee,_0x4a3fbc=_0x54e0e2==='mjhl'&&_0x14e1ed?_0x38a086(0x132)+encodeURIComponent(_0x14e1ed):'',_0x3f41ef=baseURL+_0x38a086(0x162)+_0x4a57e5+'&options=add&gametype='+_0x54e0e2+_0x38a086(0xf3)+_0x59c926+_0x38a086(0x205)+_0xb99b77+_0x38a086(0x2c7)+_0x44c06f+_0x38a086(0x139)+_0x3b6546+'&end_time='+_0x1796fb+'&random_value='+_0x535726+_0x38a086(0x17e)+_0x101bb4+_0x4a3fbc;fetch(_0x3f41ef)[_0x38a086(0xed)](_0x2c827f=>{const _0x59948c=_0x38a086;if(!_0x2c827f['ok'])throw new Error(_0x59948c(0x112));return _0x2c827f[_0x59948c(0xff)]();})['then'](_0x3a3ecd=>{const _0x4d59de=_0x38a086;if(isTokenExpired(_0x3a3ecd)){sessionStorage[_0x4d59de(0x20f)](_0x4d59de(0x268)),showTokenExpiredMessage();return;}if(_0x3a3ecd[_0x4d59de(0x22f)]===0x4e20)showSuccess(_0x4d59de(0x182)),loadBalanceInfo(),loadRecords();else{let _0x5f0490='';switch(_0x3a3ecd['code']){case 0x271d:_0x5f0490=_0x4d59de(0x26b);break;case 0x2712:_0x5f0490=_0x4d59de(0x11b);break;case 0x2719:_0x5f0490=typeof _0x3a3ecd[_0x4d59de(0x2d0)]===_0x4d59de(0x17b)&&_0x3a3ecd[_0x4d59de(0x2d0)]?_0x3a3ecd['data']:'奖池不够请充值';break;case 0x2711:_0x5f0490=_0x3a3ecd[_0x4d59de(0x2d0)]||_0x3a3ecd['tip']||_0x4d59de(0x12a);break;case 0x271f:_0x5f0490=_0x4d59de(0x1f7);break;case 0x2720:_0x5f0490=_0x3a3ecd['tip']||'玩家输赢数据异常，请稍后重试';break;default:if(_0x3a3ecd[_0x4d59de(0x2d0)]&&typeof _0x3a3ecd['data']===_0x4d59de(0x17b))_0x5f0490=_0x3a3ecd[_0x4d59de(0x2d0)];else _0x3a3ecd['tip']&&typeof _0x3a3ecd[_0x4d59de(0x242)]===_0x4d59de(0x17b)?_0x5f0490=_0x3a3ecd[_0x4d59de(0x242)]:_0x5f0490='送奖失败，请稍后重试';}console[_0x4d59de(0xf9)](_0x4d59de(0x172),_0x3a3ecd),showToast(_0x5f0490,_0x4d59de(0xf9));}})[_0x38a086(0x253)](_0x1e7184=>{const _0x5f2435=_0x38a086;console[_0x5f2435(0xf9)](_0x5f2435(0x2ae),_0x1e7184),showToast('网络错误，请重试',_0x5f2435(0xf9));})[_0x38a086(0x181)](()=>{const _0x440f89=_0x38a086;_0x3b7026[_0x440f89(0x120)][_0x440f89(0x10c)]('loading'),_0x3b7026[_0x440f89(0x2ca)]=![];});}function loadRecords(){const _0x58e205=_0x317bee,_0x5f3013=sessionStorage[_0x58e205(0x285)](_0x58e205(0x268));if(!_0x5f3013)return;const _0x986988=document[_0x58e205(0x124)](_0x58e205(0x272)),_0x591e6e=document[_0x58e205(0x124)](_0x58e205(0x2b2)),_0x506f75=document[_0x58e205(0x124)](_0x58e205(0x1fc)),_0x55162d=document['getElementById'](_0x58e205(0x2a4))['value'];if(!_0x55162d){_0x986988[_0x58e205(0x265)]='',_0x591e6e[_0x58e205(0x210)]=_0x58e205(0x2be),_0x591e6e[_0x58e205(0x22a)][_0x58e205(0x14a)]='block',_0x506f75['style']['display']=_0x58e205(0x12f);return;}_0x986988['innerHTML']=_0x58e205(0x20b),_0x591e6e['style'][_0x58e205(0x14a)]='none',_0x506f75[_0x58e205(0x22a)][_0x58e205(0x14a)]=_0x58e205(0x130),_0x506f75[_0x58e205(0x1d1)](_0x58e205(0x1a9))[_0x58e205(0x210)]='加载中...';const _0x129ef2=document[_0x58e205(0x124)](_0x58e205(0x146))[_0x58e205(0x2a3)],_0x458310=document[_0x58e205(0x124)](_0x58e205(0x203))[_0x58e205(0x2a3)],_0x7f0f6c=_0x129ef2?Math[_0x58e205(0x174)](new Date(_0x129ef2)[_0x58e205(0x256)]()/0x3e8):0x0;let _0x245cfb=_0x458310?Math['floor'](new Date(_0x458310)['getTime']()/0x3e8):Math[_0x58e205(0x174)](Date[_0x58e205(0x29a)]()/0x3e8);_0x458310&&!_0x458310['includes'](_0x58e205(0x19f))&&(_0x245cfb+=0x3b),fetch(baseURL+'appointbounsuserlist?token='+_0x5f3013+'&options=get&start_time='+_0x7f0f6c+_0x58e205(0x297)+_0x245cfb+_0x58e205(0x145)+_0x55162d)[_0x58e205(0xed)](_0x516dc7=>{const _0x6270ea=_0x58e205;if(!_0x516dc7['ok'])throw new Error(_0x6270ea(0x112));return _0x516dc7['json']();})[_0x58e205(0xed)](_0x11c2b0=>{const _0x3a6c7c=_0x58e205;if(isTokenExpired(_0x11c2b0)){sessionStorage['removeItem'](_0x3a6c7c(0x268)),showTokenExpiredMessage();return;}_0x986988['innerHTML']='';let _0x1183ac=[],_0x480fc9=0x0;if(_0x11c2b0[_0x3a6c7c(0x22f)]===0x4e20&&_0x11c2b0[_0x3a6c7c(0x2d0)]&&_0x11c2b0['data'][_0x3a6c7c(0x1f2)]){const _0x3527f4=Array[_0x3a6c7c(0x141)](_0x11c2b0[_0x3a6c7c(0x2d0)][_0x3a6c7c(0x1f2)])?_0x11c2b0[_0x3a6c7c(0x2d0)]['appointlist']:[];_0x3527f4[_0x3a6c7c(0x17c)](_0x5779eb=>{const _0x490c16=_0x3a6c7c;_0x1183ac[_0x490c16(0x25f)]({..._0x5779eb,'status':_0x490c16(0x238),'resultpoker':'--'});});}if(_0x11c2b0[_0x3a6c7c(0x22f)]===0x4e20&&_0x11c2b0[_0x3a6c7c(0x2d0)]&&_0x11c2b0[_0x3a6c7c(0x2d0)][_0x3a6c7c(0x2af)]&&_0x11c2b0[_0x3a6c7c(0x2d0)][_0x3a6c7c(0x2af)][_0x3a6c7c(0x195)]){const _0x4dae10=Array[_0x3a6c7c(0x141)](_0x11c2b0[_0x3a6c7c(0x2d0)][_0x3a6c7c(0x2af)][_0x3a6c7c(0x195)])?_0x11c2b0['data'][_0x3a6c7c(0x2af)][_0x3a6c7c(0x195)]:[];_0x4dae10[_0x3a6c7c(0x17c)](_0x2f370e=>{const _0x535254=_0x3a6c7c;let _0x56dac7=0x0;_0x2f370e[_0x535254(0x143)]!==undefined&&_0x2f370e[_0x535254(0x143)]!==null?_0x56dac7=parseFloat(_0x2f370e[_0x535254(0x143)])||0x0:(_0x2f370e['del_score']!==undefined&&_0x2f370e['del_score']!==null&&(_0x56dac7=parseFloat(_0x2f370e['del_score'])||0x0),_0x2f370e[_0x535254(0x276)]!==undefined&&_0x2f370e[_0x535254(0x276)]!==null&&(_0x56dac7-=parseFloat(_0x2f370e[_0x535254(0x276)])||0x0));_0x480fc9+=_0x56dac7;let _0x1f46cf;_0x2f370e[_0x535254(0x10b)]==='mjhl'?_0x1f46cf=getMjhlActualResultType(_0x2f370e)||_0x2f370e['pokertype']||'--':_0x1f46cf=_0x2f370e['pokertype']||'--',_0x1183ac[_0x535254(0x25f)]({..._0x2f370e,'status':_0x535254(0x1a1),'resultpoker':_0x1f46cf});});}_0x506f75['querySelector']('.diamond-value')[_0x3a6c7c(0x210)]=formatDiamondAmount(_0x480fc9),_0x1183ac[_0x3a6c7c(0x194)]>0x0?(_0x1183ac[_0x3a6c7c(0x16e)]((_0xa29e87,_0x3f13b3)=>{const _0x12d32d=_0x3a6c7c;if(_0xa29e87[_0x12d32d(0x160)]!==_0x3f13b3[_0x12d32d(0x160)])return _0xa29e87[_0x12d32d(0x160)]===_0x12d32d(0x238)?-0x1:0x1;const _0x391e3d=_0xa29e87[_0x12d32d(0x248)]||0x0,_0x468503=_0x3f13b3[_0x12d32d(0x248)]||0x0;return _0x468503-_0x391e3d;}),_0x1183ac[_0x3a6c7c(0x17c)](_0x5d51b4=>{const _0x3adb30=_0x3a6c7c,_0x1bc099=document[_0x3adb30(0x1da)]('tr'),_0x1ce9be=document[_0x3adb30(0x1da)]('td');_0x1ce9be[_0x3adb30(0x210)]=_0x5d51b4[_0x3adb30(0x2c4)]||'--',_0x1bc099['appendChild'](_0x1ce9be);const _0x523cc5=document['createElement']('td');if(_0x5d51b4[_0x3adb30(0x160)]==='pending'||_0x5d51b4[_0x3adb30(0x278)]===_0x3adb30(0x12f)){if(_0x5d51b4[_0x3adb30(0x160)]==='pending'){if(_0x5d51b4[_0x3adb30(0x10d)]===_0x3adb30(0x183))_0x523cc5[_0x3adb30(0x210)]=_0x3adb30(0x27f),_0x523cc5[_0x3adb30(0x119)]='status-pending-free';else{const _0x188901=document[_0x3adb30(0x1da)](_0x3adb30(0x175));_0x188901[_0x3adb30(0x119)]='remove-btn',_0x188901[_0x3adb30(0x210)]='移除',_0x188901[_0x3adb30(0x114)]=()=>removeRecord(_0x5d51b4[_0x3adb30(0x2c4)],_0x5d51b4['pokertype'],_0x5d51b4[_0x3adb30(0x212)],_0x5d51b4[_0x3adb30(0x10b)]),_0x523cc5['appendChild'](_0x188901);}}else _0x523cc5[_0x3adb30(0x210)]='未出';}else _0x523cc5[_0x3adb30(0x210)]='已出',_0x523cc5[_0x3adb30(0x119)]=_0x3adb30(0x16a);_0x1bc099['appendChild'](_0x523cc5);const _0x1b16f7=document[_0x3adb30(0x1da)]('td'),_0x1937ac=document[_0x3adb30(0x1da)](_0x3adb30(0x281));_0x1937ac[_0x3adb30(0x119)]=_0x3adb30(0x1ea)+_0x5d51b4[_0x3adb30(0x212)],_0x1937ac[_0x3adb30(0x210)]=hallNames[_0x5d51b4[_0x3adb30(0x212)]]||'场次'+_0x5d51b4['hallkey']||'--',_0x1b16f7['appendChild'](_0x1937ac),_0x1bc099[_0x3adb30(0x2d1)](_0x1b16f7);const _0x1a3961=document[_0x3adb30(0x1da)]('td');_0x1a3961[_0x3adb30(0x210)]=_0x5d51b4[_0x3adb30(0xdf)]||'--',_0x1bc099[_0x3adb30(0x2d1)](_0x1a3961);const _0x14880c=document[_0x3adb30(0x1da)]('td'),_0x2c6e39=_0x5d51b4[_0x3adb30(0x160)]==='pending'?_0x5d51b4['pokertype']:_0x5d51b4[_0x3adb30(0x220)]||_0x5d51b4['pokertype'],_0x534cd6=getPatternNameByGame(_0x2c6e39,_0x5d51b4[_0x3adb30(0x10b)])||_0x2c6e39||'--';_0x14880c['textContent']=_0x534cd6,_0x14880c[_0x3adb30(0x120)][_0x3adb30(0x229)](_0x3adb30(0x1e6)),_0x14880c[_0x3adb30(0x180)]('title',_0x534cd6),_0x14880c[_0x3adb30(0x1fe)](_0x3adb30(0x2ab),function(_0x42cd56){_0x42cd56['stopPropagation'](),showCellPopover(_0x534cd6,_0x14880c);}),_0x1bc099[_0x3adb30(0x2d1)](_0x14880c);const _0x1e57d4=document['createElement']('td');if(_0x5d51b4[_0x3adb30(0x160)]===_0x3adb30(0x238))_0x1e57d4[_0x3adb30(0x210)]='无';else{const _0x252b4f=getPatternNameByGame(_0x5d51b4['resultpoker'],_0x5d51b4[_0x3adb30(0x10b)])||_0x5d51b4[_0x3adb30(0x1c9)]||'--';_0x1e57d4[_0x3adb30(0x210)]=_0x252b4f,_0x1e57d4['classList'][_0x3adb30(0x229)](_0x3adb30(0x1e6)),_0x1e57d4[_0x3adb30(0x180)](_0x3adb30(0x1bf),_0x252b4f),isMjhlAchievementMismatch(_0x5d51b4)&&_0x1e57d4['classList'][_0x3adb30(0x229)](_0x3adb30(0x19e)),_0x1e57d4[_0x3adb30(0x1fe)](_0x3adb30(0x2ab),function(_0x4c4d80){const _0x17f47f=_0x3adb30;_0x4c4d80[_0x17f47f(0x16f)](),showCellPopover(_0x252b4f,_0x1e57d4);});}_0x1bc099['appendChild'](_0x1e57d4);const _0x3f1a7d=document[_0x3adb30(0x1da)]('td');_0x5d51b4['del_score']!==undefined&&_0x5d51b4[_0x3adb30(0x28d)]!==null&&_0x5d51b4['del_score']!==''?_0x3f1a7d[_0x3adb30(0x210)]=formatDiamondAmount(_0x5d51b4[_0x3adb30(0x28d)]):_0x3f1a7d[_0x3adb30(0x210)]='--';_0x1bc099['appendChild'](_0x3f1a7d);const _0x39d53c=document[_0x3adb30(0x1da)]('td');_0x5d51b4[_0x3adb30(0x143)]!==undefined&&_0x5d51b4['actual_deducted_score']!==null?_0x39d53c['textContent']=formatDiamondAmount(_0x5d51b4[_0x3adb30(0x143)]):_0x39d53c['textContent']='--';_0x1bc099['appendChild'](_0x39d53c);const _0x416024=document[_0x3adb30(0x1da)]('td');_0x416024[_0x3adb30(0x210)]=gameNames[_0x5d51b4[_0x3adb30(0x10b)]]||_0x5d51b4[_0x3adb30(0x10b)]||'--',_0x1bc099[_0x3adb30(0x2d1)](_0x416024);const _0x450a7b=document[_0x3adb30(0x1da)]('td');_0x5d51b4[_0x3adb30(0x160)]===_0x3adb30(0x1a1)&&_0x5d51b4['time']?_0x450a7b['textContent']=formatDateTime(_0x5d51b4[_0x3adb30(0x248)]):_0x450a7b[_0x3adb30(0x210)]='--',_0x1bc099['appendChild'](_0x450a7b),_0x986988[_0x3adb30(0x2d1)](_0x1bc099);}),_0x591e6e[_0x3a6c7c(0x22a)]['display']=_0x3a6c7c(0x12f)):_0x591e6e['style']['display']=_0x3a6c7c(0x130),loadBalanceInfo();})[_0x58e205(0x253)](_0x18dc63=>{const _0xca7111=_0x58e205;console[_0xca7111(0xf9)](_0xca7111(0x2cb),_0x18dc63),_0x986988[_0xca7111(0x265)]='',_0x591e6e[_0xca7111(0x22a)][_0xca7111(0x14a)]=_0xca7111(0x130),_0x506f75[_0xca7111(0x1d1)](_0xca7111(0x1a9))[_0xca7111(0x210)]='0',showError(_0xca7111(0x2d2),_0xca7111(0x112));});}function removeRecord(_0x19ce7c,_0x5385e8,_0x1fd960,_0xe44b75){const _0x375e5c=_0x317bee,_0xc2c76b=sessionStorage[_0x375e5c(0x285)](_0x375e5c(0x268));if(!_0xc2c76b)return;if(!confirm(_0x375e5c(0x2cf)+_0x19ce7c+_0x375e5c(0x2ad)))return;showToast(_0x375e5c(0x232),_0x375e5c(0x1be));const _0x29539d=Math['floor'](Date['now']()/0x3e8),_0x236f74=document[_0x375e5c(0x124)](_0x375e5c(0x146))[_0x375e5c(0x2a3)],_0x28b9fd=document[_0x375e5c(0x124)](_0x375e5c(0x203))[_0x375e5c(0x2a3)],_0xb81c2d=_0x236f74?Math['floor'](new Date(_0x236f74)[_0x375e5c(0x256)]()/0x3e8):0x0;let _0xd70b3=_0x28b9fd?Math[_0x375e5c(0x174)](new Date(_0x28b9fd)[_0x375e5c(0x256)]()/0x3e8):Math[_0x375e5c(0x174)](Date[_0x375e5c(0x29a)]()/0x3e8);_0x28b9fd&&!_0x28b9fd[_0x375e5c(0x117)](_0x375e5c(0x19f))&&(_0xd70b3+=0x3b);const _0x8a3bdb=Date[_0x375e5c(0x29a)]()+Math[_0x375e5c(0x274)](),_0x376862=baseURL+_0x375e5c(0x162)+_0xc2c76b+'&options=del&gametype='+_0xe44b75+_0x375e5c(0xf3)+_0x19ce7c+_0x375e5c(0x205)+_0x5385e8+_0x375e5c(0x2c7)+_0x1fd960+_0x375e5c(0x139)+_0xb81c2d+_0x375e5c(0x297)+_0xd70b3+_0x375e5c(0x2a8)+_0x8a3bdb+'&now_time='+_0x29539d;fetch(_0x376862)[_0x375e5c(0xed)](_0x2c5523=>{const _0x54e5d2=_0x375e5c;if(!_0x2c5523['ok'])throw new Error('网络错误，请重试');return _0x2c5523[_0x54e5d2(0xff)]();})[_0x375e5c(0xed)](_0x3286be=>{const _0x49818e=_0x375e5c;_0x3286be[_0x49818e(0x22f)]===0x4e20?(showSuccess('移除成功'),loadRecords()):showToast(_0x3286be['tip']||_0x3286be[_0x49818e(0x2d0)]||_0x49818e(0x286),_0x49818e(0xf9));})[_0x375e5c(0x253)](_0x5e4867=>{const _0x4a4ca7=_0x375e5c;showToast(_0x4a4ca7(0x112),_0x4a4ca7(0xf9));});}function getTimeRange(_0x33bf50){const _0x5cb953=_0x317bee,_0x3ce18b=document[_0x5cb953(0x124)](_0x5cb953(0x146))[_0x5cb953(0x2a3)],_0x1dd4d1=document[_0x5cb953(0x124)](_0x5cb953(0x203))[_0x5cb953(0x2a3)],_0x418384=_0x3ce18b?Math[_0x5cb953(0x174)](new Date(_0x3ce18b)[_0x5cb953(0x256)]()/0x3e8):0x0;let _0x2cb909=_0x1dd4d1?Math[_0x5cb953(0x174)](new Date(_0x1dd4d1)['getTime']()/0x3e8):Math[_0x5cb953(0x174)](Date[_0x5cb953(0x29a)]()/0x3e8);return _0x1dd4d1&&!_0x1dd4d1['includes'](_0x5cb953(0x19f))&&(_0x2cb909+=0x3b),{'startTime':_0x418384,'endTime':_0x2cb909};}function showRechargeModal(){const _0x1a9ddc=_0x317bee,_0xae8b8c=document[_0x1a9ddc(0x124)](_0x1a9ddc(0x1f4)),_0x19b850=document[_0x1a9ddc(0x124)](_0x1a9ddc(0x188)),_0x38f831=document[_0x1a9ddc(0x124)](_0x1a9ddc(0x27d));_0x38f831[_0x1a9ddc(0x2a3)]='',_0x19b850[_0x1a9ddc(0x210)]='',_0x19b850['classList'][_0x1a9ddc(0x10c)](_0x1a9ddc(0x224)),_0xae8b8c['classList'][_0x1a9ddc(0x229)](_0x1a9ddc(0x224)),setTimeout(()=>_0x38f831['focus'](),0x32);}function hideRechargeModal(){const _0x2a0c4e=_0x317bee,_0x2042dc=document[_0x2a0c4e(0x124)](_0x2a0c4e(0x1f4));_0x2042dc['classList'][_0x2a0c4e(0x10c)]('show');}function getPatternNameByGame(_0x1bc5a8,_0xe1b70c){const _0x4140eb=_0x317bee;if(!_0x1bc5a8)return'--';if(_0xe1b70c===_0x4140eb(0x15f)){const _0xc34a09=formatJsysPatternText(_0x1bc5a8);if(_0xc34a09)return _0xc34a09;}if(_0xe1b70c===_0x4140eb(0x109)&&MX99_PATTERN_LABELS[_0x1bc5a8])return MX99_PATTERN_LABELS[_0x1bc5a8][_0x4140eb(0x263)];if(_0x1bc5a8===_0x4140eb(0x284)){if(_0xe1b70c===_0x4140eb(0x206))return'四梅（60）';else return _0xe1b70c==='NBA'?'四梅（50）':_0x4140eb(0x22b);}return patternNames[_0x1bc5a8];}
+    </script>
+
+
+</body></html>

@@ -102,6 +102,10 @@
                                 <a class="menu-item" href="@Url.Action("ResetPwd","Login")">@Resources.Language.String6</a>
                                 @*<a id="lnkLoginLog" class="menu-item" href="@Url.Action("LoginLog","Login")">登录日志</a>*@
                             </li>
+                            <li>
+                                @* 不加 menu-item，避免被框架当成 iframe 选项卡打开 *@
+                                <a href="/Mgr/Index?view=mobile" title="切换到手机端后台"><i class="fa fa-mobile"></i>&nbsp;手机版后台</a>
+                            </li>
                         </ul>
                     </div>
                 </div>

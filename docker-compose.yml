@@ -1,0 +1,54 @@
+# ============================================================
+#  MTH-Backend 开发环境 - MySQL 5.7 (Docker)
+#
+#  用法(在项目根目录):
+#    docker compose up -d          # 启动 MySQL
+#    docker compose stop           # 停止容器(数据保留)
+#    docker compose down -v        # 删除容器并清空数据卷(重置数据库)
+#
+#  也可使用 Tools\docker-db.bat 一键管理(start/stop/status/reinit)
+#
+#  说明:
+#    - Web 应用(.NET Framework 4.8)无法在 Linux 容器运行,
+#      因此只容器化数据库, Web 用本机 VS2022 + IIS Express 跑。
+#    - 端口/账号/密码与 TTY.Web\Web.config 中 DbConnString 一致:
+#      Server=localhost;Port=3306;Database=mth;Uid=root;Pwd=123456
+#    - 首次启动会自动导入 docker/mysql/init 下的 SQL 文件
+#      (按文件名顺序执行, 基础结构 mth.sql + 3 个迁移补丁)
+# ============================================================
+
+services:
+  mysql:
+    image: mysql:5.7
+    container_name: mth-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: "123456"
+      MYSQL_DATABASE: mth
+      MYSQL_CHARSET: utf8mb4
+      MYSQL_COLLATION: utf8mb4_unicode_ci
+      TZ: Asia/Shanghai
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-time-zone=+08:00
+      - --max_allowed_packet=128M
+      # 表名大小写不敏感(对齐 Windows 本机 MySQL 行为):
+      # 项目 EF 代码以大写表名映射(如 [Table("Admin")]、[Table("UserLockRecord")]),
+      # 而 mth.sql 导出为小写表名; Linux 默认 lower_case_table_names=0(区分大小写)
+      # 会导致所有 EF 查询报 "Table doesn't exist"。=1 后大写查询可匹配小写表。
+      - --lower-case-table-names=1
+    ports:
+      - "3306:3306"
+    volumes:
+      - mth_mysql_data:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p123456"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+volumes:
+  mth_mysql_data:

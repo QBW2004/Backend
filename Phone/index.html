@@ -1,0 +1,4158 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#007aff">
+<title>管理后台</title>
+<style>
+/* ============================================================
+   全局设计系统 (从原后台提取,统一 iOS 风格)
+   ============================================================ */
+:root {
+    /* 主色调 */
+    --primary: #007aff;
+    --primary-dark: #0056b3;
+    --primary-light: rgba(0, 122, 255, 0.1);
+    --primary-border: rgba(0, 122, 255, 0.2);
+    /* 状态色 */
+    --success: #34c759;
+    --success-light: rgba(52, 199, 89, 0.1);
+    --success-border: rgba(52, 199, 89, 0.2);
+    --danger: #ff3b30;
+    --danger-light: rgba(255, 59, 48, 0.1);
+    --danger-border: rgba(255, 59, 48, 0.2);
+    --warning: #ff9500;
+    --warning-light: rgba(255, 149, 0, 0.1);
+    --warning-border: rgba(255, 149, 0, 0.2);
+    --neutral: #8e8e93;
+    --neutral-light: rgba(142, 142, 147, 0.1);
+    --purple: #5856D6;
+    --purple-light: rgba(88, 86, 214, 0.12);
+    --gold: #ffd700;
+    /* 背景色 */
+    --bg-page: #f5f7fa;
+    --bg-card: #ffffff;
+    --bg-soft: #f8f9fa;
+    --bg-muted: #f5f5f5;
+    --bg-gray: #f9f9f9;
+    --bg-chip: #f0f0f0;
+    --bg-hover: #f5f5f7;
+    --bg-overlay: rgba(0, 0, 0, 0.5);
+    --bg-loading: rgba(0, 0, 0, 0.8);
+    /* 文字色 */
+    --text-primary: #1d1d1f;
+    --text-body: #333;
+    --text-secondary: #666;
+    --text-tertiary: #86868b;
+    --text-disabled: #999;
+    /* 边框 */
+    --border-light: #eaeaea;
+    --border: #e5e5e5;
+    --border-dark: #e0e0e0;
+    /* 圆角 */
+    --r-sm: 4px;
+    --r-md: 6px;
+    --r-lg: 8px;
+    --r-xl: 12px;
+    --r-pill: 16px;
+    /* 阴影 */
+    --shadow-card: 0 1px 3px rgba(0,0,0,0.1);
+    --shadow-hover: 0 4px 12px rgba(0,0,0,0.15);
+    --shadow-modal: 0 10px 25px rgba(0,0,0,0.15);
+    --shadow-sidebar: 2px 0 8px rgba(0,0,0,0.15);
+    /* z-index */
+    --z-sidebar: 101;
+    --z-loading: 1000;
+    --z-modal: 1000;
+    --z-modal-top: 1200;
+    --z-toast: 1300;
+}
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+}
+body {
+    background-color: var(--bg-page);
+    color: var(--text-body);
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+input, button, textarea, select { font: inherit; color: inherit; }
+button { cursor: pointer; border: none; background: none; }
+a { color: inherit; text-decoration: none; }
+svg { fill: currentColor; }
+.hidden { display: none !important; }
+
+/* ============== 顶部导航栏 ============== */
+.header {
+    background-color: var(--primary);
+    color: white;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 80px;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+}
+.header-content {
+    position: relative;
+    width: 100%;
+    max-width: 600px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+.header-content h1 { font-size: 16px; font-weight: 600; line-height: 1; }
+.subtitle { font-size: 14px; opacity: 0.9; display: flex; align-items: center; gap: 4px; margin-top: 2px; flex-wrap: wrap; justify-content: center; }
+.subtitle .total-win-loss { font-weight: 600; font-size: 16px; padding: 2px 8px; border-radius: var(--r-sm); }
+.subtitle .total-win-loss.positive { color: var(--success); background: rgba(52,199,89,0.2); }
+.subtitle .total-win-loss.negative { color: var(--warning); background: rgba(255,149,0,0.2); }
+.subtitle .diamond-count { color: var(--gold); font-weight: 600; }
+
+/* 顶栏按钮 */
+.header-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255,255,255,0.2);
+    color: white;
+    padding: 10px;
+    border-radius: var(--r-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+    min-width: 44px;
+    min-height: 44px;
+}
+.header-btn:hover { background: rgba(255,255,255,0.3); }
+.header-btn:active { transform: translateY(-50%) scale(0.96); }
+.header-btn svg { width: 20px; height: 20px; }
+.header-btn.left { left: 0; }
+.header-btn.right { right: 0; }
+.header-btn.right-2 { right: 52px; }
+.header-btn.disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ============== 侧边抽屉 ============== */
+.sidebar-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: var(--bg-overlay);
+    z-index: var(--z-sidebar);
+    opacity: 0; visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+}
+.sidebar-overlay.active { opacity: 1; visibility: visible; }
+.sidebar {
+    position: fixed; top: 0; left: -280px; width: 280px; height: 100%;
+    background: white;
+    z-index: calc(var(--z-sidebar) + 1);
+    box-shadow: var(--shadow-sidebar);
+    transition: left 0.3s ease;
+    display: flex; flex-direction: column;
+}
+.sidebar.active { left: 0; }
+.sidebar-header {
+    padding: 20px 16px;
+    background: var(--primary);
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+.sidebar-user-info { display: flex; align-items: center; }
+.sidebar-avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    display: flex; align-items: center; justify-content: center;
+    margin-right: 12px;
+}
+.sidebar-avatar svg { width: 22px; height: 22px; }
+.sidebar-user-details { display: flex; flex-direction: column; }
+.sidebar-username { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+.sidebar-invite-code { font-size: 12px; opacity: 0.85; }
+.sidebar-close-btn {
+    background: transparent; color: white; padding: 4px;
+}
+.sidebar-close-btn svg { width: 20px; height: 20px; }
+.sidebar-menu { flex: 1; padding: 16px 0; overflow-y: auto; }
+.sidebar-menu-item {
+    display: flex; align-items: center;
+    padding: 12px 16px;
+    color: var(--text-body);
+    transition: background-color 0.2s;
+}
+.sidebar-menu-item:hover, .sidebar-menu-item:active { background: var(--bg-hover); }
+.sidebar-menu-item svg { width: 20px; height: 20px; margin-right: 12px; color: var(--primary); }
+.sidebar-menu-item.active { background: var(--primary-light); color: var(--primary); font-weight: 500; }
+.sidebar-menu-item.active svg { color: var(--primary); }
+.sidebar-menu-placeholder {
+    padding: 24px 16px;
+    text-align: center;
+    color: var(--text-disabled);
+    border-top: 1px solid var(--border-light);
+    margin-top: 16px;
+    font-style: italic;
+    font-size: 14px;
+}
+.sidebar-action-btn {
+    display: flex; align-items: center; justify-content: center;
+    margin: 8px 16px;
+    padding: 12px;
+    background: var(--bg-hover);
+    border: 1px solid;
+    border-radius: var(--r-lg);
+    font-size: 16px; font-weight: 500;
+    transition: all 0.3s;
+}
+.sidebar-action-btn svg { width: 18px; height: 18px; margin-right: 8px; }
+.sidebar-action-btn.logout { color: var(--danger); border-color: var(--danger-border); }
+.sidebar-action-btn.password { color: var(--primary); border-color: var(--primary-border); }
+.sidebar-action-btn.kick { color: var(--warning); border-color: var(--warning-border); }
+.sidebar-action-btn:hover { background: rgba(255,255,255,0.5); }
+
+/* ============== 通用容器 ============== */
+.container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 16px;
+}
+.page { display: none; }
+.page.active { display: block; animation: pageIn 0.25s ease; }
+@keyframes pageIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ============== 卡片 / 列表项 ============== */
+.card {
+    background: white;
+    border-radius: var(--r-xl);
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+}
+
+/* ============== 表单 ============== */
+.form-container {
+    background: white;
+    border-radius: var(--r-xl);
+    padding: 24px;
+    max-width: 500px;
+    margin: 20px auto;
+    box-shadow: var(--shadow-card);
+}
+.form-title {
+    font-size: 18px; font-weight: 600; color: var(--text-primary);
+    margin-bottom: 20px; padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-light);
+}
+.form-group { margin-bottom: 16px; }
+.form-label {
+    display: block;
+    font-size: 14px; color: var(--text-secondary);
+    margin-bottom: 8px; font-weight: 500;
+}
+.form-input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.3s, box-shadow 0.3s;
+    background: white;
+    -webkit-appearance: none;
+}
+.form-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(0,122,255,0.1);
+}
+.form-input::placeholder { color: var(--text-disabled); }
+.submit-btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--primary);
+    color: white;
+    border-radius: var(--r-lg);
+    font-size: 16px; font-weight: 500;
+    transition: all 0.3s;
+    margin-top: 8px;
+}
+.submit-btn:hover { background: var(--primary-dark); }
+.submit-btn:active { transform: scale(0.98); }
+.submit-btn.loading { opacity: 0.7; cursor: wait; pointer-events: none; }
+
+/* iOS 滑动开关 */
+.switch-wrapper { display: inline-block; position: relative; }
+.switch { display: inline-block; position: relative; width: 50px; height: 28px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider {
+    position: absolute; cursor: pointer; inset: 0;
+    background: #e9e9eb;
+    border-radius: 28px;
+    transition: 0.3s;
+}
+.slider:before {
+    content: ""; position: absolute;
+    height: 24px; width: 24px;
+    left: 2px; top: 2px;
+    background: white;
+    border-radius: 50%;
+    transition: 0.3s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.switch input:checked + .slider { background: var(--success); }
+.switch input:checked + .slider:before { transform: translateX(22px); }
+.switch-label { margin-left: 12px; font-size: 14px; color: var(--text-secondary); vertical-align: middle; }
+
+/* ============== 按钮系列 ============== */
+.btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 10px 16px;
+    border-radius: var(--r-lg);
+    font-size: 14px; font-weight: 500;
+    transition: all 0.3s;
+    border: none;
+}
+.btn:active { transform: scale(0.98); }
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:hover { background: var(--primary-dark); }
+.btn-secondary { background: var(--bg-hover); color: var(--primary); border: 1px solid var(--border); }
+.btn-danger { background: var(--danger); color: white; }
+.btn-success { background: var(--success); color: white; }
+.btn[disabled], .btn.disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; background: var(--bg-muted); color: var(--text-disabled); }
+
+/* ============== 标签页 ============== */
+.tabs-container {
+    background: white;
+    box-shadow: var(--shadow-card);
+}
+.tabs-header {
+    display: flex;
+    border-bottom: 1px solid var(--border-light);
+}
+.tab {
+    flex: 1;
+    text-align: center;
+    padding: 14px 0;
+    font-size: 15px; font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+}
+.tab.active { color: var(--primary); }
+.tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 25%;
+    width: 50%; height: 3px;
+    background: var(--primary);
+    border-radius: 3px 3px 0 0;
+}
+.tab-count { font-size: 16px; font-weight: 600; margin-left: 5px; color: inherit; }
+.tab-pane { display: none; }
+.tab-pane.active { display: block; }
+
+/* ============== 弹窗 ============== */
+.modal-overlay {
+    position: fixed; inset: 0;
+    background: var(--bg-overlay);
+    display: none;
+    justify-content: center; align-items: center;
+    z-index: var(--z-modal);
+    padding: 16px;
+}
+.modal-overlay.show { display: flex; }
+.modal-content {
+    background: white;
+    border-radius: var(--r-xl);
+    width: 85%; max-width: 320px;
+    overflow: hidden;
+    box-shadow: var(--shadow-modal);
+    transform: translateY(20px);
+    transition: transform 0.3s;
+    max-height: 90vh;
+    display: flex; flex-direction: column;
+}
+.modal-overlay.show .modal-content { transform: translateY(0); }
+.modal-header {
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 4px;
+}
+.modal-title { font-size: 18px; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 8px; }
+.modal-subtitle { font-size: 14px; color: var(--text-secondary); }
+.modal-body { padding: 16px; overflow-y: auto; flex: 1; }
+.modal-body.center { text-align: center; }
+.modal-body .icon-large { width: 48px; height: 48px; margin-bottom: 12px; }
+.modal-body .icon-large.success { color: var(--success); }
+.modal-body .icon-large.error { color: var(--danger); }
+.modal-message { font-size: 15px; color: var(--text-body); }
+.modal-footer {
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+}
+.modal-footer-btn {
+    width: 100%;
+    padding: 10px;
+    border-radius: var(--r-lg);
+    background: var(--bg-hover);
+    font-size: 16px; font-weight: 500;
+    color: var(--primary);
+    transition: background-color 0.2s;
+}
+.modal-footer-btn:hover { background: var(--border-light); }
+.modal-footer-btn.primary { background: var(--primary); color: white; }
+.modal-footer-btn.primary:hover { background: var(--primary-dark); }
+.modal-actions { padding: 16px; }
+.modal-action-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 100%;
+    padding: 12px 16px;
+    margin-bottom: 10px;
+    border-radius: var(--r-lg);
+    font-size: 16px; font-weight: 500;
+    transition: all 0.2s;
+}
+.modal-action-btn:last-child { margin-bottom: 0; }
+.modal-action-btn.recharge { background: var(--primary-light); color: var(--primary); }
+.modal-action-btn.reward { background: var(--success-light); color: var(--success); }
+.modal-action-btn.blacklist { background: var(--danger-light); color: var(--danger); }
+.modal-action-btn.details { background: var(--neutral-light); color: var(--neutral); }
+.modal-action-btn.prize-history { background: var(--warning-light); color: var(--warning); }
+.modal-action-btn.track { background: var(--purple-light); color: var(--purple); }
+.modal-action-btn:hover { filter: brightness(0.95); }
+.modal-action-btn:active { transform: scale(0.98); }
+.modal-search { max-width: 400px; width: 90%; }
+
+/* ============== Loading ============== */
+.loading {
+    display: none;
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--bg-loading);
+    color: white;
+    padding: 16px 24px;
+    border-radius: var(--r-xl);
+    font-size: 14px;
+    z-index: var(--z-loading);
+}
+.loading.show { display: block; }
+.spinner {
+    display: inline-block;
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ============== Toast ============== */
+.toast-container {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%; max-width: 320px;
+    z-index: var(--z-toast);
+    pointer-events: none;
+}
+.toast {
+    background: rgba(0,0,0,0.85);
+    color: white;
+    padding: 14px 16px;
+    border-radius: var(--r-lg);
+    margin-bottom: 8px;
+    font-size: 14px;
+    display: flex; align-items: center;
+    gap: 8px;
+    animation: toastIn 0.3s ease;
+}
+.toast.success { background: rgba(52,199,89,0.95); }
+.toast.error { background: rgba(255,59,48,0.95); }
+.toast.warning { background: rgba(255,149,0,0.95); }
+.toast.fade-out { animation: toastOut 0.3s ease forwards; }
+@keyframes toastIn { from { opacity: 0; transform: translateY(-8px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes toastOut { to { opacity: 0; transform: translateY(-8px) scale(0.95); } }
+
+/* ============== 表格 ============== */
+.table-container {
+    background: white;
+    border-radius: var(--r-xl);
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+    margin-bottom: 16px;
+}
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+table.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    min-width: 600px;
+}
+table.data-table th, table.data-table td {
+    padding: 10px 8px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-light);
+    word-break: break-word;
+}
+table.data-table th {
+    background: var(--bg-soft);
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 13px;
+    position: sticky; top: 0;
+}
+table.data-table td { color: var(--text-body); }
+table.data-table tr:last-child td { border-bottom: none; }
+table.data-table tr:hover td { background: var(--bg-hover); }
+.amount { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-weight: 500; }
+.positive { color: var(--success); }
+.negative { color: var(--danger); }
+.text-muted { color: var(--text-secondary); }
+.text-tertiary { color: var(--text-tertiary); }
+.account-link { color: var(--primary); cursor: pointer; }
+.account-link:hover { text-decoration: underline; }
+
+/* 标签 */
+.tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: var(--r-sm);
+    font-size: 12px;
+    font-weight: 500;
+}
+.tag.player { background: var(--primary-light); color: var(--primary); }
+.tag.admin { background: var(--warning-light); color: var(--warning); }
+.tag.child { background: var(--neutral-light); color: var(--neutral); }
+.tag.online { background: var(--success-light); color: var(--success); }
+.tag.offline { background: var(--neutral-light); color: var(--neutral); }
+.tag.blacklisted { background: var(--danger-light); color: var(--danger); }
+
+/* 表格内操作按钮 */
+.row-btn {
+    padding: 6px 12px;
+    border-radius: var(--r-md);
+    font-size: 13px; font-weight: 500;
+    transition: all 0.2s;
+}
+.row-btn.unlock { background: var(--success-light); color: var(--success); border: 1px solid var(--success-border); }
+.row-btn.unban { background: var(--primary-light); color: var(--primary); border: 1px solid var(--primary-border); }
+.row-btn.remove { background: var(--danger-light); color: var(--danger); border: 1px solid var(--danger-border); }
+.row-btn.remove-blue { background: var(--primary-light); color: var(--primary); border: 1px solid var(--primary-border); }
+.row-btn:hover { filter: brightness(0.95); }
+.row-btn:active { transform: scale(0.95); }
+.row-btn[disabled] { opacity: 0.5; cursor: not-allowed; }
+
+/* 空状态 */
+.no-data, .no-more-data {
+    text-align: center;
+    color: var(--text-disabled);
+    font-size: 14px;
+    padding: 40px 16px;
+}
+
+/* 分页 */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 0;
+}
+.pagination button {
+    padding: 8px 16px;
+    background: white;
+    color: var(--primary);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    font-size: 14px;
+    transition: all 0.2s;
+}
+.pagination button:disabled { opacity: 0.5; cursor: not-allowed; }
+.pagination button:not(:disabled):hover { background: var(--primary-light); }
+.pagination-info { font-size: 14px; color: var(--text-secondary); }
+
+/* ============== 统计卡片 ============== */
+.stats-container {
+    background: white;
+    border-radius: var(--r-xl);
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow-card);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+.stats-title { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+.stats-info { display: flex; gap: 16px; flex-wrap: wrap; }
+.stats-item { display: flex; align-items: center; gap: 4px; font-size: 14px; }
+.stats-label { color: var(--text-secondary); }
+.stats-value { font-weight: 600; color: var(--text-primary); }
+.stats-value.player { color: var(--primary); }
+.stats-value.admin { color: var(--warning); }
+.stats-value.diamond { color: var(--primary); }
+.stats-value.pool { color: var(--warning); }
+
+/* ============== 玩家卡片 ============== */
+.player-card {
+    background: white;
+    border-radius: var(--r-xl);
+    padding: 12px;
+    margin-bottom: 8px;
+    box-shadow: var(--shadow-card);
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    position: relative;
+}
+.player-card:active { transform: scale(0.98); }
+.player-card.online {
+    border-left: 4px solid var(--primary);
+    padding-left: 16px;
+}
+.player-card.offline {
+    background: var(--bg-gray);
+    border: 1px solid var(--border-light);
+    box-shadow: none;
+}
+.player-header {
+    display: flex; align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    flex-wrap: nowrap;
+    width: 100%;
+    overflow: hidden;
+}
+.player-account {
+    font-size: 15px; font-weight: 600;
+    color: var(--text-primary);
+    max-width: 100px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    flex-shrink: 0;
+}
+.player-name {
+    font-size: 14px; color: var(--text-primary);
+    max-width: 80px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    flex-shrink: 0;
+}
+.agent-line {
+    font-size: 13px; color: var(--text-secondary);
+    max-width: 60px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    flex-shrink: 0;
+}
+.remaining-score {
+    font-size: 14px; font-weight: 500;
+    color: var(--success);
+    padding: 2px 8px;
+    background: var(--success-light);
+    border-radius: var(--r-sm);
+    flex-shrink: 0;
+    margin-left: auto;
+}
+.remaining-diamond {
+    font-size: 14px; font-weight: 500;
+    color: var(--primary);
+    padding: 2px 8px;
+    background: var(--primary-light);
+    border-radius: var(--r-sm);
+    flex-shrink: 0;
+    margin-left: 8px;
+}
+.player-info {
+    display: flex; flex-direction: column;
+    gap: 8px;
+    font-size: 13px;
+}
+.info-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+}
+.info-row.money-row {
+    grid-template-columns: repeat(2, 1fr);
+}
+.info-item { display: flex; flex-direction: column; }
+.info-label { color: var(--text-tertiary); margin-bottom: 2px; font-size: 12px; }
+.info-value { color: var(--text-primary); }
+.money-row .info-item {
+    background: var(--bg-soft);
+    padding: 8px 12px;
+    border-radius: var(--r-lg);
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+}
+.money-row .info-label { font-size: 13px; color: var(--text-secondary); margin-bottom: 0; }
+.money-row .info-value {
+    font-size: 16px;
+    font-family: ui-monospace, monospace;
+    font-weight: 600;
+    text-align: right;
+}
+.login-time-row {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--border-dark);
+    display: flex; justify-content: center;
+}
+.login-time-row .info-item {
+    background: var(--primary-light);
+    border-radius: var(--r-md);
+    padding: 6px 10px;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    justify-content: center;
+}
+.login-time-row .info-label { color: var(--primary); font-size: 12px; font-weight: 500; margin-bottom: 0; }
+.login-time-row .info-value { font-size: 13px; color: var(--text-body); font-weight: 500; }
+
+/* ============== 排序/筛选选项 ============== */
+.sort-options, .filter-tabs {
+    display: flex;
+    padding: 12px 16px;
+    background: var(--bg-gray);
+    border-bottom: 1px solid var(--border-light);
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.sort-option, .filter-tab {
+    padding: 6px 12px;
+    border-radius: var(--r-pill);
+    font-size: 13px;
+    background: var(--bg-chip);
+    border: 1px solid var(--border-dark);
+    color: var(--text-secondary);
+    transition: all 0.2s;
+}
+.sort-option.active, .filter-tab.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+.sort-option:hover:not(.active), .filter-tab:hover:not(.active) { background: var(--border-light); }
+
+/* ============== 分段控件(选项组) ============== */
+.option-group {
+    display: flex;
+    background: var(--bg-muted);
+    border-radius: var(--r-lg);
+    overflow: hidden;
+    padding: 3px;
+    gap: 0;
+}
+.option-group.segmented {
+    background: #f2f2f7;
+    border-radius: 10px;
+    padding: 3px;
+}
+.option-item {
+    flex: 1;
+    padding: 8px 12px;
+    text-align: center;
+    font-size: 14px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+    border-radius: var(--r-md);
+    position: relative;
+}
+.option-group.segmented .option-item {
+    border-radius: 8px;
+}
+.option-item.active {
+    background: white;
+    color: var(--primary);
+    font-weight: 500;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+}
+.option-group.segmented .option-item.active { color: var(--primary); }
+
+/* ============== 输入区(封号/拉黑) ============== */
+.input-section {
+    background: white;
+    border-radius: var(--r-xl);
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow-card);
+    max-width: 500px;
+}
+.section-title {
+    font-size: 16px; font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-light);
+}
+.input-row {
+    display: flex; gap: 8px; margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+.input-row .form-input { flex: 1; min-width: 0; }
+.input-row .btn-danger { flex-shrink: 0; }
+
+/* ============== 面包屑 ============== */
+.breadcrumb {
+    background: white;
+    padding: 12px 16px;
+    border-radius: var(--r-xl);
+    margin-bottom: 16px;
+    box-shadow: var(--shadow-card);
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+}
+.breadcrumb-item {
+    color: var(--text-secondary);
+    font-size: 14px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+.breadcrumb-item:hover { color: var(--primary); }
+.breadcrumb-separator { color: var(--text-tertiary); font-size: 14px; }
+.breadcrumb-current { color: var(--primary); font-weight: 600; }
+
+/* ============== Toast 历史 ============== */
+.history-list {
+    position: absolute;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-modal);
+    max-height: 200px;
+    overflow-y: auto;
+    width: 100%;
+    z-index: 10;
+}
+.history-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border-light);
+    cursor: pointer;
+}
+.history-item:hover { background: var(--bg-hover); }
+.history-item:last-child { border-bottom: none; }
+.history-delete { color: var(--danger); font-size: 13px; padding: 4px 8px; }
+.history-clear {
+    text-align: center;
+    color: var(--primary);
+    padding: 10px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+/* 账号信息卡 */
+.account-info {
+    display: none;
+    background: var(--primary-light);
+    padding: 12px;
+    border-radius: var(--r-lg);
+    margin: 12px 0;
+    animation: pulse 1.5s ease;
+}
+.account-info.show { display: flex; flex-direction: column; gap: 8px; }
+.account-info-row {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 14px;
+}
+.account-info-label { color: var(--text-secondary); display: flex; align-items: center; gap: 6px; }
+.account-info-value { font-weight: 600; }
+.account-info-value.diamond { color: var(--primary); }
+.account-info-value.score { color: var(--success); }
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(0,122,255,0.4); }
+    100% { box-shadow: 0 0 0 12px rgba(0,122,255,0); }
+}
+
+/* ============== 加载更多 ============== */
+.load-more-container { padding: 12px 8px; text-align: center; }
+.load-more-btn {
+    background: var(--bg-page);
+    border: 1px solid var(--border);
+    color: var(--primary);
+    padding: 10px 20px;
+    border-radius: var(--r-lg);
+    font-size: 14px; font-weight: 500;
+    transition: all 0.3s;
+}
+.load-more-btn:hover { background: var(--border-light); }
+.load-more-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ============== 登录页 ============== */
+.login-page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 20px;
+    background: linear-gradient(180deg, #007aff 0%, #0056b3 100%);
+}
+.login-card {
+    background: white;
+    border-radius: var(--r-xl);
+    padding: 32px 24px;
+    box-shadow: var(--shadow-modal);
+    max-width: 360px;
+    margin: 0 auto;
+    width: 100%;
+}
+.login-logo {
+    text-align: center;
+    margin-bottom: 24px;
+}
+.login-logo svg {
+    width: 64px; height: 64px;
+    color: var(--primary);
+}
+.login-title {
+    text-align: center;
+    color: var(--text-primary);
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+.login-subtitle {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 14px;
+    margin-bottom: 24px;
+}
+.login-field {
+    position: relative;
+    margin-bottom: 16px;
+}
+.login-field-label {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    display: block;
+}
+.login-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+.login-input-wrap input {
+    flex: 1;
+    padding: 12px 44px 12px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.3s, box-shadow 0.3s;
+    -webkit-appearance: none;
+    width: 100%;
+}
+.login-input-wrap input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(0,122,255,0.1);
+}
+.login-input-wrap .toggle-pwd {
+    position: absolute;
+    right: 8px;
+    padding: 8px;
+    color: var(--text-tertiary);
+    font-size: 12px;
+}
+.login-btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--primary);
+    color: white;
+    border-radius: var(--r-lg);
+    font-size: 16px;
+    font-weight: 500;
+    transition: all 0.3s;
+    margin-top: 8px;
+    position: relative;
+}
+.login-btn:hover { background: var(--primary-dark); }
+.login-btn:active { transform: scale(0.98); }
+.login-btn.loading { pointer-events: none; opacity: 0.8; }
+.login-tip {
+    text-align: center;
+    color: var(--text-tertiary);
+    font-size: 12px;
+    margin-top: 16px;
+}
+
+/* ============== 响应式 ============== */
+@media (max-width: 380px) {
+    .container { padding: 8px; }
+    .player-card { padding: 10px; }
+    .info-row { gap: 6px; }
+    .money-row .info-value { font-size: 14px; }
+    .form-input { font-size: 14px; }
+}
+@media (max-width: 350px) {
+    .header { padding: 16px; height: 72px; }
+    .header-content h1 { font-size: 15px; }
+    table.data-table { font-size: 12px; }
+    table.data-table th, table.data-table td { padding: 8px 6px; }
+}
+/* ============================================================
+   细节修复 CSS - 按 _reference 对比后的逐项调整
+   ============================================================ */
+
+/* --- 主页顶栏:90px 高,副标题分两行 --- */
+body[data-page="wanjialist"] .header { height: 90px; }
+body[data-page="wanjialist"] .subtitle { flex-direction: column; gap: 2px; }
+.subtitle .total-win-loss { font-size: 18px; }
+.subtitle .total-win-loss.positive { background: rgba(52, 199, 89, 0.15); }
+.subtitle .total-win-loss.negative { background: rgba(255, 149, 0, 0.15); }
+
+/* --- 在线玩家卡片:直角 + 伪元素蓝条 + 边框 + 间距 --- */
+.player-card.online {
+    border: 1px solid #e0e0e0;
+    border-radius: 0;
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    position: relative;
+    overflow: hidden;
+}
+.player-card.online::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0;
+    height: 100%; width: 4px;
+    background: var(--primary);
+    z-index: 0;
+}
+.player-card.online > * { position: relative; z-index: 1; }
+
+/* --- 在线标签页灰底 --- */
+#onlineTab { background-color: #f8f9fa; padding: 8px 0; }
+
+/* --- 金额行标签字号 14px --- */
+.money-row .info-label { font-size: 14px; }
+
+/* --- 吃分目标行(原后台独有样式) --- */
+.info-row.money-row.eat-score-row { grid-template-columns: 1fr; margin-top: 8px; }
+.eat-score-row .info-item {
+    background: #f8f9fa;
+    border: none;
+    padding: 6px 10px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+}
+.eat-score-row .info-label { display: none; }
+.eat-score-row .info-value {
+    font-size: 12px;
+    color: #ff6b6b;
+    text-align: center;
+    width: 100%;
+    font-family: -apple-system, sans-serif;
+}
+
+/* --- 登录时间行底色 0.05(原后台更浅) --- */
+.login-time-row .info-item { background: rgba(0, 122, 255, 0.05); }
+
+/* --- 侧边抽屉头像:用原后台的实心人像图标,40x40 --- */
+.sidebar-avatar svg { width: 24px; height: 24px; }
+
+/* --- 抽屉底部按钮垂直间距 16px --- */
+.sidebar-action-btn { margin: 12px 16px; }
+
+/* --- 表格表头 padding/字号(对齐原后台) --- */
+table.data-table th, table.data-table td { padding: 12px 8px; }
+table.data-table th { font-size: 14px; }
+/* 取消表头 sticky(原后台无) */
+table.data-table th { position: static; }
+
+/* --- 统计卡标题 18px(原后台) --- */
+.stats-title { font-size: 18px; }
+
+/* --- 异常账号:账号类型标签 padding 4px 8px --- */
+.tag { padding: 4px 8px; }
+/* 异常账号:错误计数红高亮 */
+.error-count {
+    font-weight: 600;
+    color: var(--danger);
+    background: var(--danger-light);
+    padding: 2px 4px;
+    border-radius: 3px;
+    margin: 0 2px;
+    display: inline-block;
+}
+/* 异常账号:解封按钮字号 14px */
+.row-btn.unlock { font-size: 14px; padding: 6px 12px; }
+
+/* --- 充退页:扁平分段控件(替代 iOS 胶囊) --- */
+.option-group.flat {
+    background: #f9f9f9;
+    border: 1px solid #e5e5e5;
+    border-radius: 8px;
+    padding: 0;
+}
+.option-group.flat .option-item {
+    padding: 10px 0;
+    color: #777;
+    border-radius: 0;
+    box-shadow: none;
+}
+.option-group.flat .option-item:not(:last-child) {
+    border-right: 1px solid #e5e5e5;
+}
+.option-group.flat .option-item.active {
+    background: #f0f0f0;
+    color: var(--primary);
+    font-weight: 500;
+    box-shadow: none;
+}
+
+/* --- 充退页:账号信息卡白底带框 + 蓝光 --- */
+.account-info {
+    background: rgba(0, 122, 255, 0.08);
+    box-shadow: 0 4px 12px rgba(0, 122, 255, 0.15);
+    padding: 15px;
+}
+.account-info .account-info-row {
+    background: white;
+    border: 1px solid #eaeaea;
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+}
+.account-info .account-info-row:last-child { margin-bottom: 0; }
+.account-info .account-info-value.diamond { font-weight: 500; }
+
+/* --- 充退页副标题钻石字重 500 --- */
+body[data-page="chongzhi"] .subtitle .diamond-count { font-weight: 500; }
+
+/* --- 充退记录:记录类型矩形(非胶囊) --- */
+.filter-tab { padding: 8px 16px; border-radius: 6px; font-size: 14px; }
+
+/* --- 充退记录:刷新按钮带文字 --- */
+.header-btn.refresh-with-text {
+    padding: 8px 16px;
+    font-size: 15px;
+    font-weight: 500;
+    min-width: auto;
+    min-height: auto;
+    gap: 6px;
+}
+.header-btn.refresh-with-text svg { width: 16px; height: 16px; }
+.header-btn.refresh-with-text span { font-size: 15px; }
+
+/* --- 充退记录:表格 padding 12px 16px --- */
+body[data-page="chongzhilist"] table.data-table th,
+body[data-page="chongzhilist"] table.data-table td { padding: 12px 16px; }
+
+/* --- 充退记录:分页按钮文字色 #333 --- */
+.pagination button { color: var(--text-body); }
+
+/* --- 封号/黑名单/拉黑:输入区标题居中 18px 无下划线 --- */
+.input-section .section-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    text-align: center;
+    border-bottom: none;
+    padding-bottom: 0;
+    margin-bottom: 16px;
+}
+.input-section { padding: 20px; }
+
+/* --- 封号/黑名单/拉黑:主操作按钮 44px 高 16px 字 --- */
+.btn-block-action {
+    height: 44px;
+    font-size: 16px;
+    padding: 0 20px;
+    width: 100%;
+}
+
+/* --- 代理拉黑:移除按钮改实心红 --- */
+.row-btn.remove-solid {
+    background: var(--danger);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 12px;
+}
+.row-btn.remove-solid:hover { background: #e63028; filter: none; }
+
+/* --- 添加代理:表单标题居中无下划线 --- */
+.form-container .form-title {
+    text-align: center;
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+/* --- 添加代理:开关左右布局(文字左 开关右) --- */
+.switch-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+.switch-row .switch-label { margin-left: 0; margin-right: 12px; }
+
+/* ============================================================
+   送奖管理页样式
+   ============================================================ */
+
+/* 顶栏"充值奖池"按钮(透明背景白字,hover 浅白底) */
+.header-pool-btn {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: white;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: background-color 0.3s;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.header-pool-btn:hover { background-color: rgba(255, 255, 255, 0.15); }
+.header-pool-btn:active { transform: translateY(-50%) scale(0.96); }
+
+/* 送奖页表单卡片(原后台 .container) */
+.sj-container {
+    max-width: 600px;
+    margin: 20px auto;
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+    box-sizing: border-box;
+}
+.sj-record-container {
+    max-width: 600px;
+    margin: 0 auto 20px;
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    overflow: hidden;
+    box-sizing: border-box;
+}
+.sj-form-group { margin-bottom: 20px; }
+.sj-form-group.horizontal {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+.sj-form-group.horizontal .sj-form-control { flex: 1; }
+.sj-form-group.horizontal .btn { flex-shrink: 0; margin-bottom: 0; white-space: nowrap; min-width: 80px; }
+.sj-form-label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    color: #666;
+    margin-bottom: 8px;
+}
+.sj-form-control {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #e5e5e5;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: border-color 0.3s, background-color 0.3s;
+    background-color: #f8f9fa;
+    outline: none;
+    box-sizing: border-box;
+    -webkit-appearance: none;
+    appearance: none;
+}
+.sj-form-control:focus {
+    border-color: var(--primary);
+    background-color: white;
+}
+.sj-form-control:disabled {
+    background-color: #f5f5f5;
+    color: #999;
+    cursor: not-allowed;
+}
+/* 下拉框自定义箭头 */
+select.sj-form-control {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+    padding-right: 40px;
+}
+
+/* 输赢三块显示区 */
+.sj-win-info {
+    margin-bottom: 20px;
+}
+.sj-win-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+}
+.sj-win-item {
+    flex: 1;
+    padding: 12px;
+    background-color: rgba(0, 122, 255, 0.05);
+    border-radius: 6px;
+    text-align: center;
+}
+.sj-win-label {
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 5px;
+}
+.sj-win-value {
+    font-size: 22px;
+    font-weight: 600;
+    color: rgb(153, 153, 153);
+}
+
+/* 余额信息 */
+.sj-balance-info {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.sj-balance-item {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    position: relative;
+}
+.sj-balance-item:first-child {
+    border-right: 1px solid #e5e5e5;
+    padding-right: 15px;
+}
+.sj-balance-item:last-child { padding-left: 15px; }
+.sj-balance-label {
+    font-size: 14px;
+    color: #666;
+    white-space: nowrap;
+}
+.sj-balance-value {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--primary);
+}
+
+/* 送奖记录表格区 */
+.sj-diamond-statistics {
+    margin: 0 0 15px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #eee;
+}
+.sj-diamond-statistics-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.sj-diamond-statistics-text {
+    font-size: 13px;
+    color: #666;
+}
+.sj-diamond-value {
+    color: var(--warning);
+    font-weight: 600;
+}
+
+/* 日期选择器 */
+.sj-date-range-picker {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: nowrap;
+    width: 100%;
+    margin-bottom: 12px;
+}
+.sj-date-picker {
+    padding: 6px 8px;
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+    font-size: 12px;
+    background-color: #f8f9fa;
+    min-width: 0;
+    color: #333;
+    flex: 1;
+    height: 36px;
+    box-sizing: border-box;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    outline: none;
+}
+.sj-date-separator {
+    font-size: 13px;
+    color: #666;
+    flex-shrink: 0;
+}
+
+/* 卡机踢人结果弹窗(橙色主题,z-index 更高) */
+.kick-result-modal-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: var(--bg-overlay);
+    display: none;
+    justify-content: center; align-items: center;
+    z-index: 1200;
+    padding: 16px;
+}
+.kick-result-modal-overlay.show { display: flex; }
+.kick-result-modal-content {
+    background: white;
+    border-radius: 12px;
+    width: 85%; max-width: 320px;
+    overflow: hidden;
+    box-shadow: var(--shadow-modal);
+    transform: translateY(20px);
+    transition: transform 0.3s;
+    max-height: 90vh;
+    display: flex; flex-direction: column;
+}
+.kick-result-modal-overlay.show .kick-result-modal-content { transform: translateY(0); }
+.kick-result-modal-header {
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 4px;
+    background-color: var(--warning);
+    color: white;
+}
+.kick-result-modal-title { font-size: 18px; font-weight: 600; }
+.kick-result-modal-body {
+    padding: 16px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+.kick-result-content {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    white-space: pre-wrap;
+    background-color: var(--bg-soft);
+    padding: 12px;
+    border-radius: 8px;
+    border-left: 4px solid var(--warning);
+    font-size: 14px;
+    line-height: 1.5;
+}
+.kick-result-modal-footer {
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+}
+.kick-result-modal-button {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+    background-color: var(--warning);
+    font-size: 16px;
+    font-weight: 500;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.kick-result-modal-button:hover { background-color: #e68a00; }
+/* 状态指示器 */
+.status-indicator {
+    display: flex;
+    margin-bottom: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    align-items: center;
+}
+.status-icon {
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    margin-right: 8px;
+    display: inline-block;
+}
+.status-success { background-color: var(--success); }
+.status-warning { background-color: var(--warning); }
+.status-error { background-color: var(--danger); }
+/* 结果表格 */
+.kick-result-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+    font-size: 13px;
+}
+.kick-result-table th, .kick-result-table td {
+    border: 1px solid var(--border);
+    padding: 8px;
+    text-align: left;
+}
+.kick-result-table th {
+    background-color: var(--bg-hover);
+    font-weight: 600;
+}
+.kick-result-table tr:nth-child(even) { background-color: var(--bg-gray); }
+/* 可展开详情 */
+.result-details-toggle {
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--primary);
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+}
+.result-details-toggle svg {
+    width: 16px; height: 16px;
+    margin-right: 4px;
+    transition: transform 0.3s;
+}
+.result-details-toggle.expanded svg { transform: rotate(90deg); }
+.result-details-content {
+    margin-top: 8px;
+    display: none;
+}
+.result-details-content.visible { display: block; }
+
+/* 滑动提示 */
+.sj-swipe-hint {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    margin-bottom: 10px;
+    background-color: rgba(0, 122, 255, 0.1);
+    border-radius: 8px;
+    color: var(--primary);
+    font-size: 12px;
+    gap: 8px;
+}
+
+/* 会员页统计盒子(6项) */
+.stat-box {
+    background: white;
+    border-radius: 8px;
+    padding: 12px 8px;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+.stat-box .stat-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+.stat-box .stat-value {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+}
+.stat-box .stat-value.positive { color: var(--success); }
+.stat-box .stat-value.negative { color: var(--danger); }
+
+/* 排序按钮激活态 */
+.sort-btn.active {
+    background: var(--primary) !important;
+    color: white !important;
+}
+
+/* 搜索弹窗(对齐原后台) */
+.search-input-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+}
+.search-input-container input {
+    flex: 1;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.3s;
+    -webkit-appearance: none;
+}
+.search-input-container input:focus { border-color: var(--primary); }
+.search-submit-btn {
+    background: var(--primary);
+    border: none;
+    color: white;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+    flex-shrink: 0;
+}
+.search-submit-btn svg { fill: white; width: 20px; height: 20px; }
+.search-submit-btn:hover { background: var(--primary-dark); }
+.search-results {
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 0 16px;
+}
+.search-result-item {
+    padding: 12px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.search-result-item:hover { background-color: var(--bg-hover); }
+.search-result-item:last-child { border-bottom: none; }
+.search-result-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+.search-result-account { font-weight: 600; color: var(--text-primary); }
+.search-result-name { color: var(--text-secondary); }
+.search-result-status {
+    font-size: 12px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: auto;
+}
+.search-result-status.online { background: var(--success-light); color: var(--success); }
+.search-result-status.offline { background: var(--neutral-light); color: var(--neutral); }
+.search-result-info { font-size: 13px; color: var(--text-secondary); }
+.sj-swipe-hint svg { width: 16px; height: 16px; fill: currentColor; }
+.sj-swipe-hint.hide { display: none; }
+
+/* 送奖记录表格 */
+.sj-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+table.sj-record-table {
+    width: 100%;
+    min-width: 900px;
+    border-collapse: collapse;
+    font-size: 14px;
+    table-layout: fixed;
+}
+table.sj-record-table th {
+    text-align: left;
+    padding: 10px 8px;
+    border-bottom: 1px solid #eee;
+    color: #888;
+    font-weight: 500;
+    white-space: nowrap;
+}
+table.sj-record-table td {
+    padding: 10px 8px;
+    border-bottom: 1px solid #f5f5f5;
+    vertical-align: middle;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+table.sj-record-table th:nth-child(1), table.sj-record-table td:nth-child(1) { width: 10%; }
+table.sj-record-table th:nth-child(2), table.sj-record-table td:nth-child(2) { width: 7.5%; text-align: left; min-width: 58px; overflow: visible; text-overflow: clip; }
+table.sj-record-table th:nth-child(3), table.sj-record-table td:nth-child(3) { width: 7.5%; }
+table.sj-record-table th:nth-child(4), table.sj-record-table td:nth-child(4) { width: 5%; }
+table.sj-record-table th:nth-child(5), table.sj-record-table td:nth-child(5) { width: 12%; }
+table.sj-record-table th:nth-child(6), table.sj-record-table td:nth-child(6) { width: 12%; }
+table.sj-record-table th:nth-child(7), table.sj-record-table td:nth-child(7) { width: 8%; }
+table.sj-record-table th:nth-child(8), table.sj-record-table td:nth-child(8) { width: 8%; }
+table.sj-record-table th:nth-child(9), table.sj-record-table td:nth-child(9) { width: 7.5%; }
+table.sj-record-table th:nth-child(10), table.sj-record-table td:nth-child(10) {
+    width: 18%;
+    white-space: nowrap;
+    min-width: 100px;
+    overflow: visible;
+    text-overflow: clip;
+    max-width: none;
+}
+table.sj-record-table tr:last-child td { border-bottom: none; }
+.sj-record-empty {
+    text-align: center;
+    padding: 30px 0;
+    color: #999;
+    font-size: 14px;
+}
+
+/* 状态标签 */
+.sj-status-completed { color: var(--success); font-weight: 500; }
+.sj-status-pending { color: var(--text-secondary); }
+.sj-status-pending-free { color: var(--primary); font-weight: 500; }
+
+/* 场次标签 */
+.sj-hall-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    background-color: #f0f0f0;
+    color: #666;
+}
+.sj-hall-1 { background-color: #e8f5e9; color: #2e7d32; }
+.sj-hall-2 { background-color: #e3f2fd; color: #1565c0; }
+.sj-hall-3 { background-color: #e0f7fa; color: #00838f; }
+.sj-hall-4 { background-color: #fff8e1; color: #ff8f00; }
+.sj-hall-5 { background-color: #fbe9e7; color: #d84315; }
+.sj-hall-6 { background-color: #f3e5f5; color: #6a1b9a; }
+
+/* 移除按钮(送奖记录中状态列) */
+.sj-remove-btn {
+    padding: 4px 8px;
+    background-color: var(--danger);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    display: inline-block;
+    min-width: 40px;
+    text-align: center;
+}
+.sj-remove-btn:hover { background-color: #d63530; }
+
+@media (max-width: 480px) {
+    .sj-container, .sj-record-container {
+        padding: 16px;
+        width: calc(100% - 20px);
+        max-width: calc(100% - 20px);
+    }
+    table.sj-record-table { min-width: 850px; }
+}
+@media (max-width: 450px) {
+    table.sj-record-table { min-width: 750px; }
+    table.sj-record-table td, table.sj-record-table th { padding: 8px 6px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ============== 登录页 ============== -->
+<div id="loginPage" class="login-page">
+    <div class="login-card">
+        <div class="login-logo">
+            <svg viewBox="0 0 24 24"><path d="M12 2L2 7v10c0 5.55 3.84 9.74 9 11 5.16-1.26 9-5.45 9-11V7l-10-5zm0 5c1.4 0 2.5 1.1 2.5 2.5S13.4 12 12 12s-2.5-1.1-2.5-2.5S10.6 7 12 7zm0 12.5c-2.3 0-4.3-1.2-5.5-3 0-1.8 3.7-2.8 5.5-2.8s5.5 1 5.5 2.8c-1.2 1.8-3.2 3-5.5 3z"/></svg>
+        </div>
+        <div class="login-title">管理后台</div>
+        <div class="login-subtitle">请登录您的管理账号</div>
+        <form id="loginForm" autocomplete="off">
+            <div class="login-field">
+                <label class="login-field-label">用户名</label>
+                <div class="login-input-wrap">
+                    <input type="text" id="loginUsername" placeholder="请输入用户名" autocomplete="off">
+                </div>
+            </div>
+            <div class="login-field">
+                <label class="login-field-label">密码</label>
+                <div class="login-input-wrap">
+                    <input type="password" id="loginPassword" placeholder="请输入密码" autocomplete="off">
+                    <button type="button" class="toggle-pwd" id="togglePwd">显示</button>
+                </div>
+            </div>
+            <button type="submit" class="login-btn" id="loginBtn">登录</button>
+        </form>
+        <div class="login-tip">演示版 · 任意账号密码均可登录</div>
+    </div>
+</div>
+
+<!-- ============== 主应用 ============== -->
+<div id="app" class="hidden">
+    <!-- 顶部栏(每个页面共用) -->
+    <div class="header" id="appHeader">
+        <div class="header-content" id="headerContent">
+            <!-- 由 JS 动态填充 -->
+        </div>
+    </div>
+
+    <!-- 侧边抽屉 -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-user-info">
+                <div class="sidebar-avatar">
+                    <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                </div>
+                <div class="sidebar-user-details">
+                    <div class="sidebar-username" id="sidebarUsername">管理员</div>
+                    <div class="sidebar-invite-code" id="sidebarInviteCode">邀请码: ADMIN888</div>
+                </div>
+            </div>
+            <button class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="关闭">
+                <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+            </button>
+        </div>
+        <nav class="sidebar-menu" id="sidebarMenu">
+            <!-- 菜单项由 JS 生成 -->
+        </nav>
+        <div class="sidebar-menu-placeholder">
+            <div class="placeholder-text">更多功能即将上线</div>
+        </div>
+        <div>
+            <button class="sidebar-action-btn kick" id="kickMachineBtn">
+                <svg viewBox="0 0 24 24"><path d="M20 17.17L18.83 16H4V4h16v13.17zM20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4V4c0-1.1-.9-2-2-2z"/></svg>
+                卡机踢人
+            </button>
+            <button class="sidebar-action-btn password" id="changePasswordBtn">
+                <svg viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6zm9 14H6V10h12v10zm-6-3c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"/></svg>
+                修改密码
+            </button>
+            <button class="sidebar-action-btn logout" id="logoutBtn">
+                <svg viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+                退出登录
+            </button>
+        </div>
+    </aside>
+
+    <!-- 主内容区 -->
+    <main id="mainContent">
+        <!-- 各页面由 JS 动态渲染 -->
+    </main>
+</div>
+
+<!-- 全局弹窗容器 -->
+<div id="modalContainer"></div>
+<!-- 全局 loading -->
+<div class="loading" id="globalLoading"><span class="spinner"></span><span id="loadingText">处理中...</span></div>
+<!-- Toast 容器 -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+/* ============================================================
+   应用核心:路由 + 状态 + 工具函数
+   ============================================================ */
+
+// 当前状态
+const state = {
+    user: { username: '管理员', role: 'admin', inviteCode: 'ADMIN888', diamond: 88888 },
+    currentPage: null,
+    breadcrumb: [], // 我的代理面包屑
+};
+
+// SVG 图标库(常用)
+const ICONS = {
+    menu: '<svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>',
+    back: '<svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>',
+    refresh: '<svg viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>',
+    search: '<svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>',
+    add: '<svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>',
+    people: '<svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>',
+    person: '<svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>',
+    card: '<svg viewBox="0 0 24 24"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>',
+    list: '<svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-7-2h2v-4h4v-2h-4V7h-2v4H8v2h4z"/></svg>',
+    lock: '<svg viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6zm9 14H6V10h12v10zm-6-3c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"/></svg>',
+    shield: '<svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>',
+    block: '<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm5 11H7v-2h10v2z"/></svg>',
+    clock: '<svg viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 18c-4.4 0-8-3.6-8-8s3.6-8 8-8 8 3.6 8 8-3.6 8-8 8zm.5-13H11v6l5.2 3.2.8-1.3-4.5-2.7V7z"/></svg>',
+    close: '<svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>',
+    check_circle: '<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>',
+    error: '<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>',
+    info: '<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>',
+    copy: '<svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>',
+    chevron_right: '<svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>',
+    eye: '<svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>',
+};
+
+// 菜单配置
+const MENU = [
+    { id: 'kaidaili',      label: '添加代理', icon: ICONS.add,     visible: ['admin','hehuoren','daili'] },
+    { id: 'wodedaili',     label: '我的代理', icon: ICONS.people, visible: ['admin','hehuoren','daili'] },
+    { id: 'huiyuanyingkui',label: '我的会员', icon: ICONS.person, visible: ['admin','hehuoren','daili'] },
+    { id: 'chongzhi',      label: '玩家充退', icon: ICONS.card,   visible: ['admin','hehuoren','daili'] },
+    { id: 'chongzhilist',  label: '充退记录', icon: ICONS.list,   visible: ['admin','hehuoren','daili'] },
+    { id: 'yichangzhanghu',label: '异常账号', icon: ICONS.lock,    visible: ['admin','hehuoren','daili'] },
+    { id: 'fenghao',       label: '玩家封号', icon: ICONS.shield, visible: ['admin','hehuoren','daili'] },
+    { id: 'dailifenghao',  label: '代理封号', icon: ICONS.people, visible: ['admin','hehuoren'] },
+    { id: 'daililahei',    label: '代理拉黑', icon: ICONS.block,   visible: ['admin','hehuoren'] },
+];
+
+// 路由表
+const ROUTES = {
+    'wanjialist':      { title: '玩家列表',  subtitle: (s)=>`今日玩家总输赢(钻) <span class="total-win-loss ${s.totalWinLoss>=0?'positive':'negative'}">${s.totalWinLoss>=0?'+':''}${s.totalWinLoss.toLocaleString()}</span>`, headerBtns: ['menu','refresh','search'] },
+    'kaidaili':        { title: '添加代理',  subtitle: ()=>`创建新的代理商账号`, headerBtns: ['back'] },
+    'wodedaili':       { title: '我的代理',  subtitle: ()=>`查看所有代理信息`, headerBtns: ['back','refresh','search'] },
+    'huiyuanyingkui':  { title: '会员盈亏详情', subtitle: (s)=>`${s.user.username}-会员总数${mockMembers.length}`, headerBtns: ['back','refresh'] },
+    'chongzhi':        { title: '充值管理',  subtitle: (s)=>`当前钻石余额: <span class="diamond-count">${s.user.diamond.toLocaleString()}</span>`, headerBtns: ['back'] },
+    'chongzhilist':    { title: '充退记录',  subtitle: ()=>`查看玩家充值和退分历史`, headerBtns: ['back','refresh'] },
+    'yichangzhanghu':  { title: '异常账号管理', subtitle: ()=>`查看和解封异常登录的账号`, headerBtns: ['back','refresh'] },
+    'fenghao':         { title: '玩家封号',  subtitle: ()=>`封禁或解禁玩家账号`, headerBtns: ['back','refresh'] },
+    'dailifenghao':    { title: '代理黑名单', subtitle: ()=>`管理代理黑名单状态`, headerBtns: ['back','refresh'] },
+    'daililahei':      { title: '代理拉黑',  subtitle: ()=>`批量拉黑代理及其玩家`, headerBtns: ['back','refresh'] },
+    'songjiang':       { title: '送奖管理',  subtitle: ()=>`设置奖池余额和发放奖励`, headerBtns: ['back'], rightAction: 'rechargePool' },
+};
+
+// 当前页面的状态(每次进入页面重置)
+let pageState = {};
+
+// 初始化 state.totalWinLoss(避免 renderHeader 时 undefined)
+state.totalWinLoss = 0;
+
+// ============== 工具函数 ==============
+function $(sel, root=document) { return root.querySelector(sel); }
+function $$(sel, root=document) { return Array.from(root.querySelectorAll(sel)); }
+function el(tag, cls, html) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (html != null) e.innerHTML = html;
+    return e;
+}
+function fmtTime(ts) {
+    if (!ts) return '--';
+    const d = new Date(ts * (ts < 1e12 ? 1000 : 1));
+    const p = (n) => String(n).padStart(2,'0');
+    return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+// 原后台登录时间格式:YYYY-MM-DD HH:MM(无秒)
+function fmtTimeNoSec(ts) {
+    if (!ts) return '--';
+    const d = new Date(ts * (ts < 1e12 ? 1000 : 1));
+    const p = (n) => String(n).padStart(2,'0');
+    return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+function fmtDate(ts) {
+    if (!ts) return '--';
+    const d = new Date(ts);
+    const p = (n) => String(n).padStart(2,'0');
+    return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+}
+function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function uid() { return Math.random().toString(36).slice(2, 10); }
+
+// Toast 提示
+function toast(msg, type = '', duration = 2500) {
+    const t = el('div', `toast ${type}`);
+    const icon = type === 'success' ? ICONS.check_circle : type === 'error' ? ICONS.error : type === 'warning' ? ICONS.info : '';
+    t.innerHTML = `${icon}<span>${msg}</span>`;
+    $('#toastContainer').appendChild(t);
+    setTimeout(() => {
+        t.classList.add('fade-out');
+        setTimeout(() => t.remove(), 300);
+    }, duration);
+}
+
+// Loading 控制
+function showLoading(text = '处理中...') {
+    $('#loadingText').textContent = text;
+    $('#globalLoading').classList.add('show');
+}
+function hideLoading() {
+    $('#globalLoading').classList.remove('show');
+}
+
+// 模拟异步(让 loading 有时间显示)
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ============== 弹窗组件 ==============
+function showModal({ title, subtitle, bodyHTML, actions = [], cancelText = '取消', searchable = false, size = 'normal' }) {
+    return new Promise(resolve => {
+        const overlay = el('div', 'modal-overlay show');
+        const content = el('div', 'modal-content' + (size === 'search' ? ' modal-search' : ''));
+        const header = el('div', 'modal-header');
+        header.innerHTML = `
+            <div class="modal-title">${title || ''}</div>
+            ${subtitle ? `<div class="modal-subtitle">${subtitle}</div>` : ''}
+        `;
+        content.appendChild(header);
+
+        if (bodyHTML != null) {
+            const body = el('div', 'modal-body');
+            body.innerHTML = bodyHTML;
+            content.appendChild(body);
+        }
+
+        if (actions.length) {
+            const actionsDiv = el('div', 'modal-actions');
+            actions.forEach(a => {
+                const btn = el('button', `modal-action-btn ${a.type || ''}`);
+                btn.innerHTML = `${a.icon ? a.icon : ''}<span>${a.label}</span>`;
+                btn.onclick = () => { closeModal(); resolve(a.value); };
+                actionsDiv.appendChild(btn);
+            });
+            content.appendChild(actionsDiv);
+        }
+
+        const footer = el('div', 'modal-footer');
+        const cancelBtn = el('button', 'modal-footer-btn');
+        cancelBtn.textContent = cancelText;
+        cancelBtn.onclick = () => { closeModal(); resolve(null); };
+        footer.appendChild(cancelBtn);
+        content.appendChild(footer);
+
+        overlay.appendChild(content);
+        overlay.onclick = (e) => { if (e.target === overlay) { closeModal(); resolve(null); } };
+        $('#modalContainer').appendChild(overlay);
+
+        function closeModal() {
+            overlay.classList.remove('show');
+            setTimeout(() => overlay.remove(), 300);
+        }
+    });
+}
+
+// 成功/失败弹窗
+async function showResultModal({ success, message, title }) {
+    return showModal({
+        title: title || (success ? '操作成功' : '操作失败'),
+        bodyHTML: `
+            <div style="text-align:center;">
+                <div class="icon-large ${success ? 'success' : 'error'}">${success ? ICONS.check_circle : ICONS.error}</div>
+                <div class="modal-message">${message}</div>
+            </div>
+        `,
+        actions: [],
+        cancelText: '确定'
+    });
+}
+
+// 确认弹窗
+async function confirm(message, title = '提示') {
+    return new Promise(resolve => {
+        const overlay = el('div', 'modal-overlay show');
+        const content = el('div', 'modal-content');
+        content.innerHTML = `
+            <div class="modal-header"><div class="modal-title">${title}</div></div>
+            <div class="modal-body"><div class="modal-message">${message}</div></div>
+        `;
+        const footer = el('div', 'modal-footer');
+        footer.style.display = 'flex';
+        footer.style.gap = '8px';
+        const cancel = el('button', 'modal-footer-btn');
+        cancel.textContent = '取消';
+        cancel.style.background = 'var(--bg-hover)';
+        cancel.style.color = 'var(--text-secondary)';
+        cancel.onclick = () => { overlay.remove(); resolve(false); };
+        const ok = el('button', 'modal-footer-btn primary');
+        ok.textContent = '确定';
+        ok.onclick = () => { overlay.remove(); resolve(true); };
+        footer.appendChild(cancel);
+        footer.appendChild(ok);
+        content.appendChild(footer);
+        overlay.appendChild(content);
+        overlay.onclick = (e) => { if (e.target === overlay) { overlay.remove(); resolve(false); } };
+        $('#modalContainer').appendChild(overlay);
+    });
+}
+
+// ============== 路由系统 ==============
+function navigate(route, params = {}) {
+    pageState = { ...params };
+    // 用 hash 导航,触发 hashchange 事件
+    if (location.hash.slice(1) === route) {
+        // 同一页面,直接渲染
+        renderPage(route);
+    } else {
+        location.hash = route;
+    }
+    window.scrollTo(0, 0);
+}
+
+function renderPage(route) {
+    state.currentPage = route;
+    const config = ROUTES[route];
+    if (!config) { route = 'wanjialist'; return renderPage(route); }
+
+    // 标记当前页(用于按页差异化样式)
+    document.body.dataset.page = route;
+
+    // 隐藏登录页,显示主应用
+    $('#loginPage').classList.add('hidden');
+    $('#app').classList.remove('hidden');
+
+    // 渲染顶栏
+    renderHeader(config);
+
+    // 渲染侧边栏菜单(标记当前)
+    renderSidebarMenu();
+
+    // 渲染主内容
+    const main = $('#mainContent');
+    main.innerHTML = '';
+    const page = el('div', 'page active');
+    main.appendChild(page);
+
+    // 调用对应页面的渲染函数
+    const renderer = PAGE_RENDERERS[route];
+    if (renderer) renderer(page, pageState);
+    else page.innerHTML = `<div class="no-data">页面「${route}」尚未实现</div>`;
+}
+
+function renderHeader(config) {
+    const hc = $('#headerContent');
+    let btnsHTML = '';
+    if (config.headerBtns.includes('menu')) {
+        btnsHTML += `<button class="header-btn left" id="hMenuBtn" aria-label="菜单">${ICONS.menu}</button>`;
+    }
+    if (config.headerBtns.includes('back')) {
+        btnsHTML += `<button class="header-btn left" id="hBackBtn" aria-label="返回">${ICONS.back}</button>`;
+    }
+    if (config.headerBtns.includes('search')) {
+        btnsHTML += `<button class="header-btn right-2" id="hSearchBtn" aria-label="搜索">${ICONS.search}</button>`;
+    }
+    if (config.headerBtns.includes('refresh')) {
+        // 充退记录页的刷新按钮带"刷新"文字(对齐原后台)
+        if (state.currentPage === 'chongzhilist') {
+            btnsHTML += `<button class="header-btn right refresh-with-text" id="hRefreshBtn" aria-label="刷新">${ICONS.refresh}<span>刷新</span></button>`;
+        } else {
+            btnsHTML += `<button class="header-btn right" id="hRefreshBtn" aria-label="刷新">${ICONS.refresh}</button>`;
+        }
+    }
+    // 送奖页右上角的"充值奖池"按钮(透明背景白字)
+    if (config.rightAction === 'rechargePool') {
+        btnsHTML += `<button class="header-pool-btn" id="hPoolBtn" aria-label="充值奖池">充值奖池</button>`;
+    }
+    const subtitleHTML = typeof config.subtitle === 'function' ? config.subtitle(state) : (config.subtitle || '');
+    hc.innerHTML = `
+        ${btnsHTML}
+        <h1>${config.title}</h1>
+        ${subtitleHTML ? `<div class="subtitle">${subtitleHTML}</div>` : ''}
+    `;
+    // 绑定按钮事件
+    const menuBtn = $('#hMenuBtn'); if (menuBtn) menuBtn.onclick = openSidebar;
+    const backBtn = $('#hBackBtn'); if (backBtn) backBtn.onclick = () => history.length > 1 ? history.back() : navigate('wanjialist');
+    const refreshBtn = $('#hRefreshBtn'); if (refreshBtn) refreshBtn.onclick = () => { if (PAGE_REFRESH[state.currentPage]) PAGE_REFRESH[state.currentPage](); };
+    const searchBtn = $('#hSearchBtn'); if (searchBtn) searchBtn.onclick = () => { if (PAGE_SEARCH[state.currentPage]) PAGE_SEARCH[state.currentPage](); };
+    const poolBtn = $('#hPoolBtn'); if (poolBtn) poolBtn.onclick = () => { if (PAGE_POOL_ACTION[state.currentPage]) PAGE_POOL_ACTION[state.currentPage](); };
+}
+
+function renderSidebarMenu() {
+    const nav = $('#sidebarMenu');
+    nav.innerHTML = '';
+    MENU.forEach(item => {
+        if (!item.visible.includes(state.user.role)) return;
+        const a = el('a', 'sidebar-menu-item' + (state.currentPage === item.id ? ' active' : ''));
+        a.href = '#' + item.id;
+        a.innerHTML = `${item.icon}<span>${item.label}</span>`;
+        a.onclick = (e) => { e.preventDefault(); closeSidebar(); navigate(item.id); };
+        nav.appendChild(a);
+    });
+}
+
+function openSidebar() { $('#sidebar').classList.add('active'); $('#sidebarOverlay').classList.add('active'); }
+function closeSidebar() { $('#sidebar').classList.remove('active'); $('#sidebarOverlay').classList.remove('active'); }
+
+// 各页面的渲染器(后面填充)
+const PAGE_RENDERERS = {};
+const PAGE_REFRESH = {};
+const PAGE_SEARCH = {};
+const PAGE_POOL_ACTION = {};
+
+// ============== 启动 ==============
+function startApp() {
+    // 监听 hash 变化(支持浏览器前进后退)
+    window.addEventListener('hashchange', () => {
+        const hash = location.hash.slice(1);
+        if (hash && ROUTES[hash]) {
+            renderPage(hash);
+        }
+    });
+
+    // 登录表单
+    $('#loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = $('#loginBtn');
+        btn.classList.add('loading');
+        btn.innerHTML = '<span class="spinner"></span>登录中...';
+        await delay(600);
+        const u = $('#loginUsername').value.trim() || 'djy088';
+        state.user.username = u;
+        // 持久化登录态
+        try { sessionStorage.setItem('loggedIn', '1'); sessionStorage.setItem('username', u); } catch {}
+        btn.classList.remove('loading');
+        btn.innerHTML = '登录';
+        // 跳转到主页(或 hash 指定的页面)
+        const hash = location.hash.slice(1);
+        renderPage(ROUTES[hash] ? hash : 'wanjialist');
+    });
+
+    // 自动登录(如果已登录过)
+    try {
+        if (sessionStorage.getItem('loggedIn') === '1') {
+            state.user.username = sessionStorage.getItem('username') || '管理员';
+            const hash = location.hash.slice(1);
+            renderPage(ROUTES[hash] ? hash : 'wanjialist');
+            // 注意:不 return,继续往下绑定按钮事件
+        }
+    } catch {}
+
+    // 显示密码切换
+    $('#togglePwd').onclick = () => {
+        const inp = $('#loginPassword');
+        const isPwd = inp.type === 'password';
+        inp.type = isPwd ? 'text' : 'password';
+        $('#togglePwd').textContent = isPwd ? '隐藏' : '显示';
+    };
+
+    // 侧边栏关闭
+    $('#sidebarOverlay').onclick = closeSidebar;
+    $('#sidebarCloseBtn').onclick = closeSidebar;
+    // 修改密码 / 退出 / 卡机踢人
+    $('#changePasswordBtn').onclick = () => {
+        closeSidebar();
+        showChangePasswordModal();
+    };
+    $('#logoutBtn').onclick = async () => {
+        closeSidebar();
+        if (await confirm('确定要退出登录吗?')) {
+            try { sessionStorage.removeItem('loggedIn'); sessionStorage.removeItem('username'); } catch {}
+            location.hash = '';
+            location.reload();
+        }
+    };
+    $('#kickMachineBtn').onclick = () => {
+        closeSidebar();
+        showKickMachineModal();
+    };
+
+    // 只有未自动登录时才显示登录页
+    if (sessionStorage.getItem('loggedIn') !== '1') {
+        $('#loginPage').classList.remove('hidden');
+    }
+}
+
+async function showChangePasswordModal() {
+    showModal({
+        title: '修改密码',
+        bodyHTML: `
+            <div class="form-group">
+                <label class="form-label">原密码</label>
+                <input type="password" class="form-input" id="cpOld" placeholder="请输入原密码">
+            </div>
+            <div class="form-group">
+                <label class="form-label">新密码</label>
+                <input type="password" class="form-input" id="cpNew" placeholder="数字+大小写字母,8位以上">
+            </div>
+            <div class="form-group">
+                <label class="form-label">确认新密码</label>
+                <input type="password" class="form-input" id="cpConfirm" placeholder="请再次输入新密码">
+            </div>
+        `,
+        actions: [{ label: '确认修改', type: 'recharge', value: 'ok' }],
+        cancelText: '取消'
+    }).then(async (r) => {
+        if (r !== 'ok') return;
+        const oldV = $('#cpOld').value, newV = $('#cpNew').value, cfV = $('#cpConfirm').value;
+        if (!oldV || !newV || !cfV) { toast('请填写完整信息', 'error'); return; }
+        if (newV !== cfV) { toast('两次输入的新密码不一致', 'error'); return; }
+        if (newV.length < 8) { toast('新密码至少 8 位', 'error'); return; }
+        showLoading('修改中...');
+        await delay(800);
+        hideLoading();
+        toast('密码修改成功,请重新登录', 'success');
+    });
+}
+
+async function showKickMachineModal() {
+    // 原后台逻辑:卡机踢人是"一键踢所有卡机玩家",无需输入账号
+    // 点击后直接调用 /kicked_out_the_machine API,然后显示结果弹窗
+    showLoading('正在踢人...');
+    await delay(1500);
+    hideLoading();
+    // 显示结果弹窗(模拟原后台返回)
+    const servers = [
+        { id: 'srv-01', success: true, rooms: 3 },
+        { id: 'srv-02', success: true, rooms: 5 },
+        { id: 'srv-03', success: false, rooms: 0 },
+    ];
+    const successCount = servers.filter(s => s.success).length;
+    const totalCount = servers.length;
+    const isAllSuccess = successCount === totalCount;
+    const statusIcon = isAllSuccess ? 'status-success' : 'status-warning';
+    const statusText = isAllSuccess ? '操作成功' : `部分成功 (${successCount}/${totalCount})`;
+    
+    showKickResultModal(`
+        <div class="status-indicator">
+            <span class="status-icon ${statusIcon}"></span>
+            <span>${statusText}</span>
+        </div>
+        <div>已对卡机游戏机进行踢人处理,可能需要几秒钟生效。</div>
+        <table class="kick-result-table">
+            <thead>
+                <tr><th>服务器ID</th><th>状态</th><th>处理房间数</th></tr>
+            </thead>
+            <tbody>
+                ${servers.map(s => `
+                    <tr>
+                        <td>${s.id}</td>
+                        <td>${s.success ? '成功' : '失败'}</td>
+                        <td>${s.rooms}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+        <div class="result-details-toggle" id="kickDetailsToggle">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            <span>查看详细结果</span>
+        </div>
+        <div class="result-details-content" id="kickDetailsContent">
+            <div class="kick-result-content">{
+  "total_servers": ${totalCount},
+  "success_count": ${successCount},
+  "failed_count": ${totalCount - successCount},
+  "total_rooms_processed": ${servers.reduce((s,x)=>s+x.rooms,0)},
+  "execute_time": "${fmtTime(Date.now()/1000)}",
+  "operator": "${state.user.username}"
+}</div>
+        </div>
+    `);
+}
+
+// 卡机踢人结果弹窗(橙色主题,复用原后台结构)
+function showKickResultModal(bodyHTML) {
+    // 先移除已有的
+    const existing = document.querySelector('.kick-result-modal-overlay');
+    if (existing) existing.remove();
+    const overlay = el('div', 'kick-result-modal-overlay');
+    const content = el('div', 'kick-result-modal-content');
+    content.innerHTML = `
+        <div class="kick-result-modal-header">
+            <div class="kick-result-modal-title">卡机踢人执行结果</div>
+        </div>
+        <div class="kick-result-modal-body">
+            ${bodyHTML}
+        </div>
+        <div class="kick-result-modal-footer">
+            <button class="kick-result-modal-button" id="kickResultCloseBtn">确定</button>
+        </div>
+    `;
+    overlay.appendChild(content);
+    overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+    document.body.appendChild(overlay);
+    // 显示
+    setTimeout(() => overlay.classList.add('show'), 10);
+    // 关闭按钮
+    $('#kickResultCloseBtn', content).onclick = () => {
+        overlay.classList.remove('show');
+        setTimeout(() => overlay.remove(), 300);
+    };
+    // 详情展开
+    setTimeout(() => {
+        const toggle = $('#kickDetailsToggle');
+        const details = $('#kickDetailsContent');
+        if (toggle && details) {
+            toggle.onclick = () => {
+                toggle.classList.toggle('expanded');
+                details.classList.toggle('visible');
+            };
+        }
+    }, 50);
+}
+
+/* ============================================================
+   Mock 数据层 - 模拟原后台 API 返回数据
+   ============================================================ */
+
+const GAME_NAMES = { hfh: '火凤凰', mx99: '明星99', lion: '幸运六狮', mjhl: '麻将胡了', sgyy: '三国演义', fz: '飞艇', hh: '红包', jc: '金蟾捕鱼' };
+const HALL_NAMES = ['体验场', '初级场', '中级场', '高级场', '贵宾场', 'VIP场'];
+
+const mockOnlinePlayers = [];
+const mockOfflinePlayers = [];
+const mockAgents = [];
+const mockMembers = [];
+const mockRechargeRecords = [];
+const mockWithdrawRecords = [];
+const mockAbnormalAccounts = [];
+const mockBanPlayers = [];
+const mockAgentBlacklist = [];
+const mockAgentPullBlacklist = [];
+
+function genMockData() {
+    // 在线玩家:第一个是固定数据示例,其余随机
+    mockOnlinePlayers.push({
+        account: 'vip888',
+        name: '幸运大亨',
+        agentLine: 'agent100',
+        score: 66666,
+        diamond: 8888,
+        // 原后台 todayWinLoss/totalWinLoss 单位是"分",显示时除以100转"钻"
+        todayWinLoss: 480000,   // 显示为 +4800 钻
+        totalWinLoss: 1250000,  // 显示为 +12500 钻
+        game: 'jc',             // 金蟾捕鱼
+        hall: 6,                // VIP场
+        machine: 88,
+        bet: 500,
+        lastLogin: Math.floor(Date.now()/1000) - 120, // 2分钟前登录
+        blacklisted: false,
+        blackVisible: false,
+        targetScore: 0,
+        actualScore: 0,
+    });
+    // 在线玩家只需要这一个(vip888 - 金蟾捕鱼)
+    // 离线玩家(23个,用于分页)
+    for (let i = 0; i < 23; i++) {
+        // 前3个设为"已拉黑+可见+有吃分目标",用于展示吃分目标行
+        const isBlacklisted = i < 3;
+        mockOfflinePlayers.push({
+            account: `player${2000+i}`,
+            name: `离线玩家${i+1}`,
+            agentLine: `agent${randInt(100,200)}`,
+            score: randInt(0, 30000),
+            diamond: randInt(0, 5000),
+            todayWinLoss: randInt(-300000, 300000),
+            totalWinLoss: randInt(-800000, 1200000),
+            game: pick(Object.keys(GAME_NAMES)),
+            hall: randInt(1, 6),
+            machine: randInt(1, 99),
+            bet: randInt(10, 500),
+            lastLogin: Math.floor(Date.now()/1000) - randInt(3600, 86400*7),
+            blacklisted: isBlacklisted || Math.random() > 0.92,
+            blackVisible: isBlacklisted || Math.random() > 0.92,
+            targetScore: isBlacklisted ? randInt(100, 2000) : (Math.random() > 0.7 ? randInt(100, 2000) : 0),
+            actualScore: randInt(0, 500),
+        });
+    }
+    // 代理(6个 + 1个子代理作下钻示例)
+    mockAgents.push({ account: 'agent100', parent: null, diamond: 9999, pool: 5000, subAgents: 2, members: 8, inviteCode: 'AG100XYZ', lastLogin: Math.floor(Date.now()/1000)-3600, regTime: Math.floor(Date.now()/1000)-86400*30 });
+    mockAgents.push({ account: 'agent101', parent: null, diamond: 5555, pool: 2000, subAgents: 1, members: 5, inviteCode: 'AG101XYZ', lastLogin: Math.floor(Date.now()/1000)-7200, regTime: Math.floor(Date.now()/1000)-86400*60 });
+    mockAgents.push({ account: 'agent102', parent: null, diamond: 8888, pool: 0, subAgents: 0, members: 3, inviteCode: 'AG102XYZ', lastLogin: Math.floor(Date.now()/1000)-1800, regTime: Math.floor(Date.now()/1000)-86400*15 });
+    mockAgents.push({ account: 'agent103', parent: null, diamond: 1234, pool: 800, subAgents: 0, members: 6, inviteCode: 'AG103XYZ', lastLogin: Math.floor(Date.now()/1000)-86400, regTime: Math.floor(Date.now()/1000)-86400*45 });
+    mockAgents.push({ account: 'agent104', parent: null, diamond: 7777, pool: 3000, subAgents: 1, members: 4, inviteCode: 'AG104XYZ', lastLogin: Math.floor(Date.now()/1000)-5400, regTime: Math.floor(Date.now()/1000)-86400*90 });
+    mockAgents.push({ account: 'agent105', parent: null, diamond: 3333, pool: -500, subAgents: 0, members: 2, inviteCode: 'AG105XYZ', lastLogin: Math.floor(Date.now()/1000)-10800, regTime: Math.floor(Date.now()/1000)-86400*7 });
+    // agent100 的子代理
+    mockAgents.push({ account: 'agent200', parent: 'agent100', diamond: 2222, pool: 1000, subAgents: 0, members: 3, inviteCode: 'AG200XYZ', lastLogin: Math.floor(Date.now()/1000)-2400, regTime: Math.floor(Date.now()/1000)-86400*10 });
+    mockAgents.push({ account: 'agent201', parent: 'agent100', diamond: 4444, pool: 0, subAgents: 0, members: 2, inviteCode: 'AG201XYZ', lastLogin: Math.floor(Date.now()/1000)-4800, regTime: Math.floor(Date.now()/1000)-86400*5 });
+    // 会员(20个)
+    for (let i = 0; i < 20; i++) {
+        mockMembers.push({
+            account: `member${3000+i}`,
+            name: `会员${i+1}`,
+            parent: pick(mockAgents.filter(a=>!a.parent)).account,
+            diamond: randInt(0, 9999),
+            score: randInt(0, 30000),
+            todayWinLoss: randInt(-2000, 2000),
+            totalWinLoss: randInt(-5000, 10000),
+            lastLogin: Math.floor(Date.now()/1000) - randInt(600, 86400*30),
+            blacklisted: Math.random() > 0.9,
+        });
+    }
+    // 充退记录(50条,30天范围)
+    const operatorList = ['djy088', 'agent100', 'agent101'];
+    for (let i = 0; i < 30; i++) {
+        const isRecharge = Math.random() > 0.4;
+        const amount = randInt(100, 9999);
+        const before = randInt(0, 5000);
+        mockRechargeRecords.push({
+            operator: pick(operatorList),
+            playerAccount: `player${pick([1000,1001,1002,1003,1004,2000,2001,2002])}`,
+            playerName: `玩家${randInt(1,99)}`,
+            amount: isRecharge ? amount : -amount,
+            before,
+            after: isRecharge ? before + amount : before - amount,
+            time: Math.floor(Date.now()/1000) - randInt(60, 86400*30),
+            remark: isRecharge ? '充值' : '退分',
+            type: isRecharge ? 'recharge' : 'withdraw',
+        });
+    }
+    // 异常账号(6个)
+    const abTypes = [
+        { type: 'player', reason: '密码错误 5 次,IP已封禁', count: 5, ipBlocked: true },
+        { type: 'admin', reason: '密码错误 3 次', count: 3, ipBlocked: false },
+        { type: 'player', reason: 'IP已封禁', count: 0, ipBlocked: true },
+        { type: 'child', reason: '密码错误 6 次,IP已封禁', count: 6, ipBlocked: true },
+        { type: 'player', reason: '密码错误 4 次', count: 4, ipBlocked: false },
+        { type: 'admin', reason: '密码错误 7 次,IP已封禁', count: 7, ipBlocked: true },
+    ];
+    abTypes.forEach((ab, i) => {
+        mockAbnormalAccounts.push({
+            uid: `${ab.type === 'player' ? 'player' : 'agent'}${4000+i}`,
+            type: ab.type,
+            reason: ab.reason,
+            count: ab.count,
+            ipBlocked: ab.ipBlocked,
+        });
+    });
+    // 封号玩家(4个)
+    for (let i = 0; i < 4; i++) {
+        mockBanPlayers.push({
+            account: `player${5000+i}`,
+            banTime: Math.floor(Date.now()/1000) - randInt(3600, 86400*10),
+        });
+    }
+    // 代理黑名单(3个)
+    [
+        { account: 'agent900', reason: '违规操作', time: Math.floor(Date.now()/1000)-86400*3 },
+        { account: 'agent901', reason: '恶意刷单', time: Math.floor(Date.now()/1000)-86400*7 },
+        { account: 'agent902', reason: '账号异常', time: Math.floor(Date.now()/1000)-86400*1 },
+    ].forEach(x => mockAgentBlacklist.push(x));
+    // 代理拉黑(2个)
+    [
+        { agent: 'agent910', freeScore: 5000, players: 12, agents: 0, opUser: 'djy088', time: Math.floor(Date.now()/1000)-86400*2 },
+        { agent: 'agent911', freeScore: 8000, players: 25, agents: 3, opUser: 'djy088', time: Math.floor(Date.now()/1000)-86400*5 },
+    ].forEach(x => mockAgentPullBlacklist.push(x));
+}
+
+genMockData();
+
+// 历史 localStorage
+function getHistory() {
+    try { return JSON.parse(localStorage.getItem('accountHistory') || '[]'); } catch { return []; }
+}
+function saveHistory(list) {
+    localStorage.setItem('accountHistory', JSON.stringify(list.slice(0, 10)));
+}
+function addHistory(account) {
+    const list = getHistory().filter(a => a !== account);
+    list.unshift(account);
+    saveHistory(list);
+}
+
+/* ============================================================
+   页面渲染器
+   ============================================================ */
+
+// --------- 玩家列表(主页) ---------
+PAGE_RENDERERS.wanjialist = function(page, ps) {
+    let activeTab = 'online';
+    let sortKey = 'login-time';
+    let onlinePage = 0;
+    const PAGE_SIZE = 10;
+
+    function totalWinLoss() {
+        // 顶栏统计:今日玩家总输赢(钻),原后台是 sum(todayWinLoss)/100
+        return Math.round(mockOnlinePlayers.concat(mockOfflinePlayers).reduce((s,p)=>s+(p.todayWinLoss||0), 0) / 100);
+    }
+    state.totalWinLoss = totalWinLoss();
+    // 更新顶栏统计
+    renderHeader(ROUTES.wanjialist);
+
+    page.innerHTML = `
+        <div class="tabs-container">
+            <div class="tabs-header">
+                <div class="tab active" data-tab="online">在线玩家 <span class="tab-count" id="onlineCount">${mockOnlinePlayers.length}</span></div>
+                <div class="tab" data-tab="offline">离线玩家 <span class="tab-count" id="offlineCount">${mockOfflinePlayers.length}</span></div>
+            </div>
+            <div class="tab-pane active" id="onlineTab">
+                <div id="onlineSection" style="padding: 8px 0;"></div>
+            </div>
+            <div class="tab-pane" id="offlineTab">
+                <div class="sort-options">
+                    <div class="sort-option active" data-sort="login-time">按最后登录时间</div>
+                    <div class="sort-option" data-sort="win-most">今日赢最多</div>
+                    <div class="sort-option" data-sort="loss-most">今日输最多</div>
+                </div>
+                <div id="offlineSection" style="padding: 8px 0;"></div>
+                <div class="load-more-container">
+                    <button class="load-more-btn" id="loadMoreBtn">加载更多</button>
+                </div>
+                <div class="no-more-data hidden" id="noMoreData">已加载全部数据</div>
+            </div>
+        </div>
+    `;
+
+    function playerCardHTML(p, isOnline) {
+        const cls = isOnline ? 'player-card online' : 'player-card offline';
+        // 金额单位:原后台输赢值是"分",显示时除以100转"钻"
+        const todayWinLossDiamond = Math.round((p.todayWinLoss || 0) / 100);
+        const totalWinLossDiamond = Math.round((p.totalWinLoss || 0) / 100);
+        const twColor = todayWinLossDiamond > 0 ? 'positive' : todayWinLossDiamond < 0 ? 'negative' : '';
+        const TwColor = totalWinLossDiamond > 0 ? 'positive' : totalWinLossDiamond < 0 ? 'negative' : '';
+        // 离线时游戏/场次/机台/押注显示 --
+        const gameText = isOnline ? (GAME_NAMES[p.game] || p.game || '--') : '--';
+        const hallText = isOnline ? (HALL_NAMES[p.hall-1] || '--') : '--';
+        const machineText = isOnline ? (p.machine || '--') : '--';
+        const betText = isOnline ? (p.bet != null ? p.bet : '--') : '--';
+        // 押注:离线玩家不加正号(原后台 _0xf8f3c0 第二参数 false)
+        const betDisplay = isOnline ? (p.bet != null ? (p.bet > 0 ? '+' + p.bet : p.bet) : '--') : '--';
+        // 吃分目标行:仅 blacklisted && blackVisible 才显示(原后台逻辑)
+        const showEatScoreRow = p.blacklisted && p.blackVisible;
+        const eatScoreText = (p.blacklisted && p.blackVisible ? '拉黑中...' : '') + (p.targetScore > 0 ? '吃分目标 ' + p.targetScore + ' / 已吃 ' + (p.actualScore || 0) : '');
+        // 登录时间行:仅离线 + 有 lastLoginTime 才显示
+        const showLoginTimeRow = !isOnline && p.lastLogin;
+        // 登录时间格式:YYYY-MM-DD HH:MM(无秒)
+        const loginTimeStr = p.lastLogin ? fmtTimeNoSec(p.lastLogin) : '';
+        return `
+            <div class="${cls}" data-account="${p.account}">
+                <div class="player-header">
+                    <span class="player-account">${p.account}</span>
+                    <span class="player-name">${p.name}</span>
+                    <span class="agent-line">代理:${p.agentLine}</span>
+                    <span class="remaining-score">${p.score || 0}分</span>
+                    <span class="remaining-diamond">${p.diamond || 0}钻</span>
+                </div>
+                <div class="player-info">
+                    <div class="info-row">
+                        <div class="info-item"><span class="info-label">游戏</span><span class="info-value">${gameText}</span></div>
+                        <div class="info-item"><span class="info-label">场次</span><span class="info-value">${hallText}</span></div>
+                        <div class="info-item"><span class="info-label">机台号</span><span class="info-value">${machineText}</span></div>
+                        <div class="info-item"><span class="info-label">押注</span><span class="info-value money-value">${betDisplay}</span></div>
+                    </div>
+                    <div class="info-row money-row">
+                        <div class="info-item"><span class="info-label">今日输赢(钻)</span><span class="info-value money-value ${twColor}">${todayWinLossDiamond > 0 ? '+' : ''}${todayWinLossDiamond}</span></div>
+                        <div class="info-item"><span class="info-label">总输赢(钻)</span><span class="info-value money-value ${TwColor}">${totalWinLossDiamond > 0 ? '+' : ''}${totalWinLossDiamond}</span></div>
+                    </div>
+                    ${showEatScoreRow ? `<div class="info-row money-row eat-score-row"><div class="info-item"><span class="info-label"></span><span class="info-value money-value">${eatScoreText}</span></div></div>` : ''}
+                    ${showLoginTimeRow ? `<div class="info-row login-time-row"><div class="info-item"><svg viewBox="0 0 24 24" width="16" height="16" fill="#007aff"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"/><path d="M12.5 7H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg><span class="info-label">最后登录</span><span class="info-value">${loginTimeStr}</span></div></div>` : ''}
+                </div>
+            </div>
+        `;
+    }
+
+    function renderOnline() {
+        const sec = $('#onlineSection', page);
+        if (mockOnlinePlayers.length === 0) {
+            sec.innerHTML = '<div class="no-data">暂无在线玩家</div>';
+        } else {
+            sec.innerHTML = mockOnlinePlayers.map(p => playerCardHTML(p, true)).join('');
+            $$('.player-card', sec).forEach(c => {
+                c.onclick = () => showPlayerActions(c.dataset.account);
+            });
+        }
+    }
+
+    function renderOffline() {
+        const sec = $('#offlineSection', page);
+        let sorted = [...mockOfflinePlayers];
+        if (sortKey === 'login-time') sorted.sort((a,b) => b.lastLogin - a.lastLogin);
+        else if (sortKey === 'win-most') sorted.sort((a,b) => b.todayWinLoss - a.todayWinLoss);
+        else if (sortKey === 'loss-most') sorted.sort((a,b) => a.todayWinLoss - b.todayWinLoss);
+        const slice = sorted.slice(0, (onlinePage+1) * PAGE_SIZE);
+        sec.innerHTML = slice.map(p => playerCardHTML(p, false)).join('');
+        $$('.player-card', sec).forEach(c => {
+            c.onclick = () => showPlayerActions(c.dataset.account);
+        });
+        // 加载更多按钮状态
+        const loadMore = $('#loadMoreBtn', page);
+        const noMore = $('#noMoreData', page);
+        if (slice.length >= sorted.length) {
+            loadMore.classList.add('hidden');
+            noMore.classList.remove('hidden');
+        } else {
+            loadMore.classList.remove('hidden');
+            noMore.classList.add('hidden');
+        }
+    }
+
+    async function showPlayerActions(account) {
+        const allP = mockOnlinePlayers.concat(mockOfflinePlayers);
+        const p = allP.find(x => x.account === account);
+        if (!p) return;
+        const r = await showModal({
+            title: '玩家账号:' + p.account,
+            subtitle: '玩家名称:' + p.name,
+            actions: [
+                { label: '充值', type: 'recharge', value: 'recharge' },
+                { label: '送奖', type: 'reward', value: 'reward' },
+                { label: '拉黑', type: 'blacklist', value: 'blacklist' },
+                { label: '玩家详情', type: 'details', value: 'details' },
+                { label: '中奖历史', type: 'prize-history', value: 'prize-history' },
+                { label: '游戏轨迹', type: 'track', value: 'track' },
+            ],
+            cancelText: '取消'
+        });
+        if (!r) return;
+        if (r === 'recharge') {
+            navigate('chongzhi', { presetAccount: p.account, role: 'player', name: p.name });
+        } else if (r === 'reward') {
+            navigate('songjiang', { presetAccount: p.account, name: p.name });
+        } else if (r === 'blacklist') {
+            if (await confirm(`确定要拉黑玩家 ${p.account} 吗?`)) {
+                p.blacklisted = true;
+                renderOnline(); renderOffline();
+                toast(`玩家 ${p.account} 已拉黑`, 'success');
+            }
+        } else if (r === 'details') {
+            const twD = Math.round((p.todayWinLoss || 0) / 100);
+            const TwD = Math.round((p.totalWinLoss || 0) / 100);
+            showModal({
+                title: '玩家详情',
+                bodyHTML: `
+                    <div style="font-size:14px; line-height:1.8;">
+                        <div>账号: <b>${p.account}</b></div>
+                        <div>昵称: ${p.name}</div>
+                        <div>代理线: ${p.agentLine}</div>
+                        <div>剩余分数: <span class="positive">${p.score}</span></div>
+                        <div>剩余钻石: <span style="color:var(--primary);">${p.diamond}</span></div>
+                        <div>今日输赢: <span class="${twD>=0?'positive':'negative'}">${twD>=0?'+':''}${twD}</span></div>
+                        <div>总输赢: <span class="${TwD>=0?'positive':'negative'}">${TwD>=0?'+':''}${TwD}</span></div>
+                        <div>所在游戏: ${GAME_NAMES[p.game]||p.game}</div>
+                        <div>所在场次: ${HALL_NAMES[p.hall-1]||p.hall}场</div>
+                        <div>机台号: ${p.machine}</div>
+                        <div>最后登录: ${fmtTime(p.lastLogin)}</div>
+                        ${p.targetScore>0?`<div>吃分目标: <span class="negative">${p.targetScore} / 已吃 ${p.actualScore||0}</span></div>`:''}
+                    </div>
+                `,
+                cancelText: '关闭'
+            });
+        } else if (r === 'prize-history') {
+            showModal({
+                title: '中奖历史',
+                bodyHTML: `
+                    <div class="table-container" style="margin:0;box-shadow:none;">
+                        <div class="table-scroll">
+                        <table class="data-table">
+                            <thead><tr><th>时间</th><th>游戏</th><th>金额</th></tr></thead>
+                            <tbody>
+                                ${[1,2,3].map(i => `<tr><td>${fmtTime(Math.floor(Date.now()/1000)-i*3600)}</td><td>${GAME_NAMES[p.game]||p.game}</td><td class="positive">+${randInt(100,9999)}</td></tr>`).join('')}
+                            </tbody>
+                        </table>
+                        </div>
+                    </div>
+                `,
+                cancelText: '关闭'
+            });
+        } else if (r === 'track') {
+            showModal({
+                title: '游戏轨迹',
+                bodyHTML: `
+                    <div style="font-family:ui-monospace,monospace; background:#f8f9fa; padding:12px; border-radius:8px; border-left:4px solid var(--purple); font-size:13px; line-height:1.7;">
+                        账号 ${p.account} 的近期游戏轨迹:
+                        ${[1,2,3,4,5].map(i => `<div>${fmtTime(Math.floor(Date.now()/1000)-i*600)} - 进入 ${GAME_NAMES[p.game]||p.game} ${HALL_NAMES[p.hall-1]} - 押注 ${p.bet}</div>`).join('')}
+                    </div>
+                `,
+                cancelText: '关闭'
+            });
+        }
+    }
+
+    // 标签切换
+    $$('.tab', page).forEach(t => {
+        t.onclick = () => {
+            $$('.tab', page).forEach(x => x.classList.remove('active'));
+            t.classList.add('active');
+            activeTab = t.dataset.tab;
+            $$('.tab-pane', page).forEach(p => p.classList.remove('active'));
+            $(`#${activeTab}Tab`, page).classList.add('active');
+        };
+    });
+    // 排序切换
+    $$('.sort-option', page).forEach(o => {
+        o.onclick = () => {
+            $$('.sort-option', page).forEach(x => x.classList.remove('active'));
+            o.classList.add('active');
+            sortKey = o.dataset.sort;
+            onlinePage = 0;
+            renderOffline();
+        };
+    });
+    // 加载更多
+    $('#loadMoreBtn', page).onclick = () => {
+        onlinePage++;
+        renderOffline();
+    };
+
+    renderOnline();
+    renderOffline();
+
+    // 顶栏搜索
+    PAGE_SEARCH.wanjialist = () => showSearchModal();
+    PAGE_REFRESH.wanjialist = () => {
+        showLoading('刷新数据...');
+        setTimeout(() => { hideLoading(); toast('数据已刷新', 'success'); renderOnline(); renderOffline(); }, 600);
+    };
+};
+
+async function showSearchModal() {
+    return showModal({
+        title: '搜索玩家',
+        bodyHTML: `
+            <div class="form-group">
+                <input type="text" class="form-input" id="searchInput" placeholder="输入玩家账号或昵称" style="margin-bottom:8px;">
+                <button class="btn btn-primary" id="searchSubmitBtn" style="width:100%;">搜索</button>
+            </div>
+            <div id="searchResults" style="margin-top:8px; max-height: 400px; overflow-y: auto;"></div>
+        `,
+        cancelText: '关闭'
+    }).then(() => {});
+    // 注:showModal 不会等待内部事件,这里我们手动绑定
+}
+
+// 改造 showSearchModal 为内联实现
+async function showSearchModalV2() {}
+
+// --------- 添加代理 ---------
+PAGE_RENDERERS.kaidaili = function(page, ps) {
+    page.innerHTML = `
+        <div class="form-container">
+            <div class="form-title">代理账号创建</div>
+            <form id="createAgentForm" autocomplete="off">
+                <div class="form-group">
+                    <label class="form-label">账号</label>
+                    <input type="text" class="form-input" id="agentAccount" placeholder="请输入代理账号" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">密码</label>
+                    <input type="password" class="form-input" id="agentPassword" placeholder="密码必须是数字+大小写字母" required>
+                </div>
+                <div class="switch-row">
+                    <span class="switch-label">允许该代理创建下级代理</span>
+                    <label class="switch">
+                        <input type="checkbox" id="allowCreateSubAgent" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <button type="submit" class="submit-btn" id="submitBtn">创建代理</button>
+            </form>
+        </div>
+    `;
+    $('#createAgentForm', page).addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const acc = $('#agentAccount', page).value.trim();
+        const pwd = $('#agentPassword', page).value.trim();
+        const allowSub = $('#allowCreateSubAgent', page).checked;
+        if (!acc || !pwd) { toast('请填写完整信息', 'error'); return; }
+        if (pwd.length < 8) { toast('密码至少 8 位', 'error'); return; }
+        const btn = $('#submitBtn', page);
+        btn.classList.add('loading');
+        btn.innerHTML = '<span class="spinner"></span>创建中...';
+        showLoading('创建代理中...');
+        await delay(800);
+        hideLoading();
+        btn.classList.remove('loading');
+        btn.textContent = '创建代理';
+        // 添加到 Mock 数据
+        mockAgents.push({
+            account: acc, parent: null, diamond: 0, pool: 0, subAgents: 0, members: 0,
+            inviteCode: acc.toUpperCase().slice(0,6) + randInt(100,999),
+            lastLogin: Math.floor(Date.now()/1000), regTime: Math.floor(Date.now()/1000),
+        });
+        await showResultModal({ success: true, message: `代理账号 ${acc} 创建成功${allowSub?'(允许创建下级代理)':''}` });
+        // 清空表单
+        $('#agentAccount', page).value = '';
+        $('#agentPassword', page).value = '';
+    });
+    PAGE_REFRESH.kaidaili = () => toast('页面已刷新', 'success');
+};
+
+// --------- 我的代理 ---------
+PAGE_RENDERERS.wodedaili = function(page, ps) {
+    let breadcrumb = [{ name: '所有代理', account: null }];
+    if (ps.presetBreadcrumb) breadcrumb = ps.presetBreadcrumb;
+    else state.breadcrumb = breadcrumb;
+
+    function currentAgents() {
+        const parent = breadcrumb[breadcrumb.length-1].account;
+        return mockAgents.filter(a => (parent ? a.parent === parent : !a.parent));
+    }
+
+    function render() {
+        const list = currentAgents();
+        const totalDiamond = list.reduce((s,a)=>s+a.diamond, 0);
+        const totalPool = list.reduce((s,a)=>s+a.pool, 0);
+        page.innerHTML = `
+            <div class="container">
+                <div class="stats-container">
+                    <div class="stats-title">代理统计</div>
+                    <div class="stats-info">
+                        <div class="stats-item"><span class="stats-label">代理总数:</span><span class="stats-value">${list.length}</span></div>
+                        <div class="stats-item"><span class="stats-label">总钻石:</span><span class="stats-value diamond">${totalDiamond.toLocaleString()}</span></div>
+                        <div class="stats-item"><span class="stats-label">总奖池:</span><span class="stats-value pool">${totalPool.toLocaleString()}</span></div>
+                    </div>
+                </div>
+                <div class="breadcrumb" id="breadcrumb">
+                    ${breadcrumb.map((b,i) => `
+                        <span class="breadcrumb-item ${i===breadcrumb.length-1?'breadcrumb-current':''}" data-idx="${i}">${b.name}</span>
+                        ${i < breadcrumb.length-1 ? '<span class="breadcrumb-separator">/</span>' : ''}
+                    `).join('')}
+                </div>
+                <div class="table-container">
+                    <div class="table-scroll">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th style="width:22%;">账号</th>
+                                <th style="width:10%;">剩余钻石</th>
+                                <th style="width:13%;">奖池剩余</th>
+                                <th style="width:8%;">下级代理</th>
+                                <th style="width:12%;">我的会员</th>
+                                <th style="width:13%;">邀请码</th>
+                                <th style="width:12%;">最后登陆</th>
+                                <th style="width:10%;">注册时间</th>
+                            </tr>
+                        </thead>
+                        <tbody id="agentTbody">
+                            ${list.length === 0 ? '<tr><td colspan="8" class="no-data">暂无代理数据</td></tr>' : list.map(a => `
+                                <tr>
+                                    <td><span class="account-link" data-account="${a.account}">${a.account}</span></td>
+                                    <td class="amount">${a.diamond.toLocaleString()}</td>
+                                    <td class="amount ${a.pool<0?'negative':''}">${a.pool.toLocaleString()}</td>
+                                    <td style="text-align:center;">${a.subAgents > 0 ? `<span class="row-btn unban" data-account="${a.account}">${a.subAgents}</span>` : '0'}</td>
+                                    <td style="text-align:center;">${a.members}</td>
+                                    <td><span style="font-family:ui-monospace,monospace; font-size:12px;">${a.inviteCode}</span></td>
+                                    <td class="text-muted" style="font-size:12px;">${fmtTime(a.lastLogin)}</td>
+                                    <td class="text-muted" style="font-size:12px;">${fmtDate(a.regTime*1000)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+            </div>
+        `;
+        // 账号点击 - 下钻
+        $$('.account-link', page).forEach(s => {
+            s.onclick = () => {
+                const acc = s.dataset.account;
+                breadcrumb.push({ name: acc, account: acc });
+                render();
+            };
+        });
+        // 下级代理按钮 - 下钻
+        $$('.row-btn.unban[data-account]', page).forEach(b => {
+            b.onclick = () => {
+                const acc = b.dataset.account;
+                breadcrumb.push({ name: acc, account: acc });
+                render();
+            };
+        });
+        // 面包屑点击
+        $$('.breadcrumb-item', page).forEach(s => {
+            s.onclick = () => {
+                const idx = parseInt(s.dataset.idx);
+                breadcrumb = breadcrumb.slice(0, idx+1);
+                render();
+            };
+        });
+    }
+    render();
+    PAGE_SEARCH.wodedaili = () => showAgentSearchModal();
+    PAGE_REFRESH.wodedaili = () => { render(); toast('代理列表已刷新', 'success'); };
+};
+
+async function showAgentSearchModal() {
+    const overlay = el('div', 'modal-overlay show');
+    const content = el('div', 'modal-content modal-search');
+    content.innerHTML = `
+        <div class="modal-header"><div class="modal-title">搜索代理信息</div></div>
+        <div class="modal-body">
+            <div class="option-group segmented" style="margin-bottom:12px;">
+                <div class="option-item active" data-type="account">账号</div>
+                <div class="option-item" data-type="inviteCode">邀请码</div>
+            </div>
+            <div style="display:flex; gap:8px;">
+                <input type="text" class="form-input" id="agentSearchInput" placeholder="输入搜索内容" style="flex:1;">
+                <button class="btn btn-primary" id="agentSearchBtn">${ICONS.search}</button>
+            </div>
+            <div id="agentSearchResults" style="margin-top:12px; max-height: 300px; overflow-y:auto;"></div>
+        </div>
+        <div class="modal-footer"><button class="modal-footer-btn" id="agentSearchCancel">关闭</button></div>
+    `;
+    overlay.appendChild(content);
+    $('#modalContainer').appendChild(overlay);
+    const close = () => { overlay.remove(); };
+    overlay.onclick = (e) => { if (e.target === overlay) close(); };
+    $('#agentSearchCancel', content).onclick = close;
+
+    let searchType = 'account';
+    $$('.option-item', content).forEach(o => {
+        o.onclick = () => {
+            $$('.option-item', content).forEach(x => x.classList.remove('active'));
+            o.classList.add('active');
+            searchType = o.dataset.type;
+        };
+    });
+    const doSearch = () => {
+        const kw = $('#agentSearchInput', content).value.trim();
+        if (!kw) { toast('请输入搜索内容', 'error'); return; }
+        const results = mockAgents.filter(a => searchType === 'account' ? a.account.includes(kw) : a.inviteCode.includes(kw));
+        const resDiv = $('#agentSearchResults', content);
+        if (results.length === 0) {
+            resDiv.innerHTML = '<div class="no-data">未找到匹配的代理</div>';
+        } else {
+            resDiv.innerHTML = results.map(a => `
+                <div style="padding:12px; border-left:3px solid var(--primary); background:var(--bg-soft); margin-bottom:8px; border-radius:0 8px 8px 0;">
+                    <div style="font-weight:600; color:var(--text-primary); margin-bottom:6px;">${a.account} ${a.parent ? '<span class="tag child">子代理</span>' : ''}</div>
+                    <div style="font-size:13px; color:var(--text-secondary); line-height:1.6;">
+                        <div>剩余钻石: <b style="color:var(--primary);">${a.diamond.toLocaleString()}</b></div>
+                        <div>奖池剩余: <b class="${a.pool<0?'negative':''}">${a.pool.toLocaleString()}</b></div>
+                        <div>邀请码: <span style="font-family:ui-monospace,monospace;">${a.inviteCode} <button class="copy-icon" data-code="${a.inviteCode}" style="color:var(--primary); font-size:12px; margin-left:4px;">复制</button></span></div>
+                        <div>下级代理: ${a.subAgents} | 会员: ${a.members}</div>
+                        <div>最后登录: ${fmtTime(a.lastLogin)}</div>
+                    </div>
+                    <div style="margin-top:8px; display:flex; gap:8px;">
+                        <button class="btn btn-secondary recharge-btn" data-account="${a.account}" style="flex:1; padding:6px 0; font-size:13px;">充值</button>
+                        <button class="btn btn-success flow-btn" data-account="${a.account}" style="flex:1; padding:6px 0; font-size:13px;">流水</button>
+                    </div>
+                </div>
+            `).join('');
+            $$('.copy-icon', resDiv).forEach(c => c.onclick = () => {
+                navigator.clipboard?.writeText(c.dataset.code);
+                toast('已复制: ' + c.dataset.code, 'success');
+            });
+            $$('.recharge-btn', resDiv).forEach(b => b.onclick = () => {
+                close();
+                navigate('chongzhi', { presetAccount: b.dataset.account, role: 'agent' });
+            });
+            $$('.flow-btn', resDiv).forEach(b => b.onclick = () => {
+                showBonusFlowModal(b.dataset.account);
+            });
+        }
+    };
+    $('#agentSearchBtn', content).onclick = doSearch;
+    $('#agentSearchInput', content).onkeydown = (e) => { if (e.key === 'Enter') doSearch(); };
+}
+
+async function showBonusFlowModal(account) {
+    const today = new Date();
+    const start = new Date(today.getTime() - 86400*7*1000);
+    showModal({
+        title: '奖池流水',
+        subtitle: account,
+        bodyHTML: `
+            <div style="display:flex; gap:8px; margin-bottom:12px; align-items:flex-end;">
+                <div style="flex:1;"><label class="form-label">开始日期</label><input type="date" class="form-input" id="bfStart" value="${fmtDate(start)}"></div>
+                <div style="flex:1;"><label class="form-label">结束日期</label><input type="date" class="form-input" id="bfEnd" value="${fmtDate(today)}"></div>
+            </div>
+            <button class="btn btn-primary" id="bfSearch" style="width:100%; margin-bottom:12px;">查询</button>
+            <div class="stats-container" style="margin:0 0 12px 0; padding:12px;">
+                <div class="stats-item"><span class="stats-label">充值:</span><span class="positive">+${randInt(1000,9999)}</span></div>
+                <div class="stats-item"><span class="stats-label">支出:</span><span class="negative">-${randInt(500,5000)}</span></div>
+            </div>
+            <div class="table-container" style="margin:0; box-shadow:none;">
+                <div class="table-scroll">
+                <table class="data-table">
+                    <thead><tr><th>时间</th><th>余额</th><th>充值</th><th>支出</th><th>备注</th></tr></thead>
+                    <tbody>
+                        ${[1,2,3,4,5].map(i => `<tr><td style="font-size:12px;">${fmtTime(Math.floor(Date.now()/1000)-i*86400)}</td><td class="amount">${randInt(1000,9999)}</td><td class="amount positive">+${randInt(100,999)}</td><td class="amount negative">-${randInt(50,500)}</td><td style="font-size:12px;">操作${i}</td></tr>`).join('')}
+                    </tbody>
+                </table>
+                </div>
+            </div>
+        `,
+        cancelText: '关闭'
+    }).then(() => {});
+    setTimeout(() => {
+        const btn = $('#bfSearch');
+        if (btn) btn.onclick = () => toast('查询完成(演示数据)', 'success');
+    }, 100);
+}
+
+// --------- 会员盈亏详情 ---------
+PAGE_RENDERERS.huiyuanyingkui = function(page, ps) {
+    let sortKey = 'win-most'; // win-most | loss-most
+    function render() {
+        // 统计
+        const totalProfit = mockMembers.reduce((s,m) => s + (m.totalWinLoss||0), 0);
+        const totalRecharge = mockMembers.reduce((s,m) => s + randInt(0, 99999), 0); // mock
+        const totalWithdraw = mockMembers.reduce((s,m) => s + randInt(0, 99999), 0); // mock
+        const todayProfit = mockMembers.reduce((s,m) => s + (m.todayWinLoss||0), 0);
+        const todayRecharge = mockMembers.reduce((s,m) => s + randInt(0, 9999), 0); // mock
+        const todayWithdraw = mockMembers.reduce((s,m) => s + randInt(0, 9999), 0); // mock
+        // 排序
+        let sorted = [...mockMembers];
+        if (sortKey === 'win-most') sorted.sort((a,b) => (b.totalWinLoss||0) - (a.totalWinLoss||0));
+        else sorted.sort((a,b) => (a.totalWinLoss||0) - (b.totalWinLoss||0));
+
+        page.innerHTML = `
+            <div class="container">
+                <div class="stats-grid" style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:16px;">
+                    <div class="stat-box"><div class="stat-label">总盈亏</div><div class="stat-value ${totalProfit>=0?'positive':'negative'}">${totalProfit>=0?'+':''}${Math.round(totalProfit/100).toLocaleString()}</div></div>
+                    <div class="stat-box"><div class="stat-label">总充值</div><div class="stat-value">${totalRecharge.toLocaleString()}</div></div>
+                    <div class="stat-box"><div class="stat-label">总退钻</div><div class="stat-value">${totalWithdraw.toLocaleString()}</div></div>
+                    <div class="stat-box"><div class="stat-label">今日盈亏</div><div class="stat-value ${todayProfit>=0?'positive':'negative'}">${todayProfit>=0?'+':''}${Math.round(todayProfit/100).toLocaleString()}</div></div>
+                    <div class="stat-box"><div class="stat-label">今日充值</div><div class="stat-value">${todayRecharge.toLocaleString()}</div></div>
+                    <div class="stat-box"><div class="stat-label">今日退钻</div><div class="stat-value">${todayWithdraw.toLocaleString()}</div></div>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                    <div style="font-size:16px; font-weight:600; color:var(--text-primary);">会员详细信息</div>
+                    <div style="display:flex; gap:8px;">
+                        <button class="btn btn-secondary sort-btn ${sortKey==='win-most'?'active':''}" data-sort="win-most" style="padding:6px 12px; font-size:13px; width:auto; margin:0;">↓ 赢的最多</button>
+                        <button class="btn btn-secondary sort-btn ${sortKey==='loss-most'?'active':''}" data-sort="loss-most" style="padding:6px 12px; font-size:13px; width:auto; margin:0;">↓ 输的最多</button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <div class="table-scroll">
+                    <table class="data-table" style="min-width:900px;">
+                        <thead><tr>
+                            <th>玩家账号</th><th>剩余钻石</th><th>剩余分数</th><th>总盈亏</th><th>总充值</th><th>总退钻</th><th>今日盈亏</th><th>今日充值</th><th>今日退钻</th>
+                        </tr></thead>
+                        <tbody>
+                            ${sorted.map(m => {
+                                const totalW = Math.round((m.totalWinLoss||0)/100);
+                                const todayW = Math.round((m.todayWinLoss||0)/100);
+                                const mRecharge = randInt(0, 9999);
+                                const mWithdraw = randInt(0, 9999);
+                                const mTodayRecharge = randInt(0, 999);
+                                const mTodayWithdraw = randInt(0, 999);
+                                return `
+                                <tr>
+                                    <td><span class="account-link" data-account="${m.account}">${m.account}</span></td>
+                                    <td class="amount">${m.diamond.toLocaleString()}</td>
+                                    <td class="amount">${m.score.toLocaleString()}</td>
+                                    <td class="amount ${totalW>=0?'positive':'negative'}">${totalW>=0?'+':''}${totalW.toLocaleString()}</td>
+                                    <td class="amount">${mRecharge.toLocaleString()}</td>
+                                    <td class="amount">${mWithdraw.toLocaleString()}</td>
+                                    <td class="amount ${todayW>=0?'positive':'negative'}">${todayW>=0?'+':''}${todayW.toLocaleString()}</td>
+                                    <td class="amount">${mTodayRecharge.toLocaleString()}</td>
+                                    <td class="amount">${mTodayWithdraw.toLocaleString()}</td>
+                                </tr>`;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+                <div style="text-align:center; color:var(--text-tertiary); font-size:12px; padding:8px;">左右滑动查看更多数据</div>
+            </div>
+        `;
+        // 排序按钮
+        $$('.sort-btn', page).forEach(b => {
+            b.onclick = () => { sortKey = b.dataset.sort; render(); };
+        });
+        // 账号点击 - 跳玩家详情
+        $$('.account-link', page).forEach(s => {
+            s.onclick = () => toast(`查看会员 ${s.dataset.account} 详情`, 'info');
+        });
+    }
+    render();
+    PAGE_REFRESH.huiyuanyingkui = () => { render(); toast('已刷新', 'success'); };
+};
+
+// --------- 玩家充退 ---------
+PAGE_RENDERERS.chongzhi = function(page, ps) {
+    const presetAccount = ps.presetAccount || '';
+    const presetRole = ps.role || 'agent';
+    let roleType = presetRole; // agent | player
+    let opType = 'recharge';   // recharge | withdraw
+    let currentAccountInfo = null;
+
+    page.innerHTML = `
+        <div class="container">
+            <div class="form-group" style="background:white; border-radius:12px; padding:16px; box-shadow:var(--shadow-card); margin-bottom:16px;">
+                <div class="form-group">
+                    <label class="form-label">角色类型</label>
+                    <div class="option-group flat" id="roleGroup">
+                        <div class="option-item ${roleType==='agent'?'active':''}" data-val="agent">下级代理</div>
+                        <div class="option-item ${roleType==='player'?'active':''}" data-val="player">玩家</div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">操作类型</label>
+                    <div class="option-group flat" id="opGroup">
+                        <div class="option-item ${opType==='recharge'?'active':''}" data-val="recharge">充值</div>
+                        <div class="option-item ${opType==='withdraw'?'active':''}" data-val="withdraw">退分</div>
+                    </div>
+                </div>
+                <div class="form-group" style="position:relative; margin-bottom: 0;">
+                    <label class="form-label">对方账号</label>
+                    <div style="display:flex; gap:8px; position:relative;">
+                        <input type="text" class="form-input" id="accountInput" placeholder="请输入账号" value="${presetAccount}" autocomplete="off" style="flex:1;">
+                        <button class="btn btn-secondary" id="queryBtn" style="flex-shrink:0;">查询</button>
+                    </div>
+                    <div class="history-list hidden" id="historyList"></div>
+                </div>
+                <div style="color:var(--primary); font-size:13px; margin:8px 0;">
+                    ${ICONS.info.replace('<svg viewBox="0 0 24 24">','<svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:-2px;">')} 请先查询账号信息,再进行${opType==='recharge'?'充值':'退分'}操作
+                </div>
+                <div class="account-info" id="accountInfo">
+                    <div class="account-info-row"><span class="account-info-label">💎 剩余钻石</span><span class="account-info-value diamond" id="accountDiamond">0</span></div>
+                    <div class="account-info-row"><span class="account-info-label">🔢 剩余分数</span><span class="account-info-value score" id="accountScore">0</span></div>
+                </div>
+            </div>
+            <div class="form-group" style="background:white; border-radius:12px; padding:16px; box-shadow:var(--shadow-card); margin-bottom:0;">
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label class="form-label" id="amountLabel">充值钻石</label>
+                    <input type="number" class="form-input" id="amountInput" placeholder="请输入${opType==='recharge'?'充值':'退分'}钻石数量" inputmode="numeric" pattern="[0-9]*">
+                </div>
+                <button class="btn btn-primary btn-block-action" id="submitBtn" disabled>${opType==='recharge'?'充值':'退分'}</button>
+            </div>
+        </div>
+    `;
+
+    // 分段控件切换
+    $$('#roleGroup .option-item', page).forEach(o => {
+        o.onclick = () => {
+            $$('#roleGroup .option-item', page).forEach(x => x.classList.remove('active'));
+            o.classList.add('active');
+            roleType = o.dataset.val;
+            resetAccountInfo();
+        };
+    });
+    $$('#opGroup .option-item', page).forEach(o => {
+        o.onclick = () => {
+            $$('#opGroup .option-item', page).forEach(x => x.classList.remove('active'));
+            o.classList.add('active');
+            opType = o.dataset.val;
+            $('#amountLabel', page).textContent = opType === 'recharge' ? '充值钻石' : '退分钻石';
+            $('#amountInput', page).placeholder = `请输入${opType==='recharge'?'充值':'退分'}钻石数量`;
+            $('#submitBtn', page).textContent = opType === 'recharge' ? '充值' : '退分';
+            resetAccountInfo();
+        };
+    });
+
+    function resetAccountInfo() {
+        currentAccountInfo = null;
+        $('#accountInfo', page).classList.remove('show');
+        $('#submitBtn', page).disabled = true;
+    }
+
+    // 历史下拉
+    const historyList = $('#historyList', page);
+    const accountInput = $('#accountInput', page);
+    function renderHistory() {
+        const list = getHistory();
+        if (list.length === 0) {
+            historyList.innerHTML = '<div class="history-item"><span style="color:var(--text-disabled);">暂无历史记录</span></div>';
+        } else {
+            historyList.innerHTML = list.map(a => `
+                <div class="history-item"><span data-account="${a}">${a}</span><button class="history-delete" data-del="${a}">删除</button></div>
+            `).join('') + '<div class="history-clear" id="historyClear">清空历史</div>';
+            $$('.history-item span[data-account]', historyList).forEach(s => {
+                s.onclick = () => { accountInput.value = s.dataset.account; historyList.classList.add('hidden'); };
+            });
+            $$('.history-delete', historyList).forEach(d => {
+                d.onclick = (e) => {
+                    e.stopPropagation();
+                    saveHistory(getHistory().filter(a => a !== d.dataset.del));
+                    renderHistory();
+                };
+            });
+            $('#historyClear', historyList).onclick = () => { saveHistory([]); renderHistory(); };
+        }
+    }
+    accountInput.onfocus = () => { renderHistory(); historyList.classList.remove('hidden'); };
+    accountInput.onblur = () => { setTimeout(() => historyList.classList.add('hidden'), 200); };
+    accountInput.oninput = () => resetAccountInfo();
+
+    // 金额只允许数字
+    $('#amountInput', page).oninput = (e) => {
+        e.target.value = e.target.value.replace(/[^0-9]/g, '');
+    };
+
+    // 查询
+    $('#queryBtn', page).onclick = async () => {
+        const acc = accountInput.value.trim();
+        if (!acc) { toast('请输入账号', 'error'); return; }
+        showLoading('查询中...');
+        await delay(500);
+        hideLoading();
+        // 模拟查询
+        let diamond, score;
+        if (roleType === 'agent') {
+            const ag = mockAgents.find(a => a.account === acc);
+            if (ag) { diamond = ag.diamond; score = randInt(1000, 50000); }
+        } else {
+            const pl = mockOnlinePlayers.concat(mockOfflinePlayers).find(p => p.account === acc);
+            if (pl) { diamond = pl.diamond; score = pl.score; }
+            const mem = mockMembers.find(m => m.account === acc);
+            if (mem) { diamond = mem.diamond; score = mem.score; }
+        }
+        if (diamond == null) {
+            // 模拟一个随机账号
+            diamond = randInt(100, 9999);
+            score = randInt(1000, 50000);
+        }
+        currentAccountInfo = { account: acc, diamond, score };
+        $('#accountDiamond', page).textContent = diamond.toLocaleString();
+        $('#accountScore', page).textContent = score.toLocaleString();
+        $('#accountInfo', page).classList.add('show');
+        $('#submitBtn', page).disabled = false;
+        addHistory(acc);
+        toast(`查询成功:${acc}`, 'success');
+    };
+
+    // 提交
+    $('#submitBtn', page).onclick = async () => {
+        if (!currentAccountInfo) { toast('请先查询账号', 'error'); return; }
+        const amount = parseInt($('#amountInput', page).value);
+        if (!amount || amount <= 0) { toast('请输入有效金额', 'error'); return; }
+        if (opType === 'recharge' && amount > state.user.diamond) {
+            toast(`充值金额不能超过您的余额 ${state.user.diamond} (当前 ${amount})`, 'error'); return;
+        }
+        if (opType === 'withdraw' && amount > currentAccountInfo.score) {
+            toast(`退分金额不能超过对方分数 ${currentAccountInfo.score} (当前 ${amount})`, 'error'); return;
+        }
+        const btn = $('#submitBtn', page);
+        btn.classList.add('loading');
+        btn.innerHTML = '<span class="spinner"></span>处理中...';
+        showLoading('处理中...');
+        await delay(800);
+        hideLoading();
+        btn.classList.remove('loading');
+        btn.textContent = opType === 'recharge' ? '充值' : '退分';
+        // 更新数据
+        if (opType === 'recharge') {
+            currentAccountInfo.diamond += amount;
+            state.user.diamond -= amount;
+            mockRechargeRecords.unshift({
+                operator: state.user.username, playerAccount: currentAccountInfo.account,
+                playerName: '', amount, before: currentAccountInfo.diamond - amount,
+                after: currentAccountInfo.diamond, time: Math.floor(Date.now()/1000),
+                remark: '充值', type: 'recharge'
+            });
+        } else {
+            currentAccountInfo.score -= amount;
+            state.user.diamond += amount;
+            mockRechargeRecords.unshift({
+                operator: state.user.username, playerAccount: currentAccountInfo.account,
+                playerName: '', amount: -amount, before: currentAccountInfo.score + amount,
+                after: currentAccountInfo.score, time: Math.floor(Date.now()/1000),
+                remark: '退分', type: 'withdraw'
+            });
+        }
+        $('#accountDiamond', page).textContent = currentAccountInfo.diamond.toLocaleString();
+        $('#accountScore', page).textContent = currentAccountInfo.score.toLocaleString();
+        $('#amountInput', page).value = '';
+        // 更新顶栏余额
+        renderHeader(ROUTES.chongzhi);
+        toast(`成功为${roleType==='agent'?'代理':'玩家'} ${currentAccountInfo.account} ${opType==='recharge'?'充值':'退分'} ${amount} 钻石`, 'success');
+    };
+
+    // 如果预填了账号,自动查询
+    if (presetAccount) {
+        setTimeout(() => $('#queryBtn', page).click(), 200);
+    }
+};
+
+// --------- 充退记录 ---------
+PAGE_RENDERERS.chongzhilist = function(page, ps) {
+    let recordType = 'all';
+    let curPage = 0;
+    const PAGE_SIZE = 20;
+    const today = new Date();
+    const weekAgo = new Date(today.getTime() - 86400*7*1000);
+
+    function filtered() {
+        let list = [...mockRechargeRecords];
+        if (recordType !== 'all') list = list.filter(r => r.type === recordType);
+        const startStr = $('#fStart', page)?.value;
+        const endStr = $('#fEnd', page)?.value;
+        const acc = $('#fAccount', page)?.value.trim();
+        const op = $('#fOperator', page)?.value.trim();
+        if (startStr) {
+            const t = new Date(startStr + 'T00:00:00').getTime() / 1000;
+            list = list.filter(r => r.time >= t);
+        }
+        if (endStr) {
+            const t = new Date(endStr + 'T23:59:59').getTime() / 1000;
+            list = list.filter(r => r.time <= t);
+        }
+        if (acc) list = list.filter(r => r.playerAccount.includes(acc));
+        if (op) list = list.filter(r => r.operator.includes(op));
+        return list.sort((a,b) => b.time - a.time);
+    }
+
+    function render() {
+        const list = filtered();
+        const totalRecharge = list.filter(r => r.amount > 0).reduce((s,r) => s+r.amount, 0);
+        const totalWithdraw = list.filter(r => r.amount < 0).reduce((s,r) => s+r.amount, 0);
+        const totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
+        if (curPage >= totalPages) curPage = totalPages - 1;
+        const slice = list.slice(curPage*PAGE_SIZE, (curPage+1)*PAGE_SIZE);
+
+        page.innerHTML = `
+            <div class="container">
+                <div class="filter-tabs">
+                    <div class="filter-tab ${recordType==='all'?'active':''}" data-type="all">全部</div>
+                    <div class="filter-tab ${recordType==='recharge'?'active':''}" data-type="recharge">充值</div>
+                    <div class="filter-tab ${recordType==='withdraw'?'active':''}" data-type="withdraw">退分</div>
+                </div>
+                <div class="card" style="padding:16px; margin-bottom:16px;">
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                        <div class="form-group" style="margin:0;">
+                            <label class="form-label">开始日期</label>
+                            <input type="date" class="form-input" id="fStart" value="${fmtDate(weekAgo)}">
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label class="form-label">结束日期</label>
+                            <input type="date" class="form-input" id="fEnd" value="${fmtDate(today)}">
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label class="form-label">玩家账号</label>
+                            <input type="text" class="form-input" id="fAccount" placeholder="可选">
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label class="form-label">操作人</label>
+                            <input type="text" class="form-input" id="fOperator" placeholder="可选">
+                        </div>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; flex-wrap:wrap; gap:8px;">
+                        <div style="font-size:13px; display:flex; gap:12px;">
+                            <span>总充值: <b class="positive">+${totalRecharge.toLocaleString()}</b></span>
+                            <span>总退分: <b class="negative">${totalWithdraw.toLocaleString()}</b></span>
+                        </div>
+                        <button class="btn btn-primary" id="filterBtn" style="min-width:120px;">筛选</button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <div class="table-scroll">
+                    <table class="data-table">
+                        <thead><tr><th>操作人</th><th>玩家账号</th><th>玩家名称</th><th>充退数量(钻)</th><th>充退前钻石</th><th>充退后钻石</th><th>充退时间</th><th>备注</th></tr></thead>
+                        <tbody>
+                            ${slice.length === 0 ? '<tr><td colspan="8" class="no-data">暂无记录</td></tr>' : slice.map(r => `
+                                <tr>
+                                    <td>${r.operator}</td>
+                                    <td><span class="account-link">${r.playerAccount}</span></td>
+                                    <td>${r.playerName || '-'}</td>
+                                    <td class="amount ${r.amount>=0?'positive':'negative'}">${r.amount>=0?'+':''}${r.amount.toLocaleString()}</td>
+                                    <td class="amount">${r.before.toLocaleString()}</td>
+                                    <td class="amount">${r.after.toLocaleString()}</td>
+                                    <td class="text-muted" style="font-size:12px;">${fmtTime(r.time)}</td>
+                                    <td style="font-size:12px;">${r.remark}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+                <div class="pagination">
+                    <button id="prevBtn" ${curPage===0?'disabled':''}>上一页</button>
+                    <span class="pagination-info">第 ${curPage+1} 页 / 共 ${totalPages} 页</span>
+                    <button id="nextBtn" ${curPage>=totalPages-1?'disabled':''}>下一页</button>
+                </div>
+            </div>
+        `;
+        $$('.filter-tab', page).forEach(t => {
+            t.onclick = () => { recordType = t.dataset.type; curPage = 0; render(); };
+        });
+        $('#filterBtn', page).onclick = () => { curPage = 0; render(); toast('筛选完成', 'success'); };
+        $('#prevBtn', page).onclick = () => { if (curPage > 0) { curPage--; render(); } };
+        $('#nextBtn', page).onclick = () => { curPage++; render(); };
+    }
+    render();
+    PAGE_REFRESH.chongzhilist = () => { render(); toast('记录已刷新', 'success'); };
+};
+
+// --------- 异常账号 ---------
+PAGE_RENDERERS.yichangzhanghu = function(page, ps) {
+    function render() {
+        const playerCount = mockAbnormalAccounts.filter(a => a.type === 'player').length;
+        const adminCount = mockAbnormalAccounts.filter(a => a.type !== 'player').length;
+        page.innerHTML = `
+            <div class="container">
+                <div class="stats-container">
+                    <div class="stats-title">异常账号统计</div>
+                    <div class="stats-info">
+                        <div class="stats-item"><span class="stats-label">玩家账号:</span><span class="stats-value player" id="playerCount">${playerCount}</span></div>
+                        <div class="stats-item"><span class="stats-label">代理账号:</span><span class="stats-value admin" id="adminCount">${adminCount}</span></div>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <div class="table-scroll">
+                    <table class="data-table">
+                        <thead><tr><th style="width:28%;">账号</th><th style="width:16%; text-align:center;">账号类型</th><th style="width:36%;">锁定原因</th><th style="width:20%; text-align:center;">操作</th></tr></thead>
+                        <tbody>
+                            ${mockAbnormalAccounts.length === 0 ? '<tr><td colspan="4" class="no-data">暂无异常账号</td></tr>' : mockAbnormalAccounts.map(a => {
+                                const reasonHTML = a.reason.replace(/(\d+)\s*次/g, '<span class="error-count">$1 次</span>');
+                                return `
+                                <tr data-uid="${a.uid}">
+                                    <td><span class="account-link">${a.uid}</span></td>
+                                    <td style="text-align:center;"><span class="tag ${a.type}">${a.type === 'player' ? '玩家' : a.type === 'child' ? '子账号' : '代理'}</span></td>
+                                    <td style="font-size:13px;">${reasonHTML}</td>
+                                    <td style="text-align:center;"><button class="row-btn unlock" data-uid="${a.uid}">解封</button></td>
+                                </tr>`;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+            </div>
+        `;
+        $$('.row-btn.unlock', page).forEach(b => {
+            b.onclick = async () => {
+                if (!await confirm(`确定要解封账号 ${b.dataset.uid} 吗?`)) return;
+                b.disabled = true;
+                b.innerHTML = '<span class="spinner"></span>解封中';
+                showLoading('解封中...');
+                await delay(800);
+                hideLoading();
+                const idx = mockAbnormalAccounts.findIndex(a => a.uid === b.dataset.uid);
+                if (idx >= 0) mockAbnormalAccounts.splice(idx, 1);
+                await showResultModal({ success: true, message: `账号 ${b.dataset.uid} 已成功解封` });
+                render();
+            };
+        });
+    }
+    render();
+    PAGE_REFRESH.yichangzhanghu = () => { render(); toast('已刷新', 'success'); };
+};
+
+// --------- 玩家封号 ---------
+PAGE_RENDERERS.fenghao = function(page, ps) {
+    function render() {
+        page.innerHTML = `
+            <div class="container">
+                <div class="input-section">
+                    <div class="section-title">玩家封号</div>
+                    <div class="input-row">
+                        <input type="text" class="form-input" id="banInput" placeholder="输入玩家账号" autocomplete="off">
+                        <button class="btn btn-danger btn-block-action" id="banBtn" style="flex-shrink:0; width:auto; padding:0 20px;">封禁账号</button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <div class="table-scroll">
+                    <table class="data-table">
+                        <thead><tr><th style="width:40%;">玩家账号</th><th style="width:20%; text-align:center;">操作</th><th style="width:40%;">封禁时间</th></tr></thead>
+                        <tbody>
+                            ${mockBanPlayers.length === 0 ? '<tr><td colspan="3" class="no-data">暂无数据</td></tr>' : mockBanPlayers.map(p => `
+                                <tr data-account="${p.account}">
+                                    <td><span class="account-link">${p.account}</span></td>
+                                    <td style="text-align:center;"><button class="row-btn unban" data-account="${p.account}">解封</button></td>
+                                    <td class="text-muted" style="font-size:13px;">${fmtTime(p.banTime)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+            </div>
+        `;
+        $('#banBtn', page).onclick = async () => {
+            const acc = $('#banInput', page).value.trim();
+            if (!acc) { toast('请输入玩家账号', 'error'); return; }
+            if (mockBanPlayers.find(p => p.account === acc)) { toast('该账号已被封禁', 'error'); return; }
+            showLoading('封禁中...');
+            await delay(800);
+            hideLoading();
+            mockBanPlayers.push({ account: acc, banTime: Math.floor(Date.now()/1000) });
+            await showResultModal({ success: true, message: `玩家 ${acc} 已封禁` });
+            render();
+        };
+        $$('.row-btn.unban', page).forEach(b => {
+            b.onclick = async () => {
+                if (!await confirm(`确定要解封 ${b.dataset.account} 吗?`)) return;
+                b.disabled = true;
+                b.innerHTML = '<span class="spinner"></span>';
+                showLoading('解封中...');
+                await delay(600);
+                hideLoading();
+                const idx = mockBanPlayers.findIndex(p => p.account === b.dataset.account);
+                if (idx >= 0) mockBanPlayers.splice(idx, 1);
+                await showResultModal({ success: true, message: `玩家 ${b.dataset.account} 已解封` });
+                render();
+            };
+        });
+    }
+    render();
+    PAGE_REFRESH.fenghao = () => { render(); toast('已刷新', 'success'); };
+};
+
+// --------- 代理黑名单(dailifenghao) ---------
+PAGE_RENDERERS.dailifenghao = function(page, ps) {
+    function render() {
+        page.innerHTML = `
+            <div class="container">
+                <div class="input-section">
+                    <div class="section-title">添加黑名单</div>
+                    <input type="text" class="form-input" id="agentInput" placeholder="输入代理账号" autocomplete="off" style="margin-bottom:8px; width:100%;">
+                    <input type="text" class="form-input" id="reasonInput" placeholder="输入封号提示" autocomplete="off" style="margin-bottom:8px; width:100%;">
+                    <button class="btn btn-danger btn-block-action" id="blacklistBtn">加入黑名单</button>
+                </div>
+                <div class="table-container">
+                    <div class="table-scroll">
+                    <table class="data-table">
+                        <thead><tr><th style="width:25%;">代理账号</th><th style="width:30%;">封号提示</th><th style="width:15%; text-align:center;">操作</th><th style="width:30%;">添加时间</th></tr></thead>
+                        <tbody>
+                            ${mockAgentBlacklist.length === 0 ? '<tr><td colspan="4" class="no-data">暂无数据</td></tr>' : mockAgentBlacklist.map(a => `
+                                <tr data-account="${a.account}">
+                                    <td><span class="account-link">${a.account}</span></td>
+                                    <td style="font-size:13px;">${a.reason}</td>
+                                    <td style="text-align:center;"><button class="row-btn remove-blue" data-account="${a.account}">移除</button></td>
+                                    <td class="text-muted" style="font-size:13px;">${fmtTime(a.time)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+            </div>
+        `;
+        $('#blacklistBtn', page).onclick = async () => {
+            const acc = $('#agentInput', page).value.trim();
+            const reason = $('#reasonInput', page).value.trim() || '违规操作';
+            if (!acc) { toast('请输入代理账号', 'error'); return; }
+            if (mockAgentBlacklist.find(a => a.account === acc)) { toast('该代理已在黑名单', 'error'); return; }
+            showLoading('添加中...');
+            await delay(800);
+            hideLoading();
+            mockAgentBlacklist.push({ account: acc, reason, time: Math.floor(Date.now()/1000) });
+            await showResultModal({ success: true, message: `代理 ${acc} 已加入黑名单` });
+            render();
+        };
+        $$('.row-btn.remove-blue', page).forEach(b => {
+            b.onclick = async () => {
+                if (!await confirm(`确定要移除 ${b.dataset.account} 吗?`)) return;
+                showLoading('处理中...');
+                await delay(500);
+                hideLoading();
+                const idx = mockAgentBlacklist.findIndex(a => a.account === b.dataset.account);
+                if (idx >= 0) mockAgentBlacklist.splice(idx, 1);
+                await showResultModal({ success: true, message: `代理 ${b.dataset.account} 已移除` });
+                render();
+            };
+        });
+    }
+    render();
+    PAGE_REFRESH.dailifenghao = () => { render(); toast('已刷新', 'success'); };
+};
+
+// --------- 代理拉黑 ---------
+PAGE_RENDERERS.daililahei = function(page, ps) {
+    let objType = 'friend';
+    function render() {
+        page.innerHTML = `
+            <div class="container">
+                <div class="input-section">
+                    <div class="section-title">拉黑设置</div>
+                    <input type="text" class="form-input" id="agentInput" placeholder="输入代理账号" autocomplete="off" style="margin-bottom:8px; width:100%;">
+                    <input type="number" min="1" class="form-input" id="freeScoreInput" placeholder="输入吃分金额" inputmode="numeric" style="margin-bottom:12px; width:100%;">
+                    <label class="form-label">影响范围</label>
+                    <div class="option-group segmented" id="objGroup" style="margin-bottom:12px;">
+                        <div class="option-item ${objType==='friend'?'active':''}" data-val="friend">直属玩家</div>
+                        <div class="option-item ${objType==='against'?'active':''}" data-val="against">非直属玩家</div>
+                        <div class="option-item ${objType==='all'?'active':''}" data-val="all">所有玩家</div>
+                    </div>
+                    <button class="btn btn-danger btn-block-action" id="confirmBtn">确认拉黑</button>
+                </div>
+                <div class="table-container">
+                    <div class="table-scroll">
+                    <table class="data-table" style="min-width:620px;">
+                        <thead><tr><th style="width:96px;">代理账号</th><th style="width:56px;">操作</th><th style="width:80px;">吃分金额</th><th style="width:80px;">影响玩家</th><th style="width:80px;">影响代理</th><th style="width:96px;">操作人</th><th style="width:130px;">操作时间</th></tr></thead>
+                        <tbody>
+                            ${mockAgentPullBlacklist.length === 0 ? '<tr><td colspan="7" class="no-data">暂无数据</td></tr>' : mockAgentPullBlacklist.map(a => `
+                                <tr data-agent="${a.agent}">
+                                    <td><span class="account-link">${a.agent}</span></td>
+                                    <td style="text-align:center;"><button class="row-btn remove-solid" data-agent="${a.agent}">移除</button></td>
+                                    <td class="amount">${a.freeScore.toLocaleString()}</td>
+                                    <td class="amount">${a.players}</td>
+                                    <td class="amount">${a.agents}</td>
+                                    <td>${a.opUser}</td>
+                                    <td class="text-muted" style="font-size:12px;">${fmtTime(a.time)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+            </div>
+        `;
+        $$('#objGroup .option-item', page).forEach(o => {
+            o.onclick = () => {
+                $$('#objGroup .option-item', page).forEach(x => x.classList.remove('active'));
+                o.classList.add('active');
+                objType = o.dataset.val;
+            };
+        });
+        $('#confirmBtn', page).onclick = async () => {
+            const acc = $('#agentInput', page).value.trim();
+            const free = parseInt($('#freeScoreInput', page).value);
+            if (!acc) { toast('请输入代理账号', 'error'); return; }
+            if (!free || free <= 0) { toast('请输入有效的吃分金额', 'error'); return; }
+            showLoading('拉黑中...');
+            await delay(1000);
+            hideLoading();
+            const players = objType === 'all' ? randInt(20, 50) : objType === 'friend' ? randInt(5, 20) : randInt(10, 30);
+            const agents = objType === 'all' ? randInt(1, 5) : 0;
+            mockAgentPullBlacklist.unshift({
+                agent: acc, freeScore: free, players, agents, opUser: state.user.username,
+                time: Math.floor(Date.now()/1000)
+            });
+            await showResultModal({ success: true, message: `拉黑成功(影响玩家 ${players},影响代理 ${agents})` });
+            render();
+        };
+        $$('.row-btn.remove-solid', page).forEach(b => {
+            b.onclick = async () => {
+                if (!await confirm(`确定要移除 ${b.dataset.agent} 吗?`)) return;
+                showLoading('处理中...');
+                await delay(500);
+                hideLoading();
+                const idx = mockAgentPullBlacklist.findIndex(a => a.agent === b.dataset.agent);
+                if (idx >= 0) mockAgentPullBlacklist.splice(idx, 1);
+                await showResultModal({ success: true, message: `代理 ${b.dataset.agent} 已移除` });
+                render();
+            };
+        });
+    }
+    render();
+    PAGE_REFRESH.daililahei = () => { render(); toast('已刷新', 'success'); };
+};
+
+// --------- 送奖管理 ---------
+PAGE_RENDERERS.songjiang = function(page, ps) {
+    const presetAccount = ps.presetAccount || '';
+    const GAME_OPTIONS = [
+        { value: 'hfh',  label: '火凤凰' },
+        { value: 'dzb',  label: '大字版' },
+        { value: 'cjdh', label: '超级大亨' },
+        { value: 'NBA',  label: 'NBA篮球' },
+        { value: 'att',  label: 'att连环炮' },
+        { value: 'jsys', label: '点石成金' },
+        { value: 'mx97', label: '明星97' },
+        { value: 'mx99', label: '明星99' },
+        { value: 'shz',  label: '水浒传' },
+        { value: 'dbs',  label: '大白鲨' },
+        { value: 'mjhl', label: '麻将胡了' },
+        { value: 'jc',   label: '金蟾捕鱼' },
+    ];
+    const HALL_OPTIONS = [
+        { value: '1', label: '体验场' },
+        { value: '2', label: '初级场' },
+        { value: '3', label: '中级场' },
+        { value: '4', label: '高级场' },
+        { value: '5', label: '贵宾场' },
+        { value: '6', label: 'VIP场' },
+    ];
+    // 各游戏的牌型(从原后台实际抓取,格式 "牌型名(倍率)")
+    const PATTERNS = {
+        hfh:  ['对子(1)','两对(2)','三条(3)','顺子(5)','同花(7)','葫芦(10)','小四梅(50)','小四梅连庄x2(100)','小四梅连庄x3(150)','小四梅连庄x4(200)','小四梅连庄x5(250)','小四梅连庄x6(300)','小四梅连庄x7(350)','小四梅连庄x8(400)','小四梅连庄x9(450)','小四梅连庄x10(500)','大四梅(80)','同花小顺(120)','正宗大四梅X2(160)','正宗大四梅X3(240)','五梅(250)','正宗大四梅X4(320)','正宗大四梅X5(400)','正宗大四梅X6(480)','同花大顺(500)','正宗大四梅X7(560)','正宗大四梅X8(640)','正宗大四梅X9(720)','正宗大四梅X10(800)','正宗大四梅X11(880)','正宗大四梅X12(960)','正宗大四梅X13(1040)','正宗大四梅X14(1120)','五鬼(1000)'],
+        dzb:  ['对子(1)','两对(2)','三条(3)','顺子(5)','同花(7)','葫芦(15)','四梅(65)','同花小顺(150)','同花大顺(250)','五梅(500)'],
+        cjdh: ['对子(1)','两对(2)','三条(3)','顺子(5)','同花(7)','葫芦(10)','四梅(60)','同花小顺(100)','五梅(200)','同花大顺(500)','五鬼(1000)'],
+        NBA:  ['对子(1)','两对(2)','三条(3)','顺子(5)','同花(8)','葫芦(15)','四梅(50)','纯4K X2(100)','纯4K X3(150)','纯4K X4(200)','纯4K X5(250)','纯4K X6(300)','纯4K X7(350)','纯4K X8(400)','同花小顺(100)','同花大顺(200)','五梅(400)'],
+        att:  ['对子(1)','两对(2)','三条(3)','顺子(5)','同花(7)','葫芦(15)','四梅(65)','同花小顺(150)','同花大顺(250)','五梅(500)'],
+        jsys: ['对子(1)','两对(2)','三条(4/3/3 三档随机)','顺子(6/5/4 三档随机)','同花(8/7/6 三档随机)','葫芦(12/10/8 三档随机)','四梅(80/60/40 三档随机)','同花小顺(250/200/150 三档随机)','同花大顺(400/300/200 三档随机)','五梅(700/500/400 三档随机)'],
+        mx97: ['2个7(2.25)','3个7(5.5)','4个7(35.625)','5个7(79)','6个7(91.875)','7个7(135)','8个7(188)','9个7(555)','全盘水果','全盘杂牌','全盘橙子(237.5)','全盘芒果(241.5)','全盘铃铛(245.5)','全盘西瓜(330)','全盘黄牌(340)','全盘荔枝(340)','全盘红牌(490)','全盘蓝牌(520)','君临西瓜','君临木瓜','君临橘子','君临荔枝'],
+        mx99: ['2个9(2)','3个9(5)','4个9(32.5)','5个9(180)','6个9(260)','7个9(447.5)','8个9(582.5)','9个9(2175)','全盘水果(32)','全盘杂牌(187.5)','全盘橙子(402.5)','全盘芒果(403.5)','全盘铃铛(409.5)','全盘西瓜(635)','全盘黄牌(647.5)','全盘荔枝(667.5)','全盘红牌(727.5)','全盘蓝牌(762.5)'],
+        shz:  ['全盘武器(15)','全盘英雄(50)','全盘斧子(50)','全盘枪(100)','全盘刀(150)','全盘鲁智深(250)','全盘林冲(400)','全盘宋江(500)','全盘替天行道(1000)','全盘忠义堂(2500)'],
+        dbs:  ['对子(1)','两对(2)','三条(3)','顺子(5)','同花(7)','葫芦(10)','小四梅(50)','大四梅(80)','同花小顺(120)','正宗大四梅X2(160)','正宗大四梅X3(240)','五梅(500)','正宗大四梅X4(320)','正宗大四梅X5(400)','同花大顺(500)','正宗大四梅X6(480)','正宗大四梅X7(560)','正宗大四梅X8(640)','正宗大四梅X9(720)','正宗大四梅X10(800)','正宗大四梅X11(880)','正宗大四梅X12(960)','正宗大四梅X13(1040)','正宗大四梅X14(1120)','五鬼(1000)'],
+        mjhl: ['大奖(20～34倍)','巨奖(35～49倍)','超级巨奖(50～70倍)','三个胡·10次免费(预估70)','四个胡·12次免费(预估90)','五个胡·14次免费(预估120)'],
+        jc:   ['1号炮(1)','2号炮(2)','3号炮(3)','4号炮(4)','5号炮(5)','6号炮(6)','7号炮(7)','8号炮(8)','9号炮(9)','10号炮(10)','金蟾(20)','龙王(50)','金鲨(100)'],
+    };
+
+    let currentGame = '';
+    let playerInfo = null; // {bet, todayWinLoss, totalWinLoss}
+    let poolBalance = null; // 奖池余额
+    let mockRewardRecords = []; // 送奖记录
+
+    page.innerHTML = `
+        <div class="sj-container">
+            <div class="sj-form-group horizontal">
+                <input type="text" class="sj-form-control" id="sjAccount" placeholder="请输入玩家账号" value="${presetAccount}" autocomplete="off">
+                <button class="btn btn-secondary" id="sjQueryBtn">查询</button>
+            </div>
+            <div class="sj-win-info">
+                <div class="sj-win-row">
+                    <div class="sj-win-item">
+                        <div class="sj-win-label">当前押注(钻)</div>
+                        <div class="sj-win-value" id="sjBet">--</div>
+                    </div>
+                    <div class="sj-win-item">
+                        <div class="sj-win-label">今日输赢(钻)</div>
+                        <div class="sj-win-value" id="sjTodayWinLoss">--</div>
+                    </div>
+                    <div class="sj-win-item">
+                        <div class="sj-win-label">总输赢(钻)</div>
+                        <div class="sj-win-value" id="sjTotalWinLoss">--</div>
+                    </div>
+                </div>
+            </div>
+            <div class="sj-form-group">
+                <label class="sj-form-label">选择游戏</label>
+                <select class="sj-form-control" id="sjGame">
+                    <option value="">请选择游戏</option>
+                    ${GAME_OPTIONS.map(g => `<option value="${g.value}">${g.label}</option>`).join('')}
+                </select>
+            </div>
+            <div class="sj-form-group">
+                <label class="sj-form-label">送奖场次</label>
+                <select class="sj-form-control" id="sjHall">
+                    <option value="">请选择场次</option>
+                    ${HALL_OPTIONS.map(h => `<option value="${h.value}">${h.label}</option>`).join('')}
+                </select>
+            </div>
+            <div class="sj-form-group">
+                <label class="sj-form-label">送奖牌型</label>
+                <select class="sj-form-control" id="sjPattern">
+                    <option value="">请选择牌型</option>
+                </select>
+            </div>
+            <div class="sj-balance-info">
+                <div class="sj-balance-item">
+                    <div class="sj-balance-label">奖池余额(钻):</div>
+                    <div class="sj-balance-value" id="sjPool">--</div>
+                </div>
+                <div class="sj-balance-item">
+                    <div class="sj-balance-label">我的钻石:</div>
+                    <div class="sj-balance-value" id="sjMyDiamond">${state.user.diamond.toLocaleString()}</div>
+                </div>
+            </div>
+            <button class="btn btn-primary" id="sjSubmitBtn">送奖</button>
+        </div>
+
+        <div class="sj-record-container">
+            <div class="sj-date-range-picker">
+                <input type="datetime-local" class="sj-date-picker" id="sjStartDate">
+                <span class="sj-date-separator">至</span>
+                <input type="datetime-local" class="sj-date-picker" id="sjEndDate">
+            </div>
+            <div class="sj-diamond-statistics">
+                <div class="sj-diamond-statistics-inner">
+                    <div class="sj-diamond-statistics-text">已送出钻石:<span class="sj-diamond-value" id="sjSentDiamond">0</span></div>
+                    <button type="button" class="btn btn-secondary" id="sjRefreshRecordsBtn" style="padding:8px 16px; font-size:13px; margin:0; flex-shrink:0; width:auto;">刷新</button>
+                </div>
+            </div>
+            <div class="sj-swipe-hint" id="sjSwipeHint">
+                <svg viewBox="0 0 24 24"><path d="M8 5l-4 4 4 4V10h8v-2H8V5zm8 14l4-4-4-4v3H8v2h8v3z"/></svg>
+                <span>左右滑动查看更多</span>
+            </div>
+            <div class="sj-table-wrapper">
+                <table class="sj-record-table">
+                    <thead><tr>
+                        <th>送奖账号</th><th>状态</th><th>场次</th><th>机台</th>
+                        <th>送奖牌型</th><th>开奖牌型</th><th>送奖金额</th>
+                        <th>开奖金额</th><th>游戏</th><th>开奖时间</th>
+                    </tr></thead>
+                    <tbody id="sjRecordBody"></tbody>
+                </table>
+            </div>
+            <div class="sj-record-empty" id="sjEmptyRecords">请先选择游戏查看对应记录</div>
+        </div>
+    `;
+
+    // 初始化日期选择器(今天 00:00 - 23:59)
+    function initDates() {
+        const today = new Date();
+        const p = (n) => String(n).padStart(2, '0');
+        const dStr = `${today.getFullYear()}-${p(today.getMonth()+1)}-${p(today.getDate())}`;
+        $('#sjStartDate', page).value = `${dStr}T00:00`;
+        $('#sjEndDate', page).value = `${dStr}T23:59`;
+    }
+    initDates();
+
+    // 更新牌型选项(数据格式:"牌型名(倍率)",与原后台一致)
+    function updatePatterns(game) {
+        const sel = $('#sjPattern', page);
+        sel.innerHTML = '<option value="">请选择牌型</option>';
+        if (game && PATTERNS[game]) {
+            PATTERNS[game].forEach((p, i) => {
+                const opt = el('option');
+                opt.value = String(i); // 用索引作为 value
+                opt.textContent = p;
+                // 从括号里提取倍率,作为 data-multiplier
+                const mulMatch = p.match(/（(\d+(?:\.\d+)?)/) || p.match(/\((\d+(?:\.\d+)?)/);
+                if (mulMatch) opt.dataset.multiplier = mulMatch[1];
+                sel.appendChild(opt);
+            });
+        }
+    }
+
+    // 渲染送奖记录
+    function renderRecords() {
+        const tbody = $('#sjRecordBody', page);
+        const empty = $('#sjEmptyRecords', page);
+        if (!currentGame) {
+            tbody.innerHTML = '';
+            empty.style.display = 'block';
+            empty.textContent = '请先选择游戏查看对应记录';
+            return;
+        }
+        if (mockRewardRecords.length === 0) {
+            tbody.innerHTML = '';
+            empty.style.display = 'block';
+            empty.textContent = '暂无送奖记录';
+            return;
+        }
+        empty.style.display = 'none';
+        tbody.innerHTML = mockRewardRecords.map(r => {
+            const hallTag = HALL_OPTIONS.find(h => h.value === String(r.hall));
+            const gameObj = GAME_OPTIONS.find(g => g.value === r.game);
+            return `
+                <tr>
+                    <td>${r.account}</td>
+                    <td>${r.status === 'completed' ? '<span class="sj-status-completed">已出</span>' : r.status === 'pending-free' ? '<span class="sj-status-pending-free">待免费</span>' : '<button class="sj-remove-btn" data-idx="' + r.idx + '">移除</button>'}</td>
+                    <td><span class="sj-hall-tag sj-hall-${r.hall}">${hallTag ? hallTag.label : r.hall}</span></td>
+                    <td>${r.machine || '-'}</td>
+                    <td>${r.patternLabel || '-'}</td>
+                    <td>${r.actualPatternLabel || '-'}</td>
+                    <td class="amount">${r.sendAmount}</td>
+                    <td class="amount ${r.actualAmount>=0?'positive':'negative'}">${r.actualAmount>=0?'+':''}${r.actualAmount}</td>
+                    <td>${gameObj ? gameObj.label : r.game}</td>
+                    <td>${fmtTime(r.time)}</td>
+                </tr>
+            `;
+        }).join('');
+        // 绑定移除按钮
+        $$('.sj-remove-btn', tbody).forEach(b => {
+            b.onclick = async () => {
+                if (!await confirm('确定要移除这条送奖记录吗?')) return;
+                const idx = parseInt(b.dataset.idx);
+                mockRewardRecords = mockRewardRecords.filter(r => r.idx !== idx);
+                renderRecords();
+                updateSentDiamond();
+                toast('已移除', 'success');
+            };
+        });
+    }
+
+    function updateSentDiamond() {
+        const total = mockRewardRecords.reduce((s, r) => s + (r.sendAmount || 0), 0);
+        $('#sjSentDiamond', page).textContent = total.toLocaleString();
+    }
+
+    // 查询玩家输赢信息
+    async function queryPlayer() {
+        const acc = $('#sjAccount', page).value.trim();
+        if (!acc) { toast('请输入玩家账号', 'error'); return; }
+        showLoading('查询中...');
+        await delay(600);
+        hideLoading();
+        // 模拟查询
+        const allP = mockOnlinePlayers.concat(mockOfflinePlayers);
+        const p = allP.find(x => x.account === acc) || mockMembers.find(m => m.account === acc);
+        if (p) {
+            playerInfo = {
+                bet: p.bet || randInt(10, 500),
+                todayWinLoss: p.todayWinLoss || randInt(-2000, 2000),
+                totalWinLoss: p.totalWinLoss || randInt(-5000, 10000),
+            };
+        } else {
+            // 模拟一个随机玩家
+            playerInfo = {
+                bet: randInt(10, 500),
+                todayWinLoss: randInt(-2000, 2000),
+                totalWinLoss: randInt(-5000, 10000),
+            };
+        }
+        $('#sjBet', page).textContent = playerInfo.bet;
+        $('#sjBet', page).style.color = 'rgb(153, 153, 153)';
+        const twEl = $('#sjTodayWinLoss', page);
+        twEl.textContent = (playerInfo.todayWinLoss >= 0 ? '+' : '') + playerInfo.todayWinLoss.toLocaleString();
+        twEl.style.color = playerInfo.todayWinLoss >= 0 ? 'var(--success)' : 'var(--danger)';
+        const tEl = $('#sjTotalWinLoss', page);
+        tEl.textContent = (playerInfo.totalWinLoss >= 0 ? '+' : '') + playerInfo.totalWinLoss.toLocaleString();
+        tEl.style.color = playerInfo.totalWinLoss >= 0 ? 'var(--success)' : 'var(--danger)';
+        toast(`查询成功:${acc}`, 'success');
+    }
+
+    // 加载奖池余额
+    async function loadPool() {
+        if (!currentGame) {
+            $('#sjPool', page).textContent = '--';
+            return;
+        }
+        // 模拟
+        poolBalance = randInt(0, 50000);
+        $('#sjPool', page).textContent = poolBalance.toLocaleString();
+    }
+
+    // 加载记录
+    async function loadRecords() {
+        if (!currentGame) {
+            mockRewardRecords = [];
+            renderRecords();
+            return;
+        }
+        // 模拟一些记录
+        if (mockRewardRecords.length === 0) {
+            for (let i = 0; i < 3; i++) {
+                const patterns = PATTERNS[currentGame] || [];
+                const randPattern = patterns.length > 0 ? pick(patterns) : '';
+                const randActual = patterns.length > 0 && Math.random() > 0.5 ? pick(patterns) : '';
+                const mulMatch = randPattern.match(/（(\d+(?:\.\d+)?)/) || randPattern.match(/\((\d+(?:\.\d+)?)/);
+                const mul = mulMatch ? parseFloat(mulMatch[1]) : 1;
+                const bet = randInt(10, 500);
+                mockRewardRecords.push({
+                    idx: Date.now() + i,
+                    account: presetAccount || `player${randInt(1000, 1004)}`,
+                    status: pick(['completed', 'completed', 'pending']),
+                    hall: String(randInt(1, 6)),
+                    machine: String(randInt(1, 99)),
+                    game: currentGame,
+                    pokertype: '0',
+                    patternLabel: randPattern,
+                    actualPattern: randActual ? '0' : null,
+                    actualPatternLabel: randActual || null,
+                    sendAmount: Math.round(mul * bet),
+                    actualAmount: randInt(-500, 500),
+                    time: Math.floor(Date.now()/1000) - randInt(60, 86400),
+                });
+            }
+        }
+        renderRecords();
+        updateSentDiamond();
+    }
+
+    // 事件绑定
+    $('#sjQueryBtn', page).onclick = queryPlayer;
+    $('#sjAccount', page).onkeydown = (e) => { if (e.key === 'Enter') queryPlayer(); };
+    $('#sjGame', page).onchange = function() {
+        currentGame = this.value;
+        updatePatterns(currentGame);
+        loadPool();
+        mockRewardRecords = []; // 切游戏清空记录
+        loadRecords();
+    };
+    $('#sjRefreshRecordsBtn', page).onclick = () => {
+        mockRewardRecords = [];
+        loadRecords();
+        toast('记录已刷新', 'success');
+    };
+    $('#sjSubmitBtn', page).onclick = async () => {
+        const acc = $('#sjAccount', page).value.trim();
+        const game = $('#sjGame', page).value;
+        const hall = $('#sjHall', page).value;
+        const patternIdx = $('#sjPattern', page).value;
+        if (!acc) { toast('请输入玩家账号', 'error'); return; }
+        if (!game) { toast('请选择游戏', 'error'); return; }
+        if (!hall) { toast('请选择场次', 'error'); return; }
+        if (!patternIdx) { toast('请选择牌型', 'error'); return; }
+        const btn = $('#sjSubmitBtn', page);
+        btn.classList.add('loading');
+        btn.disabled = true;
+        showLoading('送奖中...');
+        await delay(1000);
+        hideLoading();
+        btn.classList.remove('loading');
+        btn.disabled = false;
+        // 从选中的 option 拿倍率
+        const selectedOpt = $('#sjPattern', page).selectedOptions[0];
+        const mul = parseFloat(selectedOpt.dataset.multiplier) || 1;
+        const patternLabel = selectedOpt.textContent;
+        const bet = playerInfo ? playerInfo.bet : randInt(10, 500);
+        const sendAmount = Math.round(mul * bet);
+        // 添加到记录
+        mockRewardRecords.unshift({
+            idx: Date.now(),
+            account: acc,
+            status: 'pending',
+            hall,
+            machine: String(randInt(1, 99)),
+            game,
+            pokertype: patternIdx,
+            patternLabel,
+            actualPattern: null,
+            actualPatternLabel: null,
+            sendAmount,
+            actualAmount: 0,
+            time: Math.floor(Date.now()/1000),
+        });
+        renderRecords();
+        updateSentDiamond();
+        // 扣奖池
+        if (poolBalance != null) {
+            poolBalance -= sendAmount;
+            $('#sjPool', page).textContent = poolBalance.toLocaleString();
+        }
+        toast(`送奖成功,送出 ${sendAmount} 钻石`, 'success');
+    };
+
+    // 滑动提示点击关闭
+    $('#sjSwipeHint', page).onclick = function() {
+        this.classList.add('hide');
+        try { localStorage.setItem('sjSawSwipeHint', '1'); } catch {}
+    };
+    if (localStorage.getItem('sjSawSwipeHint') === '1') {
+        $('#sjSwipeHint', page).classList.add('hide');
+    }
+
+    // 充值奖池按钮(顶栏)
+    PAGE_POOL_ACTION.songjiang = () => showRechargePoolModal();
+
+    async function showRechargePoolModal() {
+        if (!currentGame) { toast('请先选择游戏', 'error'); return; }
+        showModal({
+            title: '充值奖池',
+            bodyHTML: `
+                <div class="sj-form-group">
+                    <label class="sj-form-label">充值金额(钻石)</label>
+                    <input type="number" class="sj-form-control" id="sjRechargeAmount" placeholder="正数充值,负数扣减奖池">
+                </div>
+                <div style="font-size:13px; color:var(--text-tertiary);">当前奖池余额:${poolBalance != null ? poolBalance.toLocaleString() : '--'} 钻</div>
+            `,
+            actions: [{ label: '确认充值', type: 'recharge', value: 'ok' }],
+            cancelText: '取消'
+        }).then(async (r) => {
+            if (r !== 'ok') return;
+            const amount = parseInt($('#sjRechargeAmount').value);
+            if (!amount || isNaN(amount)) { toast('请输入有效金额', 'error'); return; }
+            if (amount > state.user.diamond) { toast(`充值金额不能超过您的钻石余额 ${state.user.diamond}`, 'error'); return; }
+            showLoading('处理中...');
+            await delay(800);
+            hideLoading();
+            poolBalance = (poolBalance || 0) + amount;
+            $('#sjPool', page).textContent = poolBalance.toLocaleString();
+            if (amount > 0) {
+                state.user.diamond -= amount;
+                $('#sjMyDiamond', page).textContent = state.user.diamond.toLocaleString();
+            }
+            toast(`充值${amount > 0 ? '成功' : '扣减成功'},奖池余额 ${poolBalance.toLocaleString()}`, 'success');
+        });
+    }
+
+    // 如果预填了账号,自动查询
+    if (presetAccount) {
+        setTimeout(() => queryPlayer(), 200);
+    }
+};
+
+// 暴露给主页搜索用
+window._showSearchModal = showSearchModalInline;
+async function showSearchModalInline() {
+    const overlay = el('div', 'modal-overlay show');
+    const content = el('div', 'modal-content modal-search');
+    content.innerHTML = `
+        <div class="modal-header">
+            <div class="modal-title">搜索玩家</div>
+            <div class="search-input-container">
+                <input type="text" id="psInput" placeholder="输入玩家账号或昵称" autocomplete="off">
+                <button class="search-submit-btn" id="psBtn">
+                    <svg viewBox="0 0 24 24" width="20" height="20">
+                        <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <div class="search-results" id="psResults"></div>
+        <div class="modal-footer"><button class="modal-footer-btn" id="psCancel">关闭</button></div>
+    `;
+    overlay.appendChild(content);
+    $('#modalContainer').appendChild(overlay);
+    const close = () => overlay.remove();
+    overlay.onclick = (e) => { if (e.target === overlay) close(); };
+    $('#psCancel', content).onclick = close;
+    const doSearch = () => {
+        const kw = $('#psInput', content).value.trim().toLowerCase();
+        if (!kw) {
+            $('#psResults', content).innerHTML = '<div class="search-result-item">请输入搜索内容</div>';
+            return;
+        }
+        const all = mockOnlinePlayers.concat(mockOfflinePlayers);
+        const results = all.filter(p => p.account.toLowerCase().includes(kw) || (p.name||'').toLowerCase().includes(kw));
+        const div = $('#psResults', content);
+        if (results.length === 0) {
+            div.innerHTML = `
+                <div style="text-align: center; padding: 20px;">
+                    <div style="color: #666; margin-bottom: 10px;">未找到匹配的玩家</div>
+                    <div style="font-size: 12px; color: #999;">请检查输入是否正确,或尝试使用其他搜索词</div>
+                    <div style="font-size: 12px; color: #999; margin-top: 10px;">当前搜索词:${kw}</div>
+                </div>
+            `;
+        } else {
+            div.innerHTML = results.map(p => {
+                const isOnline = mockOnlinePlayers.includes(p);
+                return `
+                <div class="search-result-item" data-account="${p.account}">
+                    <div class="search-result-header">
+                        <div class="search-result-account">${p.account}</div>
+                        <div class="search-result-name">${p.name}</div>
+                        <div class="search-result-status ${isOnline ? 'online' : 'offline'}">${isOnline ? '在线' : '离线'}</div>
+                    </div>
+                    <div class="search-result-info">剩余分数:${p.score} | 剩余钻石:${p.diamond}</div>
+                </div>
+                `;
+            }).join('');
+            $$('.search-result-item', div).forEach(item => {
+                item.onclick = () => {
+                    const acc = item.dataset.account;
+                    close();
+                    // 触发玩家操作弹窗(模拟点击卡片)
+                    const card = document.querySelector('.player-card[data-account="' + acc + '"]');
+                    if (card) card.click();
+                };
+            });
+        }
+    };
+    $('#psBtn', content).onclick = doSearch;
+    $('#psInput', content).onkeydown = (e) => { if (e.key === 'Enter') doSearch(); };
+    setTimeout(() => $('#psInput', content).focus(), 100);
+}
+
+// 覆盖原来的 showSearchModal
+window.showSearchModal = showSearchModalInline;
+
+startApp();
+</script>
+</body>
+</html>

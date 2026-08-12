@@ -1,0 +1,85 @@
+@{
+    Layout = "~/Views/Shared/Layout/_MobileLayout.cshtml";
+    string webVer = ConfigHelper.Get("WebVer");
+    string today = (string)(ViewBag.Today ?? "");
+}
+
+<div class="m-container">
+    <div class="m-chips" style="border-radius:12px 12px 0 0;">
+        @* OPT 取值见 B_Recharge.AddAgentOptLog：20 充值 / 21 兑换 / 22 赠送 / 23 扣币，2 登录 / 3 退出 *@
+        <button type="button" class="m-chip active" data-opt="-1">全部</button>
+        <button type="button" class="m-chip" data-opt="20">充值</button>
+        <button type="button" class="m-chip" data-opt="21">兑换</button>
+        <button type="button" class="m-chip" data-opt="22">赠送</button>
+        <button type="button" class="m-chip" data-opt="23">扣币</button>
+        <button type="button" class="m-chip" data-opt="2">登录</button>
+        <button type="button" class="m-chip" data-opt="3">退出</button>
+    </div>
+
+    <div class="m-card m-card-pad" style="border-radius:0 0 12px 12px;">
+        <div class="m-form-grid">
+            <div class="m-form-group" style="margin-bottom:0;">
+                <label class="m-label">日期</label>
+                <input type="date" class="m-input" id="mRecDate" value="@today" />
+            </div>
+            <div class="m-form-group" style="margin-bottom:0;">
+                <label class="m-label">账号</label>
+                <input type="text" class="m-input" id="mRecId" placeholder="可选" autocomplete="off" />
+            </div>
+        </div>
+        <button type="button" class="m-btn m-btn-primary m-btn-block" id="mRecQuery" style="margin-top:12px;">查询</button>
+    </div>
+
+    <div class="m-stats">
+        <div class="m-stats-grid">
+            <div class="m-stat-box">
+                <div class="m-stat-label">记录数</div>
+                <div class="m-stat-value" id="mRecTotal">0</div>
+            </div>
+            <div class="m-stat-box">
+                <div class="m-stat-label">本页充值</div>
+                <div class="m-stat-value positive" id="mRecSumIn">0</div>
+            </div>
+            <div class="m-stat-box">
+                <div class="m-stat-label">本页兑换</div>
+                <div class="m-stat-value negative" id="mRecSumOut">0</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="m-swipe-hint">
+        <svg viewBox="0 0 24 24"><path d="M8 5l-4 4 4 4V10h8v-2H8V5zm8 14l4-4-4-4v3H8v2h8v3z" /></svg>
+        <span>表格可左右滑动查看更多列</span>
+    </div>
+
+    <div class="m-table-wrap">
+        <div class="m-table-scroll">
+            <table class="m-table">
+                <thead>
+                    <tr>
+                        <th>时间</th>
+                        <th>类型</th>
+                        <th>操作人</th>
+                        <th>目标账号</th>
+                        <th>金额</th>
+                        <th>操作前</th>
+                        <th>操作后</th>
+                    </tr>
+                </thead>
+                <tbody id="mRecBody">
+                    <tr><td colspan="7" class="m-empty">加载中...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="m-pagination">
+        <button type="button" id="mRecPrev" disabled>上一页</button>
+        <span class="m-pagination-info" id="mRecPageInfo">第 1 页 / 共 1 页</span>
+        <button type="button" id="mRecNext" disabled>下一页</button>
+    </div>
+</div>
+
+@section scripts {
+    <script src="@Url.Content("~/Scripts/app/mobile/mobile.records.js?v=" + webVer)"></script>
+}

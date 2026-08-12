@@ -1,0 +1,520 @@
+<html lang="zh-CN"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="theme-color" content="#007aff">
+    <meta name="msapplication-tap-highlight" content="no">
+    <title>代理拉黑</title>
+    <style>
+        /* iOS输入框修复 */
+        input[type="text"],
+        input[type="number"],
+        input[type="password"],
+        input[type="email"],
+        input[type="search"],
+        input[type="tel"],
+        input[type="url"],
+        textarea {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            border-radius: 0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .header {
+            background-color: #007aff;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 80px;
+        }
+
+        .header-content {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        h1 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .back-btn,
+        .refresh-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            min-width: 44px;
+            min-height: 44px;
+        }
+
+        .back-btn {
+            left: 0;
+        }
+
+        .refresh-btn {
+            right: 0;
+        }
+
+        .back-btn:hover,
+        .refresh-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .back-btn:active,
+        .refresh-btn:active {
+            transform: translateY(-50%) scale(0.96);
+        }
+
+        .back-btn svg,
+        .refresh-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+
+        .container {
+            padding: 16px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .input-section {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .input-section table {
+            width: 100%;
+            margin-top: 5px;
+        }
+
+        .input-field {
+            height: 44px !important;
+            border: 1px solid #e1e1e1 !important;
+            border-radius: 8px !important;
+            padding: 0 12px !important;
+            font-size: 16px !important;
+            transition: border-color 0.3s !important;
+            outline: none !important;
+            background-color: #fff !important;
+            color: #333 !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+        }
+
+        .input-field:focus {
+            border-color: #007aff !important;
+            box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.1) !important;
+        }
+
+        .option-group {
+            display: flex;
+            gap: 0;
+            padding: 3px;
+            background-color: #f2f2f7;
+            border: 1px solid #e5e5ea;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .option-item {
+            flex: 1;
+            min-width: 0;
+            background-color: transparent;
+            border: none;
+            padding: 0;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .option-item input {
+            display: none;
+        }
+
+        .option-item span {
+            display: block;
+            padding: 8px 6px;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #6e6e73;
+            transition: all 0.2s;
+        }
+
+        .option-item input:checked + span {
+            background-color: #ffffff;
+            color: #007aff;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+        }
+
+        .option-item:hover span {
+            color: #1d1d1f;
+        }
+
+        .blacklist-btn {
+            height: 44px !important;
+            background-color: #ff3b30 !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 8px !important;
+            padding: 0 20px !important;
+            font-size: 16px !important;
+            font-weight: 500 !important;
+            cursor: pointer !important;
+            transition: all 0.3s !important;
+            white-space: nowrap !important;
+            width: 100% !important;
+        }
+
+        .blacklist-btn:hover {
+            background-color: #ff2d20;
+        }
+
+        .blacklist-btn:active {
+            transform: scale(0.98);
+        }
+
+        .table-container {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            overflow: hidden;
+            margin-bottom: 20px;
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .blacklist-table {
+            width: max-content;
+            border-collapse: collapse;
+            table-layout: fixed;
+            min-width: 620px;
+        }
+
+        .blacklist-table th {
+            background-color: #f8f9fa;
+            padding: 10px 8px;
+            text-align: left;
+            font-weight: 600;
+            color: #666;
+            border-bottom: 1px solid #eaeaea;
+            white-space: nowrap;
+            font-size: 14px;
+        }
+
+        .blacklist-table td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #eaeaea;
+            color: #333;
+            font-size: 14px;
+            word-break: break-word;
+        }
+
+        .blacklist-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .blacklist-table tr:hover {
+            background-color: #f5f7fa;
+        }
+
+        .remove-btn {
+            background-color: #ff3b30;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .remove-btn:hover {
+            background-color: #e63028;
+        }
+
+        .no-data {
+            padding: 20px;
+            text-align: center;
+            color: #999;
+        }
+
+        .loading-container {
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            display: none;
+            z-index: 1000;
+        }
+
+        .loading-container.show {
+            display: block;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.45);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1001;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 320px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            overflow: hidden;
+        }
+
+        .modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #eee;
+            text-align: center;
+        }
+
+        .modal-title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .modal-body {
+            padding: 20px;
+            text-align: center;
+        }
+
+        .modal-icon {
+            margin-bottom: 12px;
+        }
+
+        .modal-message {
+            font-size: 14px;
+            color: #333;
+        }
+
+        .modal-footer {
+            padding: 12px 20px;
+            border-top: 1px solid #eee;
+            text-align: center;
+        }
+
+        .modal-btn {
+            padding: 8px 16px;
+            background: #007aff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        @media (max-width: 600px) {
+            .blacklist-table th,
+            .blacklist-table td {
+                font-size: 12px;
+                padding: 8px 6px;
+            }
+
+            .back-btn,
+            .refresh-btn {
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <button class="back-btn" id="backBtn">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"></path>
+                </svg>
+            </button>
+            <h1>代理拉黑</h1>
+            <div class="subtitle">批量拉黑代理及其玩家</div>
+            <button class="refresh-btn" id="refreshBtn">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"></path>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="input-section">
+            <div class="section-title">拉黑设置</div>
+            <table style="width:100%; border-collapse:collapse;">
+                <tbody><tr>
+                    <td style="width:100%; padding-bottom:10px;">
+                        <input type="text" id="agentAccountInput" class="input-field" placeholder="输入代理账号" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+                    </td>
+                </tr>
+                <tr>
+                    <td style="width:100%; padding-bottom:10px;">
+                        <input type="number" id="freeScoreInput" class="input-field" placeholder="输入吃分金额" min="1">
+                    </td>
+                </tr>
+                <tr>
+                    <td style="width:100%; padding-bottom:10px;">
+                        <div class="option-group">
+                            <label class="option-item">
+                                <input type="radio" name="objType" value="friend" checked="">
+                                <span>直属玩家</span>
+                            </label>
+                            <label class="option-item">
+                                <input type="radio" name="objType" value="against">
+                                <span>非直属玩家</span>
+                            </label>
+                            <label class="option-item">
+                                <input type="radio" name="objType" value="all">
+                                <span>所有玩家</span>
+                            </label>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="width:100%;">
+                        <button id="confirmBtn" class="blacklist-btn">确认拉黑</button>
+                    </td>
+                </tr>
+            </tbody></table>
+        </div>
+
+        <div class="table-container">
+            <table class="blacklist-table" id="blacklistTable">
+                <thead>
+                    <tr>
+                        <th style="width: 96px;">代理账号</th>
+                        <th style="width: 56px;">操作</th>
+                        <th style="width: 80px;">吃分金额</th>
+                        <th style="width: 80px;">影响玩家</th>
+                        <th style="width: 80px;">影响代理</th>
+                        <th style="width: 96px;">操作人</th>
+                        <th style="width: 130px;">操作时间</th>
+                    </tr>
+                </thead>
+                <tbody id="blacklistContainer"></tbody>
+            </table>
+            <div class="no-data" id="noData" style="display: block;">暂无数据</div>
+        </div>
+    </div>
+
+    <div class="loading-container" id="loading">处理中...</div>
+
+    <!-- 成功弹窗 -->
+    <div class="modal-overlay" id="successModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">操作成功</div>
+            </div>
+            <div class="modal-body">
+                <div class="modal-icon success">
+                    <svg viewBox="0 0 24 24" width="48" height="48">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="#34c759"></path>
+                    </svg>
+                </div>
+                <div class="modal-message" id="successMessage">操作成功</div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn confirm" id="successModalOkBtn">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 错误弹窗 -->
+    <div class="modal-overlay" id="errorModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">操作失败</div>
+            </div>
+            <div class="modal-body">
+                <div class="modal-icon error">
+                    <svg viewBox="0 0 24 24" width="48" height="48">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="#ff3b30"></path>
+                    </svg>
+                </div>
+                <div class="modal-message" id="errorMessage">操作失败，请重试</div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn confirm" id="errorModalOkBtn">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const _0x27e0f5=_0x1688;function _0x1688(_0x42250b,_0x721771){_0x42250b=_0x42250b-0xef;const _0x42d630=_0x42d6();let _0x168839=_0x42d630[_0x42250b];if(_0x1688['QcsTwr']===undefined){var _0x54ed92=function(_0x36918b){const _0xe29a44='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+/=';let _0x1373f2='',_0x311038='';for(let _0x5d3f3a=0x0,_0x254d71,_0x53c017,_0xe2b1a4=0x0;_0x53c017=_0x36918b['charAt'](_0xe2b1a4++);~_0x53c017&&(_0x254d71=_0x5d3f3a%0x4?_0x254d71*0x40+_0x53c017:_0x53c017,_0x5d3f3a++%0x4)?_0x1373f2+=String['fromCharCode'](0xff&_0x254d71>>(-0x2*_0x5d3f3a&0x6)):0x0){_0x53c017=_0xe29a44['indexOf'](_0x53c017);}for(let _0x1765c9=0x0,_0xae74f1=_0x1373f2['length'];_0x1765c9<_0xae74f1;_0x1765c9++){_0x311038+='%'+('00'+_0x1373f2['charCodeAt'](_0x1765c9)['toString'](0x10))['slice'](-0x2);}return decodeURIComponent(_0x311038);};_0x1688['puBBuG']=_0x54ed92,_0x1688['sEFbJA']={},_0x1688['QcsTwr']=!![];}const _0x2dc319=_0x42d630[0x0],_0x30271f=_0x42250b+_0x2dc319,_0x211c8f=_0x1688['sEFbJA'][_0x30271f];return!_0x211c8f?(_0x168839=_0x1688['puBBuG'](_0x168839),_0x1688['sEFbJA'][_0x30271f]=_0x168839):_0x168839=_0x211c8f,_0x168839;}(function(_0x2d747f,_0x12b7e4){const _0x1db697={_0x3ced92:0x115,_0x289bd9:0x119,_0x283f45:0x139,_0x43141d:0x10c,_0xc9be10:0xf5,_0x4b150b:0x147},_0x322c6a=_0x1688,_0x63f4c0=_0x2d747f();while(!![]){try{const _0x347dff=parseInt(_0x322c6a(_0x1db697._0x3ced92))/0x1+parseInt(_0x322c6a(_0x1db697._0x289bd9))/0x2+parseInt(_0x322c6a(_0x1db697._0x283f45))/0x3*(-parseInt(_0x322c6a(0xef))/0x4)+-parseInt(_0x322c6a(0x10d))/0x5*(-parseInt(_0x322c6a(0x110))/0x6)+parseInt(_0x322c6a(_0x1db697._0x43141d))/0x7+-parseInt(_0x322c6a(_0x1db697._0xc9be10))/0x8+parseInt(_0x322c6a(0x127))/0x9*(parseInt(_0x322c6a(_0x1db697._0x4b150b))/0xa);if(_0x347dff===_0x12b7e4)break;else _0x63f4c0['push'](_0x63f4c0['shift']());}catch(_0x272d0d){_0x63f4c0['push'](_0x63f4c0['shift']());}}}(_0x42d6,0x9ca18));function _0x42d6(){const _0x3ee45f=['l29UzwnSAwnRC2v0AgvPp2fJy291BNq9','56E76zMK5AsX6lsL77Ym6k+36yEn6k+v','AgLZDg9YEq','jM9IAJ0','ywXSrgfPBgLdB3vUDa','otm4mtnIqxLfDMS','zxjY','jM9IAJ1MCMLLBMqMDhLWzt1MywXZzszMCMvLC2nVCMu9ma','y2XPy2S','Dgv4DenVBNrLBNq','DgLW','y2XHC3nmAxn0','yxbWzw5Kq2HPBgq','yMXVy2S','C3r5Bgu','zxjYB3jnB2rHBa','zNjLzxnJB3jL','Bg9HzgLUzW','ANnVBG','nti2nJb2sufcyu4','ywrKrxzLBNrmAxn0zw5LCG','DgHLBG','z2v0u2vJB25KCW','ogjHuuvOtW','77Yi5B2X5zon546P5A62ia','re9nq29UDgvUDeXVywrLza','zNjLzvnJB3jLsw5WDxq','z2v0rgf0zq','zgf0yq','nZC1ntq0me5LvfvPzq','Aw5WDxrBBMfTzt0IB2jQvhLWzsjDoMnOzwnRzwq','y2f0y2G','B3bLCMf0B3i','C2HVDW','z2v0rwXLBwvUDej5swq','jNr5Cgu9Dhj1zszMCMvLC2nVCMu9','y29Kzq','DMfSDwvZ','zxjYB3jnzxnZywDL','ywDLBNrby2nVDw50sw5WDxq','jMnOB29Zzt0XjNrVA2vUpq','y29UzMLYBuj0BG','z2v0twLUDxrLCW','ywXSx3bSyxLLCNnFy291BNq','zNjPzw5K','l2HVDxrHAs5ODg1S','C3vJy2vZC01LC3nHz2u','zxjYB3i','6i635y+w5PwW5O2U5AsX6lsL','yMXHy2TSAxn0q29UDgfPBMvY','DgLTzq','zM9YrwfJAa','mJiYmJiWnKj2CuzdqG','nvrPvgnVEG','CMvTB3zL','yMfJAW','mJaWmZaXnLDyC2nfBW','Bg9JyxrPB24','6k+36l6t5ywL5PYj5Pwi55Qe5zcd5yIg6yEr6AkD','zNjLzv9Zy29Yzq','ywXSugXHEwvYC0nVDw50','mZu4mZaYEgrYzwHs','5OUj6BUr5Pon5l2C5BEY5A6m5OIq','y3jLyxrLrwXLBwvUDa','6i635y+w6BUr5zcn5y2v5yIx6kgO5AsX6lsLoG','mZe2odaWtxDVCgjK','CgfKu3rHCNq','x2LK','zgLZCgXHEq','zxjYB3jnB2rHBe9RqNrU','C3vJy2vZC01VzgfS','C3vJy2vZC01VzgfSt2TcDg4','BM9eyxrH','572r57UC6zsz6k+V77Ym6k+36yEn6k+v','ywrK','DMfSDwu','5BEY56E76zMK6BUr5zcn5y2v','BM9Uzq','y2XHC3noyw1L','ody0vKzrq09H','ywXSx2rHAwXPx2nVDw50','6k+36l6t5ywL5lUJ55cg6lsM5y+3','jMnOB29Zzt0YjNrVA2vUpq','BgvUz3rO','CxvLCNLtzwXLy3rVCG','5yQG6l295AsX6lsL77Ym6k+36yEn6k+v','yMfJA0j0BG','55M75B2v5BEY6l+h5PYF77Ym6k+36yEn5PAW55M75B2v','5Pon5l2C5AsX6lsL77Ym6k+36yEn6k+v','z2v0tw9UDgG','Ag9ZDa','B2jQzwn0'];_0x42d6=function(){return _0x3ee45f;};return _0x42d6();}const baseURL=window[_0x27e0f5(0x111)]['protocol']+'//'+window['location'][_0x27e0f5(0x132)];document['addEventListener'](_0x27e0f5(0xf1),function(){const _0x5e2143={_0x58bfc7:0x120,_0x2a980b:0x145,_0x5dc18b:0xfa,_0x30dfe3:0xfa,_0x2c4e14:0xff,_0x548682:0xfa,_0x255ac1:0xf2,_0x5f5eab:0x143,_0x5f5176:0xfa,_0x10acf6:0xfe,_0xbca13d:0xfa,_0x27e242:0x11d,_0x13b1c9:0x148,_0x116e4d:0x13c},_0x501b1e={_0x284f50:0x149},_0x50f139={_0x4dc48d:0x134,_0x1c6cf6:0x137,_0x5527eb:0xfb},_0x3b50c3={_0x3a8326:0xf4,_0x1b8c3b:0xf0,_0x57b68f:0x123,_0x145526:0xf4,_0x1e53e7:0x130},_0x127767={_0x4ab56b:0x12b,_0x4ce947:0x142,_0x5d241f:0x11c,_0x5a6590:0x125},_0x5ee75d={_0x390d02:0x117,_0x3494e1:0x128,_0x3a414e:0xf8,_0x368269:0x10a,_0x1a9111:0x13d,_0x43f594:0x140,_0x9985f2:0x126,_0x19753e:0x13d,_0x5080d5:0x140,_0x1ee007:0x117,_0x4a8395:0x117,_0x1eae1e:0x13d,_0x5d7cdc:0x13d,_0x2b717b:0x13d,_0x3b1de0:0x140},_0x5c5659={_0x166969:0x149},_0xf890f0={_0x3f07c3:0x142,_0x1f2639:0x12d},_0x3cb34e={_0x26b1ee:0xfc,_0x1ba8d8:0x142},_0x1732f6={_0x14cfbc:0x12c,_0x12a565:0x123},_0x46421f={_0x597087:0x133,_0x1b675e:0xfd},_0x55545c={_0x127dde:0x11a,_0x2522f8:0xf3,_0x4ca4bc:0x11a,_0x2d6f6a:0x102,_0x5340f0:0x14a},_0x3898c7={_0x56b884:0x13d},_0x4e1a6f={_0x5f3630:0x13d},_0x5f2ae8={_0x2bb90c:0x13f},_0x541c94={_0x1a4e8f:0x13f,_0x17e6b2:0xf9},_0x526022={_0x333a71:0x10e},_0x429e32={_0x512015:0x13f,_0x3e1b76:0x122},_0x34d9cc={_0x3af999:0x129,_0x452141:0x112},_0x525577={_0x51b940:0x10f},_0x302e5f=_0x27e0f5,_0x1373f2=document[_0x302e5f(0xfa)](_0x302e5f(0x109)),_0x311038=document[_0x302e5f(0xfa)](_0x302e5f(_0x5e2143._0x58bfc7)),_0x5d3f3a=document['getElementById'](_0x302e5f(_0x5e2143._0x2a980b)),_0x254d71=document[_0x302e5f(_0x5e2143._0x5dc18b)]('refreshBtn'),_0x53c017=document['getElementById'](_0x302e5f(0x12e)),_0xe2b1a4=document[_0x302e5f(_0x5e2143._0x30dfe3)](_0x302e5f(_0x5e2143._0x2c4e14)),_0x1765c9=document[_0x302e5f(_0x5e2143._0x548682)](_0x302e5f(_0x5e2143._0x255ac1)),_0xae74f1=document[_0x302e5f(0xfa)](_0x302e5f(0x101)),_0x234228=document['getElementById'](_0x302e5f(0x11e)),_0x5f3765=document[_0x302e5f(_0x5e2143._0x5dc18b)](_0x302e5f(_0x5e2143._0x5f5eab)),_0x2d3b82=document[_0x302e5f(0xfa)](_0x302e5f(0x106)),_0x3114be=document[_0x302e5f(_0x5e2143._0x5f5176)](_0x302e5f(_0x5e2143._0x10acf6)),_0x1c02a0=document[_0x302e5f(_0x5e2143._0x30dfe3)](_0x302e5f(0x11f)),_0x5b1c05=document[_0x302e5f(_0x5e2143._0xbca13d)](_0x302e5f(_0x5e2143._0x27e242));_0x53c017[_0x302e5f(0x148)]('click',function(){const _0x4a2065=_0x302e5f;window[_0x4a2065(0x136)][_0x4a2065(_0x525577._0x51b940)]();}),_0x254d71[_0x302e5f(0x148)](_0x302e5f(0x13c),function(){_0x1c32e9();}),_0x1c02a0[_0x302e5f(_0x5e2143._0x13b1c9)](_0x302e5f(0x13c),function(){_0x2d2455(_0x234228);}),_0x5b1c05[_0x302e5f(_0x5e2143._0x13b1c9)](_0x302e5f(0x13c),function(){_0x2d2455(_0x5f3765);}),_0xae74f1[_0x302e5f(0x148)](_0x302e5f(_0x5e2143._0x116e4d),function(){const _0x52efca=_0x302e5f,_0x283958=_0xe2b1a4['value']['trim'](),_0x52ff0b=Number(_0x1765c9[_0x52efca(0x123)]),_0x17f2e5=_0x7f387e();if(!_0x283958){_0x5f4d71(_0x52efca(_0x34d9cc._0x3af999));return;}if(!_0x52ff0b||_0x52ff0b<=0x0){_0x5f4d71(_0x52efca(_0x34d9cc._0x452141));return;}_0x59cced(_0x283958,_0x52ff0b,_0x17f2e5);});function _0x186c10(){const _0x530c43=_0x302e5f;_0x5d3f3a[_0x530c43(_0x429e32._0x512015)][_0x530c43(_0x429e32._0x3e1b76)](_0x530c43(0xf9));}function _0x345ca0(){const _0x5240a0=_0x302e5f;_0x5d3f3a[_0x5240a0(0x13f)][_0x5240a0(_0x526022._0x333a71)]('show');}function _0x3ab64(_0x1fac48){const _0x4d44e2=_0x302e5f;_0x1fac48[_0x4d44e2(_0x541c94._0x1a4e8f)][_0x4d44e2(0x122)](_0x4d44e2(_0x541c94._0x17e6b2));}function _0x2d2455(_0x1fc094){const _0x2ba2a2=_0x302e5f;_0x1fc094[_0x2ba2a2(_0x5f2ae8._0x2bb90c)]['remove']('show');}function _0x46a1c8(_0x564c6c){const _0x581377=_0x302e5f;_0x2d3b82[_0x581377(_0x4e1a6f._0x5f3630)]=_0x564c6c,_0x3ab64(_0x234228);}function _0x5f4d71(_0x315c5c){const _0x49e9c6=_0x302e5f;_0x3114be[_0x49e9c6(_0x3898c7._0x56b884)]=_0x315c5c,_0x3ab64(_0x5f3765);}function _0x403a80(_0x1e5efc){const _0x4331a4=_0x302e5f;if(!_0x1e5efc)return'--';const _0x5b3e43=new Date(_0x1e5efc*0x3e8),_0x32c5ce=_0x5b3e43['getFullYear'](),_0x560b1a=String(_0x5b3e43[_0x4331a4(0x131)]()+0x1)[_0x4331a4(_0x55545c._0x127dde)](0x2,'0'),_0x56ba84=String(_0x5b3e43[_0x4331a4(_0x55545c._0x2522f8)]())[_0x4331a4(_0x55545c._0x4ca4bc)](0x2,'0'),_0x12f552=String(_0x5b3e43['getHours']())[_0x4331a4(0x11a)](0x2,'0'),_0x273467=String(_0x5b3e43[_0x4331a4(_0x55545c._0x2d6f6a)]())[_0x4331a4(_0x55545c._0x4ca4bc)](0x2,'0'),_0x2dafe2=String(_0x5b3e43[_0x4331a4(_0x55545c._0x5340f0)]())['padStart'](0x2,'0');return _0x32c5ce+'-'+_0x560b1a+'-'+_0x56ba84+'\x20'+_0x12f552+':'+_0x273467+':'+_0x2dafe2;}function _0x57dc91(){const _0x103f6b=_0x302e5f,_0x37929f=sessionStorage['getItem']('token');if(!_0x37929f)return _0x5f4d71(_0x103f6b(0x12f)),setTimeout(()=>{const _0x36533f=_0x103f6b;window['location']['href']=_0x36533f(0x105);},0x3e8),null;return _0x37929f;}function _0x2881ac(_0x2d0eb0){const _0xc7d342=_0x302e5f;if(!_0x2d0eb0)return[];if(Array['isArray'](_0x2d0eb0))return _0x2d0eb0;if(typeof _0x2d0eb0===_0xc7d342(_0x46421f._0x597087))return Object[_0xc7d342(_0x46421f._0x1b675e)](_0x2d0eb0);return[];}function _0x7f387e(){const _0x5c7d3b=_0x302e5f,_0x195120=document[_0x5c7d3b(_0x1732f6._0x14cfbc)](_0x5c7d3b(0xf6));return _0x195120?_0x195120[_0x5c7d3b(_0x1732f6._0x12a565)]:_0x5c7d3b(0x104);}function _0x1c32e9(){const _0x4b7eb2=_0x302e5f,_0x11a9c3=_0x57dc91();if(!_0x11a9c3)return;_0x186c10();const _0x52fad2=baseURL+'/api?api_type=get_black_admin_list&op_type=get_black_admin_list&token='+_0x11a9c3;fetch(_0x52fad2)[_0x4b7eb2(0x149)](_0x4ba481=>{const _0x218946=_0x4b7eb2;if(!_0x4ba481['ok'])throw new Error('网络错误，请重试');return _0x4ba481[_0x218946(0x146)]();})[_0x4b7eb2(_0x5c5659._0x166969)](_0x38f27b=>{const _0x434dbe=_0x4b7eb2;_0x345ca0(),_0x38f27b[_0x434dbe(_0x3cb34e._0x26b1ee)]===0x4e20?_0x27f940(_0x38f27b['data']):(_0x1373f2['innerHTML']='',_0x311038[_0x434dbe(_0x3cb34e._0x1ba8d8)][_0x434dbe(0x11c)]='block',_0x311038[_0x434dbe(0x13d)]=_0x38f27b[_0x434dbe(0x13e)]||_0x434dbe(0x108));})[_0x4b7eb2(0xf7)](_0x400e07=>{const _0x1782ce=_0x4b7eb2;_0x345ca0(),console[_0x1782ce(0x107)](_0x1782ce(0x118),_0x400e07),_0x1373f2['innerHTML']='',_0x311038[_0x1782ce(_0xf890f0._0x3f07c3)][_0x1782ce(0x11c)]=_0x1782ce(0x141),_0x311038['textContent']=_0x1782ce(_0xf890f0._0x1f2639);});}function _0x27f940(_0x2a690f){const _0x938d2=_0x302e5f;_0x1373f2['innerHTML']='';const _0x4c7370=_0x2881ac(_0x2a690f);if(_0x4c7370[_0x938d2(_0x127767._0x4ab56b)]===0x0){_0x311038[_0x938d2(_0x127767._0x4ce947)][_0x938d2(_0x127767._0x5d241f)]=_0x938d2(0x141),_0x311038['textContent']='暂无数据';return;}_0x311038['style']['display']=_0x938d2(_0x127767._0x5a6590),_0x4c7370[_0x938d2(0x10b)](_0x2c6251=>{const _0x32fa10=_0x938d2;if(!_0x2c6251)return;const _0x178db2=document[_0x32fa10(_0x5ee75d._0x390d02)]('tr'),_0x251ed6=_0x2c6251['uid']||_0x2c6251[_0x32fa10(0x11b)]||'--',_0x57ab38=_0x2c6251[_0x32fa10(0x144)]??_0x2c6251[_0x32fa10(0x113)]??'--',_0x44f144=_0x2c6251['all_players_count']??_0x2c6251[_0x32fa10(0x114)]??'--',_0x281b0f=_0x2c6251[_0x32fa10(_0x5ee75d._0x3494e1)]??_0x2c6251[_0x32fa10(0x138)]??'--',_0x180a85=_0x2c6251[_0x32fa10(_0x5ee75d._0x3a414e)]||'--',_0x2c96da=_0x403a80(_0x2c6251[_0x32fa10(_0x5ee75d._0x368269)]||_0x2c6251['hei_time']),_0x4a213a=document['createElement']('td');_0x4a213a[_0x32fa10(_0x5ee75d._0x1a9111)]=_0x251ed6,_0x178db2[_0x32fa10(_0x5ee75d._0x43f594)](_0x4a213a);const _0x429401=document[_0x32fa10(0x117)]('td'),_0x173e8b=document[_0x32fa10(0x117)]('button');_0x173e8b[_0x32fa10(_0x5ee75d._0x9985f2)]='remove-btn',_0x173e8b[_0x32fa10(_0x5ee75d._0x19753e)]='移除',_0x173e8b[_0x32fa10(0x148)](_0x32fa10(0x13c),function(){_0x481684(_0x251ed6);}),_0x429401[_0x32fa10(_0x5ee75d._0x5080d5)](_0x173e8b),_0x178db2['appendChild'](_0x429401);const _0x4410f3=document[_0x32fa10(_0x5ee75d._0x390d02)]('td');_0x4410f3[_0x32fa10(0x13d)]=_0x57ab38,_0x178db2[_0x32fa10(_0x5ee75d._0x43f594)](_0x4410f3);const _0x5cb4fd=document[_0x32fa10(_0x5ee75d._0x1ee007)]('td');_0x5cb4fd[_0x32fa10(0x13d)]=_0x44f144,_0x178db2['appendChild'](_0x5cb4fd);const _0x493200=document[_0x32fa10(_0x5ee75d._0x4a8395)]('td');_0x493200[_0x32fa10(_0x5ee75d._0x1eae1e)]=_0x281b0f,_0x178db2[_0x32fa10(_0x5ee75d._0x43f594)](_0x493200);const _0x556fe5=document['createElement']('td');_0x556fe5[_0x32fa10(_0x5ee75d._0x5d7cdc)]=_0x180a85,_0x178db2['appendChild'](_0x556fe5);const _0x319a55=document['createElement']('td');_0x319a55[_0x32fa10(_0x5ee75d._0x2b717b)]=_0x2c96da,_0x178db2[_0x32fa10(_0x5ee75d._0x5080d5)](_0x319a55),_0x1373f2[_0x32fa10(_0x5ee75d._0x3b1de0)](_0x178db2);});}function _0x59cced(_0x1d9976,_0x3b4ec9,_0x53ba8c){const _0x37d67d=_0x302e5f,_0x13b71b=_0x57dc91();if(!_0x13b71b)return;_0x186c10();const _0x420700=baseURL+_0x37d67d(_0x50f139._0x4dc48d)+encodeURIComponent(_0x1d9976)+_0x37d67d(0x100)+encodeURIComponent(_0x13b71b)+_0x37d67d(_0x50f139._0x1c6cf6)+encodeURIComponent(_0x53ba8c)+_0x37d67d(_0x50f139._0x5527eb)+encodeURIComponent(_0x3b4ec9);fetch(_0x420700)['then'](_0x2e4bf3=>{const _0xf33f8d=_0x37d67d;if(!_0x2e4bf3['ok'])throw new Error('网络错误，请重试');return _0x2e4bf3[_0xf33f8d(0x146)]();})['then'](_0x489491=>{const _0x30f7eb=_0x37d67d;_0x345ca0();if(_0x489491['code']===0x4e20){const _0x13cc12=_0x489491[_0x30f7eb(_0x3b50c3._0x3a8326)]||{},_0xb57df5=_0x13cc12[_0x30f7eb(0x103)],_0x3aa387=_0x13cc12[_0x30f7eb(0x128)],_0x2f3e60=_0xb57df5!==undefined&&_0xb57df5!==null&&_0x3aa387!==undefined&&_0x3aa387!==null?_0x30f7eb(_0x3b50c3._0x1b8c3b)+_0xb57df5+'，影响代理\x20'+_0x3aa387+'）':'';_0x46a1c8(_0x30f7eb(0x116)+_0x2f3e60),_0xe2b1a4[_0x30f7eb(0x123)]='',_0x1765c9[_0x30f7eb(_0x3b50c3._0x57b68f)]='',_0x1c32e9();}else _0x5f4d71(_0x489491[_0x30f7eb(0x13a)]||_0x489491[_0x30f7eb(_0x3b50c3._0x145526)]||_0x30f7eb(_0x3b50c3._0x1e53e7));})[_0x37d67d(0xf7)](_0x286b08=>{const _0x1d3f71=_0x37d67d;_0x345ca0(),_0x5f4d71(_0x286b08['message']||_0x1d3f71(0x130));});}function _0x481684(_0x5ab8d5){const _0x5ac2a4={_0x1a7fed:0x124},_0x4b3c81={_0x4fcd41:0x146},_0x2b73d3=_0x302e5f,_0x1521af=_0x57dc91();if(!_0x1521af)return;_0x186c10();const _0x393549=baseURL+_0x2b73d3(0x134)+encodeURIComponent(_0x5ab8d5)+_0x2b73d3(0x12a)+encodeURIComponent(_0x1521af)+_0x2b73d3(0x13b);fetch(_0x393549)[_0x2b73d3(_0x501b1e._0x284f50)](_0x1df4af=>{const _0x2d4969=_0x2b73d3;if(!_0x1df4af['ok'])throw new Error(_0x2d4969(0x121));return _0x1df4af[_0x2d4969(_0x4b3c81._0x4fcd41)]();})[_0x2b73d3(_0x501b1e._0x284f50)](_0x1d7e40=>{const _0x38776a=_0x2b73d3;_0x345ca0(),_0x1d7e40[_0x38776a(0xfc)]===0x4e20?(_0x46a1c8(_0x38776a(_0x5ac2a4._0x1a7fed)),_0x1c32e9()):_0x5f4d71(_0x1d7e40['err']||_0x1d7e40[_0x38776a(0xf4)]||'移除失败，请重试');})[_0x2b73d3(0xf7)](_0xa64265=>{const _0x279eb0=_0x2b73d3;_0x345ca0(),_0x5f4d71(_0xa64265['message']||_0x279eb0(0x135));});}_0x1c32e9();});
+    </script>
+
+
+</body></html>

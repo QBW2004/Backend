@@ -1,0 +1,84 @@
+@{
+    Layout = "~/Views/Shared/Layout/_MobileLayout.cshtml";
+    string webVer = ConfigHelper.Get("WebVer");
+    bool canTargetAgent = ViewBag.CanTargetAgent == true;
+    bool canTargetTopAgent = ViewBag.CanTargetTopAgent == true;
+    string presetRole = (string)(ViewBag.PresetRole ?? "player");
+    string presetPay = (string)(ViewBag.PresetPayType ?? "0");
+    string presetAccount = (string)(ViewBag.PresetAccount ?? "");
+    long ownCoins = ViewBag.OwnCoins != null ? (long)ViewBag.OwnCoins : 0L;
+}
+
+<div class="m-container">
+    <div class="m-card m-card-pad">
+        @if (canTargetAgent)
+        {
+            <div class="m-form-group">
+                <label class="m-label">操作对象</label>
+                <div class="m-segment" id="mRoleGroup">
+                    <div class="m-segment-item@(presetRole == "player" ? " active" : "")" data-val="-2">玩家</div>
+                    <div class="m-segment-item@(presetRole == "agent" ? " active" : "")" data-val="2">下级代理</div>
+                    @if (canTargetTopAgent)
+                    {
+                        <div class="m-segment-item" data-val="1">总代</div>
+                    }
+                </div>
+            </div>
+        }
+
+        <div class="m-form-group">
+            <label class="m-label">操作类型</label>
+            <div class="m-segment" id="mPayGroup">
+                <div class="m-segment-item@(presetPay == "0" ? " active" : "")" data-val="0">充值</div>
+                <div class="m-segment-item@(presetPay == "1" ? " active" : "")" data-val="1">兑换（退分）</div>
+            </div>
+        </div>
+
+        <div class="m-form-group" style="position:relative;">
+            <label class="m-label">对方账号</label>
+            <div class="m-input-row">
+                <input type="text" class="m-input" id="mRcAccount" placeholder="请输入账号" value="@presetAccount" autocomplete="off" />
+                <button type="button" class="m-btn m-btn-secondary" id="mRcQueryBtn">查询</button>
+            </div>
+            <div class="m-history m-hidden" id="mRcHistory"></div>
+        </div>
+
+        <div class="m-hint" id="mRcTip">@Html.Raw("&#9432;") 请先查询账号信息，确认无误后再操作。</div>
+
+        <div class="m-account-info" id="mRcInfo">
+            <div class="m-account-row">
+                <span class="m-account-label">账号</span>
+                <span class="m-account-value" id="mRcInfoAccount">--</span>
+            </div>
+            <div class="m-account-row">
+                <span class="m-account-label">账号类型</span>
+                <span class="m-account-value" id="mRcInfoTitle">--</span>
+            </div>
+            <div class="m-account-row">
+                <span class="m-account-label">剩余金币</span>
+                <span class="m-account-value coins" id="mRcInfoCoins">--</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="m-card m-card-pad">
+        <div class="m-form-group">
+            <label class="m-label" id="mRcAmountLabel">充值金额</label>
+            <input type="number" class="m-input" id="mRcAmount" inputmode="numeric" min="1" step="1" placeholder="请输入数量" />
+        </div>
+        <button type="button" class="m-btn m-btn-primary m-btn-block" id="mRcSubmit" disabled>充值</button>
+    </div>
+</div>
+
+@section scripts {
+    <script>
+        window.MPage = {
+            ownCoins: @ownCoins,
+            presetAccount: '@Html.Raw(HttpUtility.JavaScriptStringEncode(presetAccount))',
+            presetPay: '@presetPay',
+            presetTarget: '@Html.Raw(canTargetAgent && presetRole == "agent" ? "2" : "-2")',
+            canTargetAgent: @Html.Raw(canTargetAgent ? "true" : "false")
+        };
+    </script>
+    <script src="@Url.Content("~/Scripts/app/mobile/mobile.recharge.js?v=" + webVer)"></script>
+}

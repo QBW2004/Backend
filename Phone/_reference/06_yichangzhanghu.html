@@ -1,0 +1,572 @@
+<html lang="zh-CN"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>异常账号管理</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .header {
+            background-color: #007aff;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 80px;
+        }   
+        
+        .header-content {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+        }
+        
+        h1 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        /* 返回按钮样式 */
+        .back-btn {
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            min-width: 44px;
+            min-height: 44px;
+        }
+        
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .back-btn:active {
+            transform: translateY(-50%) scale(0.96);
+        }
+        
+        .back-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+        
+        /* 刷新按钮样式 */
+        .refresh-btn {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            min-width: 44px;
+            min-height: 44px;
+        }
+        
+        .refresh-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .refresh-btn:active {
+            transform: translateY(-50%) scale(0.96);
+        }
+        
+        .refresh-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+        
+        .container {
+            padding: 16px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        /* 表格样式 */
+        .table-container {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+        
+        th {
+            background-color: #f8f9fa;
+            padding: 10px 8px;
+            text-align: left;
+            font-weight: 600;
+            color: #666;
+            border-bottom: 1px solid #eaeaea;
+            white-space: nowrap;
+            font-size: 14px;
+        }
+        
+        td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #eaeaea;
+            color: #333;
+            font-size: 14px;
+            word-break: break-word;
+        }
+        
+        /* 设置各列宽度 */
+        th:nth-child(1), td:nth-child(1) { /* 账号列 */
+            width: 28%;
+        }
+        
+        th:nth-child(2), td:nth-child(2) { /* 账号类型列 */
+            width: 16%;
+            text-align: center;
+        }
+        
+        th:nth-child(3), td:nth-child(3) { /* 锁定原因列 */
+            width: 36%;
+        }
+        
+        th:nth-child(4), td:nth-child(4) { /* 操作列 */
+            width: 20%;
+            text-align: center;
+        }
+        
+        tr:last-child td {
+            border-bottom: none;
+        }
+        
+        tr:hover {
+            background-color: #f5f7fa;
+        }
+        
+        /* 统计信息样式 */
+        .stats-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            background-color: white;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .stats-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .stats-info {
+            display: flex;
+            gap: 16px;
+        }
+        
+        .stats-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .stats-label {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .stats-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .stats-value.player {
+            color: #007aff;
+        }
+        
+        .stats-value.admin {
+            color: #ff9500;
+        }
+        
+        /* 账号类型标签样式 */
+        .account-type {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .account-type.player {
+            background-color: rgba(0, 122, 255, 0.1);
+            color: #007aff;
+        }
+        
+        .account-type.admin {
+            background-color: rgba(255, 149, 0, 0.1);
+            color: #ff9500;
+        }
+        
+        /* 错误计数样式 */
+        .error-count {
+            display: inline-block;
+            font-weight: 600;
+            color: #ff3b30;
+            background-color: rgba(255, 59, 48, 0.1);
+            padding: 2px 4px;
+            border-radius: 3px;
+            margin: 0 2px;
+        }
+        
+        /* 解封按钮样式 */
+        .unlock-btn {
+            padding: 6px 12px;
+            background-color: rgba(52, 199, 89, 0.1);
+            color: #34c759;
+            border: 1px solid rgba(52, 199, 89, 0.2);
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+        
+        .unlock-btn:hover {
+            background-color: rgba(52, 199, 89, 0.2);
+            border-color: rgba(52, 199, 89, 0.3);
+        }
+        
+        .unlock-btn:active {
+            transform: scale(0.98);
+        }
+        
+        .unlock-btn.loading {
+            position: relative;
+            color: transparent !important;
+        }
+        
+        .unlock-btn.loading::after {
+            content: '';
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(52, 199, 89, 0.3);
+            border-radius: 50%;
+            border-top-color: #34c759;
+            animation: spin 0.8s linear infinite;
+            left: calc(50% - 7px);
+            top: calc(50% - 7px);
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* 无数据提示 */
+        .no-data {
+            text-align: center;
+            padding: 40px 0;
+            color: #999;
+            font-size: 16px;
+        }
+        
+        /* 加载动画 */
+        .loading-container {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 16px 24px;
+            border-radius: 12px;
+            font-size: 14px;
+            z-index: 1000;
+        }
+        
+        .loading-container.show {
+            display: block;
+        }
+        
+        /* 弹窗样式 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+        
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .modal-content {
+            background-color: white;
+            border-radius: 12px;
+            width: 85%;
+            max-width: 320px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            transform: translateY(20px);
+            transition: transform 0.3s;
+        }
+        
+        .modal-overlay.show .modal-content {
+            transform: translateY(0);
+        }
+        
+        .modal-header {
+            padding: 16px;
+            border-bottom: 1px solid #e5e5e5;
+            text-align: center;
+        }
+        
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1d1d1f;
+        }
+        
+        .modal-body {
+            padding: 24px 16px;
+            text-align: center;
+        }
+        
+        .modal-message {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 16px;
+        }
+        
+        .modal-icon {
+            margin-bottom: 16px;
+            display: inline-block;
+        }
+        
+        .modal-icon.success {
+            color: #34c759;
+        }
+        
+        .modal-footer {
+            padding: 12px 16px;
+            border-top: 1px solid #e5e5e5;
+            display: flex;
+            justify-content: center;
+        }
+        
+        .modal-btn {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .modal-btn.confirm {
+            background-color: #007aff;
+            color: white;
+        }
+        
+        .modal-btn.confirm:hover {
+            background-color: #0066cc;
+        }
+        
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            th, td {
+                padding: 8px 6px;
+                font-size: 13px;
+            }
+            
+            .stats-container {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+                padding: 12px;
+            }
+            
+            .table-container {
+                overflow-x: auto;
+                border-radius: 8px;
+            }
+            
+            /* 移除最小宽度限制 */
+            table {
+                min-width: auto;
+                width: 100%;
+            }
+            
+            /* 调整移动端列宽 */
+            th:nth-child(1), td:nth-child(1) { /* 账号列 */
+                width: 25%;
+            }
+            
+            th:nth-child(2), td:nth-child(2) { /* 账号类型列 */
+                width: 18%;
+            }
+            
+            th:nth-child(3), td:nth-child(3) { /* 锁定原因列 */
+                width: 35%;
+            }
+            
+            th:nth-child(4), td:nth-child(4) { /* 操作列 */
+                width: 22%;
+            }
+            
+            /* 调小按钮大小 */
+            .unlock-btn {
+                padding: 4px 8px;
+                font-size: 13px;
+            }
+        }
+        
+        @media (max-width: 350px) {
+            th, td {
+                padding: 6px 4px;
+                font-size: 12px;
+            }
+            
+            .unlock-btn {
+                padding: 3px 6px;
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <button class="back-btn" id="backBtn">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"></path>
+                </svg>
+            </button>
+            <h1>异常账号管理</h1>
+            <div class="subtitle">查看和解封异常登录的账号</div>
+            <button class="refresh-btn" id="refreshBtn">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"></path>
+                </svg>
+            </button>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="stats-container">
+            <div class="stats-title">异常账号统计</div>
+            <div class="stats-info">
+                <div class="stats-item">
+                    <div class="stats-label">玩家账号:</div>
+                    <div class="stats-value player" id="playerCount">0</div>
+                </div>
+                <div class="stats-item">
+                    <div class="stats-label">代理账号:</div>
+                    <div class="stats-value admin" id="adminCount">0</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>账号</th>
+                        <th>账号类型</th>
+                        <th>锁定原因</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="accountList"></tbody>
+            </table>
+            <div class="no-data" id="noData" style="display: block;">暂无异常账号</div>
+        </div>
+    </div>
+    
+    <div class="loading-container" id="loading">加载数据中...</div>
+    
+    <!-- 解封成功弹窗 -->
+    <div class="modal-overlay" id="successModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">操作成功</div>
+            </div>
+            <div class="modal-body">
+                <div class="modal-icon success">
+                    <svg viewBox="0 0 24 24" width="48" height="48">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="#34c759"></path>
+                    </svg>
+                </div>
+                <div class="modal-message">账号已成功解封</div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn confirm" id="successModalOkBtn">确定</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const _0x8ba951=_0x4851;(function(_0x46af3d,_0x907485){const _0x33d224=_0x4851,_0x99c9d5=_0x46af3d();while(!![]){try{const _0x3b7ef9=-parseInt(_0x33d224(0x130))/0x1*(-parseInt(_0x33d224(0x12c))/0x2)+parseInt(_0x33d224(0x15e))/0x3+-parseInt(_0x33d224(0x157))/0x4+-parseInt(_0x33d224(0x166))/0x5*(-parseInt(_0x33d224(0x143))/0x6)+parseInt(_0x33d224(0x158))/0x7*(-parseInt(_0x33d224(0x13b))/0x8)+-parseInt(_0x33d224(0x16c))/0x9*(parseInt(_0x33d224(0x14f))/0xa)+parseInt(_0x33d224(0x122))/0xb*(-parseInt(_0x33d224(0x129))/0xc);if(_0x3b7ef9===_0x907485)break;else _0x99c9d5['push'](_0x99c9d5['shift']());}catch(_0x13e41d){_0x99c9d5['push'](_0x99c9d5['shift']());}}}(_0x6de4,0xe54aa));function _0x4851(_0x544f73,_0x5c17d1){_0x544f73=_0x544f73-0x119;const _0x6de4b5=_0x6de4();let _0x48516c=_0x6de4b5[_0x544f73];return _0x48516c;}function _0x6de4(){const _0xe154ee=['button','successModalOkBtn','host','&uidtype=','error-count','5fwWghU','&api_type=securityAction&unlocked=&uidtype=&opt_type=get','error','protocol','addEventListener','catch','3891231SYeFGi','refreshBtn','textContent','display','player','unlock-btn','/houtai.html','createElement','noData','length','11yhAVnb','location','child','&api_type=securityAction&unlocked=','accountLocked','click','uidtype','7751940xAUIkU','disabled','未知错误','2etqnjm','admin','tip','remove','713363Osfzim','解封失败:\x20','子账号','playerCount','suffix','/api?token=','block','网络错误，请重试','forEach','account-type\x20','getElementById','344KHCNmJ','获取异常账号失败:','ipBlocked','加载失败，请刷新重试','className','\x20次，IP已封禁','backBtn','classList','9111054iHmlnX','accountList','IP已封禁','innerHTML','密码错误\x20','filter','loading','createTextNode','adminCount','appendChild','json','span','10BEvzNe','href','count','show','uid','prefix','getItem','add','3742024LfKmia','70861UAylZC','DOMContentLoaded','style','解封账号失败:','then','data','3469365FLpsSA','code','passwordError'];_0x6de4=function(){return _0xe154ee;};return _0x6de4();}const baseURL=window[_0x8ba951(0x123)][_0x8ba951(0x169)]+'//'+window[_0x8ba951(0x123)][_0x8ba951(0x163)];document['addEventListener'](_0x8ba951(0x159),function(){const _0x3318a6=_0x8ba951,_0x452684=document[_0x3318a6(0x13a)](_0x3318a6(0x144)),_0x3f1d96=document[_0x3318a6(0x13a)](_0x3318a6(0x120)),_0x5756a7=document[_0x3318a6(0x13a)](_0x3318a6(0x149)),_0x28ac7c=document[_0x3318a6(0x13a)](_0x3318a6(0x119)),_0x5b93d6=document[_0x3318a6(0x13a)](_0x3318a6(0x141)),_0x473db3=document[_0x3318a6(0x13a)](_0x3318a6(0x133)),_0x38121d=document[_0x3318a6(0x13a)](_0x3318a6(0x14b)),_0x1e3f54=document['getElementById']('successModal'),_0x21ec50=document['getElementById'](_0x3318a6(0x162));_0x5b93d6[_0x3318a6(0x16a)](_0x3318a6(0x127),function(){window['history']['back']();}),_0x28ac7c[_0x3318a6(0x16a)](_0x3318a6(0x127),function(){_0x4f3d20();}),_0x21ec50[_0x3318a6(0x16a)](_0x3318a6(0x127),function(){_0x28b69e(_0x1e3f54);});function _0x227c68(){const _0x241e7c=_0x3318a6;_0x5756a7[_0x241e7c(0x142)][_0x241e7c(0x156)]('show');}function _0x7955b0(){const _0x5b7468=_0x3318a6;_0x5756a7[_0x5b7468(0x142)]['remove'](_0x5b7468(0x152));}function _0x36cc83(_0x14e0a7){const _0x283efd=_0x3318a6;_0x14e0a7[_0x283efd(0x142)][_0x283efd(0x156)]('show');}function _0x28b69e(_0x2f59cc){const _0x351d2c=_0x3318a6;_0x2f59cc[_0x351d2c(0x142)][_0x351d2c(0x12f)](_0x351d2c(0x152));}function _0x4f3d20(){const _0x589ab7=_0x3318a6;_0x227c68();const _0xca05b3=sessionStorage[_0x589ab7(0x155)]('token');if(!_0xca05b3){window['location'][_0x589ab7(0x150)]=_0x589ab7(0x11e);return;}const _0x4e4988=baseURL+_0x589ab7(0x135)+_0xca05b3+_0x589ab7(0x167);fetch(_0x4e4988)['then'](_0x3237ae=>{const _0x468c5f=_0x589ab7;if(!_0x3237ae['ok'])throw new Error(_0x468c5f(0x137));return _0x3237ae[_0x468c5f(0x14d)]();})[_0x589ab7(0x15c)](_0x1002e4=>{const _0x200f9f=_0x589ab7;_0x7955b0(),_0x1002e4[_0x200f9f(0x15f)]===0x4e20&&_0x1002e4[_0x200f9f(0x15d)]&&_0x1002e4[_0x200f9f(0x15d)][_0x200f9f(0x121)]>0x0?_0x265fb7(_0x1002e4[_0x200f9f(0x15d)]):(_0x452684[_0x200f9f(0x146)]='',_0x3f1d96[_0x200f9f(0x15a)][_0x200f9f(0x11b)]=_0x200f9f(0x136),_0x473db3[_0x200f9f(0x11a)]='0',_0x38121d[_0x200f9f(0x11a)]='0');})[_0x589ab7(0x16b)](_0x3111a4=>{const _0x347c49=_0x589ab7;_0x7955b0(),console['error'](_0x347c49(0x13c),_0x3111a4),_0x452684[_0x347c49(0x146)]='',_0x3f1d96[_0x347c49(0x15a)][_0x347c49(0x11b)]=_0x347c49(0x136),_0x3f1d96['textContent']=_0x347c49(0x13e);});}function _0xa00390(_0x2a09d3){const _0x30bc63=_0x3318a6;if(_0x2a09d3===_0x30bc63(0x11c))return'玩家';if(_0x2a09d3===_0x30bc63(0x124))return _0x30bc63(0x132);return'代理';}function _0x58c09e(_0x5034af){const _0x1f3c3a=_0x3318a6,_0x4a6031=Number(_0x5034af[_0x1f3c3a(0x160)])||0x0,_0x53c994=_0x5034af[_0x1f3c3a(0x126)]||_0x4a6031>=0x5,_0xcd2c1b=!!_0x5034af[_0x1f3c3a(0x13d)];if(_0x53c994&&_0xcd2c1b)return{'prefix':_0x1f3c3a(0x147),'count':_0x4a6031,'suffix':_0x1f3c3a(0x140)};if(_0xcd2c1b)return{'prefix':_0x1f3c3a(0x145),'count':null,'suffix':''};return{'prefix':_0x1f3c3a(0x147),'count':_0x4a6031,'suffix':'\x20次'};}function _0x265fb7(_0xbb434b){const _0x33b4e4=_0x3318a6,_0x37f73e=_0xbb434b[_0x33b4e4(0x148)](_0x26919c=>_0x26919c[_0x33b4e4(0x128)]==='player'),_0x11a613=_0xbb434b[_0x33b4e4(0x148)](_0x2e6a60=>_0x2e6a60[_0x33b4e4(0x128)]===_0x33b4e4(0x12d)||_0x2e6a60[_0x33b4e4(0x128)]===_0x33b4e4(0x124));_0x473db3['textContent']=_0x37f73e['length'],_0x38121d[_0x33b4e4(0x11a)]=_0x11a613['length'],_0x452684[_0x33b4e4(0x146)]='';if(_0xbb434b[_0x33b4e4(0x121)]>0x0){_0x3f1d96['style']['display']='none';const _0x2ce167=[..._0x11a613,..._0x37f73e];_0x2ce167[_0x33b4e4(0x138)](_0x481021=>{const _0x1eca7d=_0x33b4e4,_0x4082b5=document['createElement']('tr'),_0x2423cf=document[_0x1eca7d(0x11f)]('td');_0x2423cf[_0x1eca7d(0x11a)]=_0x481021[_0x1eca7d(0x153)],_0x4082b5[_0x1eca7d(0x14c)](_0x2423cf);const _0x44ef20=document['createElement']('td'),_0x411fe0=document[_0x1eca7d(0x11f)]('span'),_0x2b3fe2=_0x481021[_0x1eca7d(0x128)]===_0x1eca7d(0x124)?'admin':_0x481021[_0x1eca7d(0x128)];_0x411fe0[_0x1eca7d(0x13f)]=_0x1eca7d(0x139)+_0x2b3fe2,_0x411fe0[_0x1eca7d(0x11a)]=_0xa00390(_0x481021[_0x1eca7d(0x128)]),_0x44ef20[_0x1eca7d(0x14c)](_0x411fe0),_0x4082b5[_0x1eca7d(0x14c)](_0x44ef20);const _0x4f60e5=document[_0x1eca7d(0x11f)]('td'),_0x2464c8=_0x58c09e(_0x481021);_0x4f60e5['appendChild'](document[_0x1eca7d(0x14a)](_0x2464c8[_0x1eca7d(0x154)]));if(_0x2464c8['count']!==null){const _0x43d4e4=document[_0x1eca7d(0x11f)](_0x1eca7d(0x14e));_0x43d4e4['className']=_0x1eca7d(0x165),_0x43d4e4[_0x1eca7d(0x11a)]=_0x2464c8[_0x1eca7d(0x151)],_0x4f60e5[_0x1eca7d(0x14c)](_0x43d4e4);}_0x2464c8[_0x1eca7d(0x134)]&&_0x4f60e5[_0x1eca7d(0x14c)](document[_0x1eca7d(0x14a)](_0x2464c8[_0x1eca7d(0x134)]));_0x4082b5[_0x1eca7d(0x14c)](_0x4f60e5);const _0x26f173=document[_0x1eca7d(0x11f)]('td'),_0x557d26=document['createElement'](_0x1eca7d(0x161));_0x557d26[_0x1eca7d(0x13f)]=_0x1eca7d(0x11d),_0x557d26['textContent']='解封',_0x557d26[_0x1eca7d(0x16a)](_0x1eca7d(0x127),function(){const _0x5a752e=_0x1eca7d;_0x10ef16(_0x481021['uid'],_0x481021[_0x5a752e(0x128)],_0x557d26);}),_0x26f173[_0x1eca7d(0x14c)](_0x557d26),_0x4082b5['appendChild'](_0x26f173),_0x452684[_0x1eca7d(0x14c)](_0x4082b5);});}else _0x3f1d96['style'][_0x33b4e4(0x11b)]=_0x33b4e4(0x136);}function _0x10ef16(_0x3a8ea5,_0x405411,_0xd7fa2f){const _0x147acc=_0x3318a6;_0xd7fa2f[_0x147acc(0x12a)]=!![],_0xd7fa2f[_0x147acc(0x142)][_0x147acc(0x156)](_0x147acc(0x149));const _0x22458f=sessionStorage[_0x147acc(0x155)]('token'),_0x135f90=baseURL+_0x147acc(0x135)+_0x22458f+_0x147acc(0x125)+encodeURIComponent(_0x3a8ea5)+_0x147acc(0x164)+encodeURIComponent(_0x405411)+'&opt_type=set';fetch(_0x135f90)[_0x147acc(0x15c)](_0x10cd87=>{const _0x150db=_0x147acc;if(!_0x10cd87['ok'])throw new Error(_0x150db(0x137));return _0x10cd87[_0x150db(0x14d)]();})[_0x147acc(0x15c)](_0x312404=>{const _0x44ddf4=_0x147acc;_0xd7fa2f['disabled']=![],_0xd7fa2f['classList'][_0x44ddf4(0x12f)](_0x44ddf4(0x149)),_0x312404[_0x44ddf4(0x15f)]===0x4e20?(_0x36cc83(_0x1e3f54),_0x4f3d20()):alert(_0x44ddf4(0x131)+(_0x312404[_0x44ddf4(0x12e)]||_0x44ddf4(0x12b)));})['catch'](_0xb30356=>{const _0x2d1607=_0x147acc;_0xd7fa2f['disabled']=![],_0xd7fa2f[_0x2d1607(0x142)][_0x2d1607(0x12f)](_0x2d1607(0x149)),console[_0x2d1607(0x168)](_0x2d1607(0x15b),_0xb30356),alert('解封失败，请重试');});}_0x4f3d20();});
+    </script>
+
+ </body></html>

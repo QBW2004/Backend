@@ -1,0 +1,47 @@
+@{
+    Layout = "~/Views/Shared/Layout/_MobileLayout.cshtml";
+    string webVer = ConfigHelper.Get("WebVer");
+}
+
+<div class="m-container">
+    <div class="m-stats">
+        <div class="m-stats-title">本页代理统计</div>
+        <div class="m-stats-grid">
+            <div class="m-stat-box">
+                <div class="m-stat-label">代理总数</div>
+                <div class="m-stat-value" id="mAgTotal">0</div>
+            </div>
+            <div class="m-stat-box">
+                <div class="m-stat-label">金币合计</div>
+                <div class="m-stat-value" id="mAgCoins">0</div>
+            </div>
+            <div class="m-stat-box">
+                <div class="m-stat-label">盈亏合计</div>
+                <div class="m-stat-value" id="mAgProfit">0</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="mAgSearchTip" class="m-chips m-hidden"></div>
+
+    <div id="mAgList">
+        <div class="m-empty"><span class="m-spinner dark"></span> 加载中...</div>
+    </div>
+
+    <div class="m-load-more" id="mAgLoadMoreBox">
+        <button type="button" class="m-load-more-btn" id="mAgLoadMore">加载更多</button>
+    </div>
+    <div class="m-empty m-hidden" id="mAgNoMore">已加载全部数据</div>
+</div>
+
+@section scripts {
+    <script>
+        window.MPage = {
+            canUpDown: @Html.Raw(ViewBag.CanUpDown == true ? "true" : "false"),
+            canCreateAgent: @Html.Raw(ViewBag.CanCreateAgent == true ? "true" : "false"),
+            isSuper: @Html.Raw(ViewBag.IsSuper == true ? "true" : "false"),
+            ownAccount: '@Html.Raw(HttpUtility.JavaScriptStringEncode((string)(ViewBag.OwnAccount ?? "")))'
+        };
+    </script>
+    <script src="@Url.Content("~/Scripts/app/mobile/mobile.agents.js?v=" + webVer)"></script>
+}

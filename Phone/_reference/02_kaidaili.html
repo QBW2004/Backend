@@ -1,0 +1,491 @@
+<html lang="zh-CN"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>添加代理</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .header {
+            background-color: #007aff;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 80px;
+        }
+        
+        .header-content {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+        }
+        
+        h1 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        /* 返回按钮样式 */
+        .back-btn {
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            min-width: 44px;
+            min-height: 44px;
+        }
+        
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .back-btn:active {
+            transform: translateY(-50%) scale(0.96);
+        }
+        
+        .back-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+        
+        .container {
+            padding: 16px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        /* 表单容器样式 */
+        .form-container {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            overflow: hidden;
+            margin-bottom: 20px;
+            padding: 24px;
+            max-width: 500px;
+            margin: 20px auto;
+        }
+        
+        .form-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e1e1e1;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+            outline: none;
+        }
+        
+        .form-input:focus {
+            border-color: #007aff;
+            box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.1);
+        }
+        
+        /* 提交按钮样式 */
+        .submit-btn {
+            width: 100%;
+            padding: 14px;
+            background-color: #007aff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+        
+        .submit-btn:hover {
+            background-color: #0066cc;
+        }
+        
+        .submit-btn:active {
+            transform: scale(0.98);
+        }
+        
+        .submit-btn.loading {
+            position: relative;
+            color: transparent !important;
+        }
+        
+        .submit-btn.loading::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.8s linear infinite;
+            left: calc(50% - 10px);
+            top: calc(50% - 10px);
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* 加载动画 */
+        .loading-container {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 16px 24px;
+            border-radius: 12px;
+            font-size: 14px;
+            z-index: 1000;
+        }
+        
+        .loading-container.show {
+            display: block;
+        }
+        
+        /* 弹窗样式 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+        
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .modal-content {
+            background-color: white;
+            border-radius: 12px;
+            width: 85%;
+            max-width: 320px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            transform: translateY(20px);
+            transition: transform 0.3s;
+        }
+        
+        .modal-overlay.show .modal-content {
+            transform: translateY(0);
+        }
+        
+        .modal-header {
+            padding: 16px;
+            border-bottom: 1px solid #e5e5e5;
+            text-align: center;
+        }
+        
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1d1d1f;
+        }
+        
+        .modal-body {
+            padding: 24px 16px;
+            text-align: center;
+        }
+        
+        .modal-message {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 16px;
+        }
+        
+        .modal-icon {
+            margin-bottom: 16px;
+            display: inline-block;
+        }
+        
+        .modal-icon.success {
+            color: #34c759;
+        }
+        
+        .modal-icon.error {
+            color: #ff3b30;
+        }
+        
+        .modal-footer {
+            padding: 12px 16px;
+            border-top: 1px solid #e5e5e5;
+            display: flex;
+            justify-content: center;
+        }
+        
+        .modal-btn {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .modal-btn.confirm {
+            background-color: #007aff;
+            color: white;
+        }
+        
+        .modal-btn.confirm:hover {
+            background-color: #0066cc;
+        }
+        
+        /* 滑动开关样式 */
+        .switch-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        
+        .switch-label {
+            font-size: 14px;
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 28px;
+        }
+        
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #e9e9eb;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 24px;
+            width: 24px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        input:checked + .slider {
+            background-color: #34c759;
+        }
+        
+        input:focus + .slider {
+            box-shadow: 0 0 1px #34c759;
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(22px);
+        }
+        
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .form-container {
+                padding: 16px;
+                margin: 10px auto;
+                border-radius: 10px;
+            }
+            
+            .form-input {
+                padding: 10px;
+                font-size: 15px;
+            }
+            
+            .submit-btn {
+                padding: 12px;
+                font-size: 15px;
+            }
+        }
+        
+        @media (max-width: 350px) {
+            .form-container {
+                padding: 12px;
+            }
+            
+            .form-input {
+                padding: 8px;
+                font-size: 14px;
+            }
+            
+            .submit-btn {
+                padding: 10px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <button class="back-btn" id="backBtn">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"></path>
+                </svg>
+            </button>
+            <h1>添加代理</h1>
+            <div class="subtitle">创建新的代理商账号</div>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="form-container">
+            <div class="form-title">代理账号创建</div>
+            <form id="createAgentForm">
+                <div class="form-group">
+                    <label for="agentAccount" class="form-label">账号</label>
+                    <input type="text" id="agentAccount" class="form-input" placeholder="请输入代理账号" required="">
+                </div>
+                <div class="form-group">
+                    <label for="agentPassword" class="form-label">密码</label>
+                    <input type="password" id="agentPassword" class="form-input" placeholder="密码必须是数字+大小写字母" required="">
+                </div>
+                
+                <!-- 滑动开关：是否允许创建下级代理 -->
+                <div class="switch-wrapper">
+                    <span class="switch-label">允许该代理创建下级代理</span>
+                    <label class="switch">
+                        <input type="checkbox" id="allowCreateSubAgent" checked="">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                
+                <button type="submit" class="submit-btn" id="submitBtn">创建代理</button>
+            </form>
+        </div>
+    </div>
+    
+    <div class="loading-container" id="loading">处理中...</div>
+    
+    <!-- 成功弹窗 -->
+    <div class="modal-overlay" id="successModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">操作成功</div>
+            </div>
+            <div class="modal-body">
+                <div class="modal-icon success">
+                    <svg viewBox="0 0 24 24" width="48" height="48">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="#34c759"></path>
+                    </svg>
+                </div>
+                <div class="modal-message">代理账号创建成功</div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn confirm" id="successModalOkBtn">确定</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 错误弹窗 -->
+    <div class="modal-overlay" id="errorModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">操作失败</div>
+            </div>
+            <div class="modal-body">
+                <div class="modal-icon error">
+                    <svg viewBox="0 0 24 24" width="48" height="48">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="#ff3b30"></path>
+                    </svg>
+                </div>
+                <div class="modal-message" id="errorMessage">操作失败，请重试</div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn confirm" id="errorModalOkBtn">确定</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const _0x535e35=_0x2032;function _0x2032(_0xce49d6,_0x2fe7d9){const _0x587af9=_0x587a();return _0x2032=function(_0x20328a,_0x35dfd8){_0x20328a=_0x20328a-0x64;let _0x5b2ff9=_0x587af9[_0x20328a];if(_0x2032['tXwKtx']===undefined){var _0x141eef=function(_0x45139f){const _0x195580='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+/=';let _0x46c3dc='',_0x3ee242='';for(let _0x4d8b8c=0x0,_0x18b70f,_0x37f1ce,_0x4cf0cb=0x0;_0x37f1ce=_0x45139f['charAt'](_0x4cf0cb++);~_0x37f1ce&&(_0x18b70f=_0x4d8b8c%0x4?_0x18b70f*0x40+_0x37f1ce:_0x37f1ce,_0x4d8b8c++%0x4)?_0x46c3dc+=String['fromCharCode'](0xff&_0x18b70f>>(-0x2*_0x4d8b8c&0x6)):0x0){_0x37f1ce=_0x195580['indexOf'](_0x37f1ce);}for(let _0x14d962=0x0,_0x136a7c=_0x46c3dc['length'];_0x14d962<_0x136a7c;_0x14d962++){_0x3ee242+='%'+('00'+_0x46c3dc['charCodeAt'](_0x14d962)['toString'](0x10))['slice'](-0x2);}return decodeURIComponent(_0x3ee242);};_0x2032['kSMNdg']=_0x141eef,_0xce49d6=arguments,_0x2032['tXwKtx']=!![];}const _0x3ab0f2=_0x587af9[0x0],_0x6a98bb=_0x20328a+_0x3ab0f2,_0xb89675=_0xce49d6[_0x6a98bb];return!_0xb89675?(_0x5b2ff9=_0x2032['kSMNdg'](_0x5b2ff9),_0xce49d6[_0x6a98bb]=_0x5b2ff9):_0x5b2ff9=_0xb89675,_0x5b2ff9;},_0x2032(_0xce49d6,_0x2fe7d9);}(function(_0x37da6b,_0x46166d){const _0x148e88=_0x2032,_0x1db72f=_0x37da6b();while(!![]){try{const _0x5402=-parseInt(_0x148e88(0xcf))/0x1+-parseInt(_0x148e88(0xbe))/0x2+-parseInt(_0x148e88(0xac))/0x3+-parseInt(_0x148e88(0x77))/0x4*(-parseInt(_0x148e88(0xcb))/0x5)+-parseInt(_0x148e88(0x9d))/0x6*(-parseInt(_0x148e88(0x95))/0x7)+parseInt(_0x148e88(0xab))/0x8+parseInt(_0x148e88(0xaa))/0x9;if(_0x5402===_0x46166d)break;else _0x1db72f['push'](_0x1db72f['shift']());}catch(_0x4df2ea){_0x1db72f['push'](_0x1db72f['shift']());}}}(_0x587a,0x739dd));function _0x587a(){const _0x1ddb49=['AhjsBNa','l2HVDxrHAs5ODg1S','ChjLDMvUDerLzMf1Bhq','jM5Vx2fKzf9KywLSAt10CNvL','zKjbCg0','uKnwvhG','nJeWnJK0z1PHwhDH','C3vJy2vZC01VzgfS','y0jkwLC','D1v3C28','C3rYAw5N','5yIB5BU65lUJ55cg5AsX6lsLoG','ywDLBNrby2nVDw50','ywrK','ndHju1nwt0G','vKHpt3u','y3jLyxrLqwDLBNrgB3jT','DgXKqu0','6k+35AgR5yAz5A6m5Pw055Qe5lUJ55cg5zwg5l+H5OgV','z2zwEuC','txfvuNa','CMvTB3zL','y2f0y2G','Dgv4DenVBNrLBNq','DvLADhu','A1bqvKy','Cujrv3C','mZmXmdaYmgjQEufvzG','nJaZnJq4og5py2nRqG','nZu0mdm4BeLyrgzg','ywrKrxzLBNrmAxn0zw5LCG','q2Hurg8','BgfWr1y','ywDLBNrqyxnZD29Yza','yNL0Bxy','zxjYB3i','tNjvELK','Bg9N','jMjPBgK9mta','5y+r6ycb6k+35RgcoG','B1jgvvu','zgf0yq','ywXSB3DdCMvHDgvtDwjbz2vUDa','re1rEeG','572r57UC6zsz6k+V77Ym6k+36yEn6k+v','y2XHC3nmAxn0','wMLTrfi','mtuWnZeXngH3reXrEq','Bg9HzgLUzW','wu91v3O','DgHLBG','AKHLt2W','DgLW','re9nq29UDgvUDeXVywrLza','zgLZywjSzwq','ugvAEfK','BuTJr2O','CMvZzxq','C0jPuvy','jNb3zd0','mtq2nxLzAfDfsG','zhzdz2K','BfLMt2m','DMfSDwu','odyXmJK4vNbXAhHS','572r57UC6k+35Rgc5AsX6lsL77Ym6k+35Qoa5P+L572r57UC6l+E5O6L5zco6yEn6k+v','v1Pyq1K','Bg9JyxrPB24','te9Izgq','AvLYAe0','D1H1Bha','C3vIBwL0qNrU','C3vJy2vZC01VzgfSt2TcDg4','ChjVDg9JB2W','jM5HBwu9','DNbyAKu','Bwzfs0q','yMfJAW','vu9Zyw0','yMfJA0j0BG','zLvltuW','BwvZC2fNzq','v3HyDvO','swndqvm','zxjYB3jnzxnZywDL','Cevcvxy','nZa5mKzbAejjuW','5yIB5BU65lUJ55cg5AsX6lsL77Ym6k+36yEn6k+v','AhjLzG','ANnVBG','z2v0rwXLBwvUDej5swq','qwT3v3G','vgf5r2q','C2HVDW','C3vIBwL0','qvbj6l+u5zUE5PwW5O2UoG','rfrvBvm','Ag9ZDa','yMX0ELa','AgLZDg9YEq','zxjYB3jnB2rHBa','y29Kzq','DhjPBq','BxnN','z2v0sxrLBq','v3LwuNq','l2nYzwf0zwfKBwLUp3rVA2vUpq','zxjYB3jnB2rHBe9RqNrU','y2HLy2TLza','y2XPy2S'];_0x587a=function(){return _0x1ddb49;};return _0x587a();}const baseURL=window[_0x535e35(0x64)][_0x535e35(0x6a)]+'//'+window[_0x535e35(0x64)][_0x535e35(0x82)];document[_0x535e35(0xad)](_0x535e35(0xc4),function(){const _0x22ee83=_0x535e35,_0x36ce52={'LObdd':function(_0x304b59,_0xdae951){return _0x304b59(_0xdae951);},'tldAM':_0x22ee83(0xc6),'uYZtu':_0x22ee83(0x78),'DMQxH':function(_0x4223e5,_0x32d4bc){return _0x4223e5===_0x32d4bc;},'WZXCY':_0x22ee83(0x94),'bltzP':_0x22ee83(0x7e),'MqURp':_0x22ee83(0xbb),'lapGV':_0x22ee83(0xae),'IcCAS':function(_0x328f34){return _0x328f34();},'sBiQV':_0x22ee83(0xbf),'AkwWx':function(_0x31d73e,_0x5d8a79){return _0x31d73e!==_0x5d8a79;},'fUKML':_0x22ee83(0x98),'YOuWz':function(_0x249225,_0x3bc9e7){return _0x249225!==_0x3bc9e7;},'oRFUU':_0x22ee83(0x9e),'pEBUv':_0x22ee83(0x80),'WxXuZ':function(_0x38b960,_0x48fcb4){return _0x38b960(_0x48fcb4);},'hrRnp':_0x22ee83(0xd0),'lYfOc':_0x22ee83(0x7d),'mfEKD':_0x22ee83(0x90),'WyVRt':_0x22ee83(0xb3),'DTUmS':_0x22ee83(0x92),'gfVyG':function(_0x21fb09,_0x2da383){return _0x21fb09!==_0x2da383;},'ZimDR':_0x22ee83(0x66),'cBJZW':function(_0x117373,_0x505704){return _0x117373(_0x505704);},'dvCgi':_0x22ee83(0x9f),'jHeOl':_0x22ee83(0x9b),'vpXjE':_0x22ee83(0xb0),'kPPVF':_0x22ee83(0x96),'fBApm':_0x22ee83(0x8c),'wXulp':_0x22ee83(0x8e)},_0x3f7c3e=document[_0x22ee83(0x7b)](_0x36ce52[_0x22ee83(0xcc)]),_0x162fe5=document[_0x22ee83(0x7b)](_0x36ce52[_0x22ee83(0xc2)]),_0x63253c=document[_0x22ee83(0x7b)](_0x36ce52[_0x22ee83(0x6c)]),_0x51bbed=document[_0x22ee83(0x7b)](_0x22ee83(0xb9)),_0x46c6a2=document[_0x22ee83(0x7b)](_0x22ee83(0x68)),_0xd39e5e=document[_0x22ee83(0x7b)](_0x36ce52[_0x22ee83(0xc9)]),_0x1b5ae8=document[_0x22ee83(0x7b)](_0x22ee83(0x70)),_0x285e68=document[_0x22ee83(0x7b)](_0x36ce52[_0x22ee83(0xa8)]),_0x59c479=document[_0x22ee83(0x7b)](_0x22ee83(0x69)),_0x225a99=document[_0x22ee83(0x7b)](_0x22ee83(0x85)),_0x5b83e6=document[_0x22ee83(0x7b)](_0x36ce52[_0x22ee83(0x93)]),_0x12ad73=document[_0x22ee83(0x7b)](_0x22ee83(0x75));_0x1b5ae8[_0x22ee83(0xad)](_0x36ce52[_0x22ee83(0x67)],function(){const _0x462858=_0x22ee83;window[_0x462858(0x84)][_0x462858(0x6e)]();}),_0x59c479[_0x22ee83(0xad)](_0x36ce52[_0x22ee83(0x67)],function(){const _0x189ed7=_0x22ee83;_0x36ce52[_0x189ed7(0xa0)]===_0x189ed7(0xc6)?(_0x59210b(_0x285e68),_0x3f7c3e[_0x189ed7(0xc8)]()):(_0x36ce52[_0x189ed7(0x65)](_0x18b70f,_0x37f1ce),_0x4cf0cb[_0x189ed7(0xc8)]());}),_0x5b83e6[_0x22ee83(0xad)](_0x22ee83(0x8e),function(){_0x59210b(_0x225a99);});function _0x550458(){const _0x3fb9dd=_0x22ee83,_0x5cf40a={'bytmv':_0x36ce52[_0x3fb9dd(0xa7)]};_0x36ce52[_0x3fb9dd(0xba)](_0x36ce52[_0x3fb9dd(0xd1)],_0x3fb9dd(0x94))?_0xd39e5e[_0x3fb9dd(0xbc)][_0x3fb9dd(0x9c)](_0x36ce52[_0x3fb9dd(0x83)]):_0xd1939e=_0x5cf40a[_0x3fb9dd(0xb1)];}function _0x1e251f(){const _0x1cea70=_0x22ee83;_0xd39e5e[_0x1cea70(0xbc)][_0x1cea70(0xa4)](_0x36ce52[_0x1cea70(0x83)]);}function _0x556f5e(_0x4ffc13){const _0xc61415=_0x22ee83;if(_0x36ce52[_0xc61415(0xaf)]===_0x36ce52[_0xc61415(0xaf)])_0x4ffc13[_0xc61415(0xbc)][_0xc61415(0x9c)](_0xc61415(0x7e));else{if(!_0x5eda1d['ok'])throw new _0x3e9720(_0x36ce52[_0xc61415(0xa3)]);return _0x4ea6fb[_0xc61415(0x7a)]();}}function _0x59210b(_0x4c1f25){const _0x5a2164=_0x22ee83;_0x4c1f25[_0x5a2164(0xbc)][_0x5a2164(0xa4)](_0x36ce52[_0x5a2164(0x83)]);}_0x3f7c3e[_0x22ee83(0xad)](_0x22ee83(0x7f),function(_0x41695c){const _0x452cc8=_0x22ee83,_0x4b76b3={'UOsam':_0x452cc8(0x92),'mKcGj':_0x36ce52[_0x452cc8(0xcd)]};_0x41695c[_0x452cc8(0x91)]();const _0x30d174=_0x162fe5[_0x452cc8(0xce)][_0x452cc8(0x87)](),_0x108985=_0x63253c[_0x452cc8(0xce)][_0x452cc8(0x87)](),_0x4e13ae=_0x51bbed[_0x452cc8(0x8d)];if(!_0x30d174||!_0x108985){_0x36ce52[_0x452cc8(0x65)](_0x2bbb2b,_0x452cc8(0xa1));return;}_0x36ce52[_0x452cc8(0x74)](_0x550458),_0x46c6a2[_0x452cc8(0xc5)]=!![],_0x46c6a2[_0x452cc8(0xbc)][_0x452cc8(0x9c)](_0x452cc8(0xbf));const _0x3f0e18=sessionStorage[_0x452cc8(0x89)]('token');if(!_0x3f0e18){window[_0x452cc8(0x64)][_0x452cc8(0x79)]=_0x36ce52[_0x452cc8(0x6d)];return;}let _0x3c2e8e=baseURL+_0x452cc8(0x8b)+_0x3f0e18+_0x452cc8(0x6b)+encodeURIComponent(_0x30d174)+_0x452cc8(0xca)+encodeURIComponent(_0x108985)+_0x452cc8(0xb5);!_0x4e13ae&&(_0x36ce52[_0x452cc8(0x8a)]===_0x36ce52[_0x452cc8(0x8a)]?_0x3c2e8e+=_0x36ce52[_0x452cc8(0x81)]:_0x5cfe46+=_0x4b76b3[_0x452cc8(0x6f)]),console[_0x452cc8(0xb4)](_0x452cc8(0xb6),_0x3c2e8e),_0x36ce52[_0x452cc8(0x73)](fetch,_0x3c2e8e)[_0x452cc8(0xc1)](_0x15f5d9=>{const _0x437aae=_0x452cc8;if(!_0x15f5d9['ok']){if(_0x4b76b3[_0x437aae(0xc7)]!==_0x4b76b3[_0x437aae(0xc7)])_0x496089[_0x437aae(0xbc)][_0x437aae(0xa4)](_0x437aae(0x7e));else throw new Error(_0x437aae(0xbb));}return _0x15f5d9[_0x437aae(0x7a)]();})[_0x452cc8(0xc1)](_0x5e3b96=>{const _0x53eac4=_0x452cc8;_0x36ce52[_0x53eac4(0x74)](_0x1e251f),_0x46c6a2[_0x53eac4(0xc5)]=![],_0x46c6a2[_0x53eac4(0xbc)][_0x53eac4(0xa4)](_0x36ce52[_0x53eac4(0xc9)]);if(_0x5e3b96[_0x53eac4(0x86)]===0x4e20)_0x556f5e(_0x285e68);else{let _0x73633d='';if(_0x5e3b96[_0x53eac4(0xc3)]&&_0x36ce52[_0x53eac4(0x7c)](_0x5e3b96[_0x53eac4(0xc3)][_0x53eac4(0x87)](),''))_0x73633d=_0x5e3b96[_0x53eac4(0xc3)];else{if(_0x5e3b96[_0x53eac4(0x88)]&&_0x5e3b96[_0x53eac4(0x88)][_0x53eac4(0x87)]()!=='')_0x36ce52[_0x53eac4(0xba)](_0x53eac4(0x98),_0x36ce52[_0x53eac4(0x71)])?_0x73633d=_0x5e3b96[_0x53eac4(0x88)]:_0xfb70cb=_0x2a5849[_0x53eac4(0x88)];else{if(_0x5e3b96[_0x53eac4(0x72)]&&_0x36ce52[_0x53eac4(0xc0)](_0x5e3b96[_0x53eac4(0x72)][_0x53eac4(0x87)](),''))_0x73633d=_0x5e3b96[_0x53eac4(0x72)];else _0x5e3b96[_0x53eac4(0xb8)]&&typeof _0x5e3b96[_0x53eac4(0xb8)]===_0x53eac4(0x99)&&_0x5e3b96[_0x53eac4(0xb8)][_0x53eac4(0x87)]()!==''?_0x36ce52[_0x53eac4(0xb7)]!==_0x53eac4(0xa9)?_0x73633d=_0x5e3b96[_0x53eac4(0xb8)]:_0x195580[_0x53eac4(0x84)][_0x53eac4(0x6e)]():_0x73633d=_0x53eac4(0x78);}}console[_0x53eac4(0xb4)](_0x36ce52[_0x53eac4(0x76)],_0x5e3b96),_0x36ce52[_0x53eac4(0x73)](_0x2bbb2b,_0x73633d);}})[_0x452cc8(0xa5)](_0x3495d9=>{const _0x295252=_0x452cc8;_0x1e251f(),_0x46c6a2[_0x295252(0xc5)]=![],_0x46c6a2[_0x295252(0xbc)][_0x295252(0xa4)](_0x295252(0xbf)),console[_0x295252(0xb2)](_0x295252(0x9a),_0x3495d9),_0x2bbb2b(_0x36ce52[_0x295252(0x8f)]);});});function _0x2bbb2b(_0x4d753c){const _0x1b20a4=_0x22ee83;_0x36ce52[_0x1b20a4(0xa2)](_0x1b20a4(0x66),_0x36ce52[_0x1b20a4(0xbd)])?_0x164d56=_0xcb8cf2[_0x1b20a4(0xc3)]:(_0x12ad73[_0x1b20a4(0xa6)]=_0x4d753c,_0x36ce52[_0x1b20a4(0x97)](_0x556f5e,_0x225a99));}});
+    </script>
+
+ </body></html>

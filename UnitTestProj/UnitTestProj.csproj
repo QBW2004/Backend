@@ -142,7 +142,18 @@
       <Name>YYT.Remote</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup />
+  <!--
+    使用 NuGet reference assemblies (Microsoft.NETFramework.ReferenceAssemblies.net48)
+    替代 .NET 4.8 Developer Pack 编译时, 需要补充 Facades 引用(仅 FrameworkPathOverride 场景生效)。
+  -->
+  <ItemGroup Condition="'$(FrameworkPathOverride)' != ''">
+    <Reference Include="System.Runtime">
+      <HintPath>$(FrameworkPathOverride)\Facades\System.Runtime.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Threading.Tasks">
+      <HintPath>$(FrameworkPathOverride)\Facades\System.Threading.Tasks.dll</HintPath>
+    </Reference>
+  </ItemGroup>
   <Import Project="$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets" Condition="Exists('$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets')" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

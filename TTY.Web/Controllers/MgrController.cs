@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
+using System.Web;
 using System.Web.Mvc;
 using YYT.BLL;
 using YYT.BLL.EF;
@@ -21,14 +23,72 @@ namespace YYT.Web.Controllers
     {
         #region 框架页
         /// <summary>
-        /// 框架页
+        /// 框架页。
+        /// 手机浏览器访问时自动跳转手机端后台；可用 ?view=pc / ?view=mobile 手动切换，
+        /// 选择会记在 Cookie 里（30 天），之后不再自动跳转。
         /// </summary>
         /// <returns></returns>
         [MemberAuthorize]
         public ActionResult Index()
         {
             M_LoginUser loginUser = WebHelper.GetLoginInfo();
+
+            string view = (Request.QueryString["view"] ?? string.Empty).Trim().ToLowerInvariant();
+            if (view == "pc" || view == "mobile")
+            {
+                SaveViewMode(view);
+                if (view == "mobile")
+                    return RedirectToAction("Index", "Home", new { area = "Mobile" });
+            }
+            else if (IsMobileBrowser() && GetViewMode() != "pc")
+            {
+                return RedirectToAction("Index", "Home", new { area = "Mobile" });
+            }
+
             return View(loginUser);
+        }
+
+        /// <summary>视图偏好 Cookie 名</summary>
+        private const string VIEW_MODE_COOKIE = "mth_view";
+
+        private void SaveViewMode(string mode)
+        {
+            HttpCookie cookie = new HttpCookie(VIEW_MODE_COOKIE, mode)
+            {
+                Expires = DateTime.Now.AddDays(30),
+                HttpOnly = true,
+                Path = "/"
+            };
+            Response.Cookies.Set(cookie);
+        }
+
+        private string GetViewMode()
+        {
+            HttpCookie cookie = Request.Cookies[VIEW_MODE_COOKIE];
+            return cookie != null ? (cookie.Value ?? string.Empty).ToLowerInvariant() : string.Empty;
+        }
+
+        /// <summary>
+        /// 手机浏览器识别。
+        /// 不用 Request.Browser.IsMobileDevice（浏览器定义文件过旧，新机型识别不准），
+        /// 直接匹配 UA 关键字；平板按电脑版处理。
+        /// </summary>
+        private static readonly Regex MobileUaRegex = new Regex(
+            @"android|iphone|ipod|windows\s?phone|iemobile|blackberry|bb10|opera\s?mini|opera\s?mobi|webos|symbian|ucbrowser|micromessenger|harmonyos",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        private bool IsMobileBrowser()
+        {
+            string ua = Request.UserAgent;
+            if (string.IsNullOrWhiteSpace(ua))
+                return false;
+            // Android 平板的 UA 含 android 但不含 mobile，按电脑版处理
+            if (ua.IndexOf("android", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                ua.IndexOf("mobile", StringComparison.OrdinalIgnoreCase) < 0)
+                return false;
+            if (ua.IndexOf("ipad", StringComparison.OrdinalIgnoreCase) >= 0)
+                return false;
+            return MobileUaRegex.IsMatch(ua);
         }
 
         /// <summary>

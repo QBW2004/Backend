@@ -1547,6 +1547,18 @@
     <Content Include="Scripts\plugins\qrcode\README.md" />
     <Content Include="Views\Mgr\Index.cshtml" />
     <Content Include="Views\Shared\Layout\_ContentLayou.Mobile.cshtml" />
+    <Content Include="Views\Shared\Layout\_MobileLayout.cshtml" />
+    <Content Include="Content\css\mobile.css" />
+    <Content Include="Scripts\app\mobile\mobile.core.js" />
+    <Content Include="Scripts\app\mobile\mobile.players.js" />
+    <Content Include="Scripts\app\mobile\mobile.agents.js" />
+    <Content Include="Scripts\app\mobile\mobile.addagent.js" />
+    <Content Include="Scripts\app\mobile\mobile.recharge.js" />
+    <Content Include="Scripts\app\mobile\mobile.records.js" />
+    <Content Include="Areas\Mobile\Views\Home\Agents.cshtml" />
+    <Content Include="Areas\Mobile\Views\Home\AddAgent.cshtml" />
+    <Content Include="Areas\Mobile\Views\Home\Recharge.cshtml" />
+    <Content Include="Areas\Mobile\Views\Home\Records.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />

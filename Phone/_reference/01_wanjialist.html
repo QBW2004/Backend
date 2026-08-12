@@ -1,0 +1,1658 @@
+<html lang="zh-CN"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>玩家列表</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/js-base64@3.7.5/base64.min.js"></script>
+    
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            min-height: 100vh;
+            overflow-x: hidden; 
+        }
+        
+        .header {
+            background-color: #007aff;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 90px;
+        }
+        
+        .header-content {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .header-content h1 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+            line-height: 1;
+        }
+        
+        .subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            margin-top: 2px;
+        }
+        
+        .total-win-loss {
+            font-weight: 600;
+            font-size: 20px;
+            padding: 0 12px;
+            border-radius: 6px;
+            margin-top: 0;
+        }
+        
+        .online-count {
+            color: #ffd700; 
+            font-weight: 500;
+        }
+        
+        
+        .total-win-loss {
+            font-weight: 600;
+            font-size: 18px;
+            margin-left: 5px;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+        
+        .total-win-loss.positive {
+            color: #34c759; 
+            background-color: rgba(52, 199, 89, 0.15);
+        }
+        
+        .total-win-loss.negative {
+            color: #ff9500; 
+            background-color: rgba(255, 149, 0, 0.15);
+        }
+        
+        .container {
+            padding: 0;
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        
+        .player-card {
+            background: white;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            cursor: pointer;  
+            transition: transform 0.2s, box-shadow 0.2s;  
+            border-radius: 0;
+        }
+        
+        .player-card:active {
+            transform: scale(0.98);  
+        }
+        
+        .player-card:hover {
+            box-shadow: 0 2px 5px rgba(0,0,0,0.15);  
+        }
+        
+        
+        #onlineTab .player-card {
+            margin-bottom: 16px;
+            border: 1px solid #e0e0e0;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+            padding: 16px;
+            position: relative;
+            border-radius: 0;
+        }
+        
+        #onlineTab .player-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border-color: #d0d0d0;
+        }
+        
+        #onlineTab .player-card:before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 4px;
+            background-color: #007aff;
+            border-radius: 0;
+        }
+        
+        
+        .player-card.offline {
+            background: #f9f9f9;
+            border: 1px solid #eaeaea;
+            box-shadow: none;
+        }
+        
+        .player-card.offline:hover {
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .player-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            flex-wrap: nowrap;
+            width: 100%;
+        }
+        
+        .player-account {
+            font-size: 15px;
+            font-weight: 600;
+            color: #1d1d1f;
+            max-width: 100px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        
+        .player-name {
+            font-size: 14px;
+            color: #1d1d1f;
+            max-width: 80px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        
+        .agent-line {
+            font-size: 13px;
+            color: #666;
+            max-width: 60px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        
+        .remaining-score {
+            font-size: 14px;
+            font-weight: 500;
+            color: #34c759;
+            padding: 2px 8px;
+            background: rgba(52, 199, 89, 0.1);
+            border-radius: 4px;
+            flex-shrink: 0;
+            margin-left: auto;
+        }
+        
+        .remaining-diamond {
+            font-size: 14px;
+            font-weight: 500;
+            color: #007aff;
+            padding: 2px 8px;
+            background: rgba(0, 122, 255, 0.1);
+            border-radius: 4px;
+            flex-shrink: 0;
+            margin-left: 8px;
+        }
+        
+        .black-listed {
+            color: #ff3b30;
+            font-weight: 500;
+            font-size: 12px;
+            padding: 2px 6px;
+            background: rgba(255, 59, 48, 0.1);
+            border-radius: 4px;
+        }
+        
+        .player-info {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 13px;
+        }
+        
+        .info-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+        
+        .info-row.money-row {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+        
+        .info-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .info-label {
+            color: #86868b;
+            margin-bottom: 2px;
+            font-size: 12px;
+        }
+        
+        .info-value {
+            color: #1d1d1f;
+        }
+        
+        .money-value {
+            font-family: -apple-system-monospace, monospace;
+            font-weight: 500;
+        }
+        
+        .positive {
+            color: #34c759;
+        }
+        
+        .negative {
+            color: #ff3b30;
+        }
+        
+        
+        .loading {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 16px 24px;
+            border-radius: 12px;
+            font-size: 14px;
+            z-index: 1000;
+        }
+        
+        .loading.show {
+            display: block;
+        }
+        
+        
+        .money-row .info-item {
+            background: #f8f9fa;
+            padding: 8px 12px;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .money-row .info-label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 0;
+            flex-shrink: 0;
+        }
+        
+        .money-row .info-value {
+            font-size: 16px;
+            font-family: -apple-system-monospace, monospace;
+            font-weight: 600;
+            text-align: right;
+        }
+        
+        .money-row .positive {
+            color: #34c759;
+        }
+        
+        .money-row .negative {
+            color: #ff3b30;
+        }
+        
+        
+        .info-row.money-row.eat-score-row {
+            grid-template-columns: 1fr;
+            margin-top: 8px;
+        }
+        
+        .eat-score-row .info-item {
+            background: #f8f9fa;  
+            border: none;  
+            padding: 6px 10px;  
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .eat-score-row .info-label {
+            display: none;  
+        }
+        
+        .eat-score-row .info-value {
+            font-size: 12px;
+            color: #ff6b6b;
+            text-align: center;
+            width: 100%;
+        }
+        
+        .login-time-row {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px dashed #e0e0e0;
+            display: flex;
+            justify-content: center;
+        }
+        
+        .login-time-row .info-item {
+            background: rgba(0, 122, 255, 0.05);
+            border-radius: 6px;
+            padding: 6px 10px;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+        }
+        
+        .login-time-row .info-label {
+            color: #007aff;
+            font-size: 12px;
+            font-weight: 500;
+            margin-bottom: 0;
+        }
+        
+        .login-time-row .info-value {
+            font-size: 13px;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        @media (max-width: 380px) {
+            .container {
+                padding: 8px;
+            }
+            
+            .player-card {
+                padding: 10px;
+                margin-bottom: 6px;
+            }
+            
+            .info-row {
+                gap: 6px;
+            }
+            
+            .money-row .info-value {
+                font-size: 14px;  
+            }
+            
+            .money-row .info-item {
+                padding: 5px 8px;  
+            }
+            
+            .money-row .info-label {
+                font-size: 11px;  
+            }
+        }
+        
+        
+        .button-group {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        
+        .button-group button {
+            flex: 1;
+            padding: 8px 0;
+            border: 1px solid #e5e5e5;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 400;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            background-color: white;
+            color: #666;
+        }
+        
+        
+        .blacklist-btn {
+            color: #ff3b30;
+            border-color: rgba(255, 59, 48, 0.2);
+        }
+        
+        .blacklist-btn:hover {
+            background-color: rgba(255, 59, 48, 0.05);
+            border-color: rgba(255, 59, 48, 0.3);
+        }
+        
+        
+        .reward-btn {
+            color: #34c759;
+            border-color: rgba(52, 199, 89, 0.2);
+        }
+        
+        .reward-btn:hover {
+            background-color: rgba(52, 199, 89, 0.05);
+            border-color: rgba(52, 199, 89, 0.3);
+        }
+        
+        
+        .recharge-btn {
+            color: #007aff;
+            border-color: rgba(0, 122, 255, 0.2);
+        }
+        
+        .recharge-btn:hover {
+            background-color: rgba(0, 122, 255, 0.05);
+            border-color: rgba(0, 122, 255, 0.3);
+        }
+        
+        
+        button.blocked {
+            background-color: #f5f5f5;
+            color: #999 !important;
+            cursor: not-allowed;
+            border-color: #e5e5e5 !important;
+        }
+        
+        
+        button.loading {
+            opacity: 0.7;
+            cursor: wait;
+        }
+        
+        
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none; 
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .modal-overlay.show {
+            display: flex; 
+        }
+        
+        .modal-content {
+            background-color: white;
+            border-radius: 12px;
+            width: 85%;
+            max-width: 320px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            transform: translateY(20px);
+            transition: transform 0.3s;
+        }
+        
+        .modal-overlay.show .modal-content {
+            transform: translateY(0);
+        }
+        
+        .modal-header {
+            padding: 16px;
+            border-bottom: 1px solid #e5e5e5;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1d1d1f;
+        }
+        
+        .modal-subtitle {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .modal-label {
+            font-weight: 500;
+            color: #666;
+        }
+        
+        .modal-actions {
+            padding: 16px;
+        }
+        
+        .modal-action-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 12px 16px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border: none;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .modal-action-btn.blacklist {
+            background-color: rgba(255, 59, 48, 0.1);
+            color: #ff3b30;
+        }
+        
+        .modal-action-btn.reward {
+            background-color: rgba(52, 199, 89, 0.1);
+            color: #34c759;
+        }
+        
+        .modal-action-btn.recharge {
+            background-color: rgba(0, 122, 255, 0.1);
+            color: #007aff;
+        }
+        
+        .modal-action-btn.details {
+            background-color: rgba(142, 142, 147, 0.1);
+            color: #8e8e93;
+        }
+        
+        .modal-action-btn:hover {
+            background-color: #f5f5f7;
+        }
+        
+        .modal-footer {
+            padding: 12px 16px;
+            border-top: 1px solid #e5e5e5;
+        }
+        
+        .modal-cancel-btn {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            background-color: #f5f5f7;
+            font-size: 16px;
+            font-weight: 500;
+            color: #007aff;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .modal-cancel-btn:hover {
+            background-color: #e5e5ea;
+        }
+        
+        
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #666;
+            margin: 20px 0 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #eaeaea;
+        }
+        
+        
+        .load-more-container {
+            padding: 0 8px;
+            width: 100%;
+        }
+        
+        .load-more-btn {
+            background-color: #f5f7fa;
+            border: 1px solid #e5e5e5;
+            color: #007aff;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .load-more-btn:hover {
+            background-color: #e5e5ea;
+        }
+        
+        .load-more-btn.loading {
+            opacity: 0.7;
+            cursor: wait;
+        }
+        
+        .load-more-btn.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            color: #999;
+        }
+        
+        .no-more-data {
+            text-align: center;
+            color: #999;
+            font-size: 14px;
+            margin: 20px 0;
+        }
+        
+        
+        .tabs-container {
+            margin: 0;
+            border-radius: 0;
+            overflow: hidden;
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            width: 100%;
+        }
+        
+        .tabs-header {
+            display: flex;
+            border-bottom: 1px solid #eaeaea;
+        }
+        
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding: 14px 0;
+            font-size: 15px;
+            font-weight: 500;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+        
+        .tab.active {
+            color: #007aff;
+        }
+        
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 25%;
+            width: 50%;
+            height: 3px;
+            background-color: #007aff;
+            border-radius: 3px 3px 0 0;
+        }
+        
+        .tab-count {
+            font-size: 16px;
+            font-weight: 600;
+            margin-left: 5px;
+            color: inherit;
+        }
+        
+        .tabs-content {
+            padding: 0;
+        }
+        
+        .tab-pane {
+            display: none;
+            padding: 0;
+        }
+        
+        
+        #onlineTab {
+            background-color: #f8f9fa;
+            padding: 8px 0;
+            width: 100%;
+        }
+        
+        
+        #offlineTab {
+            padding: 8px 0;
+            width: 100%;
+        }
+        
+        
+        #onlinePlayersSection, #offlinePlayersSection {
+            padding: 0;
+            width: 100%;
+        }
+        
+        .tab-pane.active {
+            display: block;
+        }
+        
+        
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+        
+        .sidebar-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 280px;
+            height: 100%;
+            background-color: white;
+            z-index: 101;
+            box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+            transition: left 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .sidebar.active {
+            left: 0;
+        }
+        
+        .sidebar-header {
+            padding: 20px 16px;
+            background-color: #007aff;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        
+        .sidebar-user-info {
+            display: flex;
+            align-items: center;
+        }
+        
+        .sidebar-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+        }
+        
+        .sidebar-user-details {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .sidebar-username {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .sidebar-invite-code {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        
+        .sidebar-close-btn {
+            background: transparent;
+            border: none;
+            color: white;
+            cursor: pointer;
+            padding: 4px;
+        }
+        
+        .sidebar-menu {
+            flex: 1;
+            padding: 16px 0;
+            overflow-y: auto;
+        }
+        
+        .sidebar-menu-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            color: #333;
+            text-decoration: none;
+            transition: background-color 0.2s;
+        }
+        
+        .sidebar-menu-item:hover {
+            background-color: #f5f5f7;
+        }
+        
+        .sidebar-menu-item svg {
+            margin-right: 12px;
+            color: #007aff;
+        }
+        
+        .sidebar-menu-placeholder {
+            padding: 24px 16px;
+            text-align: center;
+            color: #999;
+            border-top: 1px solid #eaeaea;
+            margin-top: 16px;
+        }
+        
+        .placeholder-text {
+            font-size: 14px;
+            font-style: italic;
+        }
+        
+        
+        .logout-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 16px;
+            padding: 12px;
+            background-color: #f5f5f7;
+            color: #ff3b30;
+            border: 1px solid rgba(255, 59, 48, 0.2);
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .logout-btn:hover {
+            background-color: rgba(255, 59, 48, 0.05);
+            border-color: rgba(255, 59, 48, 0.3);
+        }
+        
+        .logout-btn svg {
+            margin-right: 8px;
+            fill: currentColor;
+        }
+        
+        @media screen and (max-width: 768px) {
+            html, body {
+                margin: 0;
+                padding: 0;
+                width: 100%;
+                overflow-x: hidden;
+            }
+            
+            .header {
+                width: 100%;
+                padding: 20px;
+                max-width: 100%;
+            }
+            
+            .header-content {
+                width: 100%;
+                max-width: 100%;
+            }
+            
+            .menu-btn {
+                left: 0;
+            }
+            
+            .container {
+                width: calc(100% - 20px);
+                margin-left: auto;
+                margin-right: auto;
+            }
+        }
+        
+        
+        .menu-btn {
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            min-width: 44px;
+            min-height: 44px;
+        }
+        
+        .menu-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .menu-btn:active {
+            transform: translateY(-50%) scale(0.96);
+        }
+        
+        .menu-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+
+        
+        .refresh-btn {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            min-width: 44px;
+            min-height: 44px;
+        }
+        
+        .refresh-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .refresh-btn:active {
+            transform: translateY(-50%) scale(0.96);
+        }
+        
+        .refresh-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+        
+        
+        .search-btn {
+            position: absolute;
+            right: 52px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            min-width: 44px;
+            min-height: 44px;
+        }
+        
+        .search-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .search-btn:active {
+            transform: translateY(-50%) scale(0.96);
+        }
+        
+        .search-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+
+        
+        .search-modal {
+            max-width: 400px;
+            width: 90%;
+        }
+        
+        .search-input-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        
+        .search-input-container input {
+            flex: 1;
+            padding: 10px 12px;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        
+        .search-input-container input:focus {
+            border-color: #007aff;
+        }
+        
+        .search-submit-btn {
+            background: #007aff;
+            border: none;
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+        
+        .search-submit-btn svg {
+            fill: white;
+        }
+        
+        .search-submit-btn:hover {
+            background: #0056b3;
+        }
+        
+        .search-results {
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 0 16px;
+        }
+        
+        .search-result-item {
+            padding: 12px;
+            border-bottom: 1px solid #e5e5e5;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .search-result-item:hover {
+            background-color: #f5f5f7;
+        }
+        
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+        
+        .search-result-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+        
+        .search-result-account {
+            font-weight: 600;
+            color: #1d1d1f;
+        }
+        
+        .search-result-name {
+            color: #666;
+        }
+        
+        .search-result-status {
+            font-size: 12px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: auto;
+        }
+        
+        .search-result-status.online {
+            background: rgba(52, 199, 89, 0.1);
+            color: #34c759;
+        }
+        
+        .search-result-status.offline {
+            background: rgba(142, 142, 147, 0.1);
+            color: #8e8e93;
+        }
+        
+        .search-result-info {
+            font-size: 13px;
+            color: #666;
+        }
+
+        
+        .change-password-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 16px;
+            padding: 12px;
+            background-color: #f5f5f7;
+            color: #007aff;
+            border: 1px solid rgba(0, 122, 255, 0.2);
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .change-password-btn:hover {
+            background-color: rgba(0, 122, 255, 0.05);
+            border-color: rgba(0, 122, 255, 0.3);
+        }
+
+        .change-password-btn svg {
+            margin-right: 8px;
+            fill: currentColor;
+        }
+
+        .modal-action-btn.prize-history {
+            background-color: rgba(255, 149, 0, 0.1);
+            color: #ff9500;
+        }
+
+        
+        .refresh-btn.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .refresh-btn.disabled:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .refresh-btn.disabled:active {
+            transform: translateY(-50%);
+        }
+
+        
+        .kick-machine-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 16px;
+            padding: 12px;
+            background-color: #f5f5f7;
+            color: #ff9500; 
+            border: 1px solid rgba(255, 149, 0, 0.2);
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .kick-machine-btn:hover {
+            background-color: rgba(255, 149, 0, 0.05);
+            border-color: rgba(255, 149, 0, 0.3);
+        }
+
+        .kick-machine-btn svg {
+            margin-right: 8px;
+            fill: currentColor;
+        }
+
+        
+        .kick-result-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1200;
+        }
+        
+        .kick-result-modal-overlay.show {
+            display: flex;
+        }
+        
+        .kick-result-modal-content {
+            background-color: white;
+            border-radius: 12px;
+            width: 85%;
+            max-width: 320px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            transform: translateY(20px);
+            transition: transform 0.3s;
+        }
+        
+        .kick-result-modal-overlay.show .kick-result-modal-content {
+            transform: translateY(0);
+        }
+        
+        .kick-result-modal-header {
+            padding: 16px;
+            border-bottom: 1px solid #e5e5e5;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            background-color: #ff9500;
+            color: white;
+        }
+        
+        .kick-result-modal-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .kick-result-modal-body {
+            padding: 16px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .kick-result-content {
+            font-family: -apple-system-monospace, monospace;
+            white-space: pre-wrap;
+            background-color: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid #ff9500;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .kick-result-modal-footer {
+            padding: 12px 16px;
+            border-top: 1px solid #e5e5e5;
+        }
+        
+        .kick-result-modal-button {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            background-color: #ff9500;
+            font-size: 16px;
+            font-weight: 500;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .kick-result-modal-button:hover {
+            background-color: #e68a00;
+        }
+        
+        
+        .kick-result-content {
+            font-family: -apple-system-monospace, monospace;
+            white-space: pre-wrap;
+            background-color: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid #ff9500;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        
+        .status-indicator {
+            display: flex;
+            margin-bottom: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            align-items: center;
+        }
+        
+        .status-icon {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            margin-right: 8px;
+            display: inline-block;
+        }
+        
+        .status-success {
+            background-color: #34c759;
+        }
+        
+        .status-warning {
+            background-color: #ff9500;
+        }
+        
+        .status-error {
+            background-color: #ff3b30;
+        }
+        
+        
+        .kick-result-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+            font-size: 13px;
+        }
+        
+        .kick-result-table th,
+        .kick-result-table td {
+            border: 1px solid #e5e5e5;
+            padding: 8px;
+            text-align: left;
+        }
+        
+        .kick-result-table th {
+            background-color: #f5f5f7;
+            font-weight: 600;
+        }
+        
+        .kick-result-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        
+        .result-details-toggle {
+            margin-top: 12px;
+            font-size: 13px;
+            color: #007aff;
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            align-items: center;
+        }
+        
+        .result-details-toggle svg {
+            width: 16px;
+            height: 16px;
+            margin-right: 4px;
+            transition: transform 0.3s;
+        }
+        
+        .result-details-toggle.expanded svg {
+            transform: rotate(90deg);
+        }
+        
+        .result-details-content {
+            margin-top: 8px;
+            display: none;
+        }
+        
+        .result-details-content.visible {
+            display: block;
+        }
+        
+        
+        .sort-options {
+            display: flex;
+            padding: 12px 16px;
+            background-color: #f9f9f9;
+            border-bottom: 1px solid #eaeaea;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .sort-option {
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 13px;
+            background-color: #f0f0f0;
+            border: 1px solid #e0e0e0;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .sort-option.active {
+            background-color: #007aff;
+            color: white;
+            border-color: #007aff;
+        }
+        
+        .sort-option:hover:not(.active) {
+            background-color: #e5e5e5;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <button class="menu-btn" id="menuBtn">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"></path>
+                </svg>
+            </button>
+            <h1>玩家列表</h1>
+            <div class="subtitle">
+                <div>今日玩家总输赢（钻）</div>
+                <div class="total-win-loss " id="totalWinLoss">0</div>
+            </div>
+            <button class="refresh-btn" id="refreshBtn">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"></path>
+                </svg>
+            </button>
+            <button class="search-btn" id="searchBtn">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"></path>
+                </svg>
+            </button>
+        </div>
+    </div>
+    
+    
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-user-info">
+                <div class="sidebar-avatar">
+                    <svg viewBox="0 0 24 24" width="40" height="40">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" fill="#007aff"></path>
+                    </svg>
+                </div>
+                <div class="sidebar-user-details">
+                    <div class="sidebar-username" id="sidebarUsername">管理员</div>
+                    <div class="sidebar-invite-code" id="sidebarInviteCode">邀请码: --</div>
+                </div>
+            </div>
+            <button class="sidebar-close-btn" id="sidebarCloseBtn">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="currentColor"></path>
+                </svg>
+            </button>
+        </div>
+        <div class="sidebar-menu">
+            <a href="/kaidaili.html" class="sidebar-menu-item">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"></path>
+                </svg>
+                添加代理
+            </a>
+            <a href="/wodedaili.html" class="sidebar-menu-item" id="myAgentsLink">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" fill="currentColor"></path>
+                </svg>
+                我的代理
+            </a>
+            <a href="#" class="sidebar-menu-item" id="myMembersLink">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" fill="currentColor"></path>
+                </svg>
+                我的会员
+            </a>
+            <a href="/chongzhi.html" class="sidebar-menu-item">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z" fill="currentColor"></path>
+                </svg>
+                玩家充退
+            </a>
+            <a href="/chongzhilist.html" class="sidebar-menu-item">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-7-2h2v-4h4v-2h-4V7h-2v4H8v2h4z" fill="currentColor"></path>
+                </svg>
+                充退记录
+            </a>
+            <a href="/yichangzhanghu.html" class="sidebar-menu-item">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z" fill="currentColor"></path>
+                </svg>
+                异常账号
+            </a>
+            <a href="/fenghao.html" class="sidebar-menu-item">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z" fill="currentColor"></path>
+                </svg>
+                玩家封号
+            </a>
+            <a href="/dailifenghao.html" class="sidebar-menu-item">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" fill="currentColor"></path>
+                </svg>
+                代理封号
+            </a>
+            <a href="/daililahei.html" class="sidebar-menu-item" id="agentBlacklistLink" style="display: none;">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm5 11H7v-2h10v2z" fill="currentColor"></path>
+                </svg>
+                代理拉黑
+            </a>
+            
+            <div class="sidebar-menu-placeholder">
+                <div class="placeholder-text">更多功能即将上线</div>
+            </div>
+            
+            
+            <button class="kick-machine-btn" id="kickMachineBtn" style="display: none;">
+                <svg viewBox="0 0 24 24" width="20" height="20">
+                    <path d="M20 17.17L18.83 16H4V4h16v13.17zM20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4V4c0-1.1-.9-2-2-2z"></path>
+                </svg>
+                卡机踢人
+            </button>
+            
+            
+            <button class="change-password-btn" id="changePasswordBtn">
+                <svg viewBox="0 0 24 24" width="20" height="20">
+                    <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"></path>
+                </svg>
+                修改密码
+            </button>
+            
+            
+            <button class="logout-btn" id="logoutBtn">
+                <svg viewBox="0 0 24 24" width="20" height="20">
+                    <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"></path>
+                </svg>
+                退出登录
+            </button>
+        </div>
+    </div>
+    
+    <div class="container" id="playerContainer">
+        
+        <div class="tabs-container">
+            <div class="tabs-header">
+                <div class="tab active" data-tab="online">
+                    在线玩家 <span class="tab-count" id="onlinePlayerCount">0</span>
+                </div>
+                <div class="tab" data-tab="offline">
+                    离线玩家 <span class="tab-count" id="offlinePlayerCount">0</span>
+                </div>
+            </div>
+            <div class="tabs-content">
+                
+                <div class="tab-pane active" id="onlineTab">
+                    <div id="onlinePlayersSection"><div class="no-more-data" style="display: block;">暂无在线玩家</div></div>
+                </div>
+                
+                
+                <div class="tab-pane" id="offlineTab">
+                            
+        <div class="sort-options">
+            <div class="sort-option active" data-sort="login-time">按最后登录时间</div>
+            <div class="sort-option" data-sort="win-most">今日赢最多</div>
+            <div class="sort-option" data-sort="loss-most">今日输最多</div>
+        </div>
+                    <div id="offlinePlayersSection"></div>
+                    
+                    
+                    <div class="load-more-container">
+                        <button class="load-more-btn" id="loadMoreBtn">加载更多</button>
+                    </div>
+                    <div class="no-more-data" id="noMoreData" style="display: none;">已加载全部数据</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="loading" id="loading">刷新数据...</div>
+    
+    
+    <div class="modal-overlay" id="playerModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" id="modalPlayerAccount">玩家账号</div>
+                <div class="modal-subtitle" id="modalPlayerName">玩家名称</div>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-action-btn recharge" id="modalRechargeBtn">
+                    充值
+                </button>
+                <button class="modal-action-btn reward" id="modalRewardBtn" style="display: block;">
+                    送奖
+                </button>
+                <button class="modal-action-btn blacklist" id="modalBlacklistBtn" style="display: block;">
+                    拉黑
+                </button>
+                <button class="modal-action-btn details" id="modalDetailsBtn">
+                    玩家详情
+                </button>
+                <button class="modal-action-btn prize-history" id="modalPrizeHistoryBtn">
+                    中奖历史
+                </button>
+                <button class="modal-action-btn" id="modalTrackBtn" style="background-color: rgba(88, 86, 214, 0.12); color: #5856D6;">
+                    游戏轨迹
+                </button>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-cancel-btn" id="modalCancelBtn">取消</button>
+            </div>
+        </div>
+    </div>
+    
+    
+    <div class="modal-overlay" id="searchModal">
+        <div class="modal-content search-modal">
+            <div class="modal-header">
+                <div class="modal-title">搜索玩家</div>
+                <div class="search-input-container">
+                    <input type="text" id="searchInput" placeholder="输入玩家账号或昵称" autocomplete="off">
+                    <button class="search-submit-btn" id="searchSubmitBtn">
+                        <svg viewBox="0 0 24 24" width="20" height="20">
+                            <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="search-results" id="searchResults"></div>
+            <div class="modal-footer">
+                <button class="modal-cancel-btn" id="searchModalCancelBtn">关闭</button>
+            </div>
+        </div>
+    </div>
+    
+    
+    <div class="kick-result-modal-overlay" id="kickResultModal">
+        <div class="kick-result-modal-content">
+            <div class="kick-result-modal-header">
+                <div class="kick-result-modal-title">卡机踢人执行结果</div>
+            </div>
+            <div class="kick-result-modal-body">
+                <div class="kick-result-content" id="kickResultContent"></div>
+            </div>
+            <div class="kick-result-modal-footer">
+                <button class="kick-result-modal-button" id="kickResultCloseBtn">确定</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function _0x1daa(){const _0x116c31=['权限查询失败:','round','canBlacklist','离线玩家数据已缓存,\x20数量:','金蟾捕鱼','getMinutes','loadMoreBtn','html','documentElement','name','trim','钻</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22player-info\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22info-row\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22info-item\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22info-label\x22>游戏</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22info-value\x22>','black_visible','获取在线玩家数据失败','751650WQuWKl','setItem','initialLoadDone','439450uavdeE','block','div','100%','解析token获取角色失败:','sidebarUsername','OFFLINE_PLAYERS','hidden','negative','searchInput','50%','kickResultContent','获取在线玩家失败:','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22status-indicator\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22status-icon\x20status-error\x22></span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span>操作失败</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div>','Base64解码失败:','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22search-result-item\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22text-align:\x20center;\x20padding:\x2020px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22color:\x20#666;\x20margin-bottom:\x2010px;\x22>未找到匹配的玩家</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22font-size:\x2012px;\x20color:\x20#999;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20请检查输入是否正确，或尝试使用其他搜索词\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22font-size:\x2012px;\x20color:\x20#999;\x20margin-top:\x2010px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20当前搜索词：','</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>','获取玩家数据失败，请刷新重试','logoutBtn','now','&hall=','备用解码也失败:','modalRewardBtn','缓存不存在，从API加载离线玩家数据','.tab','dailiuid','getAttribute','no-more-data','&name=','safeBase64LogShown','createElement','使用兼容安卓的Base64解码函数','网络错误，请重试','</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22player-name\x22>','火凤凰','/kicked_out_the_machine?token=','total-win-loss\x20','Enter','黄金赛马','未知用户','体验场','eatscore','nextElementSibling','205012xBKESi','appendChild','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22search-result-info\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20剩余分数：','protocol','大字版','getElementById','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<table\x20class=\x22kick-result-table\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<thead>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<tr>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>服务器ID</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>状态</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>处理房间数</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</tr>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</thead>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<tbody>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20','/xiugaimima.html','加载更多','</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22search-result-name\x22>','高级场','\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22search-result-header\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22search-result-account\x22>','初级场','success','object','click','padding','loss-most','isArray','contains','/getinvitation?jwt=','position','/songjiang.html?account=','freescore','modalPlayerName','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22status-indicator\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22status-icon\x20','邀请码:\x20--','changePasswordBtn','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20','</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20','&game=','querySelector','sidebarCloseBtn','预加载权限时解析token失败:','水果玛丽','searchModal','style','20920824jewpWJ','myAgentsLink','noMoreData','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22status-indicator\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22status-icon\x20status-success\x22></span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span>操作完成</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<pre>','removeItem','getDate','replace','中级场','todayWinLoss','session','</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22info-row\x20money-row\x20eat-score-row\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22info-item\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22info-label\x22></div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22info-value\x20money-value\x22>','明星99','blackVisible','userRole','catch','scrollTo','all','9999','pathname','/wodedaili.html?role=','canReward','使用缓存数据加载离线玩家，数量:','sidebarOverlay','\x20offline','playerName','getHours','解析token失败:','55CimKKC','location','role','/get_permission?token=','att连环炮','/houtai.html','fixed','sort','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22info-row\x20login-time-row\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22info-item\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20viewBox=\x220\x200\x2024\x2024\x22\x20width=\x2216\x22\x20height=\x2216\x22\x20fill=\x22#007aff\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<path\x20d=\x22M11.99\x202C6.47\x202\x202\x206.48\x202\x2012s4.47\x2010\x209.99\x2010C17.52\x2022\x2022\x2017.52\x2022\x2012S17.52\x202\x2011.99\x202zM12\x2020c-4.42\x200-8-3.58-8-8s3.58-8\x208-8\x208\x203.58\x208\x208-3.58\x208-8\x208z\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<path\x20d=\x22M12.5\x207H11v6l5.25\x203.15.75-1.23-4.5-2.67z\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22info-label\x22>最后登录</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22info-value\x22>','parse','map','classList','未找到token，显示为未知用户','show','remainingScore','value','offline_players_count','token','forEach','/get_online?token=','width','hehuoren','min','details','className','幸运六狮','login-time','7385160OhAczU','searchSubmitBtn','</pre>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20','toggle','key','white','stringify','</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22info-item\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22info-label\x22>机台号</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22info-value\x22>','离线玩家数据缓存已清除','join','登录已过期，1秒后自动跳转到登录页面...','2027493mWHZNJ','decode','从缓存加载离线玩家数据','has','lastLoginTime','</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22info-row\x20money-row\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22info-item\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22info-label\x22>今日输赢(钻)</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22info-value\x20money-value\x20','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22status-indicator\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22status-icon\x20status-success\x22></span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span>操作成功</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div>','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22player-header\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22player-account\x22>','.result-details-toggle','获取在线玩家信息失败:','kickResultCloseBtn','top','</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20','warn','focus','log','获取玩家信息失败:','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<tr>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>','color','account','VIP场','players','tip','scrollY','flex','getFullYear','addEventListener','string','Tab','暂无在线玩家','filter','6qYToFv','status-warning','targetScore','20px','麻将胡了','modalBlacklistBtn','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20','active','count','检测到缓存，使用缓存数据','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22status-indicator\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22status-icon\x20status-warning\x22></span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span>操作太频繁</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div>','myMembersLink','onlinePlayers','length','钻\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20','/dajianglishi.html?player_name=','black','none','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22result-details-toggle\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20viewBox=\x220\x200\x2024\x2024\x22\x20width=\x2216\x22\x20height=\x2216\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<path\x20d=\x22M8\x205v14l11-7z\x22\x20fill=\x22currentColor\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span>查看详细结果</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22result-details-content\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<pre>','data-tab','slice','game','<div\x20class=\x22search-result-item\x22>请输入搜索内容</div>','scrollTop','offline_players_cache_timestamp','player-card','true','拉黑中...','&hehuo=&sort=coin','kickResultModal','lastScrollPosition','host','textContent','today_win','win','code','textAlign','</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22info-item\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22info-label\x22>场次</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22info-value\x22>','onlinePlayersSection','检查权限\x20-\x20解析到角色:','split','json','add','menuBtn','&token=','querySelectorAll','songjiang','borderRadius','searchResults','hallkey','/chongzhi.html?account=','未检测到有效缓存，从API加载数据','offlinePlayersSection','gametype','.tab-pane','remove','CACHE_TIMESTAMP','loading','searchModalCancelBtn','last_coin','DOMContentLoaded','admin','center','coin','部分成功\x20(','overflow','uid','卡机踢人失败:','zuanshi','操作失败，请重试','last_login_time','disabled','从缓存读取离线玩家数量:','agentBlacklistLink','修改黑名单','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22search-result-item\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22text-align:\x20center;\x20padding:\x2020px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22color:\x20#666;\x20margin-bottom:\x2010px;\x22>未找到匹配的玩家</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22font-size:\x2012px;\x20color:\x20#999;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20注意：离线玩家数据尚未加载，可能导致搜索结果不完整\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22font-size:\x2012px;\x20color:\x20#999;\x20margin-top:\x2010px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20当前搜索词：','innerHTML','超级大亨','background','sidebarInviteCode','toString','data','resolve','ret','href','body','五星宏辉','/wodedaili.html','getItem','refreshBtn','totalWinLoss','209510iMyNbi','offlinePlayers','.sort-option','status-success','target','positive','modalDetailsBtn','visible','transform','</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div>已对卡机游戏机进行踢人处理，可能需要几秒钟生效。</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20','then','online','padStart','dataset','.search-result-item','preventDefault','offline','modalTrackBtn','display','left','includes','keys','获取在线玩家数据失败，请刷新重试','.tab.active','blacklisted','点石成金','zIndex','remainingDiamond','push','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</tbody>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</table>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20','</pre>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20','获取邀请码失败:','onlinePlayerCount','offlinePlayerCount','line','modalCancelBtn','kickMachineBtn','modalRechargeBtn','playerContainer','error','获取离线玩家失败:'];_0x1daa=function(){return _0x116c31;};return _0x1daa();}const _0x42f1e9=_0x1931;(function(_0x5b586f,_0x6dc553){const _0xab22b7=_0x1931,_0x11b48e=_0x5b586f();while(!![]){try{const _0x3ae8f6=-parseInt(_0xab22b7(0x295))/0x1+-parseInt(_0xab22b7(0x298))/0x2+parseInt(_0xab22b7(0x1e4))/0x3+-parseInt(_0xab22b7(0x2c3))/0x4*(parseInt(_0xab22b7(0x1be))/0x5)+-parseInt(_0xab22b7(0x203))/0x6*(parseInt(_0xab22b7(0x25e))/0x7)+-parseInt(_0xab22b7(0x1d9))/0x8+parseInt(_0xab22b7(0x2e8))/0x9;if(_0x3ae8f6===_0x6dc553)break;else _0x11b48e['push'](_0x11b48e['shift']());}catch(_0x9fb095){_0x11b48e['push'](_0x11b48e['shift']());}}}(_0x1daa,0x7d086));const baseURL=window['location'][_0x42f1e9(0x2c6)]+'//'+window[_0x42f1e9(0x1bf)][_0x42f1e9(0x222)];function safeBase64Decode(_0xbf5d73){const _0x1e3ce0=_0x42f1e9;!window[_0x1e3ce0(0x2b5)]&&(console['log'](_0x1e3ce0(0x2b7)),window[_0x1e3ce0(0x2b5)]=!![]);try{let _0x421968=_0xbf5d73[_0x1e3ce0(0x2ee)](/-/g,'+')[_0x1e3ce0(0x2ee)](/_/g,'/');switch(_0x421968['length']%0x4){case 0x0:break;case 0x2:_0x421968+='==';break;case 0x3:_0x421968+='=';break;}return Base64[_0x1e3ce0(0x1e5)](_0x421968);}catch(_0x2eab26){console[_0x1e3ce0(0x285)](_0x1e3ce0(0x2a6),_0x2eab26);try{const _0x226bda=atob(_0xbf5d73[_0x1e3ce0(0x2ee)](/-/g,'+')[_0x1e3ce0(0x2ee)](/_/g,'/'));return _0x226bda;}catch(_0x524b1e){return console[_0x1e3ce0(0x285)](_0x1e3ce0(0x2ad),_0x524b1e),'{}';}}}function _0x1931(_0x297275,_0x459546){_0x297275=_0x297275-0x1b6;const _0x1daa04=_0x1daa();let _0x193143=_0x1daa04[_0x297275];return _0x193143;}document[_0x42f1e9(0x1fe)]('DOMContentLoaded',function(){const _0x452ece=_0x42f1e9,_0x42dfa1=document[_0x452ece(0x2c8)](_0x452ece(0x284)),_0x1824f7=document[_0x452ece(0x2c8)](_0x452ece(0x229)),_0x208bb4=document[_0x452ece(0x2c8)](_0x452ece(0x237)),_0x36cea4=document[_0x452ece(0x2c8)]('loading'),_0x4f1a35=document[_0x452ece(0x2c8)](_0x452ece(0x25c)),_0x12badf=document[_0x452ece(0x2c8)](_0x452ece(0x28d)),_0x5a150a=document[_0x452ece(0x2c8)](_0x452ece(0x2ea)),_0x44f8ed=document[_0x452ece(0x2c8)]('playerModal'),_0x334a6f=document[_0x452ece(0x2c8)]('modalPlayerAccount'),_0x138f35=document[_0x452ece(0x2c8)](_0x452ece(0x2db)),_0x1a58d3=document[_0x452ece(0x2c8)](_0x452ece(0x208)),_0x23fcf7=document[_0x452ece(0x2c8)](_0x452ece(0x2ae)),_0x50cbc1=document['getElementById'](_0x452ece(0x283)),_0x23ef40=document[_0x452ece(0x2c8)](_0x452ece(0x264)),_0x741e87=document[_0x452ece(0x2c8)](_0x452ece(0x281)),_0x540949=document[_0x452ece(0x2c8)](_0x452ece(0x27e)),_0x36457f=document[_0x452ece(0x2c8)](_0x452ece(0x27f)),_0x2cf651=document[_0x452ece(0x2c8)](_0x452ece(0x25d)),_0xa38433=document[_0x452ece(0x230)](_0x452ece(0x2b0)),_0x40fa5f=document[_0x452ece(0x230)](_0x452ece(0x239)),_0x21af1b=document[_0x452ece(0x2c8)](_0x452ece(0x22e)),_0x2e5ba0=document[_0x452ece(0x2c8)]('sidebar'),_0x26210b=document['getElementById'](_0x452ece(0x1b9)),_0x2a6034=document[_0x452ece(0x2c8)](_0x452ece(0x2e3)),_0x14d058=document[_0x452ece(0x2c8)](_0x452ece(0x29d)),_0x38737c=document[_0x452ece(0x2c8)](_0x452ece(0x252)),_0xaf5ee2=document[_0x452ece(0x2c8)](_0x452ece(0x2e9)),_0x964562=document[_0x452ece(0x2c8)](_0x452ece(0x20e)),_0x128887=document['getElementById'](_0x452ece(0x24c));_0xaf5ee2[_0x452ece(0x1fe)]('click',function(_0x16080f){const _0x11aa6a=_0x452ece;_0x16080f[_0x11aa6a(0x26d)]();const _0x2826ef=sessionStorage[_0x11aa6a(0x25b)](_0x11aa6a(0x2f6));_0x2826ef?window[_0x11aa6a(0x1bf)][_0x11aa6a(0x257)]=_0x11aa6a(0x1b6)+encodeURIComponent(_0x2826ef):window['location']['href']=_0x11aa6a(0x25a);}),_0x964562[_0x452ece(0x1fe)](_0x452ece(0x2d2),function(_0x3443f2){const _0x264abb=_0x452ece;_0x3443f2[_0x264abb(0x26d)]();const _0x260ae7=sessionStorage[_0x264abb(0x25b)](_0x264abb(0x1cf));let _0x5903bb='';if(_0x260ae7)try{const _0x197077=_0x260ae7[_0x264abb(0x22b)]('.');if(_0x197077['length']===0x3){const _0x20978d=JSON['parse'](safeBase64Decode(_0x197077[0x1]));_0x20978d[_0x264abb(0x245)]&&(_0x5903bb=_0x20978d['uid']);}}catch(_0x30317c){console[_0x264abb(0x285)](_0x264abb(0x1bd),_0x30317c);}const _0x3b338b=window[_0x264abb(0x1bf)][_0x264abb(0x2fb)]+window[_0x264abb(0x1bf)]['search'],_0x27a201='/huiyuanyingkui.html?account='+encodeURIComponent(_0x5903bb)+'&from='+encodeURIComponent(_0x3b338b);window[_0x264abb(0x1bf)]['href']=_0x27a201;});const _0x1d1d9f=document[_0x452ece(0x2c8)]('searchBtn'),_0x3d0b46=document['getElementById'](_0x452ece(0x2e6)),_0x13e475=document[_0x452ece(0x2c8)](_0x452ece(0x2a1)),_0xf5335d=document[_0x452ece(0x2c8)](_0x452ece(0x1da)),_0x1dd9e8=document[_0x452ece(0x2c8)](_0x452ece(0x23d)),_0x36db5e=document['getElementById'](_0x452ece(0x233));let _0x1f71bb=[],_0x564605=0x0;function _0x17ba2e(){const _0x408c64=sessionStorage['getItem']('token');if(!_0x408c64)return _0x74988b(),![];return!![];}function _0xeafaba(){const _0x21e28e=_0x452ece;if(!_0x128887)return;let _0x2058ae=sessionStorage[_0x21e28e(0x25b)](_0x21e28e(0x2f6));if(!_0x2058ae){const _0x34226f=sessionStorage[_0x21e28e(0x25b)](_0x21e28e(0x1cf));if(_0x34226f)try{const _0x103d93=_0x34226f[_0x21e28e(0x22b)]('.');if(_0x103d93[_0x21e28e(0x210)]===0x3){const _0x140299=JSON[_0x21e28e(0x1c7)](safeBase64Decode(_0x103d93[0x1]));_0x2058ae=_0x140299[_0x21e28e(0x1c0)];}}catch(_0x54193b){console[_0x21e28e(0x285)](_0x21e28e(0x29c),_0x54193b);}}_0x2058ae===_0x21e28e(0x240)||_0x2058ae===_0x21e28e(0x1d3)?_0x128887[_0x21e28e(0x2e7)]['display']=_0x21e28e(0x1fc):_0x128887[_0x21e28e(0x2e7)][_0x21e28e(0x270)]=_0x21e28e(0x214);}function _0x74988b(){const _0x511685=_0x452ece,_0x31ccca=document[_0x511685(0x2b6)](_0x511685(0x29a));_0x31ccca['style'][_0x511685(0x2d8)]=_0x511685(0x1c4),_0x31ccca['style'][_0x511685(0x1ef)]=_0x511685(0x2a2),_0x31ccca[_0x511685(0x2e7)][_0x511685(0x271)]=_0x511685(0x2a2),_0x31ccca[_0x511685(0x2e7)][_0x511685(0x266)]='translate(-50%,\x20-50%)',_0x31ccca['style'][_0x511685(0x251)]='rgba(0,\x200,\x200,\x200.8)',_0x31ccca[_0x511685(0x2e7)][_0x511685(0x1f6)]=_0x511685(0x1de),_0x31ccca['style'][_0x511685(0x2d3)]=_0x511685(0x206),_0x31ccca['style'][_0x511685(0x232)]='10px',_0x31ccca[_0x511685(0x2e7)][_0x511685(0x278)]=_0x511685(0x2fa),_0x31ccca['style'][_0x511685(0x227)]=_0x511685(0x241),_0x31ccca[_0x511685(0x24f)]=_0x511685(0x1e3),document[_0x511685(0x258)][_0x511685(0x2c4)](_0x31ccca),setTimeout(()=>{const _0x5965dc=_0x511685;window[_0x5965dc(0x1bf)][_0x5965dc(0x257)]='/houtai.html';},0x3e8);}function _0x2393e5(_0x2e6dd7){const _0x41ee43=_0x452ece;return _0x2e6dd7[_0x41ee43(0x226)]===0x9ca4||_0x2e6dd7[_0x41ee43(0x226)]===0x9ca5||_0x2e6dd7[_0x41ee43(0x226)]===0x9d6c||_0x2e6dd7[_0x41ee43(0x226)]===0xc35e||_0x2e6dd7[_0x41ee43(0x1fa)]&&(_0x2e6dd7[_0x41ee43(0x1fa)][_0x41ee43(0x272)](_0x41ee43(0x1cf))||_0x2e6dd7[_0x41ee43(0x1fa)][_0x41ee43(0x272)]('登录')||_0x2e6dd7['tip'][_0x41ee43(0x272)]('认证')||_0x2e6dd7[_0x41ee43(0x1fa)][_0x41ee43(0x272)]('授权')||_0x2e6dd7[_0x41ee43(0x1fa)]['includes']('过期'));}if(!_0x17ba2e())return;_0xeafaba(),_0x21af1b[_0x452ece(0x1fe)]('click',function(){const _0x52598e=_0x452ece;_0x2e5ba0[_0x52598e(0x1c9)]['add'](_0x52598e(0x20a)),_0x26210b[_0x52598e(0x1c9)][_0x52598e(0x22d)](_0x52598e(0x20a)),document[_0x52598e(0x258)][_0x52598e(0x2e7)][_0x52598e(0x244)]=_0x52598e(0x29f),_0x31bdf6();});function _0x2a7918(){const _0x5471d5=_0x452ece;_0x2e5ba0[_0x5471d5(0x1c9)]['remove'](_0x5471d5(0x20a)),_0x26210b['classList']['remove'](_0x5471d5(0x20a)),document[_0x5471d5(0x258)]['style'][_0x5471d5(0x244)]='';}_0x2a6034['addEventListener'](_0x452ece(0x2d2),_0x2a7918),_0x26210b[_0x452ece(0x1fe)](_0x452ece(0x2d2),_0x2a7918);const _0x33aee1=document[_0x452ece(0x2c8)](_0x452ece(0x2aa));_0x33aee1[_0x452ece(0x1fe)]('click',function(){const _0x4c2b65=_0x452ece;sessionStorage['clear'](),window['location'][_0x4c2b65(0x257)]=_0x4c2b65(0x1c3);});const _0x5ee83a=document[_0x452ece(0x2c8)](_0x452ece(0x2de));_0x5ee83a[_0x452ece(0x1fe)]('click',function(){const _0xcecae3=_0x452ece;window[_0xcecae3(0x1bf)]['href']=_0xcecae3(0x2ca);});function _0x31bdf6(){const _0x268605=_0x452ece,_0x581953=sessionStorage[_0x268605(0x25b)](_0x268605(0x1cf));if(!_0x581953){_0x14d058['textContent']=_0x268605(0x2bf),console[_0x268605(0x1f1)](_0x268605(0x1ca));return;}if(_0x581953){try{const _0x517886=_0x581953['split']('.');if(_0x517886[_0x268605(0x210)]===0x3){const _0x4745b4=JSON[_0x268605(0x1c7)](safeBase64Decode(_0x517886[0x1]));_0x4745b4[_0x268605(0x245)]?_0x14d058[_0x268605(0x223)]=_0x4745b4['uid']:(_0x14d058[_0x268605(0x223)]=_0x268605(0x2bf),console[_0x268605(0x1f1)]('token中未包含uid信息')),_0x4745b4['role']&&sessionStorage[_0x268605(0x296)](_0x268605(0x2f6),_0x4745b4[_0x268605(0x1c0)]),_0xeafaba();}}catch(_0x4e8e71){console[_0x268605(0x285)](_0x268605(0x1bd),_0x4e8e71);}fetch(baseURL+_0x268605(0x2d7)+_0x581953)[_0x268605(0x268)](_0x484b09=>_0x484b09['json']())[_0x268605(0x268)](_0x3e02aa=>{const _0x5490f5=_0x268605;if(_0x2393e5(_0x3e02aa)){sessionStorage[_0x5490f5(0x2ec)](_0x5490f5(0x1cf)),_0x74988b();return;}_0x3e02aa['code']===0x4e20&&_0x3e02aa[_0x5490f5(0x254)]?(_0x38737c['textContent']='邀请码:\x20'+_0x3e02aa[_0x5490f5(0x254)],sessionStorage[_0x5490f5(0x296)]('inviteCode',_0x3e02aa[_0x5490f5(0x254)])):(console[_0x5490f5(0x285)](_0x5490f5(0x27d),_0x3e02aa),_0x38737c[_0x5490f5(0x223)]=_0x5490f5(0x2dd));})[_0x268605(0x2f7)](_0x438adc=>{const _0x33522f=_0x268605;console[_0x33522f(0x285)]('获取邀请码请求失败:',_0x438adc),_0x38737c['textContent']='邀请码:\x20--';});}}let _0x5823b1=null,_0x2f6174=[],_0x3169b5=0x1;const _0x528df3=0xa;let _0x5a20d8=!![];_0xa38433['forEach'](_0x7ce71b=>{const _0x373792=_0x452ece;_0x7ce71b[_0x373792(0x1fe)](_0x373792(0x2d2),function(){const _0x178485=_0x373792;_0xa38433[_0x178485(0x1d0)](_0x3b16b5=>_0x3b16b5[_0x178485(0x1c9)][_0x178485(0x23a)](_0x178485(0x20a))),this[_0x178485(0x1c9)][_0x178485(0x22d)]('active');const _0x2fd29a=this[_0x178485(0x2b2)](_0x178485(0x216));_0x40fa5f['forEach'](_0x44ac26=>_0x44ac26[_0x178485(0x1c9)][_0x178485(0x23a)](_0x178485(0x20a))),document[_0x178485(0x2c8)](_0x2fd29a+_0x178485(0x200))[_0x178485(0x1c9)][_0x178485(0x22d)]('active');if(_0x2fd29a===_0x178485(0x26e)){const _0x42760c=_0x48785e();if(_0x42760c&&!_0x179fad)console[_0x178485(0x1f3)](_0x178485(0x1e6)),_0x48f3f8(_0x42760c);else!_0x179fad&&(console[_0x178485(0x1f3)](_0x178485(0x2af)),_0x110816(![]));}});});let _0x179fad=![];async function _0x5da44b(_0x94f460){const _0x36f772=_0x452ece;if(!_0x94f460){console[_0x36f772(0x1f1)]('无效的用户名，默认无权限'),_0x23fcf7[_0x36f772(0x2e7)][_0x36f772(0x270)]=_0x36f772(0x214),_0x1a58d3[_0x36f772(0x2e7)][_0x36f772(0x270)]=_0x36f772(0x214);return;}const _0xdb91c9=sessionStorage[_0x36f772(0x25b)]('token');let _0x371d33=null;const _0x2a738e={'canReward':![],'canBlacklist':![]};if(_0xdb91c9)try{const _0x387375=_0xdb91c9[_0x36f772(0x22b)]('.');if(_0x387375['length']===0x3){const _0x44d768=JSON[_0x36f772(0x1c7)](safeBase64Decode(_0x387375[0x1]));_0x371d33=_0x44d768[_0x36f772(0x1c0)],console['log'](_0x36f772(0x22a),_0x371d33,'用户:',_0x94f460);}}catch(_0x2946ee){console[_0x36f772(0x285)](_0x36f772(0x29c),_0x2946ee);}if(_0x371d33===_0x36f772(0x240)||_0x371d33===_0x36f772(0x1d3)){_0x23fcf7[_0x36f772(0x2e7)]['display']='block',_0x1a58d3['style'][_0x36f772(0x270)]=_0x36f772(0x299),_0x2a738e[_0x36f772(0x1b7)]=!![],_0x2a738e[_0x36f772(0x289)]=!![];return;}_0x23fcf7[_0x36f772(0x2e7)][_0x36f772(0x270)]=_0x36f772(0x214),_0x1a58d3['style']['display']=_0x36f772(0x214);try{const _0x4f274c=await fetch(baseURL+_0x36f772(0x1c1)+_0xdb91c9),_0x1de9fb=await _0x4f274c['json']();_0x1de9fb[_0x36f772(0x226)]===0x4e20&&_0x1de9fb['data']&&(_0x1de9fb[_0x36f772(0x254)]['heimingdang']&&(_0x1a58d3[_0x36f772(0x2e7)]['display']=_0x36f772(0x299),_0x2a738e[_0x36f772(0x289)]=!![]),_0x1de9fb[_0x36f772(0x254)][_0x36f772(0x231)]&&(_0x23fcf7['style'][_0x36f772(0x270)]=_0x36f772(0x299),_0x2a738e[_0x36f772(0x1b7)]=!![]));}catch(_0x73d90){console[_0x36f772(0x285)](_0x36f772(0x287),_0x73d90);}}function _0x1c2b97(_0x25322b){const _0x581f30=_0x452ece;_0x5823b1=_0x25322b,_0x334a6f[_0x581f30(0x223)]='玩家账号：'+_0x25322b[_0x581f30(0x1f7)],_0x138f35[_0x581f30(0x223)]='玩家名称：'+_0x25322b[_0x581f30(0x1bb)],_0x23fcf7[_0x581f30(0x2e7)][_0x581f30(0x270)]='none',_0x1a58d3[_0x581f30(0x2e7)][_0x581f30(0x270)]=_0x581f30(0x214);_0x25322b[_0x581f30(0x276)]&&_0x25322b['blackVisible']?_0x1a58d3['textContent']=_0x581f30(0x24d):_0x1a58d3['textContent']='拉黑';const _0x5acebd=sessionStorage[_0x581f30(0x25b)](_0x581f30(0x1cf));if(_0x5acebd)try{const _0x54814b=_0x5acebd[_0x581f30(0x22b)]('.');if(_0x54814b['length']===0x3){const _0xf25e78=JSON['parse'](safeBase64Decode(_0x54814b[0x1]));_0xf25e78[_0x581f30(0x245)]&&_0x5da44b(_0xf25e78[_0x581f30(0x245)]);}}catch(_0x4499a9){console[_0x581f30(0x285)](_0x581f30(0x1bd),_0x4499a9);}window[_0x581f30(0x221)]=window[_0x581f30(0x1fb)]||document[_0x581f30(0x28f)]['scrollTop'],_0x44f8ed[_0x581f30(0x1c9)][_0x581f30(0x22d)](_0x581f30(0x1cb)),_0x44f8ed[_0x581f30(0x2e7)][_0x581f30(0x270)]=_0x581f30(0x1fc),document[_0x581f30(0x258)][_0x581f30(0x2e7)][_0x581f30(0x244)]=_0x581f30(0x29f),document[_0x581f30(0x258)][_0x581f30(0x2e7)]['position']=_0x581f30(0x1c4),document[_0x581f30(0x258)][_0x581f30(0x2e7)]['width']=_0x581f30(0x29b),document[_0x581f30(0x258)]['style'][_0x581f30(0x1ef)]='-'+window[_0x581f30(0x221)]+'px';}function _0x122759(){const _0x5de0e8=_0x452ece;_0x44f8ed[_0x5de0e8(0x1c9)][_0x5de0e8(0x23a)]('show'),_0x44f8ed[_0x5de0e8(0x2e7)][_0x5de0e8(0x270)]=_0x5de0e8(0x214),document[_0x5de0e8(0x258)][_0x5de0e8(0x2e7)][_0x5de0e8(0x244)]='',document[_0x5de0e8(0x258)]['style'][_0x5de0e8(0x2d8)]='',document['body']['style']['width']='',document[_0x5de0e8(0x258)][_0x5de0e8(0x2e7)][_0x5de0e8(0x1ef)]='',window[_0x5de0e8(0x2f8)](0x0,window[_0x5de0e8(0x221)]),_0x5823b1=null;}_0x741e87[_0x452ece(0x1fe)](_0x452ece(0x2d2),_0x122759),_0x44f8ed[_0x452ece(0x1fe)](_0x452ece(0x2d2),function(_0x3dd6cf){const _0x18d602=_0x452ece;_0x3dd6cf[_0x18d602(0x262)]===_0x44f8ed&&_0x122759();}),_0x1a58d3[_0x452ece(0x1fe)](_0x452ece(0x2d2),function(){const _0x4751f9=_0x452ece;_0x5823b1&&(window[_0x4751f9(0x1bf)]['href']='/heimingdang.html?account='+encodeURIComponent(_0x5823b1['account'])+'&name='+encodeURIComponent(_0x5823b1[_0x4751f9(0x1bb)]));}),_0x23fcf7[_0x452ece(0x1fe)](_0x452ece(0x2d2),function(){const _0x1cb1df=_0x452ece;if(_0x5823b1){const _0x47ea47=_0x5823b1[_0x1cb1df(0x218)]&&_0x5823b1[_0x1cb1df(0x218)]!=='-'?_0x1cb1df(0x2e1)+encodeURIComponent(_0x5823b1[_0x1cb1df(0x218)]):'',_0x119549=_0x5823b1[_0x1cb1df(0x2f1)]&&_0x5823b1[_0x1cb1df(0x2f1)]!=='-'?_0x1cb1df(0x2ac)+encodeURIComponent(_0x5823b1['session']):'';window[_0x1cb1df(0x1bf)]['href']=_0x1cb1df(0x2d9)+encodeURIComponent(_0x5823b1['account'])+_0x1cb1df(0x2b4)+encodeURIComponent(_0x5823b1[_0x1cb1df(0x1bb)])+_0x47ea47+_0x119549;}}),_0x50cbc1[_0x452ece(0x1fe)](_0x452ece(0x2d2),function(){const _0x1117cd=_0x452ece;_0x5823b1&&(window[_0x1117cd(0x1bf)][_0x1117cd(0x257)]=_0x1117cd(0x235)+encodeURIComponent(_0x5823b1[_0x1117cd(0x1f7)])+_0x1117cd(0x2b4)+encodeURIComponent(_0x5823b1[_0x1117cd(0x1bb)])+'&role=player');}),_0x23ef40[_0x452ece(0x1fe)]('click',function(){const _0x2e37d1=_0x452ece;_0x5823b1&&(window['location'][_0x2e37d1(0x257)]='/wanjiainfo.html?account='+encodeURIComponent(_0x5823b1['account'])+_0x2e37d1(0x2b4)+encodeURIComponent(_0x5823b1[_0x2e37d1(0x1bb)]));}),modalPrizeHistoryBtn[_0x452ece(0x1fe)](_0x452ece(0x2d2),function(){const _0x4e6042=_0x452ece;if(_0x5823b1){const _0x4eeec1=sessionStorage['getItem'](_0x4e6042(0x1cf));window['location'][_0x4e6042(0x257)]=_0x4e6042(0x212)+encodeURIComponent(_0x5823b1[_0x4e6042(0x1f7)])+_0x4e6042(0x22f)+encodeURIComponent(_0x4eeec1);}});const _0x27912a=document['getElementById'](_0x452ece(0x26f));_0x27912a&&_0x27912a[_0x452ece(0x1fe)](_0x452ece(0x2d2),function(){const _0xabd7cb=_0x452ece;if(_0x5823b1){const _0x564f2b=sessionStorage[_0xabd7cb(0x25b)](_0xabd7cb(0x1cf))||'',_0x1d2b18=new URLSearchParams({'account':String(_0x5823b1['account']||''),'name':String(_0x5823b1[_0xabd7cb(0x1bb)]||''),'token':_0x564f2b});window['location'][_0xabd7cb(0x257)]='/youxiguiji.html?'+_0x1d2b18[_0xabd7cb(0x253)]();}});_0x12badf[_0x452ece(0x1fe)](_0x452ece(0x2d2),function(){const _0x3c6052=_0x452ece;if(_0x12badf['classList']['contains'](_0x3c6052(0x23c))||_0x12badf[_0x3c6052(0x1c9)][_0x3c6052(0x2d6)]('disabled'))return;_0x1d37cb();});function _0x56bf70(){const _0x13c731=_0x452ece;_0x36cea4['classList'][_0x13c731(0x22d)](_0x13c731(0x1cb)),_0x4f1a35[_0x13c731(0x1c9)][_0x13c731(0x22d)](_0x13c731(0x24a));}function _0x482231(){const _0x35f15a=_0x452ece;_0x36cea4[_0x35f15a(0x1c9)][_0x35f15a(0x23a)](_0x35f15a(0x1cb)),_0x4f1a35[_0x35f15a(0x1c9)][_0x35f15a(0x23a)]('disabled');}function _0x219259(){const _0x5cefc8=_0x452ece;_0x12badf[_0x5cefc8(0x1c9)]['add'](_0x5cefc8(0x23c)),_0x12badf[_0x5cefc8(0x223)]='加载中...';}function _0xbe139b(){const _0x119fb3=_0x452ece;_0x12badf[_0x119fb3(0x1c9)]['remove'](_0x119fb3(0x23c)),_0x12badf['textContent']=_0x119fb3(0x2cb);}function _0xf8f3c0(_0x9a48b4,_0x5bcd9f=!![]){const _0x5315b4=_0x5bcd9f&&_0x9a48b4>0x0?'+':'';return _0x5315b4+_0x9a48b4;}function _0x4549ba(_0x4203fe){const _0x795816=_0x452ece,_0x3f337f={'hfh':_0x795816(0x2ba),'dzb':_0x795816(0x2c7),'jc':_0x795816(0x28b),'cjdh':_0x795816(0x250),'NBA':'NBA篮球','att':_0x795816(0x1c2),'jsys':_0x795816(0x277),'mx97':'明星97','mx99':_0x795816(0x2f4),'lion':_0x795816(0x1d7),'shz':'水浒传','dbs':'大白鲨','mjhl':_0x795816(0x207),'sm':_0x795816(0x2be),'wxhh':_0x795816(0x259),'sgml':_0x795816(0x2e5)};if(!_0x4203fe||_0x4203fe==='-')return'--';return _0x3f337f[_0x4203fe]||_0x4203fe;}function _0x5c283f(_0x1c1dd3){const _0x36ef24=_0x452ece;if(!_0x1c1dd3)return'--';const _0x5ace29=new Date(_0x1c1dd3*0x3e8),_0x122fa8=_0x5ace29[_0x36ef24(0x1fd)](),_0x5d3887=String(_0x5ace29['getMonth']()+0x1)[_0x36ef24(0x26a)](0x2,'0'),_0x477aa4=String(_0x5ace29[_0x36ef24(0x2ed)]())['padStart'](0x2,'0'),_0x1c6fb6=String(_0x5ace29[_0x36ef24(0x1bc)]())['padStart'](0x2,'0'),_0x1575b1=String(_0x5ace29[_0x36ef24(0x28c)]())[_0x36ef24(0x26a)](0x2,'0');return _0x122fa8+'-'+_0x5d3887+'-'+_0x477aa4+'\x20'+_0x1c6fb6+':'+_0x1575b1;}function _0x1d4399(_0x970e47){const _0xdfd0a3=_0x452ece,_0x1eeec5={'1':_0xdfd0a3(0x2c0),'2':_0xdfd0a3(0x2cf),'3':_0xdfd0a3(0x2ef),'4':_0xdfd0a3(0x2cd),'5':'贵宾场','6':_0xdfd0a3(0x1f8)};if(!_0x970e47||_0x970e47==='-')return'--';return _0x1eeec5[_0x970e47]||_0x970e47;}function _0x37f5dc(_0x36440a,_0x137e3b=![]){const _0x5abd97=_0x452ece,_0x34ad81=document[_0x5abd97(0x2b6)](_0x5abd97(0x29a));return _0x34ad81[_0x5abd97(0x1d6)]=_0x5abd97(0x21c)+(_0x137e3b?_0x5abd97(0x1ba):''),_0x34ad81['innerHTML']=_0x5abd97(0x1eb)+_0x36440a[_0x5abd97(0x1f7)]+_0x5abd97(0x2b9)+_0x36440a[_0x5abd97(0x1bb)]+'</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22agent-line\x22>'+_0x36440a['agentLine']+'</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22remaining-score\x22>'+(_0x36440a['remainingScore']||0x0)+'分</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22remaining-diamond\x22>'+(_0x36440a[_0x5abd97(0x279)]||0x0)+_0x5abd97(0x292)+(_0x137e3b?'--':_0x4549ba(_0x36440a['game']))+_0x5abd97(0x228)+(_0x137e3b?'--':_0x1d4399(_0x36440a[_0x5abd97(0x2f1)]))+_0x5abd97(0x1e0)+(_0x137e3b?'--':_0x36440a['machineNo'])+'</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22info-item\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22info-label\x22>押注</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22info-value\x20money-value\x22>'+(_0x137e3b?'--':_0xf8f3c0(_0x36440a['bet'],![]))+_0x5abd97(0x1e9)+(_0x36440a['todayWinLoss']>0x0?_0x5abd97(0x263):_0x36440a[_0x5abd97(0x2f0)]<0x0?_0x5abd97(0x2a0):'')+'\x22>'+Math[_0x5abd97(0x288)](_0x36440a[_0x5abd97(0x2f0)]/0x64)+'</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22info-item\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22info-label\x22>总输赢(钻)</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22info-value\x20money-value\x20'+(_0x36440a['totalWinLoss']>0x0?_0x5abd97(0x263):_0x36440a[_0x5abd97(0x25d)]<0x0?'negative':'')+'\x22>'+Math[_0x5abd97(0x288)](_0x36440a[_0x5abd97(0x25d)]/0x64)+'</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'+(_0x36440a[_0x5abd97(0x276)]&&_0x36440a['blackVisible']?_0x5abd97(0x2f3)+(_0x36440a[_0x5abd97(0x276)]&&_0x36440a[_0x5abd97(0x2f5)]?_0x5abd97(0x21e):'')+(_0x36440a[_0x5abd97(0x205)]>0x0?'吃分目标\x20'+_0x36440a[_0x5abd97(0x205)]+'\x20/\x20已吃\x20'+_0x36440a['actualScore']:'')+'</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20':'')+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'+(_0x137e3b&&_0x36440a[_0x5abd97(0x1e8)]?_0x5abd97(0x1c6)+_0x5c283f(_0x36440a[_0x5abd97(0x1e8)])+_0x5abd97(0x2f2):'')+_0x5abd97(0x2df),_0x34ad81['addEventListener'](_0x5abd97(0x2d2),function(){_0x1c2b97(_0x36440a);}),_0x34ad81;}function _0x2d6bb4(){const _0x194f30=_0x452ece,_0x1e0e3d=_0x48785e();if(_0x1e0e3d){console['log'](_0x194f30(0x24b),_0x1e0e3d[_0x194f30(0x20b)]);const _0x49dc1b=new Set((window[_0x194f30(0x20f)]||[])[_0x194f30(0x1c8)](_0x16b8bf=>String(_0x16b8bf[_0x194f30(0x1f7)]))),_0x4aa2cf=_0x1e0e3d['players'][_0x194f30(0x202)](_0x28617f=>!_0x49dc1b[_0x194f30(0x1e7)](String(_0x28617f[_0x194f30(0x1f7)])))[_0x194f30(0x210)];_0x36457f[_0x194f30(0x223)]=_0x4aa2cf,console[_0x194f30(0x1f3)]('更新离线玩家数量显示:',_0x4aa2cf);}else console['log']('未找到离线玩家缓存');}function _0x21591a(){const _0x122895=_0x452ece;_0x56bf70(),_0x1824f7[_0x122895(0x24f)]='';const _0x58a601=sessionStorage[_0x122895(0x25b)](_0x122895(0x1cf)),_0x30f774=baseURL+_0x122895(0x1d1)+_0x58a601;fetch(_0x30f774)[_0x122895(0x268)](_0x2f32ba=>{const _0x537c31=_0x122895;if(!_0x2f32ba['ok'])throw new Error(_0x537c31(0x2b8));return _0x2f32ba[_0x537c31(0x22c)]();})[_0x122895(0x268)](_0x562a15=>{const _0x36961f=_0x122895;if(_0x2393e5(_0x562a15)){sessionStorage['removeItem'](_0x36961f(0x1cf)),_0x74988b();return;}let _0x1d26d4=[];_0x564605=0x0;if(_0x562a15[_0x36961f(0x226)]===0x4e20&&_0x562a15[_0x36961f(0x254)][_0x36961f(0x254)]&&_0x562a15[_0x36961f(0x254)]['data'][_0x36961f(0x210)]>0x0)_0x1d26d4=_0x562a15['data']['data'][_0x36961f(0x1c8)](_0x3d24fb=>{const _0x34fcd3=_0x36961f;return _0x564605+=parseFloat(_0x3d24fb[_0x34fcd3(0x224)])||0x0,{'account':_0x3d24fb[_0x34fcd3(0x245)],'playerName':_0x3d24fb['name'],'agentLine':_0x3d24fb[_0x34fcd3(0x280)]||'无','blacklisted':_0x3d24fb[_0x34fcd3(0x213)]||![],'blackVisible':_0x3d24fb['black_visible']===!![]||_0x3d24fb[_0x34fcd3(0x1d5)]?.[_0x34fcd3(0x293)]===!![],'game':_0x3d24fb['gametype']||'-','session':_0x3d24fb['hallkey']||'-','machineNo':_0x3d24fb['roomkey']||'-','bet':_0x3d24fb['last_coin']||0x0,'todayWinLoss':parseFloat(_0x3d24fb[_0x34fcd3(0x224)])||0x0,'totalWinLoss':parseFloat(_0x3d24fb['win'])||0x0,'remainingScore':_0x3d24fb[_0x34fcd3(0x242)]||0x0,'remainingDiamond':_0x3d24fb[_0x34fcd3(0x247)]||0x0,'targetScore':_0x3d24fb[_0x34fcd3(0x2da)]||0x0,'actualScore':_0x3d24fb[_0x34fcd3(0x2c1)]||0x0,'lastLoginTime':_0x3d24fb[_0x34fcd3(0x249)]||0x0};}),_0x1d26d4['sort']((_0x61f9e9,_0x382ba9)=>_0x382ba9['todayWinLoss']-_0x61f9e9[_0x36961f(0x2f0)]),_0x1d26d4[_0x36961f(0x1d0)](_0x3592dd=>{const _0x3ef036=_0x36961f;_0x1824f7[_0x3ef036(0x2c4)](_0x37f5dc(_0x3592dd,![]));}),_0x540949[_0x36961f(0x223)]=_0x1d26d4[_0x36961f(0x210)];else{_0x540949[_0x36961f(0x223)]='0';const _0x133af3=document[_0x36961f(0x2b6)](_0x36961f(0x29a));_0x133af3[_0x36961f(0x1d6)]=_0x36961f(0x2b3),_0x133af3['style'][_0x36961f(0x270)]=_0x36961f(0x299),_0x133af3[_0x36961f(0x223)]=_0x36961f(0x201),_0x1824f7[_0x36961f(0x2c4)](_0x133af3);}_0x134e65(_0x564605,![]),window[_0x36961f(0x20f)]=[..._0x1d26d4];const _0x4dbf4e=_0x48785e();if(_0x4dbf4e)_0x1f71bb=[...window[_0x36961f(0x20f)],..._0x4dbf4e['players']];else window[_0x36961f(0x25f)]?_0x1f71bb=[...window[_0x36961f(0x20f)],...window['offlinePlayers']]:_0x1f71bb=[...window['onlinePlayers']];!window[_0x36961f(0x297)]&&(window[_0x36961f(0x297)]=!![]),_0x482231(),typeof _0x2d6bb4==='function'&&_0x2d6bb4();})[_0x122895(0x2f7)](_0x12bfc7=>{const _0x2d74ab=_0x122895;_0x482231(),console[_0x2d74ab(0x285)](_0x2d74ab(0x1ed),_0x12bfc7);const _0x58392d=document[_0x2d74ab(0x2b6)](_0x2d74ab(0x29a));_0x58392d[_0x2d74ab(0x1d6)]=_0x2d74ab(0x2b3),_0x58392d['style'][_0x2d74ab(0x270)]='block',_0x58392d[_0x2d74ab(0x223)]=_0x2d74ab(0x274),_0x1824f7[_0x2d74ab(0x2c4)](_0x58392d);});}const _0xc0bd48={'OFFLINE_PLAYERS':'cached_offline_players','CACHE_TIMESTAMP':_0x452ece(0x21b),'OFFLINE_COUNT':_0x452ece(0x1ce)},_0x3b81aa=0xa*0x3c*0x3e8;function _0x1c1dc4(_0x180a9c,_0x51eea9){const _0x2e8c3e=_0x452ece;try{localStorage['setItem'](_0xc0bd48[_0x2e8c3e(0x29e)],JSON[_0x2e8c3e(0x1df)](_0x180a9c)),localStorage[_0x2e8c3e(0x296)](_0xc0bd48['OFFLINE_COUNT'],_0x51eea9[_0x2e8c3e(0x253)]()),localStorage['setItem'](_0xc0bd48[_0x2e8c3e(0x23b)],Date[_0x2e8c3e(0x2ab)]()['toString']()),console[_0x2e8c3e(0x1f3)](_0x2e8c3e(0x28a),_0x51eea9);}catch(_0x32ecf8){console['error']('缓存离线玩家数据失败:',_0x32ecf8),_0x3bdc43();}}function _0x48785e(){const _0x4b3956=_0x452ece;try{const _0x5cbd18=localStorage[_0x4b3956(0x25b)](_0xc0bd48['CACHE_TIMESTAMP']);if(!_0x5cbd18)return null;const _0x106fcd=parseInt(_0x5cbd18),_0x440ac8=Date['now']();if(_0x440ac8-_0x106fcd>_0x3b81aa)return _0x3bdc43(),null;const _0xd041e7=localStorage[_0x4b3956(0x25b)](_0xc0bd48[_0x4b3956(0x29e)]),_0x18e1ed=localStorage[_0x4b3956(0x25b)](_0xc0bd48['OFFLINE_COUNT']);if(!_0xd041e7||!_0x18e1ed)return null;return{'players':JSON[_0x4b3956(0x1c7)](_0xd041e7),'count':parseInt(_0x18e1ed)};}catch(_0x5eb80f){return console[_0x4b3956(0x285)]('读取缓存离线玩家数据失败:',_0x5eb80f),null;}}function _0x3bdc43(){const _0x4ee707=_0x452ece;Object['values'](_0xc0bd48)[_0x4ee707(0x1d0)](_0x50a559=>{localStorage['removeItem'](_0x50a559);}),console['log'](_0x4ee707(0x1e1));}function _0x48f3f8(_0x23d5ef){const _0x3aec7f=_0x452ece;console['log'](_0x3aec7f(0x1b8),_0x23d5ef[_0x3aec7f(0x20b)]),_0x3169b5=0x1,_0x5a20d8=!![],_0x2f6174=[],_0x208bb4[_0x3aec7f(0x24f)]='',_0x12badf[_0x3aec7f(0x1c9)][_0x3aec7f(0x23a)](_0x3aec7f(0x24a)),_0x12badf[_0x3aec7f(0x2e7)]['display']=_0x3aec7f(0x299),_0x5a150a['style'][_0x3aec7f(0x270)]='none';const _0x26fba4=new Set((window['onlinePlayers']||[])[_0x3aec7f(0x1c8)](_0x3f8f05=>String(_0x3f8f05[_0x3aec7f(0x1f7)]))),_0x12bdb0=_0x23d5ef[_0x3aec7f(0x1f9)][_0x3aec7f(0x202)](_0xc9024e=>!_0x26fba4['has'](String(_0xc9024e['account'])));window[_0x3aec7f(0x25f)]=[..._0x12bdb0],_0x2f6174=_0x12bdb0,_0x550e3c(),_0x36457f['textContent']=_0x12bdb0[_0x3aec7f(0x210)];if(_0x12bdb0['length']>0x0)_0x1d37cb();else{_0x12badf[_0x3aec7f(0x2e7)][_0x3aec7f(0x270)]='none';const _0xc0c17c=document[_0x3aec7f(0x2b6)](_0x3aec7f(0x29a));_0xc0c17c['className']=_0x3aec7f(0x2b3),_0xc0c17c['style'][_0x3aec7f(0x270)]=_0x3aec7f(0x299),_0xc0c17c[_0x3aec7f(0x223)]='暂无离线玩家',_0x208bb4[_0x3aec7f(0x2c4)](_0xc0c17c);}let _0x5c5198=0x0;_0x12bdb0[_0x3aec7f(0x1d0)](_0x16d075=>{const _0x132762=_0x3aec7f,_0x5993af=parseFloat(_0x16d075[_0x132762(0x2f0)])||0x0;_0x5c5198+=_0x5993af;}),_0x1f71bb=[...window[_0x3aec7f(0x20f)]||[],..._0x12bdb0];const _0x3e62dc=_0x564605+_0x5c5198;_0x134e65(_0x3e62dc,![]),_0x179fad=!![];}function _0x110816(_0x3e52bb=!![]){const _0x332a3a=_0x452ece;if(!_0x3e52bb){const _0x5b697a=_0x48785e();if(_0x5b697a){console[_0x332a3a(0x1f3)](_0x332a3a(0x20c)),_0x48f3f8(_0x5b697a);return;}console['log'](_0x332a3a(0x236));}_0x56bf70(),_0x3169b5=0x1,_0x5a20d8=!![],_0x2f6174=[],_0x208bb4[_0x332a3a(0x24f)]='',_0x12badf['classList'][_0x332a3a(0x23a)](_0x332a3a(0x24a)),_0x12badf[_0x332a3a(0x2e7)][_0x332a3a(0x270)]=_0x332a3a(0x299),_0x5a150a[_0x332a3a(0x2e7)][_0x332a3a(0x270)]=_0x332a3a(0x214);let _0x5f214e=[];const _0x5b2c4f=sessionStorage[_0x332a3a(0x25b)](_0x332a3a(0x1cf)),_0x171a3c=_0x48785e();Promise[_0x332a3a(0x2f9)]([fetch(baseURL+_0x332a3a(0x1d1)+_0x5b2c4f)['then'](_0x5ef105=>{const _0x2aa032=_0x332a3a;if(!_0x5ef105['ok'])throw new Error(_0x2aa032(0x294));return _0x5ef105[_0x2aa032(0x22c)]();})[_0x332a3a(0x268)](_0x8bcad4=>{const _0x9b8977=_0x332a3a;if(_0x2393e5(_0x8bcad4))return sessionStorage[_0x9b8977(0x2ec)](_0x9b8977(0x1cf)),_0x74988b(),[];_0x564605=0x0;if(_0x8bcad4[_0x9b8977(0x226)]===0x4e20&&_0x8bcad4[_0x9b8977(0x254)][_0x9b8977(0x254)]&&_0x8bcad4['data'][_0x9b8977(0x254)]['length']>0x0)return _0x8bcad4[_0x9b8977(0x254)][_0x9b8977(0x254)][_0x9b8977(0x1c8)](_0x455bf3=>{const _0x462cbd=_0x9b8977,_0x4738c8=parseFloat(_0x455bf3[_0x462cbd(0x224)])||0x0;return _0x564605+=_0x4738c8,{'account':_0x455bf3['uid'],'playerName':_0x455bf3[_0x462cbd(0x290)],'agentLine':_0x455bf3['line']||'无','blacklisted':_0x455bf3[_0x462cbd(0x213)]||![],'blackVisible':_0x455bf3[_0x462cbd(0x1d5)]?.[_0x462cbd(0x293)]===!![],'game':_0x455bf3[_0x462cbd(0x238)]||'-','session':_0x455bf3[_0x462cbd(0x234)]||'-','machineNo':_0x455bf3['roomkey']||'-','bet':_0x455bf3[_0x462cbd(0x23e)]||0x0,'todayWinLoss':parseFloat(_0x455bf3[_0x462cbd(0x224)])||0x0,'totalWinLoss':parseFloat(_0x455bf3[_0x462cbd(0x225)])||0x0,'remainingScore':_0x455bf3[_0x462cbd(0x242)]||0x0,'remainingDiamond':_0x455bf3['zuanshi']||0x0,'targetScore':_0x455bf3[_0x462cbd(0x2da)]||0x0,'actualScore':_0x455bf3[_0x462cbd(0x2c1)]||0x0,'lastLoginTime':_0x455bf3[_0x462cbd(0x249)]||0x0};});return[];})[_0x332a3a(0x2f7)](_0x2e830b=>{const _0x3a1eca=_0x332a3a;return console[_0x3a1eca(0x285)](_0x3a1eca(0x2a4),_0x2e830b),[];}),_0x171a3c?Promise[_0x332a3a(0x255)](_0x171a3c[_0x332a3a(0x1f9)]):fetch(baseURL+'/gethuiyuan?token='+_0x5b2c4f+_0x332a3a(0x21f))[_0x332a3a(0x268)](_0x298b9c=>{const _0x1af302=_0x332a3a;if(!_0x298b9c['ok'])throw new Error('获取离线玩家数据失败');return _0x298b9c[_0x1af302(0x22c)]();})['then'](_0x40802c=>{const _0x21f3f9=_0x332a3a;if(_0x2393e5(_0x40802c))return sessionStorage['removeItem']('token'),_0x74988b(),[];if(_0x40802c['code']===0x4e20&&_0x40802c[_0x21f3f9(0x254)]&&_0x40802c[_0x21f3f9(0x254)][_0x21f3f9(0x210)]>0x0){const _0x40a16d=_0x40802c[_0x21f3f9(0x254)]['map'](_0x5e232e=>{const _0x41cfe9=_0x21f3f9,_0x859061=parseFloat(_0x5e232e[_0x41cfe9(0x224)])||0x0;return{'account':_0x5e232e['_id'],'playerName':_0x5e232e[_0x41cfe9(0x290)],'agentLine':_0x5e232e[_0x41cfe9(0x2b1)]||'无','blacklisted':_0x5e232e[_0x41cfe9(0x213)]||![],'blackVisible':_0x5e232e[_0x41cfe9(0x293)]===!![],'game':'-','session':'-','machineNo':'-','bet':0x0,'todayWinLoss':_0x859061,'totalWinLoss':parseFloat(_0x5e232e[_0x41cfe9(0x225)])||0x0,'remainingScore':_0x5e232e[_0x41cfe9(0x242)]||0x0,'remainingDiamond':_0x5e232e[_0x41cfe9(0x247)]||0x0,'targetScore':0x0,'actualScore':0x0,'lastLoginTime':_0x5e232e['last_login_time']||0x0};});return _0x1c1dc4(_0x40a16d,_0x40a16d[_0x21f3f9(0x210)]),_0x40a16d;}return[];})[_0x332a3a(0x2f7)](_0xde40fe=>{const _0x2e2c5e=_0x332a3a;return console[_0x2e2c5e(0x285)](_0x2e2c5e(0x286),_0xde40fe),[];})])[_0x332a3a(0x268)](([_0x5c5f5d,_0x2a9e82])=>{const _0x30c26a=_0x332a3a;_0x5f214e=_0x5c5f5d,window[_0x30c26a(0x20f)]=[..._0x5f214e];const _0x1f7643=new Set(_0x5f214e[_0x30c26a(0x1c8)](_0x4c7b6a=>String(_0x4c7b6a[_0x30c26a(0x1f7)]))),_0x9f5c5e=_0x2a9e82[_0x30c26a(0x202)](_0x439a5f=>!_0x1f7643[_0x30c26a(0x1e7)](String(_0x439a5f['account'])));window['offlinePlayers']=[..._0x9f5c5e],_0x2f6174=_0x9f5c5e,_0x550e3c(),_0x36457f[_0x30c26a(0x223)]=_0x9f5c5e[_0x30c26a(0x210)];if(_0x9f5c5e[_0x30c26a(0x210)]>0x0)_0x1d37cb();else{_0x12badf[_0x30c26a(0x2e7)][_0x30c26a(0x270)]='none';const _0x8fe23e=document['createElement']('div');_0x8fe23e[_0x30c26a(0x1d6)]=_0x30c26a(0x2b3),_0x8fe23e[_0x30c26a(0x2e7)][_0x30c26a(0x270)]=_0x30c26a(0x299),_0x8fe23e['textContent']='暂无离线玩家',_0x208bb4[_0x30c26a(0x2c4)](_0x8fe23e);}let _0x56ab1e=0x0;_0x9f5c5e[_0x30c26a(0x1d0)](_0x105bb0=>{const _0x210c03=_0x30c26a,_0x17c01b=parseFloat(_0x105bb0[_0x210c03(0x2f0)])||0x0;_0x56ab1e+=_0x17c01b;}),_0x1f71bb=[..._0x5f214e,..._0x9f5c5e];const _0x4fafa9=_0x564605+_0x56ab1e;_0x134e65(_0x4fafa9,![]),_0x482231(),_0x179fad=!![];})[_0x332a3a(0x2f7)](_0x3e8f31=>{const _0x1d74e4=_0x332a3a;_0x482231(),console[_0x1d74e4(0x285)](_0x1d74e4(0x1f4),_0x3e8f31);const _0x13956a=document['createElement'](_0x1d74e4(0x29a));_0x13956a[_0x1d74e4(0x1d6)]=_0x1d74e4(0x2b3),_0x13956a['style'][_0x1d74e4(0x270)]=_0x1d74e4(0x299),_0x13956a[_0x1d74e4(0x223)]=_0x1d74e4(0x2a9),_0x208bb4['appendChild'](_0x13956a);});}function _0x1d37cb(){const _0x372574=_0x452ece;if(!_0x5a20d8)return;_0x219259();const _0x551f3b=(_0x3169b5-0x1)*_0x528df3,_0xfc9ee9=Math[_0x372574(0x1d4)](_0x551f3b+_0x528df3,_0x2f6174['length']),_0x1079f1=_0x2f6174[_0x372574(0x217)](_0x551f3b,_0xfc9ee9);_0x1079f1[_0x372574(0x1d0)](_0x189bfb=>{const _0x200356=_0x372574,_0x584af2=!_0x189bfb['game']||_0x189bfb[_0x200356(0x218)]==='-';_0x208bb4['appendChild'](_0x37f5dc(_0x189bfb,_0x584af2));}),_0x3169b5++,_0xfc9ee9>=_0x2f6174[_0x372574(0x210)]&&(_0x5a20d8=![],_0x12badf['classList'][_0x372574(0x22d)](_0x372574(0x24a)),_0x12badf[_0x372574(0x2e7)][_0x372574(0x270)]=_0x372574(0x214),_0x5a150a[_0x372574(0x2e7)]['display']=_0x372574(0x299)),_0xbe139b();}function _0x134e65(_0x147740,_0x522f45=![]){const _0x10741d=_0x452ece;if(_0x522f45){const _0x150f45=parseInt(_0x2cf651[_0x10741d(0x223)][_0x10741d(0x2ee)](/[+,]/g,''))||0x0;_0x147740=_0x150f45+_0x147740;}const _0x3c55ad=Math['round'](_0x147740/0x64),_0x42d07a=_0x3c55ad>0x0?'+':'';_0x2cf651[_0x10741d(0x223)]=_0x42d07a+_0x3c55ad,_0x2cf651[_0x10741d(0x1d6)]=_0x10741d(0x2bc)+(_0x3c55ad>0x0?_0x10741d(0x263):_0x3c55ad<0x0?_0x10741d(0x2a0):'');}function _0xdabdaa(){const _0x20c214=_0x452ece,_0x145785=sessionStorage[_0x20c214(0x25b)](_0x20c214(0x1cf)),_0x548a19=sessionStorage[_0x20c214(0x25b)](_0x20c214(0x245));if(_0x145785)try{const _0x276737=_0x145785['split']('.');if(_0x276737['length']===0x3){const _0x25c284=JSON[_0x20c214(0x1c7)](safeBase64Decode(_0x276737[0x1]));_0x25c284['uid']&&(console[_0x20c214(0x1f3)]('预加载权限\x20-\x20用户ID:',_0x25c284['uid']),_0x5da44b(_0x25c284['uid']));}}catch(_0x4bbe26){console['error'](_0x20c214(0x2e4),_0x4bbe26);}else _0x548a19&&_0x5da44b(_0x548a19);}_0xdabdaa(),_0x21591a(),_0x4f1a35[_0x452ece(0x1fe)](_0x452ece(0x2d2),function(){const _0x59dd33=_0x452ece;if(!_0x4f1a35['classList']['contains'](_0x59dd33(0x24a))){const _0x360e42=document[_0x59dd33(0x2e2)](_0x59dd33(0x275));_0x360e42[_0x59dd33(0x2b2)](_0x59dd33(0x216))===_0x59dd33(0x269)?_0x21591a():(_0x179fad=![],_0x3bdc43(),_0x110816(!![]));}});function _0x18dcbd(){const _0x1d1c88=_0x452ece;window['lastScrollPosition']=window[_0x1d1c88(0x1fb)]||document[_0x1d1c88(0x28f)][_0x1d1c88(0x21a)],_0x3d0b46[_0x1d1c88(0x1c9)][_0x1d1c88(0x22d)]('show'),document[_0x1d1c88(0x258)][_0x1d1c88(0x2e7)]['overflow']=_0x1d1c88(0x29f),document[_0x1d1c88(0x258)][_0x1d1c88(0x2e7)][_0x1d1c88(0x2d8)]=_0x1d1c88(0x1c4),document['body'][_0x1d1c88(0x2e7)][_0x1d1c88(0x1d2)]=_0x1d1c88(0x29b),document[_0x1d1c88(0x258)][_0x1d1c88(0x2e7)]['top']='-'+window[_0x1d1c88(0x221)]+'px',_0x13e475[_0x1d1c88(0x1f2)]();}function _0x3bfed2(){const _0x293672=_0x452ece;_0x3d0b46[_0x293672(0x1c9)][_0x293672(0x23a)](_0x293672(0x1cb)),document[_0x293672(0x258)][_0x293672(0x2e7)][_0x293672(0x244)]='',document['body'][_0x293672(0x2e7)][_0x293672(0x2d8)]='',document[_0x293672(0x258)][_0x293672(0x2e7)]['width']='',document[_0x293672(0x258)][_0x293672(0x2e7)][_0x293672(0x1ef)]='',window[_0x293672(0x2f8)](0x0,window[_0x293672(0x221)]),_0x13e475[_0x293672(0x1cd)]='',_0x36db5e[_0x293672(0x24f)]='';}_0x1d1d9f[_0x452ece(0x1fe)](_0x452ece(0x2d2),_0x18dcbd),_0x1dd9e8[_0x452ece(0x1fe)](_0x452ece(0x2d2),_0x3bfed2),_0x3d0b46[_0x452ece(0x1fe)](_0x452ece(0x2d2),function(_0x4ef073){const _0x2fffb5=_0x452ece;_0x4ef073[_0x2fffb5(0x262)]===_0x3d0b46&&_0x3bfed2();}),_0xf5335d[_0x452ece(0x1fe)](_0x452ece(0x2d2),_0x1dc21c),_0x13e475[_0x452ece(0x1fe)]('keypress',function(_0x201558){const _0x238d11=_0x452ece;_0x201558[_0x238d11(0x1dd)]===_0x238d11(0x2bd)&&_0x1dc21c();});function _0x1dc21c(){const _0x1cc248=_0x452ece,_0x77a396=_0x13e475['value'][_0x1cc248(0x291)]();if(!_0x77a396){_0x36db5e[_0x1cc248(0x24f)]=_0x1cc248(0x219);return;}_0x36db5e[_0x1cc248(0x24f)]='<div\x20class=\x22search-result-item\x22>正在搜索...</div>';const _0x29ab80=_0x1f71bb[_0x1cc248(0x202)](_0x576b09=>{const _0x1d61e6=_0x1cc248,_0x3203c2=String(_0x576b09['account']),_0x589c52=String(_0x576b09[_0x1d61e6(0x1bb)]);return _0x3203c2['includes'](_0x77a396)||_0x589c52[_0x1d61e6(0x272)](_0x77a396);});_0x29ab80[_0x1cc248(0x210)]>0x0?(_0x36db5e[_0x1cc248(0x24f)]=_0x29ab80[_0x1cc248(0x1c8)](_0x3933de=>'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22search-result-item\x22\x20data-account=\x22'+_0x3933de[_0x1cc248(0x1f7)]+_0x1cc248(0x2ce)+_0x3933de[_0x1cc248(0x1f7)]+_0x1cc248(0x2cc)+_0x3933de['playerName']+'</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22search-result-status\x20'+(_0x3933de[_0x1cc248(0x218)]!=='-'?_0x1cc248(0x269):'offline')+'\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'+(_0x3933de[_0x1cc248(0x218)]!=='-'?'在线':'离线')+_0x1cc248(0x2c5)+_0x3933de[_0x1cc248(0x1cc)]+'分\x20|\x20剩余钻石：'+_0x3933de[_0x1cc248(0x279)]+_0x1cc248(0x211))[_0x1cc248(0x1e2)](''),_0x36db5e[_0x1cc248(0x230)](_0x1cc248(0x26c))[_0x1cc248(0x1d0)](_0x111492=>{const _0x5df056=_0x1cc248;_0x111492[_0x5df056(0x1fe)](_0x5df056(0x2d2),function(){const _0x2cd78f=_0x5df056,_0x1613d0=this[_0x2cd78f(0x26b)][_0x2cd78f(0x1f7)],_0x308bf4=_0x29ab80['find'](_0x3601b2=>String(_0x3601b2[_0x2cd78f(0x1f7)])===String(_0x1613d0));_0x308bf4&&(_0x1c2b97(_0x308bf4),_0x3bfed2());});})):!_0x179fad?_0x36db5e[_0x1cc248(0x24f)]=_0x1cc248(0x24e)+_0x77a396+_0x1cc248(0x209):_0x36db5e[_0x1cc248(0x24f)]=_0x1cc248(0x2a7)+_0x77a396+_0x1cc248(0x209);}document[_0x452ece(0x1fe)](_0x452ece(0x23f),function(){const _0x51c5e9=_0x452ece;window[_0x51c5e9(0x20f)]=[],window['offlinePlayers']=[],window[_0x51c5e9(0x297)]=![];});const _0x181459=document[_0x452ece(0x2c8)](_0x452ece(0x220)),_0x341aae=document['getElementById'](_0x452ece(0x2a3)),_0x587316=document['getElementById'](_0x452ece(0x1ee)),_0x29f8e1=document[_0x452ece(0x2c8)](_0x452ece(0x282));function _0x275f12(_0x11f2df){const _0x13f2fa=_0x452ece;if(!_0x11f2df)return _0x11f2df;return _0x11f2df[_0x13f2fa(0x2ee)](/([\w]+)(-\d+-\d+)/g,function(_0x5f13bc,_0xc34ace,_0x308202){const _0x18e5ac=_0x4549ba(_0xc34ace);return _0x18e5ac===_0xc34ace?_0x5f13bc:_0x18e5ac+_0x308202;});}function _0x2e84be(_0x5b4258){const _0x34e77e=_0x452ece;return{'html':_0x34e77e(0x20d)+_0x5b4258['data']+_0x34e77e(0x1f0)};}function _0x1b7eb1(_0xc80f7c){const _0xb2ae26=_0x452ece;return{'html':_0xb2ae26(0x2a5)+_0xc80f7c[_0xb2ae26(0x254)]+_0xb2ae26(0x1f0)};}function _0x4f5cd0(_0x352ca9){const _0x1c5b86=_0x452ece;let _0xd9fb9c=0x0,_0x3a5d99=[];typeof _0x352ca9['data']===_0x1c5b86(0x2d1)&&Object['keys'](_0x352ca9[_0x1c5b86(0x254)])[_0x1c5b86(0x1d0)](_0x3765cc=>{const _0x5e1427=_0x1c5b86,_0x575fd0=_0x352ca9[_0x5e1427(0x254)][_0x3765cc],_0x4f1388=_0x575fd0[_0x5e1427(0x256)]===_0x5e1427(0x21d)||_0x575fd0[_0x5e1427(0x256)]===!![];_0x4f1388&&_0xd9fb9c++,_0x3a5d99[_0x5e1427(0x27a)]({'id':_0x3765cc,'success':_0x4f1388,'rooms':_0x3e5d26(_0x575fd0['data'])});});const _0x12dea0=Object[_0x1c5b86(0x273)](_0x352ca9[_0x1c5b86(0x254)])['length'];return{'html':_0x1c5b86(0x2dc)+(_0xd9fb9c===_0x12dea0?_0x1c5b86(0x261):_0x1c5b86(0x204))+'\x22></span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span>'+(_0xd9fb9c===_0x12dea0?'全部成功':_0x1c5b86(0x243)+_0xd9fb9c+'/'+_0x12dea0+')')+_0x1c5b86(0x267)+(_0x12dea0>0x0?_0x1c5b86(0x2c9)+_0x3a5d99['map'](_0x56e142=>_0x1c5b86(0x1f5)+_0x56e142['id']+_0x1c5b86(0x2a8)+(_0x56e142[_0x1c5b86(0x2d0)]?'成功':'失败')+_0x1c5b86(0x2a8)+_0x56e142['rooms']+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</tr>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20')[_0x1c5b86(0x1e2)]('')+_0x1c5b86(0x27b):'')+_0x1c5b86(0x215)+JSON['stringify'](_0x352ca9[_0x1c5b86(0x254)],null,0x2)+_0x1c5b86(0x27c)};}function _0x3e5d26(_0x29b558){const _0xd97ee1=_0x452ece;if(!_0x29b558)return 0x0;if(typeof _0x29b558===_0xd97ee1(0x2d1)&&Object[_0xd97ee1(0x273)](_0x29b558)[_0xd97ee1(0x210)]>0x0)return Object[_0xd97ee1(0x273)](_0x29b558)[_0xd97ee1(0x210)];return 0x0;}function _0x2144ce(_0x599911){const _0x3687dc=_0x452ece;if(Array[_0x3687dc(0x2d5)](_0x599911[_0x3687dc(0x254)])){const _0x221799=_0x599911[_0x3687dc(0x254)]['map'](_0x44aa91=>_0x275f12(_0x44aa91));return{'html':'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22status-indicator\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22status-icon\x20status-success\x22></span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span>操作成功</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div>以下游戏机已处理:</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<pre>'+_0x221799[_0x3687dc(0x1e2)]('\x0a')+_0x3687dc(0x1db)};}if(typeof _0x599911[_0x3687dc(0x254)]==='string')return{'html':_0x3687dc(0x1ea)+_0x275f12(_0x599911['data'])+_0x3687dc(0x2e0)};return{'html':_0x3687dc(0x2eb)+JSON[_0x3687dc(0x1df)](_0x599911,null,0x2)+'</pre>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'};}function _0xd06263(_0x5df4d8){const _0x5b06e6=_0x452ece;if(typeof _0x5df4d8===_0x5b06e6(0x1ff))_0x341aae[_0x5b06e6(0x24f)]=_0x5df4d8;else typeof _0x5df4d8===_0x5b06e6(0x2d1)&&_0x5df4d8[_0x5b06e6(0x28e)]&&(_0x341aae['innerHTML']=_0x5df4d8[_0x5b06e6(0x28e)],setTimeout(()=>{const _0x56b9c9=_0x5b06e6,_0x412bc1=_0x341aae[_0x56b9c9(0x230)](_0x56b9c9(0x1ec));_0x412bc1['forEach'](_0x21f5ab=>{const _0x365e8b=_0x56b9c9;_0x21f5ab['addEventListener'](_0x365e8b(0x2d2),function(){const _0x445c9a=_0x365e8b,_0x39d6a8=this[_0x445c9a(0x2c2)];this[_0x445c9a(0x1c9)]['toggle']('expanded'),_0x39d6a8[_0x445c9a(0x1c9)][_0x445c9a(0x1dc)](_0x445c9a(0x265));});});},0x0));_0x181459[_0x5b06e6(0x1c9)][_0x5b06e6(0x22d)](_0x5b06e6(0x1cb)),window[_0x5b06e6(0x221)]=window[_0x5b06e6(0x1fb)]||document['documentElement']['scrollTop'],document['body']['style'][_0x5b06e6(0x244)]='hidden',document[_0x5b06e6(0x258)][_0x5b06e6(0x2e7)]['position']='fixed',document[_0x5b06e6(0x258)][_0x5b06e6(0x2e7)][_0x5b06e6(0x1d2)]=_0x5b06e6(0x29b),document[_0x5b06e6(0x258)][_0x5b06e6(0x2e7)][_0x5b06e6(0x1ef)]='-'+window[_0x5b06e6(0x221)]+'px';}function _0xc1f7ca(){const _0x2cae1d=_0x452ece;_0x181459[_0x2cae1d(0x1c9)][_0x2cae1d(0x23a)](_0x2cae1d(0x1cb)),document[_0x2cae1d(0x258)][_0x2cae1d(0x2e7)][_0x2cae1d(0x244)]='',document['body']['style']['position']='',document['body'][_0x2cae1d(0x2e7)]['width']='',document[_0x2cae1d(0x258)]['style'][_0x2cae1d(0x1ef)]='',window[_0x2cae1d(0x2f8)](0x0,window['lastScrollPosition']);}function _0x1558aa(){const _0x901b7a=_0x452ece;_0x29f8e1&&(_0x29f8e1[_0x901b7a(0x2e7)][_0x901b7a(0x270)]=_0x901b7a(0x214));const _0x26ade8=sessionStorage['getItem'](_0x901b7a(0x1cf));if(!_0x26ade8)return;try{const _0x4cee5f=_0x26ade8['split']('.');if(_0x4cee5f['length']===0x3){const _0x1229c2=JSON[_0x901b7a(0x1c7)](safeBase64Decode(_0x4cee5f[0x1])),_0x573bac=_0x1229c2['role'];(_0x573bac===_0x901b7a(0x240)||_0x573bac===_0x901b7a(0x1d3))&&(_0x29f8e1&&(_0x29f8e1[_0x901b7a(0x2e7)]['display']='flex'));}}catch(_0x1ed951){console[_0x901b7a(0x285)](_0x901b7a(0x1bd),_0x1ed951);}}_0x29f8e1&&(_0x29f8e1['addEventListener']('click',function(){const _0x43fc2a=_0x452ece;_0x56bf70();const _0x14c829=sessionStorage[_0x43fc2a(0x25b)]('token');if(!_0x14c829){_0x482231(),alert('登录已过期，请重新登录');return;}fetch(baseURL+_0x43fc2a(0x2bb)+_0x14c829)['then'](_0x4c7a3f=>{if(!_0x4c7a3f['ok'])throw new Error('网络错误，请重试');return _0x4c7a3f['json']();})[_0x43fc2a(0x268)](_0x350340=>{const _0x1e3a18=_0x43fc2a;_0x482231();if(_0x2393e5(_0x350340)){sessionStorage[_0x1e3a18(0x2ec)]('token'),_0x74988b();return;}if(_0x350340[_0x1e3a18(0x226)]===0x2712){_0xd06263(_0x2e84be(_0x350340));return;}if(_0x350340[_0x1e3a18(0x226)]===0x2711){_0xd06263(_0x1b7eb1(_0x350340));return;}if(_0x350340[_0x1e3a18(0x226)]===0x4e20&&_0x350340['data']){_0xd06263(_0x4f5cd0(_0x350340));return;}let _0x59849a=_0x2144ce(_0x350340);_0xd06263(_0x59849a);})['catch'](_0x2e8bfc=>{const _0x12396f=_0x43fc2a;_0x482231(),console[_0x12396f(0x285)](_0x12396f(0x246),_0x2e8bfc),_0xd06263(_0x1b7eb1({'data':_0x12396f(0x248)}));});}),_0x1558aa());_0x587316&&_0x587316[_0x452ece(0x1fe)](_0x452ece(0x2d2),_0xc1f7ca);_0x181459&&_0x181459[_0x452ece(0x1fe)]('click',function(_0x122c52){const _0x4a09a8=_0x452ece;_0x122c52[_0x4a09a8(0x262)]===_0x181459&&_0xc1f7ca();});_0x21af1b[_0x452ece(0x1fe)](_0x452ece(0x2d2),function(){const _0xd8d85=_0x452ece;_0x2e5ba0[_0xd8d85(0x1c9)][_0xd8d85(0x22d)](_0xd8d85(0x20a)),_0x26210b[_0xd8d85(0x1c9)]['add'](_0xd8d85(0x20a)),document[_0xd8d85(0x258)][_0xd8d85(0x2e7)][_0xd8d85(0x244)]=_0xd8d85(0x29f),_0x31bdf6(),_0x1558aa();});let _0xefee3a=_0x452ece(0x1d8);const _0x35faa2=document[_0x452ece(0x230)](_0x452ece(0x260));_0x35faa2[_0x452ece(0x1d0)](_0x2fcc50=>{const _0x176478=_0x452ece;_0x2fcc50[_0x176478(0x1fe)](_0x176478(0x2d2),function(){const _0xaa6425=_0x176478;if(this[_0xaa6425(0x1c9)][_0xaa6425(0x2d6)](_0xaa6425(0x20a)))return;_0x35faa2[_0xaa6425(0x1d0)](_0x5847e7=>_0x5847e7[_0xaa6425(0x1c9)][_0xaa6425(0x23a)]('active')),this[_0xaa6425(0x1c9)]['add'](_0xaa6425(0x20a)),_0xefee3a=this[_0xaa6425(0x2b2)]('data-sort'),_0x3169b5=0x1,_0x550e3c(),_0x208bb4[_0xaa6425(0x24f)]='',_0x12badf[_0xaa6425(0x1c9)][_0xaa6425(0x23a)](_0xaa6425(0x24a)),_0x12badf[_0xaa6425(0x2e7)][_0xaa6425(0x270)]=_0xaa6425(0x299),_0x5a150a[_0xaa6425(0x2e7)]['display']='none',_0x1d37cb();});});function _0x550e3c(){const _0x5b3e41=_0x452ece;if(_0xefee3a===_0x5b3e41(0x1d8))_0x2f6174['sort']((_0x3a8c46,_0x5d3a90)=>(_0x5d3a90[_0x5b3e41(0x1e8)]||0x0)-(_0x3a8c46[_0x5b3e41(0x1e8)]||0x0));else{if(_0xefee3a==='win-most')_0x2f6174['sort']((_0x4fe617,_0x297cb8)=>_0x297cb8[_0x5b3e41(0x2f0)]-_0x4fe617[_0x5b3e41(0x2f0)]);else _0xefee3a===_0x5b3e41(0x2d4)&&_0x2f6174[_0x5b3e41(0x1c5)]((_0x40f167,_0xe0586)=>_0x40f167[_0x5b3e41(0x2f0)]-_0xe0586['todayWinLoss']);}}});
+    </script>
+
+ </body></html>

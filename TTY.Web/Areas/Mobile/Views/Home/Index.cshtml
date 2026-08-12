@@ -1,68 +1,52 @@
-﻿
-@{
-    ViewBag.Title = "Index";
-    Layout = "~/Views/Shared/Layout/_ContentLayou.Mobile.cshtml";
+﻿@{
+    Layout = "~/Views/Shared/Layout/_MobileLayout.cshtml";
+    string webVer = ConfigHelper.Get("WebVer");
 }
 
-@section include_res{
-
-}
-    <div class="page">
-        <header class="bar bar-nav">
-            <a class="button button-link button-nav pull-left" href="/demos/card" data-transition='slide-out'>
-                <span class="icon icon-left"></span>
-                返回
-            </a>
-            <h1 class="title">我的生活</h1>
-        </header>
-        <nav class="bar bar-tab">
-            <a class="tab-item active" href="#">
-                <span class="icon icon-home"></span>
-                <span class="tab-label">首页</span>
-            </a>
-            <a class="tab-item" href="#">
-                <span class="icon icon-me"></span>
-                <span class="tab-label">我</span>
-            </a>
-            <a class="tab-item" href="#">
-                <span class="icon icon-star"></span>
-                <span class="tab-label">收藏</span>
-            </a>
-            <a class="tab-item" href="#">
-                <span class="icon icon-settings"></span>
-                <span class="tab-label">设置</span>
-            </a>
-        </nav>
-        <div class="content">
-            <!-- 这里是页面内容区 -->
-            <div class="page-index">
-                <div class="card">
-                    <div style="background-image:url(http://gqianniu.alicdn.com/bao/uploaded/i4//tfscom/i3/TB10LfcHFXXXXXKXpXXXXXXXXXX_!!0-item_pic.jpg_250.3.0q60.jpg)" valign="bottom" class="card-header color-white no-border">旅途的山</div>
-                    <div class="card-content">
-                        <div class="card-content-inner">
-                            <p class="color-gray">发表于 2015/01/15</p>
-                            <p>此处是内容...</p>
-                        </div>
-                    </div>
-                    <div class="card-footer">
-                        <a href="#" class="link">赞</a>
-                        <a href="#" class="link">更多</a>
-                    </div>
-                </div>
-                <div class="card">
-                    <div style="background-image:url(http://gqianniu.alicdn.com/bao/uploaded/i4//tfscom/i3/TB10LfcHFXXXXXKXpXXXXXXXXXX_!!0-item_pic.jpg_250.3.0q60.jpg)" valign="bottom" class="card-header color-white no-border">旅途的山</div>
-                    <div class="card-content">
-                        <div class="card-content-inner">
-                            <p class="color-gray">发表于 2015/01/15</p>
-                            <p>此处是内容...</p>
-                        </div>
-                    </div>
-                    <div class="card-footer">
-                        <a href="#" class="link">赞</a>
-                        <a href="#" class="link">更多</a>
-                    </div>
-                </div>
-                ... 可以多放几张卡片
+<div class="m-container">
+    <div class="m-tabs">
+        <div class="m-tabs-header">
+            <div class="m-tab active" data-tab="online">
+                在线玩家<span class="m-tab-count" id="mOnlineCount">0</span>
+            </div>
+            <div class="m-tab" data-tab="all">
+                全部玩家<span class="m-tab-count" id="mAllCount">0</span>
             </div>
         </div>
+
+        <div class="m-tab-pane active" id="mPaneOnline">
+            <div class="m-chips">
+                <button type="button" class="m-chip active" data-sort="win">今日赢最多</button>
+                <button type="button" class="m-chip" data-sort="loss">今日输最多</button>
+                <button type="button" class="m-chip" data-sort="bet">押注最大</button>
+                <button type="button" class="m-chip" data-sort="account">按账号</button>
+            </div>
+            <div id="mOnlineList">
+                <div class="m-empty"><span class="m-spinner dark"></span> 加载中...</div>
+            </div>
+        </div>
+
+        <div class="m-tab-pane" id="mPaneAll">
+            <div id="mSearchTip" class="m-chips m-hidden"></div>
+            <div id="mAllList">
+                <div class="m-empty">点击右上角刷新或搜索加载玩家</div>
+            </div>
+            <div class="m-load-more" id="mAllLoadMoreBox">
+                <button type="button" class="m-load-more-btn" id="mAllLoadMore">加载更多</button>
+            </div>
+            <div class="m-empty m-hidden" id="mAllNoMore">已加载全部数据</div>
+        </div>
     </div>
+</div>
+
+@section scripts {
+    <script>
+        window.MPage = {
+            canUpDown: @Html.Raw(ViewBag.CanUpDown == true ? "true" : "false"),
+            canFrozen: @Html.Raw(ViewBag.CanFrozen == true ? "true" : "false"),
+            canKick: @Html.Raw(ViewBag.CanKick == true ? "true" : "false"),
+            canModifyPwd: @Html.Raw(ViewBag.CanModifyPwd == true ? "true" : "false")
+        };
+    </script>
+    <script src="@Url.Content("~/Scripts/app/mobile/mobile.players.js?v=" + webVer)"></script>
+}
