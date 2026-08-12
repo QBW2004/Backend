@@ -1017,31 +1017,31 @@
             { n: '梅花', odd: 4, w: 2350 }, { n: '方块', odd: 4, w: 2350 },
             { n: '皇冠王', odd: 20, w: 200 }
         ]},
-        10: { doors: [ // 索引顺序与服务端 12 门一致：黄/绿/红 × 兔/猴/熊猫/狮
-            { n: '黄兔', minOdd: 3, maxOdd: 4, minW: 90, maxW: 125 },
-            { n: '绿兔', minOdd: 2, maxOdd: 3, minW: 75, maxW: 105 },
-            { n: '红兔', minOdd: 5, maxOdd: 6, minW: 120, maxW: 155 },
-            { n: '黄猴', minOdd: 6, maxOdd: 7, minW: 52, maxW: 70 },
-            { n: '绿猴', minOdd: 5, maxOdd: 5, minW: 44, maxW: 62 },
-            { n: '红猴', minOdd: 8, maxOdd: 10, minW: 62, maxW: 86 },
-            { n: '黄熊猫', minOdd: 16, maxOdd: 19, minW: 30, maxW: 43 },
-            { n: '绿熊猫', minOdd: 12, maxOdd: 15, minW: 25, maxW: 38 },
-            { n: '红熊猫', minOdd: 20, maxOdd: 24, minW: 36, maxW: 52 },
-            { n: '黄狮', minOdd: 30, maxOdd: 36, minW: 13, maxW: 22 },
-            { n: '绿狮', minOdd: 24, maxOdd: 28, minW: 11, maxW: 18 },
-            { n: '红狮', minOdd: 40, maxOdd: 46, minW: 15, maxW: 26 }
+        10: { doors: [ // 索引顺序与服务端 12 门一致：黄/绿/红 × 兔/猴/熊猫/狮；倍率=服务端内置各动物档位区间(4~8/7~13/12~23/25~46)
+            { n: '黄兔', minOdd: 4, maxOdd: 8, minW: 90, maxW: 125 },
+            { n: '绿兔', minOdd: 4, maxOdd: 8, minW: 75, maxW: 105 },
+            { n: '红兔', minOdd: 4, maxOdd: 8, minW: 120, maxW: 155 },
+            { n: '黄猴', minOdd: 7, maxOdd: 13, minW: 52, maxW: 70 },
+            { n: '绿猴', minOdd: 7, maxOdd: 13, minW: 44, maxW: 62 },
+            { n: '红猴', minOdd: 7, maxOdd: 13, minW: 62, maxW: 86 },
+            { n: '黄熊猫', minOdd: 12, maxOdd: 23, minW: 30, maxW: 43 },
+            { n: '绿熊猫', minOdd: 12, maxOdd: 23, minW: 25, maxW: 38 },
+            { n: '红熊猫', minOdd: 12, maxOdd: 23, minW: 36, maxW: 52 },
+            { n: '黄狮', minOdd: 25, maxOdd: 46, minW: 13, maxW: 22 },
+            { n: '绿狮', minOdd: 25, maxOdd: 46, minW: 11, maxW: 18 },
+            { n: '红狮', minOdd: 25, maxOdd: 46, minW: 15, maxW: 26 }
         ]},
-        29: { doors: [
-            { n: '狮子', minOdd: 20, maxOdd: 45, w: 70 }, { n: '老鹰', minOdd: 15, maxOdd: 25, w: 70 },
-            { n: '熊猫', minOdd: 6, maxOdd: 12, w: 68 }, { n: '孔雀', minOdd: 6, maxOdd: 12, w: 68 },
-            { n: '猴子', minOdd: 3, maxOdd: 6, w: 72 }, { n: '白鸽', minOdd: 3, maxOdd: 6, w: 72 },
-            { n: '兔子', minOdd: 1, maxOdd: 5, w: 78 }, { n: '燕子', minOdd: 1, maxOdd: 5, w: 78 }
+        29: { doors: [ // 倍率=服务端内置 6 组表逐门 min~max（门1~门8）
+            { n: '狮子', minOdd: 3, maxOdd: 4, w: 70 }, { n: '老鹰', minOdd: 6, maxOdd: 7, w: 70 },
+            { n: '熊猫', minOdd: 10, maxOdd: 12, w: 68 }, { n: '孔雀', minOdd: 24, maxOdd: 48, w: 68 },
+            { n: '猴子', minOdd: 22, maxOdd: 48, w: 72 }, { n: '白鸽', minOdd: 10, maxOdd: 12, w: 72 },
+            { n: '兔子', minOdd: 6, maxOdd: 7, w: 78 }, { n: '燕子', minOdd: 3, maxOdd: 4, w: 78 }
         ]},
-        47: { doors: [
-            { n: '宝马', minOdd: 20, maxOdd: 48, w: 70 }, { n: '奔驰', minOdd: 15, maxOdd: 24, w: 70 },
-            { n: '大众', minOdd: 6, maxOdd: 12, w: 68 }, { n: '福特', minOdd: 6, maxOdd: 10, w: 68 },
-            { n: '狮子', minOdd: 3, maxOdd: 6, w: 72 }, { n: '丰田', minOdd: 3, maxOdd: 6, w: 72 },
-            { n: '马自达', minOdd: 1, maxOdd: 3, w: 78 }, { n: '本田', minOdd: 1, maxOdd: 4, w: 78 }
+        47: { doors: [ // 倍率=服务端内置 6 组表逐门 min~max（门1~门8）
+            { n: '宝马', minOdd: 3, maxOdd: 4, w: 70 }, { n: '奔驰', minOdd: 6, maxOdd: 7, w: 70 },
+            { n: '大众', minOdd: 10, maxOdd: 12, w: 68 }, { n: '福特', minOdd: 24, maxOdd: 48, w: 68 },
+            { n: '狮子', minOdd: 22, maxOdd: 48, w: 72 }, { n: '丰田', minOdd: 10, maxOdd: 12, w: 72 },
+            { n: '马自达', minOdd: 6, maxOdd: 7, w: 78 }, { n: '本田', minOdd: 3, maxOdd: 4, w: 78 }
         ]}
     };
     // spec 字段定义：id=JSON 键，lbl=页面标签，def=默认值（未配置时服务端使用内置行为，等价默认见注释），cls=输入类型
@@ -1205,7 +1205,7 @@
         $box.html(html);
         $box.find('.gc-betdoor').on('input', gcUpdateBetDoorRtp);
         gcUpdateBetDoorRtp();
-        $('#gcBetDoorHint').text('赔率（倍率）为只读展示：服务端当前使用内置倍率，不可调整；权重为预留配置，可编辑但暂不影响实际开奖。本表仅作 RTP 核算展示；上方「开奖权重与奖励配置」已接入服务端生效。');
+        $('#gcBetDoorHint').text('赔率（倍率）为只读展示（数值=服务端内置倍率区间，不可调整）；权重调整已接入服务端生效：控制各门出现概率（万分比权重，保存后热更新生效；全部为 0 时回退服务端内置概率）。');
     }
 
     // RTP 实时核算（算法与参考 HTML 一致：单门RTP=权重/10000×赔率×100，全局=各门合计+特殊奖励贡献）

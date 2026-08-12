@@ -174,8 +174,9 @@ namespace YYT.BLL.EF
             }
             Msg hot = PushHotUpdate(room.GAME_ID, EGameType.Bet, machine);
             // 押分扩展：随 TC 一并下发按桌押分参数，center 写入 roomtableconfig_bet 并全量重推。
-            // 字段顺序须与 center 的 TC 押分扩展解析一致；GAME_ID=10(幸运六狮)为 layoutTag==1，
-            // 需追加庄闲/和 4 个副游戏限红字段。
+            // 字段顺序须与 center 的 TC 押分扩展解析一致；layoutTag==1 的游戏需追加
+            // 4 个副游戏限红字段(庄闲/和)：GAME_ID=2(彩金单挑,皇冠副门) 与 GAME_ID=10(幸运六狮)。
+            // 与 center 端 BetLayoutTag() 保持一致，否则中心服按 layoutTag==1 解析会错位。
             // 专有参数从 base 行取(所有桌共享)，room 此处携带的是本次提交的桌台值。
             var betExt = new SConnect.TcBetExt
             {
@@ -189,7 +190,7 @@ namespace YYT.BLL.EF
                 OneCoinScore = (uint)room.COIN_SC,
                 BetScores = room.BetScores ?? string.Empty,
                 DefaultBetIndex = (byte)(room.DefaultBetIndex ?? 0),
-                IncludeViceDraw = room.GAME_ID == 10,
+                IncludeViceDraw = room.GAME_ID == 10 || room.GAME_ID == 2,
                 BetMinVice = (uint)room.BET_MIN_VICE,
                 BetMaxVice = (uint)room.BET_MAX_VICE,
                 BetMinDraw = (uint)room.BET_MIN_DRAW,
