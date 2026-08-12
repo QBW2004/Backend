@@ -2127,6 +2127,20 @@ CREATE TABLE `roomtableconfig_bet`  (
 ) ENGINE = InnoDB AUTO_INCREMENT = 36 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '押注类桌台扩展参数表(按桌)' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
+-- Table structure for betgamecfg（押注类玩法扩展配置，按游戏+桌，JSON 存储）
+-- ----------------------------
+DROP TABLE IF EXISTS `betgamecfg`;
+CREATE TABLE `betgamecfg`  (
+  `ID` int(11) NOT NULL AUTO_INCREMENT,
+  `GAME_ID` int(11) NOT NULL COMMENT '游戏ID(2/10/29/47)',
+  `TableIndex` int(11) NOT NULL COMMENT '桌台全局索引',
+  `CfgJson` varchar(16000) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '押注类玩法扩展配置(JSON)',
+  PRIMARY KEY (`ID`) USING BTREE,
+  UNIQUE INDEX `uk_game_table`(`GAME_ID`, `TableIndex`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '押注类玩法扩展配置(按桌)' ROW_FORMAT = Dynamic;
+
+
+-- ----------------------------
 -- Records of roomtableconfig_bet
 -- ----------------------------
 INSERT INTO `roomtableconfig_bet` VALUES (1, 10, 0, 0, 10, 30, 1000, 500000, 3000, 10000, 0, 1, '1,5,10,15,20', 0, 10, 1000, 10, 1000);
