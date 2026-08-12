@@ -37,3 +37,7 @@ node_modules/
 
 # DB dumps (Tools/export-db.ps1 产物)
 Tools/*.sql
+
+# Local tooling / stray dumps
+.zcode/
+dump_err.txt

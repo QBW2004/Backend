@@ -16,7 +16,7 @@ namespace YYT.BLL.EF
     {
         public B_BetGamePara() : base() { }
 
-        public Msg SaveTableFull(M_ParaBetRoom room, M_ParaBet machine)
+        public Msg SaveTableFull(M_ParaBetRoom room, M_ParaBet machine, string betGameCfg = null)
         {
             Msg result = new Msg(0, "保存失败！");
             if (room == null || machine == null)
@@ -145,6 +145,20 @@ namespace YYT.BLL.EF
                             room.SC_LIMIT_SING, room.SC_LIMIT_ALL, room.COIN_NEED, room.COIN_SC,
                             room.BetScores ?? string.Empty, room.DefaultBetIndex ?? 0,
                             room.BET_MIN_VICE, room.BET_MAX_VICE, room.BET_MIN_DRAW, room.BET_MAX_DRAW);
+
+                        // 押注类玩法扩展配置(开奖权重与奖励 JSON)按桌 upsert：
+                        // betGameCfg 为 null 表示页面未携带(保持库内现值)；空串表示清除；非空则整包覆盖。
+                        if (betGameCfg != null)
+                        {
+                            ef.Database.ExecuteSqlCommand(
+                                "DELETE FROM betgamecfg WHERE GAME_ID={0} AND TableIndex={1}", room.GAME_ID, tIdx);
+                            if (betGameCfg.Length > 0)
+                            {
+                                ef.Database.ExecuteSqlCommand(
+                                    "INSERT INTO betgamecfg (GAME_ID, TableIndex, CfgJson) VALUES ({0},{1},{2})",
+                                    room.GAME_ID, tIdx, betGameCfg);
+                            }
+                        }
 
                         trans.Commit();
                     }

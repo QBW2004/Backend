@@ -81,6 +81,9 @@ namespace YYT.Web.Areas.Game.Controllers
                         // 按桌读取 roomtableconfig_bet（押注时长/庄闲和限红/投注档位等桌级押注参数）
                         var betCfgRows = ef.Database.SqlQuery<BetTableCfgBetRow>(
                             "SELECT TableIndex, BetTime, BetMin, BetMax, BankerScoreNeed, ItemSingleScoreLimit, ItemAllScoreLimit, CoinsNeed, OneCoinScore, BetScores, DefaultBetIndex, BetMinVice, BetMaxVice, BetMinDraw, BetMaxDraw FROM roomtableconfig_bet WHERE GAME_ID={0} ORDER BY TableIndex", gameId).ToList();
+                        // 按桌读取 betgamecfg（开奖权重与奖励等玩法扩展配置 JSON）
+                        var betGameCfgRows = ef.Database.SqlQuery<BetGameCfgRow>(
+                            "SELECT TableIndex, CfgJson FROM betgamecfg WHERE GAME_ID={0} ORDER BY TableIndex", gameId).ToList();
                         int bidx = 0;
                         foreach (BetTableCfgRow cfg in cfgRows)
                         {
@@ -138,7 +141,8 @@ namespace YYT.Web.Areas.Game.Controllers
                                 bankerSiteType = m == null ? 0 : m.BANKER_SITE_TYPE,
                                 bankerPer = m == null ? 0 : m.BANKER_PER,
                                 betPayoutOn = bpr.Any(c => c.Enabled == 1) ? 1 : 0,
-                                betPayout = betPayout
+                                betPayout = betPayout,
+                                betGameCfg = betGameCfgRows.FirstOrDefault(c => c.TableIndex == btIdx)?.CfgJson ?? string.Empty
                             });
                         }
                     }
@@ -506,6 +510,7 @@ namespace YYT.Web.Areas.Game.Controllers
 							efBet.Database.ExecuteSqlCommand("DELETE FROM parabet WHERE GAME_ID=" + betGid + " AND ID=" + (betGid * 1000 + delIdx));
 							efBet.Database.ExecuteSqlCommand("DELETE FROM cardpayoutprofile WHERE GAME_ID=" + betGid + " AND TableId=" + delIdx);
 							efBet.Database.ExecuteSqlCommand("DELETE FROM roomtableconfig_bet WHERE GAME_ID=" + betGid + " AND TableIndex=" + delIdx);
+							efBet.Database.ExecuteSqlCommand("DELETE FROM betgamecfg WHERE GAME_ID=" + betGid + " AND TableIndex=" + delIdx);
 							// 压实 roomtableconfig.TableIndex 为 0..k-1
 							CompactFishTableIndexes(efBet, betGid);
 							// 压实 parabet ID 为 gameId*1000+0..k-1，与 roomtableconfig 保持同构
@@ -516,6 +521,9 @@ namespace YYT.Web.Areas.Game.Controllers
 							// 压实 roomtableconfig_bet.TableIndex 高位左移(与 cardpayoutprofile 同思路)
 							efBet.Database.ExecuteSqlCommand(
 								"UPDATE roomtableconfig_bet SET TableIndex=TableIndex-1 WHERE GAME_ID=" + betGid + " AND TableIndex>" + delIdx);
+							// 压实 betgamecfg.TableIndex 高位左移
+							efBet.Database.ExecuteSqlCommand(
+								"UPDATE betgamecfg SET TableIndex=TableIndex-1 WHERE GAME_ID=" + betGid + " AND TableIndex>" + delIdx);
 							// 同步 base 行 NUM = 剩余桌台数
 							SyncBetTableNum(efBet, betGid);
 						}
@@ -812,7 +820,8 @@ namespace YYT.Web.Areas.Game.Controllers
                     M_ParaBetRoom room = new M_ParaBetRoom();
                     room.ID = tableId;
                     room.GAME_ID = gameId;
-                    room.BET_TIME = 10;
+                    // 押注玩法设置：倒计时/单门限红/全台限红/抢庄门槛（页面对应字段，缺省沿用 base 行旧值）
+                    room.BET_TIME = form.Q<int>("BET_TIME", oldRoom == null ? 10 : oldRoom.BET_TIME);
                     room.NUM = num;
                     room.BET_MIN = betMin;
                     room.BET_MAX = betMax;
@@ -823,9 +832,9 @@ namespace YYT.Web.Areas.Game.Controllers
                     room.EX_COIN = exCoin;
                     room.COIN_SC = coinSc;
                     room.COIN_NEED = coinNeed;
-                    room.BANKER_SC_NEED = oldRoom == null ? 500000 : oldRoom.BANKER_SC_NEED;
-                    room.SC_LIMIT_SING = oldRoom == null ? 3000 : oldRoom.SC_LIMIT_SING;
-                    room.SC_LIMIT_ALL = oldRoom == null ? 10000 : oldRoom.SC_LIMIT_ALL;
+                    room.BANKER_SC_NEED = form.Q<int>("BANKER_SC_NEED", oldRoom == null ? 500000 : oldRoom.BANKER_SC_NEED);
+                    room.SC_LIMIT_SING = form.Q<int>("SC_LIMIT_SING", oldRoom == null ? 3000 : oldRoom.SC_LIMIT_SING);
+                    room.SC_LIMIT_ALL = form.Q<int>("SC_LIMIT_ALL", oldRoom == null ? 10000 : oldRoom.SC_LIMIT_ALL);
                     room.Game_Mo = gameMo;
                     room.BetScores = (form.Q<string>("BetScores", string.Empty) ?? string.Empty).Trim();
                     if (string.IsNullOrEmpty(room.BetScores)) room.BetScores = oldRoom != null && !string.IsNullOrEmpty(oldRoom.BetScores) ? oldRoom.BetScores : "1,5,10,15,20";
@@ -847,60 +856,19 @@ namespace YYT.Web.Areas.Game.Controllers
                     machine.BANKER_SITE_TYPE = form.Q<int>("BANKER_SITE_TYPE", 0);
                     machine.BANKER_PER = form.Q<int>("BANKER_PER", 0);
 
-                    // 押注赔率（每门：出现率万分比 + 倍数），复用 cardpayoutprofile：
-                    // HandType=门索引，PayoutMultiplier=倍率x10，ProbabilityBasis=出现率(万分比)
-                    int betItemCount = GetBetItemCount(gameId);
-                    if (betItemCount > 0)
+                    // 押注类玩法扩展配置（开奖权重与奖励等 JSON，按桌）：
+                    // 页面按 GAME_ID 渲染的 spec + doors 整包序列化，由 SaveTableFull 事务内 upsert 到 betgamecfg。
+                    // 服务端当前使用内置倍率，doors 段仅作 RTP 核算展示与预留存储，
+                    // spec 段（特殊奖励/庄闲和/彩金奖池）由服务端参数化生效。
+                    // CfgJson 为 VARCHAR(16000)（Poco 1.9.1 MySQL 驱动对 LONGTEXT 提取会崩溃），长度上限 15000。
+                    string betGameCfg = (form.Q<string>("BetGameCfg", string.Empty) ?? string.Empty).Trim();
+                    if (betGameCfg.Length > 15000)
                     {
-                        int betPayoutOn = form.Q<int>("BetPayoutOn", 0) == 1 ? 1 : 0;
-                        List<int[]> betProfiles = new List<int[]>();
-                        int betProbSum = 0;
-                        for (int bi = 0; bi < betItemCount; bi++)
-                        {
-                            int prob = (int)Math.Round(form.Q<decimal>("bp" + bi, 0m), MidpointRounding.AwayFromZero);
-                            decimal multD = form.Q<decimal>("bm" + bi, 0m);
-                            int mult = (int)Math.Round(multD * 10m, MidpointRounding.AwayFromZero);
-                            if (prob < 0 || prob > 10000 || mult < 0)
-                            {
-                                msg.content = "押注门出现率须在 0-10000（万分比）之间且倍数不能为负！";
-                                return Json(msg);
-                            }
-                            betProbSum += prob;
-                            betProfiles.Add(new[] { bi, prob, mult });
-                        }
-                        if (betPayoutOn == 1 && betProbSum > 10000)
-                        {
-                            msg.content = "押注门出现率合计 " + betProbSum + " 超过 10000（万分比），请调低后再保存！";
-                            return Json(msg);
-                        }
-
-                        int tIdxBet = tableId % 1000;
-                        using (var efP = new GameDbContext())
-                        {
-                            using (var txP = efP.Database.BeginTransaction())
-                            {
-                                try
-                                {
-                                    efP.Database.ExecuteSqlCommand(
-                                        "DELETE FROM cardpayoutprofile WHERE GAME_ID={0} AND TableId={1}", gameId, tIdxBet);
-                                    foreach (int[] p in betProfiles)
-                                    {
-                                        efP.Database.ExecuteSqlCommand(
-                                            "INSERT INTO cardpayoutprofile (GAME_ID, TableId, HandType, PayoutMultiplier, ProbabilityBasis, StockLimit, StockRemain, Enabled) VALUES ({0},{1},{2},{3},{4},0,0,{5})",
-                                            gameId, tIdxBet, p[0], p[2], p[1], betPayoutOn);
-                                    }
-                                    txP.Commit();
-                                }
-                                catch
-                                {
-                                    txP.Rollback();
-                                    throw;
-                                }
-                            }
-                        }
+                        msg.content = "玩法配置内容过长，请检查后重试！";
+                        return Json(msg);
                     }
 
-                    msg = new B_BetGamePara().SaveTableFull(room, machine);
+                    msg = new B_BetGamePara().SaveTableFull(room, machine, betGameCfg);
                 }
                 else if (gameType == 1)
                 {
@@ -1816,6 +1784,13 @@ namespace YYT.Web.Areas.Game.Controllers
             public int BetMaxVice { get; set; }
             public int BetMinDraw { get; set; }
             public int BetMaxDraw { get; set; }
+        }
+
+        // betgamecfg 押注类玩法扩展配置行映射（原生 SQL 查询用）
+        public class BetGameCfgRow
+        {
+            public int TableIndex { get; set; }
+            public string CfgJson { get; set; }
         }
 
         // roomtableconfig 牌机类桌台行映射（原生 SQL 查询用）
