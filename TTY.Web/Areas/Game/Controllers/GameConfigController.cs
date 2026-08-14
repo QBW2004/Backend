@@ -152,8 +152,6 @@ namespace YYT.Web.Areas.Game.Controllers
                         // 共享参数(ExCoin/GameMo/ScoreSwitch)从 pararoom base 行取，难度从 paracard 按 ID=gameId*1000+TableIndex 关联，
                         // 赔率从 cardpayoutprofile 按 TableId 关联。
                         M_ParaRoom baseRoom = ef.ParaRoom.FirstOrDefault(c => c.GAME_ID == gameId);
-                        // 房间级入场金币(未配置桌的兜底值)：取 pararoom base 行 COIN_NEED，供表单"房间入场金币"框回显
-                        int roomCoinNeed = baseRoom == null ? 0 : baseRoom.COIN_NEED;
                         List<M_ParaCard> cards = ef.ParaCards
                             .Where(c => c.GAME_ID == gameId)
                             .ToList();
@@ -199,7 +197,6 @@ namespace YYT.Web.Areas.Game.Controllers
                                 exCoin = cardCfg != null ? cardCfg.ExCoin : (baseRoom == null ? 10000 : baseRoom.EX_COIN),
                                 coinSc = cfg.OneCoinScore,
                                 coinNeed = cfg.CoinsNeed,
-                                roomCoinNeed = roomCoinNeed,
                                 gameMo = cardCfg != null ? cardCfg.GameMo : (baseRoom == null ? 0 : baseRoom.Game_Mo),
                                 scoreSwitch = cardCfg != null ? cardCfg.ScoreSwitch : (baseRoom == null ? 0 : baseRoom.scoreSwitch),
                                 maxSeats = cfg.MaxSeats <= 0 ? 6 : cfg.MaxSeats,
@@ -308,10 +305,11 @@ namespace YYT.Web.Areas.Game.Controllers
                                 .GroupBy(c => c.OptKey)
                                 .ToDictionary(g => g.Key, g => g.First().OptValue);
                         }
-                        // 从 roomtableconfig 获取桌台列表（对齐一房N桌模型）
+                        // 从 roomtableconfig 获取桌台列表（对齐一房N桌模型）。
+                        // 允许 0 张桌（不再强制补 TableIndex=0 占位行）：桌台删光后前端显示空列表 + “新建桌台”，
+                        // 避免出现“删不掉的幽灵桌”（假桌台不在 DB，删除永远无法生效）。
                         var tableIdxs = ef.Database.SqlQuery<int>(
                             "SELECT TableIndex FROM roomtableconfig WHERE GAME_ID=" + gameId + " ORDER BY TableIndex").ToList();
-                        if (tableIdxs.Count == 0) tableIdxs.Add(0);
                         foreach (int tIdx in tableIdxs)
                         {
                             int tid = gameId * 1000 + tIdx;
@@ -1004,8 +1002,8 @@ namespace YYT.Web.Areas.Game.Controllers
                         // 服务端 GetCardPara 按 roomMax=1 只读 base 行(ID=gameId*1000)的这些字段，
                         // 必须与本次提交值一致，否则服务端读到的是旧值或自动补建的默认值。
                         // 注意：COIN_NEED 不再随单桌保存同步——入场金币按桌存 roomtableconfig.CoinsNeed，
-                        // 0 值由服务端回退房间级兜底值；房间级兜底仅当表单显式提交 ROOM_COIN_NEED 时更新，
-                        // 避免"保存某张桌导致全部桌子的入场金币变成该桌的值"。
+                        // 0 值由服务端回退房间级兜底值（pararoom base 行 COIN_NEED，默认 10000），
+                        // 后台已不提供"房间入场金币（兜底）"字段，兜底值仅随库保留、不再可改。
                         int baseIdCard = gameId * 1000;
                         int affBase = ef.Database.ExecuteSqlCommand(
                             "UPDATE ParaRoom SET EX_COIN=" + cardExCoin + ",COIN_SC=" + coinSc +
@@ -1015,15 +1013,6 @@ namespace YYT.Web.Areas.Game.Controllers
                             ",MaxSeats=" + tblMaxSeats + ",IdleFireTimeoutSec=" + idleSec +
                             ",IdleFireKickEnabled=" + (tblIdleKick != 0 ? 1 : 0) + ",Enabled=" + (tblEnabled != 0 ? 1 : 0) +
                             ",TableName='" + tName.Replace("'", "''") + "' WHERE GAME_ID=" + gameId + " AND ID=" + baseIdCard);
-                        // 房间级入场金币(未配置桌的兜底值)：仅显式提交 ROOM_COIN_NEED 时更新，
-                        // base 行不存在(首张桌台)时由 SyncCardTableNum 自动 INSERT(COIN_NEED 默认 10000)
-                        int roomCoinNeed = form.Q<int>("ROOM_COIN_NEED", -1);
-                        if (roomCoinNeed >= 0)
-                        {
-                            ef.Database.ExecuteSqlCommand(
-                                "UPDATE ParaRoom SET COIN_NEED=" + roomCoinNeed +
-                                " WHERE GAME_ID=" + gameId + " AND ID=" + baseIdCard);
-                        }
                         if (affBase == 0)
                         {
                             // base 行不存在(首张桌台)时由 SyncCardTableNum 自动 INSERT，此处无需重复

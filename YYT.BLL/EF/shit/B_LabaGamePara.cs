@@ -309,6 +309,18 @@ namespace YYT.BLL.EF
             return SaveTableFull(tableId, gameId, paras, null, tableName, enabled);
         }
 
+        /// <summary>
+        /// 拉霸游戏级配置键判定（存 gameconfiglaba 且不随桌台删除而删除）：
+        /// Rtp* 三类型通用；Combo*/UseOutcomeFirst 明星97；WheelStock* 水果拉霸；ShzRate*/ShzStock* 水浒传。
+        /// 与 GameConfigController 的 GetTableConfig / Save*RtpConfig 命名空间保持一致。
+        /// </summary>
+        private static bool IsGameLevelLabaKey(string optKey)
+        {
+            if (string.IsNullOrEmpty(optKey)) return false;
+            return optKey.StartsWith("Rtp") || optKey.StartsWith("Combo") || optKey == "UseOutcomeFirst"
+                || optKey.StartsWith("WheelStock") || optKey.StartsWith("ShzRate") || optKey.StartsWith("ShzStock");
+        }
+
         public Msg DeleteTable(int tableId, int gameId)
         {
             Msg msg = new Msg(0, "删除失败！");
@@ -319,8 +331,15 @@ namespace YYT.BLL.EF
                 {
                     try
                     {
-                        // 删 gameconfiglaba（保留兼容）
-                        var toDelete = ef.GameConfigLabas.Where(c => c.GameId == gameId && c.TableIndex == tableIndex).ToList();
+                        // 删 gameconfiglaba（保留兼容）。跳过游戏级 RTP/Combo 配置键：
+                        // 拉霸的返奖率/库存/结果类配置存 TableIndex=0 但语义为游戏级（明星97 的 Rtp*/Combo*/UseOutcomeFirst、
+                        // 水果拉霸 的 Rtp*/WheelStock*、水浒传 的 Rtp*/ShzRate*/ShzStock*），
+                        // 删除桌台（含删到 0 张）不应误删这些配置，否则 RTP 闭环失效且无法恢复。
+                        var toDelete = ef.GameConfigLabas
+                            .Where(c => c.GameId == gameId && c.TableIndex == tableIndex)
+                            .ToList()
+                            .Where(c => !IsGameLevelLabaKey(c.OptKey))
+                            .ToList();
                         if (toDelete.Count > 0)
                         {
                             ef.GameConfigLabas.RemoveRange(toDelete);

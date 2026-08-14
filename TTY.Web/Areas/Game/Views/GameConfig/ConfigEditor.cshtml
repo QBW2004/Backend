@@ -139,7 +139,8 @@
                         </div>
                     </div>
                     <div class="gc-form-row">
-                        <div class="gc-field gc-hide-12">
+                        <!-- 兑换单位/兑换金币数：全类型(押注/牌机/鱼机/拉霸)隐藏，仅随表单提交保留（gcFill 仍按 base 行值回填，保存写回原值，功能保留） -->
+                        <div class="gc-field" style="display:none">
                             <label>兑换单位</label>
                             <input type="number" id="gcExCoin" name="EX_COIN" class="gc-input" min="1" value="1" />
                         </div>
@@ -147,17 +148,13 @@
                             <label>兑换币值</label>
                             <input type="number" id="gcCoinSc" name="COIN_SC" class="gc-input" min="1" value="1" />
                         </div>
-                        <div class="gc-field gc-hide-12">
+                        <div class="gc-field" style="display:none">
                             <label>兑换金币数</label>
                             <input type="number" id="gcGameMo" name="Game_Mo" class="gc-input" min="0" value="0" />
                         </div>
                         <div class="gc-field">
                             <label>入场金币</label>
                             <input type="number" id="gcCoinNeed" name="COIN_NEED" class="gc-input" min="0" value="0" />
-                        </div>
-                        <div class="gc-field gc-only-1">
-                            <label title="未配置入场金币(0)的桌台回退到该房间级兜底值，不随单桌保存覆盖">房间入场金币（兜底）</label>
-                            <input type="number" id="gcRoomCoinNeed" name="ROOM_COIN_NEED" class="gc-input" min="0" value="0" />
                         </div>
                         <div class="gc-field gc-only-1 gc-only-2 gc-only-3">
                             <label id="gcScoreSwitchLbl">加炮幅度（0.1-0.9）</label>
@@ -919,8 +916,6 @@
         $('.gc-base-info').show();
         if (type >= 0 && type <= 3) {
             $('.gc-only-' + type).show();
-            // 鱼机(2)/牌机(1)：隐藏 兑换单位、兑换金币数（仅不展示，仍随表单提交，功能保留）
-            $('.gc-hide-12').toggle(!(type === 1 || type === 2));
             if (type === 0) {
                 $('#gcMinBetLbl').text('最低压分');
                 $('#gcMaxBetLbl').text('最高压分');
@@ -1020,7 +1015,6 @@
         $('#gcCoinSc').val(t.coinSc);
         $('#gcExCoin').val(t.exCoin);
         $('#gcCoinNeed').val(t.coinNeed);
-        $('#gcRoomCoinNeed').val(t.roomCoinNeed);
         $('#gcGameMo').val(t.gameMo);
         var gcFillSs = (t.scoreSwitch !== undefined && t.scoreSwitch !== null) ? t.scoreSwitch : 0;
         gcFillSs = gcNormSs(gcFillSs, type);
