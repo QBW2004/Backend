@@ -404,7 +404,7 @@ namespace YYT.BLL.EF
 
         }
 
-        public M_EasyuiGridData<M_Users_DTO> GetUsersList(M_Page mPage, M_Users_DTO entity, M_LoginUser loginUser)
+        public M_EasyuiGridData<M_Users_DTO> GetUsersList(M_Page mPage, M_Users_DTO entity, M_LoginUser loginUser, string sort = null, string order = null)
         {
             M_EasyuiGridData<M_Users_DTO> list = new M_EasyuiGridData<M_Users_DTO>();
             using (var ef = new GameDbContext())
@@ -472,12 +472,55 @@ namespace YYT.BLL.EF
                 if (rstList != null)
                 {
                     mPage.SetTotalCount(rstList.Count());
-                    var users = rstList.AsEnumerable()
-                        .OrderByDescending(c => c.INHALL)
+
+                    // 服务端排序：用户点击可排序列时，按该列对全量过滤结果排序后再分页
+                    if (!string.IsNullOrWhiteSpace(sort) && !string.IsNullOrWhiteSpace(order))
+                    {
+                        // 今日盈亏/总盈亏需在排序前填充（分页后才填充的话无法排序）
+                        if (sort == "TodayWinLoss")
+                            FillTodayWinLoss(ef, rstList);
+                        if (sort == "Profit")
+                            FillTotalWinLoss(ef, rstList);
+
+                        bool isDesc = order.Equals("desc", StringComparison.OrdinalIgnoreCase);
+                        switch (sort)
+                        {
+                            case "TodayWinLoss":
+                                rstList = isDesc
+                                    ? rstList.OrderByDescending(c => c.TodayWinLoss).ToList()
+                                    : rstList.OrderBy(c => c.TodayWinLoss).ToList();
+                                break;
+                            case "Profit":
+                                rstList = isDesc
+                                    ? rstList.OrderByDescending(c => c.Profit).ToList()
+                                    : rstList.OrderBy(c => c.Profit).ToList();
+                                break;
+                            case "COINS":
+                                rstList = isDesc
+                                    ? rstList.OrderByDescending(c => c.COINS).ToList()
+                                    : rstList.OrderBy(c => c.COINS).ToList();
+                                break;
+                            case "GAME_SCORE":
+                                rstList = isDesc
+                                    ? rstList.OrderByDescending(c => c.GAME_SCORE).ToList()
+                                    : rstList.OrderBy(c => c.GAME_SCORE).ToList();
+                                break;
+                            default:
+                                rstList = rstList.OrderByDescending(c => c.INHALL).ToList();
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        rstList = rstList.OrderByDescending(c => c.INHALL).ToList();
+                    }
+
+                    var users = rstList
                         .Skip(mPage.PageSize * (mPage.PageIndex - 1)).Take(mPage.PageSize)
                         .ToList();
                     FillCurrentPlayInfo(ef, users);
                     FillTodayWinLoss(ef, users);
+                    FillTotalWinLoss(ef, users);
                     ApplySensitiveFieldPermissions(users, loginUser);
                     list.rows = users;
                     list.total = mPage.TotalCount;
@@ -532,8 +575,7 @@ namespace YYT.BLL.EF
                 }
 
                 List<M_Users_DTO> users = rst.ToList();
-                foreach (M_Users_DTO user in users)
-                    user.Profit = user.COINS_BUY - user.COINS_BACK;
+                FillTotalWinLoss(ef, users);
 
                 FillCurrentPlayInfo(ef, users);
                 FillTodayWinLoss(ef, users);
@@ -681,6 +723,31 @@ namespace YYT.BLL.EF
             foreach (M_Users_DTO user in users)
             {
                 user.TodayWinLoss = winLossMap.TryGetValue(user.ID, out long winLoss) ? winLoss : (long?)0;
+            }
+        }
+
+        /// <summary>
+        /// 总盈亏 = 用户注册以来每天「今日盈亏」之和（SUM user_daily_winloss 全量，与在线用户页总盈亏同口径）
+        /// </summary>
+        private void FillTotalWinLoss(GameDbContext ef, List<M_Users_DTO> users)
+        {
+            if (users == null || users.Count < 1)
+                return;
+
+            List<string> userIds = users.Select(c => c.ID).Where(c => !string.IsNullOrWhiteSpace(c)).Distinct().ToList();
+            if (userIds.Count < 1)
+                return;
+
+            string placeholders = string.Join(",", userIds.Select((c, i) => "{" + i + "}"));
+            string sql = "SELECT UserID, SUM(WINLOSS) AS WINLOSS FROM user_daily_winloss WHERE UserID IN (" + placeholders + ") GROUP BY UserID";
+            Dictionary<string, long> winLossMap = ef.Database.SqlQuery<M_UserDailyWinLoss>(sql, userIds.Cast<object>().ToArray())
+                .ToList()
+                .GroupBy(c => c.UserID)
+                .ToDictionary(g => g.Key, g => g.First().WINLOSS);
+
+            foreach (M_Users_DTO user in users)
+            {
+                user.Profit = winLossMap.TryGetValue(user.ID, out long total) ? (long?)total : 0;
             }
         }
 

@@ -1002,8 +1002,12 @@
             var arr = [];
             for (var i = 0; i < TC_CARD_TYPES.length; i++) {
                 var t = TC_CARD_TYPES[i];
-                if (cardAction == 5 && t.ht == 12) continue; // 大字板五鬼已下线
-                arr.push({ id: t.ht, text: t.name + '(' + mags[t.ht] + '倍)' });
+                // 隐藏牌型：杂牌(0)/五鬼(12)；大四梅(8)仅火凤凰保留（大字板五鬼已下线）
+                if (t.ht == 0 || t.ht == 12) continue;
+                if (t.ht == 8 && cardAction != 14) continue;
+                var item = { id: t.ht, text: t.name + '(' + mags[t.ht] + '倍)' };
+                if (t.ht == 4) item.selected = true; // 默认选中杂顺
+                arr.push(item);
             }
             arr.push({ id: 99, text: '关闭控制' });
             return arr;
@@ -1354,8 +1358,8 @@
             <th field="CurrentWinLose" width="90" formatter="fmtCoins" hidden="true">当前输赢</th>
             <th field="COINS_BUY" width="70" formatter="fmtCoins">充值</th>
             <th field="COINS_BACK" width="60" formatter="fmtCoins">兑换</th>
-            <th field="TodayWinLoss" width="60" formatter="fmtWinLoss">今日盈亏</th>
-            <th field="Profit" width="70" formatter="fmtWinLoss">总盈利</th>
+            <th field="TodayWinLoss" width="60" formatter="fmtWinLoss" sortable="true" order="desc">今日盈亏</th>
+            <th field="Profit" width="70" formatter="fmtWinLoss" sortable="true" order="desc">总盈亏</th>
             @if (loginUser.UserPriv == 0 || loginUser.IsViewSafePwd == 1)
             {
                 <th field="PWD" width="75">用户密码</th>

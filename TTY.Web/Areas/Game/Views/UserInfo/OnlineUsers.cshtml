@@ -39,26 +39,38 @@
         return '游戏' + gameId;
     }
 
+    @*0.1 分炮鱼机（内部单位 = 0.1 分）：与 GameConfigController.IsDecimalBetFish 同口径*@
+    var _decimalBetFishIds = [3, 6, 13, 19, 21, 22, 32, 33, 42, 49, 51];
+    function isDecimalBetFish(gameId) {
+        if (!gameId || gameId <= 0) return false;
+        for (var i = 0; i < _decimalBetFishIds.length; i++) {
+            if (_decimalBetFishIds[i] == gameId) return true;
+        }
+        return false;
+    }
+
     function setGridSize() {
         var w = 840;
         var h = $(window).height() - 78;
         resizeGrid('tb_OnlineUsers', w, h);
     }
 
-	    function initGrid() {
-	        if (!$('body').data('grid-init')) {
-	            $('#tb_OnlineUsers').datagrid({
-	                fitColumns: true,
-	                singleSelect: true,
-	                striped: true,
-	                rownumbers: true,
-	                height: 768,
-	                idField: 'ID',
-	                onBeforeLoad: function () { setGridSize(); }
-	            });
-	        }
-	        queryData();
-	    }
+		    function initGrid() {
+		        if (!$('body').data('grid-init')) {
+		            $('#tb_OnlineUsers').datagrid({
+		                fitColumns: true,
+		                singleSelect: true,
+		                striped: true,
+		                rownumbers: true,
+		                height: 768,
+		                idField: 'ID',
+		                // 数据由 queryData 一次性 loadData 到客户端（无服务端分页），排序走客户端
+		                remoteSort: false,
+		                onBeforeLoad: function () { setGridSize(); }
+		            });
+		        }
+		        queryData();
+		    }
 
     function queryData() {
         var srch = $('#frm_srch').serializeObject();
@@ -120,8 +132,12 @@
         return '<span style="color:#c0392b;font-size:11px;line-height:14px;display:inline-block;">' + value + '</span>';
     }
 
-    function fmtCoins(value) {
-        return top.goldFormat(value || 0);
+    // 当前压分：鱼机类内部单位为 0.1 分，需 ÷10 后显示小数
+    function fmtCoins(value, row) {
+        var v = Number(value || 0);
+        if (isDecimalBetFish(row && row.GameID))
+            return top.goldFormat((v / 10).toFixed(1));
+        return top.goldFormat(v);
     }
     // 剩余分数 = 大厅金币(Coins) + 带进游戏内的分(Score)，即账号总金币
     function fmtTotalCoins(value, row) {
@@ -532,6 +548,9 @@
             // 控牌按次数控制，不需要金币阈值
             $('.trTotalGold').hide();
             $('#numGold_Total').numberbox('setValue', 0);
+            // 默认次数 1 次、总次数五把之内
+            $('#selE_Number_Total').combobox('setValue', 1);
+            $('#selE_Total_Total').combobox('setValue', 5);
         } else {
             $('.trTotalCard').hide();
             $('.trTotalStrength').show();
@@ -795,8 +814,12 @@
         var arr = [];
         for (var i = 0; i < TC_CARD_TYPES.length; i++) {
             var t = TC_CARD_TYPES[i];
-            if (cardAction == 5 && t.ht == 12) continue; // 大字板五鬼已下线
-            arr.push({ id: t.ht, text: t.name + '(' + mags[t.ht] + '倍)' });
+            // 隐藏牌型：杂牌(0)/五鬼(12)；大四梅(8)仅火凤凰保留（大字板五鬼已下线）
+            if (t.ht == 0 || t.ht == 12) continue;
+            if (t.ht == 8 && cardAction != 14) continue;
+            var item = { id: t.ht, text: t.name + '(' + mags[t.ht] + '倍)' };
+            if (t.ht == 4) item.selected = true; // 默认选中杂顺
+            arr.push(item);
         }
         arr.push({ id: 99, text: '关闭控制' });
         return arr;
@@ -1093,9 +1116,9 @@
             <th field="SeatId" width="55" formatter="fmtSeat">座号</th>
             <th field="CurBet" width="70" formatter="fmtCoins">当前压分</th>
             <th field="Coins" width="75" formatter="fmtTotalCoins">剩余分数</th>
-            <th field="TodayWinLoss" width="70" formatter="fmtWinLoss">今日盈亏</th>
-            <th field="Profit" width="70" formatter="fmtWinLoss">总盈亏</th>
-            <th field="TotalCtrl" width="120" formatter="fmtTotalCtrl">控制</th>
+            <th field="TodayWinLoss" width="70" formatter="fmtWinLoss" sortable="true" order="desc">今日盈亏</th>
+            <th field="Profit" width="70" formatter="fmtWinLoss" sortable="true" order="desc">总盈亏</th>
+            <th field="TotalCtrl" width="160" formatter="fmtTotalCtrl">控制</th>
         </tr>
     </thead>
 </table>

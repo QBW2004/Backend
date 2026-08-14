@@ -66,7 +66,7 @@ namespace YYT.Web.Areas.Game.Controllers
             return Json(msg);
         }
         /// <summary>
-        /// 总盈亏 = 用户注册以来每天「今日盈亏」之和（SUM user_daily_winloss 全量，与用户管理页总盈利无关）
+        /// 总盈亏 = 用户注册以来每天「今日盈亏」之和（SUM user_daily_winloss 全量，与用户管理页总盈亏同口径）
         /// </summary>
         private void FillPlayerTotalWinLoss(List<OnlinePlayerInfo> players)
         {
@@ -141,6 +141,9 @@ namespace YYT.Web.Areas.Game.Controllers
                 string id = form.Q<string>("srch_ID");
                 string name = form.Q<string>("srch_NAME");
                 string agency = form.Q<string>("srch_Agency");
+                // 服务端排序（EasyUI remoteSort 默认开启，表头点击会带上 sort/order）
+                string sort = form.Q<string>("sort");
+                string order = form.Q<string>("order");
 
                 int pageIndex = form.Q<int>("page", 1);
                 int pageSize = form.Q<int>("rows", 10);
@@ -158,16 +161,10 @@ namespace YYT.Web.Areas.Game.Controllers
                 // 2 ~ 8 一般代理
                 // 9 副管理
                 // 10 运营
-                list = new B_Users().GetUsersList(mPage, mUsers, loginUser);
+                list = new B_Users().GetUsersList(mPage, mUsers, loginUser, sort, order);
                 if (list != null && list.rows != null)
                 {
-                    //  List<M_UserProit> profits = bll.GetAgencyProfits(loginUser);
-                    foreach (var item in list.rows)
-                    {
-                        //  var tmp = profits.Find(c => c.Agency.Equals(item.ID));
-                        item.Profit = item.COINS_BUY - item.COINS_BACK;
-                        // item.PlayerBalance = (tmp != null ? tmp.PlayerBalance : 0);
-                    }
+                    // 总盈亏已由 B_Users.FillTotalWinLoss 填充（SUM user_daily_winloss 全量，与在线用户页同口径）
                     List<M_Users_DTO> listFooter = new List<M_Users_DTO>();
                     M_Users_DTO footer = new M_Users_DTO();
                     long? tatolCOINS = 0;
