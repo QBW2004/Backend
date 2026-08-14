@@ -55,20 +55,22 @@
         resizeGrid('tb_OnlineUsers', w, h);
     }
 
-	    function initGrid() {
-	        if (!$('body').data('grid-init')) {
-	            $('#tb_OnlineUsers').datagrid({
-	                fitColumns: true,
-	                singleSelect: true,
-	                striped: true,
-	                rownumbers: true,
-	                height: 768,
-	                idField: 'ID',
-	                onBeforeLoad: function () { setGridSize(); }
-	            });
-	        }
-	        queryData();
-	    }
+		    function initGrid() {
+		        if (!$('body').data('grid-init')) {
+		            $('#tb_OnlineUsers').datagrid({
+		                fitColumns: true,
+		                singleSelect: true,
+		                striped: true,
+		                rownumbers: true,
+		                height: 768,
+		                idField: 'ID',
+		                // 数据由 queryData 一次性 loadData 到客户端（无服务端分页），排序走客户端
+		                remoteSort: false,
+		                onBeforeLoad: function () { setGridSize(); }
+		            });
+		        }
+		        queryData();
+		    }
 
     function queryData() {
         var srch = $('#frm_srch').serializeObject();
@@ -1114,8 +1116,8 @@
             <th field="SeatId" width="55" formatter="fmtSeat">座号</th>
             <th field="CurBet" width="70" formatter="fmtCoins">当前压分</th>
             <th field="Coins" width="75" formatter="fmtTotalCoins">剩余分数</th>
-            <th field="TodayWinLoss" width="70" formatter="fmtWinLoss">今日盈亏</th>
-            <th field="Profit" width="70" formatter="fmtWinLoss">总盈亏</th>
+            <th field="TodayWinLoss" width="70" formatter="fmtWinLoss" sortable="true" order="desc">今日盈亏</th>
+            <th field="Profit" width="70" formatter="fmtWinLoss" sortable="true" order="desc">总盈亏</th>
             <th field="TotalCtrl" width="160" formatter="fmtTotalCtrl">控制</th>
         </tr>
     </thead>

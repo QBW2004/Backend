@@ -1358,8 +1358,8 @@
             <th field="CurrentWinLose" width="90" formatter="fmtCoins" hidden="true">当前输赢</th>
             <th field="COINS_BUY" width="70" formatter="fmtCoins">充值</th>
             <th field="COINS_BACK" width="60" formatter="fmtCoins">兑换</th>
-            <th field="TodayWinLoss" width="60" formatter="fmtWinLoss">今日盈亏</th>
-            <th field="Profit" width="70" formatter="fmtWinLoss">总盈亏</th>
+            <th field="TodayWinLoss" width="60" formatter="fmtWinLoss" sortable="true" order="desc">今日盈亏</th>
+            <th field="Profit" width="70" formatter="fmtWinLoss" sortable="true" order="desc">总盈亏</th>
             @if (loginUser.UserPriv == 0 || loginUser.IsViewSafePwd == 1)
             {
                 <th field="PWD" width="75">用户密码</th>

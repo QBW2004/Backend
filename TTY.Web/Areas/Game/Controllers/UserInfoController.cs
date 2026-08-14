@@ -141,6 +141,9 @@ namespace YYT.Web.Areas.Game.Controllers
                 string id = form.Q<string>("srch_ID");
                 string name = form.Q<string>("srch_NAME");
                 string agency = form.Q<string>("srch_Agency");
+                // 服务端排序（EasyUI remoteSort 默认开启，表头点击会带上 sort/order）
+                string sort = form.Q<string>("sort");
+                string order = form.Q<string>("order");
 
                 int pageIndex = form.Q<int>("page", 1);
                 int pageSize = form.Q<int>("rows", 10);
@@ -158,7 +161,7 @@ namespace YYT.Web.Areas.Game.Controllers
                 // 2 ~ 8 一般代理
                 // 9 副管理
                 // 10 运营
-                list = new B_Users().GetUsersList(mPage, mUsers, loginUser);
+                list = new B_Users().GetUsersList(mPage, mUsers, loginUser, sort, order);
                 if (list != null && list.rows != null)
                 {
                     // 总盈亏已由 B_Users.FillTotalWinLoss 填充（SUM user_daily_winloss 全量，与在线用户页同口径）
