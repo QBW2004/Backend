@@ -1127,7 +1127,7 @@ namespace YYT.Web.Areas.Game.Controllers
                         // 同步 pararoom.NUM = roomtableconfig 条数，保证旧房间参数口径与新按桌配置一致
                         SyncFishTableNum(ef, gameId);
                     }
-                    var srv = new SConnect();   // RP/TC/PA 共用同一连接，减少管道竞争
+                    var srv = new SConnect();   // RP 独立连接；TC/PA 各自 new SConnect（SConnect 每次发送后 finally 关闭管道，无法复用）
                     msg = srv.SendReadString(EScMsgType.RP, gameId);
                     if (msg.code == 1)
                     {
@@ -1143,21 +1143,27 @@ namespace YYT.Web.Areas.Game.Controllers
                                 OneCoinScore = (uint)coinSc,
                                 CoinsNeed = (uint)coinNeed
                             };
-                            srv.SendTcCommand((ushort)gameId, 0, (ushort)tIdx, tName, (byte)(tblEnabled != 0 ? 1 : 0), (uint)idleSec, (byte)(tblIdleKick != 0 ? 1 : 0), (ushort)tblMaxSeats, null, tExt);
+                            // TC 用独立连接：SConnect 发送后 finally 关闭管道，复用 RP 的 srv 会导致重连竞争
+                            // （线上表现为"TC数据发送失败！管道尚未连接"）。
+                            var srvTc = new SConnect();
+                            srvTc.SendTcCommand((ushort)gameId, 0, (ushort)tIdx, tName, (byte)(tblEnabled != 0 ? 1 : 0), (uint)idleSec, (byte)(tblIdleKick != 0 ? 1 : 0), (ushort)tblMaxSeats, null, tExt);
                         }
                         else
                         {
-                            srv.SendTcCommand((ushort)gameId, 0, (ushort)tIdx, tName, (byte)(tblEnabled != 0 ? 1 : 0), (uint)idleSec, (byte)(tblIdleKick != 0 ? 1 : 0), (ushort)tblMaxSeats);
+                            var srvTc = new SConnect();
+                            srvTc.SendTcCommand((ushort)gameId, 0, (ushort)tIdx, tName, (byte)(tblEnabled != 0 ? 1 : 0), (uint)idleSec, (byte)(tblIdleKick != 0 ? 1 : 0), (ushort)tblMaxSeats);
                         }
                         // 鱼机难度热更：PA + gameID(2位) + tableIndex(3位) + DIF + SITE_TYPE。
                         // 中心服 PA 分支调 SetTablePara 下发 COM_TABLE_SET 给子游戏实时生效（AlgPlayerReset_DIF），
                         // 同时 SetTablePara 鱼机分支会调 UpsertFishTablePara 落库，保证 RP 全量重载与重启后一致。
                         try
                         {
-                            var paMsg = srv.SendReadString(EScMsgType.PA,
-                                gameId.ToString().PadLeft(2, '0'),
-                                tIdx.ToString().PadLeft(3, '0'),
-                                fishDif, fishSiteType);
+                        // PA 同 TC：独立连接避免复用已关闭管道导致重连失败
+                        var srvPa = new SConnect();
+                        var paMsg = srvPa.SendReadString(EScMsgType.PA,
+                            gameId.ToString().PadLeft(2, '0'),
+                            tIdx.ToString().PadLeft(3, '0'),
+                            fishDif, fishSiteType);
                             if (paMsg.code != 1)
                             {
                                 LogHelper.WriteLog(typeof(GameConfigController), "鱼机难度热更失败：" + (paMsg.content ?? ""));
