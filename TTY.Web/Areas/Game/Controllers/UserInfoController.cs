@@ -66,7 +66,7 @@ namespace YYT.Web.Areas.Game.Controllers
             return Json(msg);
         }
         /// <summary>
-        /// 总盈亏 = 用户注册以来每天「今日盈亏」之和（SUM user_daily_winloss 全量，与用户管理页总盈利无关）
+        /// 总盈亏 = 用户注册以来每天「今日盈亏」之和（SUM user_daily_winloss 全量，与用户管理页总盈亏同口径）
         /// </summary>
         private void FillPlayerTotalWinLoss(List<OnlinePlayerInfo> players)
         {
@@ -161,13 +161,7 @@ namespace YYT.Web.Areas.Game.Controllers
                 list = new B_Users().GetUsersList(mPage, mUsers, loginUser);
                 if (list != null && list.rows != null)
                 {
-                    //  List<M_UserProit> profits = bll.GetAgencyProfits(loginUser);
-                    foreach (var item in list.rows)
-                    {
-                        //  var tmp = profits.Find(c => c.Agency.Equals(item.ID));
-                        item.Profit = item.COINS_BUY - item.COINS_BACK;
-                        // item.PlayerBalance = (tmp != null ? tmp.PlayerBalance : 0);
-                    }
+                    // 总盈亏已由 B_Users.FillTotalWinLoss 填充（SUM user_daily_winloss 全量，与在线用户页同口径）
                     List<M_Users_DTO> listFooter = new List<M_Users_DTO>();
                     M_Users_DTO footer = new M_Users_DTO();
                     long? tatolCOINS = 0;

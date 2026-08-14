@@ -47,7 +47,7 @@ namespace YYT.BLL.Services.GameServer
         public long TotalWinLoss { get; set; }
 
         /// <summary>
-        /// 总盈亏 = 用户注册以来每天「今日盈亏」之和（后台补充，SUM user_daily_winloss 全量，与用户管理页总盈利无关）
+        /// 总盈亏 = 用户注册以来每天「今日盈亏」之和（后台补充，SUM user_daily_winloss 全量，与用户管理页总盈亏同口径）
         /// </summary>
         [JsonProperty("Profit")]
         public long Profit { get; set; }

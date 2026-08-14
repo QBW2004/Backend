@@ -478,6 +478,7 @@ namespace YYT.BLL.EF
                         .ToList();
                     FillCurrentPlayInfo(ef, users);
                     FillTodayWinLoss(ef, users);
+                    FillTotalWinLoss(ef, users);
                     ApplySensitiveFieldPermissions(users, loginUser);
                     list.rows = users;
                     list.total = mPage.TotalCount;
@@ -532,8 +533,7 @@ namespace YYT.BLL.EF
                 }
 
                 List<M_Users_DTO> users = rst.ToList();
-                foreach (M_Users_DTO user in users)
-                    user.Profit = user.COINS_BUY - user.COINS_BACK;
+                FillTotalWinLoss(ef, users);
 
                 FillCurrentPlayInfo(ef, users);
                 FillTodayWinLoss(ef, users);
@@ -681,6 +681,31 @@ namespace YYT.BLL.EF
             foreach (M_Users_DTO user in users)
             {
                 user.TodayWinLoss = winLossMap.TryGetValue(user.ID, out long winLoss) ? winLoss : (long?)0;
+            }
+        }
+
+        /// <summary>
+        /// 总盈亏 = 用户注册以来每天「今日盈亏」之和（SUM user_daily_winloss 全量，与在线用户页总盈亏同口径）
+        /// </summary>
+        private void FillTotalWinLoss(GameDbContext ef, List<M_Users_DTO> users)
+        {
+            if (users == null || users.Count < 1)
+                return;
+
+            List<string> userIds = users.Select(c => c.ID).Where(c => !string.IsNullOrWhiteSpace(c)).Distinct().ToList();
+            if (userIds.Count < 1)
+                return;
+
+            string placeholders = string.Join(",", userIds.Select((c, i) => "{" + i + "}"));
+            string sql = "SELECT UserID, SUM(WINLOSS) AS WINLOSS FROM user_daily_winloss WHERE UserID IN (" + placeholders + ") GROUP BY UserID";
+            Dictionary<string, long> winLossMap = ef.Database.SqlQuery<M_UserDailyWinLoss>(sql, userIds.Cast<object>().ToArray())
+                .ToList()
+                .GroupBy(c => c.UserID)
+                .ToDictionary(g => g.Key, g => g.First().WINLOSS);
+
+            foreach (M_Users_DTO user in users)
+            {
+                user.Profit = winLossMap.TryGetValue(user.ID, out long total) ? (long?)total : 0;
             }
         }
 
