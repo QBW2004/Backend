@@ -1702,11 +1702,14 @@ namespace YYT.Web.Areas.Game.Controllers
 
             // 落库：删除该游戏全部被管理 OptKey（含历史遗留的其它 TableIndex 行），
             // 再按本次配置写入 TableIndex=0（服务端按 GameId 合并读取，TableIndex 不影响语义）。
-            // 被管理命名空间为 Rtp*/Combo*（明星97 专用），LIKE 前缀匹配避免大 IN 参数列表。
+            // 被管理命名空间为 Rtp*/Combo* + UseOutcomeFirst（明星97 专用），LIKE 前缀匹配避免大 IN 参数列表。
+            // 注意：UseOutcomeFirst 不以 Rtp/Combo 开头，必须单独纳入删除范围，
+            // 否则旧行残留导致重复主键(16-0-UseOutcomeFirst) DbUpdateException，明星97 建/改桌台保存失败。
             using (var ef = new GameDbContext())
             {
                 List<M_GameConfigLaba> olds = ef.GameConfigLabas
-                    .Where(c => c.GameId == gameId && (c.OptKey.StartsWith("Rtp") || c.OptKey.StartsWith("Combo")))
+                    .Where(c => c.GameId == gameId &&
+                                (c.OptKey.StartsWith("Rtp") || c.OptKey.StartsWith("Combo") || c.OptKey == "UseOutcomeFirst"))
                     .ToList();
                 ef.GameConfigLabas.RemoveRange(olds);
                 foreach (M_GameConfigLaba row in toWrite)

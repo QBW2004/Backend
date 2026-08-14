@@ -736,7 +736,8 @@
             $('#gcLabaPayoutBox').show();
             $.each(GC_LABA_WHEEL_META, function (idx, r) {
                 $tb.append('<tr>' +
-                    '<td style="padding:6px 8px;border:1px solid #e5e9f0;font-size:13px;color:#36404a;">' + r.i + ' · ' + r.n + '</td>' +
+                    // 面板位前缀，区分同果多面板（如苹果 4/10/16/22 为不同面板；苹果·小=5 与苹果不同）
+                    '<td style="padding:6px 8px;border:1px solid #e5e9f0;font-size:13px;color:#36404a;">面板' + r.i + ' · ' + r.n + '</td>' +
                     '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="number" name="WheelProb' + r.i + '" id="gcLabaWp' + r.i + '" class="gc-input gc-laba-wp" min="0" max="10000" step="1" value="0" /></td>' +
                     '<td style="padding:6px 8px;border:1px solid #e5e9f0;font-size:13px;color:#8a94a1;text-align:center;">' + r.v + '</td>' +
                     '</tr>');
