@@ -591,15 +591,19 @@ namespace YYT.BLL.EF
                 var admin = ef.Admins.FirstOrDefault(t => t.ID == entity.ID);
                 if (admin != null)
                 {
-                    string inviteCodeMessage;
-                    bool isValidInviteCode = AgencyRules.TryValidateInviteCode(
-                        entity.InviteCode,
-                        entity.ID,
-                        ef.Admins.Select(a => a.ID).ToList(),
-                        ef.Admins.Select(a => new { a.ID, a.InviteCode }).ToList().Select(a => new AgencyRules.InviteCodeOwner(a.ID, a.InviteCode)).ToList(),
-                        out inviteCodeMessage);
-                    if (!isValidInviteCode)
-                        throw new InvalidOperationException(inviteCodeMessage);
+                    // 留空表示清除邀请码，跳过格式与去重校验
+                    if (!string.IsNullOrWhiteSpace(entity.InviteCode))
+                    {
+                        string inviteCodeMessage;
+                        bool isValidInviteCode = AgencyRules.TryValidateInviteCode(
+                            entity.InviteCode,
+                            entity.ID,
+                            ef.Admins.Select(a => a.ID).ToList(),
+                            ef.Admins.Select(a => new { a.ID, a.InviteCode }).ToList().Select(a => new AgencyRules.InviteCodeOwner(a.ID, a.InviteCode)).ToList(),
+                            out inviteCodeMessage);
+                        if (!isValidInviteCode)
+                            throw new InvalidOperationException(inviteCodeMessage);
+                    }
 
 
                     admin.InviteCode = entity.InviteCode;
