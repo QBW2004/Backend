@@ -173,9 +173,29 @@ namespace YYT.BLL.EF
                     try
                     {
                         // ── 1. 写 gameconfiglaba（保留兼容）──
+                        // 加芬幅度是游戏级全局参数：中心服 GetGameConfigParams 按 GameId 读全表
+                        // （不按 TableIndex 过滤、无 ORDER BY），同 OptKey 多行时后写覆盖先写，
+                        // 多桌各存一行会互相覆盖导致服务端下发值不可控（改 A 桌被 B 桌旧值覆盖）。
+                        // 统一落 TableIndex=0 单行：保存任意桌台时先清除该游戏其它行的 scoreSwitchX10。
+                        var swPara = paras.FirstOrDefault(p => p.OptKey == "scoreSwitchX10");
+                        if (swPara != null && swPara.OptValue > -1)
+                        {
+                            ef.Database.ExecuteSqlCommand(
+                                "DELETE FROM GameConfigLaba WHERE GameId={0} AND OptKey='scoreSwitchX10'", gameId);
+                            ef.GameConfigLabas.Add(new M_GameConfigLaba
+                            {
+                                GameId = gameId,
+                                TableIndex = 0,
+                                OptKey = "scoreSwitchX10",
+                                OptValue = swPara.OptValue,
+                                TIME = DateTime.Now,
+                                Type = "Room"
+                            });
+                        }
                         var rst = ef.GameConfigLabas.Where(c => c.GameId == gameId && c.TableIndex == tableIndex).ToList();
                         foreach (var p in paras)
                         {
+                            if (p.OptKey == "scoreSwitchX10") continue;  // 已在上方统一落 TableIndex=0
                             var existing = rst.FirstOrDefault(r => r.OptKey == p.OptKey);
                             if (existing != null && p.OptValue > -1)
                             {

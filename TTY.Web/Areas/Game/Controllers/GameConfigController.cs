@@ -338,11 +338,12 @@ namespace YYT.Web.Areas.Game.Controllers
                                 }
                                 row["minBet"] = labaPara.BetMin > 0 ? (object)(labaPara.BetMin / 10m) : 0m;
                                 row["maxBet"] = labaPara.BetMax > 0 ? (object)(labaPara.BetMax / 10m) : 0m;
-                                row["coinNeed"] = labaPara.CoinsNeed;
+                                row["coinNeed"] = labaPara.CoinsNeed > 0 ? labaPara.CoinsNeed : 0;
                                 row["defaultBetIndex"] = labaPara.DefaultBetIndex;
                                 row["exCoin"] = labaPara.ExCoin > 0 ? labaPara.ExCoin : 1;
                                 row["coinSc"] = labaPara.CoinSc > 0 ? labaPara.CoinSc : 1;
                                 row["gameMo"] = labaPara.GameMo > 0 ? labaPara.GameMo : 1;
+                                // 加芬幅度按桌独立（服务端按桌 GunPowerStep 下发）
                                 row["scoreSwitch"] = labaPara.ScoreSwitchX10 > 0 ? labaPara.ScoreSwitchX10 / 10m : 0.1m;
                             }
                             else
@@ -367,6 +368,7 @@ namespace YYT.Web.Areas.Game.Controllers
                                 row["exCoin"] = exCoinV > 0 ? exCoinV : 1;
                                 row["coinSc"] = coinScV > 0 ? coinScV : 1;
                                 row["gameMo"] = gameMoV > 0 ? gameMoV : 1;
+                                // 加芬幅度按桌独立（服务端按桌 GunPowerStep 下发）
                                 row["scoreSwitch"] = scoreSwU > 0 ? scoreSwU / 10m : 0.1m;
                             }
                             row["idleFireTimeoutSec"] = 0;
@@ -620,10 +622,29 @@ namespace YYT.Web.Areas.Game.Controllers
                             msg.content = "大转盘指向概率合计不能超过 10000！";
                             return Json(msg);
                         }
+                        // 权重全 0（未填/显式清零）→ 兜底为默认面板表：保证新建桌台或清空保存时
+                        // 落库的始终是满足逐区等值约束的合法默认表（原语义"全 0 走服务端内置表"取消）
+                        if (wheelSum == 0)
+                        {
+                            for (int w = 0; w < 24; w++)
+                            {
+                                wheelProbs[w] = FruitPanelDefaultProb[w];
+                                labaList.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "WheelProb" + w, OptValue = wheelProbs[w], TIME = DateTime.Now, Type = "Payout" });
+                            }
+                        }
                     }
 
                     decimal labaBetMinD = form.Q<decimal>("MinBet", -1m);
                     decimal labaBetMaxD = form.Q<decimal>("MaxBet", -1m);
+                    // 三个拉霸（明星97/水果机/水浒传）最小/最大押分只能为整数
+                    // （与前端 step=1/保存校验一致，权威拦截）
+                    if (subType > 0
+                        && ((labaBetMinD >= 0 && labaBetMinD != Math.Floor(labaBetMinD))
+                            || (labaBetMaxD >= 0 && labaBetMaxD != Math.Floor(labaBetMaxD))))
+                    {
+                        msg.content = "拉霸最小/最大押分只能设置整数！";
+                        return Json(msg);
+                    }
                     int labaCoinsNeed = form.Q<int>("COIN_NEED", -1);
                     int labaDefaultBetIdx = form.Q<int>("defaultBetIndex", -1);
                     int labaExCoin = form.Q<int>("EX_COIN", -1);
@@ -1834,6 +1855,11 @@ namespace YYT.Web.Areas.Game.Controllers
             { 10, 20, 50, 120, 5, 3, 15, 20, 3, 0, 5, 3, 10, 20, 3, 40, 5, 3, 15, 3, 30, 0, 5, 3 };
         private static readonly int[] FruitPanelArea =
             { 6, 4, 0, 0, 7, 7, 5, 3, 3, -1, 7, 6, 6, 4, 1, 1, 7, 5, 5, 2, 2, -1, 7, 4 };
+        // 水果拉霸默认面板权重（万分比，合计 10000）：8 押注区 Σ概率×倍率 均≈0.850（偏差 0.01%，
+        // 满足逐区等值硬门槛 ≤5%），送灯位 9/21=50/100（g=0.055），理论 RTP≈89.94%。
+        // 新建桌台或表单权重全 0 保存时兜底使用（替代原"全 0 走服务端内置表"）。
+        private static readonly int[] FruitPanelDefaultProb =
+            { 395, 200, 50, 50, 347, 505, 197, 422, 20, 50, 350, 200, 395, 180, 2700, 10, 350, 433, 283, 2033, 80, 100, 350, 300 };
         private static readonly string[] FruitRtpKeys =
         {
             "RtpTargetX100", "RtpKp", "RtpDeadband", "RtpDeltaMax",
@@ -1903,7 +1929,7 @@ namespace YYT.Web.Areas.Game.Controllers
             //    （归一化不改变 c_a 相对偏差，只影响理论 RTP 数值精度）
             int wheelSum = 0;
             for (int i = 0; i < 24; i++) wheelSum += wheelProbs[i];
-            if (wheelSum > 0)   // 全 0 = 未启用面板表，跳过校验（服务端用内置默认）
+            if (wheelSum > 0)   // 全 0 理论上已被 SaveTableConfig 兜底为 FruitPanelDefaultProb，此处仅为防御
             {
                 double[] c = new double[8];
                 double norm = 10000.0 / wheelSum;
