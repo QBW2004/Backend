@@ -618,7 +618,7 @@
     }
 
     // 水果拉霸大转盘 24 面板位：名称按服务端 WheelSurface 映射，v=客户端/服务端写死的倍率(WheelRat，不可改)；
-    // 后台只配「指向概率」：转盘停在该面板位的概率(万分比)，全为 0 时按服务端内置逻辑开奖
+    // 后台只配「指向概率」：转盘停在该面板位的概率(万分比)，全为 0 或新建桌台时自动使用内置默认 90% 面板表
     var GC_LABA_WHEEL_META = [
         { i: 0,  n: '橘子·大', v: 10 },
         { i: 1,  n: '铃铛·大', v: 20 },
@@ -829,6 +829,10 @@
     var FRUIT_RAT = [10, 20, 50, 120, 5, 3, 15, 20, 3, 0, 5, 3, 10, 20, 3, 40, 5, 3, 15, 3, 30, 0, 5, 3];
     var FRUIT_AREA = [6, 4, 0, 0, 7, 7, 5, 3, 3, -1, 7, 6, 6, 4, 1, 1, 7, 5, 5, 2, 2, -1, 7, 4];
     var FRUIT_AREA_NAME = ['BAR', '双7', '星', '西瓜', '铃铛', '柠檬', '橘子', '苹果'];
+    // 水果拉霸默认面板权重（万分比，合计 10000）：8 押注区 Σ概率×倍率 均≈0.850（偏差 0.01%，
+    // 满足逐区等值硬门槛 ≤5%），送灯位 9/21=50/100（g=0.055），理论 RTP≈89.94%；
+    // 新建桌台预填 / 权重全 0 保存时兜底使用（与后端 FruitPanelDefaultProb 同值）
+    var GC_LABA_WHEEL_DEFAULT = [395, 200, 50, 50, 347, 505, 197, 422, 20, 50, 350, 200, 395, 180, 2700, 10, 350, 433, 283, 2033, 80, 100, 350, 300];
     function fruitRtpPreview() {
         var c = [0, 0, 0, 0, 0, 0, 0, 0], sum = 0, p9 = 0, p21 = 0;
         for (var i = 0; i < 24; i++) {
@@ -849,8 +853,9 @@
             '；理论 RTP：<b>' + (rtp * 100).toFixed(2) + '%</b><br/>各区 c_a（Σ概率×倍率）：';
         for (var a3 = 0; a3 < 8; a3++)
             html += FRUIT_AREA_NAME[a3] + '=' + c[a3].toFixed(3) + '&nbsp;';
-        if (sum === 0) html += '<br/>（权重全 0：未启用面板表，服务端用内置 90% 默认表）';
+        if (sum === 0) html += '<br/>（权重全 0：保存时将自动使用内置默认 90% 面板表；新建桌台默认预填该表）';
         else if (bad.length > 0) html += '<br/><span style="color:#d33b3b;">逐区等值约束不满足：' + bad.join('，') + ' 偏差超过 5%，保存将被拒绝！</span>';
+        else if (sum > 0) html += '<br/><span style="color:#2e9e5b;">逐区等值约束满足（偏差 ≤5%），可以保存。</span>';
         $('#gcFruitRtpPreview').html(html);
     }
 
@@ -891,7 +896,7 @@
             sum += parseFloat($('#gcLabaWp' + r.i).val()) || 0;
         });
         var $el = $('#gcLabaPayoutSum');
-        $el.text('指向概率合计：' + sum + ' / 10000（全为 0 时按服务端内置逻辑开奖；送灯位 9/21 中奖为免费局）');
+        $el.text('指向概率合计：' + sum + ' / 10000（全为 0 时保存将自动使用内置默认 90% 面板表；送灯位 9/21 中奖为免费局）');
         $el.css('color', sum > 10000 ? '#d33b3b' : '#9aa4b1');
     }
 
@@ -961,6 +966,9 @@
         var isFruitRtp = (type === 3 && gcLabaSubType() === 2);
         $('#gcFruitRtpBox').toggle(isFruitRtp);
         $('#gcFruitRtpBox input, #gcFruitRtpBox select').prop('disabled', !isFruitRtp);
+        // 三个拉霸（明星97/水果机/水浒传）最小/最大押分只能为整数（步进 1；保存时另有整数校验）
+        $('#gcMinBet').attr('step', gcLabaSubType() > 0 ? '1' : '0.1');
+        $('#gcMaxBet').attr('step', gcLabaSubType() > 0 ? '1' : '0.1');
         $('#gcNewTable').toggle(true);
     }
 
@@ -1095,6 +1103,22 @@
         gcSyncSwitch();
     }
 
+    // 水果拉霸：把转盘权重恢复为内置默认 90% 面板表（满足逐区等值约束，理论 RTP≈90%）
+    function gcApplyFruitDefaultProb() {
+        if (gcGetType() === 3 && gcLabaSubType() === 2) {
+            if ($('#gcLabaWp0').length === 0) gcBuildLabaPayoutTable(2);
+            $.each(GC_LABA_WHEEL_META, function (idx, r) { $('#gcLabaWp' + r.i).val(GC_LABA_WHEEL_DEFAULT[r.i]); });
+            gcUpdateLabaWheelSum();
+            fruitRtpPreview();
+        }
+    }
+
+    // 重置表单：全部恢复默认（水果拉霸转盘权重=默认 90% 面板表，其余字段按"留空=默认"语义清空）
+    function gcResetForm() {
+        gcZeroForm();
+        gcApplyFruitDefaultProb();
+    }
+
     function gcNewTable() {
         var type = gcGetType();
         if (type != 0 && type != 1 && type != 2 && type != 3) {
@@ -1116,14 +1140,16 @@
         $('#gcGameType').val(type);
         $('#gcTableName').val('');
         gcApplyType();
-        $('#gcCurTableName').text(src ? '新建桌台（已套用最近桌台参数，填写桌名即可保存）' : '新建桌台');
+        // 水果拉霸：权重固定为默认面板表（满足逐区等值约束，理论 RTP≈90%），不复用最近桌台的权重
+        gcApplyFruitDefaultProb();
+        $('#gcCurTableName').text(src ? '新建桌台（已套用最近桌台参数，拉霸权重使用默认 90% 面板表，填写桌名即可保存）' : '新建桌台');
         gcSyncSwitch();
         gcUpdateSaveBtn();
     }
 
-    // 牌机/拉霸新桌台默认值（715Web 文档：下注与兑换）
+    // 牌机/拉霸新桌台默认值（715Web 文档：下注与兑换）；拉霸最小/最大押分只能整数，默认 1
     function gcApplyCardDefaults() {
-        $('#gcMinBet').val(0.1);
+        $('#gcMinBet').val(gcLabaSubType() > 0 ? 1 : 0.1);
         $('#gcMaxBet').val(1);
         $('#gcExCoin').val(1);
         $('#gcCoinSc').val(1);
@@ -1702,6 +1728,11 @@
             showToast('最小值不能大于最大值！', 'warning');
             return;
         }
+        // 三个拉霸（明星97/水果机/水浒传）最小/最大押分只能为整数
+        if (gcLabaSubType() > 0 && (Math.floor(minBet) !== minBet || Math.floor(maxBet) !== maxBet)) {
+            showToast('拉霸最小/最大押分只能设置整数！', 'warning');
+            return;
+        }
         if (type === 1 || type === 2 || type === 3) { // gcCardStepInvalid
             var gcSs = parseFloat($('#gcScoreSwitch').val());
             var gcSsBad = (type === 2) ? (isNaN(gcSs) || gcSs < 0.1) : (isNaN(gcSs) || gcSs < 1 || Math.floor(gcSs) !== gcSs);
@@ -1762,7 +1793,7 @@
         $('#gcGameSel').on('change', function () { gcLoadTables(); });
         $('#gcRefresh').on('click', function () { gcLoadTables(); });
         $('#gcDelete').on('click', gcDelete);
-        $('#gcReset').on('click', gcZeroForm);
+        $('#gcReset').on('click', gcResetForm);
         $('#gcSave').on('click', gcSave);
         $('#gcNewTable').on('click', gcNewTable);
         $('#gcEnabled').on('change', gcSyncSwitch);
