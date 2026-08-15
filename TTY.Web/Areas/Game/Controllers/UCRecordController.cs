@@ -99,7 +99,6 @@ namespace YYT.Web.Areas.Game.Controllers
 
                 var srv = new SConnect();
                 srv.SendReadString(EScMsgType.UC, "01", "00", 0, userId);
-                srv.SendReadString(EScMsgType.UC, "03", "00", 0, userId);
                 new B_ManagerOpt().RemoveKillRecord(userId);
                 msg.code = 1;
                 msg.content = "关闭点杀成功！";

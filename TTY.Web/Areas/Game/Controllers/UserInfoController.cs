@@ -1095,6 +1095,14 @@ namespace YYT.Web.Areas.Game.Controllers
                     return Json(msg);
                 }
 
+                // 押注点杀(3)/押注放水(4) 已收编进总控（总点杀 mode=4 / 总放水 mode=5，带金币阈值与进度），
+                // 此旧通道已废弃，统一走总控对话框设置。
+                if (action == 3 || action == 4)
+                {
+                    msg.content = "押注控制已收编到总控（吃分/放水），请在总控中设置！";
+                    return Json(msg);
+                }
+
                 bool rst = new B_Users().Exists(new M_Users { ID = id });
                 if (!rst)
                 {
@@ -1141,86 +1149,6 @@ namespace YYT.Web.Areas.Game.Controllers
                     msg.content = "设置成功" + (goldLimit > 0 && goldSaved ? "，目标已设置" : "");
                 }
                 else if (goldLimit > 0 && goldSaved)
-                {
-                    msg.code = 1;
-                    msg.content = "目标已设置";
-                }
-                else
-                {
-                    msg.code = 0;
-                    msg.content = "设置失败";
-                }
-            }
-            catch (Exception ex)
-            {
-                msg.content = "服务器内部错误。";
-                LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.UserInfoController), ex);
-            }
-            return Json(msg);
-        }
-
-        [MemberAuthorize]
-        [AjaxOnly]
-        [HttpPost]
-        public ActionResult ChgUserRateBet(FormCollection form)
-        {
-            Msg msg = new Msg(0, "下注修改失败！");
-            try
-            {
-                string id = form.Q<string>("ID11");
-                int action = form.Q<int>("Action11", -1);
-                int val = form.Q<int>("Val11");
-                if (string.IsNullOrWhiteSpace(id))
-                {
-                    msg.content = "用户ID不能为空！";
-                    return Json(msg);
-                }
-
-                bool rst = new B_Users().Exists(new M_Users { ID = id });
-                if (!rst)
-                {
-                    msg.content = "此ID用户不存在！";
-                    return Json(msg);
-                }
-                M_LoginUser loginUser = WebHelper.GetLoginInfo();
-                if (loginUser == null || loginUser.UserPriv > 0)
-                {
-                    if (action == 3 && (loginUser?.IsKill ?? 0) != 1)
-                    {
-                        msg.content = "没有点杀权限！";
-                        return Json(msg);
-                    }
-                    if (action == 4 && (loginUser?.IsProbability ?? 0) != 1)
-                    {
-                        msg.content = "没有放水权限！";
-                        return Json(msg);
-                    }
-                }
-                int set = 0;
-                if (loginUser != null && loginUser.UserName == ConfigHelper.Get("admin"))
-                {
-                    set = 1;
-                }
-                var tmpMsg = new GameCommandService().SetUserControl(action.ToString().PadLeft(2, '0'), val.ToString().PadLeft(2, '0'), set, id);
-
-                long goldLimitBet = form.Q<long>("GoldLimit11", 0);
-                bool goldSavedBet = false;
-                try
-                {
-                    SaveGoldLimitToDb(id, goldLimitBet, loginUser?.Accounts ?? "");
-                    goldSavedBet = true;
-                }
-                catch (Exception exGl) { LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.UserInfoController), exGl); }
-
-                string tmpDatasBet = tmpMsg != null ? (tmpMsg.datas as string) : null;
-                bool ucOkBet = tmpMsg != null && (tmpMsg.code == 1 || tmpDatasBet == "UCNL" || tmpDatasBet == "UCOK");
-
-                if (ucOkBet)
-                {
-                    msg.code = 1;
-                    msg.content = "设置成功" + (goldLimitBet > 0 && goldSavedBet ? "，目标已设置" : "");
-                }
-                else if (goldLimitBet > 0 && goldSavedBet)
                 {
                     msg.code = 1;
                     msg.content = "目标已设置";

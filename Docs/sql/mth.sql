@@ -11,7 +11,7 @@
  Target Server Version : 50744
  File Encoding         : 65001
 
- Date: 14/08/2026 18:38:36
+ Date: 15/08/2026 13:54:37
 */
 
 SET NAMES utf8mb4;
@@ -119,7 +119,7 @@ CREATE TABLE `agencyoptlog`  (
   `AFT_COINS` bigint(20) NOT NULL DEFAULT 0 COMMENT '操作后金币量',
   `WEEK` tinyint(4) NOT NULL DEFAULT 0 COMMENT '周数',
   PRIMARY KEY (`LID`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 27 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '代理日志表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 28 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '代理日志表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of agencyoptlog
@@ -150,6 +150,7 @@ INSERT INTO `agencyoptlog` VALUES (23, 'atmadmin', '超级管理', 'atmadmin', '
 INSERT INTO `agencyoptlog` VALUES (24, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-08-14 16:49:36', 2, 0, 0, 0, 33);
 INSERT INTO `agencyoptlog` VALUES (25, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-08-14 16:53:41', 2, 0, 0, 0, 33);
 INSERT INTO `agencyoptlog` VALUES (26, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-08-14 17:30:15', 2, 0, 0, 0, 33);
+INSERT INTO `agencyoptlog` VALUES (27, 'atmadmin', '超级管理', 'atmadmin', '超级管理', '2026-08-14 18:51:54', 2, 0, 0, 0, 33);
 
 -- ----------------------------
 -- Table structure for agent_hierarchy
@@ -1251,7 +1252,7 @@ CREATE TABLE `loginmissrecord`  (
 -- ----------------------------
 -- Records of loginmissrecord
 -- ----------------------------
-INSERT INTO `loginmissrecord` VALUES (205, 'atmadmin', 1, 0, '::1', '2026-08-14 17:30:15');
+INSERT INTO `loginmissrecord` VALUES (205, 'atmadmin', 1, 0, '::1', '2026-08-14 18:51:54');
 INSERT INTO `loginmissrecord` VALUES (206, '12345', 1, 0, '112.49.240.88', '2023-08-14 15:13:08');
 INSERT INTO `loginmissrecord` VALUES (207, '00000', 1, 0, '106.6.150.32', '2023-08-14 14:47:59');
 INSERT INTO `loginmissrecord` VALUES (208, '11111', 0, 0, '106.6.150.32', '2023-08-14 12:02:26');
@@ -1910,7 +1911,7 @@ INSERT INTO `rank` VALUES (19, 10, 20000, 20000, 1777303833, 0, 0, '121212', '12
 INSERT INTO `rank` VALUES (19, 19, 1740000, 5, 1700079202, 0, 0, 'woshini', 'woshini', '大三元(174倍)');
 INSERT INTO `rank` VALUES (19, 32, 28600, 2, 1777557913, 0, 0, 'ijb222', 'ijb222', '超级炸弹(572倍)');
 INSERT INTO `rank` VALUES (19, 1000, 20005, 1000, 1699933775, 1, 0, '11111', '11111', '11111');
-INSERT INTO `rank` VALUES (19, 1001, 1, 1001, 1786699816, 1, 0, 't01', 't01', 't01');
+INSERT INTO `rank` VALUES (19, 1001, 1, 1001, 1786704741, 1, 0, 't02', 't02', 't02');
 INSERT INTO `rank` VALUES (20, 2, 137856, 137856, 1777314352, 0, 0, '121212', '121212', '中大奖');
 INSERT INTO `rank` VALUES (20, 6, 52880, 1, 1779512384, 0, 0, 'plm123', 'plm123', '牛魔王(661倍)');
 INSERT INTO `rank` VALUES (20, 10, 20000, 20000, 1777474992, 0, 0, '55555', '55555', '中大奖');
@@ -3191,7 +3192,7 @@ CREATE TABLE `userscoresnapshotledger`  (
   PRIMARY KEY (`LID`) USING BTREE,
   INDEX `IDX_UserScoreSnapshotLedger_UserID`(`UserID`) USING BTREE,
   INDEX `IDX_UserScoreSnapshotLedger_Reason`(`Reason`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 155693 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 155698 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of userscoresnapshotledger
@@ -158888,6 +158889,11 @@ INSERT INTO `userscoresnapshotledger` VALUES (155689, 't01', 54, 0, 10289, 0, 0,
 INSERT INTO `userscoresnapshotledger` VALUES (155690, 't01', 54, 0, 10289, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-08-14 18:27:51');
 INSERT INTO `userscoresnapshotledger` VALUES (155691, 't01', 54, 0, 10289, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-08-14 18:28:37');
 INSERT INTO `userscoresnapshotledger` VALUES (155692, 't01', 0, 13, 10289, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-08-14 18:29:00');
+INSERT INTO `userscoresnapshotledger` VALUES (155693, 't02', 2, 2, 24, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-08-14 18:52:45');
+INSERT INTO `userscoresnapshotledger` VALUES (155694, 't02', 54, 0, 24, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-08-14 18:54:37');
+INSERT INTO `userscoresnapshotledger` VALUES (155695, 't02', 54, 0, 24, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-08-14 18:54:44');
+INSERT INTO `userscoresnapshotledger` VALUES (155696, 't02', 54, 0, 24, 0, 0, 0, 'SNAPSHOT_RECOVER:LOGOUT_TO_HALL', '2026-08-14 18:54:50');
+INSERT INTO `userscoresnapshotledger` VALUES (155697, 't02', 0, 7, 24, 0, 0, 0, 'SNAPSHOT_SAVE', '2026-08-14 18:55:05');
 
 -- ----------------------------
 -- Table structure for videogamecoinrecord

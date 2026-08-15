@@ -565,21 +565,6 @@
             };
             openWin(para);
         }
-        function showRateCtrlWinBet(uid) {
-            var para = {
-                winId: '#chgRateWinBet',
-                title: '【注机控制】',
-                iconCls: 'icon-chart_curve',
-                callBack: function () {
-                    $('#txtE_ID11').textbox('setValue', uid);
-                    $('#hfID11').val(uid);
-                    $('#selE_Action2').combobox('loadData', actionSelDataBet());
-                    $('#selE_Val2').combobox('loadData', getComboValKill());
-                    loadGoldLimit(uid, 'numGoldLimit2');
-                }
-            };
-            openWin(para);
-        }
         function showRateCtrlWinPAIJI(uid) {
             var para = {
                 winId: '#chgRateWinPAIJI',
@@ -673,11 +658,9 @@
                     $('#chgCtrlSelect').data('uid', uid);
                     var canFish = @Html.Raw((loginUser.UserPriv == 0 || loginUser.IsKill == 1 || loginUser.IsProbability == 1) ? "true" : "false");
                     var canPaiJi = @Html.Raw((loginUser.UserPriv == 0 || loginUser.IsRelease == 1) ? "true" : "false");
-                    var canBet = @Html.Raw((loginUser.UserPriv == 0 || loginUser.IsKill == 1 || loginUser.IsProbability == 1) ? "true" : "false");
                     if (canFish) $('#btnFishCtrl').show(); else $('#btnFishCtrl').hide();
                     if (canPaiJi) $('#btnPaiJiCtrl').show(); else $('#btnPaiJiCtrl').hide();
-                    if (canBet) $('#btnBetCtrl').show(); else $('#btnBetCtrl').hide();
-                    var canLaba = canBet;
+                    var canLaba = canFish;
                     if (canLaba) $('#btnLabaCtrl').show(); else $('#btnLabaCtrl').hide();
                     var canTotal = @Html.Raw((loginUser.UserPriv == 0 || loginUser.IsKill == 1 || loginUser.IsProbability == 1 || loginUser.IsRelease == 1) ? "true" : "false");
                     if (canTotal) $('#btnTotalCtrl').show(); else $('#btnTotalCtrl').hide();
@@ -690,7 +673,6 @@
             $('#chgCtrlSelect').dialog('close');
             if (type == 'fish') showRateCtrlWin(uid);
             else if (type == 'paiji') showRateCtrlWinPAIJI(uid);
-            else if (type == 'bet') showRateCtrlWinBet(uid);
             else if (type == 'laba') showRateCtrlWinLaba(uid);
             else if (type == 'total') showTotalCtrlWin(uid);
         }
@@ -867,20 +849,6 @@
             @if (loginUser.UserPriv == 0 || loginUser.IsProbability == 1)
             {
                 @Html.Raw("items.push({ id: 2, text: '鱼机放水' });");
-            }
-            if (items.length > 0) items[0].selected = true;
-            return items;
-        }
-
-        function actionSelDataBet() {
-            var items = [];
-            @if (loginUser.UserPriv == 0 || loginUser.IsKill == 1)
-            {
-                @Html.Raw("items.push({ id: 3, text: '注机点杀' });");
-            }
-            @if (loginUser.UserPriv == 0 || loginUser.IsProbability == 1)
-            {
-                @Html.Raw("items.push({ id: 4, text: '注机放水' });");
             }
             if (items.length > 0) items[0].selected = true;
             return items;
@@ -1068,18 +1036,6 @@
                     }
                 });");
         }
-        function SaveUserRateBet() {
-            @Html.Raw(@"       var para = $('#form11').serializeObject();
-                request('/Game/UserInfo/ChgUserRateBet', para, function (data) {
-                    //提示消息
-                    showUserResult(data);
-                    if (data && data.code == 1) {
-                        $('#chgRateWinBet').dialog('close');
-                        $('#form11').form('reset');
-                        refreshChangedUserRow(para.ID11, 500);
-                    }
-                });");
-        }
         function SaveUserRatePAIJI() {
             @Html.Raw(@"       var para = $('#form6').serializeObject();
                 request('/Game/UserInfo/ChgUserRatePAIJI', para, function (data) {
@@ -1160,12 +1116,7 @@
                     $('#selE_Val1').combobox('loadData', getComboValKill());
                 } else if (newValue == 2) {
                     $('#selE_Val1').combobox('loadData', getComboValPut());
-                } else if (newValue == 3) {
-                    $('#selE_Val2').combobox('loadData', getComboValKill());
-                } else {
-                    $('#selE_Val2').combobox('loadData', getComboValPut());
                 }
-
             }
         }
 
@@ -1444,8 +1395,6 @@
     <br/>
     <a id="btnPaiJiCtrl" href="javascript:void(0);" class="easyui-linkbutton" onclick="subCtrlClick('paiji')" data-options="plain:true,iconCls:'icon-chart_curve'" style="margin:8px;width:140px;">牌机控制</a>
     <br/>
-    <a id="btnBetCtrl" href="javascript:void(0);" class="easyui-linkbutton" onclick="subCtrlClick('bet')" data-options="plain:true,iconCls:'icon-chart_curve'" style="margin:8px;width:140px;">注机控制</a>
-    <br/>
     <a id="btnLabaCtrl" href="javascript:void(0);" class="easyui-linkbutton" onclick="subCtrlClick('laba')" data-options="plain:true,iconCls:'icon-chart_curve'" style="margin:8px;width:140px;">拉霸控制</a>
     <br/>
     <a id="btnTotalCtrl" href="javascript:void(0);" class="easyui-linkbutton" onclick="subCtrlClick('total')" data-options="plain:true,iconCls:'icon-chart_curve'" style="margin:8px;width:140px;">总控</a>
@@ -1496,51 +1445,6 @@
     </form>
 </div>
 
-
-@*修改注机控制窗口*@
-<div id="chgRateWinBet" class="hide">
-    <form id="form11">
-        <table cellpadding="0" cellspacing="0" border="0" width="100%" align="center">
-            <tr>
-                <td colspan="2" align="left" style="padding-left: 50px;color:#999;">
-                    <p style="margin-left:-35px;">温馨提示:修改后即时生效</p>
-                </td>
-            </tr>
-            <tr>
-                <td align="right">用户账号</td>
-                <td align="left" class="pd5">
-                    <input class="easyui-textbox win-txt" id="txtE_ID11" disabled />
-                </td>
-            </tr>
-            <tr>
-                <td align="right">功能</td>
-                <td align="left" class="pd5">
-                    <select class="easyui-combobox win-txt" id="selE_Action2" name="Action11" data-options="valueField:'id',textField:'text',panelHeight:150,data:actionSelDataBet(),onChange:bindAction"></select>
-                </td>
-            </tr>
-            <tr>
-                <td align="right">控值</td>
-                <td align="left" class="pd5">
-                    <select class="easyui-combobox win-txt" id="selE_Val2" name="Val11" data-options="valueField:'id',textField:'text',panelHeight:150,data:getComboValKill()"></select>
-
-                </td>
-            </tr>
-            <tr>
-                <td align="right">目标</td>
-                <td align="left" class="pd5">
-                    <input class="easyui-numberbox win-txt" id="numGoldLimit2" name="GoldLimit11" data-options="min:0,precision:0,prompt:'0=不限制'" style="width:150px;" />
-                    <span style="color:#999;font-size:12px;">金币上限到达后恢复正常吞吐币，0=不限制</span>
-                </td>
-            </tr>
-            <tr>
-                <td align="center" colspan="2" class="pd5">
-                    <input type="hidden" id="hfID11" name="ID11" value="0" />
-                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="SaveUserRateBet()" data-options="plain:true,iconCls:'icon-save'">保存</a>
-                </td>
-            </tr>
-        </table>
-    </form>
-</div>
 
 @*修改牌机控制窗口*@
 

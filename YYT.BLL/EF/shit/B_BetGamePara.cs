@@ -67,7 +67,9 @@ namespace YYT.BLL.EF
                         }
                         else
                         {
-                            // 已有 base 行：更新专有参数(每桌保存时都会刷新 base 行，以最后一次为准)
+                            // 已有 base 行：更新房级共享默认参数。
+                            // 注意：筹码档位(BetScores/DefaultBetIndex)按桌唯一权威在 roomtableconfig_bet，
+                            // 不允许用任意单桌保存的值覆盖 base 行，否则改一张桌会污染全游戏默认档位。
                             rst.GAME_ID = room.GAME_ID;
                             rst.BET_TIME = room.BET_TIME;
                             rst.BET_MIN = room.BET_MIN;
@@ -83,8 +85,6 @@ namespace YYT.BLL.EF
                             rst.SC_LIMIT_SING = room.SC_LIMIT_SING;
                             rst.SC_LIMIT_ALL = room.SC_LIMIT_ALL;
                             rst.Game_Mo = room.Game_Mo;
-                            rst.BetScores = room.BetScores;
-                            rst.DefaultBetIndex = room.DefaultBetIndex;
                             rst.TableName = room.TableName;
                             rst.IdleFireTimeoutSec = room.IdleFireTimeoutSec;
                             rst.IdleFireKickEnabled = room.IdleFireKickEnabled;
@@ -300,8 +300,12 @@ namespace YYT.BLL.EF
                     rst.SC_LIMIT_SING = entity.SC_LIMIT_SING;
                     rst.SC_LIMIT_ALL = entity.SC_LIMIT_ALL;
                     rst.Game_Mo = entity.Game_Mo;
-                    rst.BetScores = entity.BetScores;
-                    rst.DefaultBetIndex = entity.DefaultBetIndex;
+                    // base 行(ID=gameId*1000)只作游戏默认档位，不允许被单条保存覆盖（与 SaveTableFull 同口径）
+                    if (entity.ID != entity.GAME_ID * 1000)
+                    {
+                        rst.BetScores = entity.BetScores;
+                        rst.DefaultBetIndex = entity.DefaultBetIndex;
+                    }
                     ef.Entry(rst).State = EntityState.Modified;
                 }
                 else
@@ -369,8 +373,12 @@ namespace YYT.BLL.EF
                                 rst.SC_LIMIT_SING = entity.SC_LIMIT_SING;
                                 rst.SC_LIMIT_ALL = entity.SC_LIMIT_ALL;
                                 rst.Game_Mo = entity.Game_Mo;
-                                rst.BetScores = entity.BetScores;
-                                rst.DefaultBetIndex = entity.DefaultBetIndex;
+                                // base 行(ID=gameId*1000)只作游戏默认档位，不允许被单条保存覆盖（与 SaveTableFull 同口径）
+                                if (entity.ID != entity.GAME_ID * 1000)
+                                {
+                                    rst.BetScores = entity.BetScores;
+                                    rst.DefaultBetIndex = entity.DefaultBetIndex;
+                                }
                                 ef.Entry(rst).State = EntityState.Modified;
                             }
                             else

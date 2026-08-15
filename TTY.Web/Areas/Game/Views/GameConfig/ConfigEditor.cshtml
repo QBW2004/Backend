@@ -219,6 +219,8 @@
                         </div>
                         <input type="hidden" id="gcBetScores" name="BetScores" value="" />
 
+                        @*机台设定（系统/庄家难度）：按需求隐藏，字段保留在表单中以维持保存值不被重置*@
+                        <div style="display:none;">
                         <div class="gc-section-title">机台设定（系统/庄家难度）</div>
                         <div class="gc-form-row">
                             <div class="gc-field">
@@ -251,6 +253,7 @@
                                 <label>庄家抽水</label>
                                 <input type="number" id="gcBankerPer" name="BANKER_PER" class="gc-input" min="0" max="99" value="0" />
                             </div>
+                        </div>
                         </div>
                     </div>
 
