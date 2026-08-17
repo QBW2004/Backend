@@ -1555,6 +1555,21 @@
         }
     };
 
+    // 机台“有效出牌率”交付系数（按牌型索引 0..12，ht0 杂牌不用）。
+    // 扑克保留换牌机制下，客户端自动保留 × 服务端二手生成存在结构性交付损耗：
+    // 抽中的牌型不一定能真正开出（全保留按一手结算 / 鬼牌数不符 / dis_flag 随机补牌）。
+    // 系数 = 实测开出率 / 配置出现率，由服务端真实算法 + 客户端自动保留策略模拟 200 万局得出：
+    //   phenix/king3/dazhi/nba = 实测；att3 = 按 phenix 近似（ATT3 客户端保留策略未在本仓库）。
+    //   nba 已于 2026-08 修复三条换牌死循环 bug + srand(1) 后重新实测校准。
+    // 后台“实际预计RTP” = Σ(出现率/10000 × 倍数 × 交付系数)；理论RTP = Σ(出现率/10000 × 倍数)。
+    var GC_DELIVERY_FACTOR = {
+        phenix: [0, 1.30, 0.84, 0.83, 0.73, 0.65, 0.57, 0.64, 0.58, 0.55, 0.38, 0.43, 0.00],
+        king3:  [0, 1.31, 0.82, 0.84, 0.75, 0.62, 0.51, 0.64, 0.66, 0.57, 0.93, 0.48, 0.00],
+        dazhi:  [0, 1.28, 0.84, 0.83, 0.74, 0.54, 0.53, 0.63, 0.55, 0.17, 1.15, 0.19, 0.00],
+        nba:    [0, 1.259, 1.156, 0.857, 0.742, 0.607, 0.573, 0.643, 0.708, 0.330, 0.805, 0.185, 0.000],
+        att3:   [0, 1.30, 0.84, 0.83, 0.73, 0.65, 0.57, 0.64, 0.58, 0.55, 0.38, 0.43, 0.00]
+    };
+
     function gcGetMagKey() {
         var name = ($('#gcGameSel').find('option:selected').text() || '');
         if (/nba/i.test(name)) return 'nba';
@@ -1626,18 +1641,28 @@
 
     function gcUpdatePayoutSum() {
         var winSum = 0;
-        var rtp = 0;
+        var rtp = 0;      // 理论返奖率：Σ(出现率×倍数)
+        var rtpReal = 0;  // 机台实际预计返奖率：Σ(出现率×倍数×交付系数)
+        var key = gcGetMagKey();
+        var effTab = GC_DELIVERY_FACTOR[key] || GC_DELIVERY_FACTOR.phenix;
         $.each(GC_PAYOUT_ROWS, function (i, r) {
             if (r.ht !== 0 && !$('#gcHeChk' + r.ht).is(':checked')) return; // 停用行不计入
             var p = parseFloat($('#gcHp' + r.ht).val()) || 0;
             var m = parseFloat($('#gcHm' + r.ht).attr('data-rtp-m')) || 0;
             if (r.ht !== 0) winSum += p;
             rtp += p / 10000 * m;
+            rtpReal += p / 10000 * m * (effTab[r.ht] !== undefined ? effTab[r.ht] : 1);
         });
         var $el = $('#gcPayoutSum');
+        var estTag = (key === 'att3') ? '（att3 按 phenix 近似，待实测校准）' : '';
+        var color = rtpReal >= 100 ? '#d33b3b' : (rtpReal > 98 ? '#c98f2b' : '#9aa4b1');
         $el.text('中奖牌型出现率合计（仅启用行）：' + winSum + ' / 10000（余量自动落入杂牌）；' +
-            gcGetMagRtpNote() + '，理论返奖率 RTP ≈ ' + (rtp * 100).toFixed(2) + '%');
-        $el.css('color', winSum > 10000 ? '#d33b3b' : '#9aa4b1');
+            gcGetMagRtpNote() + '，理论返奖率 RTP ≈ ' + (rtp * 100).toFixed(2) + '%' +
+            '，机台实际预计 RTP ≈ ' + (rtpReal * 100).toFixed(2) + '%' + estTag);
+        $el.css('color', winSum > 10000 ? '#d33b3b' : color);
+        if (winSum > 10000) {
+            $el.css('color', '#d33b3b');
+        }
     }
 
     function gcFillPayout(t) {
