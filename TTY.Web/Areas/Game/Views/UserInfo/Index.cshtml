@@ -660,8 +660,7 @@
                     var canPaiJi = @Html.Raw((loginUser.UserPriv == 0 || loginUser.IsRelease == 1) ? "true" : "false");
                     if (canFish) $('#btnFishCtrl').show(); else $('#btnFishCtrl').hide();
                     if (canPaiJi) $('#btnPaiJiCtrl').show(); else $('#btnPaiJiCtrl').hide();
-                    var canLaba = canFish;
-                    if (canLaba) $('#btnLabaCtrl').show(); else $('#btnLabaCtrl').hide();
+                    @*拉霸控制已收编进总控（吃分/控牌），不再单独显示入口*@
                     var canTotal = @Html.Raw((loginUser.UserPriv == 0 || loginUser.IsKill == 1 || loginUser.IsProbability == 1 || loginUser.IsRelease == 1) ? "true" : "false");
                     if (canTotal) $('#btnTotalCtrl').show(); else $('#btnTotalCtrl').hide();
                 }
@@ -1394,8 +1393,6 @@
     <a id="btnFishCtrl" href="javascript:void(0);" class="easyui-linkbutton" onclick="subCtrlClick('fish')" data-options="plain:true,iconCls:'icon-chart_curve'" style="margin:8px;width:140px;">鱼机控制</a>
     <br/>
     <a id="btnPaiJiCtrl" href="javascript:void(0);" class="easyui-linkbutton" onclick="subCtrlClick('paiji')" data-options="plain:true,iconCls:'icon-chart_curve'" style="margin:8px;width:140px;">牌机控制</a>
-    <br/>
-    <a id="btnLabaCtrl" href="javascript:void(0);" class="easyui-linkbutton" onclick="subCtrlClick('laba')" data-options="plain:true,iconCls:'icon-chart_curve'" style="margin:8px;width:140px;">拉霸控制</a>
     <br/>
     <a id="btnTotalCtrl" href="javascript:void(0);" class="easyui-linkbutton" onclick="subCtrlClick('total')" data-options="plain:true,iconCls:'icon-chart_curve'" style="margin:8px;width:140px;">总控</a>
 </div>

@@ -1267,101 +1267,10 @@ namespace YYT.Web.Areas.Game.Controllers
         [HttpPost]
         public ActionResult ChgUserRateLaba(FormCollection form)
         {
+            // 拉霸控制（点杀 UC27 / 控牌 UC15/16/17）已收编进总控（吃分 mode=4 / 控牌 mode=6），
+            // 此旧通道已废弃，统一走总控对话框设置。
             Msg msg = new Msg(0, "拉霸修改失败！");
-            try
-            {
-                string id = form.Q<string>("IDLaba");
-                int action = form.Q<int>("ActionLaba", -1);
-                if (string.IsNullOrWhiteSpace(id))
-                {
-                    msg.content = "用户ID不能为空！";
-                    return Json(msg);
-                }
-
-                bool rst = new B_Users().Exists(new M_Users { ID = id });
-                if (!rst)
-                {
-                    msg.content = "此ID用户不存在！";
-                    return Json(msg);
-                }
-                M_LoginUser loginUser = WebHelper.GetLoginInfo();
-                if (loginUser == null || loginUser.UserPriv > 0)
-                {
-                    if ((loginUser?.IsKill ?? 0) != 1 && (loginUser?.IsProbability ?? 0) != 1)
-                    {
-                        msg.content = "没有控制权限！";
-                        return Json(msg);
-                    }
-                }
-                int set = 0;
-                if (loginUser != null && loginUser.UserName == ConfigHelper.Get("admin"))
-                {
-                    set = 1;
-                }
-
-                int labaMode = form.Q<int>("LabaMode", 0);
-                Msg tmpMsg;
-                if (labaMode == 1)
-                {
-                    int valLaba = form.Q<int>("ValLaba");
-                    tmpMsg = new GameCommandService().SetUserControl("27", valLaba.ToString().PadLeft(2, '0'), set, id);
-                }
-                else
-                {
-                    int symbol = form.Q<int>("SymbolLaba", 0);
-                    int number = form.Q<int>("NumberLaba", 1);
-                    int totalNumber = form.Q<int>("TotalLaba", 5);
-                    tmpMsg = new GameCommandService().SetUserControl(
-                        action.ToString().PadLeft(2, '0'),
-                        symbol.ToString().PadLeft(2, '0'),
-                        number.ToString().PadLeft(2, '0'),
-                        totalNumber.ToString().PadLeft(2, '0'),
-                        set, id);
-                    try
-                    {
-                        using (var efSave = new GameDbContext())
-                        {
-                            efSave.Database.ExecuteSqlCommand(
-                                "INSERT INTO usercontrolvalue (USERID, GAME_TYPE, CONTROL_TYPE, CONTROL_VALUE, NUMBER, TOTAL_NUMBER) VALUES ({0},1,{1},{2},{3},{4}) ON DUPLICATE KEY UPDATE GAME_TYPE=1, CONTROL_TYPE={1}, CONTROL_VALUE={2}, NUMBER={3}, TOTAL_NUMBER={4}",
-                                id, action, symbol, number, totalNumber);
-                        }
-                    }
-                    catch (Exception exSave) { LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.UserInfoController), exSave); }
-                }
-
-                long goldLimitLaba = form.Q<long>("GoldLimitLaba", 0);
-                bool goldSavedLaba = false;
-                try
-                {
-                    SaveGoldLimitToDb(id, goldLimitLaba, loginUser?.Accounts ?? "");
-                    goldSavedLaba = true;
-                }
-                catch (Exception exGl) { LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.UserInfoController), exGl); }
-
-                string tmpDatasLaba = tmpMsg != null ? (tmpMsg.datas as string) : null;
-                bool ucOkLaba = tmpMsg != null && (tmpMsg.code == 1 || tmpDatasLaba == "UCNL" || tmpDatasLaba == "UCOK");
-
-                if (ucOkLaba)
-                {
-                    msg.code = 1;
-                    msg.content = "设置成功" + (goldLimitLaba > 0 && goldSavedLaba ? "，目标已设置" : "");
-                }
-                else if (goldLimitLaba > 0 && goldSavedLaba)
-                {
-                    msg.code = 1;
-                    msg.content = "目标已设置";
-                }
-                else
-                {
-                    msg.code = 0;
-                    msg.content = "设置失败";
-                }
-            }
-            catch (Exception ex)
-            {
-                msg.content = "服务器内部错误。";
-                LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.UserInfoController), ex);
-            }
+            msg.content = "拉霸控制已收编到总控（吃分/控牌），请在总控中设置！";
             return Json(msg);
         }
 
