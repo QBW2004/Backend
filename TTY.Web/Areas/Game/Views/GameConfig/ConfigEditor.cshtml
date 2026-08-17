@@ -1192,11 +1192,11 @@
             { n: '猴子', minOdd: 22, maxOdd: 48, w: 72 }, { n: '白鸽', minOdd: 10, maxOdd: 12, w: 72 },
             { n: '兔子', minOdd: 6, maxOdd: 7, w: 78 }, { n: '燕子', minOdd: 3, maxOdd: 4, w: 78 }
         ]},
-        47: { doors: [ // 倍率=服务端内置 6 组表逐门 min~max（门1~门8）
-            { n: '宝马', minOdd: 3, maxOdd: 4, w: 70 }, { n: '奔驰', minOdd: 6, maxOdd: 7, w: 70 },
-            { n: '大众', minOdd: 10, maxOdd: 12, w: 68 }, { n: '福特', minOdd: 24, maxOdd: 48, w: 68 },
-            { n: '狮子', minOdd: 22, maxOdd: 48, w: 72 }, { n: '丰田', minOdd: 10, maxOdd: 12, w: 72 },
-            { n: '马自达', minOdd: 6, maxOdd: 7, w: 78 }, { n: '本田', minOdd: 3, maxOdd: 4, w: 78 }
+        47: { doors: [ // 倍率=服务端内置 6 组表逐门 min~max；顺序=客户端 BMW_GameController.ItemIndexToType(0~7)：马自达/标致/大众/奔驰/宝马/福特/丰田/本田
+            { n: '马自达', minOdd: 3, maxOdd: 4, w: 70 }, { n: '标致', minOdd: 6, maxOdd: 7, w: 70 },
+            { n: '大众', minOdd: 10, maxOdd: 12, w: 68 }, { n: '奔驰', minOdd: 24, maxOdd: 48, w: 68 },
+            { n: '宝马', minOdd: 22, maxOdd: 48, w: 72 }, { n: '福特', minOdd: 10, maxOdd: 12, w: 72 },
+            { n: '丰田', minOdd: 6, maxOdd: 7, w: 78 }, { n: '本田', minOdd: 3, maxOdd: 4, w: 78 }
         ]}
     };
     // spec 字段定义：id=JSON 键，lbl=页面标签，def=默认值（未配置时服务端使用内置行为，等价默认见注释），cls=输入类型
@@ -1320,6 +1320,17 @@
         }
         var fixed = !!dm.fixedOdd;
         var hasMinW = dm.doors[0] && dm.doors[0].minW !== undefined;
+        // 展示按倍率从低到高排序（仅调整行显示顺序；data-idx 仍为真实门索引，
+        // RTP 核算与保存收集按索引取数，不破坏服务端按位置消费权重的语义）
+        var sortedDoors = dm.doors.map(function (d, i) { return { d: d, i: i }; }).sort(function (a, b) {
+            var ka = a.d.minOdd !== undefined ? a.d.minOdd : (a.d.odd || 0);
+            var kb = b.d.minOdd !== undefined ? b.d.minOdd : (b.d.odd || 0);
+            if (ka !== kb) return ka - kb;
+            var ma = a.d.maxOdd !== undefined ? a.d.maxOdd : ka;
+            var mb = b.d.maxOdd !== undefined ? b.d.maxOdd : kb;
+            if (ma !== mb) return ma - mb;
+            return a.i - b.i;
+        });
         var html = '<table style="width:100%;border-collapse:collapse;margin-bottom:8px;">';
         html += '<thead><tr style="background:#f5f8ff;color:#5a6573;font-size:13px;">' +
             '<th style="padding:8px;border:1px solid #e5e9f0;text-align:left;">押注门</th>' +
@@ -1330,7 +1341,8 @@
                 ? '<th style="padding:8px;border:1px solid #e5e9f0;">权重最小(万)</th><th style="padding:8px;border:1px solid #e5e9f0;">权重最大(万)</th>'
                 : '<th style="padding:8px;border:1px solid #e5e9f0;">权重(万分)</th>') +
             '<th style="padding:8px;border:1px solid #e5e9f0;">单门RTP(%)</th></tr></thead><tbody>';
-        $.each(dm.doors, function (i, d) {
+        $.each(sortedDoors, function (_, s) {
+            var i = s.i, d = s.d;
             html += '<tr>' +
                 '<td style="padding:6px 8px;border:1px solid #e5e9f0;font-size:13px;color:#36404a;">' + d.n + '</td>';
             // 赔率（min/max/固定）只读展示：服务端当前使用内置倍率，仅作 RTP 核算参考，不可调整
@@ -1496,17 +1508,14 @@
         if (dm && doors && doors.length > 0) {
             $.each(doors, function (i, d) {
                 if (i >= dm.doors.length || !d) return;
+                // 只回填可编辑权重（weight/minW/maxW）；最小/最大赔率为只读展示列，
+                // 恒显服务端内置区间（GC_BET_DOOR_META），不被库内旧 doors 残留值覆盖
                 if (dm.fixedOdd) {
-                    if (d.odd !== undefined) $('.gc-betdoor-odd[data-idx="' + i + '"]').val(d.odd);
                     if (d.weight !== undefined) $('.gc-betdoor-w[data-idx="' + i + '"]').val(d.weight);
                 } else if (dm.doors[i].minW !== undefined) {
-                    if (d.minOdd !== undefined) $('.gc-betdoor-minodd[data-idx="' + i + '"]').val(d.minOdd);
-                    if (d.maxOdd !== undefined) $('.gc-betdoor-maxodd[data-idx="' + i + '"]').val(d.maxOdd);
                     if (d.minW !== undefined) $('.gc-betdoor-minw[data-idx="' + i + '"]').val(d.minW);
                     if (d.maxW !== undefined) $('.gc-betdoor-maxw[data-idx="' + i + '"]').val(d.maxW);
                 } else {
-                    if (d.minOdd !== undefined) $('.gc-betdoor-minodd[data-idx="' + i + '"]').val(d.minOdd);
-                    if (d.maxOdd !== undefined) $('.gc-betdoor-maxodd[data-idx="' + i + '"]').val(d.maxOdd);
                     if (d.weight !== undefined) $('.gc-betdoor-w[data-idx="' + i + '"]').val(d.weight);
                 }
             });
