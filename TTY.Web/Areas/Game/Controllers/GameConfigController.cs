@@ -839,6 +839,7 @@ namespace YYT.Web.Areas.Game.Controllers
                     // 押注玩法旧字段已从页面移除：保存时沿用库内原值，不被表单缺省值清零。
                     // 一房N桌模型：专有参数存 base 行(ID=gameId*1000)，所有桌共享，故从 base 行取旧值。
                     // 首次建游戏(base 行不存在)时，这些参数用服务端 GetBetPara 同款默认值，避免全 0。
+                    // 庄闲/和(幸运六狮)、皇冠(彩金单挑)押分限红：页面已放回输入框，缺省沿用 base 行旧值。
                     M_ParaBetRoom oldRoom = null;
                     using (var efOld = new GameDbContext())
                     {
@@ -853,10 +854,40 @@ namespace YYT.Web.Areas.Game.Controllers
                     room.NUM = num;
                     room.BET_MIN = betMin;
                     room.BET_MAX = betMax;
-                    room.BET_MIN_VICE = oldRoom == null ? 10 : oldRoom.BET_MIN_VICE;
-                    room.BET_MAX_VICE = oldRoom == null ? 1000 : oldRoom.BET_MAX_VICE;
+                    // 和门最小押分页面不提供输入，统一沿用 base 行旧值（幸运六狮用，彩金单挑不用）
                     room.BET_MIN_DRAW = oldRoom == null ? 10 : oldRoom.BET_MIN_DRAW;
-                    room.BET_MAX_DRAW = oldRoom == null ? 1000 : oldRoom.BET_MAX_DRAW;
+                    // 庄闲/和(幸运六狮)、皇冠(彩金单挑)押分限红：按游戏决定哪些字段可从页面读取。
+                    // 其他押注玩法无副玩法/和门，沿用 base 行旧值，避免被页面隐藏字段误提交覆盖。
+                    if (gameId == 2)
+                    {
+                        // 彩金单挑：皇冠最小/最大押分(vice)；和门(draw)服务端不使用，沿用库内旧值
+                        room.BET_MIN_VICE = form.Q<int>("BET_MIN_VICE", oldRoom == null ? 10 : oldRoom.BET_MIN_VICE);
+                        room.BET_MAX_VICE = form.Q<int>("BET_MAX_VICE", oldRoom == null ? 1000 : oldRoom.BET_MAX_VICE);
+                        room.BET_MAX_DRAW = oldRoom == null ? 1000 : oldRoom.BET_MAX_DRAW;
+                    }
+                    else if (gameId == 10)
+                    {
+                        // 幸运六狮：庄闲最大押分(vice) + 和最大押分(draw)；庄闲最小沿用库内旧值
+                        room.BET_MIN_VICE = oldRoom == null ? 10 : oldRoom.BET_MIN_VICE;
+                        room.BET_MAX_VICE = form.Q<int>("BET_MAX_VICE", oldRoom == null ? 1000 : oldRoom.BET_MAX_VICE);
+                        room.BET_MAX_DRAW = form.Q<int>("BET_MAX_DRAW", oldRoom == null ? 1000 : oldRoom.BET_MAX_DRAW);
+                    }
+                    else
+                    {
+                        room.BET_MIN_VICE = oldRoom == null ? 10 : oldRoom.BET_MIN_VICE;
+                        room.BET_MAX_VICE = oldRoom == null ? 1000 : oldRoom.BET_MAX_VICE;
+                        room.BET_MAX_DRAW = oldRoom == null ? 1000 : oldRoom.BET_MAX_DRAW;
+                    }
+                    if (room.BET_MAX_VICE < 0 || room.BET_MAX_DRAW < 0 || room.BET_MIN_VICE < 0)
+                    {
+                        msg.content = "庄闲/和/皇冠押分不能为负数！";
+                        return Json(msg);
+                    }
+                    if (gameId == 2 && room.BET_MIN_VICE > room.BET_MAX_VICE)
+                    {
+                        msg.content = "皇冠最小押分不能大于最大押分！";
+                        return Json(msg);
+                    }
                     room.EX_COIN = exCoin;
                     room.COIN_SC = coinSc;
                     room.COIN_NEED = coinNeed;

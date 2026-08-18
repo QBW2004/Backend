@@ -185,6 +185,21 @@
                                 <input type="number" id="gcBankerScNeed" name="BANKER_SC_NEED" class="gc-input" min="0" step="1" value="500000" />
                             </div>
                         </div>
+                        <div class="gc-form-row" id="gcViceDrawRow">
+                            <div class="gc-field" id="gcViceMaxField">
+                                <label id="gcViceMaxLbl">庄闲最大押分（庄/闲各门上限）</label>
+                                <input type="number" id="gcBetMaxVice" name="BET_MAX_VICE" class="gc-input" min="0" step="1" value="1000" />
+                            </div>
+                            <div class="gc-field" id="gcViceMinField">
+                                <label>皇冠最小押分</label>
+                                <input type="number" id="gcBetMinVice" name="BET_MIN_VICE" class="gc-input" min="0" step="1" value="10" />
+                            </div>
+                            <div class="gc-field" id="gcDrawMaxField">
+                                <label>和最大押分（和门上限）</label>
+                                <input type="number" id="gcBetMaxDraw" name="BET_MAX_DRAW" class="gc-input" min="0" step="1" value="1000" />
+                            </div>
+                        </div>
+                        <div class="gc-hint" id="gcViceDrawHint">庄闲/和/皇冠押分按桌保存，仅对幸运六狮、彩金单挑生效。</div>
 
                         <div class="gc-section-title">开奖权重与奖励配置</div>
                         <div id="gcBetSpecBox"></div>
@@ -917,6 +932,22 @@
         // 水浒传/明星97：赔付表由服务端权威（水浒双端硬编码、明星97 走「奖项配置」结果类表），无机台设定项
     }
 
+    // 庄闲/和(幸运六狮)、皇冠(彩金单挑)限红：按游戏动态显示与改名；
+    // 其余押注玩法无副玩法/和门，整行隐藏并禁用 input，避免 serializeObject 误提交覆盖库值
+    function gcApplyViceDraw() {
+        var gid = parseInt($('#gcGameSel').val(), 10);
+        var lion = (gid === 10), crown = (gid === 2);
+        var show = lion || crown;
+        $('#gcViceDrawRow').toggle(show);
+        $('#gcViceDrawHint').toggle(show);
+        if (show) {
+            $('#gcViceMaxLbl').text(crown ? '皇冠最大押分' : '庄闲最大押分（庄/闲各门上限）');
+            $('#gcViceMinField').toggle(crown);
+            $('#gcDrawMaxField').toggle(lion);
+        }
+        $('#gcViceDrawRow input').prop('disabled', !show);
+    }
+
     function gcApplyType() {
         var type = gcGetType();
         $('.gc-only-0,.gc-only-1,.gc-only-2,.gc-only-3').hide();
@@ -969,6 +1000,7 @@
         // 三个拉霸（明星97/水果机/水浒传）最小/最大押分只能为整数（步进 1；保存时另有整数校验）
         $('#gcMinBet').attr('step', gcLabaSubType() > 0 ? '1' : '0.1');
         $('#gcMaxBet').attr('step', gcLabaSubType() > 0 ? '1' : '0.1');
+        gcApplyViceDraw();
         $('#gcNewTable').toggle(true);
     }
 
@@ -1038,6 +1070,9 @@
             $('#gcScLimitSing').val(t.scLimitSing !== undefined ? t.scLimitSing : 3000);
             $('#gcScLimitAll').val(t.scLimitAll !== undefined ? t.scLimitAll : 10000);
             $('#gcBankerScNeed').val(t.bankerScNeed !== undefined ? t.bankerScNeed : 500000);
+            $('#gcBetMaxVice').val(t.betMaxVice !== undefined ? t.betMaxVice : 1000);
+            $('#gcBetMaxDraw').val(t.betMaxDraw !== undefined ? t.betMaxDraw : 1000);
+            $('#gcBetMinVice').val(t.betMinVice !== undefined ? t.betMinVice : 10);
             $('#gcDif').val(t.dif);
             $('#gcHar').val(t.har);
             $('#gcSiteType').val(t.siteType);
@@ -1098,6 +1133,9 @@
         $('#gcScLimitSing').val(3000);
         $('#gcScLimitAll').val(10000);
         $('#gcBankerScNeed').val(500000);
+        $('#gcBetMaxVice').val(1000);
+        $('#gcBetMaxDraw').val(1000);
+        $('#gcBetMinVice').val(10);
         gcBuildPayoutTable();
         gcSyncJoker();
         gcSyncSwitch();
