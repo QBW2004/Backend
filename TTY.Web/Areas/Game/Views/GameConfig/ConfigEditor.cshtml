@@ -185,6 +185,14 @@
                                 <input type="number" id="gcBankerScNeed" name="BANKER_SC_NEED" class="gc-input" min="0" step="1" value="500000" />
                             </div>
                         </div>
+                        <div class="gc-form-row gc-bet-banker-row">
+                            <div class="gc-field">
+                                <label>庄家抽水比例（%）</label>
+                                <input type="number" id="gcBankerPer" class="gc-input" min="0" max="9.9" step="0.1" value="3" />
+                                <input type="hidden" id="gcBankerPerRaw" name="BANKER_PER" value="30" />
+                            </div>
+                        </div>
+                        <div class="gc-hint" id="gcBankerPerHint">庄家抽水：从庄家每局净赢利（玩家总投注 − 玩家总赔付）中按比例抽取，进入彩金池；仅抢庄玩法生效，0 为不抽水。例：填 3 表示 3%（库内千分比 30）。</div>
                         <div class="gc-form-row" id="gcViceDrawRow">
                             <div class="gc-field" id="gcViceMaxField">
                                 <label id="gcViceMaxLbl">庄闲最大押分（庄/闲各门上限）</label>
@@ -263,10 +271,6 @@
                             <div class="gc-field">
                                 <label>庄家起伏</label>
                                 <input type="number" id="gcBankerSiteType" name="BANKER_SITE_TYPE" class="gc-input" min="0" max="2" value="0" />
-                            </div>
-                            <div class="gc-field">
-                                <label>庄家抽水</label>
-                                <input type="number" id="gcBankerPer" name="BANKER_PER" class="gc-input" min="0" max="99" value="0" />
                             </div>
                         </div>
                         </div>
@@ -1079,7 +1083,10 @@
             $('#gcBankerDif').val(t.bankerDif);
             $('#gcBankerHar').val(t.bankerHar);
             $('#gcBankerSiteType').val(t.bankerSiteType);
-            $('#gcBankerPer').val(t.bankerPer);
+            // 庄家抽水：库内千分比 → 页面百分比显示（30 = 3%）
+            var bpVal = (t.bankerPer !== undefined && t.bankerPer !== null) ? t.bankerPer : 30;
+            $('#gcBankerPer').val(bpVal / 10);
+            $('#gcBankerPerRaw').val(bpVal);
             gcFillChips(t.betScores);
         } else if (type === 1) {
             $('#gcHypeType').val(t.hypeType);
@@ -1136,6 +1143,9 @@
         $('#gcBetMaxVice').val(1000);
         $('#gcBetMaxDraw').val(1000);
         $('#gcBetMinVice').val(10);
+        // 庄家抽水：新桌台默认 3%（库内千分比 30，与服务端 GetBetPara 兜底一致）
+        $('#gcBankerPer').val(3);
+        $('#gcBankerPerRaw').val(30);
         gcBuildPayoutTable();
         gcSyncJoker();
         gcSyncSwitch();
@@ -1816,6 +1826,19 @@
         gcSyncSwitch();
         gcCollectChips();
         if (gcGetType() === 0) gcCollectBetSpec();
+        // 庄家抽水：页面以百分比显示，落库前换算为千分比（×10，服务端按 /1000 计算）
+        if (gcGetType() === 0) {
+            var bpDisp = parseFloat($('#gcBankerPer').val());
+            if (isNaN(bpDisp) || bpDisp < 0) {
+                showToast('庄家抽水比例不能为负数！', 'warning');
+                return;
+            }
+            if (bpDisp > 9.9) {
+                showToast('庄家抽水比例最大 9.9%（库内千分比 99）！', 'warning');
+                return;
+            }
+            $('#gcBankerPerRaw').val(Math.round(bpDisp * 10));
+        }
         var savedId = parseInt($('#gcId').val(), 10);
         var wasNew = isNaN(savedId) || savedId < 0;
         var para = $('#gcForm').serializeObject();

@@ -914,6 +914,12 @@ namespace YYT.Web.Areas.Game.Controllers
                     machine.BANKER_HAR = form.Q<int>("BANKER_HAR", 0);
                     machine.BANKER_SITE_TYPE = form.Q<int>("BANKER_SITE_TYPE", 0);
                     machine.BANKER_PER = form.Q<int>("BANKER_PER", 0);
+                    // 庄家抽水（库内千分比，服务端结算时 /1000）：0~99 对应 0~9.9%
+                    if (machine.BANKER_PER < 0 || machine.BANKER_PER > 99)
+                    {
+                        msg.content = "庄家抽水比例超出范围（0~9.9%）！";
+                        return Json(msg);
+                    }
 
                     // 押注类玩法扩展配置（开奖权重与奖励等 JSON，按桌）：
                     // 页面按 GAME_ID 渲染的 spec + doors 整包序列化，由 SaveTableFull 事务内 upsert 到 betgamecfg。
