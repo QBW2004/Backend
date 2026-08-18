@@ -121,7 +121,7 @@ namespace YYT.Web.Areas.Game.Controllers
                                 coinNeed = cfg.CoinsNeed,
                                 gameMo = baseRoom == null ? 100 : baseRoom.Game_Mo,
                                 maxSeats = cfg.MaxSeats <= 0 ? 6 : cfg.MaxSeats,
-                                idleFireTimeoutSec = cfg.IdleFireTimeoutSec,
+                                idleFireTimeoutSec = IdleSecToMin(cfg.IdleFireTimeoutSec),
                                 idleFireKickEnabled = cfg.IdleFireKickEnabled,
                                 enabled = cfg.Enabled,
                                 betTime = vBetTime,
@@ -200,7 +200,7 @@ namespace YYT.Web.Areas.Game.Controllers
                                 gameMo = cardCfg != null ? cardCfg.GameMo : (baseRoom == null ? 0 : baseRoom.Game_Mo),
                                 scoreSwitch = cardCfg != null ? cardCfg.ScoreSwitch : (baseRoom == null ? 0 : baseRoom.scoreSwitch),
                                 maxSeats = cfg.MaxSeats <= 0 ? 6 : cfg.MaxSeats,
-                                idleFireTimeoutSec = cfg.IdleFireTimeoutSec,
+                                idleFireTimeoutSec = IdleSecToMin(cfg.IdleFireTimeoutSec),
                                 idleFireKickEnabled = cfg.IdleFireKickEnabled,
                                 enabled = cfg.Enabled,
                                 cardDif = m == null ? string.Empty : (m.DIF ?? string.Empty),
@@ -242,6 +242,10 @@ namespace YYT.Web.Areas.Game.Controllers
                         // 一房多桌：每张桌独立读取，与服务端 GetRoomTableConfigs 逐行口径一致。
                         var cfgGunSteps = ef.Database.SqlQuery<int>(
                             "SELECT IFNULL(GunPowerStep,0) FROM roomtableconfig WHERE GAME_ID=" + gameId + " ORDER BY TableIndex").ToList();
+                        // 无发炮踢出时间：从 roomtableconfig 按 TableIndex 升序读取回显真实值。
+                        // 原写死 0，导致保存后刷新仍显示 0（误以为未写入）。
+                        var cfgIdleSecs = ef.Database.SqlQuery<int>(
+                            "SELECT IFNULL(IdleFireTimeoutSec,0) FROM roomtableconfig WHERE GAME_ID=" + gameId + " ORDER BY TableIndex").ToList();
                         // 房间加炮幅度(pararoom.scoreSwitch 存显示值×10)：仅当某桌 GunPowerStep=0(未配置)时兜底回显；
                         // 用 SqlQuery 直读标量：EF 实体映射 pararoom 会因 Game_Mo 等 NULL 列抛异常
                         int fishScoreSwRaw = ef.Database.SqlQuery<int>(
@@ -261,7 +265,8 @@ namespace YYT.Web.Areas.Game.Controllers
                                 coinNeed = i < cfgCoinNeeds.Count ? cfgCoinNeeds[i] : 10000,
                                 gameMo = 100,
                                 maxSeats = 6,
-                                idleFireTimeoutSec = 0,
+                                // 踢出时间回显库内真实值（秒→分钟）；踢出开关无独立 UI，按需求默认开启(1)
+                                idleFireTimeoutSec = IdleSecToMin(i < cfgIdleSecs.Count ? cfgIdleSecs[i] : 0),
                                 idleFireKickEnabled = 1,
                                 enabled = i < cfgEnableds.Count ? cfgEnableds[i] : 1,
                                 fishDif = i < cfgFishDifs.Count ? cfgFishDifs[i] : 0,
@@ -371,7 +376,11 @@ namespace YYT.Web.Areas.Game.Controllers
                                 // 加芬幅度按桌独立（服务端按桌 GunPowerStep 下发）
                                 row["scoreSwitch"] = scoreSwU > 0 ? scoreSwU / 10m : 0.1m;
                             }
-                            row["idleFireTimeoutSec"] = 0;
+                            // 无发炮踢出时间：从 roomtableconfig 读回真实值（秒→分钟），0=不踢
+                            int idleSecRow = ef.Database.SqlQuery<int?>(
+                                "SELECT IdleFireTimeoutSec FROM roomtableconfig WHERE GAME_ID={0} AND RoomIndex=0 AND TableIndex={1} LIMIT 1", gameId, tIdx)
+                                .FirstOrDefault() ?? 0;
+                            row["idleFireTimeoutSec"] = IdleSecToMin(idleSecRow);
                             // 水浒传：赔付表双端硬编码（ShzRules 常量），Payout0~8 输入框置灰防误改
                             if (subType == 3) row["payoutReadonly"] = true;
 
@@ -699,6 +708,9 @@ namespace YYT.Web.Areas.Game.Controllers
                     int rtCoinsNeed = labaCoinsNeed >= 0 ? labaCoinsNeed : 0;
                     // 按桌加炮幅度×10：与 ScoreSwitchX10 同口径(拉霸表单 scoreSwitch 为显示值)
                     int rtGunStep = labaScoreSw >= 0 ? (int)Math.Round(labaScoreSw * 10m) : 1;
+                    // 无发炮踢出时间：后台以分钟编辑，落库为秒；开关默认开启(1)
+                    int rtIdleSec = IdleMinToSec(form.Q<int>("IdleFireTimeoutSec", 0));
+                    int rtIdleKick = form.Q<int>("IdleFireKickEnabled", 1) == 1 ? 1 : 0;
                     using (var efRt = new GameDbContext())
                     {
                         efRt.Database.ExecuteSqlCommand(
@@ -706,7 +718,7 @@ namespace YYT.Web.Areas.Game.Controllers
                         efRt.Database.ExecuteSqlCommand(
                             "INSERT INTO roomtableconfig (GAME_ID, RoomIndex, TableIndex, TableName, Enabled, MaxSeats, OneCoinScore, BetMin, BetMax, CoinsNeed, IdleFireTimeoutSec, IdleFireKickEnabled, GunPowerStep) VALUES (" +
                             gameId + ",0," + rtTableIndex + ",'" + labaTableName.Replace("'", "''") + "'," + labaEnabled + ",6,1," +
-                            rtBetMin + "," + rtBetMax + "," + rtCoinsNeed + ",0,0," + rtGunStep + ")");
+                            rtBetMin + "," + rtBetMax + "," + rtCoinsNeed + "," + rtIdleSec + "," + rtIdleKick + "," + rtGunStep + ")");
                     }
 
                     // ── 明星97(GameId=16) RTP 控制配置：游戏级参数写 GameConfigLaba(TableIndex=0)，
@@ -770,12 +782,14 @@ namespace YYT.Web.Areas.Game.Controllers
 
                 int maxSeats = gameType == 2 ? 6 : (gameType == 1 ? 0 : 8);
 
-                int idleTimeout = form.Q<int>("IdleFireTimeoutSec", 0);
-                if (idleTimeout < 0)
+                // 后台「无发炮踢出时间」以分钟编辑；落库/下发/服务端均按秒存储与判定（分钟 → 秒）
+                int idleTimeoutMin = form.Q<int>("IdleFireTimeoutSec", 0);
+                if (idleTimeoutMin < 0)
                 {
                     msg.content = "无发炮踢出时间不能为负数！";
                     return Json(msg);
                 }
+                int idleTimeout = IdleMinToSec(idleTimeoutMin);
 
                 decimal minBetDisplay = form.Q<decimal>("MinBet", 0m);
                 decimal maxBetDisplay = form.Q<decimal>("MaxBet", 0m);
@@ -895,7 +909,7 @@ namespace YYT.Web.Areas.Game.Controllers
                     int tIdx = tableId % 1000;
                     string tName = (form.Q<string>("TableName", string.Empty) ?? "").Trim();
                     int tblEnabled = form.Q<int>("Enabled", 1);
-                    int idleSec = form.Q<int>("IdleFireTimeoutSec", 0);
+                    int idleSec = form.Q<int>("IdleFireTimeoutSec", 0) * 60; // 分钟 → 秒
                     int tblIdleKick = form.Q<int>("IdleFireKickEnabled", 1);
                     int tblMaxSeats = form.Q<int>("MaxSeats", 6);
                     // 牌机难度(按桌)：16 位 DIF 串 + 炒场类型，与服务端 GetCardPara 的 id=gameId*1000+i 对齐。
@@ -1075,7 +1089,7 @@ namespace YYT.Web.Areas.Game.Controllers
                     int tIdx = tableId % 1000;
                     string tName = (form.Q<string>("TableName", string.Empty) ?? "").Trim();
                     int tblEnabled = form.Q<int>("Enabled", 1);
-                    int idleSec = form.Q<int>("IdleFireTimeoutSec", 0);
+                    int idleSec = form.Q<int>("IdleFireTimeoutSec", 0) * 60; // 分钟 → 秒
                     int tblIdleKick = form.Q<int>("IdleFireKickEnabled", 1);
                     int tblMaxSeats = form.Q<int>("MaxSeats", 6);
                     // 鱼机难度（机台设定）：0-9级，对应可击杀倍率上限 {0=不限,1=1000,2=300,3=200,4=100,5=40,6=30,7=25,8=20,9=18}；
@@ -1205,6 +1219,11 @@ namespace YYT.Web.Areas.Game.Controllers
         {
             return System.Array.IndexOf(DecimalBetFishGameIds, gameId) >= 0;
         }
+
+        // 无发炮踢出时间：库/协议/服务端均按秒存储与判定；后台 UI 以分钟编辑。
+        // 回显 秒→分钟（四舍五入，0 保持 0）；保存 分钟→秒。
+        private static int IdleSecToMin(int sec) { return sec <= 0 ? 0 : (sec + 30) / 60; }
+        private static int IdleMinToSec(int min) { return min <= 0 ? 0 : min * 60; }
 
         // 押注类各游戏投注门数：2=彩金单挑(5) 10=幸运六狮(12) 29=金鲨银鲨(8) 47=奔驰宝马(8)
         private static int GetBetItemCount(int gameId)
