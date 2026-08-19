@@ -611,6 +611,7 @@ namespace YYT.Web.Areas.Game.Controllers
                     if (subType == 2)  // 水果拉霸：大转盘 24 面板位指向概率
                     {
                         int wheelSum = 0;
+                        List<int> submittedWheel = new List<int>();
                         for (int w = 0; w < 24; w++)
                         {
                             int wp = form.Q<int>("WheelProb" + w, -1);
@@ -623,7 +624,7 @@ namespace YYT.Web.Areas.Game.Controllers
                             {
                                 wheelSum += wp;
                                 wheelProbs[w] = wp;
-                                labaList.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "WheelProb" + w, OptValue = wp, TIME = DateTime.Now, Type = "Payout" });
+                                submittedWheel.Add(w);
                             }
                         }
                         if (wheelSum > 10000)
@@ -638,8 +639,13 @@ namespace YYT.Web.Areas.Game.Controllers
                             for (int w = 0; w < 24; w++)
                             {
                                 wheelProbs[w] = FruitPanelDefaultProb[w];
-                                labaList.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "WheelProb" + w, OptValue = wheelProbs[w], TIME = DateTime.Now, Type = "Payout" });
+                                if (!submittedWheel.Contains(w)) submittedWheel.Add(w);
                             }
+                        }
+                        // 统一只落库一次，避免重复 WheelProb 条目触发 gameconfiglaba 主键(GameId,TableIndex,OptKey)冲突
+                        foreach (int w in submittedWheel)
+                        {
+                            labaList.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "WheelProb" + w, OptValue = wheelProbs[w], TIME = DateTime.Now, Type = "Payout" });
                         }
                     }
 

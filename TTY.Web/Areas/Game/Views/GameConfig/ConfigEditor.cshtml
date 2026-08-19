@@ -45,7 +45,8 @@
         .gc-toolbar .gc-lbl { font-size: 13px; color: #5a6573; }
         .gc-toolbar #gcTypeSel { width: 160px; }
         .gc-toolbar #gcGameSel { width: 220px; }
-        .gc-hint { font-size: 12px; color: #9aa4b1; margin-top: 4px; }
+        .gc-hint { font-size: 12px; color: #9aa4b1; margin-top: 4px; line-height: 1.6; }
+        .gc-guide { margin: 0 0 14px; padding: 10px 12px; border: 1px solid #dce8ff; border-radius: 6px; background: #f7faff; color: #526173; font-size: 12px; line-height: 1.7; }
         .gc-refresh { width: 30px; height: 30px; line-height: 30px; text-align: center; border-radius: 6px; color: #5a6573; cursor: pointer; transition: background .15s, color .15s; }
         .gc-refresh:hover { background: #ecf2ff; color: #2f6fed; }
         .gc-refresh .fa { margin: 0; color: inherit; }
@@ -100,6 +101,7 @@
                     <div class="gc-para-empty-text">请先在上方选择「游戏类型」与「游戏」，选定后即可配置该游戏的桌台参数。</div>
                 </div>
                 <form id="gcForm">
+                    <div class="gc-guide"><strong>填写提示：</strong>“出现机会/权重”是相对值，不是百分比；例如 A=200、B=100，A 约是 B 的 2 倍机会。带“×100、×10000、万分比”的参数请按示例填写；留空、0 和默认值的含义以字段下方说明为准。</div>
                     @Html.AntiForgeryToken()
                     <input type="hidden" id="gcId" name="ID" value="-1" />
                     <input type="hidden" id="gcGameId" name="GAME_ID" value="-1" />
@@ -113,7 +115,7 @@
                             <input type="text" id="gcTableName" name="TableName" class="gc-input" maxlength="64" placeholder="请输入桌名" />
                         </div>
                         <div class="gc-field">
-                            <label>桌台开关</label>
+                            <label>是否开放给玩家</label>
                             <div class="gc-switch-inline">
                                 <label class="gc-switch">
                                     <input type="checkbox" id="gcEnabled" checked />
@@ -127,14 +129,14 @@
                     </div>
 
                     <div class="gc-common gc-bet-exchange">
-                    <div class="gc-section-title">下注与兑换</div>
+                    <div class="gc-section-title">下注金额与兑换规则</div>
                     <div class="gc-form-row">
                         <div class="gc-field">
-                            <label id="gcMinBetLbl">最小下注</label>
+                            <label id="gcMinBetLbl">单次最低下注</label>
                             <input type="number" id="gcMinBet" name="MinBet" class="gc-input" step="0.1" min="0" value="0" />
                         </div>
                         <div class="gc-field">
-                            <label id="gcMaxBetLbl">最大下注</label>
+                            <label id="gcMaxBetLbl">单次最高下注</label>
                             <input type="number" id="gcMaxBet" name="MaxBet" class="gc-input" step="0.1" min="0" value="0" />
                         </div>
                     </div>
@@ -145,7 +147,7 @@
                             <input type="number" id="gcExCoin" name="EX_COIN" class="gc-input" min="1" value="1" />
                         </div>
                         <div class="gc-field">
-                            <label>兑换币值</label>
+                            <label>每个游戏币对应的分值</label>
                             <input type="number" id="gcCoinSc" name="COIN_SC" class="gc-input" min="1" value="1" />
                         </div>
                         <div class="gc-field" style="display:none">
@@ -153,7 +155,7 @@
                             <input type="number" id="gcGameMo" name="Game_Mo" class="gc-input" min="0" value="0" />
                         </div>
                         <div class="gc-field">
-                            <label>入场金币</label>
+                            <label>进入房间所需金币</label>
                             <input type="number" id="gcCoinNeed" name="COIN_NEED" class="gc-input" min="0" value="0" />
                         </div>
                         <div class="gc-field gc-only-1 gc-only-2 gc-only-3">
@@ -164,7 +166,8 @@
                     </div>
 
                     <div class="gc-only-0">
-                        <div class="gc-section-title">押注玩法设置</div>
+                        <div class="gc-section-title">押注规则与限额</div>
+                        <div class="gc-hint">限红就是“这一局最多能押多少分”：单门限红限制某一个选项，全台总分限红限制所有选项合计。不同游戏可能使用不同的押分区域。</div>
                         <div class="gc-form-row">
                             <div class="gc-field">
                                 <label>单局押分倒计时(秒)</label>
@@ -181,7 +184,7 @@
                         </div>
                         <div class="gc-form-row gc-bet-banker-row">
                             <div class="gc-field">
-                                <label>玩家发起抢庄最低金币（0=禁止抢庄）</label>
+                                <label>申请当庄所需最低金币（0=关闭抢庄）</label>
                                 <input type="number" id="gcBankerScNeed" name="BANKER_SC_NEED" class="gc-input" min="0" step="1" value="500000" />
                             </div>
                         </div>
@@ -192,32 +195,33 @@
                                 <input type="hidden" id="gcBankerPerRaw" name="BANKER_PER" value="30" />
                             </div>
                         </div>
-                        <div class="gc-hint" id="gcBankerPerHint">庄家抽水：从庄家每局净赢利（玩家总投注 − 玩家总赔付）中按比例抽取，进入彩金池；仅抢庄玩法生效，0 为不抽水。例：填 3 表示 3%（库内千分比 30）。</div>
+                        <div class="gc-hint" id="gcBankerPerHint">庄家抽水是从庄家每局净赢利（玩家总投注 − 玩家总赔付）中提取的比例，不是额外向玩家扣款；仅抢庄玩法生效，0 表示不抽水。填 3 就是 3%。</div>
                         <div class="gc-form-row" id="gcViceDrawRow">
                             <div class="gc-field" id="gcViceMaxField">
-                                <label id="gcViceMaxLbl">庄闲最大押分（庄/闲各门上限）</label>
+                                <label id="gcViceMaxLbl">庄/闲单门最高押分</label>
                                 <input type="number" id="gcBetMaxVice" name="BET_MAX_VICE" class="gc-input" min="0" step="1" value="1000" />
                             </div>
                             <div class="gc-field" id="gcViceMinField">
-                                <label>皇冠最小押分</label>
+                                <label>皇冠单次最低押分</label>
                                 <input type="number" id="gcBetMinVice" name="BET_MIN_VICE" class="gc-input" min="0" step="1" value="10" />
                             </div>
                             <div class="gc-field" id="gcDrawMaxField">
-                                <label>和最大押分（和门上限）</label>
+                                <label>和单门最高押分</label>
                                 <input type="number" id="gcBetMaxDraw" name="BET_MAX_DRAW" class="gc-input" min="0" step="1" value="1000" />
                             </div>
                         </div>
-                        <div class="gc-hint" id="gcViceDrawHint">庄闲/和/皇冠押分按桌保存，仅对幸运六狮、彩金单挑生效。</div>
+                        <div class="gc-hint" id="gcViceDrawHint">庄/闲、和、皇冠分别代表不同押分区域；这些限额按桌保存，仅对幸运六狮、彩金单挑生效。</div>
 
-                        <div class="gc-section-title">开奖权重与奖励配置</div>
+                        <div class="gc-section-title">特殊结果与奖励出现机会</div>
                         <div id="gcBetSpecBox"></div>
 
-                        <div class="gc-section-title">押注门赔率权重配置（RTP 实时核算）</div>
+                        <div class="gc-section-title">各下注选项的赔率与出现机会（用于返奖率估算）</div>
+                        <div class="gc-hint">这张表帮助估算长期返奖率：赔率是中奖后返还倍数，出现机会是相对比例。当前服务端仍按内置倍率开奖，修改这里主要用于试算和保存预留，不代表一定会改变实际开奖。</div>
                         <div id="gcBetDoorBox"></div>
                         <div class="gc-hint" id="gcBetDoorHint"></div>
                         <input type="hidden" id="gcBetGameCfg" name="BetGameCfg" value="" />
 
-                        <div class="gc-section-title">筹码档位</div>
+                        <div class="gc-section-title">快捷下注金额</div>
                         <div class="gc-form-row">
                             <div class="gc-field">
                                 <label>默认筹码</label>
@@ -277,46 +281,46 @@
                     </div>
 
                     <div class="gc-only-1">
-                        <div class="gc-section-title">机台设定（牌型出现率与客户端固定倍数）</div>
+                        <div class="gc-section-title">机台设定（牌型出现机会与固定奖励倍数）</div>
                         <input type="hidden" id="gcPayoutOnVal" name="PayoutOn" value="1" />
                         <table style="width:100%;border-collapse:collapse;margin-bottom:14px;" id="gcPayoutTable">
                             <thead>
                                 <tr style="background:#f5f8ff;color:#5a6573;font-size:13px;">
                                     <th style="padding:8px;border:1px solid #e5e9f0;text-align:left;">牌型</th>
-                                    <th style="padding:8px;border:1px solid #e5e9f0;">出现率（万分比 0-10000）</th>
+                                    <th style="padding:8px;border:1px solid #e5e9f0;">出现机会（每 10000 次的相对单位）</th>
                                     <th style="padding:8px;border:1px solid #e5e9f0;">倍数（客户端写死 · 不可调；ATT3 为小 / 中 / 大）</th>
                                     <th style="padding:8px;border:1px solid #e5e9f0;width:64px;">启用</th>
                                 </tr>
                             </thead>
                             <tbody></tbody>
                         </table>
-                        <div class="gc-hint" id="gcPayoutSum"></div>
+                        <div class="gc-hint" id="gcPayoutSum">倍数由程序固定，页面只展示不能调整；出现机会填 100，表示使用相对权重 100，并不等于固定 1%。</div>
 
-                        <div class="gc-section-title" style="margin-top:16px;">机台设定（鬼牌三段概率）</div>
+                        <div class="gc-section-title" style="margin-top:16px;">机台设定（鬼牌数量出现机会）</div>
                         <input type="hidden" id="gcJokerOnVal" name="JokerOn" value="0" />
                         <div class="gc-form-row">
                             <div class="gc-field">
-                                <label><input type="checkbox" id="gcJokerOn" /> 启用鬼牌三段概率（停用时按机台难度档位的原逻辑出鬼）</label>
+                                <label><input type="checkbox" id="gcJokerOn" /> 启用鬼牌数量出现机会（停用时按机台难度档位的原逻辑出鬼）</label>
                             </div>
                         </div>
                         <div class="gc-form-row">
                             <div class="gc-field">
-                                <label>1 王概率（万分比 0-10000）</label>
+                                <label>1 王出现机会（每 10000 次的相对单位）</label>
                                 <input type="number" id="gcJk1" name="jk1" class="gc-input gc-joker-p" min="0" max="10000" step="1" value="0" />
                             </div>
                             <div class="gc-field">
-                                <label>2 王概率（万分比 0-10000）</label>
+                                <label>2 王出现机会（每 10000 次的相对单位）</label>
                                 <input type="number" id="gcJk2" name="jk2" class="gc-input gc-joker-p" min="0" max="10000" step="1" value="0" />
                             </div>
                             <div class="gc-field">
-                                <label>3 王概率（万分比 0-10000）</label>
+                                <label>3 王出现机会（每 10000 次的相对单位）</label>
                                 <input type="number" id="gcJk3" name="jk3" class="gc-input gc-joker-p" min="0" max="10000" step="1" value="0" />
                             </div>
                         </div>
                         <div class="gc-hint" id="gcJokerSum">说明：作用于可变分支的全局出鬼权重；各牌型硬约束不变（两对永远无鬼、五鬼固定 5 鬼、正宗大四梅无鬼、各牌型鬼数上下限自动限幅）。</div>
 
                         <div id="gcJpBox" style="display:none;">
-                            <div class="gc-section-title" style="margin-top:16px;">彩金奖池（服务端硬编码 · 只读展示，暂不可调）</div>
+                            <div class="gc-section-title" style="margin-top:16px;">彩金奖池（程序固定规则，仅供查看）</div>
                             <div class="gc-hint" id="gcJpRule" style="margin-bottom:8px;"></div>
                             <table style="width:100%;border-collapse:collapse;margin-bottom:14px;" id="gcJpTable">
                                 <thead>
@@ -344,12 +348,12 @@
                     </div>
 
                     <div class="gc-only-2">
-                        <div class="gc-section-title">机台设定（鱼机难度 - 可击杀倍率上限）</div>
+                        <div class="gc-section-title">机台设定（鱼的最高可获得倍率）</div>
                         <div class="gc-form-row">
                             <div class="gc-field">
-                                <label>鱼机难度（倍率上限）</label>
+                                <label>单条鱼最高奖励倍率</label>
                                 <select id="gcFishDif" name="FishDIF" class="gc-select">
-                                    <option value="0">0 级：不限上限</option>
+                                    <option value="0">0 级：不限制最高倍率</option>
                                     <option value="1">1 级：上限 1000</option>
                                     <option value="2">2 级：上限 300</option>
                                     <option value="3">3 级：上限 200</option>
@@ -375,14 +379,14 @@
 
                     <div class="gc-only-3">
                         <div id="gcLabaPayoutBox" style="display:none;">
-                            <div class="gc-section-title" id="gcLabaPayoutTitle">机台设定（大转盘指向概率与日库存）</div>
+                            <div class="gc-section-title" id="gcLabaPayoutTitle">转盘结果出现机会与每日次数限制</div>
                             <table style="width:100%;border-collapse:collapse;margin-bottom:6px;" id="gcLabaPayoutTable">
                                 <thead>
                                     <tr style="background:#f5f8ff;color:#5a6573;font-size:13px;">
                                         <th style="padding:8px;border:1px solid #e5e9f0;text-align:left;" id="gcLabaTh1">符号</th>
-                                        <th style="padding:8px;border:1px solid #e5e9f0;" id="gcLabaTh2">出现率（0-10000 万分比）</th>
-                                        <th style="padding:8px;border:1px solid #e5e9f0;" id="gcLabaTh3">倍数（压分×倍数=得芬）</th>
-                                        <th style="padding:8px;border:1px solid #e5e9f0;" id="gcLabaTh4">日库存（留空=不限，0=当天禁出）</th>
+                                        <th style="padding:8px;border:1px solid #e5e9f0;" id="gcLabaTh2">结果出现机会（每 10000 次的相对单位）</th>
+                                        <th style="padding:8px;border:1px solid #e5e9f0;" id="gcLabaTh3">奖励倍数（押分 × 倍数 = 获得分值）</th>
+                                        <th style="padding:8px;border:1px solid #e5e9f0;" id="gcLabaTh4">每天最多出现次数（留空不限，0=当天不出现）</th>
                                     </tr>
                                 </thead>
                                 <tbody></tbody>
@@ -391,45 +395,46 @@
                         </div>
 
                         <div id="gcRtpBox" style="display:none;">
-                            <div class="gc-section-title" id="gcRtpTitle">RTP 控制（结果优先生成）</div>
+                            <div class="gc-section-title" id="gcRtpTitle">长期返奖率控制（RTP，优先按控制结果生成）</div>
+                            <div class="gc-hint">RTP 可以理解为长期平均返还：玩家累计下注 100 分，理论上平均返还多少分。例如 90% 约等于返还 90 分，不代表每一局都返还 90%。</div>
                             <div class="gc-form-row">
                                 <div class="gc-field">
-                                    <label>目标返奖率（×10000）</label>
+                                    <label>目标长期返还比例（×10000，9000=90%）</label>
                                     <input type="number" id="gcRtpTargetX100" name="RtpTargetX100" class="gc-input gc-mx97 gc-shz" min="5000" max="12000" step="1" placeholder="9000（默认 90.00%）" />
                                 </div>
                                 <div class="gc-field">
-                                    <label>闭环比例系数（×100）</label>
+                                    <label>偏差纠正速度（×100）</label>
                                     <input type="number" id="gcRtpKp" name="RtpKp" class="gc-input gc-mx97 gc-shz" min="1" max="500" step="1" placeholder="100（默认）" />
                                 </div>
                                 <div class="gc-field">
-                                    <label>死区（×100）</label>
+                                    <label>允许偏差范围（原“死区”，×100）</label>
                                     <input type="number" id="gcRtpDeadband" name="RtpDeadband" class="gc-input gc-mx97 gc-shz" min="0" max="200" step="1" placeholder="10（默认，±0.10% 内不干预）" />
                                 </div>
                             </div>
                             <div class="gc-form-row">
                                 <div class="gc-field">
-                                    <label>单步偏置上限（×100）</label>
+                                    <label>每局最多调整幅度（×100）</label>
                                     <input type="number" id="gcRtpDeltaMax" name="RtpDeltaMax" class="gc-input gc-mx97 gc-shz" min="1" max="200" step="1" placeholder="40（默认，单局最多拉动 0.40）" />
                                 </div>
                                 <div class="gc-field">
-                                    <label>大奖库存阈值（赔率 ≥ 该值视为大奖）</label>
+                                    <label>从该倍率起按大奖库存限制</label>
                                     <input type="number" id="gcRtpStockThreshold" name="RtpStockThreshold" class="gc-input gc-mx97 gc-shz" min="1" step="1" placeholder="60（默认）" />
                                 </div>
                                 <div class="gc-field">
-                                    <label>RTP 统计窗口（累计下注量）</label>
+                                    <label>用于计算返奖率的累计下注量</label>
                                     <input type="number" id="gcRtpWindow" name="RtpWindow" class="gc-input gc-mx97 gc-shz" min="100000" step="1" placeholder="10000000（默认）" />
                                 </div>
                             </div>
                             <div class="gc-hint">留空即不下发，用内置默认值；改目标返奖率会自动重标定基础出现率表并在若干万局内收敛（误差 &lt;0.5%）。点杀/控牌等受控局单独记账，不污染自然 RTP；RTP 按房间类型 × 下注档位分池隔离。</div>
 
-                            <div class="gc-section-title" style="margin-top:16px;">奖项配置（结果类 · 留空即不下发）</div>
+                            <div class="gc-section-title" style="margin-top:16px;">奖励结果设置（留空使用系统默认）</div>
                             <table style="width:100%;border-collapse:collapse;margin-bottom:6px;" id="gcMx97ComboTable">
                                 <thead>
                                     <tr style="background:#f5f8ff;color:#5a6573;font-size:13px;">
-                                        <th style="padding:8px;border:1px solid #e5e9f0;text-align:left;">结果类（code）</th>
-                                        <th style="padding:8px;border:1px solid #e5e9f0;">赔率倍数</th>
-                                        <th style="padding:8px;border:1px solid #e5e9f0;">目标出现率（万分比 1-10000）</th>
-                                        <th style="padding:8px;border:1px solid #e5e9f0;">当日大奖库存（次数）</th>
+                                        <th style="padding:8px;border:1px solid #e5e9f0;text-align:left;">结果名称（编号仅供系统识别）</th>
+                                        <th style="padding:8px;border:1px solid #e5e9f0;">中奖后返还倍数</th>
+                                        <th style="padding:8px;border:1px solid #e5e9f0;">目标出现机会（每 10000 次的相对单位 1-10000）</th>
+                                        <th style="padding:8px;border:1px solid #e5e9f0;">每天最多出现次数（大奖）</th>
                                     </tr>
                                 </thead>
                                 <tbody></tbody>
@@ -437,56 +442,57 @@
                             <table style="width:100%;border-collapse:collapse;margin-bottom:6px;display:none;" id="gcShzComboTable">
                                 <thead>
                                     <tr style="background:#f5f8ff;color:#5a6573;font-size:13px;">
-                                        <th style="padding:8px;border:1px solid #e5e9f0;text-align:left;">结果类（code）</th>
-                                        <th style="padding:8px;border:1px solid #e5e9f0;">目标出现率（万分比 1-10000）</th>
-                                        <th style="padding:8px;border:1px solid #e5e9f0;">当日大奖库存（板级 · 次数）</th>
+                                        <th style="padding:8px;border:1px solid #e5e9f0;text-align:left;">结果名称（编号仅供系统识别）</th>
+                                        <th style="padding:8px;border:1px solid #e5e9f0;">目标出现机会（每 10000 次的相对单位 1-10000）</th>
+                                        <th style="padding:8px;border:1px solid #e5e9f0;">每天最多出现次数（整盘大奖）</th>
                                     </tr>
                                 </thead>
                                 <tbody></tbody>
                             </table>
-                            <div class="gc-hint" id="gcRtpComboHint">赔率/出现率留空=内置默认；库存留空=不限、0=当天禁出（服务器每天 0 点自动重置）。出现率决定各奖项之间的比例形状，总返奖率仍由上方「目标返奖率」锁定；全屏七（348）按 Scatter 9（329）结算，无需单独配置。</div>
+                            <div class="gc-hint" id="gcRtpComboHint">奖励倍数和出现机会留空=使用系统默认；每天最多出现次数留空=不限、0=当天不出现（每天 0 点重置）。出现机会只决定各奖励之间的相对比例，总体返还水平仍由上方目标长期返还比例控制；全盘七（348）按全盘七 9 个（329）结算，无需单独配置。</div>
                         </div>
 
                         <div id="gcFruitRtpBox" style="display:none;">
-                            <div class="gc-section-title">RTP 控制（水果拉霸 · 逐区等值闭环）</div>
+                            <div class="gc-section-title">长期返奖率控制（水果拉霸 · 各下注区平均返还一致）</div>
+                            <div class="gc-hint">水果拉霸会分别检查 8 个下注区的长期平均返还是否接近；差异超过 5% 时不允许保存，避免某个下注区长期明显更容易或更难中奖。</div>
                             <div class="gc-form-row">
                                 <div class="gc-field">
-                                    <label>目标返奖率（×10000）</label>
+                                    <label>目标长期返还比例（×10000，9000=90%）</label>
                                     <input type="number" id="gcFruitRtpTargetX100" name="RtpTargetX100" class="gc-input gc-fruit-rtp" min="5000" max="12000" step="1" placeholder="9000（默认 90.00%）" />
                                 </div>
                                 <div class="gc-field">
-                                    <label>闭环比例系数（×100）</label>
+                                    <label>偏差纠正速度（×100）</label>
                                     <input type="number" id="gcFruitRtpKp" name="RtpKp" class="gc-input gc-fruit-rtp" min="0" max="1000" step="1" placeholder="150（默认 1.5，0=不纠偏）" />
                                 </div>
                                 <div class="gc-field">
-                                    <label>死区（×100）</label>
+                                    <label>允许偏差范围（原“死区”，×100）</label>
                                     <input type="number" id="gcFruitRtpDeadband" name="RtpDeadband" class="gc-input gc-fruit-rtp" min="0" max="2000" step="1" placeholder="100（默认，±1% 内不干预）" />
                                 </div>
                             </div>
                             <div class="gc-form-row">
                                 <div class="gc-field">
-                                    <label>单步偏置上限（×100）</label>
+                                    <label>每局最多调整幅度（×100）</label>
                                     <input type="number" id="gcFruitRtpDeltaMax" name="RtpDeltaMax" class="gc-input gc-fruit-rtp" min="0" max="5000" step="1" placeholder="500（默认，单局最多拉动 5%）" />
                                 </div>
                                 <div class="gc-field">
-                                    <label>库存管控倍率阈值（倍率 ≥ 该值受库存约束）</label>
+                                    <label>从该倍率起按库存限制</label>
                                     <input type="number" id="gcFruitRtpStockThreshold" name="RtpStockThreshold" class="gc-input gc-fruit-rtp" min="0" max="120" step="1" placeholder="30（默认）" />
                                 </div>
                                 <div class="gc-field">
-                                    <label>RTP 统计窗口（累计下注量）</label>
+                                    <label>用于计算返奖率的累计下注量</label>
                                     <input type="number" id="gcFruitRtpWindow" name="RtpWindow" class="gc-input gc-fruit-rtp" min="0" max="10000000" step="1" placeholder="100000（默认，0=累计）" />
                                 </div>
                             </div>
                             <div id="gcFruitRtpPreview" style="font-size:12px;color:#9aa4b1;margin-bottom:10px;line-height:1.8;"></div>
-                            <div class="gc-hint">面板权重须满足「逐区等值约束」：8 个押注区的 Σ概率×倍率 必须一致（偏差 ≤5%），否则保存被拒绝；下方实时核算各区 c_a、送灯率与理论 RTP。日库存留空=不限、0=当天禁出（每天 0 点自动重置）。灰度建议：先用默认表保存并观察水位日志一周，再开启「结果优先生成」。</div>
+                            <div class="gc-hint">各下注区的长期平均返还需要保持接近（偏差 ≤5%），否则保存会被拒绝；下方实时显示各区返还估算、免费局机会和理论 RTP。每天最多出现次数留空=不限、0=当天不出现（每天 0 点重置）。这是高级控制功能，建议先用默认表观察一周，再开启“优先按控制结果生成”。</div>
                         </div>
                     </div>
 
                     <div class="gc-common">
-                    <div class="gc-section-title">玩法与踢出</div>
+                    <div class="gc-section-title">玩法与闲置处理</div>
                     <div class="gc-form-row">
                         <div class="gc-field">
-                            <label>无发炮踢出时间（分钟）</label>
+                            <label>连续不发炮多久后移出（分钟）</label>
                             <input type="number" id="gcIdleSec" name="IdleFireTimeoutSec" class="gc-input" min="0" value="0" />
                             <span class="gc-switch-label">默认开启：玩家长时间不发炮将被踢出，0 表示不踢出</span>
                             <input type="hidden" id="gcIdleKickVal" name="IdleFireKickEnabled" value="1" />
@@ -884,11 +890,11 @@
         $tb.empty();
         if (st === 2) {
             // 水果拉霸：机台设定=大转盘指向概率（倍率客户端写死，仅展示）+ 面板日库存
-            $('#gcLabaPayoutTitle').text('机台设定（大转盘指向概率与日库存）');
+            $('#gcLabaPayoutTitle').text('转盘结果出现机会与每日次数限制');
             $('#gcLabaTh1').text('面板位');
-            $('#gcLabaTh2').text('指向概率（0-10000 万分比）');
-            $('#gcLabaTh3').text('倍率（客户端写死，不可改）');
-            $('#gcLabaTh4').text('日库存（留空=不限，0=当天禁出）').show();
+            $('#gcLabaTh2').text('结果出现机会（每 10000 次的相对单位）');
+            $('#gcLabaTh3').text('奖励倍数（程序固定，只展示）');
+            $('#gcLabaTh4').text('每天最多出现次数（留空不限，0=当天不出现）').show();
             $('#gcLabaPayoutBox').show();
             $.each(GC_LABA_WHEEL_META, function (idx, r) {
                 $tb.append('<tr>' +
@@ -915,7 +921,7 @@
             sum += parseFloat($('#gcLabaWp' + r.i).val()) || 0;
         });
         var $el = $('#gcLabaPayoutSum');
-        $el.text('指向概率合计：' + sum + ' / 10000（全为 0 时保存将自动使用内置默认 90% 面板表；送灯位 9/21 中奖为免费局）');
+        $el.text('结果出现机会合计：' + sum + ' / 10000（全部为 0 时保存会自动使用系统默认 90% 面板表；送灯位 9/21 表示免费局）');
         $el.css('color', sum > 10000 ? '#d33b3b' : '#9aa4b1');
     }
 
@@ -945,7 +951,7 @@
         $('#gcViceDrawRow').toggle(show);
         $('#gcViceDrawHint').toggle(show);
         if (show) {
-            $('#gcViceMaxLbl').text(crown ? '皇冠最大押分' : '庄闲最大押分（庄/闲各门上限）');
+            $('#gcViceMaxLbl').text(crown ? '皇冠单次最高押分' : '庄/闲单门最高押分');
             $('#gcViceMinField').toggle(crown);
             $('#gcDrawMaxField').toggle(lion);
         }
@@ -966,7 +972,7 @@
                 $('#gcMinBetLbl').text('最小押分');
                 $('#gcMaxBetLbl').text('最大押分');
             }
-            $('#gcScoreSwitchLbl').text((type === 1 || type === 3) ? '加芬幅度（点击一次加多少芬）' : '加炮幅度（0.1-0.9）');
+            $('#gcScoreSwitchLbl').text((type === 1 || type === 3) ? '每次增加的分值' : '每次提升的炮值（0.1-0.9）');
             var gcSsMin = (type === 2) ? 0.1 : 1;
             $('#gcScoreSwitch').attr('step', (type === 2) ? '0.1' : '1');
             $('#gcScoreSwitch').attr('min', (type === 2) ? '0.1' : '1');
@@ -983,17 +989,17 @@
         var isRtpGame = isMx97Rtp || isShzRtp;
         $('#gcRtpBox').toggle(isRtpGame);
         if (isRtpGame) {
-            $('#gcRtpTitle').text('RTP 控制（' + (isMx97Rtp ? '明星97' : '水浒传') + ' · 结果优先生成）');
+            $('#gcRtpTitle').text('长期返奖率控制（' + (isMx97Rtp ? '明星97' : '水浒传') + ' · 优先按控制结果生成）');
             if (isMx97Rtp) {
                 $('#gcShzComboTable').hide();
                 $('#gcMx97ComboTable').show();
                 if ($('#gcMx97ComboTable tbody tr').length === 0) gcBuildMx97ComboTable();
-                $('#gcRtpComboHint').text('赔率/出现率留空=内置默认；库存留空=不限、0=当天禁出（服务器每天 0 点自动重置）。出现率决定各奖项之间的比例形状，总返奖率仍由上方「目标返奖率」锁定；全屏七（348）按 Scatter 9（329）结算，无需单独配置。');
+                $('#gcRtpComboHint').text('奖励倍数和出现机会留空=使用系统默认；每天最多出现次数留空=不限、0=当天不出现（每天 0 点重置）。出现机会只决定各奖励之间的相对比例，总体返还水平仍由上方目标长期返还比例控制；全盘七（348）按全盘七 9 个（329）结算，无需单独配置。');
             } else {
                 $('#gcMx97ComboTable').hide();
                 $('#gcShzComboTable').show();
                 if ($('#gcShzComboTable tbody tr').length === 0) gcBuildShzComboTable();
-                $('#gcRtpComboHint').text('赔付倍数由双端硬编码（ShzRules 常量）不可配，只配出现率；库存仅全屏/混合类（440-451）可配，留空=不限、0=当天禁出（每天 0 点自动重置）。出现率决定各奖项比例形状，总返奖率仍由「目标返奖率」锁定；纯万能线（430-432）出现率极小属正常。');
+                $('#gcRtpComboHint').text('奖励倍数由程序固定，不能调整；只需设置结果出现机会。每天最多出现次数仅对整盘/混合大奖（440-451）生效，留空=不限、0=当天不出现（每天 0 点重置）。出现机会决定各奖励的相对比例，总体返还水平仍由目标长期返还比例控制；纯万能线（430-432）出现机会很低是正常现象。');
             }
         }
         $('#gcRtpBox input, #gcRtpBox select').prop('disabled', !isRtpGame);
@@ -1250,26 +1256,26 @@
     // spec 字段定义：id=JSON 键，lbl=页面标签，def=默认值（未配置时服务端使用内置行为，等价默认见注释），cls=输入类型
     var GC_BET_SPEC_META = {
         47: {
-            title: '奔驰宝马 · 皇冠钻石特殊奖励配置（权重=0 关闭）',
+            title: '奔驰宝马 · 皇冠钻石特殊奖励（出现机会填 0=关闭）',
             desc: '游戏规则：8 门车标押注转盘；触发皇冠按权重随机点亮勾选车标（多门同步中奖）；触发钻石直接结算区间内随机倍率彩金大奖。',
             fields: [
-                { id: 'goldW', lbl: '皇冠开灯触发权重(万分)', def: 700, hint: '默认 700 ≈ 现有 4%+2%+1% 三档小/中/大灯合计' },
+                { id: 'goldW', lbl: '皇冠触发出现机会（每 10000 次）', def: 700, hint: '默认 700 ≈ 现有 4%+2%+1% 三档小/中/大灯合计' },
                 { id: 'goldLampMin', lbl: '皇冠随机灯数下限(1~8)', def: 1 },
                 { id: 'goldLampMax', lbl: '皇冠随机灯数上限(1~8)', def: 8 },
-                { id: 'silverW', lbl: '钻石开奖触发权重(万分)', def: 300, hint: '默认 300 = 现有 3%' },
+                { id: 'silverW', lbl: '钻石触发出现机会（每 10000 次）', def: 300, hint: '默认 300 = 现有 3%' },
                 { id: 'silverRateMin', lbl: '钻石随机倍率下限(5~99)', def: 5 },
                 { id: 'silverRateMax', lbl: '钻石随机倍率上限(5~99)', def: 99 }
             ],
             doorsLabel: '皇冠可随机点亮车标'
         },
         29: {
-            title: '金鲨银鲨 · 双鲨特殊奖励配置（权重=0 关闭）',
+            title: '金鲨银鲨 · 双鲨特殊奖励（出现机会填 0=关闭）',
             desc: '规则：8 门动物押注；开出金鲨按权重随机点亮勾选门类追加奖励；开出银鲨直接结算区间内随机倍率彩金大奖。',
             fields: [
-                { id: 'goldW', lbl: '金鲨开灯触发权重(万分)', def: 700, hint: '默认 700 ≈ 现有 4%+2%+1% 三档小/中/大灯合计' },
+                { id: 'goldW', lbl: '金鲨触发出现机会（每 10000 次）', def: 700, hint: '默认 700 ≈ 现有 4%+2%+1% 三档小/中/大灯合计' },
                 { id: 'goldLampMin', lbl: '金鲨随机灯数下限(1~8)', def: 1 },
                 { id: 'goldLampMax', lbl: '金鲨随机灯数上限(1~8)', def: 8 },
-                { id: 'silverW', lbl: '银鲨开奖触发权重(万分)', def: 300, hint: '默认 300 = 现有 3%' },
+                { id: 'silverW', lbl: '银鲨触发出现机会（每 10000 次）', def: 300, hint: '默认 300 = 现有 3%' },
                 { id: 'silverRateMin', lbl: '银鲨随机倍率下限(5~99)', def: 5 },
                 { id: 'silverRateMax', lbl: '银鲨随机倍率上限(5~99)', def: 99 }
             ],
@@ -1282,30 +1288,30 @@
                 { id: 'bankOddZhuang', lbl: '庄赔率', def: 2 },
                 { id: 'bankOddHe', lbl: '和赔率', def: 8 },
                 { id: 'bankOddXian', lbl: '闲赔率', def: 2 },
-                { id: 'probZhuangMin', lbl: '庄出现概率最小(%)', def: 40 },
-                { id: 'probZhuangMax', lbl: '庄出现概率最大(%)', def: 47 },
-                { id: 'probXianMin', lbl: '闲出现概率最小(%)', def: 40 },
-                { id: 'probXianMax', lbl: '闲出现概率最大(%)', def: 47 },
-                { id: 'probHeMin', lbl: '和出现概率最小(%)', def: 1 },
-                { id: 'probHeMax', lbl: '和出现概率最大(%)', def: 6 },
-                { id: 'litW', lbl: '幸运送灯触发权重(万分)', def: 1500, hint: '个人补灯/JPx2/JPx3 档（现有 15%）' },
-                { id: 'midW', lbl: '中档奖励触发权重(万分)', def: 800, hint: 'JPx4/JPx5/个人彩金/全体JPx2/全体送灯档（现有 8%）' },
-                { id: 'largeW', lbl: '大奖触发权重(万分)', def: 400, hint: '大三元/大四喜/闪电/全体彩金档（现有 4%）' },
-                { id: 'dsyW', lbl: '大三元 分档权重(万分)', def: 6000, hint: '大奖档内同色奖占比阈值（现有 60%）' },
-                { id: 'dsxW', lbl: '大四喜 分档权重(万分)', def: 1000, hint: '大奖档内同类奖占比阈值（现有 10%）' },
-                { id: 'pldW', lbl: '霹雳闪电 分档权重(万分)', def: 1000, hint: '大奖档内JP倍率奖占比阈值（现有 10%）' },
-                { id: 'xysdW', lbl: '幸运送灯 分档权重(万分)', def: 0, hint: '大奖档内全体送灯占比阈值（默认0=关闭）' },
+                { id: 'probZhuangMin', lbl: '庄出现比例下限（%）', def: 40 },
+                { id: 'probZhuangMax', lbl: '庄出现比例上限（%）', def: 47 },
+                { id: 'probXianMin', lbl: '闲出现比例下限（%）', def: 40 },
+                { id: 'probXianMax', lbl: '闲出现比例上限（%）', def: 47 },
+                { id: 'probHeMin', lbl: '和出现比例下限（%）', def: 1 },
+                { id: 'probHeMax', lbl: '和出现比例上限（%）', def: 6 },
+                { id: 'litW', lbl: '幸运送灯触发出现机会（每 10000 次）', def: 1500, hint: '个人补灯/JPx2/JPx3 档（现有 15%）' },
+                { id: 'midW', lbl: '中等奖励触发出现机会（每 10000 次）', def: 800, hint: 'JPx4/JPx5/个人彩金/全体JPx2/全体送灯档（现有 8%）' },
+                { id: 'largeW', lbl: '大奖触发出现机会（每 10000 次）', def: 400, hint: '大三元/大四喜/闪电/全体彩金档（现有 4%）' },
+                { id: 'dsyW', lbl: '大三元在大奖中的占比（每 10000）', def: 6000, hint: '大奖档内同色奖占比阈值（现有 60%）' },
+                { id: 'dsxW', lbl: '大四喜在大奖中的占比（每 10000）', def: 1000, hint: '大奖档内同类奖占比阈值（现有 10%）' },
+                { id: 'pldW', lbl: '霹雳闪电在大奖中的占比（每 10000）', def: 1000, hint: '大奖档内JP倍率奖占比阈值（现有 10%）' },
+                { id: 'xysdW', lbl: '幸运送灯在大奖中的占比（每 10000）', def: 0, hint: '大奖档内全体送灯占比阈值（默认0=关闭）' },
                 { id: 'dsyBonus', lbl: '大三元 额外加成(%)', def: 30, hint: '0=不额外加成' },
                 { id: 'dsxBonus', lbl: '大四喜 额外加成(%)', def: 50, hint: '0=不额外加成' },
                 { id: 'pldRate', lbl: '闪电倍率(总倍率)', def: 3, hint: '现有 JPx3 即总倍率 3' }
             ]
         },
         2: {
-            title: '彩金单挑 · 彩金奖池配置（权重=0 关闭彩金派送）',
+            title: '彩金单挑 · 彩金奖池（派送出现机会填 0=关闭）',
             desc: '规则：每局全局押注按设置比例抽水存入彩金池；派送权重设置 0 永久关闭彩金发放，抽水仍正常累计。',
             fields: [
                 { id: 'poolRate', lbl: '每局押注抽水存入彩金池比例(%)', def: 2, hint: '默认 2%（服务端未配置时为 0.2%）' },
-                { id: 'jpW', lbl: '彩金随机派送触发权重(万分)', def: 100, hint: '默认 100 = 现有 1%' }
+                { id: 'jpW', lbl: '彩金随机派送出现机会（每 10000 次）', def: 100, hint: '默认 100 = 现有 1%' }
             ]
         }
     };
@@ -1420,7 +1426,7 @@
         $box.html(html);
         $box.find('.gc-betdoor').on('input', gcUpdateBetDoorRtp);
         gcUpdateBetDoorRtp();
-        $('#gcBetDoorHint').text('赔率（倍率）为只读展示（数值=服务端内置倍率区间，不可调整）；权重调整已接入服务端生效：控制各门出现概率（万分比权重，保存后热更新生效；全部为 0 时回退服务端内置概率）。');
+        $('#gcBetDoorHint').text('赔率（倍率）为只读展示，来自服务端内置规则；出现机会用于估算各下注门的相对比例。保存后会热更新可配置部分，全部填 0 时回退服务端默认机会。');
     }
 
     // RTP 实时核算（算法与参考 HTML 一致：单门RTP=权重/10000×赔率×100，全局=各门合计+特殊奖励贡献）
