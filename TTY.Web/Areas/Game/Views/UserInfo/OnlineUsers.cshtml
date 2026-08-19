@@ -10,6 +10,7 @@
     var canKickWholeLine = @((loginUser?.UserPriv == 0 || loginUser?.ManageScope == 2).ToString().ToLower());
     var loginAgencyAccount = "@(loginUser?.Accounts)";
     var canKick = @((loginUser?.UserPriv == 0 || loginUser?.IsKicking == 1).ToString().ToLower());
+    var isSuperAdmin = @((loginUser?.UserPriv == 0).ToString().ToLower());
     $(function () {
         easyloader.load(['textbox', 'linkbutton', 'datagrid', 'dialog'], function () {
             $(window).resize(function () {
@@ -83,11 +84,13 @@
                 if (keyword) rows = rows.filter(function (r) { return (r.ID || '').toLowerCase().indexOf(keyword) >= 0; });
                 if (kwName) rows = rows.filter(function (r) { return (r.NAME || '').toLowerCase().indexOf(kwName) >= 0; });
                 if (kwAgency) rows = rows.filter(function (r) { return (r.AGENCY || '').toLowerCase().indexOf(kwAgency) >= 0; });
-                attachTotalCtrl(rows, function () {
+                // 控制列仅总管理员可见，非总管理员无需拉取总控状态
+                var renderRows = function () {
                     $('#tb_OnlineUsers').datagrid('loadData', { total: rows.length, rows: rows });
                     $('#spCount').text('共 ' + rows.length + ' 人在线');
                     bindOnlineRowClick();
-                });
+                };
+                if (isSuperAdmin) attachTotalCtrl(rows, renderRows); else renderRows();
             } else {
                 showMsg(data);
             }
@@ -1068,7 +1071,10 @@
             <th field="Coins" width="75" formatter="fmtTotalCoins">剩余分数</th>
             <th field="TodayWinLoss" width="70" formatter="fmtWinLoss" sortable="true" order="desc">今日盈亏</th>
             <th field="Profit" width="70" formatter="fmtWinLoss" sortable="true" order="desc">总盈亏</th>
-            <th field="TotalCtrl" width="200" formatter="fmtTotalCtrl">控制</th>
+            @if (loginUser?.UserPriv == 0)
+            {
+                <th field="TotalCtrl" width="200" formatter="fmtTotalCtrl">控制</th>
+            }
         </tr>
     </thead>
 </table>
