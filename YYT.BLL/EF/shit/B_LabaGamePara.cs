@@ -162,7 +162,9 @@ namespace YYT.BLL.EF
         /// <param name="laba">paralaba 结构化参数（新表）</param>
         /// <param name="tableName">桌名</param>
         /// <param name="enabled">是否启用</param>
-        public Msg SaveTableFull(int tableId, int gameId, List<M_GameConfigLaba> paras, M_ParaLaba laba, string tableName, int enabled = 1)
+        /// <param name="betScores">按桌筹码档位(1~5级)逗号串，如 "1,5,10,50,100"；null=页面未携带(保留现值)，""=显式清除(回退房间级)</param>
+        /// <param name="defaultBetIndex">默认筹码档位索引(0起)</param>
+        public Msg SaveTableFull(int tableId, int gameId, List<M_GameConfigLaba> paras, M_ParaLaba laba, string tableName, int enabled = 1, string betScores = null, int defaultBetIndex = 0)
         {
             Msg msg = new Msg(0, "保存失败！");
             int tableIndex = tableId % 1000;
@@ -240,6 +242,23 @@ namespace YYT.BLL.EF
                                 laba.ScoreSwitchX10 + "," + laba.DefaultBetIndex + ")");
                         }
 
+                        // ── 2.5 按桌筹码档位(1~5级)落库 roomtableconfig_bet（与彩金单挑同表同管道）──
+                        // 中心服 SendExtendedPara 对 0 值字段用 parabetroom base 行补填，故其余列全 0。
+                        // BetScores 为 null 表示页面未携带（保留库内现值，避免旧页面误清）；
+                        // 空串/全 0 表示显式清除（客户端回退房间级 parabetroom 筹码）。
+                        if (betScores != null)
+                        {
+                            ef.Database.ExecuteSqlCommand(
+                                "DELETE FROM roomtableconfig_bet WHERE GAME_ID={0} AND TableIndex={1}", gameId, tableIndex);
+                            if (betScores.Length > 0)
+                            {
+                                int defIdx = defaultBetIndex >= 0 ? defaultBetIndex : 0;
+                                ef.Database.ExecuteSqlCommand(
+                                    "INSERT INTO roomtableconfig_bet (GAME_ID, TableIndex, BetTime, BetMin, BetMax, BankerScoreNeed, ItemSingleScoreLimit, ItemAllScoreLimit, CoinsNeed, OneCoinScore, BetScores, DefaultBetIndex, BetMinVice, BetMaxVice, BetMinDraw, BetMaxDraw) VALUES ({0},{1},0,0,0,0,0,0,0,0,{2},{3},0,0,0,0)",
+                                    gameId, tableIndex, betScores, defIdx);
+                            }
+                        }
+
                         // ── 3. 一房N桌同步：pararoom base 行 NUM = roomtableconfig 条数，ROOM_MAX=1 ──
                         int cfgCnt = ef.Database.SqlQuery<int>(
                             "SELECT COUNT(*) FROM roomtableconfig WHERE GAME_ID=" + gameId).FirstOrDefault();
@@ -290,8 +309,21 @@ namespace YYT.BLL.EF
                 try
                 {
                     var srv2 = new SConnect();
+                    // 按桌筹码档位随 TC 押分扩展段下发（与彩金单挑同管道 TcBetExt）：
+                    // center 写 roomtableconfig_bet 并全量重推，客户端下次选桌轮询即生效（热更）。
+                    // betScores==null（页面未携带）时不发扩展段，center 不会触碰该表，保留现值。
+                    SConnect.TcBetExt betExt = null;
+                    if (betScores != null)
+                    {
+                        betExt = new SConnect.TcBetExt
+                        {
+                            BetScores = betScores,
+                            DefaultBetIndex = (byte)(defaultBetIndex >= 0 ? defaultBetIndex : 0),
+                            IncludeViceDraw = false
+                        };
+                    }
                     var tc = srv2.SendTcCommand((ushort)gameId, 0, (ushort)tableIndex,
-                        tableName, (byte)enabled, 0u, 0, 6);
+                        tableName, (byte)enabled, 0u, 0, 6, betExt);
                     if (tc != null && tc.code == 1)
                     {
                         if (msg.code == 0)
@@ -374,6 +406,11 @@ namespace YYT.BLL.EF
                             "DELETE FROM roomtableconfig WHERE GAME_ID={0} AND RoomIndex=0 AND TableIndex={1}",
                             gameId, tableIndex);
 
+                        // 删 roomtableconfig_bet（按桌筹码档位）
+                        ef.Database.ExecuteSqlCommand(
+                            "DELETE FROM roomtableconfig_bet WHERE GAME_ID={0} AND TableIndex={1}",
+                            gameId, tableIndex);
+
                         // 一房N桌同步：压实剩余 TableIndex 为 0..k-1
                         var remainIds = ef.Database.SqlQuery<int>(
                             "SELECT ID FROM roomtableconfig WHERE GAME_ID=" + gameId + " ORDER BY TableIndex, ID").ToList();
@@ -390,6 +427,16 @@ namespace YYT.BLL.EF
                             int newId = gameId * 1000 + i;
                             ef.Database.ExecuteSqlCommand(
                                 "UPDATE paralaba SET ID={0},TableIndex={1} WHERE ID={2} AND ID<>{0}", newId, i, labaRows[i]);
+                        }
+
+                        // roomtableconfig_bet（按桌筹码）同步压实 TableIndex，保证与 roomtableconfig 对齐
+                        var betIdxRows = ef.Database.SqlQuery<int>(
+                            "SELECT TableIndex FROM roomtableconfig_bet WHERE GAME_ID=" + gameId + " ORDER BY TableIndex").ToList();
+                        for (int i = 0; i < betIdxRows.Count; i++)
+                        {
+                            ef.Database.ExecuteSqlCommand(
+                                "UPDATE roomtableconfig_bet SET TableIndex={0} WHERE GAME_ID={1} AND TableIndex={2} AND TableIndex<>{0}",
+                                i, gameId, betIdxRows[i]);
                         }
 
                         // 同步 pararoom base 行 NUM 与 ROOM_MAX=1

@@ -221,7 +221,13 @@
                         <div class="gc-hint" id="gcBetDoorHint"></div>
                         <input type="hidden" id="gcBetGameCfg" name="BetGameCfg" value="" />
 
-                        <div class="gc-section-title">快捷下注金额</div>
+                    </div>
+
+                    @*快捷下注金额（1~5 级筹码）：押注类与拉霸类共用同一套输入与保存字段(隐藏域 BetScores)。
+                      押注类按桌落 roomtableconfig_bet（彩金单挑等）；拉霸类同样按桌落 roomtableconfig_bet（复用同一管道）。*@
+                    <div class="gc-only-0 gc-only-3">
+                        <div class="gc-section-title">快捷下注金额（一到五级筹码）</div>
+                        <div class="gc-hint">五档筹码为整数倍率/金额，按桌独立保存并随桌台参数下发客户端；留空或不填视为未配置（客户端回退房间级默认筹码）。</div>
                         <div class="gc-form-row">
                             <div class="gc-field">
                                 <label>默认筹码</label>
@@ -245,6 +251,7 @@
                             </div>
                         </div>
                         <input type="hidden" id="gcBetScores" name="BetScores" value="" />
+                    </div>
 
                         @*机台设定（系统/庄家难度）：按需求隐藏，字段保留在表单中以维持保存值不被重置*@
                         <div style="display:none;">
@@ -278,7 +285,6 @@
                             </div>
                         </div>
                         </div>
-                    </div>
 
                     <div class="gc-only-1">
                         <div class="gc-section-title">机台设定（牌型出现机会与固定奖励倍数）</div>
@@ -1170,6 +1176,8 @@
             $('#gcFishSiteType').val(1); // 场地类型已隐藏，固定中场地(1)
         } else if (type === 3) {
             gcFillLabaPayout(t);
+            // 拉霸按桌筹码档位(1~5级)：与押注类同管道(roomtableconfig_bet)，回填五个输入框
+            gcFillChips(t.betScores);
             if (gcLabaSubType() === 1) gcFillMx97(t);
             else if (gcLabaSubType() === 2) gcFillFruitRtp(t);
             else if (gcLabaSubType() === 3) gcFillShz(t);

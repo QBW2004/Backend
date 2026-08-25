@@ -381,6 +381,20 @@ namespace YYT.Web.Areas.Game.Controllers
                                 "SELECT IdleFireTimeoutSec FROM roomtableconfig WHERE GAME_ID={0} AND RoomIndex=0 AND TableIndex={1} LIMIT 1", gameId, tIdx)
                                 .FirstOrDefault() ?? 0;
                             row["idleFireTimeoutSec"] = IdleSecToMin(idleSecRow);
+
+                            // 按桌筹码档位(1~5级)：roomtableconfig_bet 优先（与彩金单挑同管道），
+                            // 缺省回退 parabetroom 房间级(base 行) → "1,5,10,15,20"。每桌独立，room 仅作兜底。
+                            string betScores = ef.Database.SqlQuery<string>(
+                                "SELECT BetScores FROM roomtableconfig_bet WHERE GAME_ID={0} AND TableIndex={1} LIMIT 1", gameId, tIdx)
+                                .FirstOrDefault();
+                            if (string.IsNullOrEmpty(betScores))
+                            {
+                                betScores = ef.Database.SqlQuery<string>(
+                                    "SELECT BetScores FROM parabetroom WHERE GAME_ID={0} LIMIT 1", gameId).FirstOrDefault();
+                            }
+                            if (string.IsNullOrEmpty(betScores)) betScores = "1,5,10,15,20";
+                            row["betScores"] = betScores;
+
                             // 水浒传：赔付表双端硬编码（ShzRules 常量），Payout0~8 输入框置灰防误改
                             if (subType == 3) row["payoutReadonly"] = true;
 
@@ -663,6 +677,30 @@ namespace YYT.Web.Areas.Game.Controllers
                     int labaCoinsNeed = form.Q<int>("COIN_NEED", -1);
                     int labaDefaultBetIdx = form.Q<int>("defaultBetIndex", -1);
                     int labaExCoin = form.Q<int>("EX_COIN", -1);
+                    // 按桌筹码档位(1~5级)：与押注类同字段 BetScores（逗号串）。null=页面未提交(保留现值)；
+                    // ""或全 0=清除(回退房间级)；1~5 个非负整数，非法值中断保存。
+                    string labaBetScores = form.Q<string>("BetScores", null);
+                    if (labaBetScores != null)
+                    {
+                        string[] tokens = labaBetScores.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                        List<long> chipVals = new List<long>();
+                        foreach (string tk in tokens)
+                        {
+                            long v;
+                            if (!long.TryParse(tk.Trim(), out v) || v < 0)
+                            {
+                                msg.content = "筹码档位必须为不小于 0 的整数，多个筹码用英文逗号分隔！";
+                                return Json(msg);
+                            }
+                            chipVals.Add(v);
+                        }
+                        if (chipVals.Count > 5)
+                        {
+                            msg.content = "筹码档位最多 5 级！";
+                            return Json(msg);
+                        }
+                        labaBetScores = chipVals.Count == 0 || chipVals.All(v => v == 0) ? "" : string.Join(",", chipVals);
+                    }
                     int labaCoinSc = form.Q<int>("COIN_SC", -1);
                     int labaGameMo = form.Q<int>("Game_Mo", -1);
                     decimal labaScoreSw = form.Q<decimal>("scoreSwitch", -1m);
@@ -759,7 +797,8 @@ namespace YYT.Web.Areas.Game.Controllers
                         }
                     }
 
-                    msg = new B_LabaGamePara().SaveTableFull(tableId, gameId, labaList, labaPara, labaTableName, labaEnabled);
+                    msg = new B_LabaGamePara().SaveTableFull(tableId, gameId, labaList, labaPara, labaTableName, labaEnabled,
+                        labaBetScores, labaDefaultBetIdx >= 0 ? labaDefaultBetIdx : 0);
 
                     // ── 保存成功后补发 PC 热更：center UpdateGameConfig → SendExtendedPara，
                     // 游戏服 ResetConfig + ApplyProfile，下一局立即生效（无需重启）。
