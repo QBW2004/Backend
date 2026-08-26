@@ -907,6 +907,19 @@
         }); ")
     }
 
+    // 冻结/解冻用户（功能弹窗"冻结"按钮调用，与用户管理页同接口）
+    function frozenUser(id, flag) {
+        confirm('确认' + (flag == 0 ? '解冻' : '冻结') + '选定的用户？', function () {
+            request('/Game/UserInfo/FrozenUser', { ID: id, frozen: flag }, function (data) {
+                //提示消息
+                showUserResult(data);
+                if (data && data.code == 1) {
+                    refreshChangedUserRow(id, 300);
+                }
+            });
+        });
+    }
+
     function bindAction(newValue, oldValue) {
         if (oldValue && newValue > -1 && newValue != oldValue) {
             if (newValue == 1) {

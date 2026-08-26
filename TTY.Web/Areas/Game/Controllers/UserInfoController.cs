@@ -517,6 +517,13 @@ namespace YYT.Web.Areas.Game.Controllers
                     {
                         msg.code = 1;
                         msg.content = "冻结成功！";
+                        // 冻结即时生效：把在线玩家踢下线，重新登录时被中心服冻结校验拦截
+                        if (frozen == 1)
+                        {
+                            Msg kickMsg = KickPlayer(id);
+                            if (kickMsg.code != 1)
+                                msg.content += "，但踢出玩家指令未确认（" + kickMsg.content + "）";
+                        }
                     }
                 }
             }
