@@ -684,36 +684,93 @@
         return valSelDataShz();
     }
     function valSelDataShz() {
-        @*水浒传控牌=强制中间行(线1)5连，控牌值0~7=符号1~8（ShzRules 同序）；按倍率小到大，散标/免费局已下线*@
+        @*水浒传控牌=按结果类 code 强制（与游戏配置页奖励结果设置/服务端 ShzRtp::ComboToClass 一致）：
+           400-407三连 410-417四连 420-427五连 430-432纯万能线 440-448全屏 450/451全屏混合；10=关闭。
+           控牌值兼容旧值 0-7（中间行五连符号）*@
         var arr = [];
-        arr.push({ id: 7, text: '斧(20倍)' });
-        arr.push({ id: 6, text: '枪(40倍)' });
-        arr.push({ id: 5, text: '刀(60倍)' });
-        arr.push({ id: 4, text: '鲁智深(100倍)' });
-        arr.push({ id: 3, text: '林冲(160倍)' });
-        arr.push({ id: 2, text: '宋江(200倍)' });
-        arr.push({ id: 1, text: '替天行道(400倍)' });
-        arr.push({ id: 0, text: '忠义堂(1000倍)' });
+        arr.push({ id: 400, text: '三连·忠义堂(50倍)' });
+        arr.push({ id: 401, text: '三连·替天行道(20倍)' });
+        arr.push({ id: 402, text: '三连·宋江(15倍)' });
+        arr.push({ id: 403, text: '三连·林冲(10倍)' });
+        arr.push({ id: 404, text: '三连·鲁智深(7倍)' });
+        arr.push({ id: 405, text: '三连·刀(5倍)' });
+        arr.push({ id: 406, text: '三连·枪(3倍)' });
+        arr.push({ id: 407, text: '三连·斧(2倍)' });
+        arr.push({ id: 410, text: '四连·忠义堂(200倍)' });
+        arr.push({ id: 411, text: '四连·替天行道(80倍)' });
+        arr.push({ id: 412, text: '四连·宋江(40倍)' });
+        arr.push({ id: 413, text: '四连·林冲(30倍)' });
+        arr.push({ id: 414, text: '四连·鲁智深(20倍)' });
+        arr.push({ id: 415, text: '四连·刀(15倍)' });
+        arr.push({ id: 416, text: '四连·枪(10倍)' });
+        arr.push({ id: 417, text: '四连·斧(5倍)' });
+        arr.push({ id: 420, text: '五连·忠义堂(1000倍)' });
+        arr.push({ id: 421, text: '五连·替天行道(400倍)' });
+        arr.push({ id: 422, text: '五连·宋江(200倍)' });
+        arr.push({ id: 423, text: '五连·林冲(160倍)' });
+        arr.push({ id: 424, text: '五连·鲁智深(100倍)' });
+        arr.push({ id: 425, text: '五连·刀(60倍)' });
+        arr.push({ id: 426, text: '五连·枪(40倍)' });
+        arr.push({ id: 427, text: '五连·斧(20倍)' });
+        arr.push({ id: 430, text: '纯万能线·3连(按忠义堂50倍)' });
+        arr.push({ id: 431, text: '纯万能线·4连(按忠义堂200倍)' });
+        arr.push({ id: 432, text: '纯万能线·5连(按忠义堂1000倍)' });
+        arr.push({ id: 440, text: '全屏·水浒传(万能5000倍)' });
+        arr.push({ id: 441, text: '全屏·忠义堂(2500倍)' });
+        arr.push({ id: 442, text: '全屏·替天行道(1000倍)' });
+        arr.push({ id: 443, text: '全屏·宋江(500倍)' });
+        arr.push({ id: 444, text: '全屏·林冲(400倍)' });
+        arr.push({ id: 445, text: '全屏·鲁智深(250倍)' });
+        arr.push({ id: 446, text: '全屏·刀(150倍)' });
+        arr.push({ id: 447, text: '全屏·枪(100倍)' });
+        arr.push({ id: 448, text: '全屏·斧(50倍)' });
+        arr.push({ id: 450, text: '全屏·纯人物混合(50倍)' });
+        arr.push({ id: 451, text: '全屏·纯武器混合(15倍)' });
         arr.push({ id: 10, text: '关闭控制' });
         return arr;
     }
     function valSelDataMx97() {
+        @*明星97控牌=按结果类 code 强制（与游戏配置页奖励结果设置/服务端 Mx97Rtp::ComboToClass 一致）：
+           300-308纯色三连 310 ANY BAR 311/312樱桃2/1连 322-329 Scatter 330全水果 340-347全屏 350全屏BAR；10=关闭。
+           控牌值兼容旧值 0-8（单线三连符号）*@
         var arr = [];
-        arr.push({ id: 0, text: '樱桃(10倍)' });
-        arr.push({ id: 1, text: '橘子(10倍)' });
-        arr.push({ id: 2, text: '蓝莓(14倍)' });
-        arr.push({ id: 3, text: '铃铛(18倍)' });
-        arr.push({ id: 4, text: '西瓜(20倍)' });
-        arr.push({ id: 5, text: '黄BAR(30倍)' });
-        arr.push({ id: 6, text: '红BAR(50倍)' });
-        arr.push({ id: 7, text: '蓝BAR(70倍)' });
-        arr.push({ id: 8, text: '七(80倍+)' });
+        arr.push({ id: 300, text: '纯色三连·樱桃(10倍)' });
+        arr.push({ id: 301, text: '纯色三连·橘子(10倍)' });
+        arr.push({ id: 302, text: '纯色三连·蓝莓(14倍)' });
+        arr.push({ id: 303, text: '纯色三连·铃铛(18倍)' });
+        arr.push({ id: 304, text: '纯色三连·西瓜(20倍)' });
+        arr.push({ id: 305, text: '纯色三连·黄BAR(30倍)' });
+        arr.push({ id: 306, text: '纯色三连·红BAR(50倍)' });
+        arr.push({ id: 307, text: '纯色三连·蓝BAR(70倍)' });
+        arr.push({ id: 308, text: '纯色三连·七(80倍+)' });
+        arr.push({ id: 310, text: 'ANY BAR(10倍)' });
+        arr.push({ id: 311, text: '樱桃2连(5倍)' });
+        arr.push({ id: 312, text: '樱桃1连(2倍)' });
+        arr.push({ id: 322, text: 'Scatter 全盘2个七(2倍)' });
+        arr.push({ id: 323, text: 'Scatter 全盘3个七(5倍)' });
+        arr.push({ id: 324, text: 'Scatter 全盘4个七(20倍)' });
+        arr.push({ id: 325, text: 'Scatter 全盘5个七(40倍)' });
+        arr.push({ id: 326, text: 'Scatter 全盘6个七(60倍)' });
+        arr.push({ id: 327, text: 'Scatter 全盘7个七(80倍)' });
+        arr.push({ id: 328, text: 'Scatter 全盘8个七(100倍)' });
+        arr.push({ id: 329, text: 'Scatter 全盘9个七(200倍)' });
+        arr.push({ id: 330, text: '全水果(15倍)' });
+        arr.push({ id: 340, text: '全屏·樱桃(80倍)' });
+        arr.push({ id: 341, text: '全屏·橘子(40倍)' });
+        arr.push({ id: 342, text: '全屏·蓝莓(40倍)' });
+        arr.push({ id: 343, text: '全屏·铃铛(40倍)' });
+        arr.push({ id: 344, text: '全屏·西瓜(60倍)' });
+        arr.push({ id: 345, text: '全屏·黄BAR(60倍)' });
+        arr.push({ id: 346, text: '全屏·红BAR(90倍)' });
+        arr.push({ id: 347, text: '全屏·蓝BAR(100倍)' });
+        arr.push({ id: 350, text: '全屏 ANY BAR(40倍)' });
         arr.push({ id: 10, text: '关闭控制' });
         return arr;
     }
     function valSelDataFruit() {
         @*水果拉霸控牌=强制大转盘指向面板位（与机台设定的 24 面板位一致）；id=30+面板位，10=关闭；
-           按倍率小到大排（送灯位无倍率=免费局排最后；同倍率按面板位），控牌值不变*@
+           按倍率小到大排（送灯位无倍率=免费局排最后；同倍率按面板位），控牌值不变。
+           文本不再带"面板X"前缀（面板位仍由 id=30+面板位 编码，回显同文本）*@
         var panels = [
             '橘子·大(10倍)', '铃铛·大(20倍)', 'BAR·小(50倍)', 'BAR·大(120倍)', '苹果(5倍)', '苹果·小(3倍)',
             '柠檬·大(15倍)', '西瓜·大(20倍)', '西瓜·小(3倍)', '送灯位(免费局)', '苹果(5倍)', '橘子·小(3倍)',
@@ -723,7 +780,7 @@
         var arr = [];
         for (var i = 0; i < panels.length; i++) {
             var m = /\((\d+)倍\)/.exec(panels[i]);
-            arr.push({ id: 30 + i, text: '面板' + i + ' · ' + panels[i], mag: m ? parseInt(m[1]) : 9999 });
+            arr.push({ id: 30 + i, text: panels[i], mag: m ? parseInt(m[1]) : 9999 });
         }
         arr.sort(function (a, b) {
             if (a.mag != b.mag) return a.mag - b.mag;
@@ -744,6 +801,11 @@
         if (list) {
             for (var i = 0; i < list.length; i++)
                 if (list[i].id == value) return list[i].text;
+            // 兼容旧控牌值：水浒传 0-7=中间行五连符号；明星97 0-8=单线三连符号
+            if (action == 15 && value >= 0 && value <= 7)
+                return '五连·' + ['忠义堂(1000倍)', '替天行道(400倍)', '宋江(200倍)', '林冲(160倍)', '鲁智深(100倍)', '刀(60倍)', '枪(40倍)', '斧(20倍)'][value];
+            if (action == 16 && value >= 0 && value <= 8)
+                return '三连·' + ['樱桃(10倍)', '橘子(10倍)', '蓝莓(14倍)', '铃铛(18倍)', '西瓜(20倍)', '黄BAR(30倍)', '红BAR(50倍)', '蓝BAR(70倍)', '七(80倍+)'][value];
         }
         return String(value);
     }
