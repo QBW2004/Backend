@@ -853,9 +853,14 @@ namespace YYT.BLL.EF
                     case (int)EControlMode.TotalRelease:
                         return svc.SetUserControl("31", strength.ToString().PadLeft(2, '0'), set, userId);
                     case (int)EControlMode.TotalCard:
+                        // 拉霸水浒传(15)/明星97(16) 控牌值为结果类 code(3位 400-459/300-350)，与游戏配置页奖励结果设置一致；
+                        // 其余(牌机5-14/水果拉霸17)仍为2位，中心服按 cType 分 2/3 位解析
+                        string cardValueStr = (cardAction == 15 || cardAction == 16)
+                            ? cardValue.ToString().PadLeft(3, '0')
+                            : cardValue.ToString().PadLeft(2, '0');
                         return svc.SetUserControl("32",
                             cardAction.ToString().PadLeft(2, '0'),
-                            cardValue.ToString().PadLeft(2, '0'),
+                            cardValueStr,
                             cardNumber.ToString().PadLeft(2, '0'),
                             cardTotal.ToString().PadLeft(2, '0'),
                             set, userId);
