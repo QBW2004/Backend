@@ -429,49 +429,20 @@ namespace YYT.BLL.EF
         }
 
         /// <summary>
-        /// 解析玩家所属代理的客服链接：自身为空则沿代理层级逐级向上查找；
-        /// 整条代理线仍为空时回退到平台默认（最高级管理员 PRIV==0），再退而取任意已配置的链接。
+        /// 解析玩家所属代理的客服链接：仅取直属代理配置的链接，未配置则返回空串，不做向上回退。
         /// </summary>
         public string ResolveCustomerServiceUrl(string agencyId)
         {
             using (var ef = new GameDbContext())
             {
-                string fromChain = ResolveCustomerServiceUrlFromChain(ef, agencyId);
-                if (!string.IsNullOrWhiteSpace(fromChain))
-                    return fromChain;
+                if (string.IsNullOrWhiteSpace(agencyId))
+                    return string.Empty;
 
-                // 回退一：平台默认（最高级管理员）
-                M_Admin top = ef.Admins
-                    .Where(c => c.PRIV == 0 && c.CustomerServiceUrl != null && c.CustomerServiceUrl != "")
-                    .OrderBy(c => c.ID)
-                    .FirstOrDefault();
-                if (top != null && !string.IsNullOrWhiteSpace(top.CustomerServiceUrl))
-                    return top.CustomerServiceUrl;
-
-                // 回退二：任意已配置链接（按层级由高到低）
-                M_Admin any = ef.Admins
-                    .Where(c => c.CustomerServiceUrl != null && c.CustomerServiceUrl != "")
-                    .OrderBy(c => c.PRIV)
-                    .FirstOrDefault();
-                return any != null ? any.CustomerServiceUrl : string.Empty;
+                M_Admin admin = ef.Admins.FirstOrDefault(c => c.ID.Equals(agencyId));
+                return admin != null && !string.IsNullOrWhiteSpace(admin.CustomerServiceUrl)
+                    ? admin.CustomerServiceUrl
+                    : string.Empty;
             }
-        }
-
-        private string ResolveCustomerServiceUrlFromChain(GameDbContext ef, string agencyId)
-        {
-            HashSet<string> visited = new HashSet<string>();
-            string current = agencyId;
-            int guard = 0;
-            while (!string.IsNullOrWhiteSpace(current) && guard++ < 64 && visited.Add(current))
-            {
-                M_Admin admin = ef.Admins.FirstOrDefault(c => c.ID.Equals(current));
-                if (admin == null)
-                    break;
-                if (!string.IsNullOrWhiteSpace(admin.CustomerServiceUrl))
-                    return admin.CustomerServiceUrl;
-                current = admin.AGENCY;
-            }
-            return null;
         }
 
         public Msg AddAgencyInfo(M_Admin entity)
