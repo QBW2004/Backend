@@ -1,4 +1,4 @@
-@{
+﻿@{
     M_LoginUser mUser = WebHelper.GetLoginInfo();
     string webVer = ConfigHelper.Get("WebVer");
     bool isRMB = ConfigHelper.Get("IsRMB") == "1";
@@ -40,7 +40,7 @@
     <meta name="theme-color" content="#007aff">
     <title>@(ViewBag.MTitle ?? "管理后台")</title>
     <link href="@Url.Content("~/Content/css/phone.css?v=" + webVer)" rel="stylesheet" />
-    <script src="@Url.Content("~/Scripts/jquery-2.1.4.js")"></script>
+    <script src="@Url.Content("~/Scripts/jquery-2.1.4.min.js")"></script>
     <script>
         window.MConfig = {
             isRMB: @Html.Raw(isRMB ? "true" : "false"),
