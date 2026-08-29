@@ -21,6 +21,15 @@
         min-width: 480px;
     }
 
+    /* 表格内"解封"按钮：.unban-btn 的 width:100% 不参与自动表格列宽计算，会溢出到相邻列 */
+    #banList .unban-btn {
+        width: auto;
+        max-width: none;
+        padding: 3px 8px;
+        font-size: 12px;
+        border-radius: 5px;
+    }
+
     /* 解封按钮（复用共享 .unban-btn 蓝色样式） */
     .unban-btn.danger {
         background-color: rgba(255, 59, 48, 0.1);

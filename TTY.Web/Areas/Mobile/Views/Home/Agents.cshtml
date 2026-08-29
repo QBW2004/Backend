@@ -330,6 +330,16 @@
         color: #333;
         font-size: 14px;
     }
+
+    /* 表格内"查看下级"按钮：.unban-btn 的 width:100% 不参与自动表格的列宽计算，
+       列会被表头压窄导致按钮溢出到相邻列；改用固有宽度让列自动撑开 */
+    #agentList .unban-btn {
+        width: auto;
+        max-width: none;
+        padding: 3px 8px;
+        font-size: 12px;
+        border-radius: 5px;
+    }
 </style>
 }
 

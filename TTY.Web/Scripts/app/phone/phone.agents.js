@@ -47,7 +47,7 @@
             return '<tr data-id="' + M.esc(a.ID) + '">' +
                 '<td class="account-cell">' + M.esc(a.ID) + '</td>' +
                 '<td>' + M.gold(a.COINS) + '</td>' +
-                '<td>' + (a.HasChildAgency ? '<span class="unban-btn" style="max-width:70px;">查看下级</span>' : '0') + '</td>' +
+                '<td>' + (a.HasChildAgency ? '<span class="unban-btn">查看下级</span>' : '0') + '</td>' +
                 '<td>' + M.num(a.PlayerBalance != null ? a.PlayerBalance : 0) + '</td>' +
                 '<td>' + M.esc(a.InviteCode || '--') + '</td>' +
                 '<td class="time-cell">' + M.fmtTime(a.UpdateTime) + '</td>' +
