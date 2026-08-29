@@ -94,7 +94,7 @@
         if (!v) return '--';
         var d = null;
         if (typeof v === 'string') {
-            var mm = /\/Date\((-?\d+)\//.exec(v);
+            var mm = /\/Date\((-?\d+)\)\//.exec(v);
             if (mm) {
                 d = new Date(parseInt(mm[1], 10));
             } else if (/^\d{4}-\d{2}-\d{2}/.test(v)) {
@@ -467,9 +467,34 @@
         $('#sidebarOverlay').on('click', M.closeDrawer);
         $('#sidebarCloseBtn').on('click', M.closeDrawer);
 
-        $('#backBtn').on('click', function () {
-            if (window.history.length > 1) window.history.back();
-            else window.location.href = '/Mobile/Home/Index';
+        // 返回按钮：导航锁防连点——back() 是异步遍历，遍历提交前的连点会被
+        // 内核丢弃或连跳多条历史。正常导航会触发 pagehide，此时取消兜底定时器
+        //（页面可能进 bfcache，定时器不能留着）；若 1.2s 后仍停留在本页
+        //（history.length 误报、无可退记录），兜底跳玩家主页。
+        // pageshow：首次加载与 bfcache 恢复时解锁按钮。
+        var navLocked = false;
+        var backTimer = null;
+        var $backBtn = $('#backBtn');
+        $(window).on('pagehide', function () {
+            if (backTimer) { clearTimeout(backTimer); backTimer = null; }
+        });
+        $(window).on('pageshow', function () {
+            navLocked = false;
+            $backBtn.removeClass('navigating');
+        });
+        $backBtn.on('click', function () {
+            if (navLocked) return;
+            navLocked = true;
+            $backBtn.addClass('navigating');
+            if (window.history.length > 1) {
+                window.history.back();
+                backTimer = setTimeout(function () {
+                    backTimer = null;
+                    window.location.href = '/Mobile/Home/Index';
+                }, 1200);
+            } else {
+                window.location.href = '/Mobile/Home/Index';
+            }
         });
 
         $('#refreshBtn').on('click', function () {

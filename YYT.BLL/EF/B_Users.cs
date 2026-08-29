@@ -611,7 +611,8 @@ namespace YYT.BLL.EF
                         orderClause = " ORDER BY (IFNULL(c.COINS_BUY,0) - IFNULL(c.COINS_BACK,0)) ASC, r.UserID DESC";
                         break;
                     default:
-                        orderClause = " ORDER BY r.UserID DESC";
+                        // 默认按最后登录时间倒序（无记录的排最后）
+                        orderClause = " ORDER BY l.LastLoginTime DESC, r.UserID DESC";
                         break;
                 }
 
@@ -620,13 +621,15 @@ namespace YYT.BLL.EF
                     baseArgs).FirstOrDefault();
                 mPage.SetTotalCount(total);
 
-                // 今日输赢一并 LEFT JOIN 取出（user_daily_winloss 主键 (UserID, DAY)，一次命中）
+                // 今日输赢一并 LEFT JOIN 取出（user_daily_winloss 主键 (UserID, DAY)，一次命中）；
+                // 最后登录时间取 UserOptLog 最新操作时间（UserID 存玩家账号）
                 args.Add(DateTime.Today);
                 string pageSql = "SELECT c.ID, c.NAME, c.AGENCY, c.FROZEN, c.COINS, c.COINS_BUY, c.COINS_BACK," +
                     " r.UserID, c.INHALL, c.GAME_SCORE, c.GRADE, c.SAFE_COINS," +
-                    " IFNULL(w.WINLOSS,0) AS TodayWinLoss" +
+                    " IFNULL(w.WINLOSS,0) AS TodayWinLoss, l.LastLoginTime" +
                     " FROM users c INNER JOIN userrelations r ON r.ID = c.ID" +
                     " LEFT JOIN user_daily_winloss w ON w.UserID = c.ID AND w.DAY = {" + (args.Count - 1) + "}" +
+                    " LEFT JOIN (SELECT UserID, MAX(REC_TIME) AS LastLoginTime FROM `UserOptLog` GROUP BY UserID) l ON l.UserID = c.ID" +
                     whereSql + orderClause +
                     " LIMIT " + (pageSize * (pageIndex - 1)) + ", " + pageSize;
                 List<M_Users_DTO> users = ef.Database.SqlQuery<M_Users_DTO>(pageSql, args.ToArray()).ToList();

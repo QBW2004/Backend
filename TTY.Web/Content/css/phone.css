@@ -46,6 +46,18 @@ textarea {
     color: #ff3b30;
 }
 
+/* 图标全部是装饰：命中测试统一交给父级按钮/链接。部分安卓内核（微信 X5、
+   老 WebKit）里 SVG 会吞掉点击且不冒泡给父级，导致“点图标中央没反应、
+   点按钮边缘才有效”。 */
+svg {
+    pointer-events: none;
+}
+
+button, a {
+    /* 快速连点时不进入双击缩放判定，消除点击合成延迟 */
+    touch-action: manipulation;
+}
+
 /* ---------------- 头部 ---------------- */
 .header {
     background-color: #007aff;
@@ -127,12 +139,28 @@ textarea {
     transition: all 0.3s;
     min-width: 44px;
     min-height: 44px;
+    /* 保证按钮永远在 h1/.subtitle 全宽盒子之上（旧内核命中测试不按绘制优先级） */
+    z-index: 10;
 }
 
 .menu-btn { left: 0; }
 .back-btn { left: 0; }
 .refresh-btn { right: 0; }
 .search-btn { right: 52px; }
+
+/* 标题/副标题是纯文本，永不交互：从命中测试中剔除。其全宽盒子与头部按钮
+   在垂直方向重叠，旧内核（微信 X5/老 WebKit）会按 DOM 顺序命中，导致
+   “点按钮中央没反应、点边缘才有效”。 */
+.header h1,
+.header .subtitle {
+    pointer-events: none;
+}
+
+/* 返回导航进行中：置灰并屏蔽后续点击，给用户“已响应”的反馈 */
+.back-btn.navigating {
+    opacity: 0.4;
+    pointer-events: none;
+}
 
 .menu-btn:hover,
 .back-btn:hover,

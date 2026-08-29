@@ -52,6 +52,10 @@
         var ttColor = total > 0 ? 'positive' : (total < 0 ? 'negative' : '');
 
         var blackBadge = (p.FROZEN === 1) ? '<span class="black-listed">拉黑中</span>' : '';
+        var loginRow = (!isOnline && p.LastLoginTime)
+            ? '<div class="info-row login-time-row"><div class="info-item">' + M.ICONS.clock +
+                '<span class="info-label">最后登录</span><span class="info-value">' + M.fmtTime(p.LastLoginTime) + '</span></div></div>'
+            : '';
 
         return '' +
             '<div class="player-card' + (isOnline ? '' : ' offline') + '" data-account="' + M.esc(p.ID) + '">' +
@@ -74,6 +78,7 @@
                         '<div class="info-item"><span class="info-label">今日输赢(金币)</span><span class="info-value money-value ' + twColor + '">' + (today > 0 ? '+' : '') + M.gold(today) + '</span></div>' +
                         '<div class="info-item"><span class="info-label">总输赢(金币)</span><span class="info-value money-value ' + ttColor + '">' + (total > 0 ? '+' : '') + M.gold(total) + '</span></div>' +
                     '</div>' +
+                    loginRow +
                 '</div>' +
             '</div>';
     }
@@ -393,9 +398,10 @@
             setTimeout(function () { $('#searchInput').focus(); }, 120);
         });
 
-        // 初始加载
+        // 初始加载(离线列表一并拉取:徽标进页即显示离线总数,切到离线页签无需再等待)
         loadTotalWinLoss();
         loadOnline();
+        loadOffline(1, false);
     }
 
     // 脚本在 body 末尾加载，DOM 已就绪；不依赖 jQuery ready

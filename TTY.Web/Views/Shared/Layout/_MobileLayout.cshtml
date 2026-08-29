@@ -68,8 +68,21 @@
     <form id="mTokenForm" style="display:none">@Html.AntiForgeryToken()</form>
 
     <!-- ============== 头部 ============== -->
+    <!-- 按钮统一放在标题/副标题之后：旧内核按 DOM 顺序做命中测试，
+         全宽的 h1/.subtitle 盒子若排在按钮之后会吃掉按钮中央的点击 -->
     <div class="header@(headerTall ? " tall" : "")">
         <div class="header-content">
+            <h1>@(ViewBag.MTitle ?? "管理后台")</h1>
+            <div class="subtitle">
+                @if (ViewBag.MSubtitle != null)
+                {
+                    <text>@ViewBag.MSubtitle</text>
+                }
+                @if (ViewBag.MSubtitleHtml != null)
+                {
+                    @Html.Raw(ViewBag.MSubtitleHtml)
+                }
+            </div>
             @if (showMenu)
             {
                 <button class="menu-btn" id="menuBtn">
@@ -82,17 +95,6 @@
                     <svg viewBox="0 0 24 24" width="24" height="24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"></path></svg>
                 </button>
             }
-            <h1>@(ViewBag.MTitle ?? "管理后台")</h1>
-            <div class="subtitle">
-                @if (ViewBag.MSubtitle != null)
-                {
-                    <text>@ViewBag.MSubtitle</text>
-                }
-                @if (ViewBag.MSubtitleHtml != null)
-                {
-                    @Html.Raw(ViewBag.MSubtitleHtml)
-                }
-            </div>
             @if (showRefresh)
             {
                 <button class="refresh-btn" id="refreshBtn">
