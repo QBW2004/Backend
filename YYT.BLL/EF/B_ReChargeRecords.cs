@@ -36,7 +36,6 @@ namespace YYT.BLL.EF
             M_EasyuiGridData<M_ReChargeRecords> list = new M_EasyuiGridData<M_ReChargeRecords>();
             using (var ef = new GameDbContext())
             {
-                B_Records_MySQL.CleanupExpiredRecords(ef);
                 IEnumerable<M_ReChargeRecords> rst = ef.ReChargeRecords;
                 //var rst = from c in ef.ReChargeRecords
                 //          select new M_ReChargeRecordsDao
@@ -155,8 +154,7 @@ namespace YYT.BLL.EF
             M_EasyuiGridData<M_ReChargeRecords> list = new M_EasyuiGridData<M_ReChargeRecords>();
             using (var ef = new GameDbContext())
             {
-                B_Records_MySQL.CleanupExpiredRecords(ef);
-                IEnumerable<M_ReChargeRecords> rst = ef.ReChargeRecords;
+                var rst = ef.ReChargeRecords.AsQueryable();
 
                 if (!string.IsNullOrWhiteSpace(entity.GameID))
                     rst = rst.Where(c => c.GameID.Equals(entity.GameID));
@@ -181,49 +179,48 @@ namespace YYT.BLL.EF
                     rst = rst.Where(c => c.Agency.Equals(loginUser.Accounts));
                 }
 
-                List<M_ReChargeRecords> records = rst.ToList();
-
                 // 类型筛选
                 if (entity.TypeFlag == 1)
                 {
-                    records = records.Where(c => c.RechargeType == 20 || c.RechargeType == 22 || (c.RechargeType == 30 && c.Processed == 1)).ToList();
+                    rst = rst.Where(c => c.RechargeType == 20 || c.RechargeType == 22 || (c.RechargeType == 30 && c.Processed == 1));
                 }
                 else if (entity.TypeFlag == 2)
                 {
-                    records = records.Where(c => c.RechargeType == 21 || c.RechargeType == 23 || (c.RechargeType == 31 && c.Processed == 1)).ToList();
+                    rst = rst.Where(c => c.RechargeType == 21 || c.RechargeType == 23 || (c.RechargeType == 31 && c.Processed == 1));
                 }
                 else if (entity.TypeFlag == 3)
                 {
-                    records = records.Where(c => c.RechargeType == 22).ToList();
+                    rst = rst.Where(c => c.RechargeType == 22);
                 }
 
-                // 筛选范围内合计
-                foreach (M_ReChargeRecords item in records)
-                {
-                    if (item.RechargeType == 20 || (item.RechargeType == 30 && item.Processed == 1) || item.RechargeType == 22)
-                        sumRecharge += item.Coin ?? 0;
-                    if (item.RechargeType == 21 || item.RechargeType == 23 || (item.RechargeType == 31 && item.Processed == 1))
-                        sumWithdraw += item.Coin ?? 0;
-                }
+                // 筛选范围内合计与总数，数据库端聚合（口径与原内存累加一致）
+                sumRecharge = rst.Where(c => c.RechargeType == 20 || (c.RechargeType == 30 && c.Processed == 1) || c.RechargeType == 22)
+                    .Sum(c => (long?)c.Coin) ?? 0;
+                sumWithdraw = rst.Where(c => c.RechargeType == 21 || c.RechargeType == 23 || (c.RechargeType == 31 && c.Processed == 1))
+                    .Sum(c => (long?)c.Coin) ?? 0;
+                mPage.SetTotalCount(rst.Count());
 
-                // 玩家名称补充
-                List<string> gameIds = records.Select(c => c.GameID).Where(c => !string.IsNullOrWhiteSpace(c)).Distinct().Take(1000).ToList();
+                // 分页在数据库内完成
+                List<M_ReChargeRecords> rows = rst
+                    .OrderByDescending(c => c.CreateTime)
+                    .Skip(mPage.PageSize * (mPage.PageIndex - 1)).Take(mPage.PageSize)
+                    .ToList();
+
+                // 玩家名称补充（只为当页行查）
+                List<string> gameIds = rows.Select(c => c.GameID).Where(c => !string.IsNullOrWhiteSpace(c)).Distinct().ToList();
                 Dictionary<string, string> nameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 if (gameIds.Count > 0)
                 {
                     nameMap = ef.Users.Where(c => gameIds.Contains(c.ID)).ToDictionary(c => c.ID, c => c.NAME, StringComparer.OrdinalIgnoreCase);
                 }
-                foreach (M_ReChargeRecords item in records)
+                foreach (M_ReChargeRecords item in rows)
                 {
                     string name;
                     item.UserName = nameMap.TryGetValue(item.GameID, out name) ? name : string.Empty;
                     item.TypeName = TypeName(item.RechargeType);
                 }
 
-                mPage.SetTotalCount(records.Count);
-                list.rows = records.OrderByDescending(c => c.CreateTime)
-                    .Skip(mPage.PageSize * (mPage.PageIndex - 1)).Take(mPage.PageSize)
-                    .ToList();
+                list.rows = rows;
                 list.total = mPage.TotalCount;
             }
             return list;
@@ -248,7 +245,6 @@ namespace YYT.BLL.EF
             M_EasyuiGridData<M_ReChargeRecords> list = new M_EasyuiGridData<M_ReChargeRecords>();
             using (var ef = new GameDbContext())
             {
-                B_Records_MySQL.CleanupExpiredRecords(ef);
                 var rst = ef.ReChargeRecords.ToList();
                 if (!string.IsNullOrWhiteSpace(entity.GameID))
                     rst = rst.Where(c => c.GameID.Equals(entity.GameID)).ToList();

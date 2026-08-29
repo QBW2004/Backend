@@ -1,4 +1,4 @@
-using System.Linq;
+﻿using System.Linq;
 using YYT.Entity;
 
 namespace YYT.BLL.EF
@@ -24,7 +24,6 @@ namespace YYT.BLL.EF
             M_EasyuiGridData<M_TableCoinRecord_DTO> list = new M_EasyuiGridData<M_TableCoinRecord_DTO>();
             using (var ef = new GameDbContext())
             {
-                B_Records_MySQL.CleanupExpiredRecords(ef);
                 var rst = from a in ef.TableCoinRecords
                           join b in ef.Games on a.GameID equals b.GameId
                           select new M_TableCoinRecord_DTO

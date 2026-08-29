@@ -12,6 +12,28 @@ namespace YYT.BLL.Services.GameServer
     {
         private readonly B_GameCommandOutbox commandOutbox;
 
+        // 管道熔断：游戏服不可达时每次指令都要等 Connect 超时（5-10 秒），
+        // 冷却期内直接快速失败（冷却结束放行一次真实重试，成功即复位）。
+        private static readonly object breakerLock = new object();
+        private static DateTime breakerOpenUntilUtc = DateTime.MinValue;
+        private const int BreakerCooldownSeconds = 30;
+
+        private static bool IsBreakerOpen()
+        {
+            lock (breakerLock)
+            {
+                return DateTime.UtcNow < breakerOpenUntilUtc;
+            }
+        }
+
+        private static void RecordTransportResult(bool failed)
+        {
+            lock (breakerLock)
+            {
+                breakerOpenUntilUtc = failed ? DateTime.UtcNow.AddSeconds(BreakerCooldownSeconds) : DateTime.MinValue;
+            }
+        }
+
         public PipeGameServerClient()
         {
             commandOutbox = new B_GameCommandOutbox();
@@ -19,14 +41,21 @@ namespace YYT.BLL.Services.GameServer
 
         public string SendRaw(EScMsgType command, params object[] args)
         {
+            if (IsBreakerOpen())
+                return "数据发送失败！游戏服管道熔断冷却中";
             var srv = new SConnect();
-            return srv.SendNotTranlation(command, args);
+            string raw = srv.SendNotTranlation(command, args);
+            RecordTransportResult(IsTransportFailure(raw));
+            return raw;
         }
 
         public Msg SendTranslated(EScMsgType command, params object[] args)
         {
+            if (IsBreakerOpen())
+                return new Msg(0, "游戏服管道熔断冷却中");
             var srv = new SConnect();
-            return srv.SendReadString(command, args);
+            Msg msg = srv.SendReadString(command, args);
+            return msg;
         }
 
         public GameCommandResult KickPlayer(string userAccount)

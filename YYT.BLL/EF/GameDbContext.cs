@@ -12,7 +12,9 @@ namespace YYT.BLL.EF
     {
         public GameDbContext() : base("DbConnString")
         {
-            this.Database.Log = message => Trace.WriteLine($"【SQL语句】{message}");
+            // SQL 日志默认关闭（开销随查询数线性放大）；需要排查时 appSettings 加 <add key="sqlTrace" value="1"/>
+            if (YYT.Common.ConfigHelper.GetInt("sqlTrace") == 1)
+                this.Database.Log = message => Trace.WriteLine($"【SQL语句】{message}");
             this.Configuration.ValidateOnSaveEnabled = false;
         }
 

@@ -56,6 +56,7 @@ namespace YYT.Web
                         new B_UserLockRecord().TimerTaskRun();
                         new GameCommandOutboxRetryService().ProcessDueCommands();
                         new B_LoginMissRecord().ResetLoginMissRecord();
+                        B_Records_MySQL.CleanupExpiredRecordsThrottled();
                     }
                     finally
                     {
@@ -71,8 +72,22 @@ namespace YYT.Web
         
         public override void Init()
         {
-            // 在Api中使用Session
-            this.PostAuthenticateRequest += (sender, e) => HttpContext.Current.SetSessionStateBehavior(System.Web.SessionState.SessionStateBehavior.Required);
+            // 在Api中使用Session；/Game、/Mobile 数据接口改为只读会话——
+            // 同一管理员并发发起的 AJAX 不再被会话锁串行化（会话只用于读登录态）。
+            // 这两个区域里写 Session 的只有 Game/UserInfo/Register（注册令牌），必须保持可写。
+            this.PostAuthenticateRequest += (sender, e) =>
+            {
+                HttpContext ctx = HttpContext.Current;
+                if (ctx == null)
+                    return;
+                string path = ctx.Request.AppRelativeCurrentExecutionFilePath ?? string.Empty;
+                bool readOnly = (path.StartsWith("~/Game/", StringComparison.OrdinalIgnoreCase)
+                              || path.StartsWith("~/Mobile/", StringComparison.OrdinalIgnoreCase))
+                    && !path.StartsWith("~/Game/UserInfo/Register", StringComparison.OrdinalIgnoreCase);
+                ctx.SetSessionStateBehavior(readOnly
+                    ? System.Web.SessionState.SessionStateBehavior.ReadOnly
+                    : System.Web.SessionState.SessionStateBehavior.Required);
+            };
             base.Init();
         }
     }

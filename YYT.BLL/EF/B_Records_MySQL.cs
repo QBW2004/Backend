@@ -26,6 +26,36 @@ namespace YYT.BLL.EF
             ef.Database.ExecuteSqlCommand("DELETE FROM `clientexchangerecord` WHERE `CreateTime` < @p0", cutoff);
         }
 
+        private static DateTime lastCleanupUtc = DateTime.MinValue;
+        private static readonly object cleanupLock = new object();
+
+        /// <summary>
+        /// 记录清理唯一入口：只允许定时任务调用（进程内节流，默认每小时最多一次）。
+        /// 列表/指令接口不得内联调用——6 条 DELETE 会把读接口变成全表扫描加写锁。
+        /// </summary>
+        public static void CleanupExpiredRecordsThrottled(int intervalHours = 1)
+        {
+            if (intervalHours <= 0)
+                intervalHours = 1;
+            lock (cleanupLock)
+            {
+                if ((DateTime.UtcNow - lastCleanupUtc).TotalHours < intervalHours)
+                    return;
+                lastCleanupUtc = DateTime.UtcNow;
+            }
+            try
+            {
+                using (var ef = new GameDbContext())
+                {
+                    CleanupExpiredRecords(ef);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(B_Records_MySQL), ex);
+            }
+        }
+
         /// <summary>
         /// 清理代理记录（仅超级管理员）
         /// </summary>
@@ -59,9 +89,8 @@ namespace YYT.BLL.EF
             M_EasyuiGridData<M_AgencyOptLog> list = new M_EasyuiGridData<M_AgencyOptLog>();
             using (var ef = new GameDbContext())
             {
-                CleanupExpiredRecords(ef);
                 M_S_Record queryPara = queryEntity;
-                var rst = from a in ef.AgencyOptLogs.AsEnumerable()
+                var rst = from a in ef.AgencyOptLogs
                           join b in ef.Admins on a.OptID equals b.ID
                           select new M_AgencyOptLog
                           {
@@ -116,9 +145,9 @@ namespace YYT.BLL.EF
             M_EasyuiGridData<M_UserOptLog> list = new M_EasyuiGridData<M_UserOptLog>();
             using (var ef = new GameDbContext())
             {
-                CleanupExpiredRecords(ef);
                 M_S_Record queryPara = queryEntity;
-                var rst = from a in ef.UserOptLogs.AsEnumerable()
+                // 全部条件/Join/分页下推 SQL；games 表按 GameId 主键联查，无索引回表风险
+                var rst = from a in ef.UserOptLogs
                           join b in ef.Users on a.UserID equals b.ID
                           join c in ef.Games on a.GAME_TYPE equals c.GameId into r
                           from g in r.DefaultIfEmpty()
@@ -126,7 +155,7 @@ namespace YYT.BLL.EF
                           {
                               LID = a.LID,
                               UserID = a.UserID,
-                              AGENCY = b?.AGENCY,
+                              AGENCY = b.AGENCY,
                               OPT = a.OPT,
                               OPT_COINS = a.OPT_COINS,
                               COINS = a.COINS,
@@ -134,7 +163,7 @@ namespace YYT.BLL.EF
                               ROOM = a.ROOM,
                               TABLE_ID = a.TABLE_ID,
                               SEAT_ID = a.SEAT_ID,
-                              GameName = g?.Name,
+                              GameName = g.Name,
                               GAME_TYPE = a.GAME_TYPE,
                               REC_TIME = a.REC_TIME,
                               REC_WEEK = a.REC_WEEK

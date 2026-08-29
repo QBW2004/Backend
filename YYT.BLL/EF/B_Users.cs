@@ -12,7 +12,6 @@ using YYT.Common;
 using YYT.Entity;
 using YYT.BLL.Services.GameServer;
 using static System.Runtime.CompilerServices.RuntimeHelpers;
-
 namespace YYT.BLL.EF
 {
     public class B_Users
@@ -409,26 +408,29 @@ namespace YYT.BLL.EF
             M_EasyuiGridData<M_Users_DTO> list = new M_EasyuiGridData<M_Users_DTO>();
             using (var ef = new GameDbContext())
             {
+                // 敏感列仅在有查看权限时才参与查询（与 ApplySensitiveFieldPermissions 同口径，避免密码无谓出库出接口）
+                bool canPwd = loginUser.UserPriv == 0 || loginUser.IsViewPwd == 1 || loginUser.IsViewSafePwd == 1;
+                bool canSafePwd = loginUser.UserPriv == 0 || loginUser.IsViewSafePwd == 1;
+
                 var rst = from c in ef.Users
                           join r in ef.UserRelations on c.ID equals r.ID
                           select new M_Users_DTO
                           {
                               ID = c.ID,
                               NAME = c.NAME,
-                              PWD = c.PWD,
-                              SAFE_PWD = c.SAFE_PWD,
+                              PWD = canPwd ? c.PWD : null,
+                              SAFE_PWD = canSafePwd ? c.SAFE_PWD : null,
                               AGENCY = c.AGENCY,
                               FROZEN = c.FROZEN,
                               COINS = c.COINS,
                               COINS_BUY = c.COINS_BUY,
                               COINS_BACK = c.COINS_BACK,
                               UserID = r.UserID,
-                              TELEPHONE=c.TELEPHONE,
-                              INHALL=c.INHALL,
-                              GAME_SCORE=c.GAME_SCORE,
-                              GRADE=c.GRADE,
-                              SAFE_COINS=c.SAFE_COINS
-                              //BuyBack=c.COINS_BUY- c.COINS_BACK
+                              TELEPHONE = c.TELEPHONE,
+                              INHALL = c.INHALL,
+                              GAME_SCORE = c.GAME_SCORE,
+                              GRADE = c.GRADE,
+                              SAFE_COINS = c.SAFE_COINS
                           };
 
                 if (!string.IsNullOrWhiteSpace(entity.AGENCY))
@@ -439,49 +441,29 @@ namespace YYT.BLL.EF
                     rst = rst.Where(c => c.ID.Equals(entity.ID));
                 if (entity.UserID > 0)
                     rst = rst.Where(c => c.UserID == entity.UserID);
-               
-                if (!string.IsNullOrWhiteSpace(entity.ID))
-                    rst = rst.Where(c => c.ID.Equals(entity.ID));
-                List<M_Users_DTO> rstList = new List<M_Users_DTO>();
-                // 加权限查询
+
+                // 加权限查询：一条 IN(...) 取代原先逐代理执行 SQL 的 N+1 循环
                 if (loginUser.UserPriv != 0)
                 {
                     List<string> agencies = new B_Admin().GetManagedAgencyAccounts(ef, loginUser);
-                    // 查询权限范围内的代理
-                    if (agencies.Count > 0)
-                    {
-                        foreach (var item in agencies)
-                        {
-                            var rst1 = rst.Where(c => c.AGENCY.Equals(item));
-                            if (rst1 != null)
-                            {
-                                foreach (var item1 in rst1)
-                                {
-                                    rstList.Add(item1);
-                                }
-                            }
-                        }
-                    }
+                    if (agencies == null || agencies.Count < 1)
+                        return list;
+                    rst = rst.Where(c => agencies.Contains(c.AGENCY));
                 }
-                else
-                {
-                    rstList = rst.ToList();
-                }
-             
-                // 分页
-                if (rstList != null)
-                {
-                    mPage.SetTotalCount(rstList.Count());
-                    var users = rstList.AsEnumerable()
-                        .OrderByDescending(c => c.INHALL)
-                        .Skip(mPage.PageSize * (mPage.PageIndex - 1)).Take(mPage.PageSize)
-                        .ToList();
-                    FillCurrentPlayInfo(ef, users);
-                    FillTodayWinLoss(ef, users);
-                    ApplySensitiveFieldPermissions(users, loginUser);
-                    list.rows = users;
-                    list.total = mPage.TotalCount;
-                }
+
+                // 分页下推数据库
+                mPage.SetTotalCount(rst.Count());
+                List<M_Users_DTO> users = rst
+                    .OrderByDescending(c => c.INHALL)
+                    .ThenByDescending(c => c.UserID)
+                    .Skip(mPage.PageSize * (mPage.PageIndex - 1)).Take(mPage.PageSize)
+                    .ToList();
+
+                FillCurrentPlayInfo(ef, users);
+                FillTodayWinLoss(ef, users);
+                ApplySensitiveFieldPermissions(users, loginUser);
+                list.rows = users;
+                list.total = mPage.TotalCount;
             }
             return list;
         }
@@ -503,6 +485,10 @@ namespace YYT.BLL.EF
 
             using (var ef = new GameDbContext())
             {
+                // 敏感列仅在有查看权限时才参与查询（与 ApplySensitiveFieldPermissions 同口径）
+                bool canPwd = loginUser.UserPriv == 0 || loginUser.IsViewPwd == 1 || loginUser.IsViewSafePwd == 1;
+                bool canSafePwd = loginUser.UserPriv == 0 || loginUser.IsViewSafePwd == 1;
+
                 var rst = from c in ef.Users
                           join r in ef.UserRelations on c.ID equals r.ID
                           where userIds.Contains(c.ID)
@@ -510,8 +496,8 @@ namespace YYT.BLL.EF
                           {
                               ID = c.ID,
                               NAME = c.NAME,
-                              PWD = c.PWD,
-                              SAFE_PWD = c.SAFE_PWD,
+                              PWD = canPwd ? c.PWD : null,
+                              SAFE_PWD = canSafePwd ? c.SAFE_PWD : null,
                               AGENCY = c.AGENCY,
                               FROZEN = c.FROZEN,
                               COINS = c.COINS,
@@ -545,7 +531,8 @@ namespace YYT.BLL.EF
         #region 手机端扩展查询（离线玩家 / 封禁玩家 / 会员盈亏 / 今日总输赢）
         /// <summary>
         /// 手机端通用玩家分页查询：可只看离线 / 只看封禁，支持按今日输赢、总盈亏排序。
-        /// 排序需要今日输赢时会对权限范围内全部玩家填充后再排序分页。
+        /// 过滤/排序/分页/今日输赢全部下推 SQL（配合 users(AGENCY,INHALL)、userrelations(ID)、
+        /// user_daily_winloss(UserID,DAY) 索引），禁止把权限范围内全量玩家拉进内存再排序分页。
         /// </summary>
         /// <param name="sort">空/last-time 默认序；win-most 今日赢最多；loss-most 今日输最多；profit-desc 总盈亏降序；profit-asc 总盈亏升序</param>
         private M_EasyuiGridData<M_Users_DTO> QueryUsersPaged(M_Page mPage, M_Users_DTO entity, M_LoginUser loginUser, bool onlyOffline, bool onlyFrozen, string sort)
@@ -553,88 +540,99 @@ namespace YYT.BLL.EF
             M_EasyuiGridData<M_Users_DTO> list = new M_EasyuiGridData<M_Users_DTO>();
             using (var ef = new GameDbContext())
             {
-                var rst = from c in ef.Users
-                          join r in ef.UserRelations on c.ID equals r.ID
-                          select new M_Users_DTO
-                          {
-                              ID = c.ID,
-                              NAME = c.NAME,
-                              AGENCY = c.AGENCY,
-                              FROZEN = c.FROZEN,
-                              COINS = c.COINS,
-                              COINS_BUY = c.COINS_BUY,
-                              COINS_BACK = c.COINS_BACK,
-                              UserID = r.UserID,
-                              INHALL = c.INHALL,
-                              GAME_SCORE = c.GAME_SCORE,
-                              GRADE = c.GRADE,
-                              SAFE_COINS = c.SAFE_COINS
-                          };
-
-                if (onlyOffline)
-                    rst = rst.Where(c => c.INHALL != true);
-                if (onlyFrozen)
-                    rst = rst.Where(c => c.FROZEN == 1);
-                if (!string.IsNullOrWhiteSpace(entity.AGENCY))
-                    rst = rst.Where(c => c.AGENCY.Equals(entity.AGENCY));
-                if (!string.IsNullOrWhiteSpace(entity.NAME))
-                    rst = rst.Where(c => c.NAME.Equals(entity.NAME));
-                if (!string.IsNullOrWhiteSpace(entity.ID))
-                    rst = rst.Where(c => c.ID.Equals(entity.ID));
-                if (entity.UserID > 0)
-                    rst = rst.Where(c => c.UserID == entity.UserID);
-
-                // 加权限查询（与 GetUsersList 同口径）
-                List<M_Users_DTO> rstList;
+                List<string> agencies = null;
                 if (loginUser.UserPriv != 0)
                 {
-                    List<string> agencies = new B_Admin().GetManagedAgencyAccounts(ef, loginUser);
-                    rstList = agencies.Count > 0
-                        ? rst.Where(c => agencies.Contains(c.AGENCY)).ToList()
-                        : new List<M_Users_DTO>();
+                    agencies = new B_Admin().GetManagedAgencyAccounts(ef, loginUser);
+                    if (agencies == null || agencies.Count < 1)
+                        return list;
                 }
-                else
+
+                int pageIndex = mPage != null && mPage.PageIndex > 0 ? mPage.PageIndex : 1;
+                int pageSize = mPage != null && mPage.PageSize > 0 ? mPage.PageSize : 10;
+                if (pageSize > 1000)
+                    pageSize = 1000;
+
+                List<object> args = new List<object>();
+                StringBuilder where = new StringBuilder();
+                if (onlyOffline)
+                    where.Append(" AND NOT (c.INHALL = 1)");
+                if (onlyFrozen)
+                    where.Append(" AND c.FROZEN = 1");
+                if (!string.IsNullOrWhiteSpace(entity.AGENCY))
                 {
-                    rstList = rst.ToList();
+                    where.Append(" AND c.AGENCY = {").Append(args.Count).Append("}");
+                    args.Add(entity.AGENCY);
                 }
+                if (!string.IsNullOrWhiteSpace(entity.NAME))
+                {
+                    where.Append(" AND c.NAME = {").Append(args.Count).Append("}");
+                    args.Add(entity.NAME);
+                }
+                if (!string.IsNullOrWhiteSpace(entity.ID))
+                {
+                    where.Append(" AND c.ID = {").Append(args.Count).Append("}");
+                    args.Add(entity.ID);
+                }
+                if (entity.UserID > 0)
+                {
+                    where.Append(" AND r.UserID = {").Append(args.Count).Append("}");
+                    args.Add(entity.UserID);
+                }
+                if (agencies != null)
+                {
+                    where.Append(" AND c.AGENCY IN (");
+                    for (int i = 0; i < agencies.Count; i++)
+                    {
+                        if (i > 0)
+                            where.Append(",");
+                        where.Append("{").Append(args.Count).Append("}");
+                        args.Add(agencies[i]);
+                    }
+                    where.Append(")");
+                }
+                string whereSql = where.ToString();
+                object[] baseArgs = args.ToArray();
 
-                if (rstList == null)
-                    return list;
-
-                foreach (M_Users_DTO item in rstList)
-                    item.Profit = item.COINS_BUY - item.COINS_BACK;
-
-                bool needAllWinLoss = sort == "win-most" || sort == "loss-most";
-                if (needAllWinLoss)
-                    FillTodayWinLoss(ef, rstList);
-
-                IOrderedEnumerable<M_Users_DTO> ordered;
+                // 排序口径与原内存排序一致，UserID 作稳定次序
+                string orderClause;
                 switch (sort)
                 {
                     case "win-most":
-                        ordered = rstList.OrderByDescending(c => c.TodayWinLoss ?? 0).ThenByDescending(c => c.UserID);
+                        orderClause = " ORDER BY IFNULL(w.WINLOSS,0) DESC, r.UserID DESC";
                         break;
                     case "loss-most":
-                        ordered = rstList.OrderBy(c => c.TodayWinLoss ?? 0).ThenByDescending(c => c.UserID);
+                        orderClause = " ORDER BY IFNULL(w.WINLOSS,0) ASC, r.UserID DESC";
                         break;
                     case "profit-desc":
-                        ordered = rstList.OrderByDescending(c => c.Profit ?? 0).ThenByDescending(c => c.UserID);
+                        orderClause = " ORDER BY (IFNULL(c.COINS_BUY,0) - IFNULL(c.COINS_BACK,0)) DESC, r.UserID DESC";
                         break;
                     case "profit-asc":
-                        ordered = rstList.OrderBy(c => c.Profit ?? 0).ThenByDescending(c => c.UserID);
+                        orderClause = " ORDER BY (IFNULL(c.COINS_BUY,0) - IFNULL(c.COINS_BACK,0)) ASC, r.UserID DESC";
                         break;
                     default:
-                        ordered = rstList.OrderByDescending(c => c.UserID);
+                        orderClause = " ORDER BY r.UserID DESC";
                         break;
                 }
 
-                mPage.SetTotalCount(rstList.Count);
-                List<M_Users_DTO> users = ordered
-                    .Skip(mPage.PageSize * (mPage.PageIndex - 1)).Take(mPage.PageSize)
-                    .ToList();
+                int total = ef.Database.SqlQuery<int>(
+                    "SELECT COUNT(1) FROM users c INNER JOIN userrelations r ON r.ID = c.ID" + whereSql,
+                    baseArgs).FirstOrDefault();
+                mPage.SetTotalCount(total);
 
-                if (!needAllWinLoss)
-                    FillTodayWinLoss(ef, users);
+                // 今日输赢一并 LEFT JOIN 取出（user_daily_winloss 主键 (UserID, DAY)，一次命中）
+                args.Add(DateTime.Today);
+                string pageSql = "SELECT c.ID, c.NAME, c.AGENCY, c.FROZEN, c.COINS, c.COINS_BUY, c.COINS_BACK," +
+                    " r.UserID, c.INHALL, c.GAME_SCORE, c.GRADE, c.SAFE_COINS," +
+                    " IFNULL(w.WINLOSS,0) AS TodayWinLoss" +
+                    " FROM users c INNER JOIN userrelations r ON r.ID = c.ID" +
+                    " LEFT JOIN user_daily_winloss w ON w.UserID = c.ID AND w.DAY = {" + (args.Count - 1) + "}" +
+                    whereSql + orderClause +
+                    " LIMIT " + (pageSize * (pageIndex - 1)) + ", " + pageSize;
+                List<M_Users_DTO> users = ef.Database.SqlQuery<M_Users_DTO>(pageSql, args.ToArray()).ToList();
+
+                foreach (M_Users_DTO item in users)
+                    item.Profit = item.COINS_BUY - item.COINS_BACK;
                 ApplySensitiveFieldPermissions(users, loginUser);
 
                 list.rows = users;
@@ -787,9 +785,30 @@ namespace YYT.BLL.EF
                 return;
 
             Dictionary<int, string> gameNames = ef.Games.ToDictionary(c => c.GameId, c => c.Name);
-            Dictionary<string, M_UserOptLog> latestLogs = ef.UserOptLogs
+
+            // 每个在线玩家只取最新一条操作日志：先按 UserID 取 MAX(LID)（走 useroptlog(UserID,LID) 索引），
+            // 再按 LID 回表取需要的列。禁止整表 OrderBy(LID desc) 后内存 GroupBy。
+            List<long> latestIds = ef.UserOptLogs
                 .Where(c => onlineUserIds.Contains(c.UserID))
-                .OrderByDescending(c => c.LID)
+                .GroupBy(c => c.UserID)
+                .Select(g => g.Max(x => x.LID))
+                .ToList();
+            if (latestIds.Count < 1)
+                return;
+
+            Dictionary<string, M_UserOptLog> latestLogs = ef.UserOptLogs
+                .Where(c => latestIds.Contains(c.LID))
+                .Select(c => new M_UserOptLog
+                {
+                    LID = c.LID,
+                    UserID = c.UserID,
+                    GAME_TYPE = c.GAME_TYPE,
+                    ROOM = c.ROOM,
+                    TABLE_ID = c.TABLE_ID,
+                    SEAT_ID = c.SEAT_ID,
+                    OPT_COINS = c.OPT_COINS,
+                    SCORE = c.SCORE
+                })
                 .ToList()
                 .GroupBy(c => c.UserID)
                 .ToDictionary(g => g.Key, g => g.First());

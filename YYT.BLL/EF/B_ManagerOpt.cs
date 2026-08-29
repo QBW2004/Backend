@@ -42,7 +42,6 @@ namespace YYT.BLL.EF
 
             using (var ef = new GameDbContext())
             {
-                B_Records_MySQL.CleanupExpiredRecords(ef);
                 // 点杀记录
                 IEnumerable<View_ManagerOpt_DTO> rst = null;
 

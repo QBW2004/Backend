@@ -29,7 +29,7 @@ namespace YYT.BLL.EF
                         rst.MissCount = entity.MissCount + 1;
                     }
                 }
-                ef.SaveChangesAsync();
+                ef.SaveChanges();
             }
         }
 
@@ -45,17 +45,18 @@ namespace YYT.BLL.EF
         {
             using (var ef = new GameDbContext())
             {
+                // 时间过滤必须下推 SQL（配合 loginmissrecord(ID) 索引与全表扫描防护）；
+                // 定时任务上下文用同步保存，避免 SaveChangesAsync 未 await 丢写
                 DateTime time = DateTime.Now.AddMinutes(-5);
-                List<M_LoginMissRecord> list = ef.LoginMissRecords.Where(c => c.LoginResult == 0).ToList();
-                if (list != null)
+                List<M_LoginMissRecord> list = ef.LoginMissRecords
+                    .Where(c => c.LoginResult == 0 && c.LoginTime <= time)
+                    .ToList();
+                foreach (var item in list)
                 {
-                    foreach (var item in list)
-                    {
-                        if (time >= item.LoginTime)
-                            item.MissCount = 0;
-                    }
+                    item.MissCount = 0;
                 }
-                ef.SaveChangesAsync();
+                if (list.Count > 0)
+                    ef.SaveChanges();
             }
         }
 
@@ -86,7 +87,7 @@ namespace YYT.BLL.EF
                 rst.LoginResult = 1;
                 rst.MissCount = 0;
                 rst.LoginTime = DateTime.Now;
-                ef.SaveChangesAsync();
+                ef.SaveChanges();
                 return true;
             }
         }

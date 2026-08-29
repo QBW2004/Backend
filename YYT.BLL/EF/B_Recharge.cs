@@ -440,7 +440,6 @@ namespace YYT.BLL.EF
                         else
                             this.ExChange(ef);// 兑换
 
-                        B_Records_MySQL.CleanupExpiredRecords(ef);
 
                         // 添加代理日志
                         AddAgentOptLog(ef);
@@ -518,7 +517,6 @@ namespace YYT.BLL.EF
                                 this.OptStr = "兑换";
                                 this.ExChange(ef);
                             }
-                            B_Records_MySQL.CleanupExpiredRecords(ef);
                             // 添加代理日志
                             AddAgentOptLog(ef);
 
@@ -625,7 +623,6 @@ namespace YYT.BLL.EF
                                 this.ExChange(ef);
                             }
 
-                            B_Records_MySQL.CleanupExpiredRecords(ef);
 
                             // 添加代理日志
                             AddAgentOptLog(ef);

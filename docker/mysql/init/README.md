@@ -10,8 +10,11 @@
 #        (注意: 副本已将表名改为小写 pararoom —— 原脚本的 ParaRoom 在
 #         Linux 容器(MySQL 表名区分大小写)中会报 Table doesn't exist)
 #   30_房间桌台配置表坐席扩列.sql    <- Docs/sql/房间桌台配置表坐席扩列.sql
+#   40_性能索引.sql               <- Docs/sql/性能索引.sql
+#        (幂等性能索引补丁：users/userrelations/useroptlog/rechargerecords/
+#         agencyoptlog/loginmissrecord 二级索引 + user_daily_winloss 字符集对齐)
 #
-# 注: 三个补丁对应 Tools/reset-db.ps1 中的 patche 列表,
+# 注: 补丁对应 Tools/reset-db.ps1 中的 patche 列表,
 #     保证 Docker 初始化与本机手工重置流程一致。
 #
 # 重新生成:
@@ -20,6 +23,7 @@
 #     copy Docs\sql\动态桌台字段扩展.sql  docker\mysql\init\10_动态桌台字段扩展.sql
 #     copy Docs\sql\fix_scoreswitch_decimal.sql docker\mysql\init\20_fix_scoreswitch_decimal.sql
 #     copy Docs\sql\房间桌台配置表坐席扩列.sql  docker\mysql\init\30_房间桌台配置表坐席扩列.sql
+#     copy Docs\sql\性能索引.sql docker\mysql\init\40_性能索引.sql
 #
 # 注意: 初始化只会在数据卷首次创建时执行。
 #   要重新导入(清空数据)使用: Tools\docker-db.bat reinit
