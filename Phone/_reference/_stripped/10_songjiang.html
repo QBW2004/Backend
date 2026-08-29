@@ -1,0 +1,1264 @@
+<html lang="zh-CN"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>送奖管理</title>
+    <!--script stripped-->
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        html, body {
+            background-color: #f5f7fa;
+            color: #333;
+            min-height: 100vh;
+        }
+        
+        .header {
+            background-color: #007aff;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 80px;
+        }
+        
+        .header-content {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+        }
+        
+        h1 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            box-sizing: border-box;
+        }
+        
+        .record-container {
+            max-width: 600px;
+            margin: 0 auto 20px;
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+        
+        .record-title {
+            font-size: 15px; /* 减小移动端标题字体大小 */
+            margin-bottom: 15px;
+            color: #333;
+            display: flex;
+            align-items: center;
+        }
+        
+        .record-title span {
+            font-size: 14px; /* 缩小字体 */
+            white-space: nowrap; /* 确保不会换行 */
+        }
+        
+        .record-actions {
+            display: flex;
+            align-items: center;
+            width: 100%; /* 占据整行空间 */
+        }
+        
+        .date-filter {
+            display: flex;
+            gap: 5px;
+            margin-right: 10px;
+        }
+        
+        .date-btn {
+            font-size: 12px;
+            padding: 4px 10px;
+            background-color: #f5f5f7;
+            color: #666;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .date-btn:hover {
+            background-color: #e5e5ea;
+        }
+        
+        .date-btn.active {
+            background-color: #007aff;
+            color: white;
+        }
+        
+        .record-refresh {
+            font-size: 14px;
+            color: #007aff;
+            background: none;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .record-refresh svg {
+            width: 14px;
+            height: 14px;
+            fill: currentColor;
+        }
+        
+        .table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .record-table {
+            width: 100%;
+            min-width: 900px; /* 增加最小宽度，确保各列有足够空间 */
+            border-collapse: collapse;
+            font-size: 14px; /* 恢复原来的字体大小 */
+            table-layout: fixed; /* 使用固定表格布局 */
+        }
+        
+        .record-table th {
+            text-align: left;
+            padding: 10px 8px; /* 增加左右内边距 */
+            border-bottom: 1px solid #eee;
+            color: #888; /* 修改为更浅的颜色 */
+            font-weight: 500;
+            white-space: nowrap; /* 防止标题换行 */
+        }
+        
+        .record-table td {
+            padding: 10px 8px; /* 增加左右内边距 */
+            border-bottom: 1px solid #f5f5f5;
+            vertical-align: middle; /* 垂直居中 */
+            white-space: nowrap; /* 确保所有单元格内容不换行 */
+            overflow: hidden;
+            text-overflow: ellipsis; /* 内容溢出显示省略号 */
+        }
+        
+        /* 对于所有单元格的默认处理，除了时间列与状态列（状态列需完整显示约三字） */
+        .record-table td:not(:nth-child(10)):not(:nth-child(2)) {
+            overflow: hidden;
+            text-overflow: ellipsis; /* 内容溢出显示省略号 */
+            white-space: nowrap; /* 防止内容换行 */
+        }
+        
+        /* 设置各列宽度比例 - 调整以保持充足间距 */
+        .record-table th:nth-child(1), .record-table td:nth-child(1) { width: 10%; } /* 送奖账号 */
+        .record-table th:nth-child(2), .record-table td:nth-child(2) { width: 7.5%; } /* 状态，约三字宽 */
+        .record-table th:nth-child(3), .record-table td:nth-child(3) { width: 7.5%; } /* 场次 */
+        .record-table th:nth-child(4), .record-table td:nth-child(4) { width: 5%; } /* 机台 */
+        .record-table th:nth-child(5), .record-table td:nth-child(5) { width: 12%; } /* 送奖牌型 */
+        .record-table th:nth-child(6), .record-table td:nth-child(6) { width: 12%; } /* 开奖牌型 */
+        .record-table th:nth-child(7), .record-table td:nth-child(7) { width: 8%; } /* 送奖金额 */
+        .record-table th:nth-child(8), .record-table td:nth-child(8) { width: 8%; } /* 开奖金额 */
+        .record-table th:nth-child(9), .record-table td:nth-child(9) { width: 7.5%; } /* 游戏 */
+        .record-table th:nth-child(10), .record-table td:nth-child(10) { 
+            width: 18%; /* 开奖时间 */
+            white-space: nowrap; /* 防止时间换行 */
+            min-width: 100px; /* 保证最小宽度 */
+            overflow: visible; /* 允许内容溢出 */
+            text-overflow: clip; /* 不使用省略号 */
+            max-width: none; /* 不限制最大宽度 */
+        }
+        
+        .record-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .record-empty {
+            text-align: center;
+            padding: 30px 0;
+            color: #999;
+            font-size: 14px;
+        }
+
+        /* ------ MJHL「送奖-开奖跨档」视觉标识：仅文字染橙色 ------ */
+        /* 仅当 isMjhlAchievementMismatch(record) 为真时，在开奖牌型 cell 上加这个类 */
+        .mjhl-result-mismatch {
+            color: #e67e22;
+        }
+
+        /* ------ 送奖牌型 / 开奖牌型 cell：点击在 cell 上方弹出 tooltip ------ */
+        /* 表格 td 被 overflow:hidden + text-overflow:ellipsis 截断，
+           点击时用 JS 计算 cell 位置，把 tooltip 贴着 cell 上方显示，
+           点击其他地方 / 按 ESC 关闭。 */
+        .expandable-cell {
+            cursor: pointer;
+        }
+        .cell-popover {
+            position: fixed;
+            background-color: rgba(40, 40, 40, 0.95);
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            max-width: 320px;
+            min-width: 80px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+            font-size: 13px;
+            line-height: 1.6;
+            word-break: break-all;
+            white-space: normal;
+            text-align: center;
+            z-index: 2000;
+            animation: cellPopoverFadeIn 0.12s ease-out;
+        }
+        /* 默认箭头朝下（tooltip 位于 cell 上方） */
+        .cell-popover::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-top-color: rgba(40, 40, 40, 0.95);
+        }
+        /* 上方空间不足时 fallback 到下方，箭头翻转指向上 */
+        .cell-popover.below::after {
+            top: auto;
+            bottom: 100%;
+            border-top-color: transparent;
+            border-bottom-color: rgba(40, 40, 40, 0.95);
+        }
+        @keyframes cellPopoverFadeIn {
+            from { opacity: 0; transform: translateY(2px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .hall-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            background-color: #f0f0f0;
+            color: #666;
+        }
+        
+        .hall-1 { background-color: #e8f5e9; color: #2e7d32; }
+        .hall-2 { background-color: #e3f2fd; color: #1565c0; }
+        .hall-3 { background-color: #e0f7fa; color: #00838f; }
+        .hall-4 { background-color: #fff8e1; color: #ff8f00; }
+        .hall-5 { background-color: #fbe9e7; color: #d84315; }
+        .hall-6 { background-color: #f3e5f5; color: #6a1b9a; }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group.horizontal {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .form-group.horizontal .form-control {
+            flex: 1;
+        }
+        
+        .form-group.horizontal .btn {
+            flex-shrink: 0;
+            margin-bottom: 0;
+            white-space: nowrap;
+            min-width: 80px;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+            background-color: #f8f9fa;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: #007aff;
+            background-color: white;
+        }
+        
+        .form-control:disabled {
+            background-color: #f5f5f5;
+            color: #999;
+            cursor: not-allowed;
+        }
+        
+        .balance-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        
+        .balance-item {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            position: relative;
+        }
+        
+        .balance-item:first-child {
+            border-right: 1px solid #e5e5e5;
+            padding-right: 15px;
+        }
+        
+        .balance-item:last-child {
+            padding-left: 15px;
+        }
+        
+        .balance-label {
+            font-size: 14px;
+            color: #666;
+            white-space: nowrap;
+        }
+        
+        .balance-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: #007aff;
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            margin-bottom: 12px;
+        }
+        
+        .btn-primary {
+            background-color: #007aff;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        
+        .btn-secondary {
+            background-color: #f5f5f7;
+            color: #007aff;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #e5e5ea;
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .btn.loading {
+            position: relative;
+            color: transparent;
+        }
+        
+        .btn.loading::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 2px solid currentColor;
+            border-radius: 50%;
+            border-right-color: transparent;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .error-message {
+            color: #ff3b30;
+            font-size: 14px;
+            margin-top: 4px;
+            display: none;
+        }
+        
+        .success-message {
+            color: #34c759;
+            font-size: 14px;
+            margin-top: 4px;
+            display: none;
+        }
+        
+        /* 弹窗提示样式 */
+        .toast-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
+            width: 90%;
+            max-width: 320px;
+            pointer-events: none;
+        }
+        
+        .toast {
+            padding: 16px 20px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+            display: flex;
+            align-items: center;
+            opacity: 0;
+            animation: fadeInScale 0.3s forwards;
+            font-size: 16px;
+            font-weight: 500;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        
+        .toast-success {
+            background-color: rgba(52, 199, 89, 0.95);
+            color: white;
+            border-left: 4px solid #2db149;
+        }
+        
+        .toast-error {
+            background-color: rgba(255, 59, 48, 0.95);
+            color: white;
+            border-left: 4px solid #e12d1c;
+        }
+        
+        .toast-icon {
+            margin-right: 12px;
+            flex-shrink: 0;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            padding: 5px;
+        }
+        
+        .toast-content {
+            flex: 1;
+            line-height: 1.4;
+        }
+        
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+            }
+        }
+
+        .header-recharge-btn {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none; /* 透明背景 */
+            border: none;
+            color: white; /* 白色文字 */
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 6px;
+            transition: background-color 0.3s;
+        }
+        
+        .header-recharge-btn:hover {
+            background-color: rgba(255, 255, 255, 0.15); /* 鼠标悬停时显示轻微的背景 */
+        }
+        
+        .back-btn {
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+        
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .back-btn:active {
+            transform: translateY(-50%) scale(0.96);
+        }
+        
+        .back-btn svg {
+            width: 24px;
+            height: 24px;
+        }
+        
+        /* 游戏选择下拉框样式 */
+        select.form-control {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 16px;
+            padding-right: 40px;
+        }
+        
+        /* 响应式调整 */
+        @media (max-width: 480px) {
+            body {
+                padding: 0;
+                margin: 0;
+                width: 100%;
+                overflow-x: hidden;
+            }
+            
+            .container {
+                padding: 16px;
+                margin-left: auto;
+                margin-right: auto;
+                width: calc(100% - 20px);
+                max-width: calc(100% - 20px);
+            }
+            
+            .record-container {
+                width: calc(100% - 20px);
+                max-width: calc(100% - 20px);
+                margin-left: auto;
+                margin-right: auto;
+                padding: 16px; /* 统一内边距 */
+            }
+            
+            .record-title {
+                font-size: 15px; /* 减小移动端标题字体大小 */
+                margin-bottom: 12px;
+            }
+            
+            .date-filter .date-btn {
+                padding: 3px 8px; /* 缩小按钮大小 */
+                font-size: 11px; /* 减小字体 */
+            }
+            
+            .record-refresh {
+                font-size: 12px;
+            }
+            
+            .balance-info {
+                padding: 12px;
+            }
+            
+            .balance-item:first-child {
+                padding-right: 10px;
+            }
+            
+            .balance-item:last-child {
+                padding-left: 10px;
+            }
+            
+            .balance-value {
+                font-size: 16px;
+            }
+        }
+        
+        .btn-recharge {
+            width: auto;
+            padding: 12px 20px;
+            margin-bottom: 0;
+            font-size: 14px;
+        }
+        
+        .remove-btn {
+            padding: 4px 8px;
+            background-color: #ff3b30;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            display: inline-block;
+            min-width: 40px;
+            text-align: center;
+        }
+        
+        .remove-btn:hover {
+            background-color: #d63530;
+        }
+        
+        /* 状态列：不截断省略，至少容纳三个汉字（进行中 / 已出等） */
+        .record-table td:nth-child(2) {
+            text-align: left;
+            min-width: 58px;
+            overflow: visible;
+            text-overflow: clip;
+        }
+        
+        .record-table th:nth-child(2) {
+            text-align: left;
+            overflow: visible;
+            text-overflow: clip;
+        }
+        
+        .status-completed {
+            color: #34c759;
+            font-weight: 500;
+        }
+        
+        .status-pending-free {
+            color: #007aff;
+            font-weight: 500;
+        }
+        
+        .record-table th:last-child,
+        .record-table td:last-child {
+            text-align: center;
+        }
+        
+        /* 添加横向滚动提示 */
+        @media (max-width: 600px) {
+            .swipe-hint {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 8px;
+                margin-bottom: 10px;
+                background-color: rgba(0, 122, 255, 0.1);
+                border-radius: 8px;
+                color: #007aff;
+                font-size: 12px;
+                gap: 8px;
+            }
+            
+            .swipe-hint svg {
+                width: 16px;
+                height: 16px;
+                fill: currentColor;
+            }
+            
+            .swipe-hint.hide {
+                display: none;
+            }
+        }
+        
+        @media (min-width: 601px) {
+            .swipe-hint {
+                display: none;
+            }
+        }
+        
+        .diamond-statistics {
+            margin: 0 0 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .diamond-statistics-inner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .diamond-statistics-text {
+            font-size: 13px;
+            color: #666;
+        }
+        
+        #refreshRecordsBtn {
+            padding: 8px 16px;
+            font-size: 13px;
+            margin: 0;
+            flex-shrink: 0;
+        }
+        
+        .diamond-value {
+            color: #ff9500;
+            font-weight: 600;
+        }
+        
+        .positive {
+            color: #34c759;
+        }
+        
+        .negative {
+            color: #ff3b30;
+        }
+        
+        /* 媒体查询确保在移动设备上也能正确显示全宽 */
+        @media screen and (max-width: 768px) {
+            html, body {
+                margin: 0;
+                padding: 0;
+                width: 100%;
+                overflow-x: hidden;
+            }
+            
+            .header {
+                width: 100%;
+                padding: 20px;
+                max-width: 100%;
+            }
+            
+            .header-content {
+                width: 100%;
+                max-width: 100%;
+            }
+            
+            .back-btn {
+                left: 0;
+            }
+            
+            .container, .record-container {
+                width: calc(100% - 20px);
+                margin-left: auto;
+                margin-right: auto;
+            }
+        }
+
+        /* 新增弹窗样式 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+            opacity: 1;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            width: 90%;
+            max-width: 360px;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.show .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            text-align: center;
+            color: #333;
+        }
+
+        .modal-close-btn {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #aaa;
+            cursor: pointer;
+            padding: 5px;
+            line-height: 1;
+        }
+         .modal-close-btn:hover {
+             color: #666;
+         }
+
+        .modal-body .form-group {
+            margin-bottom: 20px;
+        }
+         .modal-body .form-control {
+             background-color: white;
+         }
+         .modal-body .btn {
+             margin-top: 10px;
+         }
+         .modal-error {
+            color: #ff3b30;
+            font-size: 13px;
+            margin-top: -10px;
+            margin-bottom: 15px;
+            text-align: center;
+            min-height: 18px;
+            display: block;
+            visibility: hidden;
+         }
+         .modal-error.show {
+             visibility: visible;
+         }
+
+        /* 优化移动端表格显示 */
+        @media (max-width: 600px) {
+            .table-wrapper {
+                margin: 0 -10px; /* 增加水平滚动区域，减少边距挤压 */
+            }
+            
+            .record-table {
+                min-width: 850px; /* 针对手机端稍微减少最小宽度 */
+            }
+            
+            .swipe-hint {
+                margin: 0 10px 10px; /* 调整滑动提示的边距 */
+                padding: 10px;
+            }
+        }
+
+        /* 日期时间选择器样式 */
+        .date-range-picker {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: nowrap; /* 防止换行 */
+            width: 100%; /* 占据全部可用空间 */
+        }
+        
+        .date-picker {
+            padding: 6px 8px;
+            border: 1px solid #e5e5e5;
+            border-radius: 4px;
+            font-size: 12px;
+            background-color: #f8f9fa;
+            min-width: 0; /* 移除最小宽度限制 */
+            color: #333;
+            flex: 1; /* 占据可用空间 */
+            height: 36px; /* 确保高度与按钮一致 */
+            box-sizing: border-box; /* 确保padding不会增加元素总高度 */
+            white-space: nowrap; /* 防止内容换行 */
+            overflow: hidden; /* 隐藏溢出内容 */
+            text-overflow: ellipsis; /* 显示省略号 */
+        }
+        
+        /* iOS特定样式 */
+        @supports (-webkit-touch-callout: none) {
+            /* 只在iOS设备上应用 */
+            .date-range-picker {
+                display: flex;
+                flex-wrap: nowrap;
+                align-items: center;
+                justify-content: space-between;
+            }
+            
+            .date-picker {
+                padding: 0 8px; /* 减小内边距 */
+                height: 36px; /* 固定高度与按钮一致 */
+                line-height: 36px; /* 保证文本垂直居中 */
+                font-size: 15px; /* 缩小字体 */
+                background-color: #f2f2f7; /* iOS日期选择器的背景色 */
+                border-color: transparent; /* 移除边框 */
+                border-radius: 10px; /* 圆角 */
+                -webkit-appearance: none; /* 重设为无样式 */
+                appearance: none;
+                color: #000; /* 确保文本可见 */
+                flex: 1; /* 占据可用空间 */
+                min-width: 0; /* 防止溢出 */
+                margin: 0 2px; /* 保持间距紧凑 */
+                text-align: left; /* 靠左对齐文本 */
+                box-shadow: none; /* 移除任何阴影 */
+                white-space: nowrap; /* 防止文本换行 */
+                overflow: hidden; /* 隐藏溢出内容 */
+                text-overflow: ellipsis; /* 显示省略号 */
+            }
+            
+            /* iOS日期选择器的视觉指示组件样式 */
+            .date-picker::-webkit-datetime-edit {
+                padding: 0;
+                font-size: 15px; /* 缩小字体大小 */
+                width: 100%; /* 确保完整显示 */
+            }
+            
+            .date-picker::-webkit-datetime-edit-fields-wrapper {
+                padding: 0;
+                white-space: nowrap; /* 强制单行 */
+            }
+            
+            .date-picker::-webkit-datetime-edit-text {
+                color: #8e8e93;
+                padding: 0 1px; /* 减小间距 */
+                font-size: 15px; /* 缩小字体 */
+            }
+            
+            .date-picker::-webkit-datetime-edit-hour-field,
+            .date-picker::-webkit-datetime-edit-minute-field,
+            .date-picker::-webkit-datetime-edit-day-field,
+            .date-picker::-webkit-datetime-edit-month-field,
+            .date-picker::-webkit-datetime-edit-year-field {
+                color: #000;
+                padding: 0;
+                font-size: 15px; /* 调整字体大小 */
+            }
+            
+            .date-picker::-webkit-calendar-picker-indicator {
+                width: 14px; /* 减小日历图标大小 */
+                height: 14px;
+                margin-left: 2px; /* 减小左边距 */
+                background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%238e8e93' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2' ry='2'%3E%3C/rect%3E%3Cline x1='16' y1='2' x2='16' y2='6'%3E%3C/line%3E%3Cline x1='8' y1='2' x2='8' y2='6'%3E%3C/line%3E%3Cline x1='3' y1='10' x2='21' y2='10'%3E%3C/line%3E%3C/svg%3E");
+                background-size: contain;
+                opacity: 0.7;
+            }
+            
+            .date-separator {
+                font-size: 13px;
+                margin: 0 1px; /* 减小间距 */
+                flex-shrink: 0;
+            }
+            
+            /* iOS日期选择器的暗模式支持 */
+            @media (prefers-color-scheme: dark) {
+                .date-picker {
+                    background-color: #1c1c1e;
+                    color: white;
+                    border-color: #3a3a3c;
+                }
+                
+                .date-picker:focus {
+                    background-color: #2c2c2e;
+                }
+                
+                .date-picker::-webkit-datetime-edit-text {
+                    color: #8e8e93;
+                }
+                
+                .date-picker::-webkit-datetime-edit-hour-field,
+                .date-picker::-webkit-datetime-edit-minute-field,
+                .date-picker::-webkit-datetime-edit-day-field,
+                .date-picker::-webkit-datetime-edit-month-field,
+                .date-picker::-webkit-datetime-edit-year-field {
+                    color: #fff;
+                }
+                
+                .date-picker::-webkit-calendar-picker-indicator {
+                    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23cccccc' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2' ry='2'%3E%3C/rect%3E%3Cline x1='16' y1='2' x2='16' y2='6'%3E%3C/line%3E%3Cline x1='8' y1='2' x2='8' y2='6'%3E%3C/line%3E%3Cline x1='3' y1='10' x2='21' y2='10'%3E%3C/line%3E%3C/svg%3E");
+                    filter: invert(0.8);
+                }
+                
+            }
+        }
+        
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            .date-range-picker {
+                flex-wrap: nowrap; /* 防止换行，保持一行 */
+                gap: 4px; /* 减小间距 */
+            }
+            
+            .date-picker {
+                font-size: 11px; /* 更小的字体 */
+                padding: 0 5px; /* 更小的内边距 */
+            }
+            
+            .date-separator {
+                font-size: 11px;
+                margin: 0;
+            }
+            
+        }
+
+        /* 针对430px宽度的小屏幕手机特别优化 */
+        @media (max-width: 450px) {
+            .record-table {
+                min-width: 750px; /* 进一步减少最小宽度，但保持足够的列宽 */
+            }
+            
+            .record-table td,
+            .record-table th {
+                padding: 8px 6px; /* 小屏幕上减小内边距，但保持足够间距 */
+            }
+            
+            .date-range-picker {
+                gap: 3px; /* 进一步减小间距 */
+                align-items: center;
+                padding: 0 3px; /* 减小左右内边距 */
+            }
+            
+            .date-picker {
+                min-width: 0; /* 移除最小宽度限制 */
+                font-size: 12px; /* 更大的字体 */
+                padding: 0 3px; /* 更小的内边距 */
+                flex: 1; /* 占据可用空间 */
+            }
+            
+            .date-separator {
+                font-size: 12px; /* 更大的字体 */
+                margin: 0;
+                padding: 0;
+            }
+            
+            /* 为iOS特别优化 */
+            @supports (-webkit-touch-callout: none) {
+                .date-picker::-webkit-datetime-edit {
+                    font-size: 12px; /* 更大的字体 */
+                }
+                
+                .date-picker::-webkit-datetime-edit-text {
+                    font-size: 12px;
+                }
+                
+                .date-picker::-webkit-datetime-edit-hour-field,
+                .date-picker::-webkit-datetime-edit-minute-field,
+                .date-picker::-webkit-datetime-edit-day-field,
+                .date-picker::-webkit-datetime-edit-month-field,
+                .date-picker::-webkit-datetime-edit-year-field {
+                    font-size: 12px;
+                }
+                
+                .date-picker::-webkit-calendar-picker-indicator {
+                    width: 12px; /* 更小的图标 */
+                    height: 12px;
+                    margin-left: 1px;
+                }
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <button class="back-btn" id="backBtn">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="currentColor"></path>
+                </svg>
+            </button>
+            <h1>送奖管理</h1>
+            <button class="header-recharge-btn" id="headerRechargeBtn">充值奖池</button>
+            <div class="subtitle">设置奖池余额和发放奖励</div>
+        </div>
+    </div>
+    
+    <div class="container" style="margin-top: 20px;">
+        <div class="form-group">
+            <label class="form-label">送奖账号</label>
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <input type="text" class="form-control" id="accountInput" placeholder="请输入玩家账号" style="flex: 1;">
+                <button class="btn btn-secondary" id="queryBtn" style="width: auto; margin: 0; padding: 12px 20px;">查询</button>
+            </div>
+            <div class="error-message" id="accountError" style="display: none;">网络错误，请重试</div>
+        </div>
+        
+        <!-- 玩家输赢信息区域 -->
+        <div class="player-win-info" id="playerWinInfo" style="display: block; margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; gap: 8px;">
+                <div style="flex: 1; padding: 12px; background-color: rgba(0, 122, 255, 0.05); border-radius: 6px; text-align: center;">
+                    <div style="font-size: 13px; color: #666; margin-bottom: 5px;">当前押注（钻）</div>
+                    <div id="currentBetDisplay" style="font-size: 22px; font-weight: 600; color: rgb(153, 153, 153);">--</div>
+                </div>
+                <div style="flex: 1; padding: 12px; background-color: rgba(0, 122, 255, 0.05); border-radius: 6px; text-align: center;">
+                    <div style="font-size: 13px; color: #666; margin-bottom: 5px;">今日输赢（钻）</div>
+                    <div id="todayWinLoss" style="font-size: 22px; font-weight: 600;">--</div>
+                </div>
+                <div style="flex: 1; padding: 12px; background-color: rgba(0, 122, 255, 0.05); border-radius: 6px; text-align: center;">
+                    <div style="font-size: 13px; color: #666; margin-bottom: 5px;">总输赢（钻）</div>
+                    <div id="totalWinLoss" style="font-size: 22px; font-weight: 600;">--</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">选择游戏</label>
+            <select class="form-control" id="gameSelect">
+                <option value="">请选择游戏</option>
+                <option value="hfh">火凤凰</option>
+                <option value="dzb">大字版</option>
+                <option value="cjdh">超级大亨</option>
+                <option value="NBA">NBA篮球</option>
+                <option value="att">att连环炮</option>
+                <option value="jsys">点石成金</option>
+                <option value="mx97">明星97</option>
+                <option value="mx99">明星99</option>
+                <option value="shz">水浒传</option>
+                <option value="dbs">大白鲨</option>
+                <option value="mjhl">麻将胡了</option>
+            </select>
+            <div class="error-message" id="gameError"></div>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">送奖场次</label>
+            <select class="form-control" id="hallSelect">
+                <option value="">请选择场次</option>
+                <option value="1">体验场</option>
+                <option value="2">初级场</option>
+                <option value="3">中级场</option>
+                <option value="4">高级场</option>
+                <option value="5">贵宾场</option>
+                <option value="6">VIP场</option>
+            </select>
+            <div class="error-message" id="hallError"></div>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">送奖牌型</label>
+            <select class="form-control" id="patternSelect">
+                <option value="">请选择牌型</option>
+                <!-- 选项将由JavaScript动态生成 -->
+            </select>
+            <input type="hidden" id="patternInput">
+            <div class="error-message" id="patternError"></div>
+        </div>
+        
+        <div class="balance-info">
+            <div class="balance-item">
+                <div class="balance-label">奖池余额（钻）:</div>
+                <div class="balance-value" id="poolBalance">--</div>
+            </div>
+            <div class="balance-item">
+                <div class="balance-label">我的钻石:</div>
+                <div class="balance-value" id="myDiamond">0</div>
+            </div>
+        </div>
+        
+        <button class="btn btn-primary" id="submitBtn">送奖</button>
+        
+        <div class="success-message" id="successMessage"></div>
+    </div>
+
+    <!-- 充值弹窗 -->
+    <div class="modal-overlay" id="rechargeModal">
+        <div class="modal-content">
+             <button class="modal-close-btn" id="modalCloseBtn">×</button>
+            <div class="modal-title">充值奖池</div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label" for="modalRechargeInput">充值金额 (钻石)</label>
+                    <input type="number" class="form-control" id="modalRechargeInput" placeholder="正数充值，负数扣减奖池">
+                </div>
+                <div class="modal-error" id="modalRechargeError"></div>
+                <button class="btn btn-primary" id="modalConfirmRechargeBtn">确认充值</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 弹窗提示容器 -->
+    <div class="toast-container" id="toastContainer"></div>
+    
+    <div class="record-container">
+        <div class="record-title">
+            <div class="record-actions">
+                <div class="date-range-picker">
+                    <input type="datetime-local" id="startDatePicker" class="date-picker">
+                    <span class="date-separator">至</span>
+                    <input type="datetime-local" id="endDatePicker" class="date-picker">
+                </div>
+            </div>
+        </div>
+        
+        <div class="diamond-statistics" id="diamondStatistics">
+            <div class="diamond-statistics-inner">
+                <div class="diamond-statistics-text">
+                    已送出钻石：<span class="diamond-value">0</span>
+                </div>
+                <button type="button" class="btn btn-secondary" id="refreshRecordsBtn" title="刷新送奖记录">刷新</button>
+            </div>
+        </div>
+        
+        <div class="swipe-hint" id="swipeHint">
+            <svg viewBox="0 0 24 24">
+                <path d="M9 3l-5 5 5 5V9h6v2l5-5-5-5v4H9V3z"></path>
+            </svg>
+            <span>左右滑动查看更多</span>
+        </div>
+        
+        <div class="table-wrapper">
+            <table class="record-table">
+                <thead>
+                    <tr>
+                        <th>送奖账号</th>
+                        <th>状态</th>
+                        <th>场次</th>
+                        <th>机台</th>
+                        <th>送奖牌型</th>
+                        <th>开奖牌型</th>
+                        <th>送奖金额</th>
+                        <th>开奖金额</th>
+                        <th>游戏</th>
+                        <th>开奖时间</th>
+                    </tr>
+                </thead>
+                <tbody id="recordTableBody">
+                    <!-- 数据将通过JavaScript动态添加 -->
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="record-empty" id="emptyRecords" style="display: block;">请先选择游戏查看对应记录</div>
+    </div>
+    
+    <!--script stripped-->
+
+
+</body></html>

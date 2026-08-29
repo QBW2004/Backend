@@ -1,84 +1,377 @@
 @{
-    Layout = "~/Views/Shared/Layout/_MobileLayout.cshtml";
+    /* 玩家充退（1:1 复刻参考站 chongzhi） */
     string webVer = ConfigHelper.Get("WebVer");
-    bool canTargetAgent = ViewBag.CanTargetAgent == true;
-    bool canTargetTopAgent = ViewBag.CanTargetTopAgent == true;
     string presetRole = (string)(ViewBag.PresetRole ?? "player");
     string presetPay = (string)(ViewBag.PresetPayType ?? "0");
     string presetAccount = (string)(ViewBag.PresetAccount ?? "");
-    long ownCoins = ViewBag.OwnCoins != null ? (long)ViewBag.OwnCoins : 0L;
+    Layout = "~/Views/Shared/Layout/_MobileLayout.cshtml";
 }
 
-<div class="m-container">
-    <div class="m-card m-card-pad">
-        @if (canTargetAgent)
-        {
-            <div class="m-form-group">
-                <label class="m-label">操作对象</label>
-                <div class="m-segment" id="mRoleGroup">
-                    <div class="m-segment-item@(presetRole == "player" ? " active" : "")" data-val="-2">玩家</div>
-                    <div class="m-segment-item@(presetRole == "agent" ? " active" : "")" data-val="2">下级代理</div>
-                    @if (canTargetTopAgent)
-                    {
-                        <div class="m-segment-item" data-val="1">总代</div>
-                    }
+@section head {
+<style>
+    .diamond-count {
+        color: #ffd700; /* 金色 */
+        font-weight: 500;
+    }
+
+    .container {
+        padding: 20px;
+        max-width: 600px;
+        margin: 20px auto;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+        background: white;
+        border-radius: 12px;
+        padding: 16px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .form-row {
+        margin-bottom: 16px;
+    }
+
+    .form-row:last-child {
+        margin-bottom: 0;
+    }
+
+    .form-label {
+        display: block;
+        font-size: 14px;
+        font-weight: 500;
+        color: #666;
+        margin-bottom: 8px;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #e5e5e5;
+        border-radius: 8px;
+        font-size: 16px;
+        transition: border-color 0.3s;
+    }
+
+    .form-input:focus {
+        border-color: #007aff;
+        outline: none;
+    }
+
+    .form-tip {
+        font-size: 13px;
+        color: #007aff;
+    }
+
+    /* 历史账号下拉 */
+    .history-dropdown {
+        position: relative;
+        width: 100%;
+    }
+
+    .history-list {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        width: 100%;
+        max-height: 200px;
+        overflow-y: auto;
+        background: white;
+        border: 1px solid #e5e5e5;
+        border-top: none;
+        border-radius: 0 0 8px 8px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        z-index: 10;
+        display: none;
+    }
+
+    .history-list.show {
+        display: block;
+    }
+
+    .history-item {
+        padding: 10px 12px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .history-item:hover {
+        background-color: #f5f7fa;
+    }
+
+    .history-text {
+        flex: 1;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        white-space: nowrap;
+    }
+
+    .history-delete {
+        color: #ff3b30;
+        font-size: 18px;
+        margin-left: 8px;
+        opacity: 0.6;
+    }
+
+    /* 选项分段 */
+    .option-group {
+        display: flex;
+        width: 100%;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid #e5e5e5;
+        background-color: #f9f9f9;
+    }
+
+    .option-item {
+        flex: 1;
+        text-align: center;
+        padding: 10px 0;
+        cursor: pointer;
+        background-color: transparent;
+        color: #777;
+        font-size: 14px;
+        font-weight: 400;
+        transition: all 0.3s;
+        position: relative;
+        user-select: none;
+    }
+
+    .option-item:not(:last-child) {
+        border-right: 1px solid #e5e5e5;
+    }
+
+    .option-item.active {
+        background-color: #f0f0f0;
+        color: #007aff;
+        font-weight: 500;
+    }
+
+    .option-item input[type="radio"] {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .option-item:hover:not(.active) {
+        background-color: #e5e5ea;
+    }
+
+    /* 按钮 */
+    .btn {
+        display: block;
+        width: 100%;
+        padding: 14px;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-align: center;
+        -webkit-appearance: none;
+        appearance: none;
+    }
+
+    .btn-primary {
+        background-color: #007aff;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background-color: #0066cc;
+    }
+
+    .btn-primary:active {
+        transform: scale(0.98);
+    }
+
+    .btn-secondary {
+        background-color: #f5f5f7;
+        color: #007aff;
+        border: 1px solid #e5e5e5;
+    }
+
+    .btn-secondary:hover {
+        background-color: #e5e5ea;
+    }
+
+    .btn[disabled] {
+        opacity: 0.5;
+        cursor: not-allowed;
+        background-color: #cccccc;
+        color: #666666;
+    }
+
+    .account-input-group {
+        display: flex;
+        gap: 8px;
+    }
+
+    .account-input-group .form-input {
+        flex: 1;
+    }
+
+    .account-input-group .btn-query {
+        width: auto;
+        padding: 12px 20px;
+        white-space: nowrap;
+        align-self: flex-end;
+    }
+
+    /* 账号信息卡 */
+    .account-info {
+        margin-top: 20px;
+        padding: 15px;
+        border-radius: 12px;
+        background-color: rgba(0, 122, 255, 0.08);
+        transition: all 0.3s ease;
+        display: none;
+    }
+
+    .account-info.show {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        box-shadow: 0 4px 12px rgba(0, 122, 255, 0.15);
+        animation: pulse 1.5s ease-out;
+    }
+
+    .account-info .info-row {
+        display: flex;
+        align-items: center;
+        padding: 8px 12px;
+        background: white;
+        border-radius: 6px;
+        border: 1px solid #eaeaea;
+    }
+
+    .account-info .info-icon {
+        width: 24px;
+        margin-right: 12px;
+        text-align: center;
+    }
+
+    .account-info .info-label {
+        font-size: 14px;
+        color: #666;
+        flex: 1;
+    }
+
+    .account-info .info-value {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1d1d1f;
+    }
+
+    .diamond-value {
+        color: #007aff;
+    }
+
+    .score-value {
+        color: #34c759;
+    }
+
+    @@keyframes pulse {
+        0% {
+            box-shadow: 0 0 0 0 rgba(0, 122, 255, 0.4);
+        }
+        70% {
+            box-shadow: 0 0 0 10px rgba(0, 122, 255, 0);
+        }
+        100% {
+            box-shadow: 0 0 0 0 rgba(0, 122, 255, 0);
+        }
+    }
+</style>
+}
+
+    <div class="container">
+        <form autocomplete="off">
+            <div class="form-group">
+                <div class="form-row">
+                    <label class="form-label">角色类型</label>
+                    <div class="option-group" id="roleTypeGroup">
+                        <label class="option-item active" data-value="agent">
+                            <input type="radio" name="roleType" value="agent" checked>
+                            下级代理
+                        </label>
+                        <label class="option-item" data-value="player">
+                            <input type="radio" name="roleType" value="player">
+                            玩家
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <label class="form-label">操作类型</label>
+                    <div class="option-group" id="operationTypeGroup">
+                        <label class="option-item active" data-value="recharge">
+                            <input type="radio" name="operationType" value="recharge" checked>
+                            充值
+                        </label>
+                        <label class="option-item" data-value="withdraw">
+                            <input type="radio" name="operationType" value="withdraw">
+                            退分
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <label class="form-label">对方账号</label>
+                    <div class="account-input-group">
+                        <div class="history-dropdown">
+                            <input type="text" class="form-input" id="accountInput" placeholder="请输入账号" autocomplete="off">
+                            <div class="history-list" id="historyList"></div>
+                        </div>
+                        <button class="btn btn-secondary btn-query" id="queryBtn" type="button">查询</button>
+                    </div>
+                    <div class="form-tip" style="margin-top: 5px;">
+                        <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align: middle; margin-right: 4px;">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="#007aff"></path>
+                        </svg>
+                        请先查询账号信息，再进行充值操作
+                    </div>
+                </div>
+
+                <div class="account-info" id="accountInfo">
+                    <div class="info-row">
+                        <div class="info-icon">💎</div>
+                        <div class="info-label">剩余金币</div>
+                        <div class="info-value diamond-value" id="accountDiamond">0</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-icon">🔢</div>
+                        <div class="info-label">剩余分数</div>
+                        <div class="info-value score-value" id="accountScore">0</div>
+                    </div>
                 </div>
             </div>
-        }
 
-        <div class="m-form-group">
-            <label class="m-label">操作类型</label>
-            <div class="m-segment" id="mPayGroup">
-                <div class="m-segment-item@(presetPay == "0" ? " active" : "")" data-val="0">充值</div>
-                <div class="m-segment-item@(presetPay == "1" ? " active" : "")" data-val="1">兑换（退分）</div>
-            </div>
-        </div>
+            <div class="form-group">
+                <div class="form-row">
+                    <label class="form-label" id="amountLabel">充值金币</label>
+                    <input type="number" class="form-input" id="amountInput" placeholder="请输入充值金币数量" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
+                </div>
 
-        <div class="m-form-group" style="position:relative;">
-            <label class="m-label">对方账号</label>
-            <div class="m-input-row">
-                <input type="text" class="m-input" id="mRcAccount" placeholder="请输入账号" value="@presetAccount" autocomplete="off" />
-                <button type="button" class="m-btn m-btn-secondary" id="mRcQueryBtn">查询</button>
+                <div class="form-row">
+                    <button class="btn btn-primary" id="submitBtn" type="button" disabled>充值</button>
+                </div>
             </div>
-            <div class="m-history m-hidden" id="mRcHistory"></div>
-        </div>
-
-        <div class="m-hint" id="mRcTip">@Html.Raw("&#9432;") 请先查询账号信息，确认无误后再操作。</div>
-
-        <div class="m-account-info" id="mRcInfo">
-            <div class="m-account-row">
-                <span class="m-account-label">账号</span>
-                <span class="m-account-value" id="mRcInfoAccount">--</span>
-            </div>
-            <div class="m-account-row">
-                <span class="m-account-label">账号类型</span>
-                <span class="m-account-value" id="mRcInfoTitle">--</span>
-            </div>
-            <div class="m-account-row">
-                <span class="m-account-label">剩余金币</span>
-                <span class="m-account-value coins" id="mRcInfoCoins">--</span>
-            </div>
-        </div>
+        </form>
     </div>
-
-    <div class="m-card m-card-pad">
-        <div class="m-form-group">
-            <label class="m-label" id="mRcAmountLabel">充值金额</label>
-            <input type="number" class="m-input" id="mRcAmount" inputmode="numeric" min="1" step="1" placeholder="请输入数量" />
-        </div>
-        <button type="button" class="m-btn m-btn-primary m-btn-block" id="mRcSubmit" disabled>充值</button>
-    </div>
-</div>
 
 @section scripts {
     <script>
-        window.MPage = {
-            ownCoins: @ownCoins,
-            presetAccount: '@Html.Raw(HttpUtility.JavaScriptStringEncode(presetAccount))',
-            presetPay: '@presetPay',
-            presetTarget: '@Html.Raw(canTargetAgent && presetRole == "agent" ? "2" : "-2")',
-            canTargetAgent: @Html.Raw(canTargetAgent ? "true" : "false")
+        window.MPagePreset = {
+            role: '@Html.Raw(HttpUtility.JavaScriptStringEncode(presetRole))',
+            pay: '@Html.Raw(HttpUtility.JavaScriptStringEncode(presetPay))',
+            account: '@Html.Raw(HttpUtility.JavaScriptStringEncode(presetAccount))'
         };
     </script>
-    <script src="@Url.Content("~/Scripts/app/mobile/mobile.recharge.js?v=" + webVer)"></script>
+    <script src="@Url.Content("~/Scripts/app/phone/phone.recharge.js?v=" + webVer)"></script>
 }

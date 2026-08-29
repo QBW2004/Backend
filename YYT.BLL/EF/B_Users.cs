@@ -541,7 +541,161 @@ namespace YYT.BLL.EF
                 return users;
             }
         }
-   
+
+        #region 手机端扩展查询（离线玩家 / 封禁玩家 / 会员盈亏 / 今日总输赢）
+        /// <summary>
+        /// 手机端通用玩家分页查询：可只看离线 / 只看封禁，支持按今日输赢、总盈亏排序。
+        /// 排序需要今日输赢时会对权限范围内全部玩家填充后再排序分页。
+        /// </summary>
+        /// <param name="sort">空/last-time 默认序；win-most 今日赢最多；loss-most 今日输最多；profit-desc 总盈亏降序；profit-asc 总盈亏升序</param>
+        private M_EasyuiGridData<M_Users_DTO> QueryUsersPaged(M_Page mPage, M_Users_DTO entity, M_LoginUser loginUser, bool onlyOffline, bool onlyFrozen, string sort)
+        {
+            M_EasyuiGridData<M_Users_DTO> list = new M_EasyuiGridData<M_Users_DTO>();
+            using (var ef = new GameDbContext())
+            {
+                var rst = from c in ef.Users
+                          join r in ef.UserRelations on c.ID equals r.ID
+                          select new M_Users_DTO
+                          {
+                              ID = c.ID,
+                              NAME = c.NAME,
+                              AGENCY = c.AGENCY,
+                              FROZEN = c.FROZEN,
+                              COINS = c.COINS,
+                              COINS_BUY = c.COINS_BUY,
+                              COINS_BACK = c.COINS_BACK,
+                              UserID = r.UserID,
+                              INHALL = c.INHALL,
+                              GAME_SCORE = c.GAME_SCORE,
+                              GRADE = c.GRADE,
+                              SAFE_COINS = c.SAFE_COINS
+                          };
+
+                if (onlyOffline)
+                    rst = rst.Where(c => c.INHALL != true);
+                if (onlyFrozen)
+                    rst = rst.Where(c => c.FROZEN == 1);
+                if (!string.IsNullOrWhiteSpace(entity.AGENCY))
+                    rst = rst.Where(c => c.AGENCY.Equals(entity.AGENCY));
+                if (!string.IsNullOrWhiteSpace(entity.NAME))
+                    rst = rst.Where(c => c.NAME.Equals(entity.NAME));
+                if (!string.IsNullOrWhiteSpace(entity.ID))
+                    rst = rst.Where(c => c.ID.Equals(entity.ID));
+                if (entity.UserID > 0)
+                    rst = rst.Where(c => c.UserID == entity.UserID);
+
+                // 加权限查询（与 GetUsersList 同口径）
+                List<M_Users_DTO> rstList;
+                if (loginUser.UserPriv != 0)
+                {
+                    List<string> agencies = new B_Admin().GetManagedAgencyAccounts(ef, loginUser);
+                    rstList = agencies.Count > 0
+                        ? rst.Where(c => agencies.Contains(c.AGENCY)).ToList()
+                        : new List<M_Users_DTO>();
+                }
+                else
+                {
+                    rstList = rst.ToList();
+                }
+
+                if (rstList == null)
+                    return list;
+
+                foreach (M_Users_DTO item in rstList)
+                    item.Profit = item.COINS_BUY - item.COINS_BACK;
+
+                bool needAllWinLoss = sort == "win-most" || sort == "loss-most";
+                if (needAllWinLoss)
+                    FillTodayWinLoss(ef, rstList);
+
+                IOrderedEnumerable<M_Users_DTO> ordered;
+                switch (sort)
+                {
+                    case "win-most":
+                        ordered = rstList.OrderByDescending(c => c.TodayWinLoss ?? 0).ThenByDescending(c => c.UserID);
+                        break;
+                    case "loss-most":
+                        ordered = rstList.OrderBy(c => c.TodayWinLoss ?? 0).ThenByDescending(c => c.UserID);
+                        break;
+                    case "profit-desc":
+                        ordered = rstList.OrderByDescending(c => c.Profit ?? 0).ThenByDescending(c => c.UserID);
+                        break;
+                    case "profit-asc":
+                        ordered = rstList.OrderBy(c => c.Profit ?? 0).ThenByDescending(c => c.UserID);
+                        break;
+                    default:
+                        ordered = rstList.OrderByDescending(c => c.UserID);
+                        break;
+                }
+
+                mPage.SetTotalCount(rstList.Count);
+                List<M_Users_DTO> users = ordered
+                    .Skip(mPage.PageSize * (mPage.PageIndex - 1)).Take(mPage.PageSize)
+                    .ToList();
+
+                if (!needAllWinLoss)
+                    FillTodayWinLoss(ef, users);
+                ApplySensitiveFieldPermissions(users, loginUser);
+
+                list.rows = users;
+                list.total = mPage.TotalCount;
+            }
+            return list;
+        }
+
+        /// <summary>手机端：离线玩家分页（支持排序）</summary>
+        public M_EasyuiGridData<M_Users_DTO> GetOfflineUsersList(M_Page mPage, M_Users_DTO entity, M_LoginUser loginUser, string sort)
+        {
+            return QueryUsersPaged(mPage, entity, loginUser, true, false, sort);
+        }
+
+        /// <summary>手机端：封禁中的玩家分页</summary>
+        public M_EasyuiGridData<M_Users_DTO> GetFrozenUsersList(M_Page mPage, M_Users_DTO entity, M_LoginUser loginUser)
+        {
+            return QueryUsersPaged(mPage, entity, loginUser, false, true, null);
+        }
+
+        /// <summary>手机端：会员盈亏分页（今日输赢 + 总盈亏，支持排序）</summary>
+        public M_EasyuiGridData<M_Users_DTO> GetMemberWinLossList(M_Page mPage, M_Users_DTO entity, M_LoginUser loginUser, string sort)
+        {
+            return QueryUsersPaged(mPage, entity, loginUser, false, false, sort ?? "win-most");
+        }
+
+        /// <summary>
+        /// 手机端：今日玩家总输赢合计（权限范围内）
+        /// </summary>
+        public long GetTodayTotalWinLoss(M_LoginUser loginUser)
+        {
+            using (var ef = new GameDbContext())
+            {
+                if (loginUser != null && loginUser.UserPriv == 0)
+                {
+                    return ef.Database.SqlQuery<long>("SELECT CAST(IFNULL(SUM(WINLOSS),0) AS SIGNED) FROM user_daily_winloss WHERE DAY = CURDATE()").FirstOrDefault();
+                }
+
+                if (loginUser == null)
+                    return 0;
+
+                List<string> agencies = new B_Admin().GetManagedAgencyAccounts(ef, loginUser);
+                if (agencies.Count < 1)
+                    return 0;
+
+                long total = 0;
+                for (int i = 0; i < agencies.Count; i += 300)
+                {
+                    List<string> chunk = agencies.Skip(i).Take(300).ToList();
+                    string placeholders = string.Join(",", chunk.Select((c, j) => "{" + j + "}"));
+                    string sql = "SELECT CAST(IFNULL(SUM(w.WINLOSS),0) AS SIGNED) FROM user_daily_winloss w " +
+                                 "INNER JOIN UserRelations r ON r.UserID = w.UserID " +
+                                 "INNER JOIN Users u ON u.ID = r.ID " +
+                                 "WHERE w.DAY = CURDATE() AND u.AGENCY IN (" + placeholders + ")";
+                    total += ef.Database.SqlQuery<long>(sql, chunk.Cast<object>().ToArray()).FirstOrDefault();
+                }
+                return total;
+            }
+        }
+        #endregion
+
         public List<M_Admin> GetTree(List<M_Admin> list1, List<M_Admin> list2, string id)
         {
             var self = list1.Where(t => t.AGENCY == id);

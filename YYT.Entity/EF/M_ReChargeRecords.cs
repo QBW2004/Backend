@@ -71,6 +71,18 @@ namespace YYT.Entity
         /// </summary>
         public DateTime CreateTime { get; set; }
 
+        /// <summary>
+        /// 玩家名称（后台补充，仅手机端列表展示用）
+        /// </summary>
+        [NotMapped]
+        public string UserName { get; set; }
+
+        /// <summary>
+        /// 充退类型名称（后台充值/后台兑换/赠送/扣币/前端充值/前端提现）
+        /// </summary>
+        [NotMapped]
+        public string TypeName { get; set; }
+
      //   public M_ReportsDao dap { get; set; }
         /// <summary>
         /// 充值时间
@@ -148,6 +160,14 @@ namespace YYT.Entity
         /// <para>1 已处理</para>
         /// </summary>
         public int Processed { get; set; }
+        /// <summary>
+        /// 操作人账号（手机端筛选用，可为空）
+        /// </summary>
+        public string Operator { get; set; }
+        /// <summary>
+        /// 类型筛选（手机端用）：0 全部；1 充值类；2 退分类
+        /// </summary>
+        public int TypeFlag { get; set; }
         /// <summary>
         /// 充值时间
         /// </summary>

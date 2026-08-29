@@ -1,0 +1,518 @@
+<html lang="zh-CN"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="theme-color" content="#007aff">
+    <meta name="msapplication-tap-highlight" content="no">
+    <title>代理拉黑</title>
+    <style>
+        /* iOS输入框修复 */
+        input[type="text"],
+        input[type="number"],
+        input[type="password"],
+        input[type="email"],
+        input[type="search"],
+        input[type="tel"],
+        input[type="url"],
+        textarea {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            border-radius: 0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .header {
+            background-color: #007aff;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 80px;
+        }
+
+        .header-content {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        h1 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .back-btn,
+        .refresh-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            min-width: 44px;
+            min-height: 44px;
+        }
+
+        .back-btn {
+            left: 0;
+        }
+
+        .refresh-btn {
+            right: 0;
+        }
+
+        .back-btn:hover,
+        .refresh-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .back-btn:active,
+        .refresh-btn:active {
+            transform: translateY(-50%) scale(0.96);
+        }
+
+        .back-btn svg,
+        .refresh-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+
+        .container {
+            padding: 16px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .input-section {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .input-section table {
+            width: 100%;
+            margin-top: 5px;
+        }
+
+        .input-field {
+            height: 44px !important;
+            border: 1px solid #e1e1e1 !important;
+            border-radius: 8px !important;
+            padding: 0 12px !important;
+            font-size: 16px !important;
+            transition: border-color 0.3s !important;
+            outline: none !important;
+            background-color: #fff !important;
+            color: #333 !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+        }
+
+        .input-field:focus {
+            border-color: #007aff !important;
+            box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.1) !important;
+        }
+
+        .option-group {
+            display: flex;
+            gap: 0;
+            padding: 3px;
+            background-color: #f2f2f7;
+            border: 1px solid #e5e5ea;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .option-item {
+            flex: 1;
+            min-width: 0;
+            background-color: transparent;
+            border: none;
+            padding: 0;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .option-item input {
+            display: none;
+        }
+
+        .option-item span {
+            display: block;
+            padding: 8px 6px;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #6e6e73;
+            transition: all 0.2s;
+        }
+
+        .option-item input:checked + span {
+            background-color: #ffffff;
+            color: #007aff;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+        }
+
+        .option-item:hover span {
+            color: #1d1d1f;
+        }
+
+        .blacklist-btn {
+            height: 44px !important;
+            background-color: #ff3b30 !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 8px !important;
+            padding: 0 20px !important;
+            font-size: 16px !important;
+            font-weight: 500 !important;
+            cursor: pointer !important;
+            transition: all 0.3s !important;
+            white-space: nowrap !important;
+            width: 100% !important;
+        }
+
+        .blacklist-btn:hover {
+            background-color: #ff2d20;
+        }
+
+        .blacklist-btn:active {
+            transform: scale(0.98);
+        }
+
+        .table-container {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            overflow: hidden;
+            margin-bottom: 20px;
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .blacklist-table {
+            width: max-content;
+            border-collapse: collapse;
+            table-layout: fixed;
+            min-width: 620px;
+        }
+
+        .blacklist-table th {
+            background-color: #f8f9fa;
+            padding: 10px 8px;
+            text-align: left;
+            font-weight: 600;
+            color: #666;
+            border-bottom: 1px solid #eaeaea;
+            white-space: nowrap;
+            font-size: 14px;
+        }
+
+        .blacklist-table td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #eaeaea;
+            color: #333;
+            font-size: 14px;
+            word-break: break-word;
+        }
+
+        .blacklist-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .blacklist-table tr:hover {
+            background-color: #f5f7fa;
+        }
+
+        .remove-btn {
+            background-color: #ff3b30;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .remove-btn:hover {
+            background-color: #e63028;
+        }
+
+        .no-data {
+            padding: 20px;
+            text-align: center;
+            color: #999;
+        }
+
+        .loading-container {
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            display: none;
+            z-index: 1000;
+        }
+
+        .loading-container.show {
+            display: block;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.45);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1001;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 320px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            overflow: hidden;
+        }
+
+        .modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #eee;
+            text-align: center;
+        }
+
+        .modal-title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .modal-body {
+            padding: 20px;
+            text-align: center;
+        }
+
+        .modal-icon {
+            margin-bottom: 12px;
+        }
+
+        .modal-message {
+            font-size: 14px;
+            color: #333;
+        }
+
+        .modal-footer {
+            padding: 12px 20px;
+            border-top: 1px solid #eee;
+            text-align: center;
+        }
+
+        .modal-btn {
+            padding: 8px 16px;
+            background: #007aff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        @media (max-width: 600px) {
+            .blacklist-table th,
+            .blacklist-table td {
+                font-size: 12px;
+                padding: 8px 6px;
+            }
+
+            .back-btn,
+            .refresh-btn {
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <button class="back-btn" id="backBtn">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"></path>
+                </svg>
+            </button>
+            <h1>代理拉黑</h1>
+            <div class="subtitle">批量拉黑代理及其玩家</div>
+            <button class="refresh-btn" id="refreshBtn">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"></path>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="input-section">
+            <div class="section-title">拉黑设置</div>
+            <table style="width:100%; border-collapse:collapse;">
+                <tbody><tr>
+                    <td style="width:100%; padding-bottom:10px;">
+                        <input type="text" id="agentAccountInput" class="input-field" placeholder="输入代理账号" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+                    </td>
+                </tr>
+                <tr>
+                    <td style="width:100%; padding-bottom:10px;">
+                        <input type="number" id="freeScoreInput" class="input-field" placeholder="输入吃分金额" min="1">
+                    </td>
+                </tr>
+                <tr>
+                    <td style="width:100%; padding-bottom:10px;">
+                        <div class="option-group">
+                            <label class="option-item">
+                                <input type="radio" name="objType" value="friend" checked="">
+                                <span>直属玩家</span>
+                            </label>
+                            <label class="option-item">
+                                <input type="radio" name="objType" value="against">
+                                <span>非直属玩家</span>
+                            </label>
+                            <label class="option-item">
+                                <input type="radio" name="objType" value="all">
+                                <span>所有玩家</span>
+                            </label>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="width:100%;">
+                        <button id="confirmBtn" class="blacklist-btn">确认拉黑</button>
+                    </td>
+                </tr>
+            </tbody></table>
+        </div>
+
+        <div class="table-container">
+            <table class="blacklist-table" id="blacklistTable">
+                <thead>
+                    <tr>
+                        <th style="width: 96px;">代理账号</th>
+                        <th style="width: 56px;">操作</th>
+                        <th style="width: 80px;">吃分金额</th>
+                        <th style="width: 80px;">影响玩家</th>
+                        <th style="width: 80px;">影响代理</th>
+                        <th style="width: 96px;">操作人</th>
+                        <th style="width: 130px;">操作时间</th>
+                    </tr>
+                </thead>
+                <tbody id="blacklistContainer"></tbody>
+            </table>
+            <div class="no-data" id="noData" style="display: block;">暂无数据</div>
+        </div>
+    </div>
+
+    <div class="loading-container" id="loading">处理中...</div>
+
+    <!-- 成功弹窗 -->
+    <div class="modal-overlay" id="successModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">操作成功</div>
+            </div>
+            <div class="modal-body">
+                <div class="modal-icon success">
+                    <svg viewBox="0 0 24 24" width="48" height="48">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="#34c759"></path>
+                    </svg>
+                </div>
+                <div class="modal-message" id="successMessage">操作成功</div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn confirm" id="successModalOkBtn">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 错误弹窗 -->
+    <div class="modal-overlay" id="errorModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">操作失败</div>
+            </div>
+            <div class="modal-body">
+                <div class="modal-icon error">
+                    <svg viewBox="0 0 24 24" width="48" height="48">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="#ff3b30"></path>
+                    </svg>
+                </div>
+                <div class="modal-message" id="errorMessage">操作失败，请重试</div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn confirm" id="errorModalOkBtn">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!--script stripped-->
+
+
+</body></html>

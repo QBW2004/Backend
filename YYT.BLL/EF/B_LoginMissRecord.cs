@@ -58,5 +58,37 @@ namespace YYT.BLL.EF
                 ef.SaveChangesAsync();
             }
         }
+
+        /// <summary>
+        /// 手机端：异常登录锁定的账号列表（连续失败 5 次及以上且未解锁）
+        /// </summary>
+        public List<M_LoginMissRecord> GetAbnormalList()
+        {
+            using (var ef = new GameDbContext())
+            {
+                return ef.LoginMissRecords
+                    .Where(c => c.LoginResult == 0 && c.MissCount > 4)
+                    .OrderByDescending(c => c.LoginTime)
+                    .ToList();
+            }
+        }
+
+        /// <summary>
+        /// 手机端：解除异常登录锁定（清零失败计数）
+        /// </summary>
+        public bool Unblock(string id)
+        {
+            using (var ef = new GameDbContext())
+            {
+                var rst = ef.LoginMissRecords.Where(c => c.ID.Equals(id)).FirstOrDefault();
+                if (rst == null)
+                    return false;
+                rst.LoginResult = 1;
+                rst.MissCount = 0;
+                rst.LoginTime = DateTime.Now;
+                ef.SaveChangesAsync();
+                return true;
+            }
+        }
     }
 }

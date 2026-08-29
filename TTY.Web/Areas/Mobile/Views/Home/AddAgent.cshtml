@@ -1,90 +1,217 @@
 @{
-    Layout = "~/Views/Shared/Layout/_MobileLayout.cshtml";
+    /* 添加代理（1:1 复刻参考站 kaidaili） */
     string webVer = ConfigHelper.Get("WebVer");
     bool isSuper = ViewBag.IsSuper == true;
+    Layout = "~/Views/Shared/Layout/_MobileLayout.cshtml";
 }
 
-<div class="m-container">
-    <div class="m-card m-card-pad">
-        <div class="m-section-title">代理账号创建</div>
+@section head {
+<style>
+    /* 表单容器样式 */
+    .form-container {
+        background-color: white;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        overflow: hidden;
+        margin-bottom: 20px;
+        padding: 24px;
+        max-width: 500px;
+        margin: 20px auto;
+    }
 
-        <form id="mAddAgentForm" autocomplete="off">
-            @if (isSuper)
-            {
-                <div class="m-form-group">
-                    <label class="m-label">代理层级</label>
-                    <div class="m-segment" id="mFlagGroup">
-                        <div class="m-segment-item active" data-val="0">直属代理</div>
-                        <div class="m-segment-item" data-val="1">总代理</div>
-                    </div>
-                    <input type="hidden" name="FLAG" id="mFlag" value="0" />
+    .form-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-label {
+        display: block;
+        font-size: 14px;
+        color: #666;
+        margin-bottom: 8px;
+        font-weight: 500;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #e1e1e1;
+        border-radius: 8px;
+        font-size: 16px;
+        transition: border-color 0.3s;
+        outline: none;
+        -webkit-appearance: none;
+        appearance: none;
+    }
+
+    .form-input:focus {
+        border-color: #007aff;
+        box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.1);
+    }
+
+    /* 提交按钮样式 */
+    .submit-btn {
+        width: 100%;
+        padding: 14px;
+        background-color: #007aff;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s;
+        margin-top: 10px;
+    }
+
+    .submit-btn:hover {
+        background-color: #0066cc;
+    }
+
+    .submit-btn:active {
+        transform: scale(0.98);
+    }
+
+    .submit-btn.loading {
+        position: relative;
+        color: transparent !important;
+    }
+
+    .submit-btn.loading::after {
+        content: '';
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: white;
+        animation: phone-spin 0.8s linear infinite;
+        left: calc(50% - 10px);
+        top: calc(50% - 10px);
+    }
+
+    /* 滑动开关样式 */
+    .switch-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+    }
+
+    .switch-label {
+        font-size: 14px;
+        color: #666;
+        font-weight: 500;
+    }
+
+    .switch {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 28px;
+    }
+
+    .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #e9e9eb;
+        transition: .4s;
+        border-radius: 34px;
+    }
+
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 24px;
+        width: 24px;
+        left: 2px;
+        bottom: 2px;
+        background-color: white;
+        transition: .3s;
+        border-radius: 50%;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    input:checked + .slider {
+        background-color: #34c759;
+    }
+
+    input:focus + .slider {
+        box-shadow: 0 0 1px #34c759;
+    }
+
+    input:checked + .slider:before {
+        transform: translateX(22px);
+    }
+
+    @@media (max-width: 768px) {
+        .container {
+            padding: 10px;
+        }
+
+        .form-container {
+            padding: 16px;
+            margin: 10px auto;
+            border-radius: 10px;
+        }
+
+        .form-input {
+            padding: 10px;
+            font-size: 15px;
+        }
+
+        .submit-btn {
+            padding: 12px;
+            font-size: 15px;
+        }
+    }
+</style>
+}
+
+    <div class="container">
+        <div class="form-container">
+            <div class="form-title">代理账号创建</div>
+            <form id="createAgentForm" autocomplete="off">
+                <div class="form-group">
+                    <label for="agentAccount" class="form-label">账号</label>
+                    <input type="text" id="agentAccount" class="form-input" placeholder="请输入代理账号" required>
                 </div>
-            }
-            else
-            {
-                <input type="hidden" name="FLAG" id="mFlag" value="0" />
-            }
-
-            <div class="m-form-group">
-                <label class="m-label">账号</label>
-                <input type="text" class="m-input" name="ID" id="mAgId" placeholder="至少 3 位，字母或数字" autocomplete="off" />
-            </div>
-
-            <div class="m-form-group">
-                <label class="m-label">密码</label>
-                <input type="password" class="m-input" name="PWD" id="mAgPwd" placeholder="至少 6 位，字母或数字" autocomplete="new-password" />
-            </div>
-
-            <div class="m-form-group">
-                <label class="m-label">确认密码</label>
-                <input type="password" class="m-input" name="RE_PWD" id="mAgRePwd" placeholder="请再次输入密码" autocomplete="new-password" />
-            </div>
-
-            @if (isSuper)
-            {
-                <div class="m-form-group">
-                    <label class="m-label">邀请码（可选，4-8 位数字）</label>
-                    <input type="text" class="m-input" name="InviteCode" id="mAgInvite" inputmode="numeric" placeholder="留空则自动生成" autocomplete="off" />
+                <div class="form-group">
+                    <label for="agentPassword" class="form-label">密码</label>
+                    <input type="password" id="agentPassword" class="form-input" placeholder="密码必须是数字+大小写字母" required>
                 </div>
-            }
 
-            <div class="m-switch-row">
-                <label class="m-label">开启充值功能</label>
-                <label class="m-switch">
-                    <input type="checkbox" id="mAgEnable" checked />
-                    <span class="m-slider"></span>
-                </label>
-            </div>
-            <input type="hidden" name="RE_ENABLE" id="mAgEnableVal" value="1" />
+                <!-- 滑动开关：是否允许创建下级代理 -->
+                <div class="switch-wrapper">
+                    <span class="switch-label">允许该代理创建下级代理</span>
+                    <label class="switch">
+                        <input type="checkbox" id="allowCreateSubAgent" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
 
-            <div class="m-switch-row">
-                <label class="m-label">允许其创建下级代理</label>
-                <label class="m-switch">
-                    <input type="checkbox" id="mAgCreate" checked />
-                    <span class="m-slider"></span>
-                </label>
-            </div>
-            <input type="hidden" name="IsCreateAgent" id="mAgCreateVal" value="1" />
-
-            <div class="m-switch-row">
-                <label class="m-label">允许其上下分</label>
-                <label class="m-switch">
-                    <input type="checkbox" id="mAgUpDown" checked />
-                    <span class="m-slider"></span>
-                </label>
-            </div>
-            <input type="hidden" name="IsUpDown" id="mAgUpDownVal" value="1" />
-
-            <div class="m-hint">@Html.Raw("&#9432;") 创建成功后立即生效，其余权限可在电脑版「代理管理」中细化调整。</div>
-
-            <button type="submit" class="m-btn m-btn-primary m-btn-block" id="mAddAgentBtn" style="margin-top:16px;">创建代理</button>
-        </form>
+                <button type="submit" class="submit-btn" id="submitBtn">创建代理</button>
+            </form>
+        </div>
     </div>
-</div>
 
 @section scripts {
-    <script>
-        window.MPage = { isSuper: @Html.Raw(isSuper ? "true" : "false") };
-    </script>
-    <script src="@Url.Content("~/Scripts/app/mobile/mobile.addagent.js?v=" + webVer)"></script>
+    <script src="@Url.Content("~/Scripts/app/phone/phone.addagent.js?v=" + webVer)"></script>
 }

@@ -1,0 +1,215 @@
+@{
+    /* 代理拉黑（1:1 复刻参考站 daililahei）
+       说明：项目无「吃分」扣钱语义，金额输入保留展示但不下发，
+            拉黑 = 封禁代理整条线登录 + 按范围冻结名下玩家。 */
+    string webVer = ConfigHelper.Get("WebVer");
+    Layout = "~/Views/Shared/Layout/_MobileLayout.cshtml";
+}
+
+@section head {
+<style>
+    .section-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #666;
+        margin: 0 0 12px;
+        padding-bottom: 8px;
+        text-align: center;
+        border-bottom: 1px solid #eaeaea;
+    }
+
+    .blacklist-btn {
+        height: 44px;
+        background-color: #ff3b30;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0 20px;
+        font-size: 16px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-align: center;
+        white-space: nowrap;
+        width: 100%;
+        -webkit-appearance: none;
+        appearance: none;
+    }
+
+    .blacklist-btn:hover {
+        background-color: #ff2d20;
+    }
+
+    .blacklist-btn:active {
+        transform: scale(0.98);
+    }
+
+    /* 拉黑范围分段选择 */
+    .option-group {
+        display: flex;
+        width: 100%;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid #e5e5e5;
+        background-color: #f9f9f9;
+    }
+
+    .option-item {
+        flex: 1;
+        text-align: center;
+        padding: 10px 0;
+        cursor: pointer;
+        background-color: transparent;
+        color: #777;
+        font-size: 14px;
+        font-weight: 400;
+        transition: all 0.3s;
+        position: relative;
+        user-select: none;
+    }
+
+    .option-item:not(:last-child) {
+        border-right: 1px solid #e5e5e5;
+    }
+
+    .option-item.active {
+        background-color: #f0f0f0;
+        color: #007aff;
+        font-weight: 500;
+    }
+
+    .option-item input[type="radio"] {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .blacklist-table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+    }
+
+    .blacklist-table th {
+        background-color: #f8f9fa;
+        padding: 10px 6px;
+        text-align: left;
+        font-weight: 600;
+        color: #666;
+        border-bottom: 1px solid #eaeaea;
+        white-space: nowrap;
+        font-size: 13px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .blacklist-table td {
+        padding: 10px 6px;
+        border-bottom: 1px solid #eaeaea;
+        color: #333;
+        font-size: 13px;
+        word-break: break-all;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .blacklist-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .blacklist-table tbody tr:hover {
+        background-color: #f5f7fa;
+    }
+
+    .unblack-btn {
+        padding: 4px 8px;
+        background-color: rgba(52, 199, 89, 0.1);
+        color: #34c759;
+        border: 1px solid rgba(52, 199, 89, 0.2);
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        white-space: nowrap;
+        -webkit-appearance: none;
+        appearance: none;
+    }
+
+    @@media (max-width: 768px) {
+        .table-container {
+            overflow-x: auto;
+        }
+
+        .blacklist-table {
+            min-width: 620px;
+        }
+    }
+</style>
+}
+
+    <div class="container">
+        <div class="input-section">
+            <div class="section-title">拉黑设置</div>
+            <table style="width:100%; border-collapse:collapse;">
+                <tbody>
+                    <tr>
+                        <td style="width:100%; padding-bottom:10px;">
+                            <input type="text" id="agentAccountInput" class="input-field" placeholder="输入代理账号" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width:100%; padding-bottom:10px;">
+                            <input type="number" id="freeScoreInput" class="input-field" placeholder="输入吃分金额（当前版本不生效）" min="1">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width:100%; padding-bottom:10px;">
+                            <div class="option-group" id="scopeGroup">
+                                <label class="option-item active" data-value="1">
+                                    <input type="radio" name="objType" value="friend" checked>
+                                    <span>直属玩家</span>
+                                </label>
+                                <label class="option-item" data-value="2">
+                                    <input type="radio" name="objType" value="against">
+                                    <span>非直属玩家</span>
+                                </label>
+                                <label class="option-item" data-value="0">
+                                    <input type="radio" name="objType" value="all">
+                                    <span>所有玩家</span>
+                                </label>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width:100%;">
+                            <button id="confirmBtn" class="blacklist-btn">确认拉黑</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="table-container">
+            <table class="blacklist-table" id="blacklistTable">
+                <thead>
+                    <tr>
+                        <th style="width: 96px;">代理账号</th>
+                        <th style="width: 56px;">操作</th>
+                        <th style="width: 70px;">吃分金额</th>
+                        <th style="width: 70px;">影响玩家</th>
+                        <th style="width: 70px;">影响代理</th>
+                        <th style="width: 90px;">操作人</th>
+                        <th style="width: 130px;">操作时间</th>
+                    </tr>
+                </thead>
+                <tbody id="blacklistContainer"></tbody>
+            </table>
+            <div class="no-data" id="noData" style="display: block;">暂无数据</div>
+        </div>
+    </div>
+
+@section scripts {
+    <script src="@Url.Content("~/Scripts/app/phone/phone.blacklist.js?v=" + webVer)"></script>
+}

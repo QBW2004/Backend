@@ -330,6 +330,38 @@ namespace YYT.Web.Areas.Game.Controllers
         }
         [AjaxOnly]
         [HttpPost]
+        public ActionResult GetReChargeRecordsForPhone(FormCollection form)
+        {
+            M_EasyuiGridData<M_ReChargeRecords> list = new M_EasyuiGridData<M_ReChargeRecords>();
+            long sumRecharge = 0, sumWithdraw = 0;
+            try
+            {
+                M_LoginUser loginUser = WebHelper.GetLoginInfo();
+                if (loginUser == null)
+                    return Json(new { total = 0, rows = new List<M_ReChargeRecords>(), sumRecharge, sumWithdraw });
+
+                M_Page mPage = new M_Page(form.Q<int>("page", 1), form.Q<int>("rows", 10));
+                M_ReChargeRecordsDao entity = new M_ReChargeRecordsDao
+                {
+                    GameID = form.Q<string>("ID"),
+                    StartTime = form.Q<string>("srch_StartTime"),
+                    EndTime = form.Q<string>("srch_EndTime"),
+                    Operator = form.Q<string>("Operator"),
+                    TypeFlag = form.Q<int>("TypeFlag", 0)
+                };
+
+                list = new B_ReChargeRecords().GetReChargeRecordsForPhone(loginUser, mPage, entity, out sumRecharge, out sumWithdraw);
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.RechargeController), ex);
+            }
+
+            return Json(new { total = list.total, rows = list.rows, sumRecharge = sumRecharge, sumWithdraw = sumWithdraw });
+        }
+
+        [AjaxOnly]
+        [HttpPost]
         public ActionResult ConfirmReCharge(FormCollection form)
         {
             Msg msg = new Msg(0, "处理失败！");

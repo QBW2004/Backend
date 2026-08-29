@@ -1,0 +1,153 @@
+@{
+    /* 异常账号（1:1 复刻参考站 yichangzhanghu） */
+    string webVer = ConfigHelper.Get("WebVer");
+    Layout = "~/Views/Shared/Layout/_MobileLayout.cshtml";
+}
+
+@section head {
+<style>
+    .stats-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        background-color: white;
+        border-radius: 12px;
+        padding: 16px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .stats-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #333;
+    }
+
+    .stats-info {
+        display: flex;
+        gap: 16px;
+    }
+
+    .stats-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .stats-label {
+        font-size: 14px;
+        color: #666;
+    }
+
+    .stats-value {
+        font-size: 16px;
+        font-weight: 600;
+        color: #333;
+    }
+
+    .stats-value.player {
+        color: #007aff;
+    }
+
+    .stats-value.admin {
+        color: #ff9500;
+    }
+
+    .account-type {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    .account-type.player {
+        background-color: rgba(0, 122, 255, 0.1);
+        color: #007aff;
+    }
+
+    .account-type.admin {
+        background-color: rgba(255, 149, 0, 0.1);
+        color: #ff9500;
+    }
+
+    .error-count {
+        display: inline-block;
+        font-weight: 600;
+        color: #ff3b30;
+        background-color: rgba(255, 59, 48, 0.1);
+        padding: 2px 4px;
+        border-radius: 3px;
+        margin: 0 2px;
+    }
+
+    .unlock-btn {
+        padding: 6px 12px;
+        background-color: rgba(52, 199, 89, 0.1);
+        color: #34c759;
+        border: 1px solid rgba(52, 199, 89, 0.2);
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s;
+        white-space: nowrap;
+        -webkit-appearance: none;
+        appearance: none;
+    }
+
+    .unlock-btn:hover {
+        background-color: rgba(52, 199, 89, 0.2);
+        border-color: rgba(52, 199, 89, 0.3);
+    }
+
+    .unlock-btn:active {
+        transform: scale(0.98);
+    }
+
+    @@media (max-width: 768px) {
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            min-width: 480px;
+        }
+    }
+</style>
+}
+
+    <div class="container">
+        <div class="stats-container">
+            <div class="stats-title">异常账号统计</div>
+            <div class="stats-info">
+                <div class="stats-item">
+                    <div class="stats-label">玩家账号:</div>
+                    <div class="stats-value player" id="playerCount">0</div>
+                </div>
+                <div class="stats-item">
+                    <div class="stats-label">代理账号:</div>
+                    <div class="stats-value admin" id="adminCount">0</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>账号</th>
+                        <th>账号类型</th>
+                        <th>锁定原因</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="accountList"></tbody>
+            </table>
+            <div class="no-data" id="noData" style="display: block;">暂无异常账号</div>
+        </div>
+    </div>
+
+@section scripts {
+    <script src="@Url.Content("~/Scripts/app/phone/phone.abnormal.js?v=" + webVer)"></script>
+}

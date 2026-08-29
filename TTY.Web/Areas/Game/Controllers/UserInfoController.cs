@@ -274,6 +274,129 @@ namespace YYT.Web.Areas.Game.Controllers
             return Json(list);
         }
 
+        #region 手机端扩展接口
+        /// <summary>
+        /// 手机端：今日玩家总输赢合计（权限范围内）
+        /// </summary>
+        [MemberAuthorize]
+        [AjaxOnly]
+        [HttpPost]
+        public ActionResult GetTodayWinLoss()
+        {
+            Msg msg = new Msg(0, "查询失败！");
+            try
+            {
+                M_LoginUser loginUser = WebHelper.GetLoginInfo();
+                if (loginUser == null)
+                    return Json(msg);
+
+                long total = new B_Users().GetTodayTotalWinLoss(loginUser);
+                msg.code = 1;
+                msg.content = "查询成功！";
+                msg.datas = new { total = total };
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.UserInfoController), ex);
+            }
+            return Json(msg);
+        }
+
+        /// <summary>
+        /// 手机端：离线玩家分页（玩家列表-离线页签）
+        /// </summary>
+        [MemberAuthorize]
+        [AjaxOnly]
+        [HttpPost]
+        public ActionResult GetOfflineUsers(FormCollection form)
+        {
+            M_EasyuiGridData<M_Users_DTO> list = new M_EasyuiGridData<M_Users_DTO>();
+            try
+            {
+                M_LoginUser loginUser = WebHelper.GetLoginInfo();
+                if (loginUser == null)
+                    return Json(list);
+
+                M_Page mPage = new M_Page(form.Q<int>("page", 1), form.Q<int>("rows", 10));
+                M_Users_DTO mUsers = new M_Users_DTO
+                {
+                    ID = form.Q<string>("srch_ID"),
+                    NAME = form.Q<string>("srch_NAME"),
+                    AGENCY = form.Q<string>("srch_Agency")
+                };
+                string sort = form.Q<string>("sort");
+                list = new B_Users().GetOfflineUsersList(mPage, mUsers, loginUser, sort);
+                if (list != null && list.rows != null)
+                {
+                    foreach (var item in list.rows)
+                        item.Profit = item.COINS_BUY - item.COINS_BACK;
+                }
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.UserInfoController), ex);
+            }
+            return Json(list);
+        }
+
+        /// <summary>
+        /// 手机端：封禁中的玩家分页（玩家封号页）
+        /// </summary>
+        [MemberAuthorize]
+        [AjaxOnly]
+        [HttpPost]
+        public ActionResult GetFrozenUsers(FormCollection form)
+        {
+            M_EasyuiGridData<M_Users_DTO> list = new M_EasyuiGridData<M_Users_DTO>();
+            try
+            {
+                M_LoginUser loginUser = WebHelper.GetLoginInfo();
+                if (loginUser == null)
+                    return Json(list);
+
+                M_Page mPage = new M_Page(form.Q<int>("page", 1), form.Q<int>("rows", 10));
+                M_Users_DTO mUsers = new M_Users_DTO { ID = form.Q<string>("srch_ID") };
+                list = new B_Users().GetFrozenUsersList(mPage, mUsers, loginUser);
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.UserInfoController), ex);
+            }
+            return Json(list);
+        }
+
+        /// <summary>
+        /// 手机端：会员盈亏分页（今日输赢 + 总盈亏，支持排序）
+        /// </summary>
+        [MemberAuthorize]
+        [AjaxOnly]
+        [HttpPost]
+        public ActionResult GetMemberWinLoss(FormCollection form)
+        {
+            M_EasyuiGridData<M_Users_DTO> list = new M_EasyuiGridData<M_Users_DTO>();
+            try
+            {
+                M_LoginUser loginUser = WebHelper.GetLoginInfo();
+                if (loginUser == null)
+                    return Json(list);
+
+                M_Page mPage = new M_Page(form.Q<int>("page", 1), form.Q<int>("rows", 10));
+                M_Users_DTO mUsers = new M_Users_DTO
+                {
+                    ID = form.Q<string>("srch_ID"),
+                    AGENCY = form.Q<string>("srch_Agency")
+                };
+                string sort = form.Q<string>("sort");
+                list = new B_Users().GetMemberWinLossList(mPage, mUsers, loginUser, sort);
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.UserInfoController), ex);
+            }
+            return Json(list);
+        }
+        #endregion
+
         [MemberAuthorize]
         [AjaxOnly]
         [HttpPost]

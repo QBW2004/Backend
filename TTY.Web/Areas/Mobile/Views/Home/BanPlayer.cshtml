@@ -1,0 +1,99 @@
+@{
+    /* 玩家封号（1:1 复刻参考站 fenghao） */
+    string webVer = ConfigHelper.Get("WebVer");
+    Layout = "~/Views/Shared/Layout/_MobileLayout.cshtml";
+}
+
+@section head {
+<style>
+    /* 输入区域（覆盖共享 .section-title 为左对齐版） */
+    .section-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #666;
+        margin: 0 0 12px;
+        padding-bottom: 8px;
+        text-align: center;
+        border-bottom: 1px solid #eaeaea;
+    }
+
+    .table-container table {
+        min-width: 480px;
+    }
+
+    /* 解封按钮（复用共享 .unban-btn 蓝色样式） */
+    .unban-btn.danger {
+        background-color: rgba(255, 59, 48, 0.1);
+        color: #ff3b30;
+        border-color: rgba(255, 59, 48, 0.2);
+    }
+
+    .ban-time {
+        color: #666;
+        white-space: nowrap;
+    }
+
+    @@media (max-width: 768px) {
+        .container {
+            padding: 16px;
+        }
+
+        .input-section {
+            padding: 16px;
+        }
+
+        .input-section table tr {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .input-section table td {
+            display: block;
+            width: 100% !important;
+            padding: 0 0 10px 0 !important;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            border-radius: 8px;
+        }
+    }
+</style>
+}
+
+    <div class="container">
+        <div class="input-section">
+            <div class="section-title">玩家封号</div>
+            <table style="width:100%; border-collapse:collapse;">
+                <tbody>
+                    <tr>
+                        <td style="width:70%; padding-right:10px;">
+                            <input type="text" id="playerIdInput" class="input-field" style="width:100%; box-sizing:border-box;" placeholder="输入玩家账号" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+                        </td>
+                        <td style="width:30%;">
+                            <button id="banBtn" class="ban-btn" style="width:100%;">封禁账号</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="table-container">
+            <table id="banTable">
+                <thead>
+                    <tr>
+                        <th style="width: 40%;">玩家账号</th>
+                        <th style="width: 20%;">操作</th>
+                        <th style="width: 40%;">封禁时间</th>
+                    </tr>
+                </thead>
+                <tbody id="banList"></tbody>
+            </table>
+            <div class="no-data" id="noData" style="display: block;">暂无数据</div>
+        </div>
+    </div>
+
+@section scripts {
+    <script src="@Url.Content("~/Scripts/app/phone/phone.banplayer.js?v=" + webVer)"></script>
+}

@@ -1,0 +1,1656 @@
+<html lang="zh-CN"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>玩家列表</title>
+    
+    <!--script stripped-->
+    
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            min-height: 100vh;
+            overflow-x: hidden; 
+        }
+        
+        .header {
+            background-color: #007aff;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 90px;
+        }
+        
+        .header-content {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .header-content h1 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+            line-height: 1;
+        }
+        
+        .subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            margin-top: 2px;
+        }
+        
+        .total-win-loss {
+            font-weight: 600;
+            font-size: 20px;
+            padding: 0 12px;
+            border-radius: 6px;
+            margin-top: 0;
+        }
+        
+        .online-count {
+            color: #ffd700; 
+            font-weight: 500;
+        }
+        
+        
+        .total-win-loss {
+            font-weight: 600;
+            font-size: 18px;
+            margin-left: 5px;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+        
+        .total-win-loss.positive {
+            color: #34c759; 
+            background-color: rgba(52, 199, 89, 0.15);
+        }
+        
+        .total-win-loss.negative {
+            color: #ff9500; 
+            background-color: rgba(255, 149, 0, 0.15);
+        }
+        
+        .container {
+            padding: 0;
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        
+        .player-card {
+            background: white;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            cursor: pointer;  
+            transition: transform 0.2s, box-shadow 0.2s;  
+            border-radius: 0;
+        }
+        
+        .player-card:active {
+            transform: scale(0.98);  
+        }
+        
+        .player-card:hover {
+            box-shadow: 0 2px 5px rgba(0,0,0,0.15);  
+        }
+        
+        
+        #onlineTab .player-card {
+            margin-bottom: 16px;
+            border: 1px solid #e0e0e0;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+            padding: 16px;
+            position: relative;
+            border-radius: 0;
+        }
+        
+        #onlineTab .player-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border-color: #d0d0d0;
+        }
+        
+        #onlineTab .player-card:before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 4px;
+            background-color: #007aff;
+            border-radius: 0;
+        }
+        
+        
+        .player-card.offline {
+            background: #f9f9f9;
+            border: 1px solid #eaeaea;
+            box-shadow: none;
+        }
+        
+        .player-card.offline:hover {
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .player-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            flex-wrap: nowrap;
+            width: 100%;
+        }
+        
+        .player-account {
+            font-size: 15px;
+            font-weight: 600;
+            color: #1d1d1f;
+            max-width: 100px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        
+        .player-name {
+            font-size: 14px;
+            color: #1d1d1f;
+            max-width: 80px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        
+        .agent-line {
+            font-size: 13px;
+            color: #666;
+            max-width: 60px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        
+        .remaining-score {
+            font-size: 14px;
+            font-weight: 500;
+            color: #34c759;
+            padding: 2px 8px;
+            background: rgba(52, 199, 89, 0.1);
+            border-radius: 4px;
+            flex-shrink: 0;
+            margin-left: auto;
+        }
+        
+        .remaining-diamond {
+            font-size: 14px;
+            font-weight: 500;
+            color: #007aff;
+            padding: 2px 8px;
+            background: rgba(0, 122, 255, 0.1);
+            border-radius: 4px;
+            flex-shrink: 0;
+            margin-left: 8px;
+        }
+        
+        .black-listed {
+            color: #ff3b30;
+            font-weight: 500;
+            font-size: 12px;
+            padding: 2px 6px;
+            background: rgba(255, 59, 48, 0.1);
+            border-radius: 4px;
+        }
+        
+        .player-info {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 13px;
+        }
+        
+        .info-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+        
+        .info-row.money-row {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+        
+        .info-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .info-label {
+            color: #86868b;
+            margin-bottom: 2px;
+            font-size: 12px;
+        }
+        
+        .info-value {
+            color: #1d1d1f;
+        }
+        
+        .money-value {
+            font-family: -apple-system-monospace, monospace;
+            font-weight: 500;
+        }
+        
+        .positive {
+            color: #34c759;
+        }
+        
+        .negative {
+            color: #ff3b30;
+        }
+        
+        
+        .loading {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 16px 24px;
+            border-radius: 12px;
+            font-size: 14px;
+            z-index: 1000;
+        }
+        
+        .loading.show {
+            display: block;
+        }
+        
+        
+        .money-row .info-item {
+            background: #f8f9fa;
+            padding: 8px 12px;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .money-row .info-label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 0;
+            flex-shrink: 0;
+        }
+        
+        .money-row .info-value {
+            font-size: 16px;
+            font-family: -apple-system-monospace, monospace;
+            font-weight: 600;
+            text-align: right;
+        }
+        
+        .money-row .positive {
+            color: #34c759;
+        }
+        
+        .money-row .negative {
+            color: #ff3b30;
+        }
+        
+        
+        .info-row.money-row.eat-score-row {
+            grid-template-columns: 1fr;
+            margin-top: 8px;
+        }
+        
+        .eat-score-row .info-item {
+            background: #f8f9fa;  
+            border: none;  
+            padding: 6px 10px;  
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .eat-score-row .info-label {
+            display: none;  
+        }
+        
+        .eat-score-row .info-value {
+            font-size: 12px;
+            color: #ff6b6b;
+            text-align: center;
+            width: 100%;
+        }
+        
+        .login-time-row {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px dashed #e0e0e0;
+            display: flex;
+            justify-content: center;
+        }
+        
+        .login-time-row .info-item {
+            background: rgba(0, 122, 255, 0.05);
+            border-radius: 6px;
+            padding: 6px 10px;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+        }
+        
+        .login-time-row .info-label {
+            color: #007aff;
+            font-size: 12px;
+            font-weight: 500;
+            margin-bottom: 0;
+        }
+        
+        .login-time-row .info-value {
+            font-size: 13px;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        @media (max-width: 380px) {
+            .container {
+                padding: 8px;
+            }
+            
+            .player-card {
+                padding: 10px;
+                margin-bottom: 6px;
+            }
+            
+            .info-row {
+                gap: 6px;
+            }
+            
+            .money-row .info-value {
+                font-size: 14px;  
+            }
+            
+            .money-row .info-item {
+                padding: 5px 8px;  
+            }
+            
+            .money-row .info-label {
+                font-size: 11px;  
+            }
+        }
+        
+        
+        .button-group {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        
+        .button-group button {
+            flex: 1;
+            padding: 8px 0;
+            border: 1px solid #e5e5e5;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 400;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            background-color: white;
+            color: #666;
+        }
+        
+        
+        .blacklist-btn {
+            color: #ff3b30;
+            border-color: rgba(255, 59, 48, 0.2);
+        }
+        
+        .blacklist-btn:hover {
+            background-color: rgba(255, 59, 48, 0.05);
+            border-color: rgba(255, 59, 48, 0.3);
+        }
+        
+        
+        .reward-btn {
+            color: #34c759;
+            border-color: rgba(52, 199, 89, 0.2);
+        }
+        
+        .reward-btn:hover {
+            background-color: rgba(52, 199, 89, 0.05);
+            border-color: rgba(52, 199, 89, 0.3);
+        }
+        
+        
+        .recharge-btn {
+            color: #007aff;
+            border-color: rgba(0, 122, 255, 0.2);
+        }
+        
+        .recharge-btn:hover {
+            background-color: rgba(0, 122, 255, 0.05);
+            border-color: rgba(0, 122, 255, 0.3);
+        }
+        
+        
+        button.blocked {
+            background-color: #f5f5f5;
+            color: #999 !important;
+            cursor: not-allowed;
+            border-color: #e5e5e5 !important;
+        }
+        
+        
+        button.loading {
+            opacity: 0.7;
+            cursor: wait;
+        }
+        
+        
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none; 
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .modal-overlay.show {
+            display: flex; 
+        }
+        
+        .modal-content {
+            background-color: white;
+            border-radius: 12px;
+            width: 85%;
+            max-width: 320px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            transform: translateY(20px);
+            transition: transform 0.3s;
+        }
+        
+        .modal-overlay.show .modal-content {
+            transform: translateY(0);
+        }
+        
+        .modal-header {
+            padding: 16px;
+            border-bottom: 1px solid #e5e5e5;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1d1d1f;
+        }
+        
+        .modal-subtitle {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .modal-label {
+            font-weight: 500;
+            color: #666;
+        }
+        
+        .modal-actions {
+            padding: 16px;
+        }
+        
+        .modal-action-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 12px 16px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border: none;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .modal-action-btn.blacklist {
+            background-color: rgba(255, 59, 48, 0.1);
+            color: #ff3b30;
+        }
+        
+        .modal-action-btn.reward {
+            background-color: rgba(52, 199, 89, 0.1);
+            color: #34c759;
+        }
+        
+        .modal-action-btn.recharge {
+            background-color: rgba(0, 122, 255, 0.1);
+            color: #007aff;
+        }
+        
+        .modal-action-btn.details {
+            background-color: rgba(142, 142, 147, 0.1);
+            color: #8e8e93;
+        }
+        
+        .modal-action-btn:hover {
+            background-color: #f5f5f7;
+        }
+        
+        .modal-footer {
+            padding: 12px 16px;
+            border-top: 1px solid #e5e5e5;
+        }
+        
+        .modal-cancel-btn {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            background-color: #f5f5f7;
+            font-size: 16px;
+            font-weight: 500;
+            color: #007aff;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .modal-cancel-btn:hover {
+            background-color: #e5e5ea;
+        }
+        
+        
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #666;
+            margin: 20px 0 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #eaeaea;
+        }
+        
+        
+        .load-more-container {
+            padding: 0 8px;
+            width: 100%;
+        }
+        
+        .load-more-btn {
+            background-color: #f5f7fa;
+            border: 1px solid #e5e5e5;
+            color: #007aff;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .load-more-btn:hover {
+            background-color: #e5e5ea;
+        }
+        
+        .load-more-btn.loading {
+            opacity: 0.7;
+            cursor: wait;
+        }
+        
+        .load-more-btn.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            color: #999;
+        }
+        
+        .no-more-data {
+            text-align: center;
+            color: #999;
+            font-size: 14px;
+            margin: 20px 0;
+        }
+        
+        
+        .tabs-container {
+            margin: 0;
+            border-radius: 0;
+            overflow: hidden;
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            width: 100%;
+        }
+        
+        .tabs-header {
+            display: flex;
+            border-bottom: 1px solid #eaeaea;
+        }
+        
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding: 14px 0;
+            font-size: 15px;
+            font-weight: 500;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+        
+        .tab.active {
+            color: #007aff;
+        }
+        
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 25%;
+            width: 50%;
+            height: 3px;
+            background-color: #007aff;
+            border-radius: 3px 3px 0 0;
+        }
+        
+        .tab-count {
+            font-size: 16px;
+            font-weight: 600;
+            margin-left: 5px;
+            color: inherit;
+        }
+        
+        .tabs-content {
+            padding: 0;
+        }
+        
+        .tab-pane {
+            display: none;
+            padding: 0;
+        }
+        
+        
+        #onlineTab {
+            background-color: #f8f9fa;
+            padding: 8px 0;
+            width: 100%;
+        }
+        
+        
+        #offlineTab {
+            padding: 8px 0;
+            width: 100%;
+        }
+        
+        
+        #onlinePlayersSection, #offlinePlayersSection {
+            padding: 0;
+            width: 100%;
+        }
+        
+        .tab-pane.active {
+            display: block;
+        }
+        
+        
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+        
+        .sidebar-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 280px;
+            height: 100%;
+            background-color: white;
+            z-index: 101;
+            box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+            transition: left 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .sidebar.active {
+            left: 0;
+        }
+        
+        .sidebar-header {
+            padding: 20px 16px;
+            background-color: #007aff;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        
+        .sidebar-user-info {
+            display: flex;
+            align-items: center;
+        }
+        
+        .sidebar-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+        }
+        
+        .sidebar-user-details {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .sidebar-username {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .sidebar-invite-code {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        
+        .sidebar-close-btn {
+            background: transparent;
+            border: none;
+            color: white;
+            cursor: pointer;
+            padding: 4px;
+        }
+        
+        .sidebar-menu {
+            flex: 1;
+            padding: 16px 0;
+            overflow-y: auto;
+        }
+        
+        .sidebar-menu-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            color: #333;
+            text-decoration: none;
+            transition: background-color 0.2s;
+        }
+        
+        .sidebar-menu-item:hover {
+            background-color: #f5f5f7;
+        }
+        
+        .sidebar-menu-item svg {
+            margin-right: 12px;
+            color: #007aff;
+        }
+        
+        .sidebar-menu-placeholder {
+            padding: 24px 16px;
+            text-align: center;
+            color: #999;
+            border-top: 1px solid #eaeaea;
+            margin-top: 16px;
+        }
+        
+        .placeholder-text {
+            font-size: 14px;
+            font-style: italic;
+        }
+        
+        
+        .logout-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 16px;
+            padding: 12px;
+            background-color: #f5f5f7;
+            color: #ff3b30;
+            border: 1px solid rgba(255, 59, 48, 0.2);
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .logout-btn:hover {
+            background-color: rgba(255, 59, 48, 0.05);
+            border-color: rgba(255, 59, 48, 0.3);
+        }
+        
+        .logout-btn svg {
+            margin-right: 8px;
+            fill: currentColor;
+        }
+        
+        @media screen and (max-width: 768px) {
+            html, body {
+                margin: 0;
+                padding: 0;
+                width: 100%;
+                overflow-x: hidden;
+            }
+            
+            .header {
+                width: 100%;
+                padding: 20px;
+                max-width: 100%;
+            }
+            
+            .header-content {
+                width: 100%;
+                max-width: 100%;
+            }
+            
+            .menu-btn {
+                left: 0;
+            }
+            
+            .container {
+                width: calc(100% - 20px);
+                margin-left: auto;
+                margin-right: auto;
+            }
+        }
+        
+        
+        .menu-btn {
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            min-width: 44px;
+            min-height: 44px;
+        }
+        
+        .menu-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .menu-btn:active {
+            transform: translateY(-50%) scale(0.96);
+        }
+        
+        .menu-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+
+        
+        .refresh-btn {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            min-width: 44px;
+            min-height: 44px;
+        }
+        
+        .refresh-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .refresh-btn:active {
+            transform: translateY(-50%) scale(0.96);
+        }
+        
+        .refresh-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+        
+        
+        .search-btn {
+            position: absolute;
+            right: 52px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            min-width: 44px;
+            min-height: 44px;
+        }
+        
+        .search-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .search-btn:active {
+            transform: translateY(-50%) scale(0.96);
+        }
+        
+        .search-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+
+        
+        .search-modal {
+            max-width: 400px;
+            width: 90%;
+        }
+        
+        .search-input-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        
+        .search-input-container input {
+            flex: 1;
+            padding: 10px 12px;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        
+        .search-input-container input:focus {
+            border-color: #007aff;
+        }
+        
+        .search-submit-btn {
+            background: #007aff;
+            border: none;
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+        
+        .search-submit-btn svg {
+            fill: white;
+        }
+        
+        .search-submit-btn:hover {
+            background: #0056b3;
+        }
+        
+        .search-results {
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 0 16px;
+        }
+        
+        .search-result-item {
+            padding: 12px;
+            border-bottom: 1px solid #e5e5e5;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .search-result-item:hover {
+            background-color: #f5f5f7;
+        }
+        
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+        
+        .search-result-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+        
+        .search-result-account {
+            font-weight: 600;
+            color: #1d1d1f;
+        }
+        
+        .search-result-name {
+            color: #666;
+        }
+        
+        .search-result-status {
+            font-size: 12px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: auto;
+        }
+        
+        .search-result-status.online {
+            background: rgba(52, 199, 89, 0.1);
+            color: #34c759;
+        }
+        
+        .search-result-status.offline {
+            background: rgba(142, 142, 147, 0.1);
+            color: #8e8e93;
+        }
+        
+        .search-result-info {
+            font-size: 13px;
+            color: #666;
+        }
+
+        
+        .change-password-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 16px;
+            padding: 12px;
+            background-color: #f5f5f7;
+            color: #007aff;
+            border: 1px solid rgba(0, 122, 255, 0.2);
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .change-password-btn:hover {
+            background-color: rgba(0, 122, 255, 0.05);
+            border-color: rgba(0, 122, 255, 0.3);
+        }
+
+        .change-password-btn svg {
+            margin-right: 8px;
+            fill: currentColor;
+        }
+
+        .modal-action-btn.prize-history {
+            background-color: rgba(255, 149, 0, 0.1);
+            color: #ff9500;
+        }
+
+        
+        .refresh-btn.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .refresh-btn.disabled:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .refresh-btn.disabled:active {
+            transform: translateY(-50%);
+        }
+
+        
+        .kick-machine-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 16px;
+            padding: 12px;
+            background-color: #f5f5f7;
+            color: #ff9500; 
+            border: 1px solid rgba(255, 149, 0, 0.2);
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .kick-machine-btn:hover {
+            background-color: rgba(255, 149, 0, 0.05);
+            border-color: rgba(255, 149, 0, 0.3);
+        }
+
+        .kick-machine-btn svg {
+            margin-right: 8px;
+            fill: currentColor;
+        }
+
+        
+        .kick-result-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1200;
+        }
+        
+        .kick-result-modal-overlay.show {
+            display: flex;
+        }
+        
+        .kick-result-modal-content {
+            background-color: white;
+            border-radius: 12px;
+            width: 85%;
+            max-width: 320px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            transform: translateY(20px);
+            transition: transform 0.3s;
+        }
+        
+        .kick-result-modal-overlay.show .kick-result-modal-content {
+            transform: translateY(0);
+        }
+        
+        .kick-result-modal-header {
+            padding: 16px;
+            border-bottom: 1px solid #e5e5e5;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            background-color: #ff9500;
+            color: white;
+        }
+        
+        .kick-result-modal-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .kick-result-modal-body {
+            padding: 16px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .kick-result-content {
+            font-family: -apple-system-monospace, monospace;
+            white-space: pre-wrap;
+            background-color: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid #ff9500;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .kick-result-modal-footer {
+            padding: 12px 16px;
+            border-top: 1px solid #e5e5e5;
+        }
+        
+        .kick-result-modal-button {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            background-color: #ff9500;
+            font-size: 16px;
+            font-weight: 500;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .kick-result-modal-button:hover {
+            background-color: #e68a00;
+        }
+        
+        
+        .kick-result-content {
+            font-family: -apple-system-monospace, monospace;
+            white-space: pre-wrap;
+            background-color: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid #ff9500;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        
+        .status-indicator {
+            display: flex;
+            margin-bottom: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            align-items: center;
+        }
+        
+        .status-icon {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            margin-right: 8px;
+            display: inline-block;
+        }
+        
+        .status-success {
+            background-color: #34c759;
+        }
+        
+        .status-warning {
+            background-color: #ff9500;
+        }
+        
+        .status-error {
+            background-color: #ff3b30;
+        }
+        
+        
+        .kick-result-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+            font-size: 13px;
+        }
+        
+        .kick-result-table th,
+        .kick-result-table td {
+            border: 1px solid #e5e5e5;
+            padding: 8px;
+            text-align: left;
+        }
+        
+        .kick-result-table th {
+            background-color: #f5f5f7;
+            font-weight: 600;
+        }
+        
+        .kick-result-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        
+        .result-details-toggle {
+            margin-top: 12px;
+            font-size: 13px;
+            color: #007aff;
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            align-items: center;
+        }
+        
+        .result-details-toggle svg {
+            width: 16px;
+            height: 16px;
+            margin-right: 4px;
+            transition: transform 0.3s;
+        }
+        
+        .result-details-toggle.expanded svg {
+            transform: rotate(90deg);
+        }
+        
+        .result-details-content {
+            margin-top: 8px;
+            display: none;
+        }
+        
+        .result-details-content.visible {
+            display: block;
+        }
+        
+        
+        .sort-options {
+            display: flex;
+            padding: 12px 16px;
+            background-color: #f9f9f9;
+            border-bottom: 1px solid #eaeaea;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .sort-option {
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 13px;
+            background-color: #f0f0f0;
+            border: 1px solid #e0e0e0;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .sort-option.active {
+            background-color: #007aff;
+            color: white;
+            border-color: #007aff;
+        }
+        
+        .sort-option:hover:not(.active) {
+            background-color: #e5e5e5;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <button class="menu-btn" id="menuBtn">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"></path>
+                </svg>
+            </button>
+            <h1>玩家列表</h1>
+            <div class="subtitle">
+                <div>今日玩家总输赢（钻）</div>
+                <div class="total-win-loss " id="totalWinLoss">0</div>
+            </div>
+            <button class="refresh-btn" id="refreshBtn">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"></path>
+                </svg>
+            </button>
+            <button class="search-btn" id="searchBtn">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"></path>
+                </svg>
+            </button>
+        </div>
+    </div>
+    
+    
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-user-info">
+                <div class="sidebar-avatar">
+                    <svg viewBox="0 0 24 24" width="40" height="40">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" fill="#007aff"></path>
+                    </svg>
+                </div>
+                <div class="sidebar-user-details">
+                    <div class="sidebar-username" id="sidebarUsername">管理员</div>
+                    <div class="sidebar-invite-code" id="sidebarInviteCode">邀请码: --</div>
+                </div>
+            </div>
+            <button class="sidebar-close-btn" id="sidebarCloseBtn">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="currentColor"></path>
+                </svg>
+            </button>
+        </div>
+        <div class="sidebar-menu">
+            <a href="/kaidaili.html" class="sidebar-menu-item">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"></path>
+                </svg>
+                添加代理
+            </a>
+            <a href="/wodedaili.html" class="sidebar-menu-item" id="myAgentsLink">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" fill="currentColor"></path>
+                </svg>
+                我的代理
+            </a>
+            <a href="#" class="sidebar-menu-item" id="myMembersLink">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" fill="currentColor"></path>
+                </svg>
+                我的会员
+            </a>
+            <a href="/chongzhi.html" class="sidebar-menu-item">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z" fill="currentColor"></path>
+                </svg>
+                玩家充退
+            </a>
+            <a href="/chongzhilist.html" class="sidebar-menu-item">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-7-2h2v-4h4v-2h-4V7h-2v4H8v2h4z" fill="currentColor"></path>
+                </svg>
+                充退记录
+            </a>
+            <a href="/yichangzhanghu.html" class="sidebar-menu-item">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z" fill="currentColor"></path>
+                </svg>
+                异常账号
+            </a>
+            <a href="/fenghao.html" class="sidebar-menu-item">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z" fill="currentColor"></path>
+                </svg>
+                玩家封号
+            </a>
+            <a href="/dailifenghao.html" class="sidebar-menu-item">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" fill="currentColor"></path>
+                </svg>
+                代理封号
+            </a>
+            <a href="/daililahei.html" class="sidebar-menu-item" id="agentBlacklistLink" style="display: none;">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm5 11H7v-2h10v2z" fill="currentColor"></path>
+                </svg>
+                代理拉黑
+            </a>
+            
+            <div class="sidebar-menu-placeholder">
+                <div class="placeholder-text">更多功能即将上线</div>
+            </div>
+            
+            
+            <button class="kick-machine-btn" id="kickMachineBtn" style="display: none;">
+                <svg viewBox="0 0 24 24" width="20" height="20">
+                    <path d="M20 17.17L18.83 16H4V4h16v13.17zM20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4V4c0-1.1-.9-2-2-2z"></path>
+                </svg>
+                卡机踢人
+            </button>
+            
+            
+            <button class="change-password-btn" id="changePasswordBtn">
+                <svg viewBox="0 0 24 24" width="20" height="20">
+                    <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"></path>
+                </svg>
+                修改密码
+            </button>
+            
+            
+            <button class="logout-btn" id="logoutBtn">
+                <svg viewBox="0 0 24 24" width="20" height="20">
+                    <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"></path>
+                </svg>
+                退出登录
+            </button>
+        </div>
+    </div>
+    
+    <div class="container" id="playerContainer">
+        
+        <div class="tabs-container">
+            <div class="tabs-header">
+                <div class="tab active" data-tab="online">
+                    在线玩家 <span class="tab-count" id="onlinePlayerCount">0</span>
+                </div>
+                <div class="tab" data-tab="offline">
+                    离线玩家 <span class="tab-count" id="offlinePlayerCount">0</span>
+                </div>
+            </div>
+            <div class="tabs-content">
+                
+                <div class="tab-pane active" id="onlineTab">
+                    <div id="onlinePlayersSection"><div class="no-more-data" style="display: block;">暂无在线玩家</div></div>
+                </div>
+                
+                
+                <div class="tab-pane" id="offlineTab">
+                            
+        <div class="sort-options">
+            <div class="sort-option active" data-sort="login-time">按最后登录时间</div>
+            <div class="sort-option" data-sort="win-most">今日赢最多</div>
+            <div class="sort-option" data-sort="loss-most">今日输最多</div>
+        </div>
+                    <div id="offlinePlayersSection"></div>
+                    
+                    
+                    <div class="load-more-container">
+                        <button class="load-more-btn" id="loadMoreBtn">加载更多</button>
+                    </div>
+                    <div class="no-more-data" id="noMoreData" style="display: none;">已加载全部数据</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="loading" id="loading">刷新数据...</div>
+    
+    
+    <div class="modal-overlay" id="playerModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" id="modalPlayerAccount">玩家账号</div>
+                <div class="modal-subtitle" id="modalPlayerName">玩家名称</div>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-action-btn recharge" id="modalRechargeBtn">
+                    充值
+                </button>
+                <button class="modal-action-btn reward" id="modalRewardBtn" style="display: block;">
+                    送奖
+                </button>
+                <button class="modal-action-btn blacklist" id="modalBlacklistBtn" style="display: block;">
+                    拉黑
+                </button>
+                <button class="modal-action-btn details" id="modalDetailsBtn">
+                    玩家详情
+                </button>
+                <button class="modal-action-btn prize-history" id="modalPrizeHistoryBtn">
+                    中奖历史
+                </button>
+                <button class="modal-action-btn" id="modalTrackBtn" style="background-color: rgba(88, 86, 214, 0.12); color: #5856D6;">
+                    游戏轨迹
+                </button>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-cancel-btn" id="modalCancelBtn">取消</button>
+            </div>
+        </div>
+    </div>
+    
+    
+    <div class="modal-overlay" id="searchModal">
+        <div class="modal-content search-modal">
+            <div class="modal-header">
+                <div class="modal-title">搜索玩家</div>
+                <div class="search-input-container">
+                    <input type="text" id="searchInput" placeholder="输入玩家账号或昵称" autocomplete="off">
+                    <button class="search-submit-btn" id="searchSubmitBtn">
+                        <svg viewBox="0 0 24 24" width="20" height="20">
+                            <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="search-results" id="searchResults"></div>
+            <div class="modal-footer">
+                <button class="modal-cancel-btn" id="searchModalCancelBtn">关闭</button>
+            </div>
+        </div>
+    </div>
+    
+    
+    <div class="kick-result-modal-overlay" id="kickResultModal">
+        <div class="kick-result-modal-content">
+            <div class="kick-result-modal-header">
+                <div class="kick-result-modal-title">卡机踢人执行结果</div>
+            </div>
+            <div class="kick-result-modal-body">
+                <div class="kick-result-content" id="kickResultContent"></div>
+            </div>
+            <div class="kick-result-modal-footer">
+                <button class="kick-result-modal-button" id="kickResultCloseBtn">确定</button>
+            </div>
+        </div>
+    </div>
+    
+    <!--script stripped-->
+
+ </body></html>

@@ -1,47 +1,415 @@
 @{
-    Layout = "~/Views/Shared/Layout/_MobileLayout.cshtml";
+    /* 我的代理（1:1 复刻参考站 wodedaili） */
     string webVer = ConfigHelper.Get("WebVer");
+    Layout = "~/Views/Shared/Layout/_MobileLayout.cshtml";
 }
 
-<div class="m-container">
-    <div class="m-stats">
-        <div class="m-stats-title">本页代理统计</div>
-        <div class="m-stats-grid">
-            <div class="m-stat-box">
-                <div class="m-stat-label">代理总数</div>
-                <div class="m-stat-value" id="mAgTotal">0</div>
+@section head {
+<style>
+    /* 代理统计 */
+    .stats-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        background-color: white;
+        border-radius: 12px;
+        padding: 16px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .stats-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #333;
+    }
+
+    .stats-info {
+        display: flex;
+        gap: 16px;
+    }
+
+    .stats-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .stats-label {
+        font-size: 14px;
+        color: #666;
+    }
+
+    .stats-value {
+        font-size: 16px;
+        font-weight: 600;
+        color: #333;
+    }
+
+    .stats-value.diamond {
+        color: #007aff;
+    }
+
+    /* 面包屑导航 */
+    .breadcrumb {
+        display: flex;
+        margin-bottom: 12px;
+        font-size: 16px;
+        overflow-x: auto;
+        white-space: nowrap;
+        padding: 8px 12px;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .breadcrumb-item {
+        color: #666;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        font-weight: 500;
+        cursor: pointer;
+    }
+
+    .breadcrumb-item:hover {
+        color: #007aff;
+    }
+
+    .breadcrumb-separator {
+        margin: 0 6px;
+        color: #ccc;
+    }
+
+    .breadcrumb-current {
+        color: #007aff;
+        font-weight: 600;
+    }
+
+    /* 代理表格 */
+    .agent-table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: auto;
+        min-width: 640px;
+    }
+
+    .agent-table th {
+        background-color: #f8f9fa;
+        padding: 12px 8px;
+        text-align: left;
+        font-weight: 600;
+        color: #666;
+        border-bottom: 1px solid #eaeaea;
+        white-space: nowrap;
+        font-size: 14px;
+    }
+
+    .agent-table td {
+        padding: 12px 8px;
+        border-bottom: 1px solid #eaeaea;
+        color: #333;
+        font-size: 14px;
+        word-break: break-word;
+    }
+
+    .agent-table th:nth-child(1),
+    .agent-table td:nth-child(1) {
+        width: 26%;
+        max-width: 260px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .agent-table th:nth-child(2),
+    .agent-table td:nth-child(2),
+    .agent-table th:nth-child(3),
+    .agent-table td:nth-child(3),
+    .agent-table th:nth-child(4),
+    .agent-table td:nth-child(4),
+    .agent-table th:nth-child(6),
+    .agent-table td:nth-child(6),
+    .agent-table th:nth-child(7),
+    .agent-table td:nth-child(7),
+    .agent-table th:nth-child(8),
+    .agent-table td:nth-child(8) {
+        white-space: nowrap;
+    }
+
+    .time-cell {
+        font-size: 14px;
+        color: #333;
+        white-space: nowrap;
+        min-width: 120px;
+    }
+
+    .table-container {
+        overflow-x: auto;
+    }
+
+    .agent-table tbody tr {
+        cursor: pointer;
+    }
+
+    .agent-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .agent-table tbody tr:hover {
+        background-color: #f5f7fa;
+    }
+
+    /* 搜索弹窗 */
+    .search-modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+        touch-action: none;
+    }
+
+    .search-modal-overlay.show {
+        display: flex;
+    }
+
+    .search-modal {
+        background-color: #fff;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        width: 90%;
+        max-width: 600px;
+        max-height: 80vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        touch-action: auto;
+    }
+
+    .search-modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 20px;
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    .search-modal-header h3 {
+        margin: 0;
+        font-size: 18px;
+        color: #333;
+    }
+
+    .search-modal-close {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .search-modal-close svg {
+        fill: #666;
+        width: 20px;
+        height: 20px;
+    }
+
+    .search-modal-body {
+        padding: 20px;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        flex: 1;
+        overscroll-behavior: contain;
+    }
+
+    .search-form {
+        margin-bottom: 20px;
+    }
+
+    .search-input-group {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .search-radio-group {
+        display: flex;
+        gap: 16px;
+    }
+
+    .search-radio-group label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+    }
+
+    .search-input-wrapper {
+        display: flex;
+        border: 1px solid #d0d0d0;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .search-input-wrapper input {
+        flex: 1;
+        border: none;
+        padding: 10px 12px;
+        font-size: 15px;
+        outline: none;
+    }
+
+    .search-input-wrapper button {
+        background-color: #1890ff;
+        border: none;
+        color: white;
+        padding: 0 16px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background-color 0.3s;
+    }
+
+    .search-input-wrapper button svg {
+        fill: #fff;
+    }
+
+    .search-results {
+        border-top: 1px solid #e0e0e0;
+        padding-top: 16px;
+    }
+
+    .search-result-item {
+        background-color: #f9f9f9;
+        border-radius: 6px;
+        padding: 12px 16px;
+        margin-bottom: 12px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        border-left: 3px solid #1890ff;
+        word-break: break-word;
+        cursor: pointer;
+    }
+
+    .search-result-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .search-result-row {
+        display: flex;
+        margin-bottom: 8px;
+        align-items: center;
+    }
+
+    .search-result-row:last-child {
+        margin-bottom: 0;
+    }
+
+    .search-result-label {
+        width: 80px;
+        font-weight: 500;
+        color: #555;
+        background-color: #f5f5f5;
+        padding: 5px 8px;
+        border-radius: 4px;
+        font-size: 13px;
+        flex-shrink: 0;
+    }
+
+    .search-result-value {
+        flex: 1;
+        color: #333;
+        font-size: 14px;
+    }
+</style>
+}
+
+    <div class="container">
+        <!-- 代理统计 -->
+        <div class="stats-container">
+            <div class="stats-title">代理统计</div>
+            <div class="stats-info">
+                <div class="stats-item">
+                    <div class="stats-label">代理总数:</div>
+                    <div class="stats-value" id="totalAgents">0</div>
+                </div>
+                <div class="stats-item">
+                    <div class="stats-label">总金币:</div>
+                    <div class="stats-value diamond" id="totalDiamonds">0</div>
+                </div>
             </div>
-            <div class="m-stat-box">
-                <div class="m-stat-label">金币合计</div>
-                <div class="m-stat-value" id="mAgCoins">0</div>
+        </div>
+
+        <!-- 面包屑导航 -->
+        <div class="breadcrumb" id="breadcrumb"><a class="breadcrumb-item breadcrumb-current" data-id="" data-name="所有代理">所有代理</a></div>
+
+        <div class="table-container">
+            <table class="agent-table" id="agentTable">
+                <thead>
+                    <tr>
+                        <th style="width: 22%;">账号</th>
+                        <th style="width: 12%;">剩余金币</th>
+                        <th style="width: 12%;">下级代理</th>
+                        <th style="width: 12%;">我的会员</th>
+                        <th style="width: 13%;">邀请码</th>
+                        <th style="width: 15%;">最后登陆</th>
+                        <th style="width: 14%;">注册时间</th>
+                    </tr>
+                </thead>
+                <tbody id="agentList"></tbody>
+            </table>
+            <div class="no-data" id="noData" style="display: block;">暂无代理数据</div>
+        </div>
+    </div>
+
+    <!-- 搜索弹窗 -->
+    <div class="search-modal-overlay" id="searchModalOverlay">
+        <div class="search-modal">
+            <div class="search-modal-header">
+                <h3>搜索代理信息</h3>
+                <button class="search-modal-close" id="searchModalClose">
+                    <svg viewBox="0 0 24 24" width="24" height="24">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path>
+                    </svg>
+                </button>
             </div>
-            <div class="m-stat-box">
-                <div class="m-stat-label">盈亏合计</div>
-                <div class="m-stat-value" id="mAgProfit">0</div>
+            <div class="search-modal-body">
+                <div class="search-form">
+                    <div class="search-input-group">
+                        <div class="search-radio-group">
+                            <label>
+                                <input type="radio" name="searchType" value="account" checked>
+                                <span>账号</span>
+                            </label>
+                            <label>
+                                <input type="radio" name="searchType" value="yaoqingma">
+                                <span>邀请码</span>
+                            </label>
+                        </div>
+                        <div class="search-input-wrapper">
+                            <input type="text" id="searchInput" placeholder="请输入账号或邀请码">
+                            <button id="searchSubmitBtn">
+                                <svg viewBox="0 0 24 24" width="20" height="20">
+                                    <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="search-results" id="searchResults"></div>
             </div>
         </div>
     </div>
 
-    <div id="mAgSearchTip" class="m-chips m-hidden"></div>
-
-    <div id="mAgList">
-        <div class="m-empty"><span class="m-spinner dark"></span> 加载中...</div>
-    </div>
-
-    <div class="m-load-more" id="mAgLoadMoreBox">
-        <button type="button" class="m-load-more-btn" id="mAgLoadMore">加载更多</button>
-    </div>
-    <div class="m-empty m-hidden" id="mAgNoMore">已加载全部数据</div>
-</div>
-
 @section scripts {
-    <script>
-        window.MPage = {
-            canUpDown: @Html.Raw(ViewBag.CanUpDown == true ? "true" : "false"),
-            canCreateAgent: @Html.Raw(ViewBag.CanCreateAgent == true ? "true" : "false"),
-            isSuper: @Html.Raw(ViewBag.IsSuper == true ? "true" : "false"),
-            ownAccount: '@Html.Raw(HttpUtility.JavaScriptStringEncode((string)(ViewBag.OwnAccount ?? "")))'
-        };
-    </script>
-    <script src="@Url.Content("~/Scripts/app/mobile/mobile.agents.js?v=" + webVer)"></script>
+    <script src="@Url.Content("~/Scripts/app/phone/phone.agents.js?v=" + webVer)"></script>
 }

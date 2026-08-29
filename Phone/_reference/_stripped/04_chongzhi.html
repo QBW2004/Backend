@@ -1,0 +1,658 @@
+<html lang="zh-CN"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="robots" content="noindex">
+    <!-- 添加meta标签禁用浏览器自动填充功能 -->
+    <meta name="autocomplete" content="off">
+    <title>充值管理</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            min-height: 100vh;
+        }
+        
+        .header {
+            background-color: #007aff;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 80px;
+        }
+        
+        .header-content {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+        }
+        
+        .back-btn {
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+        
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .back-btn:active {
+            transform: translateY(-50%) scale(0.96);
+        }
+        
+        .back-btn svg {
+            width: 24px;
+            height: 24px;
+        }
+        
+        h1 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .diamond-count {
+            color: #ffd700; /* 金色 */
+            font-weight: 500;
+        }
+        
+        .container {
+            padding: 20px;
+            max-width: 600px;
+            margin: 20px auto;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .form-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #1d1d1f;
+        }
+        
+        .form-row {
+            margin-bottom: 16px;
+        }
+        
+        .form-row:last-child {
+            margin-bottom: 0;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-input:focus {
+            border-color: #007aff;
+            outline: none;
+        }
+        
+        /* 历史账号下拉菜单样式 */
+        .history-dropdown {
+            position: relative;
+            width: 100%;
+        }
+        
+        .history-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            max-height: 200px;
+            overflow-y: auto;
+            background: white;
+            border: 1px solid #e5e5e5;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            z-index: 10;
+            display: none;
+        }
+        
+        .history-list.show {
+            display: block;
+        }
+        
+        .history-item {
+            padding: 10px 12px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .history-item:hover {
+            background-color: #f5f7fa;
+        }
+        
+        .history-item:active {
+            background-color: #e5e5ea;
+        }
+        
+        .history-text {
+            flex: 1;
+            text-overflow: ellipsis;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        
+        .history-delete {
+            color: #ff3b30;
+            font-size: 18px;
+            margin-left: 8px;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+        
+        .history-delete:hover {
+            opacity: 1;
+        }
+        
+        .history-clear {
+            text-align: center;
+            padding: 8px;
+            color: #007aff;
+            font-size: 13px;
+            border-top: 1px solid #e5e5e5;
+            cursor: pointer;
+        }
+        
+        .history-clear:hover {
+            background-color: #f5f7fa;
+        }
+        
+        .history-clear:active {
+            background-color: #e5e5ea;
+        }
+        
+        .radio-group {
+            display: flex;
+            gap: 16px;
+            width: 100%;
+        }
+        
+        .radio-item {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+        
+        .radio-item input[type="radio"] {
+            margin-right: 8px;
+            cursor: pointer;
+        }
+        
+        /* 新增样式：优化单选按钮组 */
+        .option-group {
+            display: flex;
+            width: 100%;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #e5e5e5;
+            background-color: #f9f9f9;
+        }
+        
+        .option-item {
+            flex: 1;
+            text-align: center;
+            padding: 10px 0;
+            cursor: pointer;
+            background-color: transparent;
+            color: #777;
+            font-size: 14px;
+            font-weight: 400;
+            transition: all 0.3s;
+            position: relative;
+            user-select: none;
+        }
+        
+        .option-item:not(:last-child) {
+            border-right: 1px solid #e5e5e5;
+        }
+        
+        .option-item.active {
+            background-color: #f0f0f0;
+            color: #007aff;
+            font-weight: 500;
+        }
+        
+        .option-item input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .option-item:hover:not(.active) {
+            background-color: #e5e5ea;
+        }
+        
+        .option-item:active {
+            transform: scale(0.98);
+        }
+        
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+        
+        .btn-primary {
+            background-color: #007aff;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #0066cc;
+        }
+        
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+        
+        .btn-secondary {
+            background-color: #f5f5f7;
+            color: #007aff;
+            border: 1px solid #e5e5e5;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #e5e5ea;
+        }
+        
+        .btn-danger {
+            background-color: #ff3b30;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background-color: #d63030;
+        }
+        
+        .btn-disabled {
+            background-color: #e5e5e5;
+            color: #999;
+            cursor: not-allowed;
+        }
+        
+        .btn-disabled:hover {
+            background-color: #e5e5e5;
+        }
+        
+        /* 重新设计账号信息区域 */
+        .account-info {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 12px;
+            background-color: rgba(0, 122, 255, 0.08);
+            transition: all 0.3s ease;
+            display: none; /* 默认隐藏 */
+        }
+        
+        .account-info.show {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.15);
+            animation: pulse 1.5s ease-out;
+        }
+        
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(0, 122, 255, 0.4);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(0, 122, 255, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(0, 122, 255, 0);
+            }
+        }
+        
+        .info-row {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #eaeaea;
+        }
+        
+        .info-icon {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            color: #666;
+        }
+        
+        .info-label {
+            font-size: 14px;
+            color: #666;
+            flex: 1;
+        }
+        
+        .info-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1d1d1f;
+        }
+        
+        .diamond-value {
+            color: #007aff;
+        }
+        
+        .score-value {
+            color: #34c759;
+        }
+        
+        .loading {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 16px 24px;
+            border-radius: 12px;
+            font-size: 14px;
+            z-index: 1000;
+        }
+        
+        .loading.show {
+            display: block;
+        }
+        
+        /* 浮动弹窗提示样式 */
+        .toast-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
+            width: 90%;
+            max-width: 320px;
+            pointer-events: none;
+        }
+        
+        .toast {
+            padding: 16px 20px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+            display: flex;
+            align-items: center;
+            opacity: 0;
+            animation: 淡入缩放 0.3s forwards;
+            font-size: 16px;
+            font-weight: 500;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        
+        .toast-success {
+            background-color: rgba(52, 199, 89, 0.95);
+            color: white;
+            border-left: 4px solid #2db149;
+        }
+        
+        .toast-error {
+            background-color: rgba(255, 59, 48, 0.95);
+            color: white;
+            border-left: 4px solid #e12d1c;
+        }
+        
+        .toast-icon {
+            margin-right: 12px;
+            flex-shrink: 0;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            padding: 5px;
+        }
+        
+        .toast-content {
+            flex: 1;
+            line-height: 1.4;
+        }
+        
+        @keyframes 淡入缩放 {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        @keyframes 淡出 {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+            }
+        }
+        
+        /* 添加账号输入区域的布局样式 */
+        .account-input-group {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .account-input-group .form-input {
+            flex: 1;
+        }
+        
+        .account-input-group .btn-query {
+            width: auto;
+            padding: 12px 20px;
+            white-space: nowrap;
+            align-self: flex-end;
+        }
+        
+        /* 禁用按钮样式 */
+        .btn[disabled] {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background-color: #cccccc;
+            border-color: #aaaaaa;
+            color: #666666;
+        }
+        
+        /* 查询按钮强调样式 */
+        .btn-query {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-query:after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateX(-100%);
+            animation: sweep 2s infinite;
+        }
+        
+        @keyframes sweep {
+            0% {
+                transform: translateX(-100%);
+            }
+            50% {
+                transform: translateX(100%);
+            }
+            100% {
+                transform: translateX(100%);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <button class="back-btn" id="backBtn">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="currentColor"></path>
+                </svg>
+            </button>
+            <h1>充值管理</h1>
+            <div class="subtitle">当前钻石余额: <span class="diamond-count" id="currentDiamond">0</span></div>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="alert alert-success" id="successAlert"></div>
+        <div class="alert alert-error" id="errorAlert"></div>
+        
+        <form autocomplete="off">
+            <div class="form-group">
+                <div class="form-row">
+                    <label class="form-label">角色类型</label>
+                    <div class="option-group" id="roleTypeGroup">
+                        <label class="option-item active" data-value="agent">
+                            <input type="radio" name="roleType" value="agent" checked="">
+                            下级代理
+                        </label>
+                        <label class="option-item" data-value="player">
+                            <input type="radio" name="roleType" value="player">
+                            玩家
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <label class="form-label">操作类型</label>
+                    <div class="option-group" id="operationTypeGroup">
+                        <label class="option-item active" data-value="recharge">
+                            <input type="radio" name="operationType" value="recharge" checked="">
+                            充值
+                        </label>
+                        <label class="option-item" data-value="withdraw">
+                            <input type="radio" name="operationType" value="withdraw">
+                            退分
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <label class="form-label">对方账号</label>
+                    <div class="account-input-group">
+                        <div class="history-dropdown">
+                            <input type="text" class="form-input" id="accountInput" placeholder="请输入账号" autocomplete="off">
+                            <div class="history-list" id="historyList"><div class="history-item" style="text-align:center;color:#999;">暂无历史记录</div></div>
+                        </div>
+                        <button class="btn btn-secondary btn-query" id="queryBtn" type="button">查询</button>
+                    </div>
+                    <div class="form-tip" style="margin-top: 5px; font-size: 13px; color: #007aff;">
+                        <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align: middle; margin-right: 4px;">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="#007aff"></path>
+                        </svg>
+                        请先查询账号信息，再进行充值操作
+                    </div>
+                </div>
+                
+                <div class="account-info" id="accountInfo">
+                    <div class="info-row">
+                        <div class="info-icon">💎</div>
+                        <div class="info-label">剩余钻石</div>
+                        <div class="info-value diamond-value" id="accountDiamond">0</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-icon">🔢</div>
+                        <div class="info-label">剩余分数</div>
+                        <div class="info-value score-value" id="accountScore">0</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <div class="form-row">
+                    <label class="form-label" id="amountLabel">充值钻石</label>
+                    <input type="number" class="form-input" id="amountInput" placeholder="请输入充值钻石数量" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')" autocomplete="off">
+                </div>
+                
+                <div class="form-row">
+                    <button class="btn btn-primary" id="submitBtn" type="button" disabled="">充值</button>
+                </div>
+            </div>
+        </form>
+    </div>
+    
+    <div class="loading" id="loading">处理中...</div>
+    
+    <!-- 添加浮动弹窗容器 -->
+    <div class="toast-container" id="toastContainer"></div>
+    
+    <!--script stripped-->
+
+ </body></html>

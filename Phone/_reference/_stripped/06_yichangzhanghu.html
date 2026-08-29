@@ -1,0 +1,570 @@
+<html lang="zh-CN"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>异常账号管理</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .header {
+            background-color: #007aff;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 80px;
+        }   
+        
+        .header-content {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+        }
+        
+        h1 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        /* 返回按钮样式 */
+        .back-btn {
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            min-width: 44px;
+            min-height: 44px;
+        }
+        
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .back-btn:active {
+            transform: translateY(-50%) scale(0.96);
+        }
+        
+        .back-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+        
+        /* 刷新按钮样式 */
+        .refresh-btn {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            min-width: 44px;
+            min-height: 44px;
+        }
+        
+        .refresh-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .refresh-btn:active {
+            transform: translateY(-50%) scale(0.96);
+        }
+        
+        .refresh-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+        
+        .container {
+            padding: 16px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        /* 表格样式 */
+        .table-container {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+        
+        th {
+            background-color: #f8f9fa;
+            padding: 10px 8px;
+            text-align: left;
+            font-weight: 600;
+            color: #666;
+            border-bottom: 1px solid #eaeaea;
+            white-space: nowrap;
+            font-size: 14px;
+        }
+        
+        td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #eaeaea;
+            color: #333;
+            font-size: 14px;
+            word-break: break-word;
+        }
+        
+        /* 设置各列宽度 */
+        th:nth-child(1), td:nth-child(1) { /* 账号列 */
+            width: 28%;
+        }
+        
+        th:nth-child(2), td:nth-child(2) { /* 账号类型列 */
+            width: 16%;
+            text-align: center;
+        }
+        
+        th:nth-child(3), td:nth-child(3) { /* 锁定原因列 */
+            width: 36%;
+        }
+        
+        th:nth-child(4), td:nth-child(4) { /* 操作列 */
+            width: 20%;
+            text-align: center;
+        }
+        
+        tr:last-child td {
+            border-bottom: none;
+        }
+        
+        tr:hover {
+            background-color: #f5f7fa;
+        }
+        
+        /* 统计信息样式 */
+        .stats-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            background-color: white;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .stats-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .stats-info {
+            display: flex;
+            gap: 16px;
+        }
+        
+        .stats-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .stats-label {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .stats-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .stats-value.player {
+            color: #007aff;
+        }
+        
+        .stats-value.admin {
+            color: #ff9500;
+        }
+        
+        /* 账号类型标签样式 */
+        .account-type {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .account-type.player {
+            background-color: rgba(0, 122, 255, 0.1);
+            color: #007aff;
+        }
+        
+        .account-type.admin {
+            background-color: rgba(255, 149, 0, 0.1);
+            color: #ff9500;
+        }
+        
+        /* 错误计数样式 */
+        .error-count {
+            display: inline-block;
+            font-weight: 600;
+            color: #ff3b30;
+            background-color: rgba(255, 59, 48, 0.1);
+            padding: 2px 4px;
+            border-radius: 3px;
+            margin: 0 2px;
+        }
+        
+        /* 解封按钮样式 */
+        .unlock-btn {
+            padding: 6px 12px;
+            background-color: rgba(52, 199, 89, 0.1);
+            color: #34c759;
+            border: 1px solid rgba(52, 199, 89, 0.2);
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+        
+        .unlock-btn:hover {
+            background-color: rgba(52, 199, 89, 0.2);
+            border-color: rgba(52, 199, 89, 0.3);
+        }
+        
+        .unlock-btn:active {
+            transform: scale(0.98);
+        }
+        
+        .unlock-btn.loading {
+            position: relative;
+            color: transparent !important;
+        }
+        
+        .unlock-btn.loading::after {
+            content: '';
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(52, 199, 89, 0.3);
+            border-radius: 50%;
+            border-top-color: #34c759;
+            animation: spin 0.8s linear infinite;
+            left: calc(50% - 7px);
+            top: calc(50% - 7px);
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* 无数据提示 */
+        .no-data {
+            text-align: center;
+            padding: 40px 0;
+            color: #999;
+            font-size: 16px;
+        }
+        
+        /* 加载动画 */
+        .loading-container {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 16px 24px;
+            border-radius: 12px;
+            font-size: 14px;
+            z-index: 1000;
+        }
+        
+        .loading-container.show {
+            display: block;
+        }
+        
+        /* 弹窗样式 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+        
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .modal-content {
+            background-color: white;
+            border-radius: 12px;
+            width: 85%;
+            max-width: 320px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            transform: translateY(20px);
+            transition: transform 0.3s;
+        }
+        
+        .modal-overlay.show .modal-content {
+            transform: translateY(0);
+        }
+        
+        .modal-header {
+            padding: 16px;
+            border-bottom: 1px solid #e5e5e5;
+            text-align: center;
+        }
+        
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1d1d1f;
+        }
+        
+        .modal-body {
+            padding: 24px 16px;
+            text-align: center;
+        }
+        
+        .modal-message {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 16px;
+        }
+        
+        .modal-icon {
+            margin-bottom: 16px;
+            display: inline-block;
+        }
+        
+        .modal-icon.success {
+            color: #34c759;
+        }
+        
+        .modal-footer {
+            padding: 12px 16px;
+            border-top: 1px solid #e5e5e5;
+            display: flex;
+            justify-content: center;
+        }
+        
+        .modal-btn {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .modal-btn.confirm {
+            background-color: #007aff;
+            color: white;
+        }
+        
+        .modal-btn.confirm:hover {
+            background-color: #0066cc;
+        }
+        
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            th, td {
+                padding: 8px 6px;
+                font-size: 13px;
+            }
+            
+            .stats-container {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+                padding: 12px;
+            }
+            
+            .table-container {
+                overflow-x: auto;
+                border-radius: 8px;
+            }
+            
+            /* 移除最小宽度限制 */
+            table {
+                min-width: auto;
+                width: 100%;
+            }
+            
+            /* 调整移动端列宽 */
+            th:nth-child(1), td:nth-child(1) { /* 账号列 */
+                width: 25%;
+            }
+            
+            th:nth-child(2), td:nth-child(2) { /* 账号类型列 */
+                width: 18%;
+            }
+            
+            th:nth-child(3), td:nth-child(3) { /* 锁定原因列 */
+                width: 35%;
+            }
+            
+            th:nth-child(4), td:nth-child(4) { /* 操作列 */
+                width: 22%;
+            }
+            
+            /* 调小按钮大小 */
+            .unlock-btn {
+                padding: 4px 8px;
+                font-size: 13px;
+            }
+        }
+        
+        @media (max-width: 350px) {
+            th, td {
+                padding: 6px 4px;
+                font-size: 12px;
+            }
+            
+            .unlock-btn {
+                padding: 3px 6px;
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <button class="back-btn" id="backBtn">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"></path>
+                </svg>
+            </button>
+            <h1>异常账号管理</h1>
+            <div class="subtitle">查看和解封异常登录的账号</div>
+            <button class="refresh-btn" id="refreshBtn">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"></path>
+                </svg>
+            </button>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="stats-container">
+            <div class="stats-title">异常账号统计</div>
+            <div class="stats-info">
+                <div class="stats-item">
+                    <div class="stats-label">玩家账号:</div>
+                    <div class="stats-value player" id="playerCount">0</div>
+                </div>
+                <div class="stats-item">
+                    <div class="stats-label">代理账号:</div>
+                    <div class="stats-value admin" id="adminCount">0</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>账号</th>
+                        <th>账号类型</th>
+                        <th>锁定原因</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="accountList"></tbody>
+            </table>
+            <div class="no-data" id="noData" style="display: block;">暂无异常账号</div>
+        </div>
+    </div>
+    
+    <div class="loading-container" id="loading">加载数据中...</div>
+    
+    <!-- 解封成功弹窗 -->
+    <div class="modal-overlay" id="successModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">操作成功</div>
+            </div>
+            <div class="modal-body">
+                <div class="modal-icon success">
+                    <svg viewBox="0 0 24 24" width="48" height="48">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="#34c759"></path>
+                    </svg>
+                </div>
+                <div class="modal-message">账号已成功解封</div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn confirm" id="successModalOkBtn">确定</button>
+            </div>
+        </div>
+    </div>
+    
+    <!--script stripped-->
+
+ </body></html>

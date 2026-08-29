@@ -216,6 +216,8 @@
     <Compile Include="Areas\Game\Controllers\AccountLogController.cs" />
     <Compile Include="Areas\Game\Controllers\AdminController.cs" />
     <Compile Include="Areas\Game\Controllers\AgencyInfoController.cs" />
+
+    <Compile Include="Areas\Game\Controllers\AbnormalController.cs" />
     <Compile Include="Areas\Game\Controllers\AgencyRecordController.cs" />
     <Compile Include="Areas\Game\Controllers\AppUpdateController.cs" />
     <Compile Include="Areas\Game\Controllers\DownloadController.cs" />
@@ -263,6 +265,7 @@
     <Compile Include="Controllers\Api\ReChargeNotifyController.cs" />
     <Compile Include="Controllers\Api\ReportsController.cs" />
     <Compile Include="Filters\LocalizationAttribute.cs" />
+    <Compile Include="Filters\MobileOnlyAttribute.cs" />
     <Compile Include="Models\Acc\BetAcc.cs" />
     <Compile Include="Models\Acc\CardAcc.cs" />
     <Compile Include="Models\Acc\FishAcc.cs" />
@@ -1112,6 +1115,18 @@
     <Content Include="Areas\Game\Views\UserInfo\OnlineCoin.cshtml" />
     <Content Include="Areas\Mobile\Views\web.config" />
     <Content Include="Areas\Mobile\Views\Home\Index.cshtml" />
+
+    <Content Include="Areas\Mobile\Views\Home\Huiyuan.cshtml" />
+
+    <Content Include="Areas\Mobile\Views\Home\Songjiang.cshtml" />
+
+    <Content Include="Areas\Mobile\Views\Home\Blacklist.cshtml" />
+
+    <Content Include="Areas\Mobile\Views\Home\BanAgent.cshtml" />
+
+    <Content Include="Areas\Mobile\Views\Home\BanPlayer.cshtml" />
+
+    <Content Include="Areas\Mobile\Views\Home\Abnormal.cshtml" />
     <Content Include="Areas\Game\Views\GameRecord\TableRecords.cshtml" />
     <Content Include="Areas\Game\Views\GameSetting\Index.cshtml" />
     <Content Include="Areas\Game\Views\Shared\LabaGame.cshtml" />
@@ -1533,6 +1548,8 @@
     <Content Include="Scripts\plugins\webuploader\README.md" />
     <Content Include="Views\Common\NoAuthorize.cshtml" />
     <Content Include="Views\Login\Index.cshtml" />
+
+    <Content Include="Views\Login\Mobile.cshtml" />
     <Content Include="Views\Login\LoginLog.cshtml" />
     <Content Include="Views\Login\ResetPwd.cshtml" />
     <Content Include="Views\Mgr\Home.cshtml" />
@@ -1549,7 +1566,33 @@
     <Content Include="Views\Shared\Layout\_ContentLayou.Mobile.cshtml" />
     <Content Include="Views\Shared\Layout\_MobileLayout.cshtml" />
     <Content Include="Content\css\mobile.css" />
+
+    <Content Include="Content\css\phone.css" />
     <Content Include="Scripts\app\mobile\mobile.core.js" />
+
+    <Content Include="Scripts\app\phone\phone.huiyuan.js" />
+
+    <Content Include="Scripts\app\phone\phone.songjiang.js" />
+
+    <Content Include="Scripts\app\phone\phone.blacklist.js" />
+
+    <Content Include="Scripts\app\phone\phone.banagent.js" />
+
+    <Content Include="Scripts\app\phone\phone.banplayer.js" />
+
+    <Content Include="Scripts\app\phone\phone.abnormal.js" />
+
+    <Content Include="Scripts\app\phone\phone.records.js" />
+
+    <Content Include="Scripts\app\phone\phone.recharge.js" />
+
+    <Content Include="Scripts\app\phone\phone.addagent.js" />
+
+    <Content Include="Scripts\app\phone\phone.agents.js" />
+
+    <Content Include="Scripts\app\phone\phone.players.js" />
+
+    <Content Include="Scripts\app\phone\phone.core.js" />
     <Content Include="Scripts\app\mobile\mobile.players.js" />
     <Content Include="Scripts\app\mobile\mobile.agents.js" />
     <Content Include="Scripts\app\mobile\mobile.addagent.js" />

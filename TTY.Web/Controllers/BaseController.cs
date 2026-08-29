@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
+using System.Web;
 using System.Web.Mvc;
 
 namespace YYT.Web.Controllers
@@ -69,6 +71,51 @@ namespace YYT.Web.Controllers
                 return File(stream, "application/x-xls", fname);
             else
                 return File(new Byte[0], "application/x-xls", fname);
+        }
+        #endregion
+
+        #region 手机端识别与视图偏好
+        /// <summary>视图偏好 Cookie 名（pc / mobile）</summary>
+        protected const string VIEW_MODE_COOKIE = "mth_view";
+
+        public void SaveViewMode(string mode)
+        {
+            HttpCookie cookie = new HttpCookie(VIEW_MODE_COOKIE, mode)
+            {
+                Expires = DateTime.Now.AddDays(30),
+                HttpOnly = true,
+                Path = "/"
+            };
+            Response.Cookies.Set(cookie);
+        }
+
+        public string GetViewMode()
+        {
+            HttpCookie cookie = Request.Cookies[VIEW_MODE_COOKIE];
+            return cookie != null ? (cookie.Value ?? string.Empty).ToLowerInvariant() : string.Empty;
+        }
+
+        /// <summary>
+        /// 手机浏览器识别。
+        /// 不用 Request.Browser.IsMobileDevice（浏览器定义文件过旧，新机型识别不准），
+        /// 直接匹配 UA 关键字；平板按电脑版处理。
+        /// </summary>
+        protected static readonly Regex MobileUaRegex = new Regex(
+            @"android|iphone|ipod|windows\s?phone|iemobile|blackberry|bb10|opera\s?mini|opera\s?mobi|webos|symbian|ucbrowser|micromessenger|harmonyos",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        public bool IsMobileBrowser()
+        {
+            string ua = Request.UserAgent;
+            if (string.IsNullOrWhiteSpace(ua))
+                return false;
+            // Android 平板的 UA 含 android 但不含 mobile，按电脑版处理
+            if (ua.IndexOf("android", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                ua.IndexOf("mobile", StringComparison.OrdinalIgnoreCase) < 0)
+                return false;
+            if (ua.IndexOf("ipad", StringComparison.OrdinalIgnoreCase) >= 0)
+                return false;
+            return MobileUaRegex.IsMatch(ua);
         }
         #endregion
     }

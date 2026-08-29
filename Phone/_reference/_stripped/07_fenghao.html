@@ -1,0 +1,777 @@
+<html lang="zh-CN"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="theme-color" content="#007aff">
+    <meta name="msapplication-tap-highlight" content="no">
+    <title>玩家封号</title>
+    <style>
+        /* iOS输入框修复 */
+        input[type="text"],
+        input[type="password"],
+        input[type="email"],
+        input[type="number"],
+        input[type="search"],
+        input[type="tel"],
+        input[type="url"],
+        textarea {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            border-radius: 0;
+        }
+        
+        /* 紧急修复 - 直接控制所有输入框 */
+        input[type="text"] {
+            height: 44px !important;
+            min-height: 44px !important;
+            box-sizing: border-box !important;
+        }
+        
+        /* 特定输入框修复 */
+        #playerIdInput {
+            height: 44px !important;
+            min-height: 44px !important;
+            line-height: normal !important;
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+            box-sizing: border-box !important;
+            -webkit-appearance: none !important;
+            -moz-appearance: none !important;
+            appearance: none !important;
+            display: flex !important;
+            align-items: center !important;
+            text-align: left !important;
+            vertical-align: middle !important;
+        }
+        
+        /* 强制垂直居中文本 */
+        #playerIdInput::-webkit-input-placeholder {
+            line-height: 44px;
+            vertical-align: middle;
+        }
+        
+        #playerIdInput::placeholder {
+            line-height: normal;
+            vertical-align: middle;
+        }
+        
+        /* 覆盖任何可能影响文本框的默认样式 */
+        input, select, textarea, button {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        
+        /* iOS重绘触发动画 */
+        @keyframes iosHack {
+            0% { opacity: 0.99; }
+            100% { opacity: 1; }
+        }
+        
+        /* 应用动画到输入框 */
+        .input-field {
+            height: 44px;
+            border: 1px solid #e1e1e1;
+            border-radius: 8px;
+            padding: 0 12px;
+            font-size: 16px;
+            background-color: #fff;
+            color: #333;
+            width: 100%;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.3s, box-shadow 0.3s;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            display: block;
+            animation: iosHack 0.1s linear;
+        }
+        
+        input, button {
+            border-radius: 0;
+        }
+        
+        .input-field:focus {
+            border-color: #007aff;
+            box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.1);
+        }
+        
+        .ban-btn {
+            height: 44px;
+            background-color: #ff3b30;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0 20px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            text-align: center;
+            white-space: nowrap;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+        }
+        
+        .ban-btn:hover {
+            background-color: #ff2d20;
+        }
+        
+        /* PC端专用样式 */
+        @media (min-width: 769px) {
+            .input-field {
+                width: 100%;
+                border: 1px solid #e1e1e1;
+                box-sizing: border-box;
+            }
+            
+            .ban-btn {
+                width: 100%;
+                min-width: 120px;
+            }
+        }
+        
+        /* 修复iOS上圆角按钮的渲染问题 */
+        @supports (-webkit-overflow-scrolling: touch) {
+            input, button {
+                border-radius: 8px;
+            }
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .header {
+            background-color: #007aff;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;    
+            height: 80px;
+        }
+        
+        .header-content {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+        }
+        
+        h1 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        /* 返回按钮样式 */
+        .back-btn {
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            min-width: 44px;
+            min-height: 44px;
+        }
+        
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .back-btn:active {
+            transform: translateY(-50%) scale(0.96);
+        }
+        
+        .back-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+        
+        /* 刷新按钮样式 */
+        .refresh-btn {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            min-width: 44px;
+            min-height: 44px;
+        }
+        
+        .refresh-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .refresh-btn:active {
+            transform: translateY(-50%) scale(0.96);
+        }
+        
+        .refresh-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+        
+        .container {
+            padding: 16px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        /* 输入区域样式 */
+        .input-section {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+        
+        /* 输入区表格样式 */
+        .input-section table {
+            width: 100%;
+            margin-top: 5px;
+        }
+        
+        .input-field {
+            flex: 1 !important;
+            height: 44px !important;
+            border: 1px solid #e1e1e1 !important;
+            border-radius: 8px !important;
+            padding: 0 12px !important;
+            font-size: 16px !important;
+            transition: border-color 0.3s !important;
+            outline: none !important;
+            background-color: #fff !important;
+            color: #333 !important;
+            -webkit-appearance: none !important;
+            -moz-appearance: none !important;
+            appearance: none !important;
+            box-sizing: border-box !important;
+            width: 100% !important;
+            display: block !important;
+            margin: 0 !important;
+            box-shadow: none !important;
+            text-align: left !important;
+        }
+        
+        .input-field:focus {
+            border-color: #007aff !important;
+            box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.1) !important;
+        }
+        
+        .ban-btn {
+            height: 44px !important;
+            background-color: #ff3b30 !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 8px !important;
+            padding: 0 20px !important;
+            font-size: 16px !important;
+            font-weight: 500 !important;
+            cursor: pointer !important;
+            transition: all 0.3s !important;
+            white-space: nowrap !important;
+            flex-shrink: 0 !important;
+            text-align: center !important;
+            -webkit-appearance: none !important;
+            -moz-appearance: none !important;
+            appearance: none !important;
+        }
+        
+        .ban-btn:hover {
+            background-color: #ff2d20;
+        }
+        
+        .ban-btn:active {
+            transform: scale(0.98);
+        }
+        
+        /* 表格容器样式 */
+        .table-container {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            overflow: hidden;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+        
+        /* 表格样式 */
+        .ban-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+        
+        .ban-table th {
+            background-color: #f8f9fa;
+            padding: 10px 8px;
+            text-align: left;
+            font-weight: 600;
+            color: #666;
+            border-bottom: 1px solid #eaeaea;
+            white-space: nowrap;
+            font-size: 14px;
+        }
+        
+        .ban-table td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #eaeaea;
+            color: #333;
+            font-size: 14px;
+            word-break: break-word;
+        }
+        
+        .ban-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .ban-table tr:hover {
+            background-color: #f5f7fa;
+        }
+        
+        /* 解封按钮样式 */
+        .unban-btn {
+            padding: 6px 12px;
+            background-color: rgba(0, 122, 255, 0.1);
+            color: #007aff;
+            border: 1px solid rgba(0, 122, 255, 0.2);
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            white-space: nowrap;
+            display: inline-block;
+            text-align: center;
+            width: 100%;
+            max-width: 80px;
+        }
+        
+        .unban-btn:hover {
+            background-color: rgba(0, 122, 255, 0.2);
+            border-color: rgba(0, 122, 255, 0.3);
+        }
+        
+        .unban-btn:active {
+            transform: scale(0.98);
+        }
+        
+        /* 无数据提示 */
+        .no-data {
+            text-align: center;
+            padding: 40px 0;
+            color: #999;
+            font-size: 16px;
+        }
+        
+        /* 加载动画 */
+        .loading-container {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 16px 24px;
+            border-radius: 12px;
+            font-size: 14px;
+            z-index: 1000;
+        }
+        
+        .loading-container.show {
+            display: block;
+        }
+        
+        /* 弹窗样式 */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-overlay.show {
+            display: flex;
+        }
+        
+        .modal-content {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            width: 90%;
+            max-width: 320px;
+            overflow: hidden;
+        }
+        
+        .modal-header {
+            padding: 16px;
+            border-bottom: 1px solid #e5e5e5;
+        }
+        
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .modal-body {
+            padding: 20px 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .modal-message {
+            text-align: center;
+            color: #333;
+            font-size: 16px;
+            margin-bottom: 16px;
+            display: inline-block;
+        }
+        
+        .modal-icon {
+            font-size: 36px;
+            margin-bottom: 16px;
+            display: inline-block;
+        }
+        
+        .modal-icon.success {
+            color: #34c759;
+        }
+        
+        .modal-icon.error {
+            color: #ff3b30;
+        }
+        
+        .modal-footer {
+            padding: 12px 16px;
+            border-top: 1px solid #e5e5e5;
+            display: flex;
+            justify-content: center;
+        }
+        
+        .modal-btn {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .modal-btn.confirm {
+            background-color: #007aff;
+            color: white;
+        }
+        
+        .modal-btn.confirm:hover {
+            background-color: #0066cc;
+        }
+        
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 16px !important;
+            }
+            
+            .input-section {
+                padding: 16px !important;
+            }
+            
+            /* 移动端表格样式调整 */
+            .input-section table tr {
+                display: flex;
+                flex-direction: column;
+                width: 100%;
+            }
+            
+            .input-section table td {
+                display: block;
+                width: 100% !important;
+                padding: 0 0 10px 0 !important;
+            }
+            
+            .input-field {
+                width: 300px !important;
+                max-width: 100% !important;
+                height: 44px !important;
+                font-size: 16px !important;
+                -webkit-appearance: none !important;
+                -moz-appearance: none !important;
+                appearance: none !important;
+                border: 1px solid #e1e1e1 !important;
+                border-radius: 8px !important;
+            }
+            
+            .ban-btn {
+                width: 100% !important;
+                height: 44px !important;
+                font-size: 16px !important;
+                -webkit-appearance: none !important;
+                -moz-appearance: none !important;
+                appearance: none !important;
+            }
+            
+            .back-btn, .refresh-btn {
+                font-size: 14px;
+                padding: 8px 16px;
+            }
+            
+            .table td {
+                padding: 12px 8px;
+                font-size: 14px;
+            }
+            
+            .table-container {
+                overflow-x: auto;
+                border-radius: 8px;
+            }
+            
+            /* 调小按钮大小 */
+            .unban-btn {
+                padding: 4px 8px !important;
+                font-size: 13px !important;
+                -webkit-appearance: none !important;
+                -moz-appearance: none !important;
+                appearance: none !important;
+            }
+        }
+        
+        @media (max-width: 350px) {
+            .container {
+                padding: 10px !important;
+            }
+            
+            .input-section {
+                padding: 12px !important;
+            }
+            
+            .input-field {
+                width: 300px !important;
+                max-width: 100% !important;
+                padding: 8px !important;
+                font-size: 14px !important;
+                height: 44px !important;
+                -webkit-appearance: none !important;
+                -moz-appearance: none !important;
+                appearance: none !important;
+                border: 1px solid #e1e1e1 !important;
+                border-radius: 8px !important;
+            }
+            
+            .ban-btn {
+                padding: 0 16px !important;
+                font-size: 14px !important;
+                height: 44px !important;
+                -webkit-appearance: none !important;
+                -moz-appearance: none !important;
+                appearance: none !important;
+            }
+            
+            .ban-table th, .ban-table td {
+                padding: 6px 4px;
+                font-size: 12px;
+            }
+            
+            .unban-btn {
+                padding: 3px 6px;
+                font-size: 12px;
+                max-width: 60px;
+            }
+            
+            .section-title {
+                font-size: 16px !important;
+                margin-bottom: 10px !important;
+            }
+        }
+        
+        /* iOS设备特定样式 */
+        @supports (-webkit-touch-callout: none) {
+            .input-field {
+                -webkit-appearance: none !important;
+                border-radius: 8px !important;
+                border: 1px solid #e1e1e1 !important;
+                background-color: #fff !important;
+                color: #333 !important;
+                display: block !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                height: 44px !important;
+            }
+            
+            .ban-btn {
+                -webkit-appearance: none !important;
+                border-radius: 8px !important;
+                background-color: #ff3b30 !important;
+                color: white !important;
+                border: none !important;
+                height: 44px !important;
+            }
+            
+            .unban-btn {
+                -webkit-appearance: none !important;
+                border-radius: 6px !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <button class="back-btn" id="backBtn">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"></path>
+                </svg>
+            </button>
+            <h1>玩家封号</h1>
+            <div class="subtitle">封禁或解禁玩家账号</div>
+            <button class="refresh-btn" id="refreshBtn">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"></path>
+                </svg>
+            </button>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="input-section">
+            <div class="section-title">玩家封号</div>
+            <table style="width:100%; border-collapse:collapse;">
+                <tbody><tr>
+                    <td style="width:70%; padding-right:10px;">
+                        <input type="text" id="playerIdInput" class="input-field" style="width:100%; box-sizing:border-box;" placeholder="输入玩家账号" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+                    </td>
+                    <td style="width:30%;">
+                        <button id="banBtn" class="ban-btn" style="width:100%;">封禁账号</button>
+                    </td>
+                </tr>
+            </tbody></table>
+        </div>
+        
+        <div class="table-container">
+            <table class="ban-table" id="banTable">
+                <thead>
+                    <tr>
+                        <th style="width: 40%;">玩家账号</th>
+                        <th style="width: 20%;">操作</th>
+                        <th style="width: 40%;">封禁时间</th>
+                    </tr>
+                </thead>
+                <tbody id="banList"></tbody>
+            </table>
+            <div class="no-data" id="noData" style="display: block;">暂无数据</div>
+        </div>
+    </div>
+    
+    <div class="loading-container" id="loading">处理中...</div>
+    
+    <!-- 成功弹窗 -->
+    <div class="modal-overlay" id="successModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">操作成功</div>
+            </div>
+            <div class="modal-body">
+                <div class="modal-icon success">
+                    <svg viewBox="0 0 24 24" width="48" height="48">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="#34c759"></path>
+                    </svg>
+                </div>
+                <div class="modal-message" id="successMessage">操作成功</div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn confirm" id="successModalOkBtn">确定</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 错误弹窗 -->
+    <div class="modal-overlay" id="errorModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">操作失败</div>
+            </div>
+            <div class="modal-body">
+                <div class="modal-icon error">
+                    <svg viewBox="0 0 24 24" width="48" height="48">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="#ff3b30"></path>
+                    </svg>
+                </div>
+                <div class="modal-message" id="errorMessage">操作失败，请重试</div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn confirm" id="errorModalOkBtn">确定</button>
+            </div>
+        </div>
+    </div>
+    
+    <!--script stripped-->
+
+
+</body></html>

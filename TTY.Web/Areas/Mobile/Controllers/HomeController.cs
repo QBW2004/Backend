@@ -4,6 +4,7 @@ using YYT.BLL.EF;
 using YYT.Common;
 using YYT.Entity;
 using YYT.Web.Controllers;
+using YYT.Web.Filters;
 
 namespace YYT.Web.Areas.Mobile.Controllers
 {
@@ -12,6 +13,7 @@ namespace YYT.Web.Areas.Mobile.Controllers
     /// 只负责渲染外壳与权限判定，数据全部由前端 ajax 复用 /Game/* 现有接口。
     /// </summary>
     [MemberAuthorize]
+    [MobileOnly]
     public class HomeController : BaseController
     {
         #region 权限判定
@@ -52,7 +54,7 @@ namespace YYT.Web.Areas.Mobile.Controllers
 
         #endregion
 
-        /// <summary>玩家列表（在线 / 全部）</summary>
+        /// <summary>玩家列表（在线 / 离线）</summary>
         public ActionResult Index()
         {
             M_LoginUser user = WebHelper.GetLoginInfo();
@@ -62,6 +64,8 @@ namespace YYT.Web.Areas.Mobile.Controllers
             ViewBag.MShowMenu = true;
             ViewBag.MShowRefresh = true;
             ViewBag.MShowSearch = true;
+            ViewBag.MHeaderTall = true;
+            ViewBag.MSubtitleHtml = "<div>今日玩家总输赢（金币）</div><div class=\"total-win-loss\" id=\"totalWinLoss\">0</div>";
             ViewBag.CanUpDown = CanUpDown(user);
             ViewBag.CanFrozen = IsSuper(user) || (user != null && user.IsFrozen == 1);
             ViewBag.CanKick = IsSuper(user) || (user != null && user.IsKicking == 1);
@@ -77,7 +81,7 @@ namespace YYT.Web.Areas.Mobile.Controllers
 
             ViewBag.MPage = "agents";
             ViewBag.MTitle = "我的代理";
-            ViewBag.MSubtitle = "查看与管理下级代理";
+            ViewBag.MSubtitle = "查看所有代理信息";
             ViewBag.MShowRefresh = true;
             ViewBag.MShowSearch = true;
             ViewBag.CanUpDown = CanUpDown(user);
@@ -112,9 +116,10 @@ namespace YYT.Web.Areas.Mobile.Controllers
                 return RedirectToAction("Index");
 
             ViewBag.MPage = "recharge";
-            ViewBag.MTitle = "玩家充退";
+            ViewBag.MTitle = "充值管理";
             ViewBag.MShowRefresh = false;
             ViewBag.OwnCoins = GetOwnCoins(user);
+            ViewBag.MSubtitleHtml = "当前金币余额: <span class=\"diamond-count\" id=\"currentDiamond\">" + ViewBag.OwnCoins + "</span>";
             ViewBag.IsSuper = IsSuper(user);
 
             // 可操作对象范围，与桌面端 RechargeController.GetTreeDataByPermission 保持一致：
@@ -125,10 +130,10 @@ namespace YYT.Web.Areas.Mobile.Controllers
             ViewBag.CanTargetAgent = canAgent;
             ViewBag.CanTargetTopAgent = canTopAgent;
 
-            // 支持从玩家列表 / 代理列表跳转过来时预填
+            // 支持从玩家列表 / 代理列表跳转过来时预填（默认与参考站一致：下级代理）
             ViewBag.PresetAccount = Request.QueryString["id"] ?? string.Empty;
             ViewBag.PresetPayType = Request.QueryString["pay"] == "1" ? "1" : "0";
-            ViewBag.PresetRole = Request.QueryString["role"] == "agent" ? "agent" : "player";
+            ViewBag.PresetRole = Request.QueryString["role"] == "player" ? "player" : "agent";
 
             return View();
         }
@@ -138,11 +143,102 @@ namespace YYT.Web.Areas.Mobile.Controllers
         {
             ViewBag.MPage = "records";
             ViewBag.MTitle = "充退记录";
-            ViewBag.MSubtitle = "查看充值与兑换流水";
+            ViewBag.MSubtitle = "查看玩家充值和退分历史";
             ViewBag.MShowRefresh = true;
             ViewBag.Today = DateTime.Now.ToString("yyyy-MM-dd");
 
             return View();
         }
+
+        #region 手机端扩展页面
+        /// <summary>异常账号（查看和解封异常登录的账号）</summary>
+        public ActionResult Abnormal()
+        {
+            M_LoginUser user = WebHelper.GetLoginInfo();
+            if (!IsSuper(user))
+                return RedirectToAction("Index");
+
+            ViewBag.MPage = "abnormal";
+            ViewBag.MTitle = "异常账号";
+            ViewBag.MSubtitle = "查看和解封异常登录的账号";
+            ViewBag.MShowRefresh = true;
+
+            return View();
+        }
+
+        /// <summary>玩家封号（封禁或解禁玩家账号）</summary>
+        public ActionResult BanPlayer()
+        {
+            M_LoginUser user = WebHelper.GetLoginInfo();
+            if (!(IsSuper(user) || (user != null && user.IsFrozen == 1)))
+                return RedirectToAction("Index");
+
+            ViewBag.MPage = "banplayer";
+            ViewBag.MTitle = "玩家封号";
+            ViewBag.MSubtitle = "封禁或解禁玩家账号";
+            ViewBag.MShowRefresh = true;
+
+            return View();
+        }
+
+        /// <summary>代理封号（管理代理封禁）</summary>
+        public ActionResult BanAgent()
+        {
+            M_LoginUser user = WebHelper.GetLoginInfo();
+            if (!IsSuper(user))
+                return RedirectToAction("Index");
+
+            ViewBag.MPage = "banagent";
+            ViewBag.MTitle = "代理封号";
+            ViewBag.MSubtitle = "管理代理封号";
+            ViewBag.MShowRefresh = true;
+
+            return View();
+        }
+
+        /// <summary>代理拉黑（批量拉黑代理及其玩家）</summary>
+        public ActionResult Blacklist()
+        {
+            M_LoginUser user = WebHelper.GetLoginInfo();
+            if (!IsSuper(user))
+                return RedirectToAction("Index");
+
+            ViewBag.MPage = "blacklist";
+            ViewBag.MTitle = "代理拉黑";
+            ViewBag.MSubtitle = "批量拉黑代理及其玩家";
+            ViewBag.MShowRefresh = true;
+
+            return View();
+        }
+
+        /// <summary>送奖管理</summary>
+        public ActionResult Songjiang()
+        {
+            M_LoginUser user = WebHelper.GetLoginInfo();
+            if (!(IsSuper(user) || (user != null && user.IsUpDown == 1)))
+                return RedirectToAction("Index");
+
+            ViewBag.MPage = "songjiang";
+            ViewBag.MTitle = "送奖管理";
+            ViewBag.MShowRefresh = false;
+            ViewBag.OwnCoins = GetOwnCoins(user);
+            ViewBag.MSubtitleHtml = "我的金币: <span class=\"diamond-count\" id=\"ownDiamond\">" + ViewBag.OwnCoins + "</span>";
+            ViewBag.PresetAccount = Request.QueryString["id"] ?? string.Empty;
+
+            return View();
+        }
+
+        /// <summary>会员盈亏（我的会员输赢详情）</summary>
+        public ActionResult Huiyuan()
+        {
+            ViewBag.MPage = "huiyuan";
+            ViewBag.MTitle = "会员盈亏";
+            ViewBag.MSubtitle = "我的会员输赢详情";
+            ViewBag.MShowRefresh = true;
+            ViewBag.Today = DateTime.Now.ToString("yyyy-MM-dd");
+
+            return View();
+        }
+        #endregion
     }
 }

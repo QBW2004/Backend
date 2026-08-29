@@ -1,52 +1,545 @@
-﻿@{
-    Layout = "~/Views/Shared/Layout/_MobileLayout.cshtml";
+@{
+    /* 玩家列表（1:1 复刻参考站 wanjialist） */
+    bool canFrozen = ViewBag.CanFrozen != null && (bool)ViewBag.CanFrozen;
     string webVer = ConfigHelper.Get("WebVer");
+    Layout = "~/Views/Shared/Layout/_MobileLayout.cshtml";
 }
 
-<div class="m-container">
-    <div class="m-tabs">
-        <div class="m-tabs-header">
-            <div class="m-tab active" data-tab="online">
-                在线玩家<span class="m-tab-count" id="mOnlineCount">0</span>
-            </div>
-            <div class="m-tab" data-tab="all">
-                全部玩家<span class="m-tab-count" id="mAllCount">0</span>
-            </div>
-        </div>
+@section head {
+<style>
+    /* 今日总输赢（头部） */
+    .total-win-loss {
+        font-weight: 600;
+        font-size: 18px;
+        margin-left: 5px;
+        padding: 2px 8px;
+        border-radius: 4px;
+    }
 
-        <div class="m-tab-pane active" id="mPaneOnline">
-            <div class="m-chips">
-                <button type="button" class="m-chip active" data-sort="win">今日赢最多</button>
-                <button type="button" class="m-chip" data-sort="loss">今日输最多</button>
-                <button type="button" class="m-chip" data-sort="bet">押注最大</button>
-                <button type="button" class="m-chip" data-sort="account">按账号</button>
-            </div>
-            <div id="mOnlineList">
-                <div class="m-empty"><span class="m-spinner dark"></span> 加载中...</div>
-            </div>
-        </div>
+    .total-win-loss.positive {
+        color: #34c759;
+        background-color: rgba(52, 199, 89, 0.15);
+    }
 
-        <div class="m-tab-pane" id="mPaneAll">
-            <div id="mSearchTip" class="m-chips m-hidden"></div>
-            <div id="mAllList">
-                <div class="m-empty">点击右上角刷新或搜索加载玩家</div>
+    .total-win-loss.negative {
+        color: #ff9500;
+        background-color: rgba(255, 149, 0, 0.15);
+    }
+
+    /* 玩家卡片 */
+    .player-card {
+        background: white;
+        border-radius: 12px;
+        padding: 12px;
+        margin-bottom: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+        border-radius: 0;
+    }
+
+    .player-card:active {
+        transform: scale(0.98);
+    }
+
+    .player-card:hover {
+        box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+    }
+
+    #onlineTab .player-card {
+        margin-bottom: 16px;
+        border: 1px solid #e0e0e0;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        padding: 16px;
+        position: relative;
+        border-radius: 0;
+    }
+
+    #onlineTab .player-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        border-color: #d0d0d0;
+    }
+
+    #onlineTab .player-card:before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        height: 100%;
+        width: 4px;
+        background-color: #007aff;
+        border-radius: 0;
+    }
+
+    .player-card.offline {
+        background: #f9f9f9;
+        border: 1px solid #eaeaea;
+        box-shadow: none;
+    }
+
+    .player-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+        flex-wrap: nowrap;
+        width: 100%;
+    }
+
+    .player-account {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1d1d1f;
+        max-width: 100px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    .player-name {
+        font-size: 14px;
+        color: #1d1d1f;
+        max-width: 80px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    .agent-line {
+        font-size: 13px;
+        color: #666;
+        max-width: 60px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    .remaining-score {
+        font-size: 14px;
+        font-weight: 500;
+        color: #34c759;
+        padding: 2px 8px;
+        background: rgba(52, 199, 89, 0.1);
+        border-radius: 4px;
+        flex-shrink: 0;
+        margin-left: auto;
+    }
+
+    .remaining-diamond {
+        font-size: 14px;
+        font-weight: 500;
+        color: #007aff;
+        padding: 2px 8px;
+        background: rgba(0, 122, 255, 0.1);
+        border-radius: 4px;
+        flex-shrink: 0;
+        margin-left: 8px;
+    }
+
+    .black-listed {
+        color: #ff3b30;
+        font-weight: 500;
+        font-size: 12px;
+        padding: 2px 6px;
+        background: rgba(255, 59, 48, 0.1);
+        border-radius: 4px;
+    }
+
+    .player-info {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        font-size: 13px;
+    }
+
+    .info-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+    }
+
+    .info-row.money-row {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+    }
+
+    .info-item {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .info-label {
+        color: #86868b;
+        margin-bottom: 2px;
+        font-size: 12px;
+    }
+
+    .info-value {
+        color: #1d1d1f;
+    }
+
+    .money-value {
+        font-family: -apple-system-monospace, monospace;
+        font-weight: 500;
+    }
+
+    .money-row .info-item {
+        background: #f8f9fa;
+        padding: 8px 12px;
+        border-radius: 8px;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .money-row .info-label {
+        font-size: 14px;
+        color: #666;
+        margin-bottom: 0;
+        flex-shrink: 0;
+    }
+
+    .money-row .info-value {
+        font-size: 16px;
+        font-family: -apple-system-monospace, monospace;
+        font-weight: 600;
+        text-align: right;
+    }
+
+    .login-time-row {
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px dashed #e0e0e0;
+        display: flex;
+        justify-content: center;
+    }
+
+    .login-time-row .info-item {
+        background: rgba(0, 122, 255, 0.05);
+        border-radius: 6px;
+        padding: 6px 10px;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+    }
+
+    .login-time-row .info-label {
+        color: #007aff;
+        font-size: 12px;
+        font-weight: 500;
+        margin-bottom: 0;
+    }
+
+    .login-time-row .info-value {
+        font-size: 13px;
+        color: #333;
+        font-weight: 500;
+    }
+
+    /* 页签 */
+    .tabs-container {
+        margin: 0;
+        border-radius: 0;
+        overflow: hidden;
+        background-color: white;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        width: 100%;
+    }
+
+    .tabs-header {
+        display: flex;
+        border-bottom: 1px solid #eaeaea;
+    }
+
+    .tab {
+        flex: 1;
+        text-align: center;
+        padding: 14px 0;
+        font-size: 15px;
+        font-weight: 500;
+        color: #666;
+        cursor: pointer;
+        transition: all 0.3s;
+        position: relative;
+    }
+
+    .tab.active {
+        color: #007aff;
+    }
+
+    .tab.active::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 25%;
+        width: 50%;
+        height: 3px;
+        background-color: #007aff;
+        border-radius: 3px 3px 0 0;
+    }
+
+    .tab-count {
+        font-size: 16px;
+        font-weight: 600;
+        margin-left: 5px;
+        color: inherit;
+    }
+
+    .tab-pane {
+        display: none;
+        padding: 0;
+    }
+
+    #onlineTab {
+        background-color: #f8f9fa;
+        padding: 8px 0;
+        width: 100%;
+    }
+
+    #offlineTab {
+        padding: 8px 0;
+        width: 100%;
+    }
+
+    .tab-pane.active {
+        display: block;
+    }
+
+    /* 排序选项 */
+    .sort-options {
+        display: flex;
+        padding: 12px 16px;
+        background-color: #f9f9f9;
+        border-bottom: 1px solid #eaeaea;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .sort-option {
+        padding: 6px 12px;
+        border-radius: 16px;
+        font-size: 13px;
+        background-color: #f0f0f0;
+        border: 1px solid #e0e0e0;
+        color: #666;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .sort-option.active {
+        background-color: #007aff;
+        color: white;
+        border-color: #007aff;
+    }
+
+    .sort-option:hover:not(.active) {
+        background-color: #e5e5e5;
+    }
+
+    /* 搜索弹窗 */
+    .search-modal {
+        max-width: 400px;
+        width: 90%;
+    }
+
+    .search-input-container {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 12px;
+    }
+
+    .search-input-container input {
+        flex: 1;
+        padding: 10px 12px;
+        border: 1px solid #e5e5e5;
+        border-radius: 8px;
+        font-size: 14px;
+        outline: none;
+        transition: border-color 0.3s;
+    }
+
+    .search-input-container input:focus {
+        border-color: #007aff;
+    }
+
+    .search-submit-btn {
+        background: #007aff;
+        border: none;
+        color: white;
+        padding: 10px;
+        border-radius: 8px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s;
+    }
+
+    .search-submit-btn svg {
+        fill: white;
+    }
+
+    .search-results {
+        max-height: 400px;
+        overflow-y: auto;
+        padding: 0 16px;
+    }
+
+    .search-result-item {
+        padding: 12px;
+        border-bottom: 1px solid #e5e5e5;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+
+    .search-result-item:hover {
+        background-color: #f5f5f7;
+    }
+
+    .search-result-item:last-child {
+        border-bottom: none;
+    }
+
+    .search-result-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 4px;
+    }
+
+    .search-result-account {
+        font-weight: 600;
+        color: #1d1d1f;
+    }
+
+    .search-result-name {
+        color: #666;
+    }
+
+    .search-result-status {
+        font-size: 12px;
+        padding: 2px 6px;
+        border-radius: 4px;
+        margin-left: auto;
+    }
+
+    .search-result-status.online {
+        background: rgba(52, 199, 89, 0.1);
+        color: #34c759;
+    }
+
+    .search-result-status.offline {
+        background: rgba(142, 142, 147, 0.1);
+        color: #8e8e93;
+    }
+
+    .search-result-info {
+        font-size: 13px;
+        color: #666;
+    }
+
+    @@media (max-width: 380px) {
+        .money-row .info-value {
+            font-size: 14px;
+        }
+
+        .money-row .info-item {
+            padding: 5px 8px;
+        }
+
+        .money-row .info-label {
+            font-size: 11px;
+        }
+    }
+</style>
+}
+
+    <div class="container" id="playerContainer" style="padding:0; max-width:100%; margin:0 auto;">
+        <div class="tabs-container">
+            <div class="tabs-header">
+                <div class="tab active" data-tab="online">
+                    在线玩家 <span class="tab-count" id="onlinePlayerCount">0</span>
+                </div>
+                <div class="tab" data-tab="offline">
+                    离线玩家 <span class="tab-count" id="offlinePlayerCount">0</span>
+                </div>
             </div>
-            <div class="m-load-more" id="mAllLoadMoreBox">
-                <button type="button" class="m-load-more-btn" id="mAllLoadMore">加载更多</button>
+            <div class="tabs-content">
+                <div class="tab-pane active" id="onlineTab">
+                    <div id="onlinePlayersSection"><div class="no-more-data" style="display: block;">加载中...</div></div>
+                </div>
+                <div class="tab-pane" id="offlineTab">
+                    <div class="sort-options">
+                        <div class="sort-option active" data-sort="last-time">按最后登录时间</div>
+                        <div class="sort-option" data-sort="win-most">今日赢最多</div>
+                        <div class="sort-option" data-sort="loss-most">今日输最多</div>
+                    </div>
+                    <div id="offlinePlayersSection"></div>
+                    <div class="load-more-container">
+                        <button class="load-more-btn" id="loadMoreBtn">加载更多</button>
+                    </div>
+                    <div class="no-more-data" id="noMoreData" style="display: none;">已加载全部数据</div>
+                </div>
             </div>
-            <div class="m-empty m-hidden" id="mAllNoMore">已加载全部数据</div>
         </div>
     </div>
-</div>
+
+    <!-- 玩家操作弹窗 -->
+    <div class="modal-overlay" id="playerModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" id="modalPlayerAccount">玩家账号</div>
+                <div class="modal-subtitle" id="modalPlayerName">玩家名称</div>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-action-btn recharge" id="modalRechargeBtn">充值</button>
+                @if (ViewBag.CanUpDown != null && (bool)ViewBag.CanUpDown)
+                {
+                    <button class="modal-action-btn reward" id="modalRewardBtn">送奖</button>
+                }
+                @if (canFrozen)
+                {
+                    <button class="modal-action-btn blacklist" id="modalBlacklistBtn">拉黑</button>
+                }
+                <button class="modal-action-btn details" id="modalDetailsBtn">玩家详情</button>
+                <button class="modal-action-btn prize-history" id="modalPrizeHistoryBtn">中奖历史</button>
+                <button class="modal-action-btn" id="modalTrackBtn" style="background-color: rgba(88, 86, 214, 0.12); color: #5856D6;">游戏轨迹</button>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-cancel-btn" id="modalCancelBtn">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 搜索弹窗 -->
+    <div class="modal-overlay" id="searchModal">
+        <div class="modal-content search-modal">
+            <div class="modal-header">
+                <div class="modal-title">搜索玩家</div>
+                <div class="search-input-container">
+                    <input type="text" id="searchInput" placeholder="输入玩家账号或昵称" autocomplete="off">
+                    <button class="search-submit-btn" id="searchSubmitBtn">
+                        <svg viewBox="0 0 24 24" width="20" height="20">
+                            <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="search-results" id="searchResults"></div>
+            <div class="modal-footer">
+                <button class="modal-cancel-btn" id="searchModalCancelBtn">关闭</button>
+            </div>
+        </div>
+    </div>
 
 @section scripts {
-    <script>
-        window.MPage = {
-            canUpDown: @Html.Raw(ViewBag.CanUpDown == true ? "true" : "false"),
-            canFrozen: @Html.Raw(ViewBag.CanFrozen == true ? "true" : "false"),
-            canKick: @Html.Raw(ViewBag.CanKick == true ? "true" : "false"),
-            canModifyPwd: @Html.Raw(ViewBag.CanModifyPwd == true ? "true" : "false")
-        };
-    </script>
-    <script src="@Url.Content("~/Scripts/app/mobile/mobile.players.js?v=" + webVer)"></script>
+    <script src="@Url.Content("~/Scripts/app/phone/phone.players.js?v=" + webVer)"></script>
 }

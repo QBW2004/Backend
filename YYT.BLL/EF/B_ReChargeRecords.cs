@@ -144,6 +144,105 @@ namespace YYT.BLL.EF
             return list;
         }
 
+        /// <summary>
+        /// 手机端：充退记录分页（支持操作人/类型筛选，返回筛选范围内的总充值/总退分，并补充玩家名称与类型名称）
+        /// TypeFlag：0 全部；1 充值类（后台充值/赠送/前端充值）；2 退分类（后台兑换/扣币/前端提现）
+        /// </summary>
+        public M_EasyuiGridData<M_ReChargeRecords> GetReChargeRecordsForPhone(M_LoginUser loginUser, M_Page mPage, M_ReChargeRecordsDao entity, out long sumRecharge, out long sumWithdraw)
+        {
+            sumRecharge = 0;
+            sumWithdraw = 0;
+            M_EasyuiGridData<M_ReChargeRecords> list = new M_EasyuiGridData<M_ReChargeRecords>();
+            using (var ef = new GameDbContext())
+            {
+                B_Records_MySQL.CleanupExpiredRecords(ef);
+                IEnumerable<M_ReChargeRecords> rst = ef.ReChargeRecords;
+
+                if (!string.IsNullOrWhiteSpace(entity.GameID))
+                    rst = rst.Where(c => c.GameID.Equals(entity.GameID));
+                if (!string.IsNullOrWhiteSpace(entity.PayNo))
+                    rst = rst.Where(c => c.PayNo.Equals(entity.PayNo));
+                if (!string.IsNullOrWhiteSpace(entity.OrderNo))
+                    rst = rst.Where(c => c.OrderNo.Equals(entity.OrderNo));
+                if (entity.Processed > -1 && entity.Processed < 3)
+                    rst = rst.Where(c => c.Processed == entity.Processed);
+                if (!string.IsNullOrWhiteSpace(entity.StartTime))
+                    rst = rst.Where(c => c.CreateTime > Convert.ToDateTime(entity.StartTime));
+                if (!string.IsNullOrWhiteSpace(entity.EndTime))
+                    rst = rst.Where(c => c.CreateTime < Convert.ToDateTime(entity.EndTime));
+                if (!string.IsNullOrWhiteSpace(entity.Agency))
+                    rst = rst.Where(c => c.Agency.Equals(entity.Agency));
+                if (!string.IsNullOrWhiteSpace(entity.Operator))
+                    rst = rst.Where(c => c.Operator != null && c.Operator.Equals(entity.Operator));
+
+                // 加权限查询
+                if (loginUser.UserPriv != 0)
+                {
+                    rst = rst.Where(c => c.Agency.Equals(loginUser.Accounts));
+                }
+
+                List<M_ReChargeRecords> records = rst.ToList();
+
+                // 类型筛选
+                if (entity.TypeFlag == 1)
+                {
+                    records = records.Where(c => c.RechargeType == 20 || c.RechargeType == 22 || (c.RechargeType == 30 && c.Processed == 1)).ToList();
+                }
+                else if (entity.TypeFlag == 2)
+                {
+                    records = records.Where(c => c.RechargeType == 21 || c.RechargeType == 23 || (c.RechargeType == 31 && c.Processed == 1)).ToList();
+                }
+                else if (entity.TypeFlag == 3)
+                {
+                    records = records.Where(c => c.RechargeType == 22).ToList();
+                }
+
+                // 筛选范围内合计
+                foreach (M_ReChargeRecords item in records)
+                {
+                    if (item.RechargeType == 20 || (item.RechargeType == 30 && item.Processed == 1) || item.RechargeType == 22)
+                        sumRecharge += item.Coin ?? 0;
+                    if (item.RechargeType == 21 || item.RechargeType == 23 || (item.RechargeType == 31 && item.Processed == 1))
+                        sumWithdraw += item.Coin ?? 0;
+                }
+
+                // 玩家名称补充
+                List<string> gameIds = records.Select(c => c.GameID).Where(c => !string.IsNullOrWhiteSpace(c)).Distinct().Take(1000).ToList();
+                Dictionary<string, string> nameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                if (gameIds.Count > 0)
+                {
+                    nameMap = ef.Users.Where(c => gameIds.Contains(c.ID)).ToDictionary(c => c.ID, c => c.NAME, StringComparer.OrdinalIgnoreCase);
+                }
+                foreach (M_ReChargeRecords item in records)
+                {
+                    string name;
+                    item.UserName = nameMap.TryGetValue(item.GameID, out name) ? name : string.Empty;
+                    item.TypeName = TypeName(item.RechargeType);
+                }
+
+                mPage.SetTotalCount(records.Count);
+                list.rows = records.OrderByDescending(c => c.CreateTime)
+                    .Skip(mPage.PageSize * (mPage.PageIndex - 1)).Take(mPage.PageSize)
+                    .ToList();
+                list.total = mPage.TotalCount;
+            }
+            return list;
+        }
+
+        private static string TypeName(int rechargeType)
+        {
+            switch (rechargeType)
+            {
+                case 20: return "后台充值";
+                case 21: return "后台兑换";
+                case 22: return "赠送";
+                case 23: return "扣币";
+                case 30: return "前端充值";
+                case 31: return "前端提现";
+                default: return "类型" + rechargeType;
+            }
+        }
+
         public List<M_ReChargeRecords> GetReChargeRecords(M_ReChargeRecords entity)
         {
             M_EasyuiGridData<M_ReChargeRecords> list = new M_EasyuiGridData<M_ReChargeRecords>();

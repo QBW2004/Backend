@@ -31,11 +31,25 @@ namespace YYT.Web.Controllers
 
         #region 系统登录
         /// <summary>
-        /// 系统登录
+        /// 系统登录。
+        /// 手机浏览器访问时自动跳转手机登录页；可用 ?view=pc / ?view=mobile 手动切换，
+        /// 选择会记在 Cookie 里（30 天），之后不再自动跳转（与 Mgr/Index 同一套偏好）。
         /// </summary>
         /// <returns></returns>
         public ActionResult Index()
         {
+            string view = (Request.QueryString["view"] ?? string.Empty).Trim().ToLowerInvariant();
+            if (view == "pc" || view == "mobile")
+            {
+                SaveViewMode(view);
+                if (view == "mobile")
+                    return RedirectToAction("Mobile");
+            }
+            else if (IsMobileBrowser() && GetViewMode() != "pc")
+            {
+                return RedirectToAction("Mobile");
+            }
+
             ViewBag.String1 = Resources.Language.String1;
             return View();
         }
@@ -64,138 +78,180 @@ namespace YYT.Web.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult Index(FormCollection form)
         {
-            string clientIP = string.Empty;
-            string uname = string.Empty;
-            string upwd = string.Empty;
-            //string code = string.Empty;
-            string admin = ConfigHelper.Get("admin");
+            string uname = form.Q<string>("uname", "").Trim();
+            string upwd = form.Q<string>("upwd", "").Trim();
+
+            M_LoginUser loginUser;
+            string errorMsg = TryLogin(uname, upwd, out loginUser);
+            if (!string.IsNullOrEmpty(errorMsg))
+            {
+                TempData["msg"] = errorMsg;
+                return View();
+            }
+
+            return RedirectToAction("Index", "Mgr");
+        }
+
+        #region 手机端登录
+        /// <summary>
+        /// 手机端登录页（与桌面端 /Login/Index 共用校验逻辑）。
+        /// 电脑浏览器访问时弹回桌面登录页；?view=pc / ?view=mobile 可手动切换，
+        /// 偏好记在 mth_view Cookie（与 /Login/Index、/Mgr/Index 同一套）。
+        /// </summary>
+        public ActionResult Mobile()
+        {
+            string view = (Request.QueryString["view"] ?? string.Empty).Trim().ToLowerInvariant();
+            if (view == "pc" || view == "mobile")
+            {
+                SaveViewMode(view);
+                if (view == "pc")
+                    return Redirect(DesktopLoginUrl());
+            }
+            else if (GetViewMode() == "pc" || (!IsMobileBrowser() && GetViewMode() != "mobile"))
+            {
+                // 应去桌面端：主动选了 pc；或电脑 UA 且未选 mobile
+                return Redirect(DesktopLoginUrl());
+            }
+
+            return View();
+        }
+
+        /// <summary>
+        /// 桌面登录页地址。显式带上语言段，
+        /// 避免 RedirectToAction 因 controller/action 是路由默认值而被省略成 /zh-CN。
+        /// </summary>
+        private string DesktopLoginUrl()
+        {
+            string lang = Convert.ToString(RouteData.Values["lang"] ?? string.Empty);
+            return string.IsNullOrEmpty(lang) ? "~/Login/Index" : $"/{lang}/Login/Index";
+        }
+
+        /// <summary>
+        /// 手机端登录（ajax），成功后由前端跳转 /Mobile/Home/Index
+        /// </summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [WithoutLocalization]
+        public ActionResult Mobile(FormCollection form)
+        {
+            string uname = form.Q<string>("uname", "").Trim();
+            string upwd = form.Q<string>("upwd", "").Trim();
+
+            M_LoginUser loginUser;
+            string errorMsg;
             try
             {
-                uname = form.Q<string>("uname", "").Trim();
-                upwd = form.Q<string>("upwd", "").Trim();
-                //code = form.Q<string>("code", "").Trim();
-
-                clientIP = WebHelper.GetClientIP();
-
-                if (string.IsNullOrWhiteSpace(uname))
-                {
-                    TempData["msg"] = "请输入帐号！";
-                    return View();
-                }
-                if (string.IsNullOrWhiteSpace(upwd))
-                {
-                    TempData["msg"] = "请输入密码！";
-                    return View();
-                }
-                //if (string.IsNullOrWhiteSpace(code))
-                //{
-                //    TempData["msg"] = "请输入验证码！";
-                //    return View();
-                //}
-
-
-                if (uname == admin)
-                {
-                //    { "LoginResult":1,"LoginMsg":"登录成功！","UserID":999,"Accounts":"admin",
-                //            "UserName":"admin","IsDel":0,"Remark":"","Roles":"0",
-                //            "UserType":0,"RE_ENABLE":1,"UserPriv":0,"IsFrozen":1,"IsProbability":1,"IsKill":1,"IsRelease":1,"IsKicking":1,"IsDelete":1}
-                    M_LoginUser model1 = new M_LoginUser();
-                    model1.LoginResult = 1;
-                    model1.UserPriv = 0;
-                    model1.Accounts = admin;
-                    model1.UserName = admin;
-                    model1.UserID = 999;
-                    model1.LoginMsg = "登录成功！";
-                    model1.IsDel = 0;
-                    model1.Remark = "";
-                    model1.Roles = "0";
-                    model1.UserType = 0;
-                    model1.RE_ENABLE = 1;
-                    model1.IsFrozen = 1;
-                    model1.IsProbability = 1;
-                    model1.IsKill = 1;
-                    model1.IsRelease = 1;
-                    model1.IsKicking = 1;
-                    model1.IsDelete = 1;
-                    WebHelper.WriteSession("LoginInfo", DESEncrypt.Encrypt(model1.ToString()));
-                    return RedirectToAction("Index", "Mgr");
-                }
-                else
-                {
-                    var missBll = new B_LoginMissRecord();
-                    M_LoginMissRecord missEntity = missBll.GetRecord(new M_LoginMissRecord { ID = uname });
-                    if (missEntity == null)
-                    {
-                        missEntity = new M_LoginMissRecord { ID = uname, IPAddr = clientIP, LoginResult = 0, MissCount = 0, LoginTime = DateTime.Now };
-                    }
-                    else
-                    {
-                        if (missEntity.MissCount > 4 && (DateTime.Now - missEntity.LoginTime).TotalMinutes > 0)
-                        {
-                            TempData["msg"] = "登录错误次数太多，请5分钟后再登录！";
-                            return View();
-                        }
-                    }
-
-                    string regStr = "'|(select)|(drop)|(table)|(master)|(dbo\\.)|\\[|\\]|\\{|\\}";
-                    if (Regex.IsMatch(uname, regStr) || Regex.IsMatch(upwd, regStr))
-                    {
-                        TempData["msg"] = "非法字符输入！";
-                        missEntity.LoginResult = 0;
-                        missBll.UpadteRecord(missEntity);
-                        return View();
-                    }
-                    //if (Regex.IsMatch(code, "[^\\d]{4}") || !(code.Equals(WebHelper.GetValideCode(), StringComparison.InvariantCultureIgnoreCase)))
-                    //{
-                    //    TempData["msg"] = "验证码不正确！";
-                    //    missEntity.LoginResult = 0;
-                    //    missBll.UpadteRecord(missEntity);
-                    //    return View();
-                    //}
-                    //查询数据库 ,判断用户名密码是否正确
-                    M_LoginUser model = new B_UserLogin().Login(uname, /*DESEncrypt.Md5(upwd)*/upwd, WebHelper.GetClientIP());
-                    if (model != null)
-                    {
-                        if (model.LoginResult == 1)
-                        {
-                            WebHelper.WriteSession("LoginInfo", DESEncrypt.Encrypt(model.ToString()));
-
-                            //#if DEBUG
-                            //                        if (Request.Browser.IsMobileDevice)
-                            //                            return RedirectToAction("Index", "Home", new { area = "Mobile" }); 
-                            //#endif
-
-                            missEntity.LoginResult = 1;
-                            missBll.UpadteRecord(missEntity);
-
-                            return RedirectToAction("Index", "Mgr");
-                        }
-                        else
-                        {
-                            TempData["msg"] = model.LoginMsg + "登录失败！";
-                            LogHelper.WriteLog(typeof(LoginController), model.LoginMsg + "登录失败！");
-
-                            missEntity.LoginResult = 0;
-                            missBll.UpadteRecord(missEntity);
-                        }
-                    }
-                    else
-                    {
-                        TempData["msg"] = "登录失败！";
-                        missEntity.LoginResult = 0;
-                        missBll.UpadteRecord(missEntity);
-                    }
-                }
-              
+                errorMsg = TryLogin(uname, upwd, out loginUser);
             }
             catch (Exception ex)
             {
-                LogHelper.WriteLog(typeof(LoginController), ex.Message + "登录失败！");
-
-                TempData["msg"] = "登录失败。";
+                LogHelper.WriteLog(typeof(LoginController), ex.Message + "手机端登录失败！");
+                errorMsg = "登录失败。";
             }
-            return View();
+
+            if (!string.IsNullOrEmpty(errorMsg))
+                return Json(new { code = 0, msg = errorMsg });
+
+            return Json(new { code = 1, msg = "ok" });
         }
+        #endregion
+
+        #region 登录校验（桌面端 / 手机端共用）
+        /// <summary>
+        /// 统一登录校验：超级管理员旁路、失败锁定、非法字符、数据库校验，成功时写入会话。
+        /// </summary>
+        /// <param name="uname">账号</param>
+        /// <param name="upwd">密码</param>
+        /// <param name="loginUser">成功时返回登录会话模型</param>
+        /// <returns>错误消息；成功返回空字符串</returns>
+        private string TryLogin(string uname, string upwd, out M_LoginUser loginUser)
+        {
+            loginUser = null;
+            string clientIP = WebHelper.GetClientIP();
+            string admin = ConfigHelper.Get("admin");
+
+            if (string.IsNullOrWhiteSpace(uname))
+                return "请输入帐号！";
+            if (string.IsNullOrWhiteSpace(upwd))
+                return "请输入密码！";
+
+            if (uname == admin)
+            {
+                M_LoginUser model1 = new M_LoginUser();
+                model1.LoginResult = 1;
+                model1.UserPriv = 0;
+                model1.Accounts = admin;
+                model1.UserName = admin;
+                model1.UserID = 999;
+                model1.LoginMsg = "登录成功！";
+                model1.IsDel = 0;
+                model1.Remark = "";
+                model1.Roles = "0";
+                model1.UserType = 0;
+                model1.RE_ENABLE = 1;
+                model1.IsFrozen = 1;
+                model1.IsProbability = 1;
+                model1.IsKill = 1;
+                model1.IsRelease = 1;
+                model1.IsKicking = 1;
+                model1.IsDelete = 1;
+                WebHelper.WriteSession("LoginInfo", DESEncrypt.Encrypt(model1.ToString()));
+                loginUser = model1;
+                return string.Empty;
+            }
+
+            var missBll = new B_LoginMissRecord();
+            M_LoginMissRecord missEntity = missBll.GetRecord(new M_LoginMissRecord { ID = uname });
+            if (missEntity == null)
+            {
+                missEntity = new M_LoginMissRecord { ID = uname, IPAddr = clientIP, LoginResult = 0, MissCount = 0, LoginTime = DateTime.Now };
+            }
+            else
+            {
+                if (missEntity.MissCount > 4 && (DateTime.Now - missEntity.LoginTime).TotalMinutes > 0)
+                {
+                    return "登录错误次数太多，请5分钟后再登录！";
+                }
+            }
+
+            string regStr = "'|(select)|(drop)|(table)|(master)|(dbo\\.)|\\[|\\]|\\{|\\}";
+            if (Regex.IsMatch(uname, regStr) || Regex.IsMatch(upwd, regStr))
+            {
+                missEntity.LoginResult = 0;
+                missBll.UpadteRecord(missEntity);
+                return "非法字符输入！";
+            }
+
+            //查询数据库 ,判断用户名密码是否正确
+            M_LoginUser model = new B_UserLogin().Login(uname, /*DESEncrypt.Md5(upwd)*/upwd, clientIP);
+            if (model != null)
+            {
+                if (model.LoginResult == 1)
+                {
+                    WebHelper.WriteSession("LoginInfo", DESEncrypt.Encrypt(model.ToString()));
+
+                    missEntity.LoginResult = 1;
+                    missBll.UpadteRecord(missEntity);
+
+                    loginUser = model;
+                    return string.Empty;
+                }
+                else
+                {
+                    LogHelper.WriteLog(typeof(LoginController), model.LoginMsg + "登录失败！");
+                    missEntity.LoginResult = 0;
+                    missBll.UpadteRecord(missEntity);
+                    return model.LoginMsg + "登录失败！";
+                }
+            }
+            else
+            {
+                missEntity.LoginResult = 0;
+                missBll.UpadteRecord(missEntity);
+                return "登录失败！";
+            }
+        }
+        #endregion
         #endregion
 
         #region 检查登录

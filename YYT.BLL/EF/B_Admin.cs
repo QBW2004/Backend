@@ -132,7 +132,206 @@ namespace YYT.BLL.EF
                 return ef.SaveChanges();
             }
         }
-      
+
+        #region 手机端扩展（封禁代理列表 / 代理拉黑）
+        /// <summary>
+        /// 手机端：封禁中的代理分页（RE_ENABLE = 0 即禁止登录）。非超管仅返回自己权限线内的代理。
+        /// </summary>
+        public M_EasyuiGridData<M_Admin> GetBannedAgenciesList(M_Page mPage, M_LoginUser loginUser)
+        {
+            M_EasyuiGridData<M_Admin> list = new M_EasyuiGridData<M_Admin>();
+            using (var ef = new GameDbContext())
+            {
+                var rst = ef.Admins.Where(c => c.RE_ENABLE == 0);
+                if (loginUser != null && loginUser.UserPriv != 0)
+                {
+                    List<string> agencies = GetManagedAgencyAccounts(ef, loginUser);
+                    rst = agencies.Count > 0
+                        ? rst.Where(c => agencies.Contains(c.ID))
+                        : rst.Where(c => false);
+                }
+
+                List<M_Admin> rows = rst.OrderBy(c => c.ID).ToList();
+                if (mPage != null)
+                {
+                    mPage.SetTotalCount(rows.Count);
+                    list.rows = rows.Skip(mPage.PageSize * (mPage.PageIndex - 1)).Take(mPage.PageSize).ToList();
+                    list.total = mPage.TotalCount;
+                }
+                else
+                {
+                    list.rows = rows;
+                    list.total = rows.Count;
+                }
+            }
+            return list;
+        }
+
+        /// <summary>
+        /// 手机端：拉黑代理。封禁该代理及其整条线下所有代理登录，并按范围冻结其名下玩家。
+        /// </summary>
+        /// <param name="scope">0 所有玩家（默认）；1 仅直属玩家；2 非直属玩家</param>
+        public bool BlacklistAgent(M_LoginUser loginUser, string agentId, string banMsg, int scope, out int affectedPlayers, out int affectedAgents, out string error)
+        {
+            affectedPlayers = 0;
+            affectedAgents = 0;
+            error = string.Empty;
+
+            if (string.IsNullOrWhiteSpace(agentId))
+            {
+                error = "代理账号不能为空！";
+                return false;
+            }
+
+            using (var ef = new GameDbContext())
+            {
+                M_Admin agent = ef.Admins.FirstOrDefault(c => c.ID.Equals(agentId));
+                if (agent == null)
+                {
+                    error = "代理账号不存在！";
+                    return false;
+                }
+
+                // 超管可拉黑任意代理，其余仅限自己权限线内
+                if (loginUser != null && loginUser.UserPriv != 0
+                    && !GetAgencyLineAccounts(ef, loginUser.Accounts).Contains(agentId))
+                {
+                    error = "无权限操作该代理！";
+                    return false;
+                }
+
+                List<string> lineAccounts = GetAgencyLineAccounts(ef, agentId);
+
+                // 封禁线下全部代理登录
+                List<M_Admin> admins = ef.Admins.Where(c => lineAccounts.Contains(c.ID) && c.RE_ENABLE != 0).ToList();
+                foreach (M_Admin item in admins)
+                    item.RE_ENABLE = 0;
+                affectedAgents = admins.Count;
+
+                // 按范围冻结名下玩家
+                List<M_Users> players;
+                if (scope == 1)
+                {
+                    players = ef.Users.Where(c => c.AGENCY.Equals(agentId) && c.FROZEN != 1).ToList();
+                }
+                else if (scope == 2)
+                {
+                    List<string> subAccounts = lineAccounts.Where(c => !c.Equals(agentId)).ToList();
+                    players = subAccounts.Count > 0
+                        ? ef.Users.Where(c => subAccounts.Contains(c.AGENCY) && c.FROZEN != 1).ToList()
+                        : new List<M_Users>();
+                }
+                else
+                {
+                    players = ef.Users.Where(c => lineAccounts.Contains(c.AGENCY) && c.FROZEN != 1).ToList();
+                }
+                foreach (M_Users item in players)
+                    item.FROZEN = 1;
+                affectedPlayers = players.Count;
+
+                ef.SaveChanges();
+
+                new B_AgencyOptLog().AddAgencyOptLog(new M_AgencyOptLog
+                {
+                    OptID = loginUser != null ? loginUser.Accounts : string.Empty,
+                    SrcUserTitle = loginUser != null ? loginUser.Accounts : string.Empty,
+                    ID = agentId,
+                    DestUserTitle = string.IsNullOrWhiteSpace(banMsg) ? "拉黑" : banMsg,
+                    AGENCY = agent.AGENCY,
+                    OPT = 24,
+                    COINS = affectedPlayers,
+                    BEF_COINS = affectedAgents,
+                    REC_TIME = DateTime.Now,
+                    WEEK = DateTime.Now.WeekOfYear()
+                });
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// 手机端：解除拉黑。恢复该代理整条线登录，并解冻拉黑时冻结的玩家。
+        /// </summary>
+        public bool UnBlacklistAgent(M_LoginUser loginUser, string agentId, out string error)
+        {
+            error = string.Empty;
+
+            if (string.IsNullOrWhiteSpace(agentId))
+            {
+                error = "代理账号不能为空！";
+                return false;
+            }
+
+            using (var ef = new GameDbContext())
+            {
+                M_Admin agent = ef.Admins.FirstOrDefault(c => c.ID.Equals(agentId));
+                if (agent == null)
+                {
+                    error = "代理账号不存在！";
+                    return false;
+                }
+
+                if (loginUser != null && loginUser.UserPriv != 0
+                    && !GetAgencyLineAccounts(ef, loginUser.Accounts).Contains(agentId))
+                {
+                    error = "无权限操作该代理！";
+                    return false;
+                }
+
+                List<string> lineAccounts = GetAgencyLineAccounts(ef, agentId);
+
+                List<M_Admin> admins = ef.Admins.Where(c => lineAccounts.Contains(c.ID) && c.RE_ENABLE == 0).ToList();
+                foreach (M_Admin item in admins)
+                    item.RE_ENABLE = 1;
+
+                List<M_Users> players = ef.Users.Where(c => lineAccounts.Contains(c.AGENCY) && c.FROZEN == 1).ToList();
+                foreach (M_Users item in players)
+                    item.FROZEN = 0;
+
+                ef.SaveChanges();
+
+                new B_AgencyOptLog().AddAgencyOptLog(new M_AgencyOptLog
+                {
+                    OptID = loginUser != null ? loginUser.Accounts : string.Empty,
+                    SrcUserTitle = loginUser != null ? loginUser.Accounts : string.Empty,
+                    ID = agentId,
+                    DestUserTitle = "解封恢复",
+                    AGENCY = agent.AGENCY,
+                    OPT = 25,
+                    COINS = players.Count,
+                    BEF_COINS = admins.Count,
+                    REC_TIME = DateTime.Now,
+                    WEEK = DateTime.Now.WeekOfYear()
+                });
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// 手机端：拉黑/解封记录分页（OPT 24=拉黑 25=解封）。
+        /// </summary>
+        public M_EasyuiGridData<M_AgencyOptLog> GetBlacklistRecords(M_Page mPage, M_LoginUser loginUser)
+        {
+            M_EasyuiGridData<M_AgencyOptLog> list = new M_EasyuiGridData<M_AgencyOptLog>();
+            using (var ef = new GameDbContext())
+            {
+                var rst = ef.AgencyOptLogs.Where(c => c.OPT == 24 || c.OPT == 25);
+                if (loginUser != null && loginUser.UserPriv != 0)
+                {
+                    List<string> agencies = GetManagedAgencyAccounts(ef, loginUser);
+                    List<string> watchAccounts = agencies ?? new List<string>();
+                    watchAccounts.Add(loginUser.Accounts);
+                    rst = rst.Where(c => watchAccounts.Contains(c.OptID) || watchAccounts.Contains(c.ID));
+                }
+
+                mPage.SetTotalCount(rst.Count());
+                list.rows = rst.OrderByDescending(c => c.LID)
+                    .Skip(mPage.PageSize * (mPage.PageIndex - 1)).Take(mPage.PageSize)
+                    .ToList();
+                list.total = mPage.TotalCount;
+            }
+            return list;
+        }
+        #endregion
 
         public int SetFrozen(M_Admin entity)
         {

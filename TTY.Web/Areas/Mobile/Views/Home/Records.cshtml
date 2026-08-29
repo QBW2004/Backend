@@ -1,85 +1,285 @@
 @{
-    Layout = "~/Views/Shared/Layout/_MobileLayout.cshtml";
+    /* 充退记录（1:1 复刻参考站 chongzhilist） */
     string webVer = ConfigHelper.Get("WebVer");
     string today = (string)(ViewBag.Today ?? "");
+    Layout = "~/Views/Shared/Layout/_MobileLayout.cshtml";
 }
 
-<div class="m-container">
-    <div class="m-chips" style="border-radius:12px 12px 0 0;">
-        @* OPT 取值见 B_Recharge.AddAgentOptLog：20 充值 / 21 兑换 / 22 赠送 / 23 扣币，2 登录 / 3 退出 *@
-        <button type="button" class="m-chip active" data-opt="-1">全部</button>
-        <button type="button" class="m-chip" data-opt="20">充值</button>
-        <button type="button" class="m-chip" data-opt="21">兑换</button>
-        <button type="button" class="m-chip" data-opt="22">赠送</button>
-        <button type="button" class="m-chip" data-opt="23">扣币</button>
-        <button type="button" class="m-chip" data-opt="2">登录</button>
-        <button type="button" class="m-chip" data-opt="3">退出</button>
-    </div>
+@section head {
+<style>
+    .container {
+        padding: 16px;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
 
-    <div class="m-card m-card-pad" style="border-radius:0 0 12px 12px;">
-        <div class="m-form-grid">
-            <div class="m-form-group" style="margin-bottom:0;">
-                <label class="m-label">日期</label>
-                <input type="date" class="m-input" id="mRecDate" value="@today" />
+    /* 记录类型选择器 */
+    .record-type-selector {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 8px;
+    }
+
+    .record-type-btn {
+        padding: 8px 16px;
+        border: 1px solid #e5e5e5;
+        border-radius: 6px;
+        background-color: white;
+        color: #666;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-size: 14px;
+        -webkit-appearance: none;
+        appearance: none;
+    }
+
+    .record-type-btn.active {
+        background-color: #007aff;
+        color: white;
+        border-color: #007aff;
+    }
+
+    /* 筛选控件 */
+    .filter-container {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-bottom: 16px;
+        background-color: white;
+        padding: 16px;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .filter-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .filter-item {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        flex: 1;
+        min-width: 150px;
+    }
+
+    .filter-label {
+        font-size: 14px;
+        color: #666;
+    }
+
+    .filter-input {
+        padding: 8px 12px;
+        border: 1px solid #e5e5e5;
+        border-radius: 6px;
+        font-size: 14px;
+        color: #333;
+        width: 100%;
+    }
+
+    .filter-btn {
+        padding: 8px 16px;
+        background-color: #007aff;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.3s;
+        margin-top: 8px;
+        width: 120px;
+        -webkit-appearance: none;
+        appearance: none;
+    }
+
+    .filter-btn:hover {
+        background-color: #0066cc;
+    }
+
+    .filter-bottom-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+    }
+
+    .stats-container {
+        display: flex;
+        align-items: center;
+        margin-top: 8px;
+        flex: 1;
+        flex-wrap: wrap;
+    }
+
+    .stats-item {
+        display: flex;
+        align-items: center;
+        margin-right: 20px;
+        font-size: 14px;
+        color: #666;
+    }
+
+    .stats-value {
+        font-weight: 600;
+        margin-left: 5px;
+    }
+
+    .stats-value.positive {
+        color: #34c759;
+    }
+
+    .stats-value.negative {
+        color: #ff3b30;
+    }
+
+    /* 表格 */
+    .table-container table {
+        min-width: 640px;
+    }
+
+    .amount {
+        font-family: -apple-system-monospace, monospace;
+        font-weight: 500;
+    }
+
+    .amount.positive {
+        color: #34c759;
+    }
+
+    .amount.negative {
+        color: #ff3b30;
+    }
+
+    .time {
+        color: #666;
+        white-space: nowrap;
+    }
+
+    /* 分页控件 */
+    .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 20px;
+        gap: 8px;
+    }
+
+    .pagination-btn {
+        padding: 8px 16px;
+        border: 1px solid #e5e5e5;
+        border-radius: 6px;
+        background-color: white;
+        color: #333;
+        cursor: pointer;
+        transition: all 0.3s;
+        -webkit-appearance: none;
+        appearance: none;
+    }
+
+    .pagination-btn:hover {
+        background-color: #f5f5f7;
+    }
+
+    .pagination-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .pagination-info {
+        color: #666;
+        font-size: 14px;
+    }
+
+    @@media (max-width: 768px) {
+        .container {
+            padding: 12px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        .filter-row .filter-item {
+            min-width: 0;
+            width: calc(50% - 6px);
+        }
+    }
+</style>
+}
+
+    <div class="container">
+        <!-- 记录类型选择器 -->
+        <div class="record-type-selector">
+            <button class="record-type-btn active" data-type="all">全部</button>
+            <button class="record-type-btn" data-type="recharge">充值</button>
+            <button class="record-type-btn" data-type="withdraw">退分</button>
+        </div>
+
+        <!-- 筛选控件 -->
+        <div class="filter-container">
+            <div class="filter-row">
+                <div class="filter-item">
+                    <div class="filter-label">开始日期</div>
+                    <input type="date" id="startDate" class="filter-input" value="@today">
+                </div>
+                <div class="filter-item">
+                    <div class="filter-label">结束日期</div>
+                    <input type="date" id="endDate" class="filter-input" value="@today">
+                </div>
             </div>
-            <div class="m-form-group" style="margin-bottom:0;">
-                <label class="m-label">账号</label>
-                <input type="text" class="m-input" id="mRecId" placeholder="可选" autocomplete="off" />
+            <div class="filter-row">
+                <div class="filter-item">
+                    <div class="filter-label">玩家账号</div>
+                    <input type="text" id="playerAccount" class="filter-input" placeholder="输入玩家账号">
+                </div>
+                <div class="filter-item">
+                    <div class="filter-label">操作人</div>
+                    <input type="text" id="operatorAccount" class="filter-input" placeholder="输入操作人账号">
+                </div>
+            </div>
+            <div class="filter-bottom-row">
+                <div class="stats-container">
+                    <div class="stats-item">
+                        总充值（金币）: <span class="stats-value positive" id="totalRecharge">0</span>
+                    </div>
+                    <div class="stats-item">
+                        总退分（金币）: <span class="stats-value negative" id="totalWithdraw">0</span>
+                    </div>
+                </div>
+                <button class="filter-btn" id="filterBtn">筛选</button>
             </div>
         </div>
-        <button type="button" class="m-btn m-btn-primary m-btn-block" id="mRecQuery" style="margin-top:12px;">查询</button>
-    </div>
 
-    <div class="m-stats">
-        <div class="m-stats-grid">
-            <div class="m-stat-box">
-                <div class="m-stat-label">记录数</div>
-                <div class="m-stat-value" id="mRecTotal">0</div>
-            </div>
-            <div class="m-stat-box">
-                <div class="m-stat-label">本页充值</div>
-                <div class="m-stat-value positive" id="mRecSumIn">0</div>
-            </div>
-            <div class="m-stat-box">
-                <div class="m-stat-label">本页兑换</div>
-                <div class="m-stat-value negative" id="mRecSumOut">0</div>
-            </div>
-        </div>
-    </div>
-
-    <div class="m-swipe-hint">
-        <svg viewBox="0 0 24 24"><path d="M8 5l-4 4 4 4V10h8v-2H8V5zm8 14l4-4-4-4v3H8v2h8v3z" /></svg>
-        <span>表格可左右滑动查看更多列</span>
-    </div>
-
-    <div class="m-table-wrap">
-        <div class="m-table-scroll">
-            <table class="m-table">
+        <!-- 表格容器 -->
+        <div class="table-container">
+            <table>
                 <thead>
                     <tr>
-                        <th>时间</th>
-                        <th>类型</th>
                         <th>操作人</th>
-                        <th>目标账号</th>
-                        <th>金额</th>
-                        <th>操作前</th>
-                        <th>操作后</th>
+                        <th>玩家账号</th>
+                        <th>玩家名称</th>
+                        <th>充退数量（金币）</th>
+                        <th>充退前金币</th>
+                        <th>充退后金币</th>
+                        <th>充退时间</th>
+                        <th>备注</th>
                     </tr>
                 </thead>
-                <tbody id="mRecBody">
-                    <tr><td colspan="7" class="m-empty">加载中...</td></tr>
-                </tbody>
+                <tbody id="recordsTableBody"></tbody>
             </table>
+            <div class="no-data" id="noData" style="display: block;">暂无记录</div>
+        </div>
+
+        <!-- 分页控件 -->
+        <div class="pagination">
+            <button class="pagination-btn" id="prevBtn" disabled>上一页</button>
+            <div class="pagination-info" id="paginationInfo">第 1 页 / 共 0 页</div>
+            <button class="pagination-btn" id="nextBtn" disabled>下一页</button>
         </div>
     </div>
 
-    <div class="m-pagination">
-        <button type="button" id="mRecPrev" disabled>上一页</button>
-        <span class="m-pagination-info" id="mRecPageInfo">第 1 页 / 共 1 页</span>
-        <button type="button" id="mRecNext" disabled>下一页</button>
-    </div>
-</div>
-
 @section scripts {
-    <script src="@Url.Content("~/Scripts/app/mobile/mobile.records.js?v=" + webVer)"></script>
+    <script src="@Url.Content("~/Scripts/app/phone/phone.records.js?v=" + webVer)"></script>
 }

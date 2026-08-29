@@ -33,10 +33,17 @@ node_modules/
 
 # Backups / archives
 *.zip
+*.rar
 *.bak_*
 
 # DB dumps (Tools/export-db.ps1 产物)
 Tools/*.sql
+
+# 根目录带数据的 DB 快照(本地导出, 体积大且含种子数据, 不入库)
+/mth_havedata.sql
+
+# 环境检测报告(Tools/env-check.ps1 产物, 每台服务器结果不同)
+Tools/env-check-report.txt
 
 # 构建工具本地缓存(build.bat 按需下载: .NET 4.8 引用程序集 / VS Web targets)
 .build/

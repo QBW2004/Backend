@@ -1,0 +1,1668 @@
+<html lang="zh-CN"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>我的代理</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .header {
+            background-color: #007aff;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 80px;
+        }
+        
+        .header-content {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+        }
+        
+        h1 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        /* 返回按钮样式 */
+        .back-btn {
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            min-width: 44px;
+            min-height: 44px;
+        }
+        
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .back-btn:active {
+            transform: translateY(-50%) scale(0.96);
+        }
+        
+        .back-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+        
+        /* 刷新按钮样式 */
+        .refresh-btn {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            min-width: 44px;
+            min-height: 44px;
+        }
+        
+        .refresh-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .refresh-btn:active {
+            transform: translateY(-50%) scale(0.96);
+        }
+        
+        .refresh-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+        
+        /* 搜索按钮样式 */
+        .search-btn {
+            position: absolute;
+            right: 52px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            min-width: 44px;
+            min-height: 44px;
+        }
+        
+        .search-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .search-btn:active {
+            transform: translateY(-50%) scale(0.96);
+        }
+        
+        .search-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+        
+        .container {
+            padding: 16px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        /* 表格容器样式 */
+        .table-container {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            overflow: hidden;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+        
+        /* 表格样式 */
+        .agent-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: auto;
+        }
+        
+        .agent-table th {
+            background-color: #f8f9fa;
+            padding: 12px 8px;
+            text-align: left;
+            font-weight: 600;
+            color: #666;
+            border-bottom: 1px solid #eaeaea;
+            white-space: nowrap;
+            font-size: 14px;
+        }
+        
+        .agent-table td {
+            padding: 12px 8px;
+            border-bottom: 1px solid #eaeaea;
+            color: #333;
+            font-size: 14px;
+            word-break: break-word;
+        }
+        
+        /* 账号列特殊样式 */
+        .agent-table th:nth-child(1),
+        .agent-table td:nth-child(1) {
+            width: 26%;
+            max-width: 260px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        /* 钻石列和时间列样式 */
+        .agent-table th:nth-child(2),
+        .agent-table td:nth-child(2),
+        .agent-table th:nth-child(3),
+        .agent-table td:nth-child(3),
+        .agent-table th:nth-child(4),
+        .agent-table td:nth-child(4),
+        .agent-table th:nth-child(6),
+        .agent-table td:nth-child(6),
+        .agent-table th:nth-child(7),
+        .agent-table td:nth-child(7),
+        .agent-table th:nth-child(8),
+        .agent-table td:nth-child(8) {
+            white-space: nowrap;
+        }
+        
+        /* 时间单元格样式 */
+        .time-cell {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-size: 14px;
+            color: #333;
+            white-space: nowrap;
+            width: auto !important;
+            min-width: 120px;
+            overflow: visible;
+            text-overflow: clip;
+        }
+        
+        .agent-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .agent-table tr:hover {
+            background-color: #f5f7fa;
+        }
+        
+        /* 下级代理按钮样式 */
+        .sub-agents-btn {
+            padding: 5px 10px;
+            background-color: rgba(0, 122, 255, 0.1);
+            color: #007aff;
+            border: 1px solid rgba(0, 122, 255, 0.2);
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            white-space: nowrap;
+            display: inline-block;
+            text-align: center;
+            width: 100%;
+            max-width: 90px;
+            min-width: 50px;
+        }
+
+        .sub-agents-btn:hover {
+            background-color: rgba(0, 122, 255, 0.2);
+            border-color: rgba(0, 122, 255, 0.3);
+        }
+
+        .sub-agents-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* 无下级代理时的按钮样式 */
+        .sub-agents-btn[style*="pointer-events: none"] {
+            opacity: 0.6;
+        }
+        
+        /* 无数据提示 */
+        .no-data {
+            text-align: center;
+            padding: 40px 0;
+            color: #999;
+            font-size: 16px;
+        }
+        
+        /* 加载动画 */
+        .loading-container {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 16px 24px;
+            border-radius: 12px;
+            font-size: 14px;
+            z-index: 1000;
+        }
+        
+        .loading-container.show {
+            display: block;
+        }
+        
+        /* 统计信息样式 */
+        .stats-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            background-color: white;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .stats-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .stats-info {
+            display: flex;
+            gap: 16px;
+        }
+        
+        .stats-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .stats-label {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .stats-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .stats-value.diamond {
+            color: #007aff;
+        }
+        
+        .stats-value.pool {
+            color: #ff9500;
+        }
+        
+        /* 单元格特定样式 */
+        .account-cell {
+            max-width: 180px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            cursor: pointer;
+            color: #007aff;
+            transition: color 0.2s;
+        }
+        
+        .account-cell:hover {
+            color: #0056b3;
+            text-decoration: underline;
+        }
+        
+        .diamond-cell, .time-cell {
+            white-space: nowrap;
+        }
+
+        .bonus-cell {
+            cursor: pointer;
+            color: #007aff;
+            transition: color 0.2s;
+        }
+
+        .bonus-cell.bonus-negative {
+            color: #ff3b30;
+        }
+
+        .agent-table .bonus-cell.bonus-negative:hover {
+            color: #d70015;
+        }
+
+        .bonus-amount.bonus-negative,
+        .bonus-detail-amount.bonus-negative,
+        .bonus-detail-total-value.bonus-negative,
+        .stats-value.pool.bonus-negative {
+            color: #ff3b30;
+        }
+        
+        /* 下属代理数量样式 */
+        .sub-agents-count {
+            display: inline-block;
+            background-color: rgba(0, 122, 255, 0.1);
+            color: #007aff;
+            border-radius: 12px;
+            padding: 2px 8px;
+            font-size: 12px;
+            margin-left: 8px;
+            font-weight: 600;
+        }
+        
+        .loading-count {
+            color: #999;
+            font-style: italic;
+            font-size: 12px;
+        }
+        
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .agent-table th, .agent-table td {
+                padding: 12px 10px;
+                font-size: 14px;
+            }
+            
+            .table-container {
+                overflow-x: auto;
+                border-radius: 8px;
+            }
+            
+            .stats-container {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+                padding: 12px;
+            }
+            
+            .sub-agents-btn {
+                padding: 5px 10px;
+                font-size: 13px;
+                max-width: 90px;
+            }
+            
+            .account-cell {
+                max-width: 160px;
+            }
+            
+            /* 移除密码列在小屏幕上的样式 */
+        }
+        
+        @media (max-width: 480px) {
+            .agent-table {
+                min-width: 650px;
+            }
+            
+            .agent-table th, .agent-table td {
+                padding: 10px 8px;
+                font-size: 14px;
+            }
+            
+            .sub-agents-btn {
+                padding: 4px 8px;
+                font-size: 13px;
+                max-width: 80px;
+            }
+            
+            .account-cell {
+                max-width: 140px;
+            }
+            
+            .time-cell {
+                font-size: 14px;
+                min-width: 130px;
+            }
+        }
+        
+        /* 面包屑导航样式 */
+        .breadcrumb {
+            display: flex;
+            margin-bottom: 12px;
+            font-size: 16px;  /* 从13px增加到16px */
+            overflow-x: auto;
+            white-space: nowrap;
+            padding: 8px 12px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .breadcrumb-item {
+            color: #666;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            font-weight: 500;
+        }
+        
+        .breadcrumb-item:hover {
+            color: #007aff;
+        }
+        
+        .breadcrumb-separator {
+            margin: 0 6px;
+            color: #ccc;
+        }
+        
+        .breadcrumb-current {
+            color: #007aff;
+            font-weight: 600;
+        }
+        
+        /* 媒体查询中也调整面包屑 */
+        @media (max-width: 768px) {
+            .breadcrumb {
+                font-size: 15px;  /* 从12px增加到15px */
+                padding: 6px 10px;
+                margin-bottom: 10px;
+            }
+            
+            /* 其他现有样式 */
+        }
+
+        /* 搜索模态窗口样式 */
+        .search-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            touch-action: none;
+        }
+
+        .search-modal {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            touch-action: auto;
+        }
+
+        .search-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .search-modal-header h3 {
+            margin: 0;
+            font-size: 18px;
+            color: #333;
+        }
+
+        .search-modal-close {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .search-modal-close:hover {
+            background-color: #f0f0f0;
+        }
+
+        .search-modal-close svg {
+            fill: #666;
+            width: 20px;
+            height: 20px;
+        }
+
+        .search-modal-body {
+            padding: 20px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch; /* 为iOS提供流畅滚动 */
+            flex: 1;
+            overscroll-behavior: contain; /* 防止滚动传播 */
+            position: relative; /* 创建一个新的堆叠上下文 */
+            z-index: 1; /* 确保内容在iOS上正确显示 */
+        }
+        
+        /* 防止iOS橡皮筋效果 */
+        .search-modal-body:before,
+        .search-modal-body:after {
+            content: '';
+            height: 1px;
+            position: absolute;
+            width: 100%;
+            left: 0;
+            background: transparent;
+            z-index: -1;
+        }
+        
+        .search-modal-body:before {
+            top: -1px;
+        }
+        
+        .search-modal-body:after {
+            bottom: -1px;
+        }
+
+        .search-form {
+            margin-bottom: 20px;
+        }
+
+        .search-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .search-radio-group {
+            display: flex;
+            gap: 16px;
+        }
+
+        .search-radio-group label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+        }
+
+        .search-input-wrapper {
+            display: flex;
+            border: 1px solid #d0d0d0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .search-input-wrapper input {
+            flex: 1;
+            border: none;
+            padding: 10px 12px;
+            font-size: 15px;
+            outline: none;
+        }
+
+        .search-input-wrapper button {
+            background-color: #1890ff;
+            border: none;
+            color: white;
+            padding: 0 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s;
+        }
+
+        .search-input-wrapper button:hover {
+            background-color: #40a9ff;
+        }
+
+        .search-input-wrapper button svg {
+            fill: #fff;
+        }
+
+        .search-results {
+            border-top: 1px solid #e0e0e0;
+            padding-top: 16px;
+        }
+
+        .search-result-item {
+            background-color: #f9f9f9;
+            border-radius: 6px;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            border-left: 3px solid #1890ff;
+            word-break: break-word;
+        }
+
+        .search-result-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .search-result-row {
+            display: flex;
+            margin-bottom: 8px;
+            align-items: center;
+        }
+
+        .search-result-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .search-result-label {
+            width: 80px;
+            font-weight: 500;
+            color: #555;
+            background-color: #f5f5f5;
+            padding: 5px 8px;
+            border-radius: 4px;
+            margin-right: 10px;
+            flex-shrink: 0;
+            text-align: left;
+        }
+
+        .search-result-value {
+            flex: 1;
+            min-width: 0;
+            word-break: break-all;
+            padding: 5px 0;
+            color: #333;
+            font-weight: 400;
+        }
+
+        .search-result-value.copy-password {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .search-result-value.copy-password span:first-child {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            margin-right: 4px;
+        }
+        
+        .search-result-value .copy-icon {
+            cursor: pointer;
+            padding: 2px;
+            border-radius: 4px;
+            flex-shrink: 0;
+            display: inline-flex;
+        }
+        
+        .search-result-value .copy-icon:hover {
+            background-color: #e6f7ff;
+        }
+        
+        .search-result-value .copy-icon svg {
+            width: 16px;
+            height: 16px;
+            fill: #1890ff;
+        }
+
+        /* 充值和流水按钮样式 */
+        .search-result-value.diamond-with-buttons {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .search-result-value.diamond-with-buttons .diamond-amount,
+        .search-result-value.diamond-with-buttons .bonus-amount {
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .search-result-value.diamond-with-buttons .login-address-text {
+            flex: 1;
+            min-width: 0;
+            word-break: break-all;
+            line-height: 1.4;
+            padding-right: 4px;
+        }
+
+        .search-result-value.diamond-with-buttons .field-action-buttons {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 8px;
+            flex-shrink: 0;
+            margin-left: auto;
+        }
+
+        .search-result-row.login-address-row {
+            align-items: flex-start;
+        }
+
+        .search-result-row.login-address-row .field-action-buttons {
+            padding-top: 2px;
+        }
+
+        .action-btn {
+            border: none;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            white-space: nowrap;
+            flex-shrink: 0;
+            min-width: 60px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .flow-btn {
+            background-color: #34c759;
+        }
+
+        .flow-btn:hover {
+            background-color: #28a745;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(52, 199, 89, 0.3);
+        }
+
+        /* 奖池明细弹窗 */
+        .bonus-detail-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1100;
+            padding: 16px;
+        }
+
+        .bonus-detail-overlay.show {
+            display: flex;
+        }
+
+        .bonus-detail-modal {
+            background: white;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 420px;
+            max-height: 80vh;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .bonus-detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid #e5e5e5;
+        }
+
+        .bonus-detail-header h3 {
+            margin: 0;
+            font-size: 17px;
+            font-weight: 600;
+            color: #1d1d1f;
+        }
+
+        .bonus-detail-close {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .bonus-detail-close:hover {
+            background-color: #f0f0f0;
+        }
+
+        .bonus-detail-close svg {
+            width: 22px;
+            height: 22px;
+            fill: #666;
+        }
+
+        .bonus-detail-body {
+            padding: 16px 20px 20px;
+            overflow-y: auto;
+        }
+
+        .bonus-detail-agent {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 12px;
+        }
+
+        .bonus-detail-agent strong {
+            color: #333;
+        }
+
+        .bonus-detail-total {
+            background: #f5f7fa;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .bonus-detail-total-label {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .bonus-detail-total-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: #007aff;
+        }
+
+        .bonus-detail-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .bonus-detail-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            background: #fafafa;
+            border-radius: 8px;
+            border: 1px solid #eee;
+            cursor: pointer;
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+
+        .bonus-detail-item:hover {
+            background: #f0f7ff;
+            border-color: #cce4ff;
+        }
+
+        .bonus-detail-game {
+            font-size: 14px;
+            color: #333;
+        }
+
+        .bonus-detail-amount {
+            font-size: 14px;
+            font-weight: 600;
+            color: #007aff;
+        }
+
+        .bonus-detail-empty {
+            text-align: center;
+            color: #999;
+            font-size: 14px;
+            padding: 24px 0;
+        }
+
+        .search-result-value .bonus-amount {
+            color: #007aff;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .search-result-value .bonus-amount:hover {
+            text-decoration: underline;
+        }
+
+        /* 奖池流水弹窗 */
+        .bonus-flow-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1200;
+            padding: 16px;
+        }
+
+        .bonus-flow-overlay.show {
+            display: flex;
+        }
+
+        .bonus-flow-modal {
+            background: white;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 560px;
+            max-height: 85vh;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .bonus-flow-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid #e5e5e5;
+        }
+
+        .bonus-flow-header h3 {
+            margin: 0;
+            font-size: 17px;
+            font-weight: 600;
+            color: #1d1d1f;
+        }
+
+        .bonus-flow-close {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .bonus-flow-close:hover {
+            background-color: #f0f0f0;
+        }
+
+        .bonus-flow-close svg {
+            width: 22px;
+            height: 22px;
+            fill: #666;
+        }
+
+        .bonus-flow-subtitle {
+            padding: 12px 20px 0;
+            font-size: 13px;
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .bonus-flow-filters {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-end;
+            gap: 10px;
+            padding: 12px 20px 8px;
+        }
+
+        .bonus-flow-filter-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .bonus-flow-filter-item label {
+            font-size: 12px;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .bonus-flow-date-input {
+            height: 36px;
+            padding: 0 10px;
+            border: 1px solid #e1e1e1;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #333;
+            background: #fff;
+            outline: none;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .bonus-flow-date-input:focus {
+            border-color: #007aff;
+            box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.1);
+        }
+
+        .bonus-flow-search-btn {
+            height: 36px;
+            padding: 0 16px;
+            border: none;
+            border-radius: 8px;
+            background: #007aff;
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .bonus-flow-search-btn:hover {
+            background: #0066cc;
+        }
+
+        .bonus-flow-search-btn:disabled {
+            background: #b0c4de;
+            cursor: not-allowed;
+        }
+
+        .bonus-flow-body {
+            padding: 0 20px 20px;
+            overflow-x: hidden;
+            overflow-y: auto;
+            flex: 1;
+            min-height: 0;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .bonus-flow-table-scroll {
+            overflow-x: auto;
+            overflow-y: visible;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .bonus-flow-summary {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .bonus-flow-summary-item {
+            flex: 1 1 calc(33.333% - 10px);
+            background: #f5f7fa;
+            border-radius: 8px;
+            padding: 10px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 96px;
+        }
+
+        .bonus-flow-summary-label {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .bonus-flow-summary-value {
+            font-size: 17px;
+            font-weight: 600;
+            line-height: 1.3;
+        }
+
+        .bonus-flow-summary-value.recharge {
+            color: #34c759;
+        }
+
+        .bonus-flow-summary-value.expend {
+            color: #ff3b30;
+        }
+
+        .bonus-flow-table {
+            width: max-content;
+            min-width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            table-layout: auto;
+        }
+
+        .bonus-flow-table th {
+            background: #f8f9fa;
+            color: #666;
+            font-weight: 600;
+            text-align: left;
+            padding: 10px 8px;
+            border-bottom: 1px solid #eaeaea;
+            white-space: nowrap;
+        }
+
+        .bonus-flow-table td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #f0f0f0;
+            color: #333;
+            vertical-align: top;
+            text-align: left;
+        }
+
+        .bonus-flow-table .col-time {
+            min-width: 100px;
+            white-space: normal;
+        }
+
+        .bonus-flow-table .col-time .bonus-flow-time-date,
+        .bonus-flow-table .col-time .bonus-flow-time-clock {
+            display: block;
+            line-height: 1.45;
+        }
+
+        .bonus-flow-table .col-time .bonus-flow-time-clock {
+            margin-top: 2px;
+        }
+
+        .bonus-flow-table .col-balance,
+        .bonus-flow-table .col-recharge,
+        .bonus-flow-table .col-expend {
+            min-width: 76px;
+            white-space: nowrap;
+        }
+
+        .bonus-flow-table .col-remark {
+            min-width: 148px;
+        }
+
+        .bonus-flow-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .bonus-flow-table .col-recharge.has-value {
+            color: #34c759;
+            font-weight: 600;
+        }
+
+        .bonus-flow-table .col-expend.has-value {
+            color: #ff3b30;
+            font-weight: 600;
+        }
+
+        .bonus-flow-table .col-empty {
+            color: #ccc;
+        }
+
+        .bonus-flow-table .col-remark .bonus-flow-remark-player,
+        .bonus-flow-table .col-remark .bonus-flow-remark-pattern {
+            display: block;
+            line-height: 1.45;
+        }
+
+        .bonus-flow-table .col-remark .bonus-flow-remark-pattern {
+            margin-top: 2px;
+        }
+
+        .bonus-flow-empty {
+            text-align: center;
+            color: #999;
+            font-size: 14px;
+            padding: 24px 0;
+        }
+
+        .bonus-flow-loading {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+            padding: 24px 0;
+        }
+
+        .flow-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 2px rgba(52, 199, 89, 0.3);
+        }
+
+        .recharge-btn {
+            background-color: #007aff;
+        }
+
+        .recharge-btn:hover {
+            background-color: #0056b3;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0, 122, 255, 0.3);
+        }
+
+        .recharge-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 2px rgba(0, 122, 255, 0.3);
+        }
+
+        .search-no-results {
+            text-align: center;
+            padding: 24px;
+            color: #999;
+            font-size: 15px;
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 600px) {
+            .search-modal {
+                width: 95%;
+            }
+            
+            .search-modal-body {
+                padding: 16px;
+            }
+            
+            .search-result-item {
+                padding: 10px 12px;
+            }
+            
+            .search-result-row {
+                flex-direction: row;
+                align-items: center;
+                margin-bottom: 8px;
+                flex-wrap: nowrap;
+                width: 100%;
+                overflow: hidden;
+            }
+            
+            .search-result-label {
+                width: auto;
+                min-width: 75px;
+                max-width: 90px;
+                margin-bottom: 0;
+                text-align: left;
+                padding: 5px 8px;
+                font-size: 14px;
+                flex-shrink: 0;
+            }
+            
+            .search-result-value {
+                flex: 1;
+                padding: 5px 0;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                font-size: 14px;
+            }
+            
+            .search-no-results {
+                padding: 15px;
+                font-size: 14px;
+            }
+        }
+        
+        /* 特别针对430px宽度的屏幕优化 */
+        @media (max-width: 430px) {
+            .search-modal {
+                width: 92%;
+                max-height: 85vh;
+            }
+            
+            .search-modal-header {
+                padding: 16px 18px;
+            }
+            
+            .search-modal-header h3 {
+                font-size: 18px;
+            }
+            
+            .search-modal-close {
+                padding: 6px;
+            }
+            
+            .search-modal-close svg {
+                width: 22px;
+                height: 22px;
+            }
+            
+            .search-modal-body {
+                padding: 14px;
+            }
+            
+            .search-form {
+                margin-bottom: 16px;
+            }
+            
+            .search-radio-group {
+                margin-bottom: 12px;
+            }
+            
+            .search-radio-group label span {
+                font-size: 15px;
+            }
+            
+            .search-input-wrapper input {
+                font-size: 15px;
+                padding: 12px;
+            }
+            
+            .search-input-wrapper button {
+                padding: 0 18px;
+            }
+            
+            .search-input-wrapper button svg {
+                width: 20px;
+                height: 20px;
+            }
+            
+            .search-result-item {
+                padding: 12px;
+                margin-bottom: 10px;
+            }
+            
+            .search-result-row {
+                margin-bottom: 10px;
+            }
+            
+            .search-result-row:last-child {
+                margin-bottom: 0;
+            }
+            
+            .search-result-label {
+                min-width: 80px;
+                max-width: 90px;
+                font-size: 15px;
+                font-weight: 500;
+                padding: 6px 8px;
+            }
+            
+            .search-result-value {
+                font-size: 15px;
+                padding: 6px 0;
+            }
+            
+            .search-result-value .copy-icon svg {
+                width: 18px;
+                height: 18px;
+            }
+
+            .search-result-value.diamond-with-buttons {
+                gap: 8px;
+            }
+
+            .search-result-value.diamond-with-buttons .field-action-buttons {
+                gap: 6px;
+            }
+
+            .action-btn {
+                padding: 6px 12px;
+                font-size: 13px;
+                min-width: 50px;
+                height: 28px;
+            }
+
+            .search-no-results {
+                font-size: 15px;
+                padding: 20px 15px;
+            }
+        }
+        
+        /* 滑动开关样式 */
+        .switch-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        
+        .switch-label {
+            font-size: 14px;
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 28px;
+        }
+        
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #e9e9eb;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 24px;
+            width: 24px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        input:checked + .slider {
+            background-color: #34c759;
+        }
+        
+        input:focus + .slider {
+            box-shadow: 0 0 1px #34c759;
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(22px);
+        }
+        
+        .status-text {
+            font-size: 14px;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <button class="back-btn" id="backBtn">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"></path>
+                </svg>
+            </button>
+            <h1>我的代理</h1>
+            <div class="subtitle">查看所有代理信息</div>
+            <button class="refresh-btn" id="refreshBtn">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"></path>
+                </svg>
+            </button>
+            <button class="search-btn" id="searchBtn">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"></path>
+                </svg>
+            </button>
+        </div>
+    </div>
+    
+    <div class="container">
+        <!-- 统计信息 -->
+        <div class="stats-container">
+            <div class="stats-title">代理统计</div>
+            <div class="stats-info">
+                <div class="stats-item">
+                    <div class="stats-label">代理总数:</div>
+                    <div class="stats-value" id="totalAgents">0</div>
+                </div>
+                <div class="stats-item">
+                    <div class="stats-label">总钻石:</div>
+                    <div class="stats-value diamond" id="totalDiamonds">0</div>
+                </div>
+                <div class="stats-item" id="poolStatsItem" style="display: none;">
+                    <div class="stats-label">总奖池:</div>
+                    <div class="stats-value pool" id="totalPool">0.00</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 面包屑导航 - 移到代理统计下方 -->
+        <div class="breadcrumb" id="breadcrumb"><a href="#" class="breadcrumb-item breadcrumb-current" data-id="" data-name="所有代理" data-role="admin">所有代理</a></div>
+        
+        <div class="table-container">
+            <table class="agent-table" id="agentTable">
+                <thead>
+                    <tr>
+                        <th style="width: 22%;">账号</th>
+                        <th style="width: 10%;">剩余钻石</th>
+                        <th id="bonusHeader" style="width: 13%; display: none;">奖池剩余</th>
+                        <th style="width: 8%;">下级代理</th>
+                        <th style="width: 12%;">我的会员</th>
+                        <th style="width: 13%;">邀请码</th>
+                        <th style="width: 12%;">最后登陆</th>
+                        <th style="width: 10%;">注册时间</th>
+                    </tr>
+                </thead>
+                <tbody id="agentList"></tbody>
+            </table>
+            <div class="no-data" id="noData" style="display: block;">暂无代理数据</div>
+        </div>
+    </div>
+    
+    <div class="loading-container" id="loading" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(0, 0, 0, 0.7); color: white; padding: 15px 20px; border-radius: 5px; z-index: 2000;">加载数据中...</div>
+    
+    <!-- 搜索模态窗口 -->
+    <div class="search-modal-overlay" id="searchModalOverlay">
+        <div class="search-modal">
+            <div class="search-modal-header">
+                <h3>搜索代理信息</h3>
+                <button class="search-modal-close" id="searchModalClose">
+                    <svg viewBox="0 0 24 24" width="24" height="24">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="search-modal-body">
+                <div class="search-form">
+                    <div class="search-input-group">
+                        <div class="search-radio-group">
+                            <label>
+                                <input type="radio" name="searchType" value="account" checked="">
+                                <span>账号</span>
+                            </label>
+                            <label>
+                                <input type="radio" name="searchType" value="yaoqingma">
+                                <span>邀请码</span>
+                            </label>
+                        </div>
+                        <div class="search-input-wrapper">
+                            <input type="text" id="searchInput" placeholder="请输入账号或邀请码">
+                            <button id="searchSubmitBtn">
+                                <svg viewBox="0 0 24 24" width="20" height="20">
+                                    <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="search-results" id="searchResults">
+                    <!-- 搜索结果将在这里显示 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 奖池明细弹窗 -->
+    <div class="bonus-detail-overlay" id="bonusDetailOverlay">
+        <div class="bonus-detail-modal">
+            <div class="bonus-detail-header">
+                <h3>各游戏奖池明细</h3>
+                <button class="bonus-detail-close" id="bonusDetailClose" type="button">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="bonus-detail-body">
+                <div class="bonus-detail-agent" id="bonusDetailAgent"></div>
+                <div class="bonus-detail-total">
+                    <span class="bonus-detail-total-label">奖池合计</span>
+                    <span class="bonus-detail-total-value" id="bonusDetailTotal">0.00</span>
+                </div>
+                <div class="bonus-detail-list" id="bonusDetailList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 奖池流水弹窗（近7天充值/支出） -->
+    <div class="bonus-flow-overlay" id="bonusFlowOverlay">
+        <div class="bonus-flow-modal">
+            <div class="bonus-flow-header">
+                <h3 id="bonusFlowTitle">奖池流水</h3>
+                <button class="bonus-flow-close" id="bonusFlowClose" type="button">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="bonus-flow-subtitle" id="bonusFlowSubtitle"></div>
+            <div class="bonus-flow-filters">
+                <div class="bonus-flow-filter-item">
+                    <label for="bonusFlowStartDate">开始日期</label>
+                    <input type="date" id="bonusFlowStartDate" class="bonus-flow-date-input">
+                </div>
+                <div class="bonus-flow-filter-item">
+                    <label for="bonusFlowEndDate">结束日期</label>
+                    <input type="date" id="bonusFlowEndDate" class="bonus-flow-date-input">
+                </div>
+                <button type="button" class="bonus-flow-search-btn" id="bonusFlowSearchBtn">查询</button>
+            </div>
+            <div class="bonus-flow-body">
+                <div id="bonusFlowContent">加载中...</div>
+            </div>
+        </div>
+    </div>
+    
+    <!--script stripped-->
+
+ </body></html>

@@ -1,0 +1,122 @@
+@{
+    /* 代理封号（1:1 复刻参考站 dailifenghao：代理黑名单） */
+    string webVer = ConfigHelper.Get("WebVer");
+    Layout = "~/Views/Shared/Layout/_MobileLayout.cshtml";
+}
+
+@section head {
+<style>
+    .section-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #666;
+        margin: 0 0 12px;
+        padding-bottom: 8px;
+        text-align: center;
+        border-bottom: 1px solid #eaeaea;
+    }
+
+    .blacklist-btn {
+        height: 44px;
+        background-color: #ff3b30;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0 20px;
+        font-size: 16px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-align: center;
+        white-space: nowrap;
+        width: 100%;
+        -webkit-appearance: none;
+        appearance: none;
+    }
+
+    .blacklist-btn:hover {
+        background-color: #ff2d20;
+    }
+
+    .blacklist-btn:active {
+        transform: scale(0.98);
+    }
+
+    .table-container table {
+        min-width: 520px;
+    }
+
+    .ban-msg {
+        word-break: break-all;
+    }
+
+    .ban-time {
+        color: #666;
+        white-space: nowrap;
+    }
+
+    .remove-btn {
+        padding: 4px 8px;
+        background-color: rgba(255, 59, 48, 0.1);
+        color: #ff3b30;
+        border: 1px solid rgba(255, 59, 48, 0.2);
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        white-space: nowrap;
+        -webkit-appearance: none;
+        appearance: none;
+    }
+
+    @@media (max-width: 768px) {
+        .table-container {
+            overflow-x: auto;
+        }
+    }
+</style>
+}
+
+    <div class="container">
+        <div class="input-section">
+            <div class="section-title">添加黑名单</div>
+            <table style="width:100%; border-collapse:collapse;">
+                <tbody>
+                    <tr>
+                        <td style="width:100%; padding-bottom:10px;">
+                            <input type="text" id="agentIdInput" class="input-field" style="width:100%; box-sizing:border-box; max-width:100%; display:block;" placeholder="输入代理账号" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width:100%; padding-bottom:10px;">
+                            <input type="text" id="reasonInput" class="input-field" style="width:100%; box-sizing:border-box; max-width:100%; display:block;" placeholder="输入封号提示" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width:100%;">
+                            <button id="blacklistBtn" class="blacklist-btn" style="width:100%;">加入黑名单</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="table-container">
+            <table id="blacklistTable">
+                <thead>
+                    <tr>
+                        <th style="width: 22%;">代理账号</th>
+                        <th style="width: 30%;">封号提示</th>
+                        <th style="width: 15%;">操作</th>
+                        <th style="width: 33%;">添加时间</th>
+                    </tr>
+                </thead>
+                <tbody id="blacklistContainer"></tbody>
+            </table>
+            <div class="no-data" id="noData" style="display: block;">暂无数据</div>
+        </div>
+    </div>
+
+@section scripts {
+    <script src="@Url.Content("~/Scripts/app/phone/phone.banagent.js?v=" + webVer)"></script>
+}

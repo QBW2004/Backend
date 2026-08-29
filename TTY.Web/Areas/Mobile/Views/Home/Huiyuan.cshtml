@@ -1,0 +1,186 @@
+@{
+    /* 会员盈亏（原型 huiyuanyingkui：我的会员输赢详情） */
+    string webVer = ConfigHelper.Get("WebVer");
+    Layout = "~/Views/Shared/Layout/_MobileLayout.cshtml";
+}
+
+@section head {
+<style>
+    /* 统计卡 */
+    .stats-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        background-color: white;
+        border-radius: 12px;
+        padding: 16px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .stats-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #333;
+    }
+
+    .stats-info {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+
+    .stats-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .stats-label {
+        font-size: 14px;
+        color: #666;
+    }
+
+    .stats-value {
+        font-size: 16px;
+        font-weight: 600;
+        color: #333;
+    }
+
+    .stats-value.diamond {
+        color: #007aff;
+    }
+
+    /* 排序选项 */
+    .sort-options {
+        display: flex;
+        padding: 12px 16px;
+        background-color: #f9f9f9;
+        border-bottom: 1px solid #eaeaea;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .sort-option {
+        padding: 6px 12px;
+        border-radius: 16px;
+        font-size: 13px;
+        background-color: #f0f0f0;
+        border: 1px solid #e0e0e0;
+        color: #666;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .sort-option.active {
+        background-color: #007aff;
+        color: white;
+        border-color: #007aff;
+    }
+
+    /* 表格 */
+    .member-table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: auto;
+    }
+
+    .member-table th {
+        background-color: #f8f9fa;
+        padding: 12px 8px;
+        text-align: left;
+        font-weight: 600;
+        color: #666;
+        border-bottom: 1px solid #eaeaea;
+        white-space: nowrap;
+        font-size: 14px;
+    }
+
+    .member-table td {
+        padding: 12px 8px;
+        border-bottom: 1px solid #eaeaea;
+        color: #333;
+        font-size: 14px;
+        word-break: break-word;
+    }
+
+    .member-table td.account {
+        color: #007aff;
+        font-weight: 500;
+        max-width: 120px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .member-table tbody tr:hover {
+        background-color: #f5f7fa;
+    }
+
+    .member-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    #memberSection {
+        padding: 8px 0;
+    }
+
+    @@media (max-width: 768px) {
+        .table-container {
+            overflow-x: auto;
+        }
+
+        .member-table {
+            min-width: 560px;
+        }
+    }
+</style>
+}
+
+    <div class="container">
+        <div class="stats-container">
+            <div class="stats-title">会员统计</div>
+            <div class="stats-info">
+                <div class="stats-item">
+                    <div class="stats-label">会员总数:</div>
+                    <div class="stats-value" id="totalMembers">0</div>
+                </div>
+                <div class="stats-item">
+                    <div class="stats-label">今日总输赢（金币）:</div>
+                    <div class="stats-value diamond" id="totalTodayWinLoss">0</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <div class="sort-options">
+                <div class="sort-option active" data-sort="win-most">今日赢最多</div>
+                <div class="sort-option" data-sort="loss-most">今日输最多</div>
+                <div class="sort-option" data-sort="profit-desc">总盈亏最多</div>
+            </div>
+            <table class="member-table">
+                <thead>
+                    <tr>
+                        <th>账号</th>
+                        <th>昵称</th>
+                        <th>所属代理</th>
+                        <th>今日输赢(金币)</th>
+                        <th>总盈亏(金币)</th>
+                        <th>余额(金币)</th>
+                    </tr>
+                </thead>
+                <tbody id="memberList"></tbody>
+            </table>
+            <div id="memberSection">
+                <div class="no-more-data" id="noMoreData" style="display: none;">已加载全部数据</div>
+                <div class="load-more-container">
+                    <button class="load-more-btn" id="loadMoreBtn">加载更多</button>
+                </div>
+                <div class="no-data" id="noData" style="display: none;">暂无会员数据</div>
+            </div>
+        </div>
+    </div>
+
+@section scripts {
+    <script src="@Url.Content("~/Scripts/app/phone/phone.huiyuan.js?v=" + webVer)"></script>
+}

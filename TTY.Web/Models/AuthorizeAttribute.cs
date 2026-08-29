@@ -8,7 +8,7 @@ namespace YYT.Web
 {
 
     /// <summary>
-    /// 站点授权属性  
+    /// 站点授权属性
     /// </summary>
     public class MemberAuthorizeAttribute : AuthorizeAttribute
     {
@@ -25,7 +25,13 @@ namespace YYT.Web
                 }
                 else
                 {
-                    context.Response.Redirect("~/Login/Index");
+                    // 手机端（Mobile 区域）跳转手机登录页，其余维持桌面登录页
+                    string area = filterContext.RouteData != null && filterContext.RouteData.DataTokens["area"] != null
+                        ? filterContext.RouteData.DataTokens["area"].ToString()
+                        : string.Empty;
+                    context.Response.Redirect(area.Equals("Mobile", StringComparison.OrdinalIgnoreCase)
+                        ? "~/Login/Mobile"
+                        : "~/Login/Index");
                     filterContext.Result = new EmptyResult();//加入EmptyResult就告诉ASP.NET MVC在本拦截器执行结束后，不必再为当前请求执行Controller中Action的代码
                 }
                 return;
