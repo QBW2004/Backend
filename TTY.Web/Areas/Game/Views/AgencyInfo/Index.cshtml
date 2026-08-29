@@ -115,6 +115,9 @@
                 return '无限制';
             return value;
         }
+        function fmtShowPwd(value, rowData, rowIndex) {
+            return rowData && rowData.PWD ? rowData.PWD : '';
+        }
         function fmtID(value, rowData, rowIndex) {
             if (rowData.ID == "@(loginUser?.Accounts)")
                 return value;
@@ -618,6 +621,7 @@
             <th field="Profit" width="85" formatter="fmtCoins">盈利</th>
             <th field="RE_ENABLE" width="85" formatter="fmtRechargeSwitch">账号状态</th>
             <th field="AGENCY_LIMIT" width="80" formatter="fmtAgencyLimit">分代上限</th>
+            <th field="ShowPWD" width="90" formatter="fmtShowPwd">代理密码显示</th>
             <th field="OPT" width="520" formatter="fmtOpt">操作</th>
         </tr>
     </thead>
