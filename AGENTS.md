@@ -51,13 +51,15 @@ Tools\env-check.ps1        # 部署环境检测+补装（服务器用）
 
 **认证**：Session 存 `M_LoginUser`（`WebHelper.GetLoginInfo()`）。`MemberAuthorizeAttribute`（业务接口）/`MgrAuthorizeAttribute`（要求 RoleId=1 超管）拦截：
 POST 未登录 → HTTP 200 返回 `TipMsg.MSG_LOGIN_TIMEOUT`（前端约定 `code==-1` 跳登录页）；GET 未登录 → 桌面跳 `~/Login/Index`，**Mobile 区域跳 `~/Login/Mobile`**。角色/权限位（IsSuper/CanCreateAgent/CanUpDown/CanFrozen…）经 `window.MConfig` 注入前端控制显隐。
+超管（`atmadmin`）与所有代理一律走 `admin` 表校验（明文密码比对 + `RE_ENABLE=1`）。2026-08-29 已移除"账号名等于 Web.config `admin` 键（admin1）即免密码登录超管"的后门分支；`admin` 键残留的唯一用途是总控指令里 `UserName=="admin1"` 时置 set=1（移除后恒为 0，与 atmadmin 历史行为一致）。
 
 **手机端适配**：`BaseController` 用 UA 正则识别手机浏览器（平板按 PC），选择记在 Cookie `mth_view`（30 天）；`/Mgr/Index` 命中手机 UA 自动跳 `/Mobile/Home/Index`，可用 `?view=pc|mobile` 强制切换。
 
 **与游戏中心服通信**：`YYT.Remote.SConnect` 连命名管道 `\\.\pipe\mynamedpipe`（配置键 `serverName`/`pipeName`，机器人走 `robotPipeName`=`MTH_RobotPipe`），发 `Config/MsgDefine.config` 定义的 XML 指令。BLL 侧封装为 `GameCommandService` + `gamecommandoutbox` 发件箱表，`PipeGameServerClient` 实际发管道，失败可由重试服务补偿。
 
 **定时任务**（`Global.asax` `Application_Start`，间隔=appSettings `Timer`=60s）：
-`B_UserLockRecord.TimerTaskRun`（锁定记录迁移）+ `GameCommandOutboxRetryService.ProcessDueCommands`（指令重试）+ `B_LoginMissRecord.ResetLoginMissRecord`（登录失败计数解封）。单飞锁防重入。
+`B_UserLockRecord.TimerTaskRun`（锁定记录迁移）+ `GameCommandOutboxRetryService.ProcessDueCommands`（指令重试）+ `B_LoginMissRecord.ResetLoginMissRecord`（登录失败计数解封）+ `B_Records_MySQL.CleanupExpiredRecordsThrottled`（6 张日志表 7 天滚动清理，进程内节流每小时最多一次）。单飞锁防重入。
+注意：清理只允许走定时任务，任何列表/指令接口**不得**内联调用 `CleanupExpiredRecords`（6 条 DELETE 会把读接口变成全表扫描+写锁）。
 
 **JSON 约定**：表格接口返回 `{ total, rows }`（`BaseController.GridJson`）；操作接口返回 `{ code, msg }`；全部 GET-可 Json 化、AJAX POST 为主。
 
@@ -87,7 +89,7 @@ ssh -i "$HOME\.ssh\mht-server-ed25519" -o IdentitiesOnly=yes administrator@134.1
 | 磁盘 | 仅 C:（338/360 GB 空闲）。**没有 D 盘** |
 | IIS | `Default Web Site` → `C:\Backend`，绑定 `*:80` + `*:8081`，应用池 DefaultAppPool（v4.0 / 64 位），运行正常，本机探测 HTTP 200 |
 | 公网 | 80 / 8081 均可达（返回 302 跳登录页） |
-| 部署版本 | **WebVer = 1.0.4**（bin 时间 2026-08-21）；备份 `C:\Backend_backup_20260826_221220`。**本地 master 已是 1.0.8**，线上落后 |
+| 部署版本 | **WebVer = 1.0.9**（2026-08-29 晚部署，含手机端性能优化，备份 `C:\Backend_backup_20260829_203305`）；此前 1.0.8（备份含 `C:\Backend_backup_20260826_221220`）。性能索引补丁（`Docs/sql/性能索引.sql`）已在线上 MySQL57 的 mth 库执行 |
 | MySQL | 5.7.44，服务名 `MySQL57`，`C:\mysql\bin\mysqld.exe --defaults-file=C:\mysql\my.ini`，库 mth，`lower_case_table_names=1`，users≈124 行 / admin≈7 行（数据量很小） |
 | 端口监听 | 80、8081（HTTP.sys）、3306、3389(RDP) |
 | 中心服 | **本机没有**：找不到 `ServerCenterNew.exe`（扫到两层深度）、无 `mynamedpipe`/`MTH_RobotPipe` 命名管道、无 8020/8021/9000 监听 |
@@ -107,12 +109,15 @@ ssh -i "$HOME\.ssh\mht-server-ed25519" -o IdentitiesOnly=yes administrator@134.1
 
 - 目录名 `TTY.Web` ≠ 项目名 `YYT.Web`；部署目标目录固定 `C:\Backend`。
 - 新增文件必须登记 csproj（老式项目，无 SDK 通配）。
+- **新增 .cshtml 必须是 UTF-8 with BOM**：Web.config 已设 `<globalization fileEncoding="utf-8"/>`，但历史上无 BOM 的视图（手机端 13 个页面曾中招）在中文 Windows 服务器上会被运行时按 GBK 解码导致整页乱码。怀疑乱码先查文件头三字节是不是 `EF BB BF`。
 - MySQL 必须 `lower_case_table_names=1`；本地容器已配置，Windows 本机 MySQL 天然满足，Linux 上会炸。
 - 应用池必须 64 位（x64 SQLite.Interop）。
 - **SSH 远程执行 PowerShell 时是 32 位进程**：`Import-Module WebAdministration` 后 `Get-Website` 返回空、`Get-Process` 拿不到 64 位进程路径。要用 `C:\Windows\Sysnative\WindowsPowerShell\v1.0\powershell.exe` 起真正的 64 位会话。长脚本用 `scp` 传 `-File` 执行（cmd 有 8191 字符限制，`-EncodedCommand` 太长会报"命令行太长"）。
 - `deploy.ps1` 已内置 WOW64 逃离（Sysnative），直接在服务器本地跑没问题。
 - 分支现状（2026-08-29）：`Add-Phone-Support` 上有大量未提交改动（手机端 12 页改造 + AbnormalController + phone.css/js + MobileOnlyAttribute 等），工作区不要随意 checkout/reset。
 - 数据库结构变更参考根目录 `mth.sql` + `docker/mysql/init/` 迁移补丁的顺序加载机制。
+- 读接口禁止全量 `ToList()` 后内存分页/排序/求和——玩家与记录类查询一律 SQL 下推（参考 `B_Users.QueryUsersPaged` / `B_ReChargeRecords.GetReChargeRecordsForPhone`，见 `Docs/手机端性能优化-20260829.md`）。`/Game`、`/Mobile` 已改只读会话，往这两个区域加写 Session 的代码需先确认（当前仅 `Game/UserInfo/Register` 例外可写）。
+- **线上部署前先在 MySQL57 对 mth 库执行 `Docs/sql/性能索引.sql`**（幂等；核心表二级索引 + user_daily_winloss.UserID 字符集对齐，未执行则新查询走不了索引）。
 
 ## 调查方式（可复现）
 

