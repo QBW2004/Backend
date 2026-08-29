@@ -936,7 +936,17 @@ namespace YYT.Web.Areas.Game.Controllers
                     room.EX_COIN = exCoin;
                     room.COIN_SC = coinSc;
                     room.COIN_NEED = coinNeed;
-                    room.BANKER_SC_NEED = form.Q<int>("BANKER_SC_NEED", oldRoom == null ? 500000 : oldRoom.BANKER_SC_NEED);
+                    // 抢庄门槛：页面已去除"申请当庄所需最低金币(0=关闭抢庄)"输入（押注类四个游戏统一）。
+                    // 彩金单挑(gameId==2)需求关闭抢庄，强制 0=禁止抢庄（服务端 BetDT 装载配置时同样强制 0，抢庄代码保留）；
+                    // 其余押注玩法沿用库内 base 行旧值，避免被表单缺省值清零。
+                    if (gameId == 2)
+                    {
+                        room.BANKER_SC_NEED = 0;
+                    }
+                    else
+                    {
+                        room.BANKER_SC_NEED = form.Q<int>("BANKER_SC_NEED", oldRoom == null ? 500000 : oldRoom.BANKER_SC_NEED);
+                    }
                     room.SC_LIMIT_SING = form.Q<int>("SC_LIMIT_SING", oldRoom == null ? 3000 : oldRoom.SC_LIMIT_SING);
                     room.SC_LIMIT_ALL = form.Q<int>("SC_LIMIT_ALL", oldRoom == null ? 10000 : oldRoom.SC_LIMIT_ALL);
                     room.Game_Mo = gameMo;

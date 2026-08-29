@@ -185,12 +185,6 @@
                         </div>
                         <div class="gc-form-row gc-bet-banker-row">
                             <div class="gc-field">
-                                <label>申请当庄所需最低金币（0=关闭抢庄）</label>
-                                <input type="number" id="gcBankerScNeed" name="BANKER_SC_NEED" class="gc-input" min="0" step="1" value="500000" />
-                            </div>
-                        </div>
-                        <div class="gc-form-row gc-bet-banker-row">
-                            <div class="gc-field">
                                 <label>庄家抽水比例（%）</label>
                                 <input type="number" id="gcBankerPer" class="gc-input" min="0" max="9.9" step="0.1" value="3" />
                                 <input type="hidden" id="gcBankerPerRaw" name="BANKER_PER" value="30" />
@@ -1159,7 +1153,6 @@
             $('#gcBetTime').val(t.betTime !== undefined ? t.betTime : 10);
             $('#gcScLimitSing').val(t.scLimitSing !== undefined ? t.scLimitSing : 3000);
             $('#gcScLimitAll').val(t.scLimitAll !== undefined ? t.scLimitAll : 10000);
-            $('#gcBankerScNeed').val(t.bankerScNeed !== undefined ? t.bankerScNeed : 500000);
             $('#gcBetMaxVice').val(t.betMaxVice !== undefined ? t.betMaxVice : 1000);
             $('#gcBetMaxDraw').val(t.betMaxDraw !== undefined ? t.betMaxDraw : 1000);
             $('#gcBetMinVice').val(t.betMinVice !== undefined ? t.betMinVice : 10);
@@ -1227,7 +1220,6 @@
         $('#gcBetTime').val(10);
         $('#gcScLimitSing').val(3000);
         $('#gcScLimitAll').val(10000);
-        $('#gcBankerScNeed').val(500000);
         $('#gcBetMaxVice').val(1000);
         $('#gcBetMaxDraw').val(1000);
         $('#gcBetMinVice').val(10);
