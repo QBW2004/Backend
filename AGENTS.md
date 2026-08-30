@@ -89,7 +89,7 @@ ssh -i "$HOME\.ssh\mht-server-ed25519" -o IdentitiesOnly=yes administrator@134.1
 | 磁盘 | 仅 C:（338/360 GB 空闲）。**没有 D 盘** |
 | IIS | `Default Web Site` → `C:\Backend`，绑定 `*:80` + `*:8081`，应用池 DefaultAppPool（v4.0 / 64 位），运行正常，本机探测 HTTP 200 |
 | 公网 | 80 / 8081 均可达（返回 302 跳登录页） |
-| 部署版本 | **WebVer = 1.0.9**（2026-08-29 晚部署，含手机端性能优化，备份 `C:\Backend_backup_20260829_203305`）；此前 1.0.8（备份含 `C:\Backend_backup_20260826_221220`）。性能索引补丁（`Docs/sql/性能索引.sql`）已在线上 MySQL57 的 mth 库执行 |
+| 部署版本 | **WebVer = 1.0.20**（2026-08-31 部署，手机端改版：控制/玩家详情页、移除拉黑与送江、登录禁用提示，备份 `C:\Backend_backup_20260831_011351`）；此前 1.0.18（备份 `C:\Backend_backup_20260830_112202`）。性能索引补丁（`Docs/sql/性能索引.sql`）已在线上 MySQL57 的 mth 库执行；`Docs/sql/线上games名称修正.sql` 已应用（games.Name 已为正常 UTF-8 中文）；`usercontrolstatus`/`usercontrolvalue` 表线上已存在 |
 | MySQL | 5.7.44，服务名 `MySQL57`，`C:\mysql\bin\mysqld.exe --defaults-file=C:\mysql\my.ini`，库 mth，`lower_case_table_names=1`，users≈124 行 / admin≈7 行（数据量很小） |
 | 端口监听 | 80、8081（HTTP.sys）、3306、3389(RDP) |
 | 中心服 | **本机没有**：找不到 `ServerCenterNew.exe`（扫到两层深度）、无 `mynamedpipe`/`MTH_RobotPipe` 命名管道、无 8020/8021/9000 监听 |
@@ -101,7 +101,7 @@ ssh -i "$HOME\.ssh\mht-server-ed25519" -o IdentitiesOnly=yes administrator@134.1
 2. **游戏控制类功能在这台机器上不可用**：无中心服、无管道（Web.config `serverName="."` 指本机）。踢人/机器人/热更推送等管道指令会失败；中心服要么部署在别的机器（需把 `serverName` 改成对方主机名并打通管道权限），要么尚未迁移。
 3. **`UploadPath=D:\Uploads` 但服务器没有 D 盘** → 涉及图片/文件上传的功能会失败。改为存在的目录（如 `C:\Uploads`）并放好权限。
 4. **支付回调仍指旧服**：`PayOrderNotify`/`DPayOrderNotify` = `http://175.178.196.75:8081/api/...`（Web.config 里连同第三方支付参数都是旧值）。切流量前必须确认回调地址与公网 IP（134.122.203.112）一致。
-5. **线上版本 1.0.4 落后本地 1.0.8**：手机端适配（`Add-Phone-Support` 分支，尚未合并/提交完毕）及其它修复都未部署。
+5. **分支尚未合并**：手机端适配（`Add-Phone-Support`）代码已随 1.0.20 部署到线上，但分支本身尚未合并回 `master`。
 6. 日志每 60s 刷 `Legacy UserLockRecord cannot be migrated because coin amount was not found {...}`——定时任务对旧锁定记录的无害告警，量大需清理/降级。
 7. `Config/MsgDefine.config`、Web.config 含生产密钥（支付 shop_key、api token、DB 密码）。**不要**把它们写进文档/日志/对外输出。
 
