@@ -1,5 +1,5 @@
 /* ============================================================
-   异常账号页（1:1 复刻参考站 yichangzhanghu）
+   冻结明细页（原"异常账号"，参考站 yichangzhanghu）
    数据源：/Game/Abnormal/GetAbnormalAccounts、/Game/Abnormal/Unblock
    ============================================================ */
 (function (window, $, M) {
@@ -32,7 +32,7 @@
                     '<td>' + M.esc(r.ID) + '</td>' +
                     '<td><span class="account-type ' + typeCls + '">' + M.esc(type) + '</span></td>' +
                     '<td>' + M.esc(String(r.Reason || '').replace(/(\d+)/, '<span class="error-count">$1</span>')) + '</td>' +
-                    '<td><button class="unlock-btn" data-id="' + M.esc(r.ID) + '">解封</button></td>' +
+                    '<td><button class="unlock-btn" data-id="' + M.esc(r.ID) + '">解冻</button></td>' +
                     '</tr>';
             }).join(''));
         });
@@ -41,7 +41,7 @@
     function initPage() {
         $('#accountList').on('click', '.unlock-btn', function () {
             var id = $(this).data('id');
-            M.confirm('确定要解封账号 ' + id + ' 吗？', '解封账号').then(function (ok) {
+            M.confirm('确定要解冻账号 ' + id + ' 吗？', '解冻账号').then(function (ok) {
                 if (!ok) return;
                 M.loading('处理中...');
                 M.post('/Game/Abnormal/Unblock', { ID: id }).always(M.hideLoading).then(function (res) {

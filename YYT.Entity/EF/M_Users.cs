@@ -164,6 +164,50 @@ namespace YYT.Entity
         public long WINLOSS { get; set; }
     }
 
+    /// <summary>
+    /// 手机端会员盈亏统计卡（B_Users.GetMemberWinLossStats 原生 SQL 按列别名映射）
+    /// </summary>
+    public class M_MemberWinLossStats
+    {
+        /// <summary>总充值（users.COINS_BUY 合计）</summary>
+        public long? TotalBuy { get; set; }
+        /// <summary>总退钻（users.COINS_BACK 合计）</summary>
+        public long? TotalBack { get; set; }
+        /// <summary>今日充值（当日充值类流水合计）</summary>
+        public long? TodayBuy { get; set; }
+        /// <summary>今日退钻（当日退分类流水合计）</summary>
+        public long? TodayBack { get; set; }
+    }
+
+    /// <summary>
+    /// 手机端玩家详情页数据（B_Users.GetUserPhoneDetail 原生 SQL 按列别名映射）
+    /// </summary>
+    public class M_UserPhoneDetail
+    {
+        public string ID { get; set; }
+        public string NAME { get; set; }
+        /// <summary>密码（仅有权查看时回填）</summary>
+        public string PWD { get; set; }
+        public string AGENCY { get; set; }
+        public int? FROZEN { get; set; }
+        public long? GAME_SCORE { get; set; }
+        public long? COINS { get; set; }
+        public long? COINS_BUY { get; set; }
+        public long? COINS_BACK { get; set; }
+        /// <summary>注册时间（users.CreateTime）</summary>
+        public DateTime? CreateTime { get; set; }
+        /// <summary>今日盈亏（user_daily_winloss 当日）</summary>
+        public long? TodayWinLoss { get; set; }
+        /// <summary>最后登录（UserOptLog 最新操作时间）</summary>
+        public DateTime? LastLoginTime { get; set; }
+        /// <summary>今日充值（当日充值类流水合计）</summary>
+        public long? TodayBuy { get; set; }
+        /// <summary>今日退分（当日退分类流水合计）</summary>
+        public long? TodayBack { get; set; }
+        /// <summary>邀请码（注册使用的邀请码，回退所属代理的邀请码）</summary>
+        public string InviteCode { get; set; }
+    }
+
     public class UserDailyAccounts
     {
         public int UserID { get; set; }

@@ -18,7 +18,7 @@ setlocal enabledelayedexpansion
 ::      /p:VSToolsPath。
 :: ============================================================
 
-set "SLN=%~dp0..\MTH_Mgr_MySQL.sln"
+set "SLN=%~dp0..\..\MTH_Mgr_MySQL.sln"
 set "CONFIG=Release"
 set "DO_CLEAN=1"
 
@@ -70,7 +70,7 @@ if not exist "%NUGET%" (
     where nuget >nul 2>&1 && set "NUGET=nuget"
 )
 
-if not exist "%~dp0..\packages\EntityFramework.6.4.4" (
+if not exist "%~dp0..\..\packages\EntityFramework.6.4.4" (
     if exist "%NUGET%" (
         echo [NuGet] Restoring packages...
         "%NUGET%" restore "%SLN%" -NonInteractive
@@ -80,7 +80,7 @@ if not exist "%~dp0..\packages\EntityFramework.6.4.4" (
         )
     ) else (
         echo [WARN] nuget.exe not found and packages incomplete.
-        echo        Download nuget.exe to Tools\ and re-run, or restore manually.
+        echo        Download nuget.exe to Tools\dev\ and re-run, or restore manually.
     )
 ) else (
     echo [NuGet] Packages directory ready, skipping restore.
@@ -98,7 +98,7 @@ if exist "%FX48%" (
     echo       Using NuGet reference assemblies instead - no admin needed.
     call :ensure_build_tool refasms Microsoft.NETFramework.ReferenceAssemblies.net48 1.0.3
     if errorlevel 1 exit /b 1
-    set "FPO=%~dp0..\.build\refasms\build\.NETFramework\v4.8"
+    set "FPO=%~dp0..\..\.build\refasms\build\.NETFramework\v4.8"
 )
 if defined FPO call :ensure_nlp_files "%FPO%"
 echo.
@@ -120,7 +120,7 @@ if defined WEBTARGETS_FOUND (
     echo       Using NuGet MSBuild.Microsoft.VisualStudio.Web.targets instead.
     call :ensure_build_tool webtargets MSBuild.Microsoft.VisualStudio.Web.targets 14.0.0.3
     if errorlevel 1 exit /b 1
-    set "VSTP=%~dp0..\.build\webtargets\tools\VSToolsPath"
+    set "VSTP=%~dp0..\..\.build\webtargets\tools\VSToolsPath"
 )
 echo.
 
@@ -158,7 +158,7 @@ echo ============================================================
 echo   BUILD SUCCEEDED (%CONFIG%)
 echo ============================================================
 
-set "WEB_BIN=%~dp0..\TTY.Web\bin"
+set "WEB_BIN=%~dp0..\..\TTY.Web\bin"
 if exist "%WEB_BIN%" (
     echo   Output: %WEB_BIN%
 )
@@ -173,16 +173,16 @@ exit /b 0
 ::   %1 = 目录名   %2 = NuGet 包 ID   %3 = 版本
 :: ------------------------------------------------------------
 :ensure_build_tool
-set "PKG_DIR=%~dp0..\.build\%1"
+set "PKG_DIR=%~dp0..\..\.build\%1"
 if exist "%PKG_DIR%" (
     echo [Env] %1 already cached.
     exit /b 0
 )
 echo [Env] Downloading %2 v%3 ...
-powershell -NoProfile -Command "$ErrorActionPreference='Stop'; [Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; $id='%2'.ToLowerInvariant(); $ver='%3'; $dir='%~dp0..\.build\%1'; New-Item -ItemType Directory -Force -Path $dir | Out-Null; $pkg='%~dp0..\.build\%1.zip'; Invoke-WebRequest -Uri ('https://api.nuget.org/v3-flatcontainer/' + $id + '/' + $ver + '/' + $id + '.' + $ver + '.nupkg') -OutFile $pkg; Expand-Archive -Path $pkg -DestinationPath $dir -Force; Remove-Item $pkg -Force"
+powershell -NoProfile -Command "$ErrorActionPreference='Stop'; [Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; $id='%2'.ToLowerInvariant(); $ver='%3'; $dir='%~dp0..\..\.build\%1'; New-Item -ItemType Directory -Force -Path $dir | Out-Null; $pkg='%~dp0..\..\.build\%1.zip'; Invoke-WebRequest -Uri ('https://api.nuget.org/v3-flatcontainer/' + $id + '/' + $ver + '/' + $id + '.' + $ver + '.nupkg') -OutFile $pkg; Expand-Archive -Path $pkg -DestinationPath $dir -Force; Remove-Item $pkg -Force"
 if errorlevel 1 (
     echo [ERROR] Failed to download %2. Check network or install the VS component manually.
-    rmdir /s /q "%~dp0..\.build\%1" 2>nul
+    rmdir /s /q "%~dp0..\..\.build\%1" 2>nul
     exit /b 1
 )
 exit /b 0

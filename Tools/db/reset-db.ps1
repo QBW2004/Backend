@@ -81,7 +81,7 @@ if (-not $DryRun) {
 # Step 3: Apply patches
 Write-Host "[3/4] Applying migration patches ..." -ForegroundColor Green
 foreach ($patch in $patches) {
-    $pp = Join-Path $PSScriptRoot $patch
+    $pp = Join-Path $PSScriptRoot "..\..\$patch"
     if (Test-Path $pp) {
         Write-Host "  -> $patch" -ForegroundColor DarkGray
         if (-not $DryRun) {

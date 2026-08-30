@@ -1,5 +1,5 @@
 ﻿@{
-    /* 代理封号（1:1 复刻参考站 dailifenghao：代理黑名单） */
+    /* 禁用代理（原"代理封号"，参考站 dailifenghao；封号提示在该代理登录时弹出） */
     string webVer = ConfigHelper.Get("WebVer");
     Layout = "~/Views/Shared/Layout/_MobileLayout.cshtml";
 }
@@ -79,7 +79,7 @@
 
     <div class="container">
         <div class="input-section">
-            <div class="section-title">添加黑名单</div>
+            <div class="section-title">禁用代理</div>
             <table style="width:100%; border-collapse:collapse;">
                 <tbody>
                     <tr>
@@ -89,12 +89,12 @@
                     </tr>
                     <tr>
                         <td style="width:100%; padding-bottom:10px;">
-                            <input type="text" id="reasonInput" class="input-field" style="width:100%; box-sizing:border-box; max-width:100%; display:block;" placeholder="输入封号提示" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+                            <input type="text" id="reasonInput" class="input-field" style="width:100%; box-sizing:border-box; max-width:100%; display:block;" placeholder="输入封号提示（该代理登录时弹出）" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
                         </td>
                     </tr>
                     <tr>
                         <td style="width:100%;">
-                            <button id="blacklistBtn" class="blacklist-btn" style="width:100%;">加入黑名单</button>
+                            <button id="blacklistBtn" class="blacklist-btn" style="width:100%;">确认禁用</button>
                         </td>
                     </tr>
                 </tbody>

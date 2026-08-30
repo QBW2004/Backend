@@ -1118,9 +1118,9 @@
 
     <Content Include="Areas\Mobile\Views\Home\Huiyuan.cshtml" />
 
-    <Content Include="Areas\Mobile\Views\Home\Songjiang.cshtml" />
+    <Content Include="Areas\Mobile\Views\Home\Control.cshtml" />
+    <Content Include="Areas\Mobile\Views\Home\PlayerDetail.cshtml" />
 
-    <Content Include="Areas\Mobile\Views\Home\Blacklist.cshtml" />
 
     <Content Include="Areas\Mobile\Views\Home\BanAgent.cshtml" />
 
@@ -1572,7 +1572,8 @@
 
     <Content Include="Scripts\app\phone\phone.huiyuan.js" />
 
-    <Content Include="Scripts\app\phone\phone.songjiang.js" />
+    <Content Include="Scripts\app\phone\phone.control.js" />
+    <Content Include="Scripts\app\phone\phone.playerdetail.js" />
 
     <Content Include="Scripts\app\phone\phone.blacklist.js" />
 

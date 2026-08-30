@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Web;
 using System.Web.Mvc;
 using YYT.BLL.EF;
 using YYT.Common;
@@ -70,6 +71,9 @@ namespace YYT.Web.Areas.Mobile.Controllers
             ViewBag.CanFrozen = IsSuper(user) || (user != null && user.IsFrozen == 1);
             ViewBag.CanKick = IsSuper(user) || (user != null && user.IsKicking == 1);
             ViewBag.CanModifyPwd = IsSuper(user) || (user != null && user.IsModifyPwd == 1);
+            // 控制管理入口：吃分(IsKill)/放水(IsProbability)/控牌(IsRelease) 任一权限即可
+            ViewBag.CanControl = IsSuper(user)
+                || (user != null && (user.IsKill == 1 || user.IsProbability == 1 || user.IsRelease == 1));
 
             return View();
         }
@@ -151,7 +155,7 @@ namespace YYT.Web.Areas.Mobile.Controllers
         }
 
         #region 手机端扩展页面
-        /// <summary>异常账号（查看和解封异常登录的账号）</summary>
+        /// <summary>冻结明细（查看冻结中的账号并解冻）</summary>
         public ActionResult Abnormal()
         {
             M_LoginUser user = WebHelper.GetLoginInfo();
@@ -159,14 +163,14 @@ namespace YYT.Web.Areas.Mobile.Controllers
                 return RedirectToAction("Index");
 
             ViewBag.MPage = "abnormal";
-            ViewBag.MTitle = "异常账号";
-            ViewBag.MSubtitle = "查看和解封异常登录的账号";
+            ViewBag.MTitle = "冻结明细";
+            ViewBag.MSubtitle = "查看冻结账号并解冻";
             ViewBag.MShowRefresh = true;
 
             return View();
         }
 
-        /// <summary>玩家封号（封禁或解禁玩家账号）</summary>
+        /// <summary>冻结账号（冻结或解冻玩家账号）</summary>
         public ActionResult BanPlayer()
         {
             M_LoginUser user = WebHelper.GetLoginInfo();
@@ -174,14 +178,14 @@ namespace YYT.Web.Areas.Mobile.Controllers
                 return RedirectToAction("Index");
 
             ViewBag.MPage = "banplayer";
-            ViewBag.MTitle = "玩家封号";
-            ViewBag.MSubtitle = "封禁或解禁玩家账号";
+            ViewBag.MTitle = "冻结账号";
+            ViewBag.MSubtitle = "冻结或解冻玩家账号";
             ViewBag.MShowRefresh = true;
 
             return View();
         }
 
-        /// <summary>代理封号（管理代理封禁）</summary>
+        /// <summary>禁用代理（禁用代理登录，可填写封号提示，该代理登录时弹出）</summary>
         public ActionResult BanAgent()
         {
             M_LoginUser user = WebHelper.GetLoginInfo();
@@ -189,53 +193,71 @@ namespace YYT.Web.Areas.Mobile.Controllers
                 return RedirectToAction("Index");
 
             ViewBag.MPage = "banagent";
-            ViewBag.MTitle = "代理封号";
-            ViewBag.MSubtitle = "管理代理封号";
+            ViewBag.MTitle = "禁用代理";
+            ViewBag.MSubtitle = "禁用代理账号登录";
             ViewBag.MShowRefresh = true;
 
             return View();
         }
 
-        /// <summary>代理拉黑（批量拉黑代理及其玩家）</summary>
-        public ActionResult Blacklist()
+        /// <summary>
+        /// 控制管理（吃分 / 送分 / 控牌），复用电脑端总控接口：
+        /// /Game/UserInfo/ApplyTotalControl、GetTotalControlStatus、CloseTotalControl、GetControlRecords。
+        /// Mode=4 吃分需 IsKill，Mode=5 送分需 IsProbability，Mode=6 控牌需 IsRelease（与电脑端一致）。
+        /// </summary>
+        public ActionResult Control()
         {
             M_LoginUser user = WebHelper.GetLoginInfo();
-            if (!IsSuper(user))
+            bool canKill = IsSuper(user) || (user != null && user.IsKill == 1);
+            bool canRelease = IsSuper(user) || (user != null && user.IsProbability == 1);
+            bool canCard = IsSuper(user) || (user != null && user.IsRelease == 1);
+            if (!(canKill || canRelease || canCard))
                 return RedirectToAction("Index");
 
-            ViewBag.MPage = "blacklist";
-            ViewBag.MTitle = "代理拉黑";
-            ViewBag.MSubtitle = "批量拉黑代理及其玩家";
-            ViewBag.MShowRefresh = true;
-
-            return View();
-        }
-
-        /// <summary>送奖管理</summary>
-        public ActionResult Songjiang()
-        {
-            M_LoginUser user = WebHelper.GetLoginInfo();
-            if (!(IsSuper(user) || (user != null && user.IsUpDown == 1)))
-                return RedirectToAction("Index");
-
-            ViewBag.MPage = "songjiang";
-            ViewBag.MTitle = "送奖管理";
+            ViewBag.MPage = "control";
+            ViewBag.MTitle = "控制管理";
+            ViewBag.MSubtitle = "设置吃分、送分、控牌";
             ViewBag.MShowRefresh = false;
-            ViewBag.OwnCoins = GetOwnCoins(user);
-            ViewBag.MSubtitleHtml = "我的金币: <span class=\"diamond-count\" id=\"ownDiamond\">" + ViewBag.OwnCoins + "</span>";
+            ViewBag.CanKill = canKill;
+            ViewBag.CanRelease = canRelease;
+            ViewBag.CanCard = canCard;
             ViewBag.PresetAccount = Request.QueryString["id"] ?? string.Empty;
 
             return View();
         }
 
-        /// <summary>会员盈亏（我的会员输赢详情）</summary>
+        /// <summary>会员盈亏（会员盈亏详情，头部副标题显示 代理名- 会员总数N）</summary>
         public ActionResult Huiyuan()
         {
             ViewBag.MPage = "huiyuan";
-            ViewBag.MTitle = "会员盈亏";
-            ViewBag.MSubtitle = "我的会员输赢详情";
+            ViewBag.MTitle = "会员盈亏详情";
             ViewBag.MShowRefresh = true;
             ViewBag.Today = DateTime.Now.ToString("yyyy-MM-dd");
+
+            // 从"我的代理-我的会员-查看"跳转过来（?agency=）时副标题带代理名
+            string agency = (Request.QueryString["agency"] ?? string.Empty).Trim();
+            ViewBag.MSubtitleHtml =
+                (agency.Length > 0 ? HttpUtility.HtmlEncode(agency) + "- " : "") +
+                "会员总数<span id=\"memberTotal\">--</span>";
+
+            return View();
+        }
+
+        /// <summary>
+        /// 玩家详细信息（独立页面，替代原玩家弹窗里的详情浮层）。
+        /// 数据由 /Game/UserInfo/GetUserDetail 提供；?id= 指定玩家账号。
+        /// </summary>
+        public ActionResult PlayerDetail()
+        {
+            M_LoginUser user = WebHelper.GetLoginInfo();
+
+            ViewBag.MPage = "playerdetail";
+            ViewBag.MTitle = "玩家详细信息";
+            ViewBag.MShowRefresh = true;
+            ViewBag.CanModifyPwd = IsSuper(user) || (user != null && user.IsModifyPwd == 1);
+            ViewBag.CanControl = IsSuper(user)
+                || (user != null && (user.IsKill == 1 || user.IsProbability == 1 || user.IsRelease == 1));
+            ViewBag.PlayerAccount = Request.QueryString["id"] ?? string.Empty;
 
             return View();
         }

@@ -1,66 +1,90 @@
 ﻿@{
-    /* 会员盈亏（原型 huiyuanyingkui：我的会员输赢详情） */
+    /* 会员盈亏详情（统计卡两行六项 + 会员详细信息表格） */
     string webVer = ConfigHelper.Get("WebVer");
     Layout = "~/Views/Shared/Layout/_MobileLayout.cshtml";
 }
 
 @section head {
 <style>
-    /* 统计卡 */
-    .stats-container {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 16px;
+    /* 盈亏统计卡：两行三列（总盈亏/总充值/总退钻、今日盈亏/今日充值/今日退钻） */
+    .profit-stats-card {
         background-color: white;
         border-radius: 12px;
-        padding: 16px;
+        padding: 16px 8px;
+        margin-bottom: 12px;
         box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
 
-    .stats-title {
-        font-size: 18px;
+    .profit-stats-row {
+        display: flex;
+    }
+
+        .profit-stats-row + .profit-stats-row {
+            margin-top: 16px;
+        }
+
+    .profit-stats-item {
+        flex: 1;
+        text-align: center;
+        min-width: 0;
+    }
+
+    .profit-stats-label {
+        font-size: 13px;
+        color: #8e8e93;
+        margin-bottom: 6px;
+    }
+
+    .profit-stats-value {
+        font-size: 15px;
         font-weight: 600;
         color: #333;
+        font-family: -apple-system-monospace, monospace;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
-    .stats-info {
-        display: flex;
-        gap: 16px;
-        flex-wrap: wrap;
+        .profit-stats-value.positive {
+            color: #34c759;
+        }
+
+        .profit-stats-value.negative {
+            color: #ff3b30;
+        }
+
+    /* 会员详细信息卡（标题 + 排序 + 表格） */
+    .member-detail-card {
+        background-color: white;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        overflow: hidden;
     }
 
-    .stats-item {
+    .member-detail-header {
         display: flex;
         align-items: center;
-        gap: 6px;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 14px 16px;
     }
 
-    .stats-label {
-        font-size: 14px;
-        color: #666;
-    }
-
-    .stats-value {
+    .member-detail-title {
         font-size: 16px;
         font-weight: 600;
-        color: #333;
+        color: #1d1d1f;
+        flex-shrink: 0;
     }
 
-    .stats-value.diamond {
-        color: #007aff;
+    .member-detail-header .sort-options {
+        padding: 0;
+        background-color: transparent;
+        border-bottom: none;
+        gap: 8px;
+        flex-wrap: nowrap;
     }
 
     /* 排序选项 */
-    .sort-options {
-        display: flex;
-        padding: 12px 16px;
-        background-color: #f9f9f9;
-        border-bottom: 1px solid #eaeaea;
-        gap: 10px;
-        flex-wrap: wrap;
-    }
-
     .sort-option {
         padding: 6px 12px;
         border-radius: 16px;
@@ -70,107 +94,174 @@
         color: #666;
         cursor: pointer;
         transition: all 0.2s;
+        white-space: nowrap;
     }
 
-    .sort-option.active {
-        background-color: #007aff;
-        color: white;
-        border-color: #007aff;
-    }
+        .sort-option.active {
+            background-color: #007aff;
+            color: white;
+            border-color: #007aff;
+        }
 
     /* 表格 */
+    .table-container {
+        overflow-x: auto;
+    }
+
     .member-table {
         width: 100%;
         border-collapse: collapse;
         table-layout: auto;
+        min-width: 620px;
     }
 
-    .member-table th {
-        background-color: #f8f9fa;
-        padding: 12px 8px;
-        text-align: left;
-        font-weight: 600;
-        color: #666;
-        border-bottom: 1px solid #eaeaea;
-        white-space: nowrap;
-        font-size: 14px;
-    }
+        .member-table th {
+            background-color: #f8f9fa;
+            padding: 12px 8px;
+            text-align: left;
+            font-weight: 600;
+            color: #666;
+            border-bottom: 1px solid #eaeaea;
+            white-space: nowrap;
+            font-size: 14px;
+        }
 
-    .member-table td {
-        padding: 12px 8px;
-        border-bottom: 1px solid #eaeaea;
-        color: #333;
-        font-size: 14px;
-        word-break: break-word;
-    }
+        .member-table td {
+            padding: 12px 8px;
+            border-bottom: 1px solid #eaeaea;
+            color: #333;
+            font-size: 14px;
+            word-break: break-word;
+            white-space: nowrap;
+        }
 
-    .member-table td.account {
-        color: #007aff;
-        font-weight: 500;
-        max-width: 120px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
+            .member-table td.account {
+                color: #007aff;
+                font-weight: 500;
+                max-width: 120px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
 
-    .member-table tbody tr:hover {
-        background-color: #f5f7fa;
-    }
+        .member-table tbody tr:hover {
+            background-color: #f5f7fa;
+        }
 
-    .member-table tr:last-child td {
-        border-bottom: none;
-    }
+        .member-table tr:last-child td {
+            border-bottom: none;
+        }
 
     #memberSection {
         padding: 8px 0;
     }
 
-    @@media (max-width: 768px) {
-        .table-container {
-            overflow-x: auto;
+    /* 代理过滤提示条（从"我的代理-我的会员-查看"跳转过来时显示） */
+    .agency-filter-bar {
+        display: none;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 12px;
+        padding: 10px 12px;
+        background-color: rgba(0, 122, 255, 0.08);
+        border: 1px solid rgba(0, 122, 255, 0.2);
+        border-radius: 8px;
+        font-size: 14px;
+        color: #333;
+    }
+
+        .agency-filter-bar.show {
+            display: flex;
         }
 
-        .member-table {
-            min-width: 560px;
+    .agency-filter-label {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+        .agency-filter-label strong {
+            color: #007aff;
+            font-weight: 600;
         }
+
+    .agency-filter-clear {
+        flex-shrink: 0;
+        padding: 4px 10px;
+        background-color: white;
+        color: #007aff;
+        border: 1px solid rgba(0, 122, 255, 0.3);
+        border-radius: 6px;
+        font-size: 13px;
+        cursor: pointer;
+        -webkit-appearance: none;
+        appearance: none;
     }
 </style>
 }
 
     <div class="container">
-        <div class="stats-container">
-            <div class="stats-title">会员统计</div>
-            <div class="stats-info">
-                <div class="stats-item">
-                    <div class="stats-label">会员总数:</div>
-                    <div class="stats-value" id="totalMembers">0</div>
+        <div class="agency-filter-bar" id="agencyFilterBar">
+            <div class="agency-filter-label">当前代理：<strong id="agencyFilterName"></strong>（直属会员）</div>
+            <button class="agency-filter-clear" id="agencyFilterClear">查看全部</button>
+        </div>
+
+        <!-- 盈亏统计卡 -->
+        <div class="profit-stats-card">
+            <div class="profit-stats-row">
+                <div class="profit-stats-item">
+                    <div class="profit-stats-label">总盈亏</div>
+                    <div class="profit-stats-value" id="totalProfit">0</div>
                 </div>
-                <div class="stats-item">
-                    <div class="stats-label">今日总输赢（金币）:</div>
-                    <div class="stats-value diamond" id="totalTodayWinLoss">0</div>
+                <div class="profit-stats-item">
+                    <div class="profit-stats-label">总充值</div>
+                    <div class="profit-stats-value" id="totalBuy">0</div>
+                </div>
+                <div class="profit-stats-item">
+                    <div class="profit-stats-label">总退钻</div>
+                    <div class="profit-stats-value" id="totalBack">0</div>
+                </div>
+            </div>
+            <div class="profit-stats-row">
+                <div class="profit-stats-item">
+                    <div class="profit-stats-label">今日盈亏</div>
+                    <div class="profit-stats-value" id="todayProfit">0</div>
+                </div>
+                <div class="profit-stats-item">
+                    <div class="profit-stats-label">今日充值</div>
+                    <div class="profit-stats-value" id="todayBuy">0</div>
+                </div>
+                <div class="profit-stats-item">
+                    <div class="profit-stats-label">今日退钻</div>
+                    <div class="profit-stats-value" id="todayBack">0</div>
                 </div>
             </div>
         </div>
 
-        <div class="table-container">
-            <div class="sort-options">
-                <div class="sort-option active" data-sort="win-most">今日赢最多</div>
-                <div class="sort-option" data-sort="loss-most">今日输最多</div>
-                <div class="sort-option" data-sort="profit-desc">总盈亏最多</div>
+        <!-- 会员详细信息 -->
+        <div class="member-detail-card">
+            <div class="member-detail-header">
+                <div class="member-detail-title">会员详细信息</div>
+                <div class="sort-options">
+                    <div class="sort-option active" data-sort="profit-desc">↓ 赢的最多</div>
+                    <div class="sort-option" data-sort="profit-asc">↓ 输的最多</div>
+                </div>
             </div>
-            <table class="member-table">
-                <thead>
-                    <tr>
-                        <th>账号</th>
-                        <th>昵称</th>
-                        <th>所属代理</th>
-                        <th>今日输赢(金币)</th>
-                        <th>总盈亏(金币)</th>
-                        <th>余额(金币)</th>
-                    </tr>
-                </thead>
-                <tbody id="memberList"></tbody>
-            </table>
+            <div class="table-container">
+                <table class="member-table">
+                    <thead>
+                        <tr>
+                            <th>玩家账号</th>
+                            <th>剩余钻石</th>
+                            <th>剩余分数</th>
+                            <th>总盈亏</th>
+                            <th>总充值</th>
+                            <th>总退钻</th>
+                        </tr>
+                    </thead>
+                    <tbody id="memberList"></tbody>
+                </table>
+            </div>
             <div id="memberSection">
                 <div class="no-more-data" id="noMoreData" style="display: none;">已加载全部数据</div>
                 <div class="load-more-container">

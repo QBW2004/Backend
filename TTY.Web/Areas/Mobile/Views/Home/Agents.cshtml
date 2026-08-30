@@ -86,12 +86,15 @@
         font-weight: 600;
     }
 
-    /* 代理表格 */
-    .agent-table {
+    /* 代理表格。
+       ⚠️ 必须用 .table-container .agent-table 提高优先级：
+       phone.css 里 .table-container table { table-layout: fixed }（类+元素）会压过单类选择器，
+       fixed 布局把日期列按百分比压窄后 nowrap 文本会溢出压到相邻列（字段重叠）。 */
+    .table-container .agent-table {
         width: 100%;
         border-collapse: collapse;
         table-layout: auto;
-        min-width: 640px;
+        min-width: 700px;
     }
 
     .agent-table th {
@@ -122,19 +125,35 @@
         text-overflow: ellipsis;
     }
 
+    /* 下级代理 / 我的会员两列固定等宽，让两列按钮宽度一致 */
+    .agent-table th:nth-child(3),
+    .agent-table td:nth-child(3),
+    .agent-table th:nth-child(4),
+    .agent-table td:nth-child(4) {
+        width: 13%;
+    }
+
     .agent-table th:nth-child(2),
     .agent-table td:nth-child(2),
     .agent-table th:nth-child(3),
     .agent-table td:nth-child(3),
     .agent-table th:nth-child(4),
     .agent-table td:nth-child(4),
+    .agent-table th:nth-child(5),
+    .agent-table td:nth-child(5),
     .agent-table th:nth-child(6),
     .agent-table td:nth-child(6),
     .agent-table th:nth-child(7),
-    .agent-table td:nth-child(7),
-    .agent-table th:nth-child(8),
-    .agent-table td:nth-child(8) {
+    .agent-table td:nth-child(7) {
         white-space: nowrap;
+    }
+
+    /* 时间列给足最小宽度，避免被挤压后与相邻列文字重叠 */
+    .agent-table th:nth-child(6),
+    .agent-table td:nth-child(6),
+    .agent-table th:nth-child(7),
+    .agent-table td:nth-child(7) {
+        min-width: 128px;
     }
 
     .time-cell {
@@ -331,14 +350,74 @@
         font-size: 14px;
     }
 
-    /* 表格内"查看下级"按钮：.unban-btn 的 width:100% 不参与自动表格的列宽计算，
-       列会被表头压窄导致按钮溢出到相邻列；改用固有宽度让列自动撑开 */
-    #agentList .unban-btn {
-        width: auto;
-        max-width: none;
-        padding: 3px 8px;
-        font-size: 12px;
-        border-radius: 5px;
+    /* 下级代理数量框：蓝色小框展示个数，点击下钻查看子代理；
+       块级 + 100% 宽铺满所在单元格（配合两列等宽，与"查看"按钮宽度一致） */
+    .sub-agents-btn {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+        padding: 5px 0;
+        background-color: rgba(0, 122, 255, 0.1);
+        color: #007aff;
+        border: 1px solid rgba(0, 122, 255, 0.2);
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s;
+        white-space: nowrap;
+        text-align: center;
+        -webkit-appearance: none;
+        appearance: none;
+    }
+
+    .sub-agents-btn:hover {
+        background-color: rgba(0, 122, 255, 0.2);
+        border-color: rgba(0, 122, 255, 0.3);
+    }
+
+    .sub-agents-btn:active {
+        transform: scale(0.98);
+    }
+
+    .sub-agents-btn.none {
+        background-color: rgba(142, 142, 147, 0.1);
+        color: #8e8e93;
+        border-color: rgba(142, 142, 147, 0.2);
+        cursor: default;
+    }
+
+    .sub-agents-btn.none:active {
+        transform: none;
+    }
+
+    /* 我的会员"查看"按钮：点击查看该代理所有直属会员；块级 + 100% 宽铺满单元格 */
+    .member-view-btn {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+        padding: 5px 0;
+        background-color: rgba(52, 199, 89, 0.1);
+        color: #34c759;
+        border: 1px solid rgba(52, 199, 89, 0.2);
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s;
+        white-space: nowrap;
+        text-align: center;
+        -webkit-appearance: none;
+        appearance: none;
+    }
+
+    .member-view-btn:hover {
+        background-color: rgba(52, 199, 89, 0.2);
+        border-color: rgba(52, 199, 89, 0.3);
+    }
+
+    .member-view-btn:active {
+        transform: scale(0.98);
     }
 </style>
 }
@@ -366,13 +445,13 @@
             <table class="agent-table" id="agentTable">
                 <thead>
                     <tr>
-                        <th style="width: 22%;">账号</th>
-                        <th style="width: 12%;">剩余金币</th>
-                        <th style="width: 12%;">下级代理</th>
-                        <th style="width: 12%;">我的会员</th>
-                        <th style="width: 13%;">邀请码</th>
-                        <th style="width: 15%;">最后登陆</th>
-                        <th style="width: 14%;">注册时间</th>
+                        <th>账号</th>
+                        <th>剩余金币</th>
+                        <th>下级代理</th>
+                        <th>我的会员</th>
+                        <th>邀请码</th>
+                        <th>最后登陆</th>
+                        <th>注册时间</th>
                     </tr>
                 </thead>
                 <tbody id="agentList"></tbody>

@@ -14,7 +14,7 @@
 #        (幂等性能索引补丁：users/userrelations/useroptlog/rechargerecords/
 #         agencyoptlog/loginmissrecord 二级索引 + user_daily_winloss 字符集对齐)
 #
-# 注: 补丁对应 Tools/reset-db.ps1 中的 patche 列表,
+# 注: 补丁对应 Tools/db/reset-db.ps1 中的 patche 列表,
 #     保证 Docker 初始化与本机手工重置流程一致。
 #
 # 重新生成:
@@ -26,5 +26,5 @@
 #     copy Docs\sql\性能索引.sql docker\mysql\init\40_性能索引.sql
 #
 # 注意: 初始化只会在数据卷首次创建时执行。
-#   要重新导入(清空数据)使用: Tools\docker-db.bat reinit
+#   要重新导入(清空数据)使用: Tools\db\docker-db.bat reinit
 #   或: docker-compose down -v && docker-compose up -d

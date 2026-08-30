@@ -236,6 +236,12 @@ namespace YYT.Entity
         public bool HasChildAgency { get; set; }
 
         /// <summary>
+        /// 直属下级代理数量（手机端我的代理列表展示用，非数据库字段）。
+        /// </summary>
+        [NotMapped]
+        public int SubAgencyCount { get; set; }
+
+        /// <summary>
         /// 前端标记是否可继续创建下级代理。
         /// </summary>
         [NotMapped]

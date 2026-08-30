@@ -117,9 +117,9 @@ namespace YYT.Web.Areas.Game.Controllers
             return Json(msg);
         }
 
-        #region 手机端扩展（代理封号 / 代理拉黑）
+        #region 手机端扩展（禁用代理）
         /// <summary>
-        /// 手机端：封禁中的代理分页（代理封号页列表）
+        /// 手机端：禁用中的代理分页（禁用代理页列表）
         /// </summary>
         [AjaxOnly]
         [HttpPost]
@@ -143,89 +143,7 @@ namespace YYT.Web.Areas.Game.Controllers
         }
 
         /// <summary>
-        /// 手机端：拉黑代理（封禁整条线 + 按范围冻结名下玩家）
-        /// </summary>
-        [AjaxOnly]
-        [HttpPost]
-        public ActionResult BlacklistAgent(FormCollection form)
-        {
-            Msg msg = new Msg(0, "拉黑失败！");
-            try
-            {
-                M_LoginUser loginUser = WebHelper.GetLoginInfo();
-                if (loginUser == null || loginUser.UserPriv != 0)
-                {
-                    msg.content = "无权限操作！";
-                    return Json(msg);
-                }
-
-                string id = form.Q<string>("ID");
-                string banMsg = form.Q<string>("BanMsg", "").Trim();
-                int scope = form.Q<int>("Scope", 0);
-                if (loginUser.Accounts.Equals(id, StringComparison.OrdinalIgnoreCase))
-                {
-                    msg.content = "不能对自己拉黑！";
-                    return Json(msg);
-                }
-
-                int affectedPlayers, affectedAgents;
-                string error;
-                if (new B_Admin().BlacklistAgent(loginUser, id, banMsg, scope, out affectedPlayers, out affectedAgents, out error))
-                {
-                    msg.code = 1;
-                    msg.content = "拉黑成功！";
-                    msg.datas = new { affectedPlayers = affectedPlayers, affectedAgents = affectedAgents };
-                }
-                else
-                {
-                    msg.content = error;
-                }
-            }
-            catch (Exception ex)
-            {
-                LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.AgencyInfoController), ex);
-            }
-            return Json(msg);
-        }
-
-        /// <summary>
-        /// 手机端：解除拉黑（恢复整条线登录并解冻玩家）
-        /// </summary>
-        [AjaxOnly]
-        [HttpPost]
-        public ActionResult UnBlacklistAgent(FormCollection form)
-        {
-            Msg msg = new Msg(0, "解封失败！");
-            try
-            {
-                M_LoginUser loginUser = WebHelper.GetLoginInfo();
-                if (loginUser == null || loginUser.UserPriv != 0)
-                {
-                    msg.content = "无权限操作！";
-                    return Json(msg);
-                }
-
-                string id = form.Q<string>("ID");
-                string error;
-                if (new B_Admin().UnBlacklistAgent(loginUser, id, out error))
-                {
-                    msg.code = 1;
-                    msg.content = "解封成功！";
-                }
-                else
-                {
-                    msg.content = error;
-                }
-            }
-            catch (Exception ex)
-            {
-                LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.AgencyInfoController), ex);
-            }
-            return Json(msg);
-        }
-
-        /// <summary>
-        /// 手机端：拉黑/解封操作记录分页
+        /// 手机端：代理禁用/恢复记录分页（禁用代理页据此展示封号提示与时间）
         /// </summary>
         [AjaxOnly]
         [HttpPost]
@@ -248,13 +166,13 @@ namespace YYT.Web.Areas.Game.Controllers
             return Json(list);
         }
         /// <summary>
-        /// 手机端：代理封号（仅封禁该代理登录，不级联），并记录封号提示到操作日志
+        /// 手机端：禁用代理（仅禁用该代理登录，不级联），封号提示记入操作日志，该代理登录时弹出
         /// </summary>
         [AjaxOnly]
         [HttpPost]
         public ActionResult BanAgent(FormCollection form)
         {
-            Msg msg = new Msg(0, "封禁失败！");
+            Msg msg = new Msg(0, "禁用失败！");
             try
             {
                 M_LoginUser loginUser = WebHelper.GetLoginInfo();
@@ -268,7 +186,7 @@ namespace YYT.Web.Areas.Game.Controllers
                 string banMsg = form.Q<string>("BanMsg", "").Trim();
                 if (loginUser.Accounts.Equals(id, StringComparison.OrdinalIgnoreCase))
                 {
-                    msg.content = "不能对自己封禁！";
+                    msg.content = "不能对自己禁用！";
                     return Json(msg);
                 }
 
@@ -288,16 +206,17 @@ namespace YYT.Web.Areas.Game.Controllers
                         OptID = loginUser.Accounts,
                         SrcUserTitle = loginUser.Accounts,
                         ID = id,
-                        DestUserTitle = string.IsNullOrWhiteSpace(banMsg) ? "代理封号" : banMsg,
+                        DestUserTitle = string.IsNullOrWhiteSpace(banMsg) ? "该账号已被禁用" : banMsg,
                         AGENCY = agent.AGENCY,
                         OPT = 24,
                         COINS = 0,
                         BEF_COINS = 1,
+                        AFT_COINS = 0,
                         REC_TIME = DateTime.Now,
                         WEEK = DateTime.Now.WeekOfYear()
                     });
                     msg.code = 1;
-                    msg.content = "封禁成功！";
+                    msg.content = "禁用成功！";
                 }
             }
             catch (Exception ex)
@@ -308,13 +227,13 @@ namespace YYT.Web.Areas.Game.Controllers
         }
 
         /// <summary>
-        /// 手机端：解除代理封号（恢复登录，不级联解冻玩家）
+        /// 手机端：解除代理禁用（恢复登录，不级联解冻玩家）
         /// </summary>
         [AjaxOnly]
         [HttpPost]
         public ActionResult UnbanAgent(FormCollection form)
         {
-            Msg msg = new Msg(0, "解封失败！");
+            Msg msg = new Msg(0, "恢复失败！");
             try
             {
                 M_LoginUser loginUser = WebHelper.GetLoginInfo();
@@ -341,16 +260,17 @@ namespace YYT.Web.Areas.Game.Controllers
                         OptID = loginUser.Accounts,
                         SrcUserTitle = loginUser.Accounts,
                         ID = id,
-                        DestUserTitle = "解封恢复",
+                        DestUserTitle = "禁用已解除",
                         AGENCY = agent.AGENCY,
                         OPT = 25,
                         COINS = 0,
                         BEF_COINS = 1,
+                        AFT_COINS = 1,
                         REC_TIME = DateTime.Now,
                         WEEK = DateTime.Now.WeekOfYear()
                     });
                     msg.code = 1;
-                    msg.content = "解封成功！";
+                    msg.content = "已恢复！";
                 }
             }
             catch (Exception ex)
@@ -534,6 +454,10 @@ namespace YYT.Web.Areas.Game.Controllers
             Msg msg = new Msg(0, "代理添加失败！");
             try
             {
+                // 手机端只输入一次密码；桌面端仍可提交并校验确认密码。
+                if (string.IsNullOrWhiteSpace(form["RE_PWD"]) && !string.IsNullOrWhiteSpace(form["PWD"]))
+                    form.Set("RE_PWD", form["PWD"]);
+
                 M_Admin entity = new M_Admin();
                 if (TryUpdateModel<M_Admin>(entity) && ModelState.IsValid)
                 {

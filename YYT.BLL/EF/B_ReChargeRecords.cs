@@ -51,13 +51,13 @@ namespace YYT.BLL.EF
                 //          };
 
                 if (!string.IsNullOrWhiteSpace(entity.GameID))
-                    rst = rst.Where(c => c.GameID.Equals(entity.GameID));
+                    rst = rst.Where(c => c.GameID.Contains(entity.GameID));
 
                 if (!string.IsNullOrWhiteSpace(entity.PayNo))
-                    rst = rst.Where(c => c.PayNo.Equals(entity.PayNo));
+                    rst = rst.Where(c => c.PayNo.Contains(entity.PayNo));
 
                 if (!string.IsNullOrWhiteSpace(entity.OrderNo))
-                    rst = rst.Where(c => c.OrderNo.Equals(entity.OrderNo));
+                    rst = rst.Where(c => c.OrderNo.Contains(entity.OrderNo));
 
                 if (entity.Processed > -1 && entity.Processed < 3)
                     rst = rst.Where(c => c.Processed == entity.Processed);
@@ -69,8 +69,8 @@ namespace YYT.BLL.EF
                     rst = rst.Where(c => c.CreateTime < Convert.ToDateTime(entity.EndTime));
 
                 if (!string.IsNullOrWhiteSpace(entity.Agency))
-                    rst = rst.Where(c => c.Agency.Equals(entity.Agency));
-                // 加权限查询
+                    rst = rst.Where(c => c.Agency.Contains(entity.Agency));
+                // 加权限查询（权限边界保持精确匹配）
                 if (loginUser.UserPriv != 0)
                 {
                     rst = rst.Where(c => c.Agency.Equals(loginUser.Accounts));
@@ -156,12 +156,13 @@ namespace YYT.BLL.EF
             {
                 var rst = ef.ReChargeRecords.AsQueryable();
 
+                // 搜索统一模糊匹配（LIKE '%kw%'）；权限过滤（下方 Agency=登录账号）保持精确
                 if (!string.IsNullOrWhiteSpace(entity.GameID))
-                    rst = rst.Where(c => c.GameID.Equals(entity.GameID));
+                    rst = rst.Where(c => c.GameID.Contains(entity.GameID));
                 if (!string.IsNullOrWhiteSpace(entity.PayNo))
-                    rst = rst.Where(c => c.PayNo.Equals(entity.PayNo));
+                    rst = rst.Where(c => c.PayNo.Contains(entity.PayNo));
                 if (!string.IsNullOrWhiteSpace(entity.OrderNo))
-                    rst = rst.Where(c => c.OrderNo.Equals(entity.OrderNo));
+                    rst = rst.Where(c => c.OrderNo.Contains(entity.OrderNo));
                 if (entity.Processed > -1 && entity.Processed < 3)
                     rst = rst.Where(c => c.Processed == entity.Processed);
                 if (!string.IsNullOrWhiteSpace(entity.StartTime))
@@ -169,9 +170,9 @@ namespace YYT.BLL.EF
                 if (!string.IsNullOrWhiteSpace(entity.EndTime))
                     rst = rst.Where(c => c.CreateTime < Convert.ToDateTime(entity.EndTime));
                 if (!string.IsNullOrWhiteSpace(entity.Agency))
-                    rst = rst.Where(c => c.Agency.Equals(entity.Agency));
+                    rst = rst.Where(c => c.Agency.Contains(entity.Agency));
                 if (!string.IsNullOrWhiteSpace(entity.Operator))
-                    rst = rst.Where(c => c.Operator != null && c.Operator.Equals(entity.Operator));
+                    rst = rst.Where(c => c.Operator.Contains(entity.Operator));
 
                 // 加权限查询
                 if (loginUser.UserPriv != 0)

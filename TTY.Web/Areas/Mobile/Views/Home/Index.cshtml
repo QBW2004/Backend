@@ -1,6 +1,5 @@
 ﻿@{
     /* 玩家列表（1:1 复刻参考站 wanjialist） */
-    bool canFrozen = ViewBag.CanFrozen != null && (bool)ViewBag.CanFrozen;
     string webVer = ConfigHelper.Get("WebVer");
     Layout = "~/Views/Shared/Layout/_MobileLayout.cshtml";
 }
@@ -82,7 +81,7 @@
         align-items: center;
         gap: 8px;
         margin-bottom: 8px;
-        flex-wrap: nowrap;
+        flex-wrap: wrap;
         width: 100%;
     }
 
@@ -110,11 +109,13 @@
     .agent-line {
         font-size: 13px;
         color: #666;
-        max-width: 60px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        flex-shrink: 0;
+        flex: 1 1 auto;
+        min-width: 0;
+        max-width: 100%;
+        overflow: visible;
+        text-overflow: clip;
+        white-space: normal;
+        word-break: break-all;
     }
 
     .remaining-score {
@@ -241,6 +242,21 @@
         font-size: 13px;
         color: #333;
         font-weight: 500;
+    }
+
+    .active-control-status {
+        margin-top: 8px;
+        padding: 8px 10px;
+        border-radius: 8px;
+        background: #f8f9fa;
+        color: #ff3b30;
+        font-size: 13px;
+        line-height: 1.6;
+        text-align: center;
+    }
+
+    .active-control-status-item + .active-control-status-item {
+        margin-top: 2px;
     }
 
     /* 页签 */
@@ -501,17 +517,13 @@
             </div>
             <div class="modal-actions">
                 <button class="modal-action-btn recharge" id="modalRechargeBtn">充值</button>
-                @if (ViewBag.CanUpDown != null && (bool)ViewBag.CanUpDown)
+                @if (ViewBag.CanControl != null && (bool)ViewBag.CanControl)
                 {
-                    <button class="modal-action-btn reward" id="modalRewardBtn">送奖</button>
+                    <button class="modal-action-btn reward" id="modalControlBtn">控制</button>
                 }
-                @if (canFrozen)
-                {
-                    <button class="modal-action-btn blacklist" id="modalBlacklistBtn">拉黑</button>
-                }
-                <button class="modal-action-btn details" id="modalDetailsBtn">玩家详情</button>
+                <button class="modal-action-btn details" id="modalDetailsBtn">玩家详细</button>
                 <button class="modal-action-btn prize-history" id="modalPrizeHistoryBtn">中奖历史</button>
-                <button class="modal-action-btn" id="modalTrackBtn" style="background-color: rgba(88, 86, 214, 0.12); color: #5856D6;">游戏轨迹</button>
+                <button class="modal-action-btn" id="modalTrackBtn" style="background-color: rgba(88, 86, 214, 0.12); color: #5856D6;">游戏记录</button>
             </div>
             <div class="modal-footer">
                 <button class="modal-cancel-btn" id="modalCancelBtn">取消</button>

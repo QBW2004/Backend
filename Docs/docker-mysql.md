@@ -24,19 +24,19 @@
 在项目根目录（或任意位置）执行：
 
 ```bat
-Tools\docker-db.bat start     :: 启动 MySQL(首次自动导入数据库)
-Tools\docker-db.bat stop      :: 停止容器(数据保留)
-Tools\docker-db.bat status    :: 查看容器状态与 MySQL 版本
-Tools\docker-db.bat reinit    :: 重置数据库(清空数据后重新导入, 需输入 YES)
+Tools\db\docker-db.bat start     :: 启动 MySQL(首次自动导入数据库)
+Tools\db\docker-db.bat stop      :: 停止容器(数据保留)
+Tools\db\docker-db.bat status    :: 查看容器状态与 MySQL 版本
+Tools\db\docker-db.bat reinit    :: 重置数据库(清空数据后重新导入, 需输入 YES)
 ```
 
 PowerShell 等价命令：
 
 ```powershell
-.\Tools\docker-db.ps1 start
-.\Tools\docker-db.ps1 stop
-.\Tools\docker-db.ps1 status
-.\Tools\docker-db.ps1 reinit -Force
+.\Tools\db\docker-db.ps1 start
+.\Tools\db\docker-db.ps1 stop
+.\Tools\db\docker-db.ps1 status
+.\Tools\db\docker-db.ps1 reinit -Force
 ```
 
 ## 手动 Docker 命令
@@ -87,9 +87,9 @@ docker compose logs -f mysql  # 查看 MySQL 日志
 ### 一键编译
 
 ```bat
-Tools\build.bat        :: Clean + Release 编译
-Tools\build.bat Debug  :: Clean + Debug 编译
-Tools\build.bat noclean :: 跳过 Clean
+Tools\dev\build.bat        :: Clean + Release 编译
+Tools\dev\build.bat Debug  :: Clean + Debug 编译
+Tools\dev\build.bat noclean :: 跳过 Clean
 ```
 
 `build.bat` 会自动检测并自愈环境缺口（无需管理员权限）：
@@ -98,7 +98,7 @@ Tools\build.bat noclean :: 跳过 Clean
 |----------|-------------|
 | 未装 .NET Framework 4.8 Developer Pack | 自动下载 NuGet 包 `Microsoft.NETFramework.ReferenceAssemblies.net48` 到 `.build\`，并设置 `/p:FrameworkPathOverride` |
 | VS 未装「ASP.NET 和 Web 开发」工作负载（缺 WebApplication.targets） | 自动下载 `MSBuild.Microsoft.VisualStudio.Web.targets` 到 `.build\`，并设置 `/p:VSToolsPath` |
-| 首次构建需 NuGet 还原 | 自动调用 `Tools\nuget.exe restore`（若存在） |
+| 首次构建需 NuGet 还原 | 自动调用 `Tools\dev\nuget.exe restore`（若存在） |
 
 > 机器**已装** Developer Pack / Web 工作负载时，脚本走原生路径，行为不变。
 > `.build\` 已加入 .gitignore。
@@ -106,7 +106,7 @@ Tools\build.bat noclean :: 跳过 Clean
 ### 部署（本机 IIS Express 运行）
 
 ```bat
-Tools\start.bat    :: 启动 IIS Express，站点 WebSite1，端口 8080
+Tools\dev\start.bat    :: 启动 IIS Express，站点 WebSite1，端口 8080
 ```
 
 访问 `http://localhost:8080/Login/Index`。
@@ -121,13 +121,13 @@ Tools\start.bat    :: 启动 IIS Express，站点 WebSite1，端口 8080
 1. 服务器安装 IIS + .NET Framework 4.8（含 ASP.NET 功能），创建应用池（.NET v4.0 / 集成模式）
 2. 将 `TTY.Web\` 整个目录（含 `bin\`、`Views\`、`Content\`、`Scripts\`、`Global.asax`、`Web.config`）复制到 IIS 站点目录
 3. 按生产环境修改 `Web.config`：`connectionStrings`、`appSettings` 中的 `WebHost`、支付回调、`UploadPath`、`RecordDbPath` 等
-4. 生产数据库用 `mth.sql`（或 `Tools\reset-db.ps1` 流程）初始化
+4. 生产数据库用 `mth.sql`（或 `Tools\db\reset-db.ps1` 流程）初始化
 
 ## 常见问题
 
 **Q: `docker compose` 命令不存在？**
 Docker Desktop 的 compose 插件位于 `resources\cli-plugins\docker-compose.exe`，
-一键脚本已内置完整路径，请优先使用 `Tools\docker-db.bat`。
+一键脚本已内置完整路径，请优先使用 `Tools\db\docker-db.bat`。
 
 **Q: 启动报 `error getting credentials`？**
 需将 `C:\Program Files\Docker\Docker\resources\bin` 加入 PATH，

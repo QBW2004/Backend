@@ -6,8 +6,7 @@
      - /Game/UserInfo/GetOfflineUsers   离线玩家分页（支持排序）
      - /Game/UserInfo/GetUsers          搜索玩家
      - /Game/UserInfo/GetVisibleUserRows  按账号取玩家详情
-     - /Game/UserInfo/FrozenUser        拉黑 / 解黑（封禁玩家）
-     - /Game/UserRecord/GetUserRecords  玩家当日游戏记录（中奖历史 / 游戏轨迹）
+     - /Game/UserRecord/GetUserRecords  玩家当日游戏记录（中奖历史 / 游戏记录）
    ============================================================ */
 (function (window, $, M) {
     'use strict';
@@ -38,6 +37,39 @@
         });
     }
 
+    /* ---------------- 在线玩家控制状态 ---------------- */
+
+    function activeControlText(control) {
+        var mode = Number(control.ControlMode);
+        if (mode === 4) {
+            return '吃分中... 吃分目标 ' + M.gold(control.TargetCoins) +
+                ' / 已吃 ' + M.gold(-Number(control.ConsumedCoins || 0));
+        }
+        if (mode === 5) {
+            return '放分中... 放分目标 ' + M.gold(control.TargetCoins) +
+                ' / 已放 ' + M.gold(control.GrantedCoins);
+        }
+        if (mode === 6) {
+            var total = Number(control.CardTotal || control.TargetCoins || 0);
+            var remaining = Number(control.CardNumber || 0);
+            if (total <= 0 || remaining <= 0) return '';
+            return '控牌中... 控牌值 ' + M.num(control.LimitCoins) +
+                ' / 次数 ' + (total - remaining) + ' / ' + total;
+        }
+        return '';
+    }
+
+    function groupActiveControls(rows) {
+        var map = {};
+        (rows || []).forEach(function (control) {
+            var text = activeControlText(control);
+            if (!text || !control.UserID) return;
+            if (!map[control.UserID]) map[control.UserID] = [];
+            map[control.UserID].push(text);
+        });
+        return map;
+    }
+
     /* ---------------- 卡片渲染 ---------------- */
 
     function playerCardHTML(p, isOnline) {
@@ -55,6 +87,12 @@
         var loginRow = (!isOnline && p.LastLoginTime)
             ? '<div class="info-row login-time-row"><div class="info-item">' + M.ICONS.clock +
                 '<span class="info-label">最后登录</span><span class="info-value">' + M.fmtTime(p.LastLoginTime) + '</span></div></div>'
+            : '';
+        var controls = isOnline && p.ActiveControls ? p.ActiveControls : [];
+        var controlRow = controls.length
+            ? '<div class="active-control-status">' + controls.map(function (text) {
+                return '<div class="active-control-status-item">' + M.esc(text) + '</div>';
+            }).join('') + '</div>'
             : '';
 
         return '' +
@@ -80,6 +118,7 @@
                     '</div>' +
                     loginRow +
                 '</div>' +
+                controlRow +
             '</div>';
     }
 
@@ -92,6 +131,25 @@
             }, function () {
                 // 游戏服不可达 / 超时：按空列表处理
                 onlinePlayers = [];
+            })
+            .then(function () {
+                var ids = onlinePlayers.map(function (p) { return p.ID; }).filter(function (id, index, list) {
+                    return id && list.indexOf(id) === index;
+                });
+                if (!ids.length) return [];
+                return M.post('/Game/UserInfo/GetActiveTotalControls', {
+                    UserIDs: JSON.stringify(ids)
+                }).then(function (res) {
+                    return res && res.code === 1 ? (res.datas || []) : [];
+                }, function () {
+                    return [];
+                });
+            })
+            .then(function (controls) {
+                var controlMap = groupActiveControls(controls);
+                onlinePlayers.forEach(function (p) {
+                    p.ActiveControls = controlMap[p.ID] || [];
+                });
             })
             .then(function () {
                 var $sec = $('#onlinePlayersSection');
@@ -151,10 +209,6 @@
                 current.INHALL = current.INHALL || false;
                 $('#modalPlayerAccount').text('玩家账号:' + row.ID);
                 $('#modalPlayerName').text('玩家名称:' + (row.NAME || row.ID));
-                var $black = $('#modalBlacklistBtn');
-                if ($black.length) {
-                    $black.text(Number(row.FROZEN) === 1 ? '解除拉黑' : '拉黑');
-                }
                 $('#playerModal').addClass('show');
             });
     }
@@ -163,31 +217,7 @@
         $('#playerModal').removeClass('show');
     }
 
-    function showPlayerDetails() {
-        if (!current) return;
-        var today = Number(current.TodayWinLoss || 0);
-        var total = Number(current.Profit || 0);
-        var html = '' +
-            '<div style="font-size:14px; line-height:1.8; text-align:left; width:100%;">' +
-                '<div>账号: <b>' + M.esc(current.ID) + '</b></div>' +
-                '<div>昵称: ' + M.esc(current.NAME || '--') + '</div>' +
-                '<div>代理: ' + M.esc(current.AGENCY || '--') + '</div>' +
-                '<div>剩余分数: <span class="positive">' + M.num(current.GAME_SCORE || 0) + '</span></div>' +
-                '<div>剩余金币: <span style="color:#007aff;">' + M.gold(current.COINS) + '</span></div>' +
-                '<div>保险柜: ' + M.gold(current.SAFE_COINS) + '</div>' +
-                '<div>今日输赢: <span class="' + (today >= 0 ? 'positive' : 'negative') + '">' + (today >= 0 ? '+' : '') + M.gold(today) + '</span></div>' +
-                '<div>总输赢: <span class="' + (total >= 0 ? 'positive' : 'negative') + '">' + (total >= 0 ? '+' : '') + M.gold(total) + '</span></div>' +
-                '<div>总充值: ' + M.gold(current.COINS_BUY) + ' / 总兑换: ' + M.gold(current.COINS_BACK) + '</div>' +
-                (Number(current.FROZEN) === 1 ? '<div style="color:#ff3b30;">状态: 已拉黑</div>' : '') +
-            '</div>';
-        M.modal({
-            title: '玩家详情',
-            bodyHTML: html,
-            buttons: [{ label: '关闭', value: null, type: 'confirm' }]
-        });
-    }
-
-    /** 玩家当日游戏记录（中奖历史 / 游戏轨迹共用） */
+    /** 玩家当日游戏记录（中奖历史 / 游戏记录共用） */
     function loadPlayerRecords(account) {
         return M.post('/Game/UserRecord/GetUserRecords', { ID: account, TIME: todayStr(), page: 1, rows: 20 })
             .then(function (list) {
@@ -241,41 +271,14 @@
                         ' 输赢 <span class="' + (Number(r.SCORE || 0) >= 0 ? 'positive' : 'negative') + '">' + M.gold(r.SCORE) + '</span></div>';
                 }).join('');
                 body = '<div style="width:100%; font-family:ui-monospace,monospace; background:#f8f9fa; padding:12px; border-radius:8px; border-left:4px solid #5856D6; font-size:13px; line-height:1.7; max-height:320px; overflow-y:auto; text-align:left;">' +
-                    '账号 ' + M.esc(current.ID) + ' 的今日游戏轨迹:' + lines + '</div>';
+                    '账号 ' + M.esc(current.ID) + ' 的今日游戏记录:' + lines + '</div>';
             }
             M.modal({
-                title: '游戏轨迹',
+                title: '游戏记录',
                 bodyHTML: body,
                 buttons: [{ label: '关闭', value: null, type: 'confirm' }]
             });
         });
-    }
-
-    function toggleBlacklist() {
-        if (!current) return;
-        var frozen = Number(current.FROZEN) === 1;
-        var acc = current.ID;
-        var doIt = function (target) {
-            M.loading('处理中...');
-            M.post('/Game/UserInfo/FrozenUser', { ID: acc, frozen: target }).always(M.hideLoading).then(function (res) {
-                var r = M.result(res);
-                M.alert(r.text, r.ok, r.ok ? '操作成功' : '操作失败').then(function () {
-                    if (r.ok) {
-                        current.FROZEN = target;
-                        $('#modalBlacklistBtn').text(target === 1 ? '解除拉黑' : '拉黑');
-                        loadOnline();
-                        if (offlineLoaded) loadOffline(1, false);
-                    }
-                });
-            });
-        };
-        if (frozen) {
-            doIt(0);
-        } else {
-            M.confirm('确定要拉黑玩家 ' + acc + ' 吗？', '拉黑玩家').then(function (ok) {
-                if (ok) doIt(1);
-            });
-        }
     }
 
     /* ---------------- 搜索 ---------------- */
@@ -361,12 +364,16 @@
             if (!current) return;
             window.location.href = '/Mobile/Home/Recharge?id=' + encodeURIComponent(current.ID) + '&pay=0&role=player';
         });
-        $('#modalRewardBtn').on('click', function () {
+        // 控制：跳转控制管理页（吃分/放水/控牌），预填玩家账号
+        $('#modalControlBtn').on('click', function () {
             if (!current) return;
-            window.location.href = '/Mobile/Home/Songjiang?id=' + encodeURIComponent(current.ID);
+            window.location.href = '/Mobile/Home/Control?id=' + encodeURIComponent(current.ID);
         });
-        $('#modalBlacklistBtn').on('click', toggleBlacklist);
-        $('#modalDetailsBtn').on('click', showPlayerDetails);
+        // 玩家详细：独立页面展示
+        $('#modalDetailsBtn').on('click', function () {
+            if (!current) return;
+            window.location.href = '/Mobile/Home/PlayerDetail?id=' + encodeURIComponent(current.ID);
+        });
         $('#modalPrizeHistoryBtn').on('click', showPrizeHistory);
         $('#modalTrackBtn').on('click', showGameTrack);
 

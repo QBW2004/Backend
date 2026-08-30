@@ -1,0 +1,226 @@
+﻿@{
+    /* 玩家详细信息（独立页面，替代原玩家弹窗里的详情浮层）
+       数据源：/Game/UserInfo/GetUserDetail（含总控状态 Controls）
+       操作：密码修改 /Game/UserInfo/ChgPwd；游戏记录 /Game/UserRecord/GetUserRecords */
+    string webVer = ConfigHelper.Get("WebVer");
+    string playerAccount = (string)(ViewBag.PlayerAccount ?? "");
+    bool canModifyPwd = ViewBag.CanModifyPwd == true;
+    bool canControl = ViewBag.CanControl == true;
+    Layout = "~/Views/Shared/Layout/_MobileLayout.cshtml";
+}
+
+@section head {
+<style>
+    .container {
+        padding: 12px;
+        max-width: 720px;
+        margin: 0 auto;
+    }
+
+    /* 详情卡片 */
+    .detail-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        padding: 4px 16px;
+        margin-bottom: 20px;
+    }
+
+    .d-row {
+        display: flex;
+        align-items: center;
+        padding: 13px 0;
+        border-bottom: 1px solid #f0f0f0;
+        font-size: 14px;
+        min-height: 24px;
+    }
+
+    .d-row:last-child {
+        border-bottom: none;
+    }
+
+    .d-label {
+        width: 92px;
+        flex-shrink: 0;
+        color: #86868b;
+    }
+
+    .d-value {
+        flex: 1;
+        color: #1d1d1f;
+        font-weight: 500;
+        word-break: break-all;
+        min-width: 0;
+    }
+
+    .d-value.muted {
+        color: #8e8e93;
+        font-weight: 400;
+    }
+
+    .d-extra {
+        flex-shrink: 0;
+        display: flex;
+        gap: 8px;
+        margin-left: 8px;
+    }
+
+    .d-btn {
+        border: none;
+        border-radius: 6px;
+        padding: 6px 14px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        -webkit-appearance: none;
+        appearance: none;
+        white-space: nowrap;
+    }
+
+    .d-btn:active {
+        transform: scale(0.97);
+    }
+
+    .d-btn.blue {
+        background: rgba(0, 122, 255, 0.12);
+        color: #007aff;
+    }
+
+    .d-btn.red {
+        background: rgba(255, 59, 48, 0.1);
+        color: #ff3b30;
+    }
+
+    .d-btn.purple {
+        background: rgba(114, 46, 209, 0.1);
+        color: #722ed1;
+    }
+
+    .d-value .positive {
+        color: #34c759;
+    }
+
+    .d-value .negative {
+        color: #ff3b30;
+    }
+
+    .d-value .blue {
+        color: #007aff;
+    }
+
+    /* 控制状态多行 */
+    .ctrl-status-list {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        align-items: flex-start;
+    }
+
+    .ctrl-status-item {
+        color: #ff3b30;
+        font-weight: 500;
+        font-size: 13px;
+    }
+
+    /* 底部操作按钮 */
+    .page-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding-bottom: 24px;
+    }
+
+    .page-action-btn {
+        height: 48px;
+        border: none;
+        border-radius: 10px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        width: 100%;
+        -webkit-appearance: none;
+        appearance: none;
+        transition: opacity 0.2s;
+    }
+
+    .page-action-btn:active {
+        opacity: 0.85;
+    }
+
+    .page-action-btn.primary {
+        background: #007aff;
+        color: white;
+    }
+
+    .page-action-btn.orange {
+        background: #fff7e6;
+        color: #fa8c16;
+    }
+
+    .page-action-btn.purple {
+        background: #f9f0ff;
+        color: #722ed1;
+    }
+
+    .page-action-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+</style>
+}
+
+    <div class="container">
+        <div class="detail-card" id="detailCard">
+            <div class="d-row"><span class="d-label">注册时间</span><span class="d-value" id="dCreateTime">--</span></div>
+            <div class="d-row"><span class="d-label">最后登入</span><span class="d-value" id="dLastLogin">--</span></div>
+            <div class="d-row"><span class="d-label">玩家账号</span><span class="d-value" id="dAccount">--</span></div>
+            <div class="d-row">
+                <span class="d-label">密码</span>
+                <span class="d-value" id="dPwd">--</span>
+                <span class="d-extra">
+                    <button class="d-btn blue" id="btnCopyPwd" type="button" style="display:none;">复制</button>
+                    @if (canModifyPwd)
+                    {
+                        <button class="d-btn red" id="btnChgPwd" type="button">修改</button>
+                    }
+                </span>
+            </div>
+            <div class="d-row"><span class="d-label">玩家名称</span><span class="d-value" id="dName">--</span></div>
+            <div class="d-row">
+                <span class="d-label">控制状态</span>
+                <span class="d-value muted" id="dControl">--</span>
+                @if (canControl)
+                {
+                    <span class="d-extra">
+                        <button class="d-btn purple" id="btnControl" type="button">设置</button>
+                    </span>
+                }
+            </div>
+            <div class="d-row"><span class="d-label">剩余分数</span><span class="d-value" id="dScore">--</span></div>
+            <div class="d-row"><span class="d-label">剩余金币</span><span class="d-value" id="dCoins">--</span></div>
+            <div class="d-row"><span class="d-label">今日充值</span><span class="d-value" id="dTodayBuy">--</span></div>
+            <div class="d-row"><span class="d-label">今日退分</span><span class="d-value" id="dTodayBack">--</span></div>
+            <div class="d-row"><span class="d-label">今日盈亏</span><span class="d-value" id="dTodayWinLoss">--</span></div>
+            <div class="d-row"><span class="d-label">总充值</span><span class="d-value" id="dTotalBuy">--</span></div>
+            <div class="d-row"><span class="d-label">总退分</span><span class="d-value" id="dTotalBack">--</span></div>
+            <div class="d-row"><span class="d-label">总盈亏</span><span class="d-value" id="dTotalWinLoss">--</span></div>
+            <div class="d-row"><span class="d-label">所属代理</span><span class="d-value" id="dAgency">--</span></div>
+            <div class="d-row"><span class="d-label">邀请码</span><span class="d-value" id="dInviteCode">--</span></div>
+        </div>
+
+        <div class="page-actions">
+            <button class="page-action-btn primary" id="btnRecharge" type="button" disabled>充值</button>
+            <button class="page-action-btn orange" id="btnPrizeHistory" type="button" disabled>中奖历史</button>
+            <button class="page-action-btn purple" id="btnGameTrack" type="button" disabled>游戏轨迹</button>
+        </div>
+    </div>
+
+@section scripts {
+    <script>
+        window.MPagePreset = {
+            account: '@Html.Raw(HttpUtility.JavaScriptStringEncode(playerAccount))',
+            canModifyPwd: @Html.Raw(canModifyPwd ? "true" : "false")
+        };
+    </script>
+    <script src="@Url.Content("~/Scripts/app/phone/phone.playerdetail.js?v=" + webVer)"></script>
+}

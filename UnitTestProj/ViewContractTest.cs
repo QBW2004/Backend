@@ -317,6 +317,19 @@ namespace UnitTestProj
         }
 
         [TestMethod]
+        public void MobileAddAgentUsesSinglePasswordAndBackfillsMissingConfirmation()
+        {
+            string view = ReadRepoFile(@"TTY.Web\Areas\Mobile\Views\Home\AddAgent.cshtml");
+            string script = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.addagent.js");
+            string controller = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\AgencyInfoController.cs");
+
+            Assert.IsFalse(view.Contains("agentPassword2"));
+            Assert.IsFalse(script.Contains("password2"));
+            Assert.IsFalse(script.Contains("RE_PWD:"));
+            StringAssert.Contains(controller, "form.Set(\"RE_PWD\", form[\"PWD\"])");
+        }
+
+        [TestMethod]
         public void FirstLevelAgentKickAllUsesManageScopeForVisibleUserRange()
         {
             string userInfoView = ReadRepoFile(@"TTY.Web\Areas\Game\Views\UserInfo\Index.cshtml");

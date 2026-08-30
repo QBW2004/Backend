@@ -24,7 +24,7 @@ param(
 
 $ErrorActionPreference = "Continue"
 
-$root = Resolve-Path (Join-Path $PSScriptRoot "..")
+$root = Resolve-Path (Join-Path $PSScriptRoot "..\..")
 $composeFile = Join-Path $root "docker-compose.yml"
 
 # Docker 可执行文件(固定路径, 规避 PATH 问题)

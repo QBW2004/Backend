@@ -1,5 +1,5 @@
 ﻿@{
-    /* 异常账号（1:1 复刻参考站 yichangzhanghu） */
+    /* 冻结明细（原"异常账号"，参考站 yichangzhanghu） */
     string webVer = ConfigHelper.Get("WebVer");
     Layout = "~/Views/Shared/Layout/_MobileLayout.cshtml";
 }
@@ -119,7 +119,7 @@
 
     <div class="container">
         <div class="stats-container">
-            <div class="stats-title">异常账号统计</div>
+            <div class="stats-title">冻结账号统计</div>
             <div class="stats-info">
                 <div class="stats-item">
                     <div class="stats-label">玩家账号:</div>
@@ -144,7 +144,7 @@
                 </thead>
                 <tbody id="accountList"></tbody>
             </table>
-            <div class="no-data" id="noData" style="display: block;">暂无异常账号</div>
+            <div class="no-data" id="noData" style="display: block;">暂无冻结账号</div>
         </div>
     </div>
 

@@ -82,7 +82,8 @@ namespace YYT.Web.Controllers
             string upwd = form.Q<string>("upwd", "").Trim();
 
             M_LoginUser loginUser;
-            string errorMsg = TryLogin(uname, upwd, out loginUser);
+            bool banned;
+            string errorMsg = TryLogin(uname, upwd, out loginUser, out banned);
             if (!string.IsNullOrEmpty(errorMsg))
             {
                 TempData["msg"] = errorMsg;
@@ -138,19 +139,21 @@ namespace YYT.Web.Controllers
             string upwd = form.Q<string>("upwd", "").Trim();
 
             M_LoginUser loginUser;
+            bool banned;
             string errorMsg;
             try
             {
-                errorMsg = TryLogin(uname, upwd, out loginUser);
+                errorMsg = TryLogin(uname, upwd, out loginUser, out banned);
             }
             catch (Exception ex)
             {
                 LogHelper.WriteLog(typeof(LoginController), ex.Message + "手机端登录失败！");
                 errorMsg = "登录失败。";
+                banned = false;
             }
 
             if (!string.IsNullOrEmpty(errorMsg))
-                return Json(new { code = 0, msg = errorMsg });
+                return Json(new { code = 0, msg = errorMsg, banned = banned });
 
             return Json(new { code = 1, msg = "ok" });
         }
@@ -158,15 +161,17 @@ namespace YYT.Web.Controllers
 
         #region 登录校验（桌面端 / 手机端共用）
         /// <summary>
-        /// 统一登录校验：超级管理员旁路、失败锁定、非法字符、数据库校验，成功时写入会话。
+        /// 统一登录校验：失败锁定、非法字符、数据库校验，成功时返回登录会话模型。
         /// </summary>
         /// <param name="uname">账号</param>
         /// <param name="upwd">密码</param>
         /// <param name="loginUser">成功时返回登录会话模型</param>
+        /// <param name="banned">账号存在但被禁用时为 true，errorMsg 即禁用提示（封号提示），登录页需弹窗展示</param>
         /// <returns>错误消息；成功返回空字符串</returns>
-        private string TryLogin(string uname, string upwd, out M_LoginUser loginUser)
+        private string TryLogin(string uname, string upwd, out M_LoginUser loginUser, out bool banned)
         {
             loginUser = null;
+            banned = false;
             string clientIP = WebHelper.GetClientIP();
 
             if (string.IsNullOrWhiteSpace(uname))
@@ -218,6 +223,13 @@ namespace YYT.Web.Controllers
                     LogHelper.WriteLog(typeof(LoginController), model.LoginMsg + "登录失败！");
                     missEntity.LoginResult = 0;
                     missBll.UpadteRecord(missEntity);
+
+                    // 账号存在但被禁用：直接弹出禁用时的封号提示
+                    if (model.RE_ENABLE == 0 && !string.IsNullOrWhiteSpace(model.LoginMsg))
+                    {
+                        banned = true;
+                        return model.LoginMsg;
+                    }
                     return model.LoginMsg + "登录失败！";
                 }
             }

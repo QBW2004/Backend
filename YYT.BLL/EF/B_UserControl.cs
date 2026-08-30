@@ -349,6 +349,83 @@ namespace YYT.BLL.EF
         }
 
         /// <summary>
+        /// 手机端控制管理：总控记录分页（GameType=9，按设置时间倒序）。
+        /// 非超管仅限代理线内玩家；activeCount 返回筛选范围内执行中的控制条数。
+        /// 控牌行的牌型名/次数由前端按 GameId(=cardAction)+KillRatio(=cardValue)+TargetCoins(=cardNumber) 解析。
+        /// </summary>
+        public M_EasyuiGridData<M_UserControlStatus_DTO> GetTotalControlRecords(M_Page mPage, M_LoginUser loginUser, DateTime? startTime, DateTime? endTime, out int activeCount)
+        {
+            var list = new M_EasyuiGridData<M_UserControlStatus_DTO>();
+            activeCount = 0;
+            if (loginUser == null)
+                return list;
+            try
+            {
+                using (var ef = new GameDbContext())
+                {
+                    var rst = from c in ef.UserControlStatuses
+                              join u in ef.Users on c.UserID equals u.ID into gu
+                              from u in gu.DefaultIfEmpty()
+                              where c.GameType == GAMETYPE_TOTAL
+                              select new
+                              {
+                                  c.ID,
+                                  c.UserID,
+                                  c.GameId,
+                                  c.ControlMode,
+                                  c.TargetCoins,
+                                  c.ConsumedCoins,
+                                  c.GrantedCoins,
+                                  c.KillRatio,
+                                  c.Status,
+                                  c.CreatedBy,
+                                  c.CreatedTime,
+                                  AGENCY = u == null ? null : u.AGENCY
+                              };
+
+                    if (loginUser.UserPriv > 0)
+                    {
+                        var agencies = new B_Admin().GetAgencyLineAccounts(ef, loginUser.Accounts);
+                        rst = rst.Where(c => agencies.Contains(c.AGENCY));
+                    }
+                    if (startTime != null)
+                        rst = rst.Where(c => c.CreatedTime >= startTime.Value);
+                    if (endTime != null)
+                        rst = rst.Where(c => c.CreatedTime < endTime.Value);
+
+                    activeCount = rst.Count(c => c.Status == (int)EControlStatus.Active);
+                    mPage.SetTotalCount(rst.Count());
+                    list.rows = rst
+                        .OrderByDescending(c => c.ID)
+                        .Skip(mPage.PageSize * (mPage.PageIndex - 1)).Take(mPage.PageSize)
+                        .ToList()
+                        .Select(c => new M_UserControlStatus_DTO
+                        {
+                            ID = c.ID,
+                            UserID = c.UserID,
+                            GameType = GAMETYPE_TOTAL,
+                            GameId = c.GameId,
+                            ControlMode = c.ControlMode,
+                            TargetCoins = c.TargetCoins,
+                            ConsumedCoins = c.ConsumedCoins,
+                            GrantedCoins = c.GrantedCoins,
+                            LimitCoins = c.KillRatio,
+                            Status = c.Status,
+                            CreatedBy = c.CreatedBy,
+                            CreatedTime = c.CreatedTime.ToString("yyyy-MM-dd HH:mm:ss")
+                        })
+                        .ToList();
+                    list.total = mPage.TotalCount;
+                }
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(B_UserControl), ex);
+            }
+            return list;
+        }
+
+        /// <summary>
         /// 下发 UC 扩展指令：UC + 指令码(2位) + 金额(12位左补零) + 游戏ID(4位左补零) + 目标账号（"*"=机台范围）
         /// </summary>
         private Msg SendUcCommand(int mode, long amount, int gameId, string target)

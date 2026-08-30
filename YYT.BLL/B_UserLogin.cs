@@ -57,13 +57,46 @@ namespace YYT.BLL
                     loginUser.IsDelete = rst.IsDelete;
                     return loginUser;
                 }
+
+                // 账号存在但被禁用（RE_ENABLE=0）：带出禁用时的封号提示，登录页弹窗展示
+                M_Admin disabled = ef.Admins.FirstOrDefault(c => c.ID.Equals(accounts) && c.RE_ENABLE == 0);
+                if (disabled != null)
+                {
+                    loginUser = disabled.ToLoginUser();
+                    loginUser.UserPriv = loginUser.UserType = -1;
+                    loginUser.Accounts = loginUser.UserName = accounts;
+                    loginUser.LoginMsg = GetLatestBanMsg(ef, accounts);
+                    return loginUser;
+                }
             }
             loginUser = new M_Admin().ToLoginUser();
             loginUser.UserPriv = loginUser.UserType = -1;
-            loginUser.RE_ENABLE = 0;
             loginUser.Accounts = loginUser.UserName = accounts;
-            
+
             return loginUser;
+        }
+
+        /// <summary>
+        /// 最近一次封禁该代理时填写的封号提示（agencyoptlog OPT=24）；
+        /// 没有记录或提示为空时返回默认文案。
+        /// </summary>
+        private static string GetLatestBanMsg(GameDbContext ef, string accounts)
+        {
+            try
+            {
+                string msg = ef.AgencyOptLogs
+                    .Where(l => l.ID.Equals(accounts) && l.OPT == 24)
+                    .OrderByDescending(l => l.LID)
+                    .Select(l => l.DestUserTitle)
+                    .FirstOrDefault();
+                if (!string.IsNullOrWhiteSpace(msg) && msg != "代理封号" && msg != "拉黑")
+                    return msg;
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(B_UserLogin), ex);
+            }
+            return "该账号已被禁用，请联系上级代理！";
         }
         #endregion
 

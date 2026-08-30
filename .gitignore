@@ -31,6 +31,9 @@ Desktop.ini
 # Node
 node_modules/
 
+# Python 字节码缓存（Tools/one-off 下一次性脚本）
+__pycache__/
+
 # Backups / archives
 *.zip
 *.rar

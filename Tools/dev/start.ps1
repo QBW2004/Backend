@@ -4,8 +4,8 @@ param(
 )
 
 $iis = "C:\Program Files\IIS Express\iisexpress.exe"
-$config = Join-Path (Resolve-Path (Join-Path $PSScriptRoot "..")) "apphost.config"
-$webroot = Join-Path (Resolve-Path (Join-Path $PSScriptRoot "..")) "TTY.Web"
+$config = Join-Path (Resolve-Path (Join-Path $PSScriptRoot "..\..")) "apphost.config"
+$webroot = Join-Path (Resolve-Path (Join-Path $PSScriptRoot "..\..")) "TTY.Web"
 
 if ($Stop) {
     Get-Process iisexpress -ErrorAction SilentlyContinue | Stop-Process -Force

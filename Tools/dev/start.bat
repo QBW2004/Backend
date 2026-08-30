@@ -8,8 +8,8 @@ if not exist "%IIS%" (
     exit /b 1
 )
 
-set "CONFIG=%~dp0..\apphost.config"
-set "WEBROOT=%~dp0..\TTY.Web"
+set "CONFIG=%~dp0..\..\apphost.config"
+set "WEBROOT=%~dp0..\..\TTY.Web"
 
 if exist "%CONFIG%" (
     echo Starting MTH-Backend (apphost.config) ...

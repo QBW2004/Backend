@@ -21,7 +21,6 @@
         if (!password) { M.toast('请输入密码', 'error'); return; }
         if (password.length < 6) { M.toast('密码长度不能小于6个字符', 'error'); return; }
         if (!/^[a-zA-Z0-9]+$/.test(password)) { M.toast('密码只能是英文字母和数字', 'error'); return; }
-
         setSubmitting(true);
         M.post('/Game/AgencyInfo/AddAgencyInfo', {
             FLAG: 0,

@@ -1,5 +1,5 @@
 ﻿@{
-    /* 玩家封号（1:1 复刻参考站 fenghao） */
+    /* 冻结账号（原"玩家封号"，参考站 fenghao） */
     string webVer = ConfigHelper.Get("WebVer");
     Layout = "~/Views/Shared/Layout/_MobileLayout.cshtml";
 }
@@ -73,7 +73,7 @@
 
     <div class="container">
         <div class="input-section">
-            <div class="section-title">玩家封号</div>
+            <div class="section-title">冻结账号</div>
             <table style="width:100%; border-collapse:collapse;">
                 <tbody>
                     <tr>
@@ -81,7 +81,7 @@
                             <input type="text" id="playerIdInput" class="input-field" style="width:100%; box-sizing:border-box;" placeholder="输入玩家账号" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
                         </td>
                         <td style="width:30%;">
-                            <button id="banBtn" class="ban-btn" style="width:100%;">封禁账号</button>
+                            <button id="banBtn" class="ban-btn" style="width:100%;">冻结账号</button>
                         </td>
                     </tr>
                 </tbody>
@@ -94,7 +94,7 @@
                     <tr>
                         <th style="width: 40%;">玩家账号</th>
                         <th style="width: 20%;">操作</th>
-                        <th style="width: 40%;">封禁时间</th>
+                        <th style="width: 40%;">冻结时间</th>
                     </tr>
                 </thead>
                 <tbody id="banList"></tbody>

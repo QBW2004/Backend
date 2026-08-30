@@ -1,7 +1,8 @@
 /* ============================================================
    我的代理页（1:1 复刻参考站 wodedaili）
    数据源：/Game/AgencyInfo/GetAgencies
-   交互：面包屑逐级下钻、按账号/邀请码搜索
+   交互：面包屑逐级下钻、按账号/邀请码搜索、
+         下级代理数量框下钻、我的会员"查看"跳会员盈亏页（?agency= 过滤直属会员）
    ============================================================ */
 (function (window, $, M) {
     'use strict';
@@ -44,11 +45,14 @@
         }
         $('#noData').hide();
         $body.html(rows.map(function (a) {
+            var subCount = Number(a.SubAgencyCount || 0);
             return '<tr data-id="' + M.esc(a.ID) + '">' +
                 '<td class="account-cell">' + M.esc(a.ID) + '</td>' +
                 '<td>' + M.gold(a.COINS) + '</td>' +
-                '<td>' + (a.HasChildAgency ? '<span class="unban-btn">查看下级</span>' : '0') + '</td>' +
-                '<td>' + M.num(a.PlayerBalance != null ? a.PlayerBalance : 0) + '</td>' +
+                '<td>' + (subCount > 0
+                    ? '<span class="sub-agents-btn" data-id="' + M.esc(a.ID) + '">' + subCount + '个</span>'
+                    : '<span class="sub-agents-btn none">0个</span>') + '</td>' +
+                '<td><span class="member-view-btn" data-id="' + M.esc(a.ID) + '">查看</span></td>' +
                 '<td>' + M.esc(a.InviteCode || '--') + '</td>' +
                 '<td class="time-cell">' + M.fmtTime(a.UpdateTime) + '</td>' +
                 '<td class="time-cell">' + M.fmtTime(a.CreateTime) + '</td>' +
@@ -103,8 +107,9 @@
         if (type === 'account') {
             dfd = fetchAgencies({ ID: kw }).then(function (list) { return (list && list.rows) || []; });
         } else {
+            // 邀请码模糊匹配（包含即命中）
             dfd = fetchAllOnce().then(function (rows) {
-                return $.grep(rows, function (a) { return String(a.InviteCode || '') === kw; });
+                return $.grep(rows, function (a) { return String(a.InviteCode || '').indexOf(kw) >= 0; });
             });
         }
 
@@ -143,6 +148,20 @@
         $('#agentList').on('click', 'tr', function () {
             var id = $(this).data('id');
             if (id) pushCrumb(String(id), String(id));
+        });
+
+        // 下级代理数量框：下钻查看该代理的子代理（阻止冒泡避免触发两次 pushCrumb）
+        $('#agentList').on('click', '.sub-agents-btn:not(.none)', function (e) {
+            e.stopPropagation();
+            var id = String($(this).data('id') || '');
+            if (id) pushCrumb(id, id);
+        });
+
+        // 我的会员"查看"：跳转会员盈亏页并按该代理过滤直属会员
+        $('#agentList').on('click', '.member-view-btn', function (e) {
+            e.stopPropagation();
+            var id = String($(this).data('id') || '');
+            if (id) window.location.href = '/Mobile/Home/Huiyuan?agency=' + encodeURIComponent(id);
         });
 
         // 搜索弹窗

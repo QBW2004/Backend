@@ -395,6 +395,149 @@ namespace YYT.Web.Areas.Game.Controllers
             }
             return Json(list);
         }
+
+        /// <summary>
+        /// 手机端：会员盈亏统计卡（权限范围内，支持代理过滤）。
+        /// 口径：总盈亏 = 总充值 - 总退钻（与用户管理页总盈利同口径），今日盈亏 = 今日充值 - 今日退钻。
+        /// </summary>
+        [MemberAuthorize]
+        [AjaxOnly]
+        [HttpPost]
+        public ActionResult GetMemberWinLossStats(FormCollection form)
+        {
+            Msg msg = new Msg(0, "查询失败！");
+            try
+            {
+                M_LoginUser loginUser = WebHelper.GetLoginInfo();
+                if (loginUser == null)
+                    return Json(msg);
+
+                M_MemberWinLossStats stats = new B_Users().GetMemberWinLossStats(loginUser, form.Q<string>("srch_Agency"));
+                long totalBuy = stats.TotalBuy ?? 0;
+                long totalBack = stats.TotalBack ?? 0;
+                long todayBuy = stats.TodayBuy ?? 0;
+                long todayBack = stats.TodayBack ?? 0;
+                msg.code = 1;
+                msg.content = "查询成功！";
+                msg.datas = new
+                {
+                    TotalBuy = totalBuy,
+                    TotalBack = totalBack,
+                    TotalProfit = totalBuy - totalBack,
+                    TodayBuy = todayBuy,
+                    TodayBack = todayBack,
+                    TodayProfit = todayBuy - todayBack
+                };
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.UserInfoController), ex);
+            }
+            return Json(msg);
+        }
+
+        /// <summary>
+        /// 手机端控制管理：总控记录分页（GameType=9，按设置时间倒序）。
+        /// 返回 { total, rows, activeCount }；StartTime/EndTime 为 yyyy-MM-dd（End 含当天，闭区间）。
+        /// 控牌行的牌型名由前端按 GameId(=cardAction)+LimitCoins(=cardValue)+TargetCoins(=cardNumber) 解析。
+        /// </summary>
+        [MemberAuthorize]
+        [AjaxOnly]
+        [HttpPost]
+        public ActionResult GetControlRecords(FormCollection form)
+        {
+            var list = new M_EasyuiGridData<M_UserControlStatus_DTO>();
+            try
+            {
+                M_LoginUser loginUser = WebHelper.GetLoginInfo();
+                if (loginUser == null)
+                    return Json(list);
+
+                DateTime? start = ParseDateOrNull(form.Q<string>("StartTime"));
+                DateTime? end = ParseDateOrNull(form.Q<string>("EndTime"));
+                if (end != null)
+                    end = end.Value.AddDays(1); // 结束日期含当天
+
+                M_Page mPage = new M_Page(form.Q<int>("page", 1), form.Q<int>("rows", 20));
+                int activeCount;
+                list = new B_UserControl().GetTotalControlRecords(mPage, loginUser, start, end, out activeCount);
+                return Json(new { total = list.total, rows = list.rows, activeCount = activeCount });
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.UserInfoController), ex);
+            }
+            return Json(list);
+        }
+
+        private static DateTime? ParseDateOrNull(string value)
+        {
+            DateTime d;
+            if (string.IsNullOrWhiteSpace(value))
+                return null;
+            return DateTime.TryParse(value.Trim(), out d) ? d.Date : (DateTime?)null;
+        }
+
+        /// <summary>
+        /// 手机端：玩家详情页数据（注册/最后登录/今日与累计充退/总控状态/邀请码）。
+        /// 返回 datas = { 玩家基础字段..., Controls = [当前执行中的总控] }，Controls 复用
+        /// B_UserControl.GetTotalControlStatus（含吃分/放水阈值进度与控牌次数）。
+        /// </summary>
+        [MemberAuthorize]
+        [AjaxOnly]
+        [HttpPost]
+        public ActionResult GetUserDetail(FormCollection form)
+        {
+            Msg msg = new Msg(0, "查询失败！");
+            try
+            {
+                string id = form.Q<string>("ID");
+                if (string.IsNullOrWhiteSpace(id))
+                {
+                    msg.content = "玩家账号不能为空！";
+                    return Json(msg);
+                }
+
+                M_LoginUser loginUser = WebHelper.GetLoginInfo();
+                if (loginUser == null)
+                    return Json(msg);
+
+                M_UserPhoneDetail detail = new B_Users().GetUserPhoneDetail(id, loginUser);
+                if (detail == null)
+                {
+                    msg.content = "未找到该玩家，或其不在您的代理线内！";
+                    return Json(msg);
+                }
+
+                Msg ctrl = new B_UserControl().GetTotalControlStatus(loginUser, id);
+                msg.code = 1;
+                msg.content = "查询成功！";
+                msg.datas = new
+                {
+                    detail.ID,
+                    detail.NAME,
+                    detail.PWD,
+                    detail.AGENCY,
+                    detail.FROZEN,
+                    detail.GAME_SCORE,
+                    detail.COINS,
+                    detail.COINS_BUY,
+                    detail.COINS_BACK,
+                    detail.TodayWinLoss,
+                    detail.TodayBuy,
+                    detail.TodayBack,
+                    detail.CreateTime,
+                    detail.LastLoginTime,
+                    detail.InviteCode,
+                    Controls = (ctrl != null && ctrl.code == 1) ? ctrl.datas : null
+                };
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.UserInfoController), ex);
+            }
+            return Json(msg);
+        }
         #endregion
 
         [MemberAuthorize]

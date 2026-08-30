@@ -1,28 +1,30 @@
 /* ============================================================
-   代理封号页（1:1 复刻参考站 dailifenghao：代理黑名单）
+   禁用代理页（原"代理封号"，参考站 dailifenghao）
    数据源：
-     - /Game/AgencyInfo/BanAgent       封禁登录 + 记录封号提示
-     - /Game/AgencyInfo/UnbanAgent     解封登录
-     - /Game/AgencyInfo/GetBannedAgencies  封禁列表
+     - /Game/AgencyInfo/BanAgent       禁用登录 + 记录封号提示
+     - /Game/AgencyInfo/UnbanAgent     恢复登录
+     - /Game/AgencyInfo/GetBannedAgencies  禁用列表
      - /Game/AgencyInfo/GetBlacklistRecords 封号提示/时间（操作日志）
+   封号提示在该代理登录时于登录页弹窗展示（见 B_UserLogin.Login）。
    ============================================================ */
 (function (window, $, M) {
     'use strict';
 
     function loadList() {
+        // M.post resolve 的就是后端 JSON 本体（不是 jqXHR 三元组），$.when 后直接按 .rows 取
         return $.when(
             M.post('/Game/AgencyInfo/GetBannedAgencies', { page: 1, rows: 200 }),
             M.post('/Game/AgencyInfo/GetBlacklistRecords', { page: 1, rows: 500 })
         ).then(function (banned, logs) {
-            // 以最近一次拉黑日志补充封号提示与时间
+            // 以最近一次禁用日志补充封号提示与时间
             var msgMap = {};
-            $.each((logs && logs[0] && logs[0].rows) || [], function (i, r) {
+            $.each((logs && logs.rows) || [], function (i, r) {
                 if (Number(r.OPT) !== 24) return;
                 var id = String(r.ID || '');
                 if (!msgMap[id]) msgMap[id] = r;
             });
 
-            var rows = (banned && banned[0] && banned[0].rows) ? banned[0].rows : [];
+            var rows = (banned && banned.rows) ? banned.rows : [];
             var $body = $('#blacklistContainer');
             if (!rows.length) {
                 $body.empty();
@@ -35,7 +37,7 @@
                 return '<tr>' +
                     '<td>' + M.esc(a.ID) + '</td>' +
                     '<td class="ban-msg">' + M.esc(log ? (log.DestUserTitle || '--') : '--') + '</td>' +
-                    '<td><button class="remove-btn" data-id="' + M.esc(a.ID) + '">移除</button></td>' +
+                    '<td><button class="remove-btn" data-id="' + M.esc(a.ID) + '">恢复</button></td>' +
                     '<td class="ban-time">' + (log ? M.fmtTime(log.REC_TIME, true) : '--') + '</td>' +
                     '</tr>';
             }).join(''));
@@ -77,7 +79,7 @@
         });
         $('#blacklistContainer').on('click', '.remove-btn', function () {
             var id = $(this).data('id');
-            M.confirm('确定要将代理 ' + id + ' 移出黑名单吗？', '移除确认').then(function (ok) {
+            M.confirm('确定要恢复代理 ' + id + ' 的登录吗？', '恢复确认').then(function (ok) {
                 if (ok) unban(id);
             });
         });

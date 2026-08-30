@@ -6,10 +6,9 @@
     检测运行 MTH-Backend (YYT.Web, .NET Framework 4.8 + IIS + MySQL 5.7) 所需的服务器
     环境是否齐全。
 
-    默认行为: 直接运行(不加任何参数)就会先完整检测一遍并打印结果; 如果发现某个
-    必需项(Required)缺失, 会当场针对那一项询问 "是否现在安装/修复? (Y/N)", 不需要
-    额外的子命令或参数去触发安装, 检测和修复是同一次运行里连续完成的。
-    如果只想看检测结果、不想被逐项询问, 加 -CheckOnly。
+    默认行为: 直接运行(不加任何参数)就会先完整检测一遍并打印结果, 检测和修复是
+    同一次运行里连续完成的; 发现某个必需项(Required)缺失时不再逐项询问,
+    直接下载并静默安装修复。如果只想看检测结果、不做任何改动, 加 -CheckOnly。
 
     必需项 (Required):
       - 管理员权限
@@ -33,7 +32,8 @@
     仅检测并输出报告, 不询问、不做任何修复(供纯审计/巡检场景使用)。
 
 .PARAMETER Yes
-    检测到必需项缺失时跳过逐项询问, 直接尝试修复全部缺失项(无人值守)。
+    (已废弃) 自动修复现在是默认行为, 缺失必需项时不再询问、直接下载安装,
+    保留此开关只为兼容旧的调用方式, 传不传效果相同。
     仍需以管理员身份运行才会真正生效, 否则只会显示检测结果。
 
 .PARAMETER WebPort
@@ -50,13 +50,13 @@
 
 .EXAMPLE
     powershell -ExecutionPolicy Bypass -File env-check.ps1
-    # 默认: 检测一遍, 对每个缺失的必需项询问是否现在修复
+    # 默认: 检测一遍, 缺失的必需项直接下载安装修复(无需任何确认)
 .EXAMPLE
     powershell -ExecutionPolicy Bypass -File env-check.ps1 -CheckOnly
-    # 仅检测, 不询问, 不做任何修改(适合巡检/审计)
+    # 仅检测, 不做任何修改(适合巡检/审计)
 .EXAMPLE
-    powershell -ExecutionPolicy Bypass -File env-check.ps1 -Yes -InitSchema
-    # 检测到缺失项直接全部修复(无人值守), MySQL 全新安装时顺便导入基础表结构
+    powershell -ExecutionPolicy Bypass -File env-check.ps1 -InitSchema
+    # 检测到缺失项直接全部修复, MySQL 全新安装时顺便导入基础表结构
 #>
 param(
     [switch]$CheckOnly,
@@ -435,7 +435,7 @@ default-character-set=utf8mb4
 
 function Invoke-SchemaImport {
     param([string]$RootPassword)
-    $initDir = Join-Path $PSScriptRoot '..\docker\mysql\init'
+    $initDir = Join-Path $PSScriptRoot '..\..\docker\mysql\init'
     $mysqlExe = 'C:\mysql\bin\mysql.exe'
     if (-not (Test-Path $initDir)) {
         Write-Host '    未找到 docker\mysql\init 目录 (脚本未随完整仓库拷贝), 跳过表结构导入。' -ForegroundColor Yellow
@@ -556,18 +556,8 @@ foreach ($chk in $checks) {
     Write-CheckLine -Name $chk.Name -Result $r -Category $chk.Category
 
     if ($chk.Category -eq 'Required' -and -not $r.Ok -and $chk.Fix) {
-        $attemptFix = $false
-        if ($canAttemptFix) {
-            if ($Yes) {
-                $attemptFix = $true
-            } elseif ([Environment]::UserInteractive) {
-                $answer = Read-Host "    -> 安装/修复 [$($chk.Name)] ? (Y/N)"
-                $attemptFix = ($answer -match '^[Yy]')
-                if (-not $attemptFix) { Write-Host '    已跳过' -ForegroundColor DarkGray }
-            } else {
-                Write-Host '    非交互式会话且未指定 -Yes, 跳过修复(仅报告)' -ForegroundColor DarkGray
-            }
-        }
+        # 缺失即修: 管理员权限 + 非 -CheckOnly 时直接下载安装, 不再逐项询问。
+        $attemptFix = $canAttemptFix
 
         if ($attemptFix) {
             Write-Host "    正在处理 $($chk.Name) ..." -ForegroundColor Cyan
@@ -604,7 +594,7 @@ if ($requiredFails.Count -eq 0) {
     $requiredFails | ForEach-Object { Write-Host "  - $($_.Name): $($_.Detail)" -ForegroundColor Red }
     Write-Host ''
     if ($CheckOnly) {
-        Write-Host '当前为仅检测模式(-CheckOnly), 未尝试任何修复。去掉该参数重新运行, 检测后会针对每个缺失项询问是否修复。' -ForegroundColor Yellow
+        Write-Host '当前为仅检测模式(-CheckOnly), 未尝试任何修复。以管理员身份去掉该参数重新运行, 缺失项会被直接下载安装。' -ForegroundColor Yellow
     } elseif (-not $isAdmin) {
         Write-Host '当前非管理员权限, 无法执行修复, 请以管理员身份重新运行本脚本。' -ForegroundColor Yellow
     }

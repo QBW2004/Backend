@@ -433,12 +433,13 @@ namespace YYT.BLL.EF
                               SAFE_COINS = c.SAFE_COINS
                           };
 
+                // 搜索统一模糊匹配（LIKE '%kw%'）
                 if (!string.IsNullOrWhiteSpace(entity.AGENCY))
-                    rst = rst.Where(c => c.AGENCY.Equals(entity.AGENCY));
+                    rst = rst.Where(c => c.AGENCY.Contains(entity.AGENCY));
                 if (!string.IsNullOrWhiteSpace(entity.NAME))
-                    rst = rst.Where(c => c.NAME.Equals(entity.NAME));
+                    rst = rst.Where(c => c.NAME.Contains(entity.NAME));
                 if (!string.IsNullOrWhiteSpace(entity.ID))
-                    rst = rst.Where(c => c.ID.Equals(entity.ID));
+                    rst = rst.Where(c => c.ID.Contains(entity.ID));
                 if (entity.UserID > 0)
                     rst = rst.Where(c => c.UserID == entity.UserID);
 
@@ -559,20 +560,21 @@ namespace YYT.BLL.EF
                     where.Append(" AND NOT (c.INHALL = 1)");
                 if (onlyFrozen)
                     where.Append(" AND c.FROZEN = 1");
+                // 搜索统一模糊匹配（LIKE '%kw%'）
                 if (!string.IsNullOrWhiteSpace(entity.AGENCY))
                 {
-                    where.Append(" AND c.AGENCY = {").Append(args.Count).Append("}");
-                    args.Add(entity.AGENCY);
+                    where.Append(" AND c.AGENCY LIKE {").Append(args.Count).Append("}");
+                    args.Add("%" + entity.AGENCY + "%");
                 }
                 if (!string.IsNullOrWhiteSpace(entity.NAME))
                 {
-                    where.Append(" AND c.NAME = {").Append(args.Count).Append("}");
-                    args.Add(entity.NAME);
+                    where.Append(" AND c.NAME LIKE {").Append(args.Count).Append("}");
+                    args.Add("%" + entity.NAME + "%");
                 }
                 if (!string.IsNullOrWhiteSpace(entity.ID))
                 {
-                    where.Append(" AND c.ID = {").Append(args.Count).Append("}");
-                    args.Add(entity.ID);
+                    where.Append(" AND c.ID LIKE {").Append(args.Count).Append("}");
+                    args.Add("%" + entity.ID + "%");
                 }
                 if (entity.UserID > 0)
                 {
@@ -622,7 +624,9 @@ namespace YYT.BLL.EF
                 mPage.SetTotalCount(total);
 
                 // 今日输赢一并 LEFT JOIN 取出（user_daily_winloss 主键 (UserID, DAY)，一次命中）；
-                // 最后登录时间取 UserOptLog 最新操作时间（UserID 存玩家账号）
+                // 最后登录时间取 UserOptLog 最新操作时间（UserID 存玩家账号）。
+                // ⚠️ whereSql 必须以 WHERE 落地：直接拼在 LEFT JOIN ON 后会把过滤/权限条件
+                // 变成 ON 条件，LEFT JOIN 不命中也保留左表行，等于过滤与代理权限全部失效。
                 args.Add(DateTime.Today);
                 string pageSql = "SELECT c.ID, c.NAME, c.AGENCY, c.FROZEN, c.COINS, c.COINS_BUY, c.COINS_BACK," +
                     " r.UserID, c.INHALL, c.GAME_SCORE, c.GRADE, c.SAFE_COINS," +
@@ -630,7 +634,7 @@ namespace YYT.BLL.EF
                     " FROM users c INNER JOIN userrelations r ON r.ID = c.ID" +
                     " LEFT JOIN user_daily_winloss w ON w.UserID = c.ID AND w.DAY = {" + (args.Count - 1) + "}" +
                     " LEFT JOIN (SELECT UserID, MAX(REC_TIME) AS LastLoginTime FROM `UserOptLog` GROUP BY UserID) l ON l.UserID = c.ID" +
-                    whereSql + orderClause +
+                    " WHERE 1=1" + whereSql + orderClause +
                     " LIMIT " + (pageSize * (pageIndex - 1)) + ", " + pageSize;
                 List<M_Users_DTO> users = ef.Database.SqlQuery<M_Users_DTO>(pageSql, args.ToArray()).ToList();
 
@@ -695,6 +699,122 @@ namespace YYT.BLL.EF
                 return total;
             }
         }
+
+        /// <summary>
+        /// 手机端：会员盈亏统计卡聚合（权限范围内，可按代理模糊过滤）。
+        /// 总充值/总退钻 = users.COINS_BUY/COINS_BACK 权限范围合计；
+        /// 今日充值/今日退钻 = 当日充退流水合计（TypeFlag 口径与 GetUserPhoneDetail 一致）。
+        /// 总盈亏 = 总充值 - 总退钻、今日盈亏 = 今日充值 - 今日退钻 由调用端计算（与用户管理页总盈利同口径）。
+        /// </summary>
+        public M_MemberWinLossStats GetMemberWinLossStats(M_LoginUser loginUser, string agency)
+        {
+            using (var ef = new GameDbContext())
+            {
+                List<string> agencies = null;
+                if (loginUser != null && loginUser.UserPriv != 0)
+                {
+                    agencies = new B_Admin().GetManagedAgencyAccounts(ef, loginUser);
+                    if (agencies == null || agencies.Count < 1)
+                        return new M_MemberWinLossStats();
+                }
+
+                List<object> args = new List<object>();
+                StringBuilder scope = new StringBuilder();
+                if (!string.IsNullOrWhiteSpace(agency))
+                {
+                    scope.Append(" AND c.AGENCY LIKE {").Append(args.Count).Append("}");
+                    args.Add("%" + agency + "%");
+                }
+                else if (agencies != null)
+                {
+                    scope.Append(" AND c.AGENCY IN (");
+                    for (int i = 0; i < agencies.Count; i++)
+                    {
+                        if (i > 0)
+                            scope.Append(",");
+                        scope.Append("{").Append(args.Count).Append("}");
+                        args.Add(agencies[i]);
+                    }
+                    scope.Append(")");
+                }
+
+                M_MemberWinLossStats stats = ef.Database.SqlQuery<M_MemberWinLossStats>(
+                    "SELECT IFNULL(SUM(c.COINS_BUY),0) AS TotalBuy, IFNULL(SUM(c.COINS_BACK),0) AS TotalBack" +
+                    " FROM users c INNER JOIN userrelations r ON r.ID = c.ID WHERE 1=1" + scope,
+                    args.ToArray()).FirstOrDefault();
+                if (stats == null)
+                    stats = new M_MemberWinLossStats();
+
+                args.Add(DateTime.Today);
+                M_MemberWinLossStats today = ef.Database.SqlQuery<M_MemberWinLossStats>(
+                    "SELECT IFNULL(SUM(CASE WHEN r.RechargeType IN (20,22) OR (r.RechargeType = 30 AND r.Processed = 1) THEN r.Coin ELSE 0 END),0) AS TodayBuy," +
+                    " IFNULL(SUM(CASE WHEN r.RechargeType IN (21,23) OR (r.RechargeType = 31 AND r.Processed = 1) THEN r.Coin ELSE 0 END),0) AS TodayBack" +
+                    " FROM rechargerecords r INNER JOIN users c ON c.ID = r.GameID" +
+                    " INNER JOIN userrelations rr ON rr.ID = c.ID" +
+                    " WHERE r.CreateTime >= {" + (args.Count - 1) + "}" + scope,
+                    args.ToArray()).FirstOrDefault();
+                if (today != null)
+                {
+                    stats.TodayBuy = today.TodayBuy;
+                    stats.TodayBack = today.TodayBack;
+                }
+                return stats;
+            }
+        }
+
+        /// <summary>
+        /// 手机端：玩家详情页数据（注册时间/最后登录/今日与累计充退/邀请码）。
+        /// 今日充值=当日充值类流水（20/22/已处理30）合计，今日退分=当日退分类流水（21/23/已处理31）合计，
+        /// 与充退记录页 TypeFlag 口径一致。邀请码优先取注册时使用的邀请码（invite_codes.UsedBy），
+        /// 无则回退所属代理的邀请码。密码按权限单独回填（与 GetUsersList 的 canPwd 口径一致）。
+        /// </summary>
+        public M_UserPhoneDetail GetUserPhoneDetail(string userId, M_LoginUser loginUser)
+        {
+            if (string.IsNullOrWhiteSpace(userId) || loginUser == null)
+                return null;
+
+            using (var ef = new GameDbContext())
+            {
+                string target = userId.Trim();
+                const string detailSql =
+                    "SELECT c.ID, c.NAME, c.AGENCY, c.FROZEN, c.GAME_SCORE, c.COINS, c.COINS_BUY, c.COINS_BACK," +
+                    " c.CreateTime," +
+                    " IFNULL(w.WINLOSS,0) AS TodayWinLoss," +
+                    " l.LastLoginTime," +
+                    " (SELECT IFNULL(SUM(CASE WHEN r.RechargeType IN (20,22) OR (r.RechargeType = 30 AND r.Processed = 1) THEN r.Coin ELSE 0 END),0)" +
+                    "   FROM rechargerecords r WHERE r.GameID = c.ID AND r.CreateTime >= CURDATE()) AS TodayBuy," +
+                    " (SELECT IFNULL(SUM(CASE WHEN r.RechargeType IN (21,23) OR (r.RechargeType = 31 AND r.Processed = 1) THEN r.Coin ELSE 0 END),0)" +
+                    "   FROM rechargerecords r WHERE r.GameID = c.ID AND r.CreateTime >= CURDATE()) AS TodayBack," +
+                    " (SELECT ic.InviteCode FROM invite_codes ic WHERE ic.UsedBy = c.ID AND ic.IsUsed = 1 ORDER BY ic.ID DESC LIMIT 1) AS InviteCode" +
+                    " FROM users c" +
+                    " LEFT JOIN user_daily_winloss w ON w.UserID = c.ID AND w.DAY = {0}" +
+                    " LEFT JOIN (SELECT UserID, MAX(REC_TIME) AS LastLoginTime FROM `UserOptLog` GROUP BY UserID) l ON l.UserID = c.ID" +
+                    " WHERE c.ID = {1}";
+                M_UserPhoneDetail detail = ef.Database
+                    .SqlQuery<M_UserPhoneDetail>(detailSql, DateTime.Today, target)
+                    .FirstOrDefault();
+                if (detail == null)
+                    return null;
+
+                // 代理线权限：非超管只能看自己线内的玩家（与总控状态查询同口径）
+                if (loginUser.UserPriv > 0 && !new B_Admin().IsInAgencyLine(ef, loginUser.Accounts, detail.AGENCY))
+                    return null;
+
+                // 密码仅在有权查看时出库（与 GetUsersList/GetUserRowsByIds 同口径）
+                bool canPwd = loginUser.UserPriv == 0 || loginUser.IsViewPwd == 1 || loginUser.IsViewSafePwd == 1;
+                if (canPwd)
+                    detail.PWD = ef.Users.Where(u => u.ID == target).Select(u => u.PWD).FirstOrDefault();
+
+                // 注册时未使用邀请码时，回退所属代理的邀请码
+                if (string.IsNullOrWhiteSpace(detail.InviteCode) && !string.IsNullOrWhiteSpace(detail.AGENCY))
+                    detail.InviteCode = ef.Admins
+                        .Where(a => a.ID == detail.AGENCY)
+                        .Select(a => a.InviteCode)
+                        .FirstOrDefault();
+
+                return detail;
+            }
+        }
         #endregion
 
         public List<M_Admin> GetTree(List<M_Admin> list1, List<M_Admin> list2, string id)
@@ -745,12 +865,13 @@ namespace YYT.BLL.EF
                               //BuyBack=c.COINS_BUY- c.COINS_BACK
                           };
                 rst = rst.Where(c => c.INHALL==true);
+                // 搜索统一模糊匹配（LIKE '%kw%'）
                 if (!string.IsNullOrWhiteSpace(entity.AGENCY))
-                    rst = rst.Where(c => c.AGENCY.Equals(entity.AGENCY));
+                    rst = rst.Where(c => c.AGENCY.Contains(entity.AGENCY));
                 if (!string.IsNullOrWhiteSpace(entity.NAME))
-                    rst = rst.Where(c => c.NAME.Equals(entity.NAME));
+                    rst = rst.Where(c => c.NAME.Contains(entity.NAME));
                 if (!string.IsNullOrWhiteSpace(entity.ID))
-                    rst = rst.Where(c => c.ID.Equals(entity.ID));
+                    rst = rst.Where(c => c.ID.Contains(entity.ID));
                 if (entity.UserID > 0)
                     rst = rst.Where(c => c.UserID == entity.UserID);
 
@@ -893,13 +1014,14 @@ namespace YYT.BLL.EF
                               COIN = r.Coin,
                           };
                 rst = rst.Where(c => c.PROCESSED == 1 && c.GAMETIME>= sevenDaysAgo);//只获取已经处理 和7天前的数据
+                // 搜索统一模糊匹配（LIKE '%kw%'）
                 if (!string.IsNullOrWhiteSpace(entity.AGENCY))
-                    rst = rst.Where(c => c.AGENCY.Equals(entity.AGENCY));
+                    rst = rst.Where(c => c.AGENCY.Contains(entity.AGENCY));
                 if (!string.IsNullOrWhiteSpace(entity.NAME))
-                    rst = rst.Where(c => c.NAME.Equals(entity.NAME));
+                    rst = rst.Where(c => c.NAME.Contains(entity.NAME));
                 if (!string.IsNullOrWhiteSpace(entity.ID))
-                    rst = rst.Where(c => c.ID.Equals(entity.ID));
-    
+                    rst = rst.Where(c => c.ID.Contains(entity.ID));
+
                 // 加权限查询
                 if (loginUser.UserPriv != 0)
                 {

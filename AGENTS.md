@@ -24,7 +24,7 @@ ASP.NET **MVC5 + .NET Framework 4.x（目标 4.8）**，EF6 + **MySQL 5.7**（�
 | `YYT.DbUtility/` | 数据访问工具 |
 | `YYT.Remote/` | `SConnect`：命名管道客户端（向中心服发 XML 消息，消息定义在 `TTY.Web/Config/MsgDefine.config`） |
 | `Game.Utils/`、`UnitTestProj/` | 工具类、单元测试 |
-| `Tools/` | 本地构建/起站/数据库脚本 + **部署脚本**（见"部署"节） |
+| `Tools/` | 运维脚本，按用途分 5 个子目录：`server-env/`（服务器环境安装/检测）、`deploy/`（部署与打包）、`dev/`（本地构建/起站）、`db/`（本地数据库）、`one-off/`（一次性排查脚本）。逐个脚本说明见 `Tools/README.md` |
 | `docker/` + `docker-compose.yml` | 本地 MySQL 5.7 容器（含初始化 SQL） |
 | `Docs/` | 历次改造方案与进度文档（拉霸/押注/桌台配置等） |
 | `Phone/` | 手机端改造参考物：`_reference/` 参考站 DOM 快照、`_accept/` 验收截图、`index.html`+`serve.js` 预览服务 |
@@ -36,16 +36,16 @@ ASP.NET **MVC5 + .NET Framework 4.x（目标 4.8）**，EF6 + **MySQL 5.7**（�
 # 数据库：docker compose up -d        # mysql:5.7，容器名 mth-mysql，root/123456，库 mth
 #            ⚠️ 必须带 --lower-case-table-names=1（compose 已配置），
 #            否则 EF 大写表名映射（[Table("Users")] 等）全部报 Table doesn't exist
-Tools\build.bat            # Clean + Release MSBuild（自动补 .NET48 引用程序集/Web targets，无需 VS 全家桶）
-Tools\start.ps1            # IIS Express 起站（root apphost.config 缺失时用直连路径模式）
-Tools\docker-db.bat        # 数据库容器 start/stop/status/reinit
-Tools\env-check.ps1        # 部署环境检测+补装（服务器用）
+Tools\dev\build.bat             # Clean + Release MSBuild（自动补 .NET48 引用程序集/Web targets，无需 VS 全家桶）
+Tools\dev\start.ps1             # IIS Express 起站（root apphost.config 缺失时用直连路径模式）
+Tools\db\docker-db.bat          # 数据库容器 start/stop/status/reinit
+Tools\server-env\env-check.ps1  # 部署环境检测+补装（服务器用）
 ```
 
 - 连接串在 `TTY.Web/Web.config`：本地为 `Server=localhost;Port=3306;Database=mth;Uid=root;Pwd=123456`。
-- ⚠️ **老式 csproj**：新增 .cs/.cshtml/.js/.css 必须手工登记进 `TTY.Web/YYT.Web.csproj`（可用 `Tools/_add_csproj.py`），否则编译产物缺文件。
+- ⚠️ **老式 csproj**：新增 .cs/.cshtml/.js/.css 必须手工登记进 `TTY.Web/YYT.Web.csproj`（可用 `Tools/one-off/_add_csproj.py`），否则编译产物缺文件。
 - ⚠️ bin 里同时有 x86/x64 `SQLite.Interop.dll`；应用池必须 **64 位 v4.0 Integrated**，不要开 32 位兼容。
-- 仓库根 `TTY.Web.rar` 是整站源码快照备份；`Tools/_check_*.ps1`、`_repro*.ps1` 是历次排查的一次性脚本。
+- 仓库根 `TTY.Web.rar` 是整站源码快照备份；`Tools/one-off/` 下的 `_check_*`、`_repro*`、`_prod_*` 等是历次排查的一次性脚本。
 
 ## 核心运行逻辑
 
@@ -69,7 +69,7 @@ POST 未登录 → HTTP 200 返回 `TipMsg.MSG_LOGIN_TIMEOUT`（前端约定 `co
 
 ## 部署流程（线上）
 
-1. 本地 `Tools\build.bat` 编译，把**整个 TTY.Web 目录**（源码+bin+Views+Web.config）打成 zip 上传服务器（不走 VS 发布精简流程——这是既有习惯）。
+1. 本地 `Tools\dev\build.bat` 编译（`Tools\deploy\pack.ps1 -Version x.x.x` 打包），把**整个 TTY.Web 目录**（源码+bin+Views+Web.config）打成 zip 上传服务器（不走 VS 发布精简流程——这是既有习惯）。
 2. 服务器上管理员运行：`powershell -ExecutionPolicy Bypass -File deploy.ps1 -SourcePath C:\...\TTY.Web.zip [-Yes]`
    自动：备份旧版到 `C:\Backend_backup_<时间戳>` → robocopy /MIR 到 `C:\Backend`（保留 `App_Data`/`Logs`/`Upload`）→ 校验应用池 v4.0/64 位 → 站点绑 8081 → 放行防火墙 → 回收应用池 → HTTP 探测。
 3. `server_deploy_check.ps1` 可一键收集服务器部署情况（注意：SSH 远程执行时它是 32 位 PowerShell，IIS 检测会拿空结果，见"坑"节）。

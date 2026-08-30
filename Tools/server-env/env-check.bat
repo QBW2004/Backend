@@ -10,11 +10,13 @@ rem   gets its lines corrupted/truncated when run via a non-interactive
 rem   pipe, e.g. SSH remote exec. Keeping this file pure ASCII avoids it.)
 rem
 rem  Usage:
-rem    env-check.bat                Check, then ask per missing item whether to fix it now
-rem    env-check.bat -checkonly     Check only, never ask, no changes to the server
-rem    env-check.bat -y             Check and auto-fix every missing item (unattended)
+rem    env-check.bat                Check, then auto-download & install every missing
+rem                                 required item (no prompts, fully unattended)
+rem    env-check.bat -checkonly     Check only, no changes to the server
+rem    env-check.bat -y             Same as no args (-y is accepted for backward
+rem                                 compatibility, auto-fix is already the default)
 rem    env-check.bat -y -initschema
-rem                                 Same, and import mth base schema from
+rem                                 Auto-fix, and import mth base schema from
 rem                                 ..\docker\mysql\init\*.sql on fresh MySQL install
 rem
 rem  Must be run as Administrator (right-click -> "Run as administrator").
@@ -47,8 +49,4 @@ if not exist "%PS1%" (
 )
 
 powershell -NoProfile -ExecutionPolicy Bypass -File "%PS1%" %EXTRA_ARGS%
-set "PSRESULT=%errorlevel%"
-
-echo.
-pause
-exit /b %PSRESULT%
+exit /b %errorlevel%

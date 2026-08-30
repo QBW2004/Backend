@@ -1,8 +1,8 @@
 /* ============================================================
-   玩家封号页（1:1 复刻参考站 fenghao）
+   冻结账号页（原"玩家封号"，参考站 fenghao）
    数据源：/Game/UserInfo/FrozenUser、/Game/UserInfo/GetFrozenUsers
-   说明：项目无「封禁时间」字段，列表展示账号 + 解封操作；
-        封禁时间列展示「--」以保持版式一致。
+   说明：项目无「冻结时间」字段，列表展示账号 + 解冻操作；
+        冻结时间列展示「--」以保持版式一致。
    ============================================================ */
 (function (window, $, M) {
     'use strict';
@@ -23,7 +23,7 @@
                 $body.html(rows.map(function (u) {
                     return '<tr>' +
                         '<td>' + M.esc(u.ID) + '</td>' +
-                        '<td><button class="unban-btn" data-id="' + M.esc(u.ID) + '">解封</button></td>' +
+                        '<td><button class="unban-btn" data-id="' + M.esc(u.ID) + '">解冻</button></td>' +
                         '<td class="ban-time">--</td>' +
                         '</tr>';
                 }).join(''));
@@ -46,7 +46,7 @@
         });
     }
 
-    function unbanAccount(id) {
+    function unfreezeAccount(id) {
         M.loading('处理中...');
         M.post('/Game/UserInfo/FrozenUser', { ID: id, frozen: 0 }).always(M.hideLoading).then(function (res) {
             var r = M.result(res);
@@ -63,8 +63,8 @@
         });
         $('#banList').on('click', '.unban-btn', function () {
             var id = $(this).data('id');
-            M.confirm('确定要解封玩家 ' + id + ' 吗？', '解封确认').then(function (ok) {
-                if (ok) unbanAccount(id);
+            M.confirm('确定要解冻玩家 ' + id + ' 吗？', '解冻确认').then(function (ok) {
+                if (ok) unfreezeAccount(id);
             });
         });
 
