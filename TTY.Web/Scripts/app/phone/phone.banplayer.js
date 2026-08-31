@@ -57,6 +57,10 @@
     }
 
     function initPage() {
+        M.bindAccountAutocomplete({
+            input: '#playerIdInput',
+            suggest: '#playerSuggest'
+        });
         $('#banBtn').on('click', banAccount);
         $('#playerIdInput').on('keydown', function (e) {
             if (e.keyCode === 13) banAccount();

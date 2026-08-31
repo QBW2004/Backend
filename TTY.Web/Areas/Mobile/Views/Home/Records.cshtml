@@ -232,11 +232,17 @@
             <div class="filter-row">
                 <div class="filter-item">
                     <div class="filter-label">玩家账号</div>
-                    <input type="text" id="playerAccount" class="filter-input" placeholder="输入玩家账号">
+                    <div style="position:relative;">
+                        <input type="text" id="playerAccount" class="filter-input" placeholder="输入玩家账号，支持模糊匹配" autocomplete="off">
+                        <div class="m-account-suggest" id="recordPlayerSuggest"></div>
+                    </div>
                 </div>
                 <div class="filter-item">
                     <div class="filter-label">操作人</div>
-                    <input type="text" id="operatorAccount" class="filter-input" placeholder="输入操作人账号">
+                    <div style="position:relative;">
+                        <input type="text" id="operatorAccount" class="filter-input" placeholder="输入操作人账号，支持模糊匹配" autocomplete="off">
+                        <div class="m-account-suggest" id="recordOperatorSuggest"></div>
+                    </div>
                 </div>
             </div>
             <div class="filter-bottom-row">

@@ -73,6 +73,11 @@
     }
 
     function initPage() {
+        M.bindAccountAutocomplete({
+            input: '#agentIdInput',
+            suggest: '#agentSuggest',
+            kind: 'agent'
+        });
         $('#blacklistBtn').on('click', ban);
         $('#agentIdInput, #reasonInput').on('keydown', function (e) {
             if (e.keyCode === 13) ban();

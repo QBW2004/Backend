@@ -77,8 +77,9 @@
             <table style="width:100%; border-collapse:collapse;">
                 <tbody>
                     <tr>
-                        <td style="width:70%; padding-right:10px;">
-                            <input type="text" id="playerIdInput" class="input-field" style="width:100%; box-sizing:border-box;" placeholder="输入玩家账号" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+                        <td style="width:70%; padding-right:10px; position:relative;">
+                            <input type="text" id="playerIdInput" class="input-field" style="width:100%; box-sizing:border-box;" placeholder="输入玩家账号，支持模糊匹配" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+                            <div class="m-account-suggest" id="playerSuggest"></div>
                         </td>
                         <td style="width:30%;">
                             <button id="banBtn" class="ban-btn" style="width:100%;">冻结账号</button>

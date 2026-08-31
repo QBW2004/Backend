@@ -78,6 +78,15 @@
     }
 
     function initPage() {
+        M.bindAccountAutocomplete({
+            input: '#playerAccount',
+            suggest: '#recordPlayerSuggest'
+        });
+        M.bindAccountAutocomplete({
+            input: '#operatorAccount',
+            suggest: '#recordOperatorSuggest',
+            kind: 'agent'
+        });
         // 类型选择
         $('.record-type-btn').on('click', function () {
             var type = $(this).data('type');

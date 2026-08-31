@@ -434,6 +434,100 @@
         }
     };
 
+    /* ---------------- 账号模糊联想 ---------------- */
+
+    /**
+     * 为手机端账号输入框绑定统一的模糊联想。
+     * kind 可为 player/agent，也可传函数以便根据页面状态动态切换。
+     * onSelect(row) 用于在选中后执行页面自己的查询或填充逻辑。
+     */
+    M.bindAccountAutocomplete = function (options) {
+        options = options || {};
+        var $input = $(options.input);
+        if (!$input.length) return null;
+
+        var $box = options.suggest ? $(options.suggest) : $('<div class="m-account-suggest"></div>').appendTo($input.parent());
+        var timer = null;
+        var sequence = 0;
+        var rowMap = {};
+
+        function hide() {
+            rowMap = {};
+            $box.removeClass('show').empty();
+        }
+
+        function kind() {
+            return typeof options.kind === 'function' ? options.kind() : (options.kind || 'player');
+        }
+
+        function highlight(value, keyword) {
+            var text = String(value == null ? '' : value);
+            var key = String(keyword || '');
+            var index = key ? text.toLowerCase().indexOf(key.toLowerCase()) : -1;
+            if (index < 0) return M.esc(text);
+            return M.esc(text.substring(0, index)) +
+                '<span class="m-account-suggest-hl">' + M.esc(text.substring(index, index + key.length)) + '</span>' +
+                M.esc(text.substring(index + key.length));
+        }
+
+        function render(rows, keyword, rowKind) {
+            rows = rows || [];
+            if (!rows.length) {
+                rowMap = {};
+                $box.html('<div class="m-account-suggest-empty">未找到匹配账号</div>').addClass('show');
+                return;
+            }
+            rowMap = {};
+            $box.html(rows.map(function (row) {
+                var account = row.ID || '';
+                rowMap[String(account)] = row;
+                var secondary = rowKind === 'player' ? (row.NAME || '') : (row.AGENCY || '');
+                var coins = row.COINS == null ? '' : M.gold(row.COINS) + '币';
+                return '<div class="m-account-suggest-item" data-account="' + M.esc(account) + '">' +
+                    '<span class="m-account-suggest-account">' + highlight(account, keyword) + '</span>' +
+                    '<span class="m-account-suggest-secondary">' + M.esc(secondary) + '</span>' +
+                    (coins ? '<span class="m-account-suggest-coins">' + coins + '</span>' : '') +
+                    '</div>';
+            }).join('')).addClass('show');
+        }
+
+        function search(keyword) {
+            var rowKind = kind();
+            var currentSequence = ++sequence;
+            var request = rowKind === 'agent'
+                ? M.post('/Game/AgencyInfo/GetAgencies', { ID: keyword, Agency: '', page: 1, rows: 8 })
+                : M.post('/Game/UserInfo/GetUsers', { srch_ID: keyword, srch_NAME: '', srch_Agency: '', page: 1, rows: 8 });
+            request.then(function (result) {
+                if (currentSequence !== sequence) return;
+                render(result && result.rows, keyword, rowKind);
+            }, function () {
+                if (currentSequence === sequence) hide();
+            });
+        }
+
+        $input.on('input', function () {
+            var keyword = $.trim($input.val());
+            if (timer) { clearTimeout(timer); timer = null; }
+            if (typeof options.onInput === 'function') options.onInput(keyword);
+            if (!keyword) { sequence++; hide(); return; }
+            timer = setTimeout(function () { search(keyword); }, options.delay == null ? 300 : options.delay);
+        });
+        $input.on('blur', function () { setTimeout(hide, 180); });
+        $box.on('mousedown', '.m-account-suggest-item', function (event) {
+            event.preventDefault();
+            var account = $(this).data('account');
+            if (!account) return;
+            var selectedRow = rowMap[String(account)] || { ID: String(account) };
+            hide();
+            $input.val(String(account));
+            if (typeof options.onSelect === 'function') {
+                options.onSelect(selectedRow);
+            }
+        });
+
+        return { hide: hide, search: search };
+    };
+
     /* ---------------- 游戏名映射 ---------------- */
 
     var gamesCache = null;

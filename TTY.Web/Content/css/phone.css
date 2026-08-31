@@ -896,6 +896,75 @@ button, a {
     margin: 20px 0;
 }
 
+/* ---------------- 账号模糊联想 ---------------- */
+.m-account-suggest {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 70;
+    display: none;
+    max-height: 228px;
+    margin-top: 4px;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    border-radius: 8px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.14);
+    -webkit-overflow-scrolling: touch;
+}
+
+.m-account-suggest.show { display: block; }
+
+.m-account-suggest-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+}
+
+.m-account-suggest-item:last-child { border-bottom: none; }
+.m-account-suggest-item:active { background: #f5f5f7; }
+
+.m-account-suggest-account {
+    flex-shrink: 0;
+    max-width: 45%;
+    overflow: hidden;
+    color: #1d1d1f;
+    font-size: 14px;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.m-account-suggest-secondary {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    color: #86868b;
+    font-size: 13px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.m-account-suggest-coins {
+    flex-shrink: 0;
+    color: #007aff;
+    font-family: -apple-system-monospace, monospace;
+    font-size: 13px;
+}
+
+.m-account-suggest-hl { color: #007aff; }
+
+.m-account-suggest-empty {
+    padding: 14px 12px;
+    color: #8e8e93;
+    font-size: 13px;
+    text-align: center;
+}
+
 /* ---------------- 响应式 ---------------- */
 @media (max-width: 768px) {
     html, body {

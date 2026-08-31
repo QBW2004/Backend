@@ -160,6 +160,17 @@
         });
 
         // 历史下拉
+        M.bindAccountAutocomplete({
+            input: '#accountInput',
+            suggest: '#accountSuggest',
+            kind: function () { return role === 'player' ? 'player' : 'agent'; },
+            onInput: function () { $('#historyList').removeClass('show'); },
+            onSelect: function (row) {
+                $('#historyList').removeClass('show');
+                $('#accountInput').val(row.ID);
+                queryAccount();
+            }
+        });
         $('#accountInput').on('focus', function () {
             renderHistory();
             $('#historyList').addClass('show');

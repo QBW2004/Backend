@@ -83,8 +83,9 @@
             <table style="width:100%; border-collapse:collapse;">
                 <tbody>
                     <tr>
-                        <td style="width:100%; padding-bottom:10px;">
-                            <input type="text" id="agentIdInput" class="input-field" style="width:100%; box-sizing:border-box; max-width:100%; display:block;" placeholder="输入代理账号" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+                        <td style="width:100%; padding-bottom:10px; position:relative;">
+                            <input type="text" id="agentIdInput" class="input-field" style="width:100%; box-sizing:border-box; max-width:100%; display:block;" placeholder="输入代理账号，支持模糊匹配" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+                            <div class="m-account-suggest" id="agentSuggest"></div>
                         </td>
                     </tr>
                     <tr>

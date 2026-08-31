@@ -16,6 +16,15 @@ namespace YYT.Web.Areas.Game.Controllers
     [MemberAuthorize]
     public class AbnormalController : BaseController
     {
+        private sealed class FrozenAccountRow
+        {
+            public string ID { get; set; }
+            public string Type { get; set; }
+            public string Reason { get; set; }
+            public string IP { get; set; }
+            public string Time { get; set; }
+        }
+
         /// <summary>
         /// 异常账号统计 + 列表（玩家账号 / 代理账号分类计数）
         /// </summary>
@@ -31,24 +40,44 @@ namespace YYT.Web.Areas.Game.Controllers
                     return Json(msg);
 
                 List<M_LoginMissRecord> records = new B_LoginMissRecord().GetAbnormalList();
-                List<string> ids = records.Select(c => c.ID).Distinct().ToList();
-
-                HashSet<string> adminIds;
-                HashSet<string> userIds;
+                List<FrozenAccountRow> rows = new List<FrozenAccountRow>();
                 using (var ef = new GameDbContext())
                 {
-                    adminIds = ef.Admins.Where(c => ids.Contains(c.ID)).Select(c => c.ID).ToHashSet(StringComparer.OrdinalIgnoreCase);
-                    userIds = ef.Users.Where(c => ids.Contains(c.ID)).Select(c => c.ID).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                    // 真实冻结状态：玩家 FROZEN=1，代理 RE_ENABLE=0。
+                    rows.AddRange(ef.Users.Where(c => c.FROZEN == 1).Select(c => new FrozenAccountRow
+                    {
+                        ID = c.ID,
+                        Type = "玩家",
+                        Reason = "账号已冻结"
+                    }).ToList());
+                    rows.AddRange(ef.Admins.Where(c => c.RE_ENABLE == 0).Select(c => new FrozenAccountRow
+                    {
+                        ID = c.ID,
+                        Type = "代理",
+                        Reason = "账号已禁用"
+                    }).ToList());
                 }
 
-                var rows = records.Select(c => new
+                // 异常登录锁定也属于冻结明细；同一账号只保留一行并合并原因。
+                foreach (M_LoginMissRecord record in records)
                 {
-                    ID = c.ID,
-                    Type = adminIds.Contains(c.ID) ? "代理" : (userIds.Contains(c.ID) ? "玩家" : "未知"),
-                    Reason = "连续登录失败 " + c.MissCount + " 次",
-                    IP = c.IPAddr,
-                    Time = c.LoginTime.ToString("yyyy-MM-dd HH:mm:ss")
-                }).ToList();
+                    FrozenAccountRow row = rows.FirstOrDefault(c => string.Equals(c.ID, record.ID, StringComparison.OrdinalIgnoreCase));
+                    if (row == null)
+                    {
+                        row = new FrozenAccountRow
+                        {
+                            ID = record.ID,
+                            Type = "未知",
+                            Reason = string.Empty
+                        };
+                        rows.Add(row);
+                    }
+                    row.Reason = string.IsNullOrWhiteSpace(row.Reason)
+                        ? "连续登录失败 " + record.MissCount + " 次"
+                        : row.Reason + "；连续登录失败 " + record.MissCount + " 次";
+                    row.IP = record.IPAddr;
+                    row.Time = record.LoginTime.ToString("yyyy-MM-dd HH:mm:ss");
+                }
 
                 msg.code = 1;
                 msg.content = "查询成功！";
@@ -90,7 +119,25 @@ namespace YYT.Web.Areas.Game.Controllers
                     return Json(msg);
                 }
 
-                if (new B_LoginMissRecord().Unblock(id))
+                bool changed = new B_LoginMissRecord().Unblock(id);
+                using (var ef = new GameDbContext())
+                {
+                    var user = ef.Users.FirstOrDefault(c => c.ID.Equals(id));
+                    if (user != null && user.FROZEN == 1)
+                    {
+                        user.FROZEN = 0;
+                        changed = true;
+                    }
+                    var admin = ef.Admins.FirstOrDefault(c => c.ID.Equals(id));
+                    if (admin != null && admin.RE_ENABLE == 0)
+                    {
+                        admin.RE_ENABLE = 1;
+                        changed = true;
+                    }
+                    if (changed)
+                        ef.SaveChanges();
+                }
+                if (changed)
                 {
                     msg.code = 1;
                     msg.content = "账号已成功解封";
