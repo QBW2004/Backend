@@ -161,6 +161,21 @@ namespace YYT.Entity
         public long? IsModifySafePwd { get; set; }
 
         /// <summary>
+        /// 删除代理权限 0无 1有
+        /// </summary>
+        public long? IsDeleteAgent { get; set; }
+
+        /// <summary>
+        /// 查看代理密码权限（仅直属代理）0无 1有
+        /// </summary>
+        public long? IsViewAgentPwd { get; set; }
+
+        /// <summary>
+        /// 修改代理密码权限（仅直属代理）0无 1有
+        /// </summary>
+        public long? IsModifyAgentPwd { get; set; }
+
+        /// <summary>
         /// 管理范围 1=仅直属 2=全部下级
         /// </summary>
         public long? ManageScope { get; set; }
@@ -291,6 +306,9 @@ namespace YYT.Entity
                 IsResetSafePwd = this.IsResetSafePwd,
                 IsViewSafePwd = this.IsViewSafePwd,
                 IsModifySafePwd = this.IsModifySafePwd,
+                IsDeleteAgent = this.IsDeleteAgent,
+                IsViewAgentPwd = this.IsViewAgentPwd,
+                IsModifyAgentPwd = this.IsModifyAgentPwd,
                 ManageScope = this.ManageScope,
                 InviteCode = this.InviteCode,
                 CommissionRate = this.CommissionRate

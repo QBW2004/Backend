@@ -72,6 +72,16 @@ namespace YYT.Web.Areas.Game.Controllers
                         item.PlayerBalance = (tmp != null ? tmp.PlayerBalance : 0);
                         item.UserBalance = (tmp != null ? tmp.UserBalance : 0);
                     }
+
+                    // 代理密码脱敏：非超级管理只有拥有查看代理密码权限时可见，且仅限自己的直属代理
+                    if (loginUser.UserPriv != 0)
+                    {
+                        foreach (var item in list.rows)
+                        {
+                            if (loginUser.IsViewAgentPwd != 1 || !string.Equals(item.AGENCY, loginUser.Accounts, StringComparison.OrdinalIgnoreCase))
+                                item.PWD = null;
+                        }
+                    }
                 }
             }
             catch (Exception ex)
@@ -137,6 +147,12 @@ namespace YYT.Web.Areas.Game.Controllers
 
                     if (m_LoginUser.UserPriv > 0)
                     {
+                        if (m_LoginUser.IsDeleteAgent != 1)
+                        {
+                            msg.content = "没有删除代理权限！";
+                            return Json(msg);
+                        }
+
                         using (var ef = new GameDbContext())
                         {
                             List<string> managedAgencies = new B_Admin().GetManagedAgencyAccounts(ef, m_LoginUser);
@@ -175,6 +191,13 @@ namespace YYT.Web.Areas.Game.Controllers
                 string id = form.Q<string>("ID");
                 string pwd = form.Q<string>("PWD");
 
+                M_LoginUser m_LoginUser = WebHelper.GetLoginInfo();
+                if (m_LoginUser == null)
+                {
+                    msg.content = "登录已超时，请重新登录！";
+                    return Json(msg);
+                }
+
                 if (string.IsNullOrWhiteSpace(id))
                 {
                     msg.content = "代理ID不能为空！";
@@ -184,6 +207,26 @@ namespace YYT.Web.Areas.Game.Controllers
                 {
                     msg.content = "密码不能为空！";
                     return Json(msg);
+                }
+
+                // 非超级管理：需要修改代理密码权限，且只能修改自己直属代理的密码
+                if (m_LoginUser.UserPriv > 0)
+                {
+                    if (m_LoginUser.IsModifyAgentPwd != 1)
+                    {
+                        msg.content = "没有修改代理密码权限！";
+                        return Json(msg);
+                    }
+
+                    using (var ef = new GameDbContext())
+                    {
+                        M_Admin target = ef.Admins.FirstOrDefault(a => a.ID == id);
+                        if (target == null || !string.Equals(target.AGENCY, m_LoginUser.Accounts, StringComparison.OrdinalIgnoreCase))
+                        {
+                            msg.content = "只能修改自己直属代理的密码！";
+                            return Json(msg);
+                        }
+                    }
                 }
 
                 M_Admin entity = new M_Admin { ID = id, PWD = pwd };
@@ -420,6 +463,9 @@ namespace YYT.Web.Areas.Game.Controllers
             entity.IsKill = form.Q<int>("IsKill", 0);
             entity.IsUpDown = form.Q<int>("IsUpDown", 1);
             entity.IsViewSafePwd = form.Q<int>("IsViewSafePwd", 0);
+            entity.IsDeleteAgent = form.Q<int>("IsDeleteAgent", 0);
+            entity.IsViewAgentPwd = form.Q<int>("IsViewAgentPwd", 0);
+            entity.IsModifyAgentPwd = form.Q<int>("IsModifyAgentPwd", 0);
             entity.KickScope = form.Q<int>("KickScope", 2);
             entity.ManageScope = form.Q<int>("ManageScope", 2);
         }

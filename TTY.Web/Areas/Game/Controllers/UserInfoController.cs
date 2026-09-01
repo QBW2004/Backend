@@ -45,6 +45,7 @@ namespace YYT.Web.Areas.Game.Controllers
         {
             return View();
         }
+        [MemberAuthorize]
         [AjaxOnly]
         [HttpPost]
         public ActionResult GetOnlineUsers()
@@ -52,7 +53,22 @@ namespace YYT.Web.Areas.Game.Controllers
             Msg msg = new Msg(0, "查询失败！");
             try
             {
+                M_LoginUser loginUser = WebHelper.GetLoginInfo();
+                if (loginUser == null)
+                    return Json(msg);
+
                 List<OnlinePlayerInfo> players = new PlayerStateService().QueryAllOnlinePlayers();
+
+                // 与用户管理页同口径：非超级管理只能看到自己直属玩家和自己名下代理的用户
+                if (loginUser.UserPriv != 0 && players != null && players.Count > 0)
+                {
+                    using (var ef = new GameDbContext())
+                    {
+                        List<string> agencies = new B_Admin().GetManagedAgencyAccounts(ef, loginUser);
+                        players = players.Where(c => c != null && agencies.Contains(c.AGENCY)).ToList();
+                    }
+                }
+
                 FillPlayerTotalWinLoss(players);
                 FillPlayerTodayWinLoss(players);
                 msg.code = 1;

@@ -40,10 +40,11 @@
                     url: "/Game/AgencyInfo/GetAgencies",
                     queryParams: $.extend({}, para),
                     pagination: true,
-                    fitColumns: true,
+                    fitColumns: false,
                     singleSelect: true,
                     striped: false,
                     rownumbers: true,
+                    nowrap: true,
                     //showFooter: true,
                     height: 768,
                     pageSize: 20,
@@ -52,8 +53,12 @@
                     rowStyler: agencyRowStyler,
                     onBeforeLoad: setGridSize,
                     onLoadSuccess: function () {
+                        $('#tb_AgencyInfo').datagrid('getPanel').addClass('admin-perm-grid');
                         onLoaded();
-                        bindAgencyRowNumberToggle();
+                        setTimeout(function () {
+                            autoFitAgencyColumns();
+                            bindAgencyRowNumberToggle();
+                        }, 0);
                     }
                 });
             } else {
@@ -101,10 +106,26 @@
                 arr.push('<a href="javascript:void(0)" class="green Lpd5" onclick="setIsDelete(\'' + rowData.ID + '\',1)">启用删除用户</a>');
             else
                 arr.push('<a href="javascript:void(0)" class="red Lpd5" onclick="setIsDelete(\'' + rowData.ID + '\',0)">禁用删除用户</a>');
+            if (rowData.IsDeleteAgent == 0)
+                arr.push('<a href="javascript:void(0)" class="green Lpd5" onclick="setIsDeleteAgent(\'' + rowData.ID + '\',1)">启用删除代理</a>');
+            else
+                arr.push('<a href="javascript:void(0)" class="red Lpd5" onclick="setIsDeleteAgent(\'' + rowData.ID + '\',0)">禁用删除代理</a>');
             if (rowData.IsModifyPwd == 0)
                 arr.push('<a href="javascript:void(0)" class="green Lpd5" onclick="setIsModifyPwd(\'' + rowData.ID + '\',1)">启用修改密码</a>');
             else
                 arr.push('<a href="javascript:void(0)" class="red Lpd5" onclick="setIsModifyPwd(\'' + rowData.ID + '\',0)">禁用修改密码</a>');
+            if (rowData.IsViewPwd == 0)
+                arr.push('<a href="javascript:void(0)" class="green Lpd5" onclick="setIsViewPwd(\'' + rowData.ID + '\',1)">启用查看用户密码</a>');
+            else
+                arr.push('<a href="javascript:void(0)" class="red Lpd5" onclick="setIsViewPwd(\'' + rowData.ID + '\',0)">禁用查看用户密码</a>');
+            if (rowData.IsViewAgentPwd == 0)
+                arr.push('<a href="javascript:void(0)" class="green Lpd5" onclick="setIsViewAgentPwd(\'' + rowData.ID + '\',1)">启用查看代理密码</a>');
+            else
+                arr.push('<a href="javascript:void(0)" class="red Lpd5" onclick="setIsViewAgentPwd(\'' + rowData.ID + '\',0)">禁用查看代理密码</a>');
+            if (rowData.IsModifyAgentPwd == 0)
+                arr.push('<a href="javascript:void(0)" class="green Lpd5" onclick="setIsModifyAgentPwd(\'' + rowData.ID + '\',1)">启用修改代理密码</a>');
+            else
+                arr.push('<a href="javascript:void(0)" class="red Lpd5" onclick="setIsModifyAgentPwd(\'' + rowData.ID + '\',0)">禁用修改代理密码</a>');
             arr.push('<a href="javascript:void(0)" class="blue Lpd5" onclick="setKickScope(\'' + rowData.ID + '\',' + (rowData.KickScope == 2 ? 1 : 2) + ')">踢人范围:' + (rowData.KickScope == 2 ? '整条线' : '直属') + '</a>');
             arr.push('<a href="javascript:void(0)" class="blue Lpd5" onclick="setManageScope(\'' + rowData.ID + '\',' + (rowData.ManageScope == 2 ? 1 : 2) + ')">管理范围:' + (rowData.ManageScope == 2 ? '整条线' : '直属') + '</a>');
 
@@ -248,6 +269,46 @@
                 });
             });
         }
+        function setIsDeleteAgent(id, flag) {
+            confirm('确认' + (flag == 0 ? '禁用删除代理' : '启用删除代理') + '所选代理的权限？', function () {
+                request('/Game/Admin/SetIsDeleteAgent', { ID: id, IsDeleteAgent: flag }, function (data) {
+                    showAdminResult(data);
+                    if (data && data.code == 1) {
+                        $('#tb_AgencyInfo').datagrid('reload');
+                    }
+                });
+            });
+        }
+        function setIsViewPwd(id, flag) {
+            confirm('确认' + (flag == 0 ? '禁用查看用户密码' : '启用查看用户密码') + '所选代理的权限？', function () {
+                request('/Game/Admin/SetIsViewPwd', { ID: id, IsViewPwd: flag }, function (data) {
+                    showAdminResult(data);
+                    if (data && data.code == 1) {
+                        $('#tb_AgencyInfo').datagrid('reload');
+                    }
+                });
+            });
+        }
+        function setIsViewAgentPwd(id, flag) {
+            confirm('确认' + (flag == 0 ? '禁用查看代理密码' : '启用查看代理密码') + '所选代理的权限？', function () {
+                request('/Game/Admin/SetIsViewAgentPwd', { ID: id, IsViewAgentPwd: flag }, function (data) {
+                    showAdminResult(data);
+                    if (data && data.code == 1) {
+                        $('#tb_AgencyInfo').datagrid('reload');
+                    }
+                });
+            });
+        }
+        function setIsModifyAgentPwd(id, flag) {
+            confirm('确认' + (flag == 0 ? '禁用修改代理密码' : '启用修改代理密码') + '所选代理的权限？', function () {
+                request('/Game/Admin/SetIsModifyAgentPwd', { ID: id, IsModifyAgentPwd: flag }, function (data) {
+                    showAdminResult(data);
+                    if (data && data.code == 1) {
+                        $('#tb_AgencyInfo').datagrid('reload');
+                    }
+                });
+            });
+        }
         function setKickScope(id, scope) {
             confirm('确认修改所选代理的踢人范围？', function () {
                 request('/Game/Admin/SetKickScope', { ID: id, KickScope: scope }, function (data) {
@@ -302,6 +363,79 @@
         function agencyRowStyler(index, rowData) {
             var color = rowData && rowData.AgencyGroupIndex % 2 == 1 ? '#eeeeee' : '#ffffff';
             return 'background-color:' + color + ';';
+        }
+
+        function autoFitAgencyColumns() {
+            var grid = $('#tb_AgencyInfo');
+            var fields = grid.datagrid('getColumnFields', true).concat(grid.datagrid('getColumnFields', false));
+            var panel = grid.datagrid('getPanel');
+            var rows = grid.datagrid('getRows');
+
+            for (var i = 0; i < fields.length; i++) {
+                var field = fields[i];
+                if (!field)
+                    continue;
+
+                var column = grid.datagrid('getColumnOption', field);
+                if (!column || column.hidden)
+                    continue;
+
+                grid.datagrid('autoSizeColumn', field);
+                var headerText = column.title || panel.find('.datagrid-header td[field="' + field + '"] .datagrid-cell').text();
+                var maxWidth = measureAgencyText(headerText);
+                var headerCell = panel.find('.datagrid-header td[field="' + field + '"] .datagrid-cell');
+                if (headerCell.length > 0)
+                    maxWidth = Math.max(maxWidth, headerCell[0].scrollWidth);
+
+                for (var j = 0; j < rows.length; j++) {
+                    var row = rows[j];
+                    var cellValue = row[field];
+                    if (column.formatter)
+                        cellValue = column.formatter(row[field], row, j);
+                    maxWidth = Math.max(maxWidth, measureAgencyText(stripAgencyHtml(cellValue)));
+                }
+                panel.find('.datagrid-body td[field="' + field + '"] .datagrid-cell').each(function () {
+                    maxWidth = Math.max(maxWidth, this.scrollWidth);
+                });
+
+                setAgencyColumnWidth(grid, field, Math.ceil(maxWidth + 10));
+            }
+            grid.datagrid('fixColumnSize');
+        }
+
+        function setAgencyColumnWidth(grid, field, width) {
+            var column = grid.datagrid('getColumnOption', field);
+            if (!column)
+                return;
+
+            column.width = width;
+            var panel = grid.datagrid('getPanel');
+            var selector = 'td[field="' + field + '"]';
+            panel.find('.datagrid-header ' + selector + ' .datagrid-cell').outerWidth(width);
+            panel.find('.datagrid-body ' + selector + ' .datagrid-cell').outerWidth(width);
+        }
+
+        function measureAgencyText(text) {
+            var value = text == null ? '' : String(text);
+            if (!window._agencyTextMeasure) {
+                window._agencyTextMeasure = $('<span></span>').css({
+                    position: 'absolute',
+                    top: '-9999px',
+                    left: '-9999px',
+                    visibility: 'hidden',
+                    whiteSpace: 'nowrap',
+                    fontSize: '12px',
+                    fontFamily: 'Arial, Microsoft YaHei, sans-serif'
+                }).appendTo('body');
+            }
+            window._agencyTextMeasure.text(value);
+            return window._agencyTextMeasure.outerWidth();
+        }
+
+        function stripAgencyHtml(value) {
+            if (value == null)
+                return '';
+            return $('<div></div>').html(String(value).replace(/<\/a>/gi, '</a> ')).text().replace(/\s+/g, ' ').trim();
         }
 
         function bindAgencyRowNumberToggle() {
@@ -429,6 +563,34 @@
     </script>
 
     <style>
+        .admin-perm-grid,
+        .admin-perm-grid .datagrid-cell,
+        .admin-perm-grid .datagrid-cell span {
+            white-space: nowrap;
+        }
+
+        .admin-perm-grid .datagrid-cell {
+            padding-left: 5px;
+            padding-right: 5px;
+            text-align: left;
+            overflow: hidden;
+            text-overflow: clip;
+        }
+
+        .admin-perm-grid .datagrid-header .datagrid-cell {
+            text-align: center;
+        }
+
+        .admin-perm-grid .datagrid-view,
+        .admin-perm-grid .datagrid-body {
+            overflow-x: auto;
+        }
+
+        .admin-perm-grid a.Lpd5 {
+            display: inline-block;
+            padding: 0 5px;
+            white-space: nowrap;
+        }
     </style>
 }
 

@@ -109,6 +109,15 @@ namespace YYT.Entity
         [DataMember(Name = "IsModifySafePwd")]
         public long? IsModifySafePwd { get; set; }
 
+        [DataMember(Name = "IsDeleteAgent")]
+        public long? IsDeleteAgent { get; set; }
+
+        [DataMember(Name = "IsViewAgentPwd")]
+        public long? IsViewAgentPwd { get; set; }
+
+        [DataMember(Name = "IsModifyAgentPwd")]
+        public long? IsModifyAgentPwd { get; set; }
+
 
         // ======================================================================
         /// <summary>
@@ -147,6 +156,9 @@ namespace YYT.Entity
                 IsResetSafePwd = this.IsResetSafePwd,
                 IsViewSafePwd = this.IsViewSafePwd,        // 新增
                 IsModifySafePwd = this.IsModifySafePwd,    // 新增
+                IsDeleteAgent = this.IsDeleteAgent,
+                IsViewAgentPwd = this.IsViewAgentPwd,
+                IsModifyAgentPwd = this.IsModifyAgentPwd,
                 ManageScope = this.ManageScope,
                 InviteCode = this.InviteCode,
                 CommissionRate = this.CommissionRate

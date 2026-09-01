@@ -622,6 +622,111 @@ namespace YYT.Web.Areas.Game.Controllers
             return Json(msg);
         }
 
+        /// <summary>
+        /// 设置删除代理权限
+        /// </summary>
+        [AjaxOnly]
+        [HttpPost]
+        public ActionResult SetIsDeleteAgent(FormCollection form)
+        {
+            Msg msg = new Msg(0, "设置失败！");
+            try
+            {
+                string id = form.Q<string>("ID");
+                int isDeleteAgent = form.Q<int>("IsDeleteAgent", 0);
+                M_LoginUser m_LoginUser = WebHelper.GetLoginInfo();
+
+                if (m_LoginUser != null && !string.IsNullOrWhiteSpace(id))
+                {
+                    if (!CanManagePermissionTarget(m_LoginUser, id, msg))
+                        return Json(msg);
+
+                    M_Admin mUsers = new M_Admin { ID = id, IsDeleteAgent = isDeleteAgent };
+                    int val = new B_Admin().SetDeleteAgentPermission(mUsers);
+                    if (val > 0)
+                    {
+                        msg.code = 1;
+                        msg.content = "删除代理权限设置成功！";
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.AdminController), ex);
+            }
+            return Json(msg);
+        }
+
+        /// <summary>
+        /// 设置查看代理密码权限（仅直属代理）
+        /// </summary>
+        [AjaxOnly]
+        [HttpPost]
+        public ActionResult SetIsViewAgentPwd(FormCollection form)
+        {
+            Msg msg = new Msg(0, "设置失败！");
+            try
+            {
+                string id = form.Q<string>("ID");
+                int isViewAgentPwd = form.Q<int>("IsViewAgentPwd", 0);
+                M_LoginUser m_LoginUser = WebHelper.GetLoginInfo();
+
+                if (m_LoginUser != null && !string.IsNullOrWhiteSpace(id))
+                {
+                    if (!CanManagePermissionTarget(m_LoginUser, id, msg))
+                        return Json(msg);
+
+                    M_Admin mUsers = new M_Admin { ID = id, IsViewAgentPwd = isViewAgentPwd };
+                    int val = new B_Admin().SetViewAgentPwdPermission(mUsers);
+                    if (val > 0)
+                    {
+                        msg.code = 1;
+                        msg.content = "查看代理密码权限设置成功！";
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.AdminController), ex);
+            }
+            return Json(msg);
+        }
+
+        /// <summary>
+        /// 设置修改代理密码权限（仅直属代理）
+        /// </summary>
+        [AjaxOnly]
+        [HttpPost]
+        public ActionResult SetIsModifyAgentPwd(FormCollection form)
+        {
+            Msg msg = new Msg(0, "设置失败！");
+            try
+            {
+                string id = form.Q<string>("ID");
+                int isModifyAgentPwd = form.Q<int>("IsModifyAgentPwd", 0);
+                M_LoginUser m_LoginUser = WebHelper.GetLoginInfo();
+
+                if (m_LoginUser != null && !string.IsNullOrWhiteSpace(id))
+                {
+                    if (!CanManagePermissionTarget(m_LoginUser, id, msg))
+                        return Json(msg);
+
+                    M_Admin mUsers = new M_Admin { ID = id, IsModifyAgentPwd = isModifyAgentPwd };
+                    int val = new B_Admin().SetModifyAgentPwdPermission(mUsers);
+                    if (val > 0)
+                    {
+                        msg.code = 1;
+                        msg.content = "修改代理密码权限设置成功！";
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.AdminController), ex);
+            }
+            return Json(msg);
+        }
+
 
     }
 }

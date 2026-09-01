@@ -78,15 +78,20 @@
         function fmtOpt(value, rowData, rowIndex) {
             var isSelf = rowData.ID == "@(loginUser?.Accounts)";
             var isSuperAdmin = @((loginUser?.UserPriv == 0).ToString().ToLower());
+            var canDeleteAgent = @((loginUser?.UserPriv == 0 || loginUser?.IsDeleteAgent == 1).ToString().ToLower());
+            var canModifyAgentPwd = @((loginUser?.UserPriv == 0 || loginUser?.IsModifyAgentPwd == 1).ToString().ToLower());
+            var isDirectChild = rowData.AGENCY == "@(loginUser?.Accounts)";
             if (isSelf && !isSuperAdmin)
                 return "";
 
             var features = [];
             var states = [];
-            features.push('<a href="javascript:void(0)" class="agency-action-link agency-action-feature" onclick="showChgWin(\'' + rowData.ID + '\')">改密码</a>');
+            if (canModifyAgentPwd && (isSuperAdmin || isDirectChild))
+                features.push('<a href="javascript:void(0)" class="agency-action-link agency-action-feature" onclick="showChgWin(\'' + rowData.ID + '\')">改密码</a>');
             features.push('<a href="javascript:void(0)" class="agency-action-link agency-action-feature" onclick="showCustomerServiceUrl(\'' + rowData.ID + '\')">客服</a>');
             if (!isSelf) {
-                features.push('<a href="javascript:void(0)" class="agency-action-link agency-action-delete" onclick="DeleteAdmin(\'' + rowData.ID + '\')">删除</a>');
+                if (canDeleteAgent)
+                    features.push('<a href="javascript:void(0)" class="agency-action-link agency-action-delete" onclick="DeleteAdmin(\'' + rowData.ID + '\')">删除</a>');
                 if (rowData.RE_ENABLE == 0)
                     states.push('<a href="javascript:void(0)" class="agency-action-link agency-action-enabled" onclick="setRecharge(\'' + rowData.ID + '\',1)">启用</a>');
                 else
@@ -621,7 +626,10 @@
             <th field="Profit" width="85" formatter="fmtCoins">盈利</th>
             <th field="RE_ENABLE" width="85" formatter="fmtRechargeSwitch">账号状态</th>
             <th field="AGENCY_LIMIT" width="80" formatter="fmtAgencyLimit">分代上限</th>
+@if (loginUser?.UserPriv == 0 || loginUser?.IsViewAgentPwd == 1)
+{
             <th field="ShowPWD" width="90" formatter="fmtShowPwd">代理密码显示</th>
+}
             <th field="OPT" width="520" formatter="fmtOpt">操作</th>
         </tr>
     </thead>

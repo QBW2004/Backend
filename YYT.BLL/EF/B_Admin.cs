@@ -492,6 +492,9 @@ namespace YYT.BLL.EF
                 entity.IsRelease = entity.IsRelease ?? 0;
                 entity.IsViewSafePwd = entity.IsViewSafePwd ?? 0;
                 entity.IsModifySafePwd = entity.IsModifySafePwd ?? 0;
+                entity.IsDeleteAgent = entity.IsDeleteAgent ?? 0;
+                entity.IsViewAgentPwd = entity.IsViewAgentPwd ?? 0;
+                entity.IsModifyAgentPwd = entity.IsModifyAgentPwd ?? 0;
                 entity.ManageScope = entity.ManageScope ?? 1;
                 entity.CommissionRate = entity.CommissionRate ?? 0.00m;
                 entity.CreateTime = DateTime.Now;
@@ -780,6 +783,57 @@ namespace YYT.BLL.EF
                     if (admin.IsModifySafePwd == entity.IsModifySafePwd)
                         return 1;
                     admin.IsModifySafePwd = entity.IsModifySafePwd;
+                    admin.UpdateTime = DateTime.Now;
+                    return ef.SaveChanges();
+                }
+            }
+            return 0;
+        }
+
+        public int SetDeleteAgentPermission(M_Admin entity)
+        {
+            using (var ef = new GameDbContext())
+            {
+                var admin = ef.Admins.FirstOrDefault(t => t.ID == entity.ID);
+                if (admin != null)
+                {
+                    if (admin.IsDeleteAgent == entity.IsDeleteAgent)
+                        return 1;
+                    admin.IsDeleteAgent = entity.IsDeleteAgent;
+                    admin.UpdateTime = DateTime.Now;
+                    return ef.SaveChanges();
+                }
+            }
+            return 0;
+        }
+
+        public int SetViewAgentPwdPermission(M_Admin entity)
+        {
+            using (var ef = new GameDbContext())
+            {
+                var admin = ef.Admins.FirstOrDefault(t => t.ID == entity.ID);
+                if (admin != null)
+                {
+                    if (admin.IsViewAgentPwd == entity.IsViewAgentPwd)
+                        return 1;
+                    admin.IsViewAgentPwd = entity.IsViewAgentPwd;
+                    admin.UpdateTime = DateTime.Now;
+                    return ef.SaveChanges();
+                }
+            }
+            return 0;
+        }
+
+        public int SetModifyAgentPwdPermission(M_Admin entity)
+        {
+            using (var ef = new GameDbContext())
+            {
+                var admin = ef.Admins.FirstOrDefault(t => t.ID == entity.ID);
+                if (admin != null)
+                {
+                    if (admin.IsModifyAgentPwd == entity.IsModifyAgentPwd)
+                        return 1;
+                    admin.IsModifyAgentPwd = entity.IsModifyAgentPwd;
                     admin.UpdateTime = DateTime.Now;
                     return ef.SaveChanges();
                 }

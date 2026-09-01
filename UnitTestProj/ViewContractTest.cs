@@ -10,7 +10,7 @@ namespace UnitTestProj
         private static string ReadRepoFile(string relativePath)
         {
             DirectoryInfo dir = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory);
-            while (dir != null && !File.Exists(Path.Combine(dir.FullName, "YYT_Game_Mgr_MySQL.sln")))
+            while (dir != null && !File.Exists(Path.Combine(dir.FullName, "MTH_Mgr_MySQL.sln")))
                 dir = dir.Parent;
 
             Assert.IsNotNull(dir, "Cannot locate repository root.");
@@ -36,14 +36,20 @@ namespace UnitTestProj
             StringAssert.Contains(view, "/Game/Admin/SetIsKill");
             StringAssert.Contains(view, "setIsRelease");
             StringAssert.Contains(view, "/Game/Admin/SetIsRelease");
-            StringAssert.Contains(view, "setIsViewSafePwd");
-            StringAssert.Contains(view, "/Game/Admin/SetIsViewSafePwd");
             StringAssert.Contains(view, "setIsUpDown");
             StringAssert.Contains(view, "/Game/Admin/SetIsUpDown");
             StringAssert.Contains(view, "setIsDelete");
             StringAssert.Contains(view, "/Game/Admin/SetIsDelete");
             StringAssert.Contains(view, "setIsModifyPwd");
             StringAssert.Contains(view, "/Game/Admin/SetIsModifyPwd");
+            StringAssert.Contains(view, "setIsDeleteAgent");
+            StringAssert.Contains(view, "/Game/Admin/SetIsDeleteAgent");
+            StringAssert.Contains(view, "setIsViewPwd");
+            StringAssert.Contains(view, "/Game/Admin/SetIsViewPwd");
+            StringAssert.Contains(view, "setIsViewAgentPwd");
+            StringAssert.Contains(view, "/Game/Admin/SetIsViewAgentPwd");
+            StringAssert.Contains(view, "setIsModifyAgentPwd");
+            StringAssert.Contains(view, "/Game/Admin/SetIsModifyAgentPwd");
             StringAssert.Contains(view, "setKickScope");
             StringAssert.Contains(view, "/Game/Admin/SetKickScope");
             StringAssert.Contains(view, "setManageScope");
@@ -52,10 +58,19 @@ namespace UnitTestProj
             StringAssert.Contains(view, "禁用删除用户");
             StringAssert.Contains(view, "启用修改密码");
             StringAssert.Contains(view, "禁用修改密码");
-            StringAssert.Contains(view, "启用保险柜");
-            StringAssert.Contains(view, "禁用保险柜");
+            StringAssert.Contains(view, "启用删除代理");
+            StringAssert.Contains(view, "禁用删除代理");
+            StringAssert.Contains(view, "启用查看用户密码");
+            StringAssert.Contains(view, "禁用查看用户密码");
+            StringAssert.Contains(view, "启用查看代理密码");
+            StringAssert.Contains(view, "禁用查看代理密码");
+            StringAssert.Contains(view, "启用修改代理密码");
+            StringAssert.Contains(view, "禁用修改代理密码");
+            Assert.IsFalse(view.Contains("field=\"IsDeleteAgent\""));
+            Assert.IsFalse(view.Contains("field=\"IsViewPwd\""));
+            Assert.IsFalse(view.Contains("field=\"IsViewAgentPwd\""));
+            Assert.IsFalse(view.Contains("field=\"IsModifyAgentPwd\""));
             Assert.IsFalse(view.Contains("showMsg(data);"));
-            Assert.IsFalse(view.Contains("启用查看密码"));
             Assert.IsFalse(view.Contains("启用重置保险"));
             Assert.IsFalse(view.Contains("启用赠送"));
             Assert.IsFalse(view.Contains("启用开代理"));
@@ -64,10 +79,14 @@ namespace UnitTestProj
             Assert.IsFalse(view.Contains("保险柜密码"));
 
             Assert.IsFalse(view.Contains("setIsModifySafePwd"));
-            Assert.IsTrue(view.IndexOf("setIsUpDown", StringComparison.Ordinal) < view.IndexOf("setIsViewSafePwd", StringComparison.Ordinal));
+            Assert.IsFalse(view.Contains("启用保险柜"));
+            Assert.IsFalse(view.Contains("setIsViewSafePwd"));
             Assert.IsTrue(view.IndexOf("setIsUpDown", StringComparison.Ordinal) < view.IndexOf("setIsDelete", StringComparison.Ordinal));
-            Assert.IsTrue(view.IndexOf("setIsDelete", StringComparison.Ordinal) < view.IndexOf("setIsModifyPwd", StringComparison.Ordinal));
-            Assert.IsTrue(view.IndexOf("setIsModifyPwd", StringComparison.Ordinal) < view.IndexOf("setIsViewSafePwd", StringComparison.Ordinal));
+            Assert.IsTrue(view.IndexOf("setIsDelete", StringComparison.Ordinal) < view.IndexOf("setIsDeleteAgent", StringComparison.Ordinal));
+            Assert.IsTrue(view.IndexOf("setIsDeleteAgent", StringComparison.Ordinal) < view.IndexOf("setIsModifyPwd", StringComparison.Ordinal));
+            Assert.IsTrue(view.IndexOf("setIsModifyPwd", StringComparison.Ordinal) < view.IndexOf("setIsViewPwd", StringComparison.Ordinal));
+            Assert.IsTrue(view.IndexOf("setIsViewPwd", StringComparison.Ordinal) < view.IndexOf("setIsViewAgentPwd", StringComparison.Ordinal));
+            Assert.IsTrue(view.IndexOf("setIsViewAgentPwd", StringComparison.Ordinal) < view.IndexOf("setIsModifyAgentPwd", StringComparison.Ordinal));
 
             StringAssert.Contains(controller, "public ActionResult SetFrozen");
             StringAssert.Contains(controller, "public ActionResult SetIsProbability");
@@ -75,10 +94,13 @@ namespace UnitTestProj
             StringAssert.Contains(controller, "public ActionResult SetIsDelete");
             StringAssert.Contains(controller, "public ActionResult SetIsKill");
             StringAssert.Contains(controller, "public ActionResult SetIsRelease");
-            StringAssert.Contains(controller, "public ActionResult SetIsViewSafePwd");
             StringAssert.Contains(controller, "public ActionResult SetIsModifyPwd");
             StringAssert.Contains(controller, "public ActionResult SetIsModifySafePwd");
             StringAssert.Contains(controller, "public ActionResult SetIsUpDown");
+            StringAssert.Contains(controller, "public ActionResult SetIsDeleteAgent");
+            StringAssert.Contains(controller, "public ActionResult SetIsViewPwd");
+            StringAssert.Contains(controller, "public ActionResult SetIsViewAgentPwd");
+            StringAssert.Contains(controller, "public ActionResult SetIsModifyAgentPwd");
             StringAssert.Contains(controller, "public ActionResult SetKickScope");
             StringAssert.Contains(controller, "public ActionResult SetManageScope");
             StringAssert.Contains(adminBll, "public int SetFrozen");
@@ -87,9 +109,11 @@ namespace UnitTestProj
             StringAssert.Contains(adminBll, "public int SetDelete");
             StringAssert.Contains(adminBll, "public int SetKillPermission");
             StringAssert.Contains(adminBll, "public int SetReleasePermission");
-            StringAssert.Contains(adminBll, "public int SetViewSafePwdPermission");
             StringAssert.Contains(adminBll, "public int SetModifyPwdPermission");
             StringAssert.Contains(adminBll, "public int SetModifySafePwdPermission");
+            StringAssert.Contains(adminBll, "public int SetDeleteAgentPermission");
+            StringAssert.Contains(adminBll, "public int SetViewAgentPwdPermission");
+            StringAssert.Contains(adminBll, "public int SetModifyAgentPwdPermission");
             StringAssert.Contains(adminBll, "public int SetUpDown");
             StringAssert.Contains(adminBll, "public int SetKickScope");
             StringAssert.Contains(adminBll, "public int SetManageScope");
@@ -122,6 +146,59 @@ namespace UnitTestProj
             StringAssert.Contains(controller, "entity.IsRelease = form.Q<int>(\"IsRelease\", 0);");
             StringAssert.Contains(controller, "entity.IsKill = form.Q<int>(\"IsKill\", 0);");
             StringAssert.Contains(controller, "entity.IsViewSafePwd = form.Q<int>(\"IsViewSafePwd\", 0);");
+            StringAssert.Contains(controller, "entity.IsDeleteAgent = form.Q<int>(\"IsDeleteAgent\", 0);");
+            StringAssert.Contains(controller, "entity.IsViewAgentPwd = form.Q<int>(\"IsViewAgentPwd\", 0);");
+            StringAssert.Contains(controller, "entity.IsModifyAgentPwd = form.Q<int>(\"IsModifyAgentPwd\", 0);");
+        }
+
+        [TestMethod]
+        public void AgentPasswordAndDeletePermissionsAreScopedToDirectSubordinates()
+        {
+            string adminView = ReadRepoFile(@"TTY.Web\Areas\Game\Views\Admin\Index.cshtml");
+            string agencyView = ReadRepoFile(@"TTY.Web\Areas\Game\Views\AgencyInfo\Index.cshtml");
+            string agencyController = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\AgencyInfoController.cs");
+            string adminEntity = ReadRepoFile(@"YYT.Entity\EF\M_Admin.cs");
+            string loginUserEntity = ReadRepoFile(@"YYT.Entity\Sys\M_LoginUser.cs");
+            string sqlUpdate = ReadRepoFile(@"mth_update_agent_permissions.sql");
+
+            StringAssert.Contains(adminEntity, "public long? IsDeleteAgent { get; set; }");
+            StringAssert.Contains(adminEntity, "public long? IsViewAgentPwd { get; set; }");
+            StringAssert.Contains(adminEntity, "public long? IsModifyAgentPwd { get; set; }");
+            StringAssert.Contains(loginUserEntity, "IsViewAgentPwd");
+            StringAssert.Contains(loginUserEntity, "IsModifyAgentPwd");
+
+            // 代理管理页：按权限显示删除/改密入口，改密仅限直属代理行
+            StringAssert.Contains(agencyView, "canDeleteAgent");
+            StringAssert.Contains(agencyView, "canModifyAgentPwd");
+            StringAssert.Contains(agencyView, "loginUser?.IsDeleteAgent == 1");
+            StringAssert.Contains(agencyView, "loginUser?.IsModifyAgentPwd == 1");
+            StringAssert.Contains(agencyView, "canModifyAgentPwd && (isSuperAdmin || isDirectChild)");
+            StringAssert.Contains(agencyView, "if (canDeleteAgent)");
+            StringAssert.Contains(agencyView, "loginUser?.IsViewAgentPwd == 1");
+
+            // 服务端：删除代理需要权限；改密仅限直属；列表对代理密码做服务端脱敏
+            StringAssert.Contains(agencyController, "m_LoginUser.IsDeleteAgent != 1");
+            StringAssert.Contains(agencyController, "没有删除代理权限");
+            StringAssert.Contains(agencyController, "m_LoginUser.IsModifyAgentPwd != 1");
+            StringAssert.Contains(agencyController, "没有修改代理密码权限");
+            StringAssert.Contains(agencyController, "只能修改自己直属代理的密码");
+            StringAssert.Contains(agencyController, "loginUser.IsViewAgentPwd != 1 || !string.Equals(item.AGENCY, loginUser.Accounts, StringComparison.OrdinalIgnoreCase)");
+            StringAssert.Contains(agencyController, "item.PWD = null");
+
+            // 数据库脚本包含新增字段
+            StringAssert.Contains(sqlUpdate, "IsDeleteAgent");
+            StringAssert.Contains(sqlUpdate, "IsViewAgentPwd");
+            StringAssert.Contains(sqlUpdate, "IsModifyAgentPwd");
+        }
+
+        [TestMethod]
+        public void OnlineUsersListIsScopedToManagedAgencies()
+        {
+            string userInfoController = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\UserInfoController.cs");
+
+            StringAssert.Contains(userInfoController, "public ActionResult GetOnlineUsers()");
+            StringAssert.Contains(userInfoController, "GetManagedAgencyAccounts(ef, loginUser)");
+            StringAssert.Contains(userInfoController, "agencies.Contains(c.AGENCY)");
         }
 
         [TestMethod]
@@ -393,8 +470,10 @@ namespace UnitTestProj
         public void AllBackendTablesUseAdaptiveColumnWidthsWithoutChangingHeightSizing()
         {
             string common = ReadRepoFile(@"TTY.Web\Scripts\app\common.js");
+            string adminView = ReadRepoFile(@"TTY.Web\Areas\Game\Views\Admin\Index.cshtml");
+            string agencyView = ReadRepoFile(@"TTY.Web\Areas\Game\Views\AgencyInfo\Index.cshtml");
             DirectoryInfo dir = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory);
-            while (dir != null && !File.Exists(Path.Combine(dir.FullName, "YYT_Game_Mgr_MySQL.sln")))
+            while (dir != null && !File.Exists(Path.Combine(dir.FullName, "MTH_Mgr_MySQL.sln")))
                 dir = dir.Parent;
 
             Assert.IsNotNull(dir, "Cannot locate repository root.");
@@ -402,10 +481,17 @@ namespace UnitTestProj
             StringAssert.Contains(common, "$.fn.datagrid.defaults.fitColumns = true;");
             StringAssert.Contains(common, "$.fn.treegrid.defaults.fitColumns = true;");
             StringAssert.Contains(common, "function applyAdaptiveGridColumns(id)");
-            StringAssert.Contains(common, "grid.datagrid('options').fitColumns = true;");
+            StringAssert.Contains(common, "grid.datagrid('options').fitColumns !== true");
             StringAssert.Contains(common, "grid.datagrid('fitColumns');");
             StringAssert.Contains(common, "height: h");
 
+            // 需要底部左右滑动条的代理页面显式关闭 fitColumns，并按内容自适应列宽
+            StringAssert.Contains(agencyView, "fitColumns: false");
+            StringAssert.Contains(adminView, "fitColumns: false");
+            StringAssert.Contains(agencyView, "autoFitAgencyColumns()");
+            StringAssert.Contains(adminView, "autoFitAgencyColumns()");
+
+            // 其余页面仍不允许私自关闭 fitColumns
             foreach (string relativeDir in new[] { @"TTY.Web\Areas", @"TTY.Web\Views", @"TTY.Web\Scripts\app", @"TTY.Web\Scripts\game" })
             {
                 string sourceDir = Path.Combine(dir.FullName, relativeDir);
@@ -415,6 +501,9 @@ namespace UnitTestProj
                     if (extension != ".cshtml" && extension != ".js")
                         continue;
 
+                    if (file.EndsWith(@"AgencyInfo\Index.cshtml", StringComparison.OrdinalIgnoreCase) ||
+                        file.EndsWith(@"Admin\Index.cshtml", StringComparison.OrdinalIgnoreCase))
+                        continue;
                     Assert.IsFalse(File.ReadAllText(file).Contains("fitColumns: false"), file);
                 }
             }
