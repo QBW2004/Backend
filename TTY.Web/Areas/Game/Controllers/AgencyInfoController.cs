@@ -71,6 +71,26 @@ namespace YYT.Web.Areas.Game.Controllers
                         item.Profit =  item.RECHARGE-item.EXCHANGE;
                         item.PlayerBalance = (tmp != null ? tmp.PlayerBalance : 0);
                         item.UserBalance = (tmp != null ? tmp.UserBalance : 0);
+                        item.PWD = null;
+                    }
+                    List<string> agencyIds = list.rows.Select(a => a.ID).Where(a => !string.IsNullOrWhiteSpace(a)).ToList();
+                    using (var ef = new GameDbContext())
+                    {
+                        Dictionary<string, long> scoreMap = ef.Users
+                            .Where(u => agencyIds.Contains(u.AGENCY))
+                            .GroupBy(u => u.AGENCY)
+                            .ToDictionary(g => g.Key, g => g.Select(u => (long?)u.GAME_SCORE).Sum() ?? 0);
+                        Dictionary<string, DateTime> loginMap = ef.AgencyOptLogs
+                            .Where(l => agencyIds.Contains(l.ID) && l.OPT == 2)
+                            .GroupBy(l => l.ID)
+                            .ToDictionary(g => g.Key, g => g.Max(l => l.REC_TIME));
+                        foreach (var item in list.rows)
+                        {
+                            long score;
+                            DateTime login;
+                            item.RemainingScore = scoreMap.TryGetValue(item.ID, out score) ? score : 0;
+                            item.LastLoginTime = loginMap.TryGetValue(item.ID, out login) ? (DateTime?)login : null;
+                        }
                     }
                 }
             }
@@ -119,6 +139,77 @@ namespace YYT.Web.Areas.Game.Controllers
 
         #region 手机端扩展（禁用代理）
         /// <summary>
+        /// 手机端：代理详情。非超级管理员只能查看自己管理范围内的代理，且不返回代理密码。
+        /// </summary>
+        [AjaxOnly]
+        [HttpPost]
+        public ActionResult GetAgencyDetail(FormCollection form)
+        {
+            Msg msg = new Msg(0, "查询失败！");
+            try
+            {
+                M_LoginUser loginUser = WebHelper.GetLoginInfo();
+                string id = form.Q<string>("ID");
+                if (loginUser == null || string.IsNullOrWhiteSpace(id))
+                {
+                    msg.content = "代理账号不能为空！";
+                    return Json(msg);
+                }
+
+                using (var ef = new GameDbContext())
+                {
+                    M_Admin agent = ef.Admins.FirstOrDefault(a => a.ID == id.Trim());
+                    if (agent == null)
+                    {
+                        msg.content = "代理账号不存在！";
+                        return Json(msg);
+                    }
+                    if (loginUser.UserPriv != 0)
+                    {
+                        List<string> managed = new B_Admin().GetManagedAgencyAccounts(ef, loginUser);
+                        if (!managed.Contains(agent.ID))
+                        {
+                            msg.content = "无权查看该代理！";
+                            return Json(msg);
+                        }
+                    }
+
+                    long remainingScore = ef.Users.Where(u => u.AGENCY == agent.ID)
+                        .Select(u => (long?)u.GAME_SCORE).Sum() ?? 0;
+                    DateTime? lastLogin = ef.AgencyOptLogs
+                        .Where(l => l.ID == agent.ID && l.OPT == 2)
+                        .OrderByDescending(l => l.REC_TIME)
+                        .Select(l => (DateTime?)l.REC_TIME)
+                        .FirstOrDefault();
+
+                    msg.code = 1;
+                    msg.content = "查询成功！";
+                    msg.datas = new
+                    {
+                        ID = agent.ID,
+                        PWD = loginUser.UserPriv == 0 ? agent.PWD : null,
+                        PRIV = agent.PRIV,
+                        AGENCY = agent.AGENCY,
+                        COINS = agent.COINS ?? 0,
+                        RemainingScore = remainingScore,
+                        RECHARGE = agent.RECHARGE ?? 0,
+                        EXCHANGE = agent.EXCHANGE ?? 0,
+                        RE_ENABLE = agent.RE_ENABLE ?? 0,
+                        InviteCode = agent.InviteCode,
+                        CreateTime = agent.CreateTime,
+                        UpdateTime = agent.UpdateTime,
+                        LastLoginTime = lastLogin
+                    };
+                }
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.AgencyInfoController), ex);
+            }
+            return Json(msg);
+        }
+
+        /// <summary>
         /// 手机端：禁用中的代理分页（禁用代理页列表）
         /// </summary>
         [AjaxOnly]
@@ -134,6 +225,9 @@ namespace YYT.Web.Areas.Game.Controllers
 
                 M_Page mPage = new M_Page(form.Q<int>("page", 1), form.Q<int>("rows", 10));
                 list = new B_Admin().GetBannedAgenciesList(mPage, loginUser);
+                if (list != null && list.rows != null)
+                    foreach (M_Admin item in list.rows)
+                        item.PWD = null;
             }
             catch (Exception ex)
             {
@@ -300,18 +394,10 @@ namespace YYT.Web.Areas.Game.Controllers
                         return Json(msg);
                     }
 
-                    if (m_LoginUser.UserPriv > 0)
+                    if (m_LoginUser.UserPriv != 0)
                     {
-                        using (var ef = new GameDbContext())
-                        {
-                            List<string> managedAgencies = new B_Admin().GetManagedAgencyAccounts(ef, m_LoginUser);
-                            M_Admin target = ef.Admins.FirstOrDefault(a => a.ID == id);
-                            if (target == null || !managedAgencies.Contains(id))
-                            {
-                                msg.content = "只能删除自己管理范围内的下级代理！";
-                                return Json(msg);
-                            }
-                        }
+                        msg.content = "只有超级管理员可以删除代理！";
+                        return Json(msg);
                     }
 
                     M_Admin mUsers = new M_Admin { ID = id};
@@ -497,7 +583,8 @@ namespace YYT.Web.Areas.Game.Controllers
                         return Json(msg);
                     }
                     entity.AGENCY_LIMIT = entity.AGENCY_LIMIT ?? AgencyRules.UnlimitedAgencyLimit;
-                    ApplyDefaultAgencyPermissions(entity, form);
+                    // 新建普通代理统一使用后台默认权限，不能由客户端伪造权限字段覆盖。
+                    ApplyDefaultAgencyPermissions(entity);
                     
                     // 检查代理创建数量限制，AGENCY_LIMIT=0 表示无限制；大于0表示当前代理最多可创建几个直属下级代理。
                     if (loginUser.UserPriv > 0)
@@ -541,33 +628,6 @@ namespace YYT.Web.Areas.Game.Controllers
                     }
 
 
-                    // 设置默认权限
-                    // 如果是总台添加，使用表单提交的权限值
-                    // 如果是代理添加，使用默认权限
-                    if (loginUser.UserPriv > 0)
-                    {
-                        // 代理添加下级代理的默认权限
-                        if (entity.PRIV == 1)
-                        {
-                            // 一级代理默认权限（总台可编辑）
-                            // 这里使用表单提交的值，如果没有则使用默认值
-                        }
-                        else
-                        {
-                            // 二级以下代理默认权限
-                            entity.IsFrozen = entity.IsFrozen ?? 0;
-                            entity.IsUpDown = entity.IsUpDown ?? 0;
-                            entity.IsProbability = entity.IsProbability ?? 0;
-                            entity.IsRelease = entity.IsRelease ?? 0;
-                            entity.IsKill = entity.IsKill ?? 0;
-                            entity.IsKicking = entity.IsKicking ?? 0;
-                            entity.IsViewSafePwd = entity.IsViewSafePwd ?? 0;
-                            entity.KickScope = entity.KickScope ?? 1;  // 默认只能踢直属
-                            entity.IsCreateAgent = entity.IsCreateAgent ?? 1;
-                            entity.ManageScope = entity.ManageScope ?? 1;  // 默认只管理直属
-                        }
-                    }
-
                     msg = bll.AddAgencyInfo(entity);
                 }
                 else
@@ -582,17 +642,24 @@ namespace YYT.Web.Areas.Game.Controllers
             return Json(msg);
         }
 
-        private static void ApplyDefaultAgencyPermissions(M_Admin entity, FormCollection form)
+        private static void ApplyDefaultAgencyPermissions(M_Admin entity)
         {
-            entity.IsFrozen = form.Q<int>("IsFrozen", 1);
-            entity.IsKicking = form.Q<int>("IsKicking", 1);
-            entity.IsProbability = form.Q<int>("IsProbability", 0);
-            entity.IsRelease = form.Q<int>("IsRelease", 0);
-            entity.IsKill = form.Q<int>("IsKill", 0);
-            entity.IsUpDown = form.Q<int>("IsUpDown", 1);
-            entity.IsViewSafePwd = form.Q<int>("IsViewSafePwd", 0);
-            entity.KickScope = form.Q<int>("KickScope", 2);
-            entity.ManageScope = form.Q<int>("ManageScope", 2);
+            entity.IsFrozen = 1;
+            entity.IsKicking = 0;
+            entity.IsProbability = 0;
+            entity.IsRelease = 0;
+            entity.IsKill = 1;
+            entity.IsUpDown = 1;
+            entity.IsDelete = 0;
+            entity.IsViewPwd = 0;
+            entity.IsViewSafePwd = 0;
+            entity.IsModifyPwd = 0;
+            entity.IsResetSafePwd = 0;
+            entity.IsGift = 0;
+            entity.IsModifySafePwd = 0;
+            entity.IsCreateAgent = 1;
+            entity.KickScope = 2;
+            entity.ManageScope = 2;
         }
 
         [AjaxOnly]

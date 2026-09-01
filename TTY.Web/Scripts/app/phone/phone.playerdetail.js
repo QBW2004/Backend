@@ -36,12 +36,12 @@
         var items = rows.map(function (r) {
             var mode = Number(r.ControlMode);
             if (mode == 6) {
-                return '控牌（控牌值 ' + M.esc(r.LimitCoins) + '） 次数 ' + M.esc(r.CardNumber) + '/' + M.esc(r.CardTotal);
+                return '控牌（控牌值 ' + M.esc(r.LimitCoins) + '，1次/5把）';
             }
             var isRelease = (mode == 5);
             var progress = isRelease ? Number(r.GrantedCoins || 0) : -Number(r.ConsumedCoins || 0);
             var name = mode == 4 ? '吃分' : '放水';
-            return name + '（强度 ' + M.esc(r.LimitCoins) + '） 阈值 ' + M.esc(r.TargetCoins) +
+            return name + '（目标 ' + M.esc(r.TargetCoins) +
                 ' 已' + (isRelease ? '放' : '吃') + '分 ' + M.gold(progress);
         });
         $el.attr('class', 'd-value ctrl-status-list')
@@ -167,31 +167,7 @@
 
     function showPrizeHistory() {
         if (!detail) return;
-        M.loading('查询中...');
-        loadPlayerRecords(detail.ID).always(M.hideLoading).then(function (rows) {
-            var body;
-            if (!rows.length) {
-                body = '<div class="modal-message" style="margin-bottom:0;">今日暂无记录</div>';
-            } else {
-                var trs = rows.map(function (r) {
-                    var score = Number(r.SCORE || 0);
-                    return '<tr>' +
-                        '<td>' + M.fmtTime(r.REC_TIME) + '</td>' +
-                        '<td>' + M.esc(r.GameName || M.gameName(r.GAME_TYPE)) + '</td>' +
-                        '<td class="' + (score >= 0 ? 'positive' : 'negative') + '">' + (score >= 0 ? '+' : '') + M.gold(score) + '</td>' +
-                        '</tr>';
-                }).join('');
-                body = '<div style="width:100%; max-height:320px; overflow-y:auto;">' +
-                    '<table class="table-container" style="box-shadow:none; margin-bottom:0; border:1px solid #eaeaea; border-radius:8px;">' +
-                    '<thead><tr><th>时间</th><th>游戏</th><th>输赢</th></tr></thead>' +
-                    '<tbody>' + trs + '</tbody></table></div>';
-            }
-            M.modal({
-                title: '中奖历史',
-                bodyHTML: body,
-                buttons: [{ label: '关闭', value: null, type: 'confirm' }]
-            });
-        });
+        window.location.href = '/Mobile/Home/PrizeHistory?id=' + encodeURIComponent(detail.ID);
     }
 
     function showGameTrack() {

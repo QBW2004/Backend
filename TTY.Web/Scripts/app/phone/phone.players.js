@@ -1,7 +1,7 @@
 /* ============================================================
    玩家列表页（1:1 复刻参考站 wanjialist）
    数据源：
-     - /Game/UserInfo/GetTodayWinLoss   今日玩家总输赢合计
+     - /Game/UserInfo/GetTodayWinLoss   离线页签使用的权限范围内今日输赢合计
      - /Game/UserInfo/GetOnlineUsers    在线玩家（游戏服实时）
      - /Game/UserInfo/GetOfflineUsers   离线玩家分页（支持排序）
      - /Game/UserInfo/GetUsers          搜索玩家
@@ -17,6 +17,8 @@
     var offlineSort = 'last-time';
     var offlineLoaded = false;
     var onlinePlayers = [];
+    var onlineTotalWinLoss = 0;
+    var offlineTotalWinLoss = 0;
     var current = null; // 当前操作的玩家（含详情）
 
     function todayStr() {
@@ -26,14 +28,20 @@
 
     /* ---------------- 头部总输赢 ---------------- */
 
+    function renderTotalWinLoss(isOnline) {
+        var total = isOnline ? onlineTotalWinLoss : offlineTotalWinLoss;
+        $('#totalWinLossLabel').text(isOnline ? '今日在线玩家总输赢（金币）' : '今日所有玩家总输赢（金币）');
+        var $el = $('#totalWinLoss');
+        $el.text(M.gold(total));
+        $el.removeClass('positive negative');
+        if (total > 0) $el.addClass('positive');
+        else if (total < 0) $el.addClass('negative');
+    }
+
     function loadTotalWinLoss() {
         return M.post('/Game/UserInfo/GetTodayWinLoss', {}).then(function (res) {
-            var total = res && res.datas ? Number(res.datas.total || 0) : 0;
-            var $el = $('#totalWinLoss');
-            $el.text(M.gold(total));
-            $el.removeClass('positive negative');
-            if (total > 0) $el.addClass('positive');
-            else if (total < 0) $el.addClass('negative');
+            offlineTotalWinLoss = res && res.datas ? Number(res.datas.total || 0) : 0;
+            renderTotalWinLoss($('.tab[data-tab="online"]').hasClass('active'));
         });
     }
 
@@ -46,15 +54,11 @@
                 ' / 已吃 ' + M.gold(-Number(control.ConsumedCoins || 0));
         }
         if (mode === 5) {
-            return '放分中... 放分目标 ' + M.gold(control.TargetCoins) +
+            return '放水中... 放水目标 ' + M.gold(control.TargetCoins) +
                 ' / 已放 ' + M.gold(control.GrantedCoins);
         }
         if (mode === 6) {
-            var total = Number(control.CardTotal || control.TargetCoins || 0);
-            var remaining = Number(control.CardNumber || 0);
-            if (total <= 0 || remaining <= 0) return '';
-            return '控牌中... 控牌值 ' + M.num(control.LimitCoins) +
-                ' / 次数 ' + (total - remaining) + ' / ' + total;
+            return '控牌中... 控牌值 ' + M.num(control.LimitCoins) + '（1次/5把）';
         }
         return '';
     }
@@ -84,7 +88,7 @@
         var ttColor = total > 0 ? 'positive' : (total < 0 ? 'negative' : '');
 
         var blackBadge = (p.FROZEN === 1) ? '<span class="black-listed">拉黑中</span>' : '';
-        var loginRow = (!isOnline && p.LastLoginTime)
+        var loginRow = p.LastLoginTime
             ? '<div class="info-row login-time-row"><div class="info-item">' + M.ICONS.clock +
                 '<span class="info-label">最后登录</span><span class="info-value">' + M.fmtTime(p.LastLoginTime) + '</span></div></div>'
             : '';
@@ -98,7 +102,7 @@
         return '' +
             '<div class="player-card' + (isOnline ? '' : ' offline') + '" data-account="' + M.esc(p.ID) + '">' +
                 '<div class="player-header">' +
-                    '<span class="player-account">' + M.esc(p.ID) + '</span>' +
+                    '<span class="player-account player-account-link" data-account="' + M.esc(p.ID) + '">' + M.esc(p.ID) + '</span>' +
                     '<span class="player-name">' + M.esc(p.NAME || p.ID) + '</span>' +
                     blackBadge +
                     '<span class="agent-line">代理:' + M.esc(p.AGENCY || '--') + '</span>' +
@@ -152,6 +156,10 @@
                 });
             })
             .then(function () {
+                onlineTotalWinLoss = onlinePlayers.reduce(function (sum, p) {
+                    return sum + Number(p.TodayWinLoss || 0);
+                }, 0);
+                if ($('.tab[data-tab="online"]').hasClass('active')) renderTotalWinLoss(true);
                 var $sec = $('#onlinePlayersSection');
                 if (!onlinePlayers.length) {
                     $sec.html('<div class="no-more-data" style="display: block;">暂无在线玩家</div>');
@@ -229,31 +237,7 @@
 
     function showPrizeHistory() {
         if (!current) return;
-        M.loading('查询中...');
-        loadPlayerRecords(current.ID).always(M.hideLoading).then(function (rows) {
-            var body;
-            if (!rows.length) {
-                body = '<div class="modal-message" style="margin-bottom:0;">今日暂无记录</div>';
-            } else {
-                var trs = rows.map(function (r) {
-                    var score = Number(r.SCORE || 0);
-                    return '<tr>' +
-                        '<td>' + M.fmtTime(r.REC_TIME) + '</td>' +
-                        '<td>' + M.esc(r.GameName || M.gameName(r.GAME_TYPE)) + '</td>' +
-                        '<td class="' + (score >= 0 ? 'positive' : 'negative') + '">' + (score >= 0 ? '+' : '') + M.gold(score) + '</td>' +
-                        '</tr>';
-                }).join('');
-                body = '<div style="width:100%; max-height:320px; overflow-y:auto;">' +
-                    '<table class="table-container" style="box-shadow:none; margin-bottom:0; border:1px solid #eaeaea; border-radius:8px;">' +
-                    '<thead><tr><th>时间</th><th>游戏</th><th>输赢</th></tr></thead>' +
-                    '<tbody>' + trs + '</tbody></table></div>';
-            }
-            M.modal({
-                title: '中奖历史',
-                bodyHTML: body,
-                buttons: [{ label: '关闭', value: null, type: 'confirm' }]
-            });
-        });
+        window.location.href = '/Mobile/Home/PrizeHistory?id=' + encodeURIComponent(current.ID);
     }
 
     function showGameTrack() {
@@ -329,6 +313,7 @@
             $(this).addClass('active');
             $('.tab-pane').removeClass('active');
             $('#' + tab + 'Tab').addClass('active');
+            renderTotalWinLoss(tab === 'online');
             if (tab === 'offline' && !offlineLoaded) {
                 loadOffline(1, false);
             }
@@ -351,6 +336,11 @@
         });
 
         // 卡片点击 -> 玩家操作弹窗
+        $(document).on('click', '.player-account-link', function (e) {
+            e.stopPropagation();
+            var account = $(this).data('account');
+            if (account) window.location.href = '/Mobile/Home/PlayerDetail?id=' + encodeURIComponent(String(account));
+        });
         $(document).on('click', '.player-card', function () {
             openPlayerModal($(this).data('account'));
         });

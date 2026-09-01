@@ -179,6 +179,31 @@
         background-color: #f5f7fa;
     }
 
+    .agent-detail-btn {
+        color: #007aff;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .agent-detail-modal {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        text-align: left;
+    }
+
+    .agent-detail-modal > div {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        border-bottom: 1px solid #f0f0f0;
+        padding-bottom: 8px;
+    }
+
+    .agent-detail-modal span { color: #888; }
+    .agent-detail-modal b { color: #333; text-align: right; word-break: break-all; }
+    .agent-detail-modal .blue-text { color: #007aff; }
+
     /* 搜索弹窗 */
     .search-modal-overlay {
         display: none;
@@ -450,7 +475,7 @@
                         <th>下级代理</th>
                         <th>我的会员</th>
                         <th>邀请码</th>
-                        <th>最后登陆</th>
+                        <th>最后登录</th>
                         <th>注册时间</th>
                     </tr>
                 </thead>

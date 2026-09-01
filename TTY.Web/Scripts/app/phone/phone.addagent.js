@@ -14,7 +14,6 @@
     function submitForm() {
         var account = $.trim($('#agentAccount').val());
         var password = $('#agentPassword').val();
-        var allowCreate = $('#allowCreateSubAgent').prop('checked') ? 1 : 0;
 
         if (!account) { M.toast('请输入代理账号', 'error'); return; }
         if (account.length < 6) { M.toast('账号长度不能小于6个字符', 'error'); return; }
@@ -27,8 +26,7 @@
             ID: account,
             PWD: password,
             RE_ENABLE: 1,
-            IsCreateAgent: allowCreate,
-            IsUpDown: 0,
+            MobileRequest: 1,
             InviteCode: ''
         }).always(function () { setSubmitting(false); }).then(function (res) {
             var r = M.result(res);

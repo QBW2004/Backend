@@ -74,48 +74,22 @@ namespace YYT.Web.Controllers
         }
         #endregion
 
-        #region 手机端识别与视图偏好
-        /// <summary>视图偏好 Cookie 名（pc / mobile）</summary>
-        protected const string VIEW_MODE_COOKIE = "mth_view";
-
+        #region 手机端识别兼容 API
+        // 端版本现在由显式 URL 决定，不能再由 UA 或 Cookie 自动切换。
+        // 保留这些方法仅兼容旧代码调用；它们不读写 mth_view，也不参与路由决策。
         public void SaveViewMode(string mode)
         {
-            HttpCookie cookie = new HttpCookie(VIEW_MODE_COOKIE, mode)
-            {
-                Expires = DateTime.Now.AddDays(30),
-                HttpOnly = true,
-                Path = "/"
-            };
-            Response.Cookies.Set(cookie);
+            // intentionally no-op: URL is the single source of view mode
         }
 
         public string GetViewMode()
         {
-            HttpCookie cookie = Request.Cookies[VIEW_MODE_COOKIE];
-            return cookie != null ? (cookie.Value ?? string.Empty).ToLowerInvariant() : string.Empty;
+            return string.Empty;
         }
-
-        /// <summary>
-        /// 手机浏览器识别。
-        /// 不用 Request.Browser.IsMobileDevice（浏览器定义文件过旧，新机型识别不准），
-        /// 直接匹配 UA 关键字；平板按电脑版处理。
-        /// </summary>
-        protected static readonly Regex MobileUaRegex = new Regex(
-            @"android|iphone|ipod|windows\s?phone|iemobile|blackberry|bb10|opera\s?mini|opera\s?mobi|webos|symbian|ucbrowser|micromessenger|harmonyos",
-            RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         public bool IsMobileBrowser()
         {
-            string ua = Request.UserAgent;
-            if (string.IsNullOrWhiteSpace(ua))
-                return false;
-            // Android 平板的 UA 含 android 但不含 mobile，按电脑版处理
-            if (ua.IndexOf("android", StringComparison.OrdinalIgnoreCase) >= 0 &&
-                ua.IndexOf("mobile", StringComparison.OrdinalIgnoreCase) < 0)
-                return false;
-            if (ua.IndexOf("ipad", StringComparison.OrdinalIgnoreCase) >= 0)
-                return false;
-            return MobileUaRegex.IsMatch(ua);
+            return false;
         }
         #endregion
     }

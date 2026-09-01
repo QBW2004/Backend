@@ -247,6 +247,14 @@ namespace YYT.Entity
         [NotMapped]
         public bool CanCreateChildAgent { get; set; }
 
+        /// <summary>最近一次代理登录时间（AgencyOptLog OPT=2，手机端代理详情/列表展示）。</summary>
+        [NotMapped]
+        public DateTime? LastLoginTime { get; set; }
+
+        /// <summary>直属玩家剩余分数合计（users.GAME_SCORE，手机端代理详情展示）。</summary>
+        [NotMapped]
+        public long RemainingScore { get; set; }
+
         public EAdminType PRIV_Translate()
         {
             switch (this.PRIV)

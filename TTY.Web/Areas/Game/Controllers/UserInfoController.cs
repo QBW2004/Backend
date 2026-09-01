@@ -45,6 +45,7 @@ namespace YYT.Web.Areas.Game.Controllers
         {
             return View();
         }
+        [MemberAuthorize]
         [AjaxOnly]
         [HttpPost]
         public ActionResult GetOnlineUsers()
@@ -52,9 +53,28 @@ namespace YYT.Web.Areas.Game.Controllers
             Msg msg = new Msg(0, "查询失败！");
             try
             {
+                M_LoginUser loginUser = WebHelper.GetLoginInfo();
+                if (loginUser == null)
+                    return Json(msg);
+
                 List<OnlinePlayerInfo> players = new PlayerStateService().QueryAllOnlinePlayers();
+                if (players == null)
+                    players = new List<OnlinePlayerInfo>();
+
+                // 游戏服返回的是全量在线玩家；先用一次批量查询裁剪到当前代理可见范围，避免泄露线外玩家。
+                List<string> ids = players.Where(c => !string.IsNullOrWhiteSpace(c.ID))
+                    .Select(c => c.ID).Distinct().ToList();
+                B_Users usersBll = new B_Users();
+                HashSet<string> visibleIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                for (int i = 0; i < ids.Count; i += 100)
+                {
+                    foreach (M_Users_DTO row in usersBll.GetUserRowsByIds(ids.Skip(i).Take(100).ToList(), loginUser))
+                        visibleIds.Add(row.ID);
+                }
+                players = players.Where(c => !string.IsNullOrWhiteSpace(c.ID) && visibleIds.Contains(c.ID)).ToList();
                 FillPlayerProfits(players);
                 FillPlayerTodayWinLoss(players);
+                FillPlayerLastLogin(players);
                 msg.code = 1;
                 msg.content = "查询成功！";
                 msg.datas = players;
@@ -122,6 +142,43 @@ namespace YYT.Web.Areas.Game.Controllers
             {
                 LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.UserInfoController), $"FillPlayerTodayWinLoss Err >> {ex.Message}");
             }
+        }
+
+        /// <summary>补充最近登录时间，避免在线/离线卡片字段不一致。</summary>
+        private void FillPlayerLastLogin(List<OnlinePlayerInfo> players)
+        {
+            if (players == null || players.Count < 1)
+                return;
+            List<string> ids = players.Where(c => !string.IsNullOrWhiteSpace(c.ID)).Select(c => c.ID).Distinct().ToList();
+            if (ids.Count < 1)
+                return;
+            try
+            {
+                using (var ef = new GameDbContext())
+                {
+                    string placeholders = string.Join(",", ids.Select((c, i) => "{" + i + "}"));
+                    string sql = "SELECT UserID, MAX(REC_TIME) AS LastLoginTime FROM UserOptLog WHERE UserID IN (" + placeholders + ") GROUP BY UserID";
+                    Dictionary<string, DateTime?> loginMap = ef.Database.SqlQuery<UserLastLoginRow>(sql, ids.Cast<object>().ToArray())
+                        .ToList()
+                        .ToDictionary(c => c.UserID, c => c.LastLoginTime, StringComparer.OrdinalIgnoreCase);
+                    foreach (OnlinePlayerInfo player in players)
+                    {
+                        DateTime? last;
+                        if (player.ID != null && loginMap.TryGetValue(player.ID, out last))
+                            player.LastLoginTime = last;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.UserInfoController), $"FillPlayerLastLogin Err >> {ex.Message}");
+            }
+        }
+
+        private sealed class UserLastLoginRow
+        {
+            public string UserID { get; set; }
+            public DateTime? LastLoginTime { get; set; }
         }
         [MemberAuthorize]
         [AjaxOnly]
@@ -386,6 +443,9 @@ namespace YYT.Web.Areas.Game.Controllers
                     ID = form.Q<string>("srch_ID"),
                     AGENCY = form.Q<string>("srch_Agency")
                 };
+                // 手机端“我的会员”未指定代理时，普通代理只看自己的直属会员；超管保留全平台视图。
+                if (loginUser.UserPriv != 0 && string.IsNullOrWhiteSpace(mUsers.AGENCY))
+                    mUsers.AGENCY = loginUser.Accounts;
                 string sort = form.Q<string>("sort");
                 list = new B_Users().GetMemberWinLossList(mPage, mUsers, loginUser, sort);
             }
@@ -412,7 +472,11 @@ namespace YYT.Web.Areas.Game.Controllers
                 if (loginUser == null)
                     return Json(msg);
 
-                M_MemberWinLossStats stats = new B_Users().GetMemberWinLossStats(loginUser, form.Q<string>("srch_Agency"));
+                string agency = form.Q<string>("srch_Agency");
+                // 与会员列表一致：普通代理无筛选参数时只统计直属会员，超管统计全平台。
+                if (loginUser.UserPriv != 0 && string.IsNullOrWhiteSpace(agency))
+                    agency = loginUser.Accounts;
+                M_MemberWinLossStats stats = new B_Users().GetMemberWinLossStats(loginUser, agency);
                 long totalBuy = stats.TotalBuy ?? 0;
                 long totalBack = stats.TotalBack ?? 0;
                 long todayBuy = stats.TodayBuy ?? 0;
@@ -1253,10 +1317,11 @@ namespace YYT.Web.Areas.Game.Controllers
                 int cardValue = form.Q<int>("CardValue", 0);
                 int cardNumber = form.Q<int>("CardNumber", 0);
                 int cardTotal = form.Q<int>("CardTotal", 0);
+                bool mobileFixedCard = form.Q<int>("MobileRequest", 0) == 1;
 
                 M_LoginUser loginUser = WebHelper.GetLoginInfo();
                 msg = new B_UserControl().ApplyTotalControl(loginUser, id, mode, strength, goldThreshold,
-                    cardAction, cardValue, cardNumber, cardTotal);
+                    cardAction, cardValue, cardNumber, cardTotal, mobileFixedCard);
             }
             catch (Exception ex)
             {
@@ -1807,13 +1872,8 @@ namespace YYT.Web.Areas.Game.Controllers
                 return Json(msg);
             }
 
-            if (loginUser.UserPriv != 1)
-            {
-                msg.content = "一键踢出整条线仅开放给一级代理！";
-                return Json(msg);
-            }
-
-            List<string> onlinePlayers = (loginUser.ManageScope ?? 1) == 2
+            // 踢人范围由 KickScope 独立控制：2=整条代理线，1=直属代理。
+            List<string> onlinePlayers = (loginUser.KickScope ?? 1) == 2
                 ? new B_Admin().GetOnlinePlayerAccountsInLine(loginUser.Accounts)
                 : new B_Admin().GetOnlinePlayerAccountsByAgency(loginUser.Accounts);
             int success = 0;
@@ -1849,7 +1909,8 @@ namespace YYT.Web.Areas.Game.Controllers
                 if (user == null)
                     return false;
 
-                if ((loginUser.ManageScope ?? 1) == 2)
+                // 踢人范围独立于查询/管理范围：2=整条代理线，1=直属代理。
+                if ((loginUser.KickScope ?? 1) == 2)
                     return new B_Admin().IsInAgencyLine(ef, loginUser.Accounts, user.AGENCY);
 
                 return user.AGENCY == loginUser.Accounts;

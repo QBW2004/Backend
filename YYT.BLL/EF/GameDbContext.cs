@@ -114,6 +114,8 @@ namespace YYT.BLL.EF
         /// 玩家日志
         /// </summary>
         public DbSet<M_UserOptLog> UserOptLogs { get; set; }
+        /// <summary>高倍率中奖播报记录</summary>
+        public DbSet<M_GamePrizeRecord> GamePrizeRecords { get; set; }
         /// <summary>
         /// 拉霸参数
         /// </summary>

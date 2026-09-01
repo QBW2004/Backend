@@ -66,7 +66,7 @@ namespace YYT.Web.Areas.Mobile.Controllers
             ViewBag.MShowRefresh = true;
             ViewBag.MShowSearch = true;
             ViewBag.MHeaderTall = true;
-            ViewBag.MSubtitleHtml = "<div>今日玩家总输赢（金币）</div><div class=\"total-win-loss\" id=\"totalWinLoss\">0</div>";
+            ViewBag.MSubtitleHtml = "<div id=\"totalWinLossLabel\">今日在线玩家总输赢（金币）</div><div class=\"total-win-loss\" id=\"totalWinLoss\">0</div>";
             ViewBag.CanUpDown = CanUpDown(user);
             ViewBag.CanFrozen = IsSuper(user) || (user != null && user.IsFrozen == 1);
             ViewBag.CanKick = IsSuper(user) || (user != null && user.IsKicking == 1);
@@ -150,6 +150,7 @@ namespace YYT.Web.Areas.Mobile.Controllers
             ViewBag.MSubtitle = "查看玩家充值和退分历史";
             ViewBag.MShowRefresh = true;
             ViewBag.Today = DateTime.Now.ToString("yyyy-MM-dd");
+            ViewBag.PresetAccount = Request.QueryString["id"] ?? string.Empty;
 
             return View();
         }
@@ -201,9 +202,9 @@ namespace YYT.Web.Areas.Mobile.Controllers
         }
 
         /// <summary>
-        /// 控制管理（吃分 / 送分 / 控牌），复用电脑端总控接口：
-        /// /Game/UserInfo/ApplyTotalControl、GetTotalControlStatus、CloseTotalControl、GetControlRecords。
-        /// Mode=4 吃分需 IsKill，Mode=5 送分需 IsProbability，Mode=6 控牌需 IsRelease（与电脑端一致）。
+        /// 控制管理（吃分 / 放水 / 控牌），复用电脑端总控接口：
+        /// /Game/UserInfo/ApplyTotalControl、GetTotalControlStatus、CloseTotalControl。
+        /// Mode=4 吃分需 IsKill，Mode=5 放水需 IsProbability，Mode=6 控牌需 IsRelease（与电脑端一致）。
         /// </summary>
         public ActionResult Control()
         {
@@ -216,7 +217,7 @@ namespace YYT.Web.Areas.Mobile.Controllers
 
             ViewBag.MPage = "control";
             ViewBag.MTitle = "控制管理";
-            ViewBag.MSubtitle = "设置吃分、送分、控牌";
+            ViewBag.MSubtitle = "设置吃分、放水、控牌";
             ViewBag.MShowRefresh = false;
             ViewBag.CanKill = canKill;
             ViewBag.CanRelease = canRelease;
@@ -259,6 +260,17 @@ namespace YYT.Web.Areas.Mobile.Controllers
                 || (user != null && (user.IsKill == 1 || user.IsProbability == 1 || user.IsRelease == 1));
             ViewBag.PlayerAccount = Request.QueryString["id"] ?? string.Empty;
 
+            return View();
+        }
+
+        /// <summary>高倍率中奖播报历史（独立手机页面）。</summary>
+        public ActionResult PrizeHistory()
+        {
+            ViewBag.MPage = "prizehistory";
+            ViewBag.MTitle = "中奖历史";
+            ViewBag.MShowRefresh = true;
+            ViewBag.PlayerAccount = Request.QueryString["id"] ?? string.Empty;
+            ViewBag.Today = DateTime.Now.ToString("yyyy-MM-dd");
             return View();
         }
         #endregion

@@ -1,4 +1,5 @@
 using Newtonsoft.Json;
+using System;
 
 namespace YYT.BLL.Services.GameServer
 {
@@ -57,6 +58,10 @@ namespace YYT.BLL.Services.GameServer
         /// </summary>
         [JsonProperty("TodayWinLoss")]
         public long TodayWinLoss { get; set; }
+
+        /// <summary>最近登录时间（后台补充，用于在线/离线列表统一展示）。</summary>
+        [JsonProperty("LastLoginTime")]
+        public DateTime? LastLoginTime { get; set; }
 
         /// <summary>
         /// 状态: 0=游戏中, 1=大厅, 2=其他

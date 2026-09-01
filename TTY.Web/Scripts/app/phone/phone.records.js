@@ -78,6 +78,8 @@
     }
 
     function initPage() {
+        var preset = window.MPagePreset || {};
+        if (preset.account) $('#playerAccount').val(preset.account);
         M.bindAccountAutocomplete({
             input: '#playerAccount',
             suggest: '#recordPlayerSuggest'

@@ -43,7 +43,7 @@
                 var profit = Number(u.Profit || 0);
                 var back = Number(u.COINS_BACK || 0);
                 return '<tr>' +
-                    '<td class="account">' + M.esc(u.ID) + '</td>' +
+                    '<td class="account"><a href="/Mobile/Home/PlayerDetail?id=' + encodeURIComponent(u.ID) + '">' + M.esc(u.ID) + '</a></td>' +
                     '<td>' + M.gold(u.COINS) + '</td>' +
                     '<td>' + M.num(u.GAME_SCORE) + '</td>' +
                     '<td class="' + M.signClass(profit) + '">' + M.signed(profit) + '</td>' +

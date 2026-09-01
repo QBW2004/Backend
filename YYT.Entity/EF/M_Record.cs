@@ -163,4 +163,30 @@ namespace YYT.Entity
             return JsonConvert.SerializeObject(this);
         }
     }
+
+    /// <summary>高倍率中奖播报记录。</summary>
+    [Table("gameprizerecord")]
+    public class M_GamePrizeRecord
+    {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public long ID { get; set; }
+        [Required, StringLength(64)]
+        public string EventId { get; set; }
+        [Required, StringLength(50)]
+        public string UserID { get; set; }
+        public int GameId { get; set; }
+        public int GameType { get; set; }
+        public long RoomId { get; set; }
+        public long TableId { get; set; }
+        public string CardType { get; set; }
+        public decimal Multiplier { get; set; }
+        public long Score { get; set; }
+        public int IsManualControl { get; set; }
+        public int IsBroadcast { get; set; }
+        public DateTime RecTime { get; set; }
+
+        [NotMapped]
+        public string GameName { get; set; }
+    }
 }

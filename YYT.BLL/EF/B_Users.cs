@@ -560,11 +560,11 @@ namespace YYT.BLL.EF
                     where.Append(" AND NOT (c.INHALL = 1)");
                 if (onlyFrozen)
                     where.Append(" AND c.FROZEN = 1");
-                // 搜索统一模糊匹配（LIKE '%kw%'）
+                // 代理过滤必须精确匹配：会员页从“我的代理”进入时只展示该代理的直属会员。
                 if (!string.IsNullOrWhiteSpace(entity.AGENCY))
                 {
-                    where.Append(" AND c.AGENCY LIKE {").Append(args.Count).Append("}");
-                    args.Add("%" + entity.AGENCY + "%");
+                    where.Append(" AND c.AGENCY = {").Append(args.Count).Append("}");
+                    args.Add(entity.AGENCY.Trim());
                 }
                 if (!string.IsNullOrWhiteSpace(entity.NAME))
                 {
@@ -722,8 +722,10 @@ namespace YYT.BLL.EF
                 StringBuilder scope = new StringBuilder();
                 if (!string.IsNullOrWhiteSpace(agency))
                 {
-                    scope.Append(" AND c.AGENCY LIKE {").Append(args.Count).Append("}");
-                    args.Add("%" + agency + "%");
+                    if (agencies != null && !agencies.Contains(agency.Trim()))
+                        return new M_MemberWinLossStats();
+                    scope.Append(" AND c.AGENCY = {").Append(args.Count).Append("}");
+                    args.Add(agency.Trim());
                 }
                 else if (agencies != null)
                 {

@@ -1,0 +1,51 @@
+﻿@{
+    string webVer = ConfigHelper.Get("WebVer");
+    string playerAccount = (string)(ViewBag.PlayerAccount ?? "");
+    Layout = "~/Views/Shared/Layout/_MobileLayout.cshtml";
+}
+
+@section head {
+<style>
+    .container { padding: 12px; max-width: 720px; margin: 0 auto; }
+    .history-filter { display:flex; gap:8px; margin-bottom:12px; }
+    .history-filter input { flex:1; min-width:0; height:40px; border:1px solid #ddd; border-radius:8px; padding:0 10px; }
+    .history-filter button { height:40px; border:0; border-radius:8px; background:#007aff; color:#fff; padding:0 16px; }
+    .game-card { background:#fff; border-radius:12px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,.08); overflow:hidden; }
+    .game-card-header { display:flex; align-items:center; justify-content:space-between; padding:14px 16px; font-weight:600; border-bottom:1px solid #eee; }
+    .game-count { color:#8e8e93; font-size:13px; font-weight:400; }
+    .history-table { width:100%; border-collapse:collapse; table-layout:auto; }
+    .history-table th,.history-table td { padding:10px 8px; border-bottom:1px solid #f0f0f0; text-align:center; font-size:13px; white-space:nowrap; }
+    .history-table th { color:#86868b; background:#f8f9fa; font-weight:500; }
+    .history-table tr:last-child td { border-bottom:0; }
+    .history-table .positive { color:#34c759; }
+    .history-table .negative { color:#ff3b30; }
+    .history-empty { padding:18px; text-align:center; color:#8e8e93; font-size:13px; }
+    .history-summary { color:#666; margin:0 2px 12px; font-size:13px; }
+    .history-pagination { display:flex; align-items:center; justify-content:center; gap:10px; margin:14px 0 4px; }
+    .history-pagination button { height:36px; padding:0 16px; border:1px solid #ddd; border-radius:7px; background:#fff; color:#333; }
+    .history-pagination button:disabled { opacity:.45; }
+    #historyPageInfo { color:#666; font-size:13px; }
+</style>
+}
+
+<div class="container">
+    <div class="history-filter">
+        <input type="date" id="historyStart" value="@ViewBag.Today" />
+        <input type="date" id="historyEnd" value="@ViewBag.Today" />
+        <button type="button" id="historyQueryBtn">查询</button>
+    </div>
+    <div class="history-summary" id="historySummary">--</div>
+    <div id="prizeHistoryList"></div>
+    <div class="history-pagination">
+        <button type="button" id="historyPrevBtn" disabled>上一页</button>
+        <span id="historyPageInfo">第 1 页 / 共 1 页</span>
+        <button type="button" id="historyNextBtn" disabled>下一页</button>
+    </div>
+</div>
+
+@section scripts {
+    <script>
+        window.MPagePreset = { account: '@Html.Raw(HttpUtility.JavaScriptStringEncode(playerAccount))' };
+    </script>
+    <script src="@Url.Content("~/Scripts/app/phone/phone.prizehistory.js?v=" + webVer)"></script>
+}

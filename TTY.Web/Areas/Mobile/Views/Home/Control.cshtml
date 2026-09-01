@@ -1,9 +1,9 @@
 ﻿@{
-    /* 控制管理（吃分 / 送分 / 控牌）
-       页面框架对齐参考站送奖管理：账号查询 → 统计卡 → 控制类型 → 动态参数 → 应用 → 底部记录区（日期筛选+刷新+分页）。
+    /* 控制管理（吃分 / 放水 / 控牌）
+       页面框架对齐参考站送奖管理：账号查询 → 统计卡 → 控制类型 → 动态参数 → 应用。
        房间已锁定为 1 个，无场次选择。
        复用电脑端总控接口：/Game/UserInfo/ApplyTotalControl、GetTotalControlStatus、CloseTotalControl、
-       GetControlRecords（总控记录分页）。玩家查询复用 /Game/UserInfo/GetVisibleUserRows。 */
+       玩家查询复用 /Game/UserInfo/GetVisibleUserRows。 */
     string webVer = ConfigHelper.Get("WebVer");
     string presetAccount = (string)(ViewBag.PresetAccount ?? "");
     bool canKill = ViewBag.CanKill == true;
@@ -18,16 +18,6 @@
         padding: 16px;
         max-width: 1200px;
         margin: 0 auto;
-    }
-
-    .section-title {
-        font-size: 16px;
-        font-weight: 600;
-        color: #666;
-        margin: 0 0 12px;
-        padding-bottom: 8px;
-        text-align: center;
-        border-bottom: 1px solid #eaeaea;
     }
 
     .form-row {
@@ -257,110 +247,6 @@
         cursor: not-allowed;
     }
 
-    /* ============ 底部控制记录区 ============ */
-    .records-section {
-        margin-top: 16px;
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-        padding: 14px;
-    }
-
-    .date-row {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 10px;
-    }
-
-    .date-row input[type="date"] {
-        flex: 1;
-        min-width: 0;
-        height: 40px;
-        padding: 0 8px;
-        border: 1px solid #e1e1e1;
-        border-radius: 8px;
-        font-size: 14px;
-        color: #333;
-        background: white;
-        -webkit-appearance: none;
-        appearance: none;
-    }
-
-    .date-row .date-sep {
-        color: #666;
-        font-size: 14px;
-        flex-shrink: 0;
-    }
-
-    .rec-stats {
-        font-size: 14px;
-        color: #333;
-        margin-bottom: 10px;
-    }
-
-    .rec-stats b {
-        color: #ff9500;
-        font-weight: 600;
-    }
-
-    .rec-refresh-btn {
-        width: 100%;
-        height: 42px;
-        border: none;
-        border-radius: 8px;
-        background: #f2f3f5;
-        color: #007aff;
-        font-size: 15px;
-        font-weight: 500;
-        cursor: pointer;
-        margin-bottom: 12px;
-        -webkit-appearance: none;
-        appearance: none;
-    }
-
-    .rec-refresh-btn:active {
-        background: #e8eaed;
-    }
-
-    .records-section .table-container table {
-        min-width: 620px;
-    }
-
-    .amount {
-        font-family: -apple-system-monospace, monospace;
-        font-weight: 500;
-    }
-
-    .pagination {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin-top: 14px;
-        gap: 8px;
-    }
-
-    .pagination-btn {
-        padding: 8px 16px;
-        border: 1px solid #e5e5e5;
-        border-radius: 6px;
-        background-color: white;
-        color: #333;
-        cursor: pointer;
-        -webkit-appearance: none;
-        appearance: none;
-    }
-
-    .pagination-btn:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-
-    .pagination-info {
-        color: #666;
-        font-size: 14px;
-    }
-
     /* ============ 账号实时模糊联想下拉 ============ */
     .input-with-btn {
         position: relative;
@@ -453,7 +339,6 @@
 
     <div class="container">
         <div class="input-section" style="max-width:100%;">
-            <div class="section-title">控制</div>
             <div class="form-row">
                 <label class="form-label" for="ctrlAccount">控制账号</label>
                 <div class="input-with-btn">
@@ -497,7 +382,7 @@
                         }
                         @if (canRelease)
                         {
-                            <option value="5">送分</option>
+                            <option value="5">放水</option>
                         }
                         @if (canCard)
                         {
@@ -506,21 +391,14 @@
                     </select>
                 </div>
 
-                @* 吃分 / 送分：控值 + 目标（累计达到目标后自动失效） *@
-                <div class="form-row" id="rowStrength">
-                    <label class="form-label" for="ctrlStrength">控值</label>
-                    <select id="ctrlStrength" class="input-field">
-                        <option value="3">开启</option>
-                        <option value="0">关闭</option>
-                    </select>
-                </div>
+                @* 吃分 / 放水：直接输入目标，控制默认启用。 *@
                 <div class="form-row" id="rowGold">
                     <label class="form-label" for="ctrlGold">目标</label>
                     <input type="number" id="ctrlGold" class="input-field" placeholder="必填，累计达到目标后自动失效" inputmode="numeric" autocomplete="off">
-                    <div class="tip-text">温馨提示：吃分 / 送分累计达到目标后自动失效，恢复桌台参数难度</div>
+                    <div class="tip-text">温馨提示：吃分 / 放水累计达到目标后自动失效，恢复桌台参数难度</div>
                 </div>
 
-                @* 控牌：游戏类型 / 控制牌型 / 次数 / 总次数（按次数控制，无需目标） *@
+                @* 控牌：游戏类型 / 控制牌型。固定控制 1 次，限制在 5 把内。 *@
                 <div class="form-row" id="rowCardAction" style="display:none;">
                     <label class="form-label" for="ctrlCardAction">游戏类型</label>
                     <select id="ctrlCardAction" class="input-field"></select>
@@ -529,55 +407,16 @@
                     <label class="form-label" for="ctrlCardValue">控制牌型</label>
                     <select id="ctrlCardValue" class="input-field"></select>
                 </div>
-                <div class="form-row" id="rowCardNumber" style="display:none;">
-                    <label class="form-label" for="ctrlCardNumber">次数</label>
-                    <select id="ctrlCardNumber" class="input-field"></select>
-                </div>
-                <div class="form-row" id="rowCardTotal" style="display:none;">
-                    <label class="form-label" for="ctrlCardTotal">总次数</label>
-                    <select id="ctrlCardTotal" class="input-field"></select>
-                </div>
 
                 <div class="form-row">
                     <button class="apply-btn" id="applyBtn" type="button" disabled>应用控制</button>
                 </div>
                 <div class="form-row">
-                    <button class="close-ctrl-btn" id="closeCtrlBtn" type="button" disabled>关闭当前功能</button>
+                    <button class="close-ctrl-btn" id="closeCtrlBtn" type="button" disabled>移除当前控制</button>
                 </div>
             </div>
         </div>
 
-        @* ============ 控制记录 ============ *@
-        <div class="records-section">
-            <div class="date-row">
-                <input type="date" id="recStart">
-                <span class="date-sep">至</span>
-                <input type="date" id="recEnd">
-            </div>
-            <div class="rec-stats">执行中控制：<b id="recActive">0</b></div>
-            <button class="rec-refresh-btn" id="recRefreshBtn" type="button">刷新</button>
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>控制账号</th>
-                            <th>类型</th>
-                            <th>参数</th>
-                            <th>状态</th>
-                            <th>操作人</th>
-                            <th>时间</th>
-                        </tr>
-                    </thead>
-                    <tbody id="recBody"></tbody>
-                </table>
-                <div class="no-data" id="recNoData" style="display: block;">暂无控制记录</div>
-            </div>
-            <div class="pagination">
-                <button class="pagination-btn" id="recPrevBtn" disabled>上一页</button>
-                <div class="pagination-info" id="recPageInfo">第 1 页 / 共 0 页</div>
-                <button class="pagination-btn" id="recNextBtn" disabled>下一页</button>
-            </div>
-        </div>
     </div>
 
 @section scripts {

@@ -1,23 +1,19 @@
 /* ============================================================
-   控制管理页（吃分 / 送分 / 控牌，对齐电脑端总控窗口）
+   控制管理页（吃分 / 放水 / 控牌，对齐电脑端总控窗口）
    页面框架对齐参考站送奖管理：账号查询 → 统计卡 → 控制类型 → 动态参数 →
-   应用控制 → 底部控制记录（日期筛选 + 刷新 + 分页）。房间锁定 1 个，无场次。
+   应用控制。房间锁定 1 个，无场次。
    数据源：
      - /Game/UserInfo/GetVisibleUserRows    查询玩家
      - /Game/UserInfo/GetTotalControlStatus 当前执行中的总控（含阈值进度/控牌次数）
-     - /Game/UserInfo/ApplyTotalControl     应用控制（Mode=4 吃分 / 5 送分 / 6 控牌）
-     - /Game/UserInfo/CloseTotalControl     关闭当前功能
-     - /Game/UserInfo/GetControlRecords     总控记录分页（含执行中数量）
-   权限：服务端渲染控制类型下拉（吃分需 IsKill、送分需 IsProbability、控牌需 IsRelease）。
+     - /Game/UserInfo/ApplyTotalControl     应用控制（Mode=4 吃分 / 5 放水 / 6 控牌）
+     - /Game/UserInfo/CloseTotalControl     移除当前控制
+   权限：服务端渲染控制类型下拉（吃分需 IsKill、放水需 IsProbability、控牌需 IsRelease）。
    记录行参数解析：GameId=控牌游戏(cardAction)、LimitCoins=控牌值(cardValue)/强度、
    TargetCoins=控牌次数(cardNumber)/金币阈值。
    ============================================================ */
 (function (window, $, M) {
     'use strict';
 
-    var PAGE_SIZE = 20;
-    var recPage = 1;
-    var recTotal = 0;
     var current = null; // 当前查询的玩家
 
     /* ---------------- 控牌参数（移植电脑端 UserInfo/Index.cshtml） ---------------- */
@@ -131,7 +127,7 @@
 
     function modeName(mode) {
         mode = parseInt(mode, 10);
-        return mode == 4 ? '吃分' : (mode == 5 ? '送分' : (mode == 6 ? '控牌' : ''));
+        return mode == 4 ? '吃分' : (mode == 5 ? '放水' : (mode == 6 ? '控牌' : ''));
     }
 
     /* ---------------- 账号实时模糊联想 ---------------- */
@@ -230,25 +226,23 @@
         }
         var items = rows.map(function (r) {
             return ctrlParamText(r.ControlMode, r.GameId, r.LimitCoins, r.TargetCoins, r.CardNumber, r.CardTotal) +
-                (Number(r.ControlMode) == 6 ? '' : ' 已' + (Number(r.ControlMode) == 5 ? '送' : '吃') + '分 ' + M.gold(Number(r.ControlMode) == 5 ? r.GrantedCoins : -r.ConsumedCoins));
+                (Number(r.ControlMode) == 6 ? '' : ' 已' + (Number(r.ControlMode) == 5 ? '放' : '吃') + '分 ' + M.gold(Number(r.ControlMode) == 5 ? r.GrantedCoins : -r.ConsumedCoins));
         });
         $el.attr('class', 'info-value ctrl-status-list')
             .html(items.map(function (t) { return '<span class="ctrl-status-item">' + M.esc(t) + '</span>'; }).join(''));
     }
 
-    /** 记录/状态的参数文案：吃分/送分 = 强度·目标；控牌 = 游戏·牌型×次数 */
+    /** 当前控制参数文案：吃分/放水显示目标；控牌显示游戏、牌型和固定 1/5 规则。 */
     function ctrlParamText(mode, gameId, killRatio, targetCoins, cardNumber, cardTotal) {
         mode = parseInt(mode, 10);
         if (mode == 6) {
-            var n = cardNumber != null ? cardNumber : targetCoins;
-            var t = cardTotal ? ' / ' + cardTotal : '';
             // 历史/异常数据可能没有游戏类型（GameId<5），只显示牌型值
             if (parseInt(gameId, 10) >= 5) {
-                return cardActionName(gameId) + ' ' + cardTypeName(gameId, killRatio) + ' ×' + n + '次' + t;
+                return cardActionName(gameId) + ' ' + cardTypeName(gameId, killRatio) + '（1次/5把）';
             }
-            return '控牌值 ' + M.esc(killRatio) + ' ×' + n + '次' + t;
+            return '控牌值 ' + M.esc(killRatio) + '（1次/5把）';
         }
-        return '强度 ' + M.esc(killRatio) + ' · 目标 ' + M.gold(targetCoins);
+        return '目标 ' + M.gold(targetCoins);
     }
 
     function refreshCtrlStatus() {
@@ -270,19 +264,11 @@
     function bindMode() {
         var mode = currentMode();
         var isCard = (mode == 6);
-        $('#rowStrength, #rowGold').toggle(!isCard);
-        $('#rowCardAction, #rowCardValue, #rowCardNumber, #rowCardTotal').toggle(isCard);
+        $('#rowGold').toggle(!isCard);
+        $('#rowCardAction, #rowCardValue').toggle(isCard);
         if (isCard) {
             fillSelect($('#ctrlCardAction'), CARD_ACTIONS, true);
             fillSelect($('#ctrlCardValue'), cardTypeData(parseInt($('#ctrlCardAction').val(), 10)), false);
-            if (!$('#ctrlCardNumber').find('option').length) {
-                var nums = [];
-                for (var i = 1; i <= 10; i++) nums.push({ id: i, text: i });
-                fillSelect($('#ctrlCardNumber'), nums, false);
-            }
-            if (!$('#ctrlCardTotal').find('option').length) {
-                fillSelect($('#ctrlCardTotal'), [{ id: 5, text: '五把之内' }, { id: 10, text: '十把之内' }], false);
-            }
         }
     }
 
@@ -291,21 +277,19 @@
     function applyControl() {
         if (!current) { M.toast('请先查询玩家信息', 'error'); return; }
         var mode = currentMode();
-        var para = { ID: current.ID, Mode: mode };
+        var para = { ID: current.ID, Mode: mode, MobileRequest: 1 };
 
         if (mode == 6) {
             // 控牌按次数控制，不需要金币阈值
             para.GoldThreshold = 0;
             para.CardAction = parseInt($('#ctrlCardAction').val(), 10);
             para.CardValue = parseInt($('#ctrlCardValue').val(), 10);
-            para.CardNumber = parseInt($('#ctrlCardNumber').val(), 10);
-            para.CardTotal = parseInt($('#ctrlCardTotal').val(), 10);
-            if (!(para.CardNumber >= 1) || !(para.CardTotal >= 5) || para.CardNumber > para.CardTotal) {
-                M.toast('控牌数量/总把数无效（数量≥1，总把数 5-50，数量≤总把数）', 'error');
-                return;
-            }
+            // 需求固定为控制 1 次，且必须在 5 把之内；不再让客户端选择次数。
+            para.CardNumber = 1;
+            para.CardTotal = 5;
         } else {
-            para.Strength = parseInt($('#ctrlStrength').val(), 10);
+            // 吃分/放水无需再选择开关，默认按开启状态提交。
+            para.Strength = 3;
             var gold = $.trim($('#ctrlGold').val());
             if (!gold || parseInt(gold, 10) <= 0) {
                 M.toast('请填写大于 0 的目标', 'error');
@@ -316,7 +300,7 @@
 
         var desc = mode == 6
             ? '对玩家 ' + current.ID + ' 执行 控牌（' + cardActionName(para.CardAction) +
-              ' ' + cardTypeName(para.CardAction, para.CardValue) + '，次数 ' + para.CardNumber + '/' + para.CardTotal + '）？'
+              ' ' + cardTypeName(para.CardAction, para.CardValue) + '，1 次（5 把之内））？'
             : '对玩家 ' + current.ID + ' 执行 ' + modeName(mode) + '（目标 ' + M.gold(para.GoldThreshold) + '）？';
 
         M.confirm(desc, '控制确认').then(function (ok) {
@@ -327,7 +311,6 @@
                 M.alert(r.text, r.ok, r.ok ? '操作成功' : '操作失败').then(function () {
                     if (r.ok) {
                         refreshCtrlStatus();
-                        loadRecords(1);
                     }
                 });
             });
@@ -337,7 +320,7 @@
     function closeControl() {
         if (!current) { M.toast('请先查询玩家信息', 'error'); return; }
         var mode = currentMode();
-        M.confirm('确认关闭该玩家的' + modeName(mode) + '？', '关闭控制').then(function (ok) {
+        M.confirm('确认移除该玩家的' + modeName(mode) + '？', '移除控制').then(function (ok) {
             if (!ok) return;
             M.loading('处理中...');
             M.post('/Game/UserInfo/CloseTotalControl', { ID: current.ID, Mode: mode }).always(M.hideLoading).then(function (res) {
@@ -345,67 +328,15 @@
                 M.alert(r.text, r.ok, r.ok ? '操作成功' : '操作失败').then(function () {
                     if (r.ok) {
                         refreshCtrlStatus();
-                        loadRecords(1);
                     }
                 });
             });
         });
     }
 
-    /* ---------------- 控制记录（日期筛选 + 分页） ---------------- */
-
-    function pad2(n) { return (n < 10 ? '0' : '') + n; }
-
-    function todayInput() {
-        var d = new Date();
-        return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
-    }
-
-    function loadRecords(page) {
-        var start = $.trim($('#recStart').val());
-        var end = $.trim($('#recEnd').val());
-        M.post('/Game/UserInfo/GetControlRecords', {
-            StartTime: start, EndTime: end,
-            page: page, rows: PAGE_SIZE
-        }).then(function (res) {
-            recPage = page;
-            recTotal = res ? Number(res.total || 0) : 0;
-            $('#recActive').text(res ? Number(res.activeCount || 0) : 0);
-
-            var rows = (res && res.rows) ? res.rows : [];
-            var $body = $('#recBody');
-            if (!rows.length) {
-                $body.empty();
-                $('#recNoData').show();
-            } else {
-                $('#recNoData').hide();
-                $body.html(rows.map(function (r) {
-                    var active = Number(r.Status) === 0;
-                    return '<tr>' +
-                        '<td>' + M.esc(r.UserID || '--') + '</td>' +
-                        '<td>' + M.esc(modeName(r.ControlMode) || '--') + '</td>' +
-                        '<td>' + M.esc(ctrlParamText(r.ControlMode, r.GameId, r.LimitCoins, r.TargetCoins, r.CardNumber, r.CardTotal)) + '</td>' +
-                        '<td class="' + (active ? 'positive' : '') + '">' + (active ? '执行中' : '已结束') + '</td>' +
-                        '<td>' + M.esc(r.CreatedBy || '--') + '</td>' +
-                        '<td class="time">' + M.esc(r.CreatedTime || '--') + '</td>' +
-                        '</tr>';
-                }).join(''));
-            }
-
-            var totalPages = Math.max(1, Math.ceil(recTotal / PAGE_SIZE));
-            $('#recPageInfo').text('第 ' + recPage + ' 页 / 共 ' + totalPages + ' 页');
-            $('#recPrevBtn').prop('disabled', recPage <= 1);
-            $('#recNextBtn').prop('disabled', recPage >= totalPages);
-        }, function () { });
-    }
-
     /* ---------------- 初始化 ---------------- */
 
     function initPage() {
-        // 记录区日期默认今天
-        $('#recStart').val(todayInput());
-        $('#recEnd').val(todayInput());
-
         var preset = window.MPagePreset || {};
         if (preset.account) {
             $('#ctrlAccount').val(preset.account);
@@ -443,13 +374,7 @@
         $('#applyBtn').on('click', applyControl);
         $('#closeCtrlBtn').on('click', closeControl);
 
-        // 记录区
-        $('#recRefreshBtn').on('click', function () { loadRecords(1); });
-        $('#recPrevBtn').on('click', function () { if (recPage > 1) loadRecords(recPage - 1); });
-        $('#recNextBtn').on('click', function () { if (recPage < Math.ceil(recTotal / PAGE_SIZE)) loadRecords(recPage + 1); });
-
         bindMode();
-        loadRecords(1);
     }
 
     // 脚本在 body 末尾加载，DOM 已就绪；不依赖 jQuery ready

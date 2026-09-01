@@ -4,7 +4,7 @@
    约定：
      - 所有数据接口均为 POST，返回 Msg{code,content,datas}
        或 EasyUI 形状 {total,rows}；code == 1 表示成功。
-     - 登录超时返回 code == -1，统一跳转手机登录页 /Mobile/Login。
+     - 登录超时返回 code == -1，统一跳转手机登录页 /Login/Mobile。
      - 页面级配置由 _MobileLayout.cshtml 注入到 window.MConfig。
      - 页面通过 M.onRefresh(fn) / M.onSearch(fn) 注册头部按钮行为。
    ============================================================ */
@@ -47,13 +47,12 @@
             .replace(/'/g, '&#39;');
     };
 
-    /** 千分位整数 */
+    /** 手机端整数：不使用千分位分隔符 */
     M.num = function (v) {
         var n = Number(v || 0);
         if (isNaN(n)) return '0';
         var neg = n < 0;
         var s = Math.abs(Math.round(n)).toString();
-        s = s.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
         return (neg ? '-' : '') + s;
     };
 
@@ -70,7 +69,7 @@
 
     /**
      * 金额显示，与后端 IsRMB/ExchangeRate 口径一致：
-     * 真金版按兑换率折算成两位小数，否则原样千分位。
+     * 真金版按兑换率折算成两位小数，否则原样显示；两种模式均不加逗号。
      */
     M.gold = function (v) {
         var n = Number(v || 0);
@@ -78,9 +77,7 @@
         if (MConfig.isRMB && MConfig.exchangeRate > 0) {
             var val = n / MConfig.exchangeRate;
             var fixed = Math.abs(val).toFixed(2);
-            var parts = fixed.split('.');
-            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-            return (val < 0 ? '-' : '') + parts.join('.');
+            return (val < 0 ? '-' : '') + fixed;
         }
         return M.num(n);
     };

@@ -22,11 +22,11 @@ namespace YYT.BLL.EF
         {
             if (currentLevel < 0)
                 return false;
+            if (createAgentPermission != 1)
+                return false;
             long limit = agencyLimit ?? UnlimitedAgencyLimit;
             if (limit <= 0)
                 return true;
-            if (createAgentPermission != 1)
-                return false;
             return limit >= 0;
         }
 

@@ -24,8 +24,7 @@ namespace YYT.Web.Controllers
         #region 框架页
         /// <summary>
         /// 框架页。
-        /// 手机浏览器访问时自动跳转手机端后台；可用 ?view=pc / ?view=mobile 手动切换，
-        /// 选择会记在 Cookie 里（30 天），之后不再自动跳转。
+        /// 默认入口固定跳转手机端；仅显式 ?view=pc 进入电脑版。
         /// </summary>
         /// <returns></returns>
         [MemberAuthorize]
@@ -34,16 +33,8 @@ namespace YYT.Web.Controllers
             M_LoginUser loginUser = WebHelper.GetLoginInfo();
 
             string view = (Request.QueryString["view"] ?? string.Empty).Trim().ToLowerInvariant();
-            if (view == "pc" || view == "mobile")
-            {
-                SaveViewMode(view);
-                if (view == "mobile")
-                    return RedirectToAction("Index", "Home", new { area = "Mobile" });
-            }
-            else if (IsMobileBrowser() && GetViewMode() != "pc")
-            {
+            if (view != "pc")
                 return RedirectToAction("Index", "Home", new { area = "Mobile" });
-            }
 
             return View(loginUser);
         }

@@ -31,25 +31,11 @@ namespace YYT.Web.Controllers
 
         #region 系统登录
         /// <summary>
-        /// 系统登录。
-        /// 手机浏览器访问时自动跳转手机登录页；可用 ?view=pc / ?view=mobile 手动切换，
-        /// 选择会记在 Cookie 里（30 天），之后不再自动跳转（与 Mgr/Index 同一套偏好）。
+        /// 电脑版登录页。手机端登录使用显式 /Login/Mobile。
         /// </summary>
         /// <returns></returns>
         public ActionResult Index()
         {
-            string view = (Request.QueryString["view"] ?? string.Empty).Trim().ToLowerInvariant();
-            if (view == "pc" || view == "mobile")
-            {
-                SaveViewMode(view);
-                if (view == "mobile")
-                    return RedirectToAction("Mobile");
-            }
-            else if (IsMobileBrowser() && GetViewMode() != "pc")
-            {
-                return RedirectToAction("Mobile");
-            }
-
             ViewBag.String1 = Resources.Language.String1;
             return View();
         }
@@ -90,30 +76,16 @@ namespace YYT.Web.Controllers
                 return View();
             }
 
-            return RedirectToAction("Index", "Mgr");
+            return RedirectToAction("Index", "Mgr", new { view = "pc" });
         }
 
         #region 手机端登录
         /// <summary>
         /// 手机端登录页（与桌面端 /Login/Index 共用校验逻辑）。
-        /// 电脑浏览器访问时弹回桌面登录页；?view=pc / ?view=mobile 可手动切换，
-        /// 偏好记在 mth_view Cookie（与 /Login/Index、/Mgr/Index 同一套）。
+        /// 所有 UA 均可访问，端版本由显式 URL 决定。
         /// </summary>
         public ActionResult Mobile()
         {
-            string view = (Request.QueryString["view"] ?? string.Empty).Trim().ToLowerInvariant();
-            if (view == "pc" || view == "mobile")
-            {
-                SaveViewMode(view);
-                if (view == "pc")
-                    return Redirect(DesktopLoginUrl());
-            }
-            else if (GetViewMode() == "pc" || (!IsMobileBrowser() && GetViewMode() != "mobile"))
-            {
-                // 应去桌面端：主动选了 pc；或电脑 UA 且未选 mobile
-                return Redirect(DesktopLoginUrl());
-            }
-
             return View();
         }
 

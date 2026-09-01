@@ -287,5 +287,8 @@
     </div>
 
 @section scripts {
+    <script>
+        window.MPagePreset = { account: '@Html.Raw(HttpUtility.JavaScriptStringEncode((string)(ViewBag.PresetAccount ?? "")))' };
+    </script>
     <script src="@Url.Content("~/Scripts/app/phone/phone.records.js?v=" + webVer)"></script>
 }

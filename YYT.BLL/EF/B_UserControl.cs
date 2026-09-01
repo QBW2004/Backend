@@ -497,7 +497,7 @@ namespace YYT.BLL.EF
         /// 总控牌时 cardAction/cardValue/cardNumber/cardTotal 为精确控牌参数（与牌机控牌一致）。
         /// </summary>
         public Msg ApplyTotalControl(M_LoginUser loginUser, string userId, int mode, int strength, long goldThreshold,
-            int cardAction, int cardValue, int cardNumber, int cardTotal)
+            int cardAction, int cardValue, int cardNumber, int cardTotal, bool mobileFixedCard = false)
         {
             Msg msg = new Msg(0, "设置失败！");
             if (loginUser == null)
@@ -523,6 +523,13 @@ namespace YYT.BLL.EF
             }
             if (mode == (int)EControlMode.TotalCard)
             {
+                // 手机端需求固定为控制 1 次、限定在 5 把内；仅当请求明确来自手机端时校验该约束，
+                // 保留电脑端原有的可配置次数/总把数能力。
+                if (mobileFixedCard && (cardNumber != 1 || cardTotal != 5))
+                {
+                    msg.content = "控牌规则固定为 1 次、5 把之内！";
+                    return msg;
+                }
                 if (cardAction < 5 || cardAction > 17)
                 {
                     msg.content = "无效的控牌类型！";
@@ -541,7 +548,7 @@ namespace YYT.BLL.EF
                     msg.content = "大字板五鬼已下线，无法控牌五鬼！";
                     return msg;
                 }
-                if (cardNumber < 1 || cardTotal < 5 || cardTotal > 50 || cardNumber > cardTotal)
+                if (!mobileFixedCard && (cardNumber < 1 || cardTotal < 5 || cardTotal > 50 || cardNumber > cardTotal))
                 {
                     msg.content = "控牌数量/总把数无效（数量≥1，总把数 5-50，数量≤总把数）！";
                     return msg;
@@ -767,8 +774,18 @@ namespace YYT.BLL.EF
             {
                 using (var ef = new GameDbContext())
                 {
-                    var rows = ef.UserControlStatuses
-                        .Where(c => c.GameType == GAMETYPE_TOTAL && c.Status == (int)EControlStatus.Active && ids.Contains(c.UserID))
+                    var activeQuery = ef.UserControlStatuses
+                        .Where(c => c.GameType == GAMETYPE_TOTAL && c.Status == (int)EControlStatus.Active && ids.Contains(c.UserID));
+                    if (loginUser.UserPriv > 0)
+                    {
+                        // 读取接口也必须校验代理线，避免通过伪造 UserIDs 查看线外玩家的控制状态。
+                        List<string> managed = new B_Admin().GetManagedAgencyAccounts(ef, loginUser);
+                        activeQuery = from c in activeQuery
+                                      join u in ef.Users on c.UserID equals u.ID
+                                      where managed.Contains(u.AGENCY)
+                                      select c;
+                    }
+                    var rows = activeQuery
                         .OrderByDescending(c => c.ID)
                         .ToList()
                         .GroupBy(c => c.UserID + "_" + c.ControlMode)

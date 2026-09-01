@@ -25,13 +25,20 @@ namespace YYT.Web
                 }
                 else
                 {
-                    // 手机端（Mobile 区域）跳转手机登录页，其余维持桌面登录页
+                    // Mobile 区域固定跳手机登录；Mgr 默认入口也固定跳手机登录。
+                    // 显式 /Mgr/Index?view=pc 保持电脑版登录入口。
                     string area = filterContext.RouteData != null && filterContext.RouteData.DataTokens["area"] != null
                         ? filterContext.RouteData.DataTokens["area"].ToString()
                         : string.Empty;
-                    context.Response.Redirect(area.Equals("Mobile", StringComparison.OrdinalIgnoreCase)
+                    string controller = filterContext.RouteData.Values["controller"] == null
+                        ? string.Empty
+                        : filterContext.RouteData.Values["controller"].ToString();
+                    bool explicitPc = string.Equals(filterContext.HttpContext.Request.QueryString["view"], "pc", StringComparison.OrdinalIgnoreCase);
+                    string loginUrl = area.Equals("Mobile", StringComparison.OrdinalIgnoreCase)
+                        || (controller.Equals("Mgr", StringComparison.OrdinalIgnoreCase) && !explicitPc)
                         ? "~/Login/Mobile"
-                        : "~/Login/Index");
+                        : "~/Login/Index";
+                    context.Response.Redirect(loginUrl);
                     filterContext.Result = new EmptyResult();//加入EmptyResult就告诉ASP.NET MVC在本拦截器执行结束后，不必再为当前请求执行Controller中Action的代码
                 }
                 return;

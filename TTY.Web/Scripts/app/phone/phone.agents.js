@@ -47,17 +47,56 @@
         $body.html(rows.map(function (a) {
             var subCount = Number(a.SubAgencyCount || 0);
             return '<tr data-id="' + M.esc(a.ID) + '">' +
-                '<td class="account-cell">' + M.esc(a.ID) + '</td>' +
+                '<td class="account-cell"><span class="agent-detail-btn" data-id="' + M.esc(a.ID) + '">' + M.esc(a.ID) + '</span></td>' +
                 '<td>' + M.gold(a.COINS) + '</td>' +
                 '<td>' + (subCount > 0
                     ? '<span class="sub-agents-btn" data-id="' + M.esc(a.ID) + '">' + subCount + '个</span>'
                     : '<span class="sub-agents-btn none">0个</span>') + '</td>' +
                 '<td><span class="member-view-btn" data-id="' + M.esc(a.ID) + '">查看</span></td>' +
                 '<td>' + M.esc(a.InviteCode || '--') + '</td>' +
-                '<td class="time-cell">' + M.fmtTime(a.UpdateTime) + '</td>' +
+                '<td class="time-cell">' + M.fmtTime(a.LastLoginTime) + '</td>' +
                 '<td class="time-cell">' + M.fmtTime(a.CreateTime) + '</td>' +
                 '</tr>';
         }).join(''));
+    }
+
+    function showAgentDetail(id) {
+        if (!id) return;
+        M.loading('查询代理信息...');
+        M.post('/Game/AgencyInfo/GetAgencyDetail', { ID: id }).always(M.hideLoading).then(function (res) {
+            var r = M.result(res);
+            if (!r.ok || !r.datas) {
+                M.alert(r.text, false, '查询失败');
+                return;
+            }
+            var a = r.datas;
+            var body = '<div class="agent-detail-modal">' +
+                '<div><span>代理账号</span><b>' + M.esc(a.ID) + '</b></div>' +
+                '<div><span>账号密码</span><b>' + M.esc(a.PWD || '--') + '</b></div>' +
+                '<div><span>注册时间</span><b>' + M.esc(M.fmtTime(a.CreateTime, true)) + '</b></div>' +
+                '<div><span>代理级别</span><b>' + M.esc(M.privName(a.PRIV)) + '</b></div>' +
+                '<div><span>最后登录</span><b>' + M.esc(M.fmtTime(a.LastLoginTime, true)) + '</b></div>' +
+                '<div><span>邀请码</span><b>' + M.esc(a.InviteCode || '--') + '</b></div>' +
+                '<div><span>上级代理</span><b>' + M.esc(a.AGENCY || '--') + '</b></div>' +
+                '<div><span>剩余金币</span><b class="blue-text">' + M.gold(a.COINS) + '</b></div>' +
+                '<div><span>剩余分</span><b>' + M.num(a.RemainingScore || 0) + '</b></div>' +
+                '</div>';
+            var dlg = M.modal({
+                title: '代理详细信息',
+                bodyHTML: body,
+                actions: [
+                    { label: '流水', value: 'records', type: 'secondary' },
+                    { label: '充值', value: 'recharge', type: 'primary' }
+                ],
+                buttons: [{ label: '关闭', value: null, type: 'confirm' }]
+            });
+            dlg.then(function (value) {
+                if (value === 'records')
+                    window.location.href = '/Mobile/Home/Records?id=' + encodeURIComponent(a.ID);
+                else if (value === 'recharge')
+                    window.location.href = '/Mobile/Home/Recharge?id=' + encodeURIComponent(a.ID) + '&role=agent';
+            });
+        });
     }
 
     function renderStats(list) {
@@ -144,10 +183,10 @@
             loadNode(crumbs[crumbs.length - 1].id, crumbs[crumbs.length - 1].name);
         });
 
-        // 行点击下钻
-        $('#agentList').on('click', 'tr', function () {
-            var id = $(this).data('id');
-            if (id) pushCrumb(String(id), String(id));
+        // 点击代理账号查看详情；层级下钻只由“下级代理”数量按钮触发。
+        $('#agentList').on('click', '.agent-detail-btn', function (e) {
+            e.stopPropagation();
+            showAgentDetail(String($(this).data('id') || ''));
         });
 
         // 下级代理数量框：下钻查看该代理的子代理（阻止冒泡避免触发两次 pushCrumb）
@@ -176,9 +215,8 @@
         $('#searchResults').on('click', '.search-result-item', function () {
             var id = $(this).data('id');
             $('#searchModalOverlay').removeClass('show');
-            crumbs = [{ id: '', name: '所有代理' }, { id: String(id), name: String(id) }];
-            renderBreadcrumb();
-            loadNode(id, id);
+            // 搜索结果中的代理账号与列表账号行为一致：打开详情；层级下钻只由“下级代理”按钮触发。
+            showAgentDetail(String(id || ''));
         });
 
         // 头部刷新 / 搜索
