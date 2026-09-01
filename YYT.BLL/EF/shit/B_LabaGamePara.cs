@@ -362,7 +362,7 @@ namespace YYT.BLL.EF
         }
 
         /// <summary>
-        /// 拉霸游戏级配置键判定（存 gameconfiglaba 且不随桌台删除而删除）：
+        /// 拉霸 RTP/结果类配置键判定（按桌存 gameconfiglaba，删除对应桌台时同步删除并压实）：
         /// Rtp* 三类型通用；Combo*/UseOutcomeFirst 明星97；WheelStock* 水果拉霸；ShzRate*/ShzStock* 水浒传。
         /// 与 GameConfigController 的 GetTableConfig / Save*RtpConfig 命名空间保持一致。
         /// </summary>
@@ -383,10 +383,7 @@ namespace YYT.BLL.EF
                 {
                     try
                     {
-                        // 删 gameconfiglaba（保留兼容）。跳过游戏级 RTP/Combo 配置键：
-                        // 拉霸的返奖率/库存/结果类配置存 TableIndex=0 但语义为游戏级（明星97 的 Rtp*/Combo*/UseOutcomeFirst、
-                        // 水果拉霸 的 Rtp*/WheelStock*、水浒传 的 Rtp*/ShzRate*/ShzStock*），
-                        // 删除桌台（含删到 0 张）不应误删这些配置，否则 RTP 闭环失效且无法恢复。
+                        // 删除普通桌台参数；RTP/结果类配置在下方按桌删除并压缩。
                         var toDelete = ef.GameConfigLabas
                             .Where(c => c.GameId == gameId && c.TableIndex == tableIndex)
                             .ToList()
@@ -411,6 +408,12 @@ namespace YYT.BLL.EF
                             "DELETE FROM roomtableconfig_bet WHERE GAME_ID={0} AND TableIndex={1}",
                             gameId, tableIndex);
 
+                        // 拉霸 RTP/结果类配置已同步到 cardpayoutprofile，删除桌台时必须同步删除当前桌，
+                        // 否则中心服 RP 会继续把孤儿配置下发给游戏服。
+                        ef.Database.ExecuteSqlCommand(
+                            "DELETE FROM cardpayoutprofile WHERE GAME_ID={0} AND TableId={1}",
+                            gameId, tableIndex);
+
                         // 一房N桌同步：压实剩余 TableIndex 为 0..k-1
                         var remainIds = ef.Database.SqlQuery<int>(
                             "SELECT ID FROM roomtableconfig WHERE GAME_ID=" + gameId + " ORDER BY TableIndex, ID").ToList();
@@ -431,13 +434,37 @@ namespace YYT.BLL.EF
 
                         // roomtableconfig_bet（按桌筹码）同步压实 TableIndex，保证与 roomtableconfig 对齐
                         var betIdxRows = ef.Database.SqlQuery<int>(
-                            "SELECT TableIndex FROM roomtableconfig_bet WHERE GAME_ID=" + gameId + " ORDER BY TableIndex").ToList();
+                            "SELECT DISTINCT TableIndex FROM roomtableconfig_bet WHERE GAME_ID=" + gameId + " ORDER BY TableIndex").ToList();
                         for (int i = 0; i < betIdxRows.Count; i++)
                         {
                             ef.Database.ExecuteSqlCommand(
                                 "UPDATE roomtableconfig_bet SET TableIndex={0} WHERE GAME_ID={1} AND TableIndex={2} AND TableIndex<>{0}",
                                 i, gameId, betIdxRows[i]);
                         }
+
+                        // 兼容表中的 RTP/结果类配置也按桌删除并压实，避免删除中间桌后回显/迁移回退错位。
+                        const string rtpScope = "(OptKey LIKE 'Rtp%' OR OptKey LIKE 'Combo%' OR OptKey='UseOutcomeFirst' OR " +
+                            "OptKey LIKE 'WheelStock%' OR OptKey LIKE 'ShzRate%' OR OptKey LIKE 'ShzStock%')";
+                        ef.Database.ExecuteSqlCommand(
+                            "DELETE FROM GameConfigLaba WHERE GameId={0} AND TableIndex={1} AND " + rtpScope,
+                            gameId, tableIndex);
+                        // 先整体移到临时区间，再回写目标桌号，避免主键
+                        // (GameId, TableIndex, OptKey) 在中间桌删除时发生碰撞。
+                        ef.Database.ExecuteSqlCommand(
+                            "UPDATE GameConfigLaba SET TableIndex=TableIndex+100000 WHERE GameId={0} AND TableIndex>{1} AND " + rtpScope,
+                            gameId, tableIndex);
+                        ef.Database.ExecuteSqlCommand(
+                            "UPDATE GameConfigLaba SET TableIndex=TableIndex-100001 WHERE GameId={0} AND TableIndex>{1} AND " + rtpScope,
+                            gameId, tableIndex + 100000);
+
+                        // 删除后将剩余 RTP profile 的 TableId 压实为 0..k-1，与 roomtableconfig 对齐。
+                        // 同样采用临时偏移，避免未来增加 (GAME_ID, TableId, HandType) 唯一索引时冲突。
+                        ef.Database.ExecuteSqlCommand(
+                            "UPDATE cardpayoutprofile SET TableId=TableId+100000 WHERE GAME_ID={0} AND TableId>{1}",
+                            gameId, tableIndex);
+                        ef.Database.ExecuteSqlCommand(
+                            "UPDATE cardpayoutprofile SET TableId=TableId-100001 WHERE GAME_ID={0} AND TableId>{1}",
+                            gameId, tableIndex + 100000);
 
                         // 同步 pararoom base 行 NUM 与 ROOM_MAX=1
                         int cfgCnt = ef.Database.SqlQuery<int>(

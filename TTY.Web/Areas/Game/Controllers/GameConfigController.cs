@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web.Mvc;
@@ -279,33 +279,35 @@ namespace YYT.Web.Areas.Game.Controllers
                     {
                         int subType = GetLabaSubType(gameId);
                         string gameName = ef.Games.Where(c => c.GameId == gameId).Select(c => c.Name).FirstOrDefault() ?? ("游戏" + gameId);
-                        // 明星97(GameId=16) RTP/Combo 配置为游戏级（存 TableIndex=0），
-                        // 先一次性读入，供每桌行回显（服务端 GetGameConfigParams 按 GameId 全量合并）。
+                        // 明星97(GameId=16) RTP/Combo 配置按桌存储；TableIndex=0 仅作为
+                        // 兼容旧数据的公共回退，供没有桌级覆盖的桌台回显。
                         Dictionary<string, int> mx97Rtp = null;
                         if (subType == 1)
                         {
                             mx97Rtp = ef.GameConfigLabas
-                                .Where(c => c.GameId == gameId && (c.OptKey.StartsWith("Rtp") || c.OptKey.StartsWith("Combo")))
+                                .Where(c => c.GameId == gameId && c.TableIndex == 0 && (c.OptKey.StartsWith("Rtp") || c.OptKey.StartsWith("Combo")))
                                 .AsEnumerable()
                                 .GroupBy(c => c.OptKey)
                                 .ToDictionary(g => g.Key, g => g.First().OptValue);
                         }
-                        // 水果拉霸(GameId=40) RTP 闭环 + 面板日库存 同为游戏级（存 TableIndex=0）
+                        // 水果拉霸(GameId=40) RTP 闭环 + 面板日库存按桌存储；TableIndex=0
+                        // 仅作为兼容旧数据的公共回退。
                         Dictionary<string, int> fruitRtp = null;
                         if (subType == 2)
                         {
                             fruitRtp = ef.GameConfigLabas
-                                .Where(c => c.GameId == gameId && (c.OptKey.StartsWith("Rtp") || c.OptKey.StartsWith("WheelStock")))
+                                .Where(c => c.GameId == gameId && c.TableIndex == 0 && (c.OptKey.StartsWith("Rtp") || c.OptKey.StartsWith("WheelStock")))
                                 .AsEnumerable()
                                 .GroupBy(c => c.OptKey)
                                 .ToDictionary(g => g.Key, g => g.First().OptValue);
                         }
-                        // 水浒传(GameId=53) RTP 闭环 + 结果类（ShzRate/ShzStock）同为游戏级（存 TableIndex=0）
+                        // 水浒传(GameId=53) RTP 闭环 + 结果类（ShzRate/ShzStock）按桌存储；
+                        // TableIndex=0 仅作为兼容旧数据的公共回退。
                         Dictionary<string, int> shzRtp = null;
                         if (subType == 3)
                         {
                             shzRtp = ef.GameConfigLabas
-                                .Where(c => c.GameId == gameId && (c.OptKey.StartsWith("Rtp") || c.OptKey.StartsWith("ShzRate") || c.OptKey.StartsWith("ShzStock")))
+                                .Where(c => c.GameId == gameId && c.TableIndex == 0 && (c.OptKey.StartsWith("Rtp") || c.OptKey.StartsWith("ShzRate") || c.OptKey.StartsWith("ShzStock")))
                                 .AsEnumerable()
                                 .GroupBy(c => c.OptKey)
                                 .ToDictionary(g => g.Key, g => g.First().OptValue);
@@ -398,15 +400,36 @@ namespace YYT.Web.Areas.Game.Controllers
                             // 水浒传：赔付表双端硬编码（ShzRules 常量），Payout0~8 输入框置灰防误改
                             if (subType == 3) row["payoutReadonly"] = true;
 
-                            // 明星97：追加 RTP/Combo 配置回显（游戏级，仅 subType==1 有）
-                            if (subType == 1 && mx97Rtp != null)
-                                AddMx97RtpRowFields(row, mx97Rtp);
-                            // 水果拉霸：追加 RTP 闭环 + 面板日库存回显（游戏级，仅 subType==2 有）
-                            if (subType == 2 && fruitRtp != null)
-                                AddFruitRtpRowFields(row, fruitRtp);
-                            // 水浒传：追加 RTP 闭环 + 结果类回显（游戏级，仅 subType==3 有）
-                            if (subType == 3 && shzRtp != null)
-                                AddShzRtpRowFields(row, shzRtp);
+                            // 明星97：追加按桌 RTP/Combo 配置回显（仅 subType==1 有）
+                            if (subType == 1)
+                            {
+                                var tableRtp = ef.GameConfigLabas
+                                    .Where(c => c.GameId == gameId && c.TableIndex == tIdx &&
+                                        (c.OptKey.StartsWith("Rtp") || c.OptKey.StartsWith("Combo")))
+                                    .ToDictionary(c => c.OptKey, c => c.OptValue);
+                                if (tableRtp.Count == 0 && mx97Rtp != null) tableRtp = mx97Rtp;
+                                AddMx97RtpRowFields(row, tableRtp);
+                            }
+                            // 水果拉霸：追加按桌 RTP 闭环 + 面板日库存回显（仅 subType==2 有）
+                            if (subType == 2)
+                            {
+                                var tableRtp = ef.GameConfigLabas
+                                    .Where(c => c.GameId == gameId && c.TableIndex == tIdx &&
+                                        (c.OptKey.StartsWith("Rtp") || c.OptKey.StartsWith("WheelStock")))
+                                    .ToDictionary(c => c.OptKey, c => c.OptValue);
+                                if (tableRtp.Count == 0 && fruitRtp != null) tableRtp = fruitRtp;
+                                AddFruitRtpRowFields(row, tableRtp);
+                            }
+                            // 水浒传：追加按桌 RTP 闭环 + 结果类回显（仅 subType==3 有）
+                            if (subType == 3)
+                            {
+                                var tableRtp = ef.GameConfigLabas
+                                    .Where(c => c.GameId == gameId && c.TableIndex == tIdx &&
+                                        (c.OptKey.StartsWith("Rtp") || c.OptKey.StartsWith("ShzRate") || c.OptKey.StartsWith("ShzStock")))
+                                    .ToDictionary(c => c.OptKey, c => c.OptValue);
+                                if (tableRtp.Count == 0 && shzRtp != null) tableRtp = shzRtp;
+                                AddShzRtpRowFields(row, tableRtp);
+                            }
 
                             rows.Add(row);
                         }
@@ -765,32 +788,32 @@ namespace YYT.Web.Areas.Game.Controllers
                             rtBetMin + "," + rtBetMax + "," + rtCoinsNeed + "," + rtIdleSec + "," + rtIdleKick + "," + rtGunStep + ")");
                     }
 
-                    // ── 明星97(GameId=16) RTP 控制配置：游戏级参数写 GameConfigLaba(TableIndex=0)，
+                    // ── 明星97(GameId=16) RTP 控制配置：写入当前桌台的 GameConfigLaba(TableIndex)，
                     // 留空即删除该 OptKey（服务端整包先清空再套用，缺项回内置默认）。
                     // 校验/落库失败则中断本次保存，避免桌台已存而 RTP 未生效的观感问题。
                     if (subType == 1)
                     {
-                        Msg rtpMsg = SaveMx97RtpConfig(form, gameId);
+                        Msg rtpMsg = SaveMx97RtpConfig(form, gameId, tableId % 1000);
                         if (rtpMsg.code != 1)
                         {
                             return Json(rtpMsg);
                         }
                     }
-                    // ── 水果拉霸(GameId=40) RTP 控制配置：7 个闭环参数 + WheelStock0..23 面板日库存，
+                    // ── 水果拉霸(GameId=40) RTP 控制配置：按当前桌台保存 6 个闭环参数 + WheelStock0..23 面板日库存，
                     // 含逐区等值校验（设计文档 §5.3 硬门槛）与理论 RTP 回显警告。
                     if (subType == 2)
                     {
-                        Msg rtpMsg = SaveFruitRtpConfig(form, gameId, wheelProbs);
+                        Msg rtpMsg = SaveFruitRtpConfig(form, gameId, wheelProbs, tableId % 1000);
                         if (rtpMsg.code != 1)
                         {
                             return Json(rtpMsg);
                         }
                     }
-                    // ── 水浒传(GameId=53) RTP 控制配置：闭环参数 Rtp* + 结果类 ShzRate/ShzStock，
+                    // ── 水浒传(GameId=53) RTP 控制配置：按当前桌台保存闭环参数 Rtp* + 结果类 ShzRate/ShzStock，
                     // 赔付表双端硬编码（ShzRules 常量）无赔率项；留空即删除该 OptKey。
                     if (subType == 3)
                     {
-                        Msg rtpMsg = SaveShzRtpConfig(form, gameId);
+                        Msg rtpMsg = SaveShzRtpConfig(form, gameId, tableId % 1000);
                         if (rtpMsg.code != 1)
                         {
                             return Json(rtpMsg);
@@ -1731,7 +1754,7 @@ namespace YYT.Web.Areas.Game.Controllers
             return val != null ? (int)val : 0;
         }
 
-        // ── 明星97(GameId=16) RTP 控制配置（游戏级，存 GameConfigLaba TableIndex=0）──
+        // ── 明星97(GameId=16) RTP 控制配置（按桌存 GameConfigLaba TableIndex）──
         // 见《明星97-RTP控制-后台对接文档》：OptValue 为 int，小数用整数放大表示；
         // 服务端收到整包配置先清空再套用，后台删掉某 OptKey 即回内置默认值。
         private static readonly string[] Mx97RtpKeys =
@@ -1751,11 +1774,11 @@ namespace YYT.Web.Areas.Game.Controllers
         };
 
         /// <summary>
-        /// 保存明星97 RTP 控制配置：校验 + 写 GameConfigLaba(GameId=16, TableIndex=0)。
+        /// 保存明星97 RTP 控制配置：校验 + 写 GameConfigLaba(GameId=16, 当前 TableIndex)。
         /// 留空的 RTP/Combo 项删除对应 OptKey（回内置默认/不限）；
         /// ComboStock=0（当天禁出）为合法显式值。
         /// </summary>
-        private static Msg SaveMx97RtpConfig(FormCollection form, int gameId)
+        private static Msg SaveMx97RtpConfig(FormCollection form, int gameId, int tableIndex)
         {
             Msg msg = new Msg(1, "RTP 配置保存成功！");
             List<M_GameConfigLaba> toWrite = new List<M_GameConfigLaba>();
@@ -1811,26 +1834,26 @@ namespace YYT.Web.Areas.Game.Controllers
                     toWrite.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "ComboStock" + code, OptValue = stock, Type = "Combo" });
             }
 
-            // 落库：删除该游戏全部被管理 OptKey（含历史遗留的其它 TableIndex 行），
-            // 再按本次配置写入 TableIndex=0（服务端按 GameId 合并读取，TableIndex 不影响语义）。
+            // 落库：只删除当前桌台被管理的 OptKey，再按本次配置写入当前 TableIndex。
             // 被管理命名空间为 Rtp*/Combo* + UseOutcomeFirst（明星97 专用），LIKE 前缀匹配避免大 IN 参数列表。
             // 注意：UseOutcomeFirst 不以 Rtp/Combo 开头，必须单独纳入删除范围，
             // 否则旧行残留导致重复主键(16-0-UseOutcomeFirst) DbUpdateException，明星97 建/改桌台保存失败。
             using (var ef = new GameDbContext())
             {
                 List<M_GameConfigLaba> olds = ef.GameConfigLabas
-                    .Where(c => c.GameId == gameId &&
+                    .Where(c => c.GameId == gameId && c.TableIndex == tableIndex &&
                                 (c.OptKey.StartsWith("Rtp") || c.OptKey.StartsWith("Combo") || c.OptKey == "UseOutcomeFirst"))
                     .ToList();
                 ef.GameConfigLabas.RemoveRange(olds);
                 foreach (M_GameConfigLaba row in toWrite)
                 {
                     row.GameId = gameId;
-                    row.TableIndex = 0;
+                    row.TableIndex = tableIndex;
                     row.TIME = DateTime.Now;
                     ef.GameConfigLabas.Add(row);
                 }
                 ef.SaveChanges();
+                SyncLabaRtpProfiles(ef, gameId, tableIndex, toWrite, 1, null);
             }
             return msg;
         }
@@ -1855,7 +1878,7 @@ namespace YYT.Web.Areas.Game.Controllers
             }
         }
 
-        // ── 水浒传(GameId=53) RTP 控制配置（游戏级，存 GameConfigLaba TableIndex=0）──
+        // ── 水浒传(GameId=53) RTP 控制配置（按桌存 GameConfigLaba TableIndex）──
         // 见《水浒传RTP后台控制系统设计.md》：赔付表双端硬编码（ShzRules 常量），
         // 闭环参数复用 Rtp* 键名（按 GameId 隔离存储）；结果类 400-459 键 ShzRate{code}/ShzStock{code}。
         private static readonly int ShzComboMin = 400;
@@ -1864,12 +1887,12 @@ namespace YYT.Web.Areas.Game.Controllers
         private static readonly int ShzStockMax = 451;
 
         /// <summary>
-        /// 保存水浒传 RTP 控制配置：校验 + 写 GameConfigLaba(GameId=53, TableIndex=0)。
+        /// 保存水浒传 RTP 控制配置：校验 + 写 GameConfigLaba(GameId=53, 当前 TableIndex)。
         /// 留空的 RTP/结果类项删除对应 OptKey（回内置默认/不限）；
         /// ShzStock=0（当天禁出）为合法显式值。
         /// 赔付表由双端硬编码，无赔率项；结果类 400-459 中未定义间隙（409/419/429/433-439/449/452-459）不接受配置。
         /// </summary>
-        private static Msg SaveShzRtpConfig(FormCollection form, int gameId)
+        private static Msg SaveShzRtpConfig(FormCollection form, int gameId, int tableIndex)
         {
             Msg msg = new Msg(1, "水浒传 RTP 配置保存成功！");
             List<M_GameConfigLaba> toWrite = new List<M_GameConfigLaba>();
@@ -1919,22 +1942,22 @@ namespace YYT.Web.Areas.Game.Controllers
                 }
             }
 
-            // 落库：删除该游戏全部被管理 OptKey（Rtp*/ShzRate*/ShzStock*，水浒传专用命名空间），
-            // 再按本次配置写入 TableIndex=0（服务端按 GameId 合并读取，TableIndex 不影响语义）。
+            // 落库：只替换当前桌台的 RTP/结果类配置，保留其它桌台配置。
             using (var ef = new GameDbContext())
             {
                 List<M_GameConfigLaba> olds = ef.GameConfigLabas
-                    .Where(c => c.GameId == gameId && (c.OptKey.StartsWith("Rtp") || c.OptKey.StartsWith("ShzRate") || c.OptKey.StartsWith("ShzStock")))
+                    .Where(c => c.GameId == gameId && c.TableIndex == tableIndex && (c.OptKey.StartsWith("Rtp") || c.OptKey.StartsWith("ShzRate") || c.OptKey.StartsWith("ShzStock")))
                     .ToList();
                 ef.GameConfigLabas.RemoveRange(olds);
                 foreach (M_GameConfigLaba row in toWrite)
                 {
                     row.GameId = gameId;
-                    row.TableIndex = 0;
+                    row.TableIndex = tableIndex;
                     row.TIME = DateTime.Now;
                     ef.GameConfigLabas.Add(row);
                 }
                 ef.SaveChanges();
+                SyncLabaRtpProfiles(ef, gameId, tableIndex, toWrite, 3, null);
             }
             return msg;
         }
@@ -1959,7 +1982,7 @@ namespace YYT.Web.Areas.Game.Controllers
             }
         }
 
-        // ── 水果拉霸(GameId=40) RTP 控制配置（游戏级，存 GameConfigLaba TableIndex=0）──
+        // ── 水果拉霸(GameId=40) RTP 控制配置（按桌存 GameConfigLaba TableIndex）──
         // 见《10-水果拉霸-RTP返奖率控制系统设计.md》：面板倍率/区域映射为固定常量
         // （与服务端 FruitRtp kPanelRat/kPanelArea 一致），后台只配权重(万分比)与日库存。
         private static readonly int[] FruitPanelRat =
@@ -1992,7 +2015,7 @@ namespace YYT.Web.Areas.Game.Controllers
         /// 含逐区等值校验（设计文档 §5.3 硬门槛：各区 Σ概率×倍率 偏差 ≤5%）。
         /// 留空即删除对应 OptKey（回内置默认/不限）；WheelStock=0（当天禁出）为合法显式值。
         /// </summary>
-        private static Msg SaveFruitRtpConfig(FormCollection form, int gameId, int[] wheelProbs)
+        private static Msg SaveFruitRtpConfig(FormCollection form, int gameId, int[] wheelProbs, int tableIndex)
         {
             Msg msg = new Msg(1, "RTP 配置保存成功！");
             List<M_GameConfigLaba> toWrite = new List<M_GameConfigLaba>();
@@ -2068,24 +2091,86 @@ namespace YYT.Web.Areas.Game.Controllers
                     msg.content += "（提示：面板表理论RTP=" + (rtp * 100).ToString("F2") + "% 与目标偏差超过3%，闭环将持续纠偏）";
             }
 
-            // ⑤ 落库：删除命名空间 Rtp* / WheelStock*（勿动 WheelProb*，那是 labaList 的领域），
-            //    再写入 TableIndex=0（服务端按 GameId 合并读取）
+            // ⑤ 落库：只替换当前桌台的 RTP/库存配置，勿动其它桌台。
             using (var ef = new GameDbContext())
             {
                 List<M_GameConfigLaba> olds = ef.GameConfigLabas
-                    .Where(c => c.GameId == gameId && (c.OptKey.StartsWith("Rtp") || c.OptKey.StartsWith("WheelStock")))
+                    .Where(c => c.GameId == gameId && c.TableIndex == tableIndex && (c.OptKey.StartsWith("Rtp") || c.OptKey.StartsWith("WheelStock")))
                     .ToList();
                 ef.GameConfigLabas.RemoveRange(olds);
                 foreach (M_GameConfigLaba row in toWrite)
                 {
                     row.GameId = gameId;
-                    row.TableIndex = 0;
+                    row.TableIndex = tableIndex;
                     row.TIME = DateTime.Now;
                     ef.GameConfigLabas.Add(row);
                 }
                 ef.SaveChanges();
+                SyncLabaRtpProfiles(ef, gameId, tableIndex, toWrite, 2, wheelProbs);
             }
             return msg;
+        }
+
+        /// <summary>
+        /// 将拉霸 RTP 配置同步到已有的 cardpayoutprofile 按桌通道。
+        /// gameconfiglaba 仍保留用于后台回显/兼容；运行时以本表 TableId 为准。
+        /// StockLimit=-1 表示不限库存，0 表示显式禁出。
+        /// </summary>
+        private static void SyncLabaRtpProfiles(GameDbContext ef, int gameId, int tableIndex,
+            List<M_GameConfigLaba> values, int subType, int[] wheelProbs)
+        {
+            string scope = subType == 1 ? "(HandType BETWEEN 210 AND 216 OR HandType BETWEEN 300 AND 359)"
+                : subType == 3 ? "(HandType BETWEEN 210 AND 216 OR HandType BETWEEN 400 AND 459)"
+                : "(HandType BETWEEN 100 AND 123 OR HandType BETWEEN 130 AND 153 OR HandType BETWEEN 210 AND 216)";
+            ef.Database.ExecuteSqlCommand("DELETE FROM cardpayoutprofile WHERE GAME_ID={0} AND TableId={1} AND " + scope,
+                gameId, tableIndex);
+
+            var map = values.GroupBy(v => v.OptKey).ToDictionary(g => g.Key, g => g.Last().OptValue);
+            var rows = new List<string>();
+            Action<int, int, int, int> add = (hand, pay, prob, stock) =>
+            {
+                // cardpayoutprofile 旧表 StockLimit/StockRemain 为 NOT NULL；-1 作为“不限库存”哨兵。
+                string stockSql = stock < 0 ? "-1" : stock.ToString();
+                // int(11) 列不能存无符号 0xFFFFFFFF，使用 INT_MAX 哨兵，中心服读取时还原。
+                string paySql = pay < 0 ? "2147483647" : pay.ToString();
+                rows.Add("(" + gameId + "," + tableIndex + "," + hand + "," + paySql + "," + prob + "," + stockSql + "," + stockSql + ",1)");
+            };
+            int[] rtpHands = { 210, 211, 212, 213, 214, 216 };
+            string[] rtpKeys = { "RtpTargetX100", "RtpKp", "RtpDeadband", "RtpDeltaMax", "RtpStockThreshold", "RtpWindow" };
+            for (int i = 0; i < rtpHands.Length; i++)
+                if (map.ContainsKey(rtpKeys[i])) add(rtpHands[i], map[rtpKeys[i]], 0, -1);
+
+            if (subType == 1)
+            {
+                for (int code = 300; code <= 359; code++)
+                {
+                    int pay = map.ContainsKey("Combo" + code) ? map["Combo" + code] : -1;
+                    int prob = map.ContainsKey("ComboProb" + code) ? map["ComboProb" + code] : 0;
+                    int stock = map.ContainsKey("ComboStock" + code) ? map["ComboStock" + code] : -1;
+                    if (map.ContainsKey("Combo" + code) || map.ContainsKey("ComboProb" + code) || map.ContainsKey("ComboStock" + code)) add(code, pay, prob, stock);
+                }
+            }
+            else if (subType == 3)
+            {
+                for (int code = 400; code <= 459; code++)
+                {
+                    int prob = map.ContainsKey("ShzRate" + code) ? map["ShzRate" + code] : 0;
+                    int stock = map.ContainsKey("ShzStock" + code) ? map["ShzStock" + code] : -1;
+                    if (prob > 0 || stock >= 0) add(code, -1, prob, stock);
+                }
+            }
+            else if (subType == 2)
+            {
+                for (int i = 0; i < 24; i++)
+                {
+                    int prob = wheelProbs != null && i < wheelProbs.Length ? wheelProbs[i] : 0;
+                    if (prob > 0) add(100 + i, -1, prob, -1);
+                    int stock = map.ContainsKey("WheelStock" + i) ? map["WheelStock" + i] : -1;
+                    if (stock >= 0) add(130 + i, -1, stock, -1);
+                }
+            }
+            if (rows.Count > 0)
+                ef.Database.ExecuteSqlCommand("INSERT INTO cardpayoutprofile (GAME_ID,TableId,HandType,PayoutMultiplier,ProbabilityBasis,StockLimit,StockRemain,Enabled) VALUES " + string.Join(",", rows));
         }
 
         /// <summary>
