@@ -784,7 +784,7 @@ namespace YYT.Web.Areas.Game.Controllers
                             "DELETE FROM roomtableconfig WHERE GAME_ID=" + gameId + " AND RoomIndex=0 AND TableIndex=" + rtTableIndex);
                         efRt.Database.ExecuteSqlCommand(
                             "INSERT INTO roomtableconfig (GAME_ID, RoomIndex, TableIndex, TableName, Enabled, MaxSeats, OneCoinScore, BetMin, BetMax, CoinsNeed, IdleFireTimeoutSec, IdleFireKickEnabled, GunPowerStep) VALUES (" +
-                            gameId + ",0," + rtTableIndex + ",'" + labaTableName.Replace("'", "''") + "'," + labaEnabled + ",6,1," +
+                            gameId + ",0," + rtTableIndex + ",'" + labaTableName.Replace("'", "''") + "'," + labaEnabled + ",6," + (labaCoinSc > 0 ? labaCoinSc : 1) + "," +
                             rtBetMin + "," + rtBetMax + "," + rtCoinsNeed + "," + rtIdleSec + "," + rtIdleKick + "," + rtGunStep + ")");
                     }
 
