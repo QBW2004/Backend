@@ -513,6 +513,8 @@ namespace YYT.BLL.EF
                     return msg;
                 }
 
+                ApplyNewAgencyDefaultPermissions(entity);
+
                 entity.COINS = entity.COINS ?? 0;
                 entity.COINS_BACK = entity.COINS_BACK ?? 0;
                 entity.COINS_BUY = entity.COINS_BUY ?? 0;
@@ -521,25 +523,6 @@ namespace YYT.BLL.EF
                 entity.RECHARGE = entity.RECHARGE ?? 0;
                 entity.RE_ENABLE = entity.RE_ENABLE ?? 1;
                 entity.AGENCY_LIMIT = entity.AGENCY_LIMIT ?? 0;
-                entity.IsFrozen = entity.IsFrozen ?? 0;
-                entity.IsProbability = entity.IsProbability ?? 0;
-                entity.IsKicking = entity.IsKicking ?? 0;
-                entity.IsDelete = entity.IsDelete ?? 0;
-                entity.IsUpDown = entity.IsUpDown ?? 0;
-                entity.KickScope = entity.KickScope ?? 1;
-                entity.IsGift = entity.IsGift ?? 0;
-                entity.IsCreateAgent = entity.IsCreateAgent ?? 0;
-                entity.IsViewPwd = entity.IsViewPwd ?? 0;
-                entity.IsModifyPwd = entity.IsModifyPwd ?? 0;
-                entity.IsResetSafePwd = entity.IsResetSafePwd ?? 0;
-                entity.IsKill = entity.IsKill ?? 0;
-                entity.IsRelease = entity.IsRelease ?? 0;
-                entity.IsViewSafePwd = entity.IsViewSafePwd ?? 0;
-                entity.IsModifySafePwd = entity.IsModifySafePwd ?? 0;
-                entity.IsDeleteAgent = entity.IsDeleteAgent ?? 0;
-                entity.IsViewAgentPwd = entity.IsViewAgentPwd ?? 0;
-                entity.IsModifyAgentPwd = entity.IsModifyAgentPwd ?? 0;
-                entity.ManageScope = entity.ManageScope ?? 1;
                 entity.CommissionRate = entity.CommissionRate ?? 0.00m;
                 entity.CreateTime = DateTime.Now;
                 entity.UpdateTime = DateTime.Now;
@@ -553,6 +536,30 @@ namespace YYT.BLL.EF
                 }
             }
             return msg;
+        }
+
+        private static void ApplyNewAgencyDefaultPermissions(M_Admin entity)
+        {
+            entity.IsFrozen = 1;
+            entity.IsKill = 1;
+            entity.IsUpDown = 1;
+            entity.IsKicking = 1;
+            entity.ManageScope = 2;
+            entity.KickScope = entity.ManageScope;
+
+            entity.IsProbability = 0;
+            entity.IsRelease = 0;
+            entity.IsDelete = 0;
+            entity.IsGift = 0;
+            entity.IsCreateAgent = 0;
+            entity.IsViewPwd = 0;
+            entity.IsModifyPwd = 0;
+            entity.IsResetSafePwd = 0;
+            entity.IsViewSafePwd = 0;
+            entity.IsModifySafePwd = 0;
+            entity.IsDeleteAgent = 0;
+            entity.IsViewAgentPwd = 0;
+            entity.IsModifyAgentPwd = 0;
         }
 
         public int SaveAgencyLimit(M_Admin entity)
