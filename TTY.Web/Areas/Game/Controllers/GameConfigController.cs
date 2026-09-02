@@ -800,7 +800,7 @@ namespace YYT.Web.Areas.Game.Controllers
                         }
                     }
                     // ── 水果拉霸(GameId=40) RTP 控制配置：按当前桌台保存 6 个闭环参数 + WheelStock0..23 面板日库存，
-                    // 含逐区等值校验（设计文档 §5.3 硬门槛）与理论 RTP 回显警告。
+                    // 含理论 RTP 与目标偏差的黄色回显警告（逐区等值硬门槛已移除，不拦截）。
                     if (subType == 2)
                     {
                         Msg rtpMsg = SaveFruitRtpConfig(form, gameId, wheelProbs, tableId % 1000);
@@ -2001,8 +2001,8 @@ namespace YYT.Web.Areas.Game.Controllers
         };
 
         /// <summary>
-        /// 保存水果拉霸 RTP 控制配置：6 个闭环参数 + WheelStock0..23 面板日库存，
-        /// 含逐区等值校验（设计文档 §5.3 硬门槛：各区 Σ概率×倍率 偏差 ≤5%）。
+        /// 保存水果拉霸 RTP 控制配置：6 个闭环参数 + WheelStock0..23 面板日库存。
+        /// 逐区等值硬门槛已移除（按运营要求放开）；仍保留理论 RTP 与目标偏差 &gt;3% 的黄色提示（不拦截）。
         /// 留空即删除对应 OptKey（回内置默认/不限）；WheelStock=0（当天禁出）为合法显式值。
         /// </summary>
         private static Msg SaveFruitRtpConfig(FormCollection form, int gameId, int[] wheelProbs, int tableIndex)
@@ -2049,8 +2049,8 @@ namespace YYT.Web.Areas.Game.Controllers
                     toWrite.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "WheelStock" + w, OptValue = st, Type = "RTP" });
             }
 
-            // ③ 逐区等值校验（设计文档 §5.3 硬门槛）：先按服务端口径归一化到 10000 再算各区 c_a
-            //    （归一化不改变 c_a 相对偏差，只影响理论 RTP 数值精度）
+            // ③ 理论 RTP 估算（归一化到 10000 后按区求和）：逐区等值硬门槛已按运营要求移除（原偏差>5% 拦截），
+            //    下方保留归一化均值 mean 供 ④ 理论 RTP 与目标偏差的黄色警告使用（只提示不拦截）。
             int wheelSum = 0;
             for (int i = 0; i < 24; i++) wheelSum += wheelProbs[i];
             if (wheelSum > 0)   // 全 0 理论上已被 SaveTableConfig 兜底为 FruitPanelDefaultProb，此处仅为防御
@@ -2063,16 +2063,6 @@ namespace YYT.Web.Areas.Game.Controllers
                         c[FruitPanelArea[i]] += wheelProbs[i] * norm / 10000.0 * FruitPanelRat[i];
                 }
                 double mean = c.Average();
-                for (int a = 0; a < 8; a++)
-                {
-                    if (mean > 0 && Math.Abs(c[a] - mean) / mean > 0.05)
-                    {
-                        msg.code = 0;
-                        msg.content = "面板权重不满足逐区等值约束：区" + a + " 的 Σ概率×倍率=" + c[a].ToString("F3")
-                                    + "，均值=" + mean.ToString("F3") + "，偏差超过 5%。请按公式 c=RTP×(1-g) 重新分配权重。";
-                        return msg;
-                    }
-                }
                 // ④ 理论 RTP 与目标偏差 >3% → 黄色警告（不拦截，闭环会持续纠偏）
                 double g = wheelProbs[9] / 10000.0 * 2.0 + wheelProbs[21] / 10000.0 * 4.5;
                 double rtp = g < 1 ? mean / (1 - g) : 0;
