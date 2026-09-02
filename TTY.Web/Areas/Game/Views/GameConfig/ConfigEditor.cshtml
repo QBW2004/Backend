@@ -47,6 +47,13 @@
         .gc-toolbar #gcGameSel { width: 220px; }
         .gc-hint { font-size: 12px; color: #9aa4b1; margin-top: 4px; line-height: 1.6; }
         .gc-guide { margin: 0 0 14px; padding: 10px 12px; border: 1px solid #dce8ff; border-radius: 6px; background: #f7faff; color: #526173; font-size: 12px; line-height: 1.7; }
+        /* 高级参数折叠引导条：显示在基础信息之后、高级参数区之上，默认收起 */
+        .gc-adv-head { margin: 0 0 12px; padding: 10px 14px; border: 1px dashed #cdd9f7; border-radius: 8px; background: #fbfcff; display: flex; align-items: center; flex-wrap: wrap; gap: 6px 14px; }
+        .gc-adv-head-title { font-size: 13px; font-weight: 600; color: #2f6fed; }
+        .gc-adv-head-title .fa { margin-right: 6px; }
+        .gc-adv-head-link { font-size: 13px; color: #2f6fed; text-decoration: none; border: 1px solid #cdd9f7; border-radius: 14px; padding: 2px 12px; background: #fff; cursor: pointer; }
+        .gc-adv-head-link:hover { background: #ecf2ff; }
+        .gc-adv-head-sub { font-size: 12px; color: #8a94a1; }
         .gc-refresh { width: 30px; height: 30px; line-height: 30px; text-align: center; border-radius: 6px; color: #5a6573; cursor: pointer; transition: background .15s, color .15s; }
         .gc-refresh:hover { background: #ecf2ff; color: #2f6fed; }
         .gc-refresh .fa { margin: 0; color: inherit; }
@@ -383,6 +390,12 @@
                         </div>
                     </div>
 
+                    <div class="gc-adv-head" id="gcAdvHead" style="display:none;">
+                        <span class="gc-adv-head-title"><i class="fa fa-cog"></i>高级参数（返奖率 / 转盘概率 / 每日次数）</span>
+                        <a href="javascript:;" class="gc-adv-head-link" id="gcAdvToggle">展开设置</a>
+                        <span class="gc-adv-head-sub">拉霸高级控制：长期返奖率 RTP、结果出现机会、每天最多出现次数。留空=使用系统默认，展开后可按需调整。</span>
+                    </div>
+                    <div class="gc-adv-body" id="gcAdvBody" style="display:none;">
                     <div class="gc-only-3">
                         <div id="gcLabaPayoutBox" style="display:none;">
                             <div class="gc-section-title" id="gcLabaPayoutTitle">转盘结果出现机会与每日次数限制</div>
@@ -460,8 +473,8 @@
                         </div>
 
                         <div id="gcFruitRtpBox" style="display:none;">
-                            <div class="gc-section-title">长期返奖率控制（水果拉霸 · 各下注区平均返还一致）</div>
-                            <div class="gc-hint">水果拉霸会分别检查 8 个下注区的长期平均返还是否接近；差异超过 5% 时不允许保存，避免某个下注区长期明显更容易或更难中奖。</div>
+                            <div class="gc-section-title">长期返奖率控制（水果拉霸）</div>
+                            <div class="gc-hint">水果拉霸转盘权重可自由配置（无逐区偏差限制）；下方实时展示 8 个下注区的估算返还供参考，各区差异不影响保存。</div>
                             <div class="gc-form-row">
                                 <div class="gc-field">
                                     <label>目标长期返还比例（×10000，9000=90%）</label>
@@ -491,8 +504,9 @@
                                 </div>
                             </div>
                             <div id="gcFruitRtpPreview" style="font-size:12px;color:#9aa4b1;margin-bottom:10px;line-height:1.8;"></div>
-                            <div class="gc-hint">各下注区的长期平均返还需要保持接近（偏差 ≤5%），否则保存会被拒绝；下方实时显示各区返还估算、免费局机会和理论 RTP。每天最多出现次数留空=不限、0=当天不出现（每天 0 点重置）。这是高级控制功能，建议先用默认表观察一周，再开启“优先按控制结果生成”。</div>
+                            <div class="gc-hint">下方实时显示各区返还估算、免费局机会和理论 RTP，各区差异仅作参考不拦截保存。每天最多出现次数留空=不限、0=当天不出现（每天 0 点重置）。这是高级控制功能，建议先用默认表观察一周，再开启“优先按控制结果生成”。</div>
                         </div>
+                    </div>
                     </div>
 
                     <div class="gc-common">
@@ -509,7 +523,7 @@
                 </form>
             </div>
             <div class="gc-foot" id="gcParaFoot">
-                <button type="button" id="gcReset" class="gc-btn gc-btn-default">重置</button>
+                <button type="button" id="gcReset" class="gc-btn gc-btn-default">恢复默认</button>
                 <button type="button" id="gcSave" class="gc-btn gc-btn-primary">保存并热更新</button>
             </div>
         </div>
@@ -679,83 +693,85 @@
     ];
 
     // 明星97 组合结果类（HandType 300-359）：v=内置默认赔率（留空即用默认）；
-    // 出现率默认值由服务端内置，后台只配目标出现率(万分比)；348 为预留，全屏七按 Scatter9 结算。
+    // p=服务端默认出现率（标定后百万分比，Mx97Rtp 内置默认标定输出；÷100 即每 10000 相对单位，
+    // 如 5425 → 54.25/万次）。后台只配目标出现率(万分比)；348 为预留，全屏七按 Scatter9 结算。
     var GC_MX97_COMBO_META = [
-        { code: 300, n: '纯色三连·樱桃', v: 10 },
-        { code: 301, n: '纯色三连·橘子', v: 10 },
-        { code: 302, n: '纯色三连·蓝莓', v: 14 },
-        { code: 303, n: '纯色三连·铃铛', v: 18 },
-        { code: 304, n: '纯色三连·西瓜', v: 20 },
-        { code: 305, n: '纯色三连·黄BAR', v: 30 },
-        { code: 306, n: '纯色三连·红BAR', v: 50 },
-        { code: 307, n: '纯色三连·蓝BAR', v: 70 },
-        { code: 308, n: '纯色三连·七', v: 80 },
-        { code: 310, n: 'ANY BAR（三色BAR混合一条线）', v: 10 },
-        { code: 311, n: '樱桃 2 连', v: 5 },
-        { code: 312, n: '樱桃 1 连（线首一个樱桃）', v: 2 },
-        { code: 322, n: 'Scatter 全盘 2 个七', v: 2 },
-        { code: 323, n: 'Scatter 全盘 3 个七', v: 5 },
-        { code: 324, n: 'Scatter 全盘 4 个七', v: 20 },
-        { code: 325, n: 'Scatter 全盘 5 个七', v: 40 },
-        { code: 326, n: 'Scatter 全盘 6 个七', v: 60 },
-        { code: 327, n: 'Scatter 全盘 7 个七', v: 80 },
-        { code: 328, n: 'Scatter 全盘 8 个七', v: 100 },
-        { code: 329, n: 'Scatter 全盘 9 个七', v: 200 },
-        { code: 330, n: '全水果（9 格全是水果且不全同）', v: 15 },
-        { code: 340, n: '全屏·樱桃', v: 80 },
-        { code: 341, n: '全屏·橘子', v: 40 },
-        { code: 342, n: '全屏·蓝莓', v: 40 },
-        { code: 343, n: '全屏·铃铛', v: 40 },
-        { code: 344, n: '全屏·西瓜', v: 60 },
-        { code: 345, n: '全屏·黄BAR', v: 60 },
-        { code: 346, n: '全屏·红BAR', v: 90 },
-        { code: 347, n: '全屏·蓝BAR', v: 100 },
-        { code: 350, n: '全屏 ANY BAR（9 格全 BAR 且不全同）', v: 40 }
+        { code: 300, n: '纯色三连·樱桃', v: 10, p: 5425 },
+        { code: 301, n: '纯色三连·橘子', v: 10, p: 5425 },
+        { code: 302, n: '纯色三连·蓝莓', v: 14, p: 3875 },
+        { code: 303, n: '纯色三连·铃铛', v: 18, p: 3100 },
+        { code: 304, n: '纯色三连·西瓜', v: 20, p: 2790 },
+        { code: 305, n: '纯色三连·黄BAR', v: 30, p: 1550 },
+        { code: 306, n: '纯色三连·红BAR', v: 50, p: 775 },
+        { code: 307, n: '纯色三连·蓝BAR', v: 70, p: 465 },
+        { code: 308, n: '纯色三连·七', v: 80, p: 62 },
+        { code: 310, n: 'ANY BAR（三色BAR混合一条线）', v: 10, p: 15499 },
+        { code: 311, n: '樱桃 2 连', v: 5, p: 12399 },
+        { code: 312, n: '樱桃 1 连（线首一个樱桃）', v: 2, p: 54246 },
+        { code: 322, n: 'Scatter 全盘 2 个七', v: 2, p: 1550 },
+        { code: 323, n: 'Scatter 全盘 3 个七', v: 5, p: 620 },
+        { code: 324, n: 'Scatter 全盘 4 个七', v: 20, p: 186 },
+        { code: 325, n: 'Scatter 全盘 5 个七', v: 40, p: 62 },
+        { code: 326, n: 'Scatter 全盘 6 个七', v: 60, p: 19 },
+        { code: 327, n: 'Scatter 全盘 7 个七', v: 80, p: 5 },
+        { code: 328, n: 'Scatter 全盘 8 个七', v: 100, p: 1 },
+        { code: 329, n: 'Scatter 全盘 9 个七', v: 200, p: 0 },
+        { code: 330, n: '全水果（9 格全是水果且不全同）', v: 15, p: 310 },
+        { code: 340, n: '全屏·樱桃', v: 80, p: 9 },
+        { code: 341, n: '全屏·橘子', v: 40, p: 8 },
+        { code: 342, n: '全屏·蓝莓', v: 40, p: 8 },
+        { code: 343, n: '全屏·铃铛', v: 40, p: 8 },
+        { code: 344, n: '全屏·西瓜', v: 60, p: 6 },
+        { code: 345, n: '全屏·黄BAR', v: 60, p: 5 },
+        { code: 346, n: '全屏·红BAR', v: 90, p: 3 },
+        { code: 347, n: '全屏·蓝BAR', v: 100, p: 2 },
+        { code: 350, n: '全屏 ANY BAR（9 格全 BAR 且不全同）', v: 40, p: 62 }
     ];
 
     // 水浒传 组合结果类（HandType 400-459）：赔付倍数双端硬编码（ShzRules 常量）不可配，
     // v=硬编码倍率（仅展示，与 ShzRules kTier/kFullScreen/kFullAllChar/kFullAllWeapon 一致），
+    // p=服务端默认出现率（标定后百万分比，ShzRtp 内置默认标定输出；÷100 即每 10000 相对单位）。
     // 只配目标出现率(万分比 1-10000)；库存仅板级类(board=1，440-451)有意义，留空=不限、0=当天禁出。
     // 编码表见《水浒传RTP后台控制系统设计.md》§5.1；409/419/429/433-439/449/452-459 为未定义间隙不渲染。
     var GC_SHZ_COMBO_META = [
-        { code: 400, n: '三连·忠义堂', v: 50,   board: 0 },
-        { code: 401, n: '三连·替天行道', v: 20,  board: 0 },
-        { code: 402, n: '三连·宋江', v: 15,  board: 0 },
-        { code: 403, n: '三连·林冲', v: 10,  board: 0 },
-        { code: 404, n: '三连·鲁智深', v: 7,   board: 0 },
-        { code: 405, n: '三连·刀', v: 5,   board: 0 },
-        { code: 406, n: '三连·枪', v: 3,   board: 0 },
-        { code: 407, n: '三连·斧', v: 2,   board: 0 },
-        { code: 410, n: '四连·忠义堂', v: 200, board: 0 },
-        { code: 411, n: '四连·替天行道', v: 80,  board: 0 },
-        { code: 412, n: '四连·宋江', v: 40,  board: 0 },
-        { code: 413, n: '四连·林冲', v: 30,  board: 0 },
-        { code: 414, n: '四连·鲁智深', v: 20,  board: 0 },
-        { code: 415, n: '四连·刀', v: 15,  board: 0 },
-        { code: 416, n: '四连·枪', v: 10,  board: 0 },
-        { code: 417, n: '四连·斧', v: 5,   board: 0 },
-        { code: 420, n: '五连·忠义堂', v: 1000, board: 0 },
-        { code: 421, n: '五连·替天行道', v: 400, board: 0 },
-        { code: 422, n: '五连·宋江', v: 200, board: 0 },
-        { code: 423, n: '五连·林冲', v: 160, board: 0 },
-        { code: 424, n: '五连·鲁智深', v: 100, board: 0 },
-        { code: 425, n: '五连·刀', v: 60,  board: 0 },
-        { code: 426, n: '五连·枪', v: 40,  board: 0 },
-        { code: 427, n: '五连·斧', v: 20,  board: 0 },
-        { code: 430, n: '纯万能线·3连（按忠义堂赔付）', v: 50,  board: 0 },
-        { code: 431, n: '纯万能线·4连', v: 200, board: 0 },
-        { code: 432, n: '纯万能线·5连', v: 1000, board: 0 },
-        { code: 440, n: '全屏·水浒传(万能)', v: 5000, board: 1 },
-        { code: 441, n: '全屏·忠义堂', v: 2500, board: 1 },
-        { code: 442, n: '全屏·替天行道', v: 1000, board: 1 },
-        { code: 443, n: '全屏·宋江', v: 500, board: 1 },
-        { code: 444, n: '全屏·林冲', v: 400, board: 1 },
-        { code: 445, n: '全屏·鲁智深', v: 250, board: 1 },
-        { code: 446, n: '全屏·刀', v: 150, board: 1 },
-        { code: 447, n: '全屏·枪', v: 100, board: 1 },
-        { code: 448, n: '全屏·斧', v: 50,  board: 1 },
-        { code: 450, n: '全屏·纯人物混合（宋江/林冲/鲁智深）', v: 50,  board: 1 },
-        { code: 451, n: '全屏·纯武器混合（刀/枪/斧）', v: 15,  board: 1 }
+        { code: 400, n: '三连·忠义堂', v: 50,   board: 0, p: 929 },
+        { code: 401, n: '三连·替天行道', v: 20,  board: 0, p: 2012 },
+        { code: 402, n: '三连·宋江', v: 15,  board: 0, p: 2631 },
+        { code: 403, n: '三连·林冲', v: 10,  board: 0, p: 3869 },
+        { code: 404, n: '三连·鲁智深', v: 7,   board: 0, p: 5417 },
+        { code: 405, n: '三连·刀', v: 5,   board: 0, p: 7429 },
+        { code: 406, n: '三连·枪', v: 3,   board: 0, p: 11608 },
+        { code: 407, n: '三连·斧', v: 2,   board: 0, p: 17025 },
+        { code: 410, n: '四连·忠义堂', v: 200, board: 0, p: 186 },
+        { code: 411, n: '四连·替天行道', v: 80,  board: 0, p: 402 },
+        { code: 412, n: '四连·宋江', v: 40,  board: 0, p: 526 },
+        { code: 413, n: '四连·林冲', v: 30,  board: 0, p: 774 },
+        { code: 414, n: '四连·鲁智深', v: 20,  board: 0, p: 1083 },
+        { code: 415, n: '四连·刀', v: 15,  board: 0, p: 1486 },
+        { code: 416, n: '四连·枪', v: 10,  board: 0, p: 2322 },
+        { code: 417, n: '四连·斧', v: 5,   board: 0, p: 3405 },
+        { code: 420, n: '五连·忠义堂', v: 1000, board: 0, p: 37 },
+        { code: 421, n: '五连·替天行道', v: 400, board: 0, p: 80 },
+        { code: 422, n: '五连·宋江', v: 200, board: 0, p: 105 },
+        { code: 423, n: '五连·林冲', v: 160, board: 0, p: 155 },
+        { code: 424, n: '五连·鲁智深', v: 100, board: 0, p: 217 },
+        { code: 425, n: '五连·刀', v: 60,  board: 0, p: 297 },
+        { code: 426, n: '五连·枪', v: 40,  board: 0, p: 464 },
+        { code: 427, n: '五连·斧', v: 20,  board: 0, p: 681 },
+        { code: 430, n: '纯万能线·3连（按忠义堂赔付）', v: 50,  board: 0, p: 31 },
+        { code: 431, n: '纯万能线·4连', v: 200, board: 0, p: 6 },
+        { code: 432, n: '纯万能线·5连', v: 1000, board: 0, p: 2 },
+        { code: 440, n: '全屏·水浒传(万能)', v: 5000, board: 1, p: 1 },
+        { code: 441, n: '全屏·忠义堂', v: 2500, board: 1, p: 2 },
+        { code: 442, n: '全屏·替天行道', v: 1000, board: 1, p: 3 },
+        { code: 443, n: '全屏·宋江', v: 500, board: 1, p: 6 },
+        { code: 444, n: '全屏·林冲', v: 400, board: 1, p: 8 },
+        { code: 445, n: '全屏·鲁智深', v: 250, board: 1, p: 11 },
+        { code: 446, n: '全屏·刀', v: 150, board: 1, p: 15 },
+        { code: 447, n: '全屏·枪', v: 100, board: 1, p: 23 },
+        { code: 448, n: '全屏·斧', v: 50,  board: 1, p: 39 },
+        { code: 450, n: '全屏·纯人物混合（宋江/林冲/鲁智深）', v: 50,  board: 1, p: 46 },
+        { code: 451, n: '全屏·纯武器混合（刀/枪/斧）', v: 15,  board: 1, p: 124 }
     ];
 
     // 拉霸子类型（与后端 GetLabaSubType 对齐）：53=水浒传 16=明星97 40=水果拉霸
@@ -767,6 +783,15 @@
         return 0;
     }
 
+    // 服务端默认出现率(p, 百万分比) → 每 10000 相对单位占位文案（保留有效精度；p=0 时≈0）
+    function gcDefRateText(p) {
+        if (!p) return '≈0';
+        var perWan = p / 100;
+        if (perWan >= 100) return '' + Math.round(perWan);
+        if (perWan >= 10) return perWan.toFixed(1);
+        return perWan.toFixed(2);
+    }
+
     function gcBuildMx97ComboTable() {
         var $tb = $('#gcMx97ComboTable tbody');
         $tb.empty();
@@ -774,7 +799,7 @@
             $tb.append('<tr>' +
                 '<td style="padding:6px 8px;border:1px solid #e5e9f0;font-size:13px;color:#36404a;">' + r.n + '</td>' +
                 '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="number" name="Combo' + r.code + '" id="gcMxCombo' + r.code + '" class="gc-input gc-mx97" min="1" step="1" placeholder="' + r.v + '（默认）" /></td>' +
-                '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="number" name="ComboProb' + r.code + '" id="gcMxComboProb' + r.code + '" class="gc-input gc-mx97" min="1" max="10000" step="1" placeholder="默认" /></td>' +
+                '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="number" name="ComboProb' + r.code + '" id="gcMxComboProb' + r.code + '" class="gc-input gc-mx97" min="1" max="10000" step="1" placeholder="' + gcDefRateText(r.p) + '（默认）" /></td>' +
                 '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="number" name="ComboStock' + r.code + '" id="gcMxComboStock' + r.code + '" class="gc-input gc-mx97" min="0" step="1" placeholder="不限" /></td>' +
                 '</tr>');
         });
@@ -814,7 +839,7 @@
             $tb.append('<tr>' +
                 '<td style="padding:6px 8px;border:1px solid #e5e9f0;font-size:13px;color:#36404a;">' + r.n + '</td>' +
                 '<td style="padding:6px 8px;border:1px solid #e5e9f0;font-size:13px;color:#8a94a1;text-align:center;">' + r.v + '</td>' +
-                '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="number" name="ShzRate' + r.code + '" id="gcShzRate' + r.code + '" class="gc-input gc-shz" min="1" max="10000" step="1" placeholder="默认" /></td>' +
+                '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="number" name="ShzRate' + r.code + '" id="gcShzRate' + r.code + '" class="gc-input gc-shz" min="1" max="10000" step="1" placeholder="' + gcDefRateText(r.p) + '（默认）" /></td>' +
                 stockCell +
                 '</tr>');
         });
@@ -863,10 +888,17 @@
     var FRUIT_RAT = [10, 20, 50, 120, 5, 3, 15, 20, 3, 0, 5, 3, 10, 20, 3, 40, 5, 3, 15, 3, 30, 0, 5, 3];
     var FRUIT_AREA = [6, 4, 0, 0, 7, 7, 5, 3, 3, -1, 7, 6, 6, 4, 1, 1, 7, 5, 5, 2, 2, -1, 7, 4];
     var FRUIT_AREA_NAME = ['BAR', '双7', '星', '西瓜', '铃铛', '柠檬', '橘子', '苹果'];
-    // 水果拉霸默认面板权重（万分比，合计 10000）：8 押注区 Σ概率×倍率 均≈0.850（偏差 0.01%，
-    // 满足逐区等值硬门槛 ≤5%），送灯位 9/21=50/100（g=0.055），理论 RTP≈89.94%；
+    // 水果拉霸默认面板权重（万分比，合计 10000）：8 押注区 Σ概率×倍率 均≈0.850（相互偏差 0.01%，
+    // 各区高度均衡），送灯位 9/21=50/100（g=0.055），理论 RTP≈89.94%；
     // 新建桌台预填 / 权重全 0 保存时兜底使用（与后端 FruitPanelDefaultProb 同值）
     var GC_LABA_WHEEL_DEFAULT = [395, 200, 50, 50, 347, 505, 197, 422, 20, 50, 350, 200, 395, 180, 2700, 10, 350, 433, 283, 2033, 80, 100, 350, 300];
+
+    // 拉霸 RTP 闭环参数内置默认（与各输入框 placeholder/服务端校验范围一致）：
+    // 明星97(gcRtpBox)与水浒传(gcRtpBox)共用同一组参数，默认值相同；水果拉霸(gcFruitRtpBox)单独一组。
+    // 重置/新建时回填为可见值，使用户直接看到"默认是多少"；留空语义(服务端内置)见各字段说明。
+    var GC_MX97_RTP_DEFAULT = { targetX100: 9000, kp: 100, deadband: 10, deltaMax: 40, stockThreshold: 60, window: 10000000 };
+    var GC_SHZ_RTP_DEFAULT = { targetX100: 9000, kp: 100, deadband: 10, deltaMax: 40, stockThreshold: 60, window: 10000000 };
+    var GC_FRUIT_RTP_DEFAULT = { targetX100: 9000, kp: 150, deadband: 100, deltaMax: 500, stockThreshold: 30, window: 100000 };
 
     // 水果拉霸按图标归类（去掉"面板N ·"前缀，每类一行展示；同类内大在上小在下，按倍率低→高排序）：
     // v=该类固定倍率，panels=该类占用的面板位；类值=该类各面板位合计，保存时均分到各面板位（后端仍是 24 面板位契约）
@@ -902,16 +934,19 @@
         for (var a = 0; a < 8; a++) mean += c[a];
         mean /= 8;
         var rtp = (g < 1 && sum > 0) ? mean / (1 - g) : 0;
-        var bad = [];
-        for (var a2 = 0; a2 < 8; a2++)
-            if (mean > 0 && Math.abs(c[a2] - mean) / mean > 0.05) bad.push(FRUIT_AREA_NAME[a2] + '=' + c[a2].toFixed(3));
+        var maxDev = 0, maxA = -1;
+        for (var a2 = 0; a2 < 8; a2++) {
+            var dev = (mean > 0) ? Math.abs(c[a2] - mean) / mean : 0;
+            if (dev > maxDev) { maxDev = dev; maxA = a2; }
+        }
         var html = '指向概率合计：' + sum + ' / 10000；送灯率：' + ((p9 + p21) * 100).toFixed(2) + '%；g=' + g.toFixed(4) +
             '；理论 RTP：<b>' + (rtp * 100).toFixed(2) + '%</b><br/>各区 c_a（Σ概率×倍率）：';
         for (var a3 = 0; a3 < 8; a3++)
             html += FRUIT_AREA_NAME[a3] + '=' + c[a3].toFixed(3) + '&nbsp;';
         if (sum === 0) html += '<br/>（权重全 0：保存时将自动使用内置默认 90% 面板表；新建桌台默认预填该表）';
-        else if (bad.length > 0) html += '<br/><span style="color:#d33b3b;">逐区等值约束不满足：' + bad.join('，') + ' 偏差超过 5%，保存将被拒绝！</span>';
-        else if (sum > 0) html += '<br/><span style="color:#2e9e5b;">逐区等值约束满足（偏差 ≤5%），可以保存。</span>';
+        else if (mean > 0 && maxDev > 0.05) html += '<br/><span style="color:#c78a00;">提示：' + FRUIT_AREA_NAME[maxA] +
+            ' 区与其它区差异约 ' + (maxDev * 100).toFixed(1) + '%（无拦截，可自由配置）。</span>';
+        else if (sum > 0) html += '<br/><span style="color:#2e9e5b;">各区返奖接近（差异 ≤5%），配置均衡。</span>';
         $('#gcFruitRtpPreview').html(html);
     }
 
@@ -1085,6 +1120,25 @@
         $('#gcMaxBet').attr('step', gcLabaSubType() > 0 ? '1' : '0.1');
         gcApplyViceDraw();
         $('#gcNewTable').toggle(true);
+        // 高级参数折叠区联动：非拉霸类型隐藏引导条与容器；拉霸类型显示引导条且默认收起，
+        // 用户点"展开设置"后才展示 RTP/转盘/每日次数（简化日常操作路径）
+        var isLabaType = type === 3;
+        $('#gcAdvHead').toggle(isLabaType);
+        if (!isLabaType) $('#gcAdvBody').hide();
+    }
+
+    // 拉霸高级参数（RTP/转盘概率/每日次数）折叠开关：仅对拉霸类型显示引导条
+    function gcToggleAdv(expand) {
+        var isLaba = gcGetType() === 3;
+        if (!isLaba) { $('#gcAdvHead').hide(); $('#gcAdvBody').hide(); return; }
+        $('#gcAdvHead').show();
+        if (typeof expand === 'boolean') {
+            $('#gcAdvBody').toggle(expand);
+        } else {
+            // 不传参 = 切换
+            $('#gcAdvBody').toggle();
+        }
+        $('#gcAdvToggle').text($('#gcAdvBody').is(':visible') ? '收起设置' : '展开设置');
     }
 
     function gcUpdateSaveBtn() {
@@ -1232,7 +1286,7 @@
         gcSyncSwitch();
     }
 
-    // 水果拉霸：把转盘权重恢复为内置默认 90% 面板表（满足逐区等值约束，理论 RTP≈90%）
+    // 水果拉霸：把转盘权重恢复为内置默认 90% 面板表（8 区高度均衡，理论 RTP≈90%）
     function gcApplyFruitDefaultProb() {
         if (gcGetType() === 3 && gcLabaSubType() === 2) {
             if ($('#gcLabaWpCat0').length === 0) gcBuildLabaPayoutTable(2);
@@ -1247,10 +1301,51 @@
         }
     }
 
-    // 重置表单：全部恢复默认（水果拉霸转盘权重=默认 90% 面板表，其余字段按"留空=默认"语义清空）
+    // 恢复默认：对拉霸三个子游戏回填可见的内置默认值（RTP 闭环参数 / 水果转盘默认 90% 权重 / 明星97 组合默认赔率），
+    // 使用户能直接看到"默认是多少"再决定是否调整；保存时按所见值显式写库，与内置默认等价。
+    // 组合"出现率/每日次数"默认=服务端内置分布/不限，无单一数值可显示 → 保持留空(placeholder 已注明)，
+    // 绝不填 0（0 是合法显式值，语义为"当天禁出/不出现"，会错误覆盖"不限"）。
+    // 隐藏字段（兑换单位 EX_COIN / 兑换金币数 Game_Mo 等）保持 0 = 保存时走服务端兜底默认，不回填 1。
+    // 其它游戏类型维持原语义：清空表单（留空/0 = 服务端兜底默认）。
     function gcResetForm() {
         gcZeroForm();
-        gcApplyFruitDefaultProb();
+        if (gcGetType() !== 3) return;          // 非拉霸维持原"清空=默认"
+        // 拉霸可见的押分/兑换默认（最小/最大押分 1、每个游戏币分值 1、进房金币 1、加炮分值 1；与新建桌台一致）
+        $('#gcMinBet').val(1);
+        $('#gcMaxBet').val(1);
+        $('#gcCoinSc').val(1);
+        $('#gcCoinNeed').val(1);
+        $('#gcScoreSwitch').val(1);
+        var st = gcLabaSubType();
+        if (st === 1) {                          // 明星97：RTP 闭环默认 + 组合默认赔率
+            $('#gcRtpTargetX100').val(GC_MX97_RTP_DEFAULT.targetX100);
+            $('#gcRtpKp').val(GC_MX97_RTP_DEFAULT.kp);
+            $('#gcRtpDeadband').val(GC_MX97_RTP_DEFAULT.deadband);
+            $('#gcRtpDeltaMax').val(GC_MX97_RTP_DEFAULT.deltaMax);
+            $('#gcRtpStockThreshold').val(GC_MX97_RTP_DEFAULT.stockThreshold);
+            $('#gcRtpWindow').val(GC_MX97_RTP_DEFAULT.window);
+            if ($('#gcMx97ComboTable tbody tr').length === 0) gcBuildMx97ComboTable();
+            $.each(GC_MX97_COMBO_META, function (i, r) {
+                $('#gcMxCombo' + r.code).val(r.v);   // 组合默认赔率（出现率留空=服务端内置）
+            });
+        } else if (st === 2) {                   // 水果拉霸：RTP 闭环默认 + 默认 90% 转盘权重
+            $('#gcFruitRtpTargetX100').val(GC_FRUIT_RTP_DEFAULT.targetX100);
+            $('#gcFruitRtpKp').val(GC_FRUIT_RTP_DEFAULT.kp);
+            $('#gcFruitRtpDeadband').val(GC_FRUIT_RTP_DEFAULT.deadband);
+            $('#gcFruitRtpDeltaMax').val(GC_FRUIT_RTP_DEFAULT.deltaMax);
+            $('#gcFruitRtpStockThreshold').val(GC_FRUIT_RTP_DEFAULT.stockThreshold);
+            $('#gcFruitRtpWindow').val(GC_FRUIT_RTP_DEFAULT.window);
+            gcApplyFruitDefaultProb();
+        } else if (st === 3) {                   // 水浒传：RTP 闭环默认（结果类出现率服务端内置，保持留空）
+            $('#gcRtpTargetX100').val(GC_SHZ_RTP_DEFAULT.targetX100);
+            $('#gcRtpKp').val(GC_SHZ_RTP_DEFAULT.kp);
+            $('#gcRtpDeadband').val(GC_SHZ_RTP_DEFAULT.deadband);
+            $('#gcRtpDeltaMax').val(GC_SHZ_RTP_DEFAULT.deltaMax);
+            $('#gcRtpStockThreshold').val(GC_SHZ_RTP_DEFAULT.stockThreshold);
+            $('#gcRtpWindow').val(GC_SHZ_RTP_DEFAULT.window);
+        }
+        // 回填后展开高级区，让用户直接看到默认值
+        gcToggleAdv(true);
     }
 
     function gcNewTable() {
@@ -1274,9 +1369,11 @@
         $('#gcGameType').val(type);
         $('#gcTableName').val('');
         gcApplyType();
-        // 水果拉霸：权重固定为默认面板表（满足逐区等值约束，理论 RTP≈90%），不复用最近桌台的权重
+        // 水果拉霸：权重固定为默认面板表（8 区高度均衡，理论 RTP≈90%），不复用最近桌台的权重
         gcApplyFruitDefaultProb();
-        $('#gcCurTableName').text(src ? '新建桌台（已套用最近桌台参数，拉霸权重使用默认 90% 面板表，填写桌名即可保存）' : '新建桌台');
+        // 新建桌台：RTP/组合等高级项保持"留空=系统默认"（不显式写库），让游戏服内置默认跟随版本演进；
+        // 需要看到并落库内置默认数值时，点"恢复默认"按钮即可
+        $('#gcCurTableName').text(src ? '新建桌台（已套用最近桌台参数，拉霸权重使用默认 90% 面板表，填写桌名即可保存）' : '新建桌台（RTP 等高级项保持系统默认，可点“恢复默认”查看默认值）');
         gcSyncSwitch();
         gcUpdateSaveBtn();
     }
@@ -1976,9 +2073,16 @@
         $('#gcGameSel').on('change', function () { gcLoadTables(); });
         $('#gcRefresh').on('click', function () { gcLoadTables(); });
         $('#gcDelete').on('click', gcDelete);
-        $('#gcReset').on('click', gcResetForm);
+        $('#gcReset').on('click', function () {
+            // 恢复默认会把当前表单所有参数改为出厂默认（保存后即覆盖当前桌台配置），二次确认防止误触
+            var isEditing = parseInt($('#gcId').val(), 10) >= 0;
+            confirm(isEditing
+                ? '确定将该桌台所有参数恢复为默认值吗？\n点击确认后表单将回填默认值，保存即覆盖当前桌台的已配置参数。'
+                : '确定将表单恢复为默认值吗？', function () { gcResetForm(); });
+        });
         $('#gcSave').on('click', gcSave);
         $('#gcNewTable').on('click', gcNewTable);
+        $('#gcAdvToggle').on('click', function () { gcToggleAdv(!$('#gcAdvBody').is(':visible')); });
         $('#gcEnabled').on('change', gcSyncSwitch);
         $('#gcPayoutOn').on('change', gcSyncSwitch);
         $('#gcJokerOn').on('change', gcSyncJoker);
@@ -1989,5 +2093,8 @@
             var idx = parseInt($(this).attr('data-idx'), 10);
             if (!isNaN(idx)) gcFill(GC_TABLES[idx]);
         });
+        // 高级参数折叠引导条初始状态：默认收起，切换类型时 gcApplyType 已同步隐藏/折叠
+        gcToggleAdv(false);
+        $('#gcTypeSel').on('change', function () { gcToggleAdv(false); });
     });
 </script>
