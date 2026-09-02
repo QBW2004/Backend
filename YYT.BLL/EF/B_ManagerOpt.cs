@@ -65,10 +65,10 @@ namespace YYT.BLL.EF
                 }
                 else
                 {
-
-                    // 查询权限内的所有用户
+                    List<string> managedAgencies = new B_Admin().GetManagedPlayerAgencyAccounts(ef, loginUser);
+                    // 查询权限内的所有用户，直属/整线由 ManageScope 决定。
                     rst = from a in ef.View_ManagerOpts
-                          where a.AGENCY.Equals(loginUser.Accounts)
+                          where managedAgencies.Contains(a.AGENCY)
                           select new View_ManagerOpt_DTO
                           {
                               AGENCY = a.AGENCY,

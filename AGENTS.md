@@ -89,7 +89,7 @@ ssh -i "$HOME\.ssh\mht-server-ed25519" -o IdentitiesOnly=yes administrator@134.1
 | 磁盘 | 仅 C:（338/360 GB 空闲）。**没有 D 盘** |
 | IIS | `Default Web Site` → `C:\Backend`，绑定 `*:80` + `*:8081`，应用池 DefaultAppPool（v4.0 / 64 位），运行正常，本机探测 HTTP 200 |
 | 公网 | 80 / 8081 均可达（返回 302 跳登录页） |
-| 部署版本 | **WebVer = 1.0.20**（2026-08-31 部署，手机端改版：控制/玩家详情页、移除拉黑与送江、登录禁用提示，备份 `C:\Backend_backup_20260831_011351`）；此前 1.0.18（备份 `C:\Backend_backup_20260830_112202`）。性能索引补丁（`Docs/sql/性能索引.sql`）已在线上 MySQL57 的 mth 库执行；`Docs/sql/线上games名称修正.sql` 已应用（games.Name 已为正常 UTF-8 中文）；`usercontrolstatus`/`usercontrolvalue` 表线上已存在 |
+| 部署版本 | **WebVer = 1.0.23**（2026-09-02 部署，手机端权限策略 + 记录 7×24 窗口与 gameprizerecord 清理，备份 `C:\Backend_backup_20260902_201631`，部署前库备份 `C:\mth_backup_20260902_201442.sql`）；此前 1.0.22（2026-09-01 部署，权限/中奖页终版）；1.0.20（2026-08-31 部署，手机端改版，备份 `C:\Backend_backup_20260831_011351`）。SQL 补丁已全部执行：性能索引（`Docs/sql/性能索引.sql`）、`Docs/sql/线上games名称修正.sql`（games.Name 正常 UTF-8 中文）、`Docs/sql/手机端后台权限与记录保留-20260902.sql`（幂等，gameprizerecord 表 + 记录清理索引已就位）；`usercontrolstatus`/`usercontrolvalue` 表线上已存在 |
 | MySQL | 5.7.44，服务名 `MySQL57`，`C:\mysql\bin\mysqld.exe --defaults-file=C:\mysql\my.ini`，库 mth，`lower_case_table_names=1`，users≈124 行 / admin≈7 行（数据量很小） |
 | 端口监听 | 80、8081（HTTP.sys）、3306、3389(RDP) |
 | 中心服 | **本机没有**：找不到 `ServerCenterNew.exe`（扫到两层深度）、无 `mynamedpipe`/`MTH_RobotPipe` 命名管道、无 8020/8021/9000 监听 |

@@ -24,6 +24,7 @@ namespace YYT.BLL.EF
             ef.Database.ExecuteSqlCommand("DELETE FROM `TableCoinRecord` WHERE `CreateTime` < @p0", cutoff);
             ef.Database.ExecuteSqlCommand("DELETE FROM `manageropt` WHERE `TIME` < @p0", cutoff);
             ef.Database.ExecuteSqlCommand("DELETE FROM `clientexchangerecord` WHERE `CreateTime` < @p0", cutoff);
+            ef.Database.ExecuteSqlCommand("DELETE FROM `gameprizerecord` WHERE `RecTime` < @p0", cutoff);
         }
 
         private static DateTime lastCleanupUtc = DateTime.MinValue;
@@ -31,7 +32,7 @@ namespace YYT.BLL.EF
 
         /// <summary>
         /// 记录清理唯一入口：只允许定时任务调用（进程内节流，默认每小时最多一次）。
-        /// 列表/指令接口不得内联调用——6 条 DELETE 会把读接口变成全表扫描加写锁。
+        /// 列表/指令接口不得内联调用——7 条 DELETE 会把读接口变成全表扫描加写锁。
         /// </summary>
         public static void CleanupExpiredRecordsThrottled(int intervalHours = 1)
         {
@@ -90,6 +91,9 @@ namespace YYT.BLL.EF
             using (var ef = new GameDbContext())
             {
                 M_S_Record queryPara = queryEntity;
+                DateTime cutoff = GetRetentionCutoff();
+                DateTime now = DateTime.Now;
+                bool retentionAdjusted = false;
                 var rst = from a in ef.AgencyOptLogs
                           join b in ef.Admins on a.OptID equals b.ID
                           select new M_AgencyOptLog
@@ -110,10 +114,25 @@ namespace YYT.BLL.EF
 
                 if (!string.IsNullOrWhiteSpace(queryPara.ID))
                     rst = rst.Where(c => c.ID.Equals(queryPara.ID) || c.OptID.Equals(queryPara.ID));
+                rst = rst.Where(c => c.REC_TIME >= cutoff && c.REC_TIME <= now);
                 if (queryPara.S_TIME > DateTime.MinValue)
                 {
                     DateTime begin = queryPara.S_TIME.Date;
-                    DateTime end = begin.AddDays(1);
+                    if (begin < cutoff)
+                    {
+                        begin = cutoff;
+                        retentionAdjusted = true;
+                    }
+                    DateTime end = queryPara.S_TIME.Date.AddDays(1);
+                    if (end > now)
+                        end = now;
+                    if (queryPara.S_TIME.Date.AddDays(1) < cutoff)
+                        retentionAdjusted = true;
+                    if (end <= begin)
+                    {
+                        list.notice = "只能查询最近7天";
+                        return list;
+                    }
                     rst = rst.Where(c => c.REC_TIME >= begin && c.REC_TIME < end);
                 }
                 if (queryPara.OPT > -1)
@@ -123,7 +142,10 @@ namespace YYT.BLL.EF
 
                 if (loginUser.UserPriv != 0)
                 {
-                    rst = rst.Where(c => c.AGENCY.Equals(loginUser.Accounts) || c.OptID.Equals(loginUser.Accounts));
+                    List<string> managed = new B_Admin().GetManagedAgencyAccounts(ef, loginUser);
+                    if (!managed.Contains(loginUser.Accounts))
+                        managed.Add(loginUser.Accounts);
+                    rst = rst.Where(c => managed.Contains(c.OptID) || managed.Contains(c.ID));
                 }
 
                 if (rst != null)
@@ -136,6 +158,7 @@ namespace YYT.BLL.EF
                     list.rows = agencies;
                     list.total = mPage.TotalCount;
                 }
+                list.notice = retentionAdjusted ? "只能查询最近7天" : "";
             }
             return list;
         }
@@ -146,6 +169,9 @@ namespace YYT.BLL.EF
             using (var ef = new GameDbContext())
             {
                 M_S_Record queryPara = queryEntity;
+                DateTime cutoff = GetRetentionCutoff();
+                DateTime now = DateTime.Now;
+                bool retentionAdjusted = false;
                 // 全部条件/Join/分页下推 SQL；games 表按 GameId 主键联查，无索引回表风险
                 var rst = from a in ef.UserOptLogs
                           join b in ef.Users on a.UserID equals b.ID
@@ -171,16 +197,32 @@ namespace YYT.BLL.EF
 
                 if (!string.IsNullOrWhiteSpace(queryPara.ID))
                     rst = rst.Where(c => c.UserID.Equals(queryPara.ID));
+                rst = rst.Where(c => c.REC_TIME >= cutoff && c.REC_TIME <= now);
                 if (queryPara.S_TIME > DateTime.MinValue)
                 {
                     DateTime begin = queryPara.S_TIME.Date;
-                    DateTime end = begin.AddDays(1);
+                    if (begin < cutoff)
+                    {
+                        begin = cutoff;
+                        retentionAdjusted = true;
+                    }
+                    DateTime end = queryPara.S_TIME.Date.AddDays(1);
+                    if (end > now)
+                        end = now;
+                    if (queryPara.S_TIME.Date.AddDays(1) < cutoff)
+                        retentionAdjusted = true;
+                    if (end <= begin)
+                    {
+                        list.notice = "只能查询最近7天";
+                        return list;
+                    }
                     rst = rst.Where(c => c.REC_TIME >= begin && c.REC_TIME < end);
                 }
 
                 if (loginUser.UserPriv != 0)
                 {
-                    rst = rst.Where(c => c.AGENCY.Equals(loginUser.Accounts));
+                    List<string> agencies = new B_Admin().GetManagedPlayerAgencyAccounts(ef, loginUser);
+                    rst = rst.Where(c => agencies.Contains(c.AGENCY));
                 }
 
                 if (rst != null)
@@ -193,6 +235,7 @@ namespace YYT.BLL.EF
                     list.rows = users;
                     list.total = mPage.TotalCount;
                 }
+                list.notice = retentionAdjusted ? "只能查询最近7天" : "";
             }
             return list;
         }

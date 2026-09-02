@@ -1008,7 +1008,7 @@
                 $('#menuUserName').text(rd.NAME || '');
                 // 冻结按钮：按用户当前状态显示 冻结/解冻，并按权限显隐
                 $('#menuBtnFrozen').text(rd.FROZEN == 1 ? '解冻' : '冻结');
-                @if (loginUser.UserPriv == 0 || loginUser.IsFrozen == 1)
+                @if (loginUser != null)
                 {
                     <text>$('#menuBtnFrozen').show();</text>
                 }
@@ -1530,11 +1530,11 @@
         {
             <a href="javascript:void(0);" id="menuBtnKick" class="menu-btn-item menu-btn-kick" onclick="menuKick()">踢人</a>
         }
-        @if (loginUser.UserPriv == 0 || loginUser.IsFrozen == 1)
+        @if (loginUser != null)
         {
             <a href="javascript:void(0);" id="menuBtnFrozen" class="menu-btn-item menu-btn-frozen" onclick="menuFrozen()">冻结</a>
         }
-        @if (loginUser.UserPriv == 0 || loginUser.IsModifyPwd == 1)
+        @if (loginUser.UserPriv == 0 || (loginUser.IsViewPwd == 1 && loginUser.IsModifyPwd == 1))
         {
             <a href="javascript:void(0);" class="menu-btn-item menu-btn-pwd" onclick="menuChgPwd()">修改密码</a>
         }

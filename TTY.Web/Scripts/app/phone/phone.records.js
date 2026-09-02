@@ -33,6 +33,7 @@
             page: pageIndex,
             rows: PAGE_SIZE
         }).always(M.hideLoading).then(function (res) {
+            if (res && res.notice) M.toast(res.notice, 'info');
             var rows = (res && res.rows) ? res.rows : [];
             totalCount = res ? Number(res.total || 0) : 0;
 

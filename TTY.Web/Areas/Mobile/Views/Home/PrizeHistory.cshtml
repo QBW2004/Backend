@@ -21,10 +21,6 @@
     .history-table .negative { color:#ff3b30; }
     .history-empty { padding:18px; text-align:center; color:#8e8e93; font-size:13px; }
     .history-summary { color:#666; margin:0 2px 12px; font-size:13px; }
-    .history-pagination { display:flex; align-items:center; justify-content:center; gap:10px; margin:14px 0 4px; }
-    .history-pagination button { height:36px; padding:0 16px; border:1px solid #ddd; border-radius:7px; background:#fff; color:#333; }
-    .history-pagination button:disabled { opacity:.45; }
-    #historyPageInfo { color:#666; font-size:13px; }
 </style>
 }
 
@@ -36,11 +32,6 @@
     </div>
     <div class="history-summary" id="historySummary">--</div>
     <div id="prizeHistoryList"></div>
-    <div class="history-pagination">
-        <button type="button" id="historyPrevBtn" disabled>上一页</button>
-        <span id="historyPageInfo">第 1 页 / 共 1 页</span>
-        <button type="button" id="historyNextBtn" disabled>下一页</button>
-    </div>
 </div>
 
 @section scripts {

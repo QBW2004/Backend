@@ -1,8 +1,7 @@
 /* ============================================================
    冻结账号页（原"玩家封号"，参考站 fenghao）
    数据源：/Game/UserInfo/FrozenUser、/Game/UserInfo/GetFrozenUsers
-   说明：项目无「冻结时间」字段，列表展示账号 + 解冻操作；
-        冻结时间列展示「--」以保持版式一致。
+   说明：冻结操作人和时间来自 AgencyOptLog 审计记录。
    ============================================================ */
 (function (window, $, M) {
     'use strict';
@@ -24,7 +23,8 @@
                     return '<tr>' +
                         '<td>' + M.esc(u.ID) + '</td>' +
                         '<td><button class="unban-btn" data-id="' + M.esc(u.ID) + '">解冻</button></td>' +
-                        '<td class="ban-time">--</td>' +
+                        '<td>' + M.esc(u.FrozenOperator || '--') + '</td>' +
+                        '<td class="ban-time">' + M.fmtTime(u.FrozenTime, true) + '</td>' +
                         '</tr>';
                 }).join(''));
             });

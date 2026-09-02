@@ -102,7 +102,7 @@
                 targetType: targetType()
             }).always(M.hideLoading).then(function (res) {
                 var r = M.result(res);
-                M.alert(r.text, r.ok, r.ok ? '操作成功' : '操作失败').then(function () {
+                M.alert(r.ok ? '操作成功' : r.text, r.ok, r.ok ? '操作成功' : '操作失败').then(function () {
                     if (r.ok) {
                         $('#amountInput').val('');
                         resetQuery();

@@ -129,7 +129,9 @@ namespace YYT.BLL.EF
                     // 检查归属代理
                     if (this.SrcUser.PRIV != 0)
                     {
-                        List<string> agencies = new B_Admin().GetManagedAgencyAccounts(ef, this.SrcUser.ToLoginUser());
+                        // 玩家目标遵循会员管理范围：直属代理只能操作自己的直属会员，
+                        // 只有 ManageScope=2 才能覆盖整条代理线的会员。
+                        List<string> agencies = new B_Admin().GetManagedPlayerAgencyAccounts(ef, this.SrcUser.ToLoginUser());
                         return rst.Where(c => agencies.Contains(c.AGENCY)).FirstOrDefault();
                     }
                     else

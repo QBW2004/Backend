@@ -26,11 +26,12 @@
             ID: account,
             PWD: password,
             RE_ENABLE: 1,
+            IsCreateAgent: $('#agentCreateAgent').is(':checked') ? 1 : 0,
             MobileRequest: 1,
             InviteCode: ''
         }).always(function () { setSubmitting(false); }).then(function (res) {
             var r = M.result(res);
-            M.alert(r.ok ? '代理账号创建成功' : r.text, r.ok, r.ok ? '操作成功' : '操作失败').then(function () {
+            M.alert(r.ok ? '操作成功' : r.text, r.ok, r.ok ? '操作成功' : '操作失败').then(function () {
                 if (r.ok) {
                     window.location.href = '/Mobile/Home/Agents';
                 }

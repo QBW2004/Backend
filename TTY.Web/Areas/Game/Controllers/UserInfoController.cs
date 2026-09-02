@@ -443,11 +443,9 @@ namespace YYT.Web.Areas.Game.Controllers
                     ID = form.Q<string>("srch_ID"),
                     AGENCY = form.Q<string>("srch_Agency")
                 };
-                // 手机端“我的会员”未指定代理时，普通代理只看自己的直属会员；超管保留全平台视图。
-                if (loginUser.UserPriv != 0 && string.IsNullOrWhiteSpace(mUsers.AGENCY))
-                    mUsers.AGENCY = loginUser.Accounts;
+                bool includeDescendants = form.Q<int>("IncludeDescendants", 0) == 1;
                 string sort = form.Q<string>("sort");
-                list = new B_Users().GetMemberWinLossList(mPage, mUsers, loginUser, sort);
+                list = new B_Users().GetMemberWinLossList(mPage, mUsers, loginUser, sort, includeDescendants);
             }
             catch (Exception ex)
             {
@@ -473,10 +471,8 @@ namespace YYT.Web.Areas.Game.Controllers
                     return Json(msg);
 
                 string agency = form.Q<string>("srch_Agency");
-                // 与会员列表一致：普通代理无筛选参数时只统计直属会员，超管统计全平台。
-                if (loginUser.UserPriv != 0 && string.IsNullOrWhiteSpace(agency))
-                    agency = loginUser.Accounts;
-                M_MemberWinLossStats stats = new B_Users().GetMemberWinLossStats(loginUser, agency);
+                bool includeDescendants = form.Q<int>("IncludeDescendants", 0) == 1;
+                M_MemberWinLossStats stats = new B_Users().GetMemberWinLossStats(loginUser, agency, includeDescendants);
                 long totalBuy = stats.TotalBuy ?? 0;
                 long totalBack = stats.TotalBack ?? 0;
                 long todayBuy = stats.TodayBuy ?? 0;
@@ -803,6 +799,15 @@ namespace YYT.Web.Areas.Game.Controllers
                 string id = form.Q<string>("ID");
                 if (!string.IsNullOrWhiteSpace(id))
                 {
+                    using (var ef = new GameDbContext())
+                    {
+                        M_Users target = ef.Users.FirstOrDefault(c => c.ID == id);
+                        if (target == null || !new B_Admin().CanManagePlayer(ef, loginUser, target.AGENCY))
+                        {
+                            msg.content = target == null ? "用户不存在！" : "无权限操作！";
+                            return Json(msg);
+                        }
+                    }
                     M_Users mUsers = new M_Users { ID = id };
                     int val = new B_Users().ResetSafePwd(mUsers);
                     if (val > 0)
@@ -828,21 +833,24 @@ namespace YYT.Web.Areas.Game.Controllers
             try
             {
                 M_LoginUser loginUser = WebHelper.GetLoginInfo();
-                if (loginUser == null || (loginUser.UserPriv > 0 && loginUser.IsFrozen != 1))
+                if (loginUser == null)
                 {
-                    msg.content = "没有冻结权限！";
+                    msg.content = "无权限操作！";
                     return Json(msg);
                 }
                 string id = form.Q<string>("ID");
                 int frozen = form.Q<int>("frozen", 0);
                 if (!string.IsNullOrWhiteSpace(id))
                 {
-                    M_Users mUsers = new M_Users { ID = id, FROZEN = frozen };
-                    int val = new B_Users().FrozenUser(mUsers);
-                    if (val > 0)
+                    int val = new B_Users().FrozenUserWithAudit(loginUser, id, frozen);
+                    if (val < 0)
+                    {
+                        msg.content = "无权限操作！";
+                    }
+                    else if (val > 0)
                     {
                         msg.code = 1;
-                        msg.content = "冻结成功！";
+                        msg.content = "操作成功";
                     }
                 }
             }
@@ -862,7 +870,7 @@ namespace YYT.Web.Areas.Game.Controllers
             try
             {
                 M_LoginUser loginUser = WebHelper.GetLoginInfo();
-                if (loginUser == null || (loginUser.UserPriv > 0 && loginUser.IsModifyPwd != 1))
+                if (loginUser == null || (loginUser.UserPriv > 0 && (loginUser.IsViewPwd != 1 || loginUser.IsModifyPwd != 1)))
                 {
                     msg.content = "没有修改密码权限！";
                     return Json(msg);
@@ -881,12 +889,27 @@ namespace YYT.Web.Areas.Game.Controllers
                     return Json(msg);
                 }
 
+                using (var ef = new GameDbContext())
+                {
+                    M_Users target = ef.Users.FirstOrDefault(c => c.ID == id);
+                    if (target == null)
+                    {
+                        msg.content = "用户不存在！";
+                        return Json(msg);
+                    }
+                    if (!new B_Admin().CanManagePlayer(ef, loginUser, target.AGENCY))
+                    {
+                        msg.content = "无权限操作！";
+                        return Json(msg);
+                    }
+                }
+
                 M_Users entity = new M_Users { ID = id, PWD = pwd };
                 int val = new B_Users().ChgPwd(entity);
                 if (val > 0)
                 {
                     msg.code = 1;
-                    msg.content = "密码修改成功！";
+                    msg.content = "修改成功";
                 }
             }
             catch (Exception ex)
@@ -922,6 +945,16 @@ namespace YYT.Web.Areas.Game.Controllers
                 {
                     msg.content = "保险柜密码不能为空！";
                     return Json(msg);
+                }
+
+                using (var ef = new GameDbContext())
+                {
+                    M_Users target = ef.Users.FirstOrDefault(c => c.ID == id);
+                    if (target == null || !new B_Admin().CanManagePlayer(ef, loginUser, target.AGENCY))
+                    {
+                        msg.content = target == null ? "用户不存在！" : "无权限操作！";
+                        return Json(msg);
+                    }
                 }
 
                 M_Users entity = new M_Users { ID = id, SAFE_PWD = safePwd };
@@ -1872,10 +1905,13 @@ namespace YYT.Web.Areas.Game.Controllers
                 return Json(msg);
             }
 
-            // 踢人范围由 KickScope 独立控制：2=整条代理线，1=直属代理。
-            List<string> onlinePlayers = (loginUser.KickScope ?? 1) == 2
-                ? new B_Admin().GetOnlinePlayerAccountsInLine(loginUser.Accounts)
-                : new B_Admin().GetOnlinePlayerAccountsByAgency(loginUser.Accounts);
+            List<string> onlinePlayers;
+            using (var ef = new GameDbContext())
+            {
+                List<string> agencies = new B_Admin().GetManagedPlayerAgencyAccounts(ef, loginUser);
+                onlinePlayers = ef.Users.Where(c => c.INHALL && agencies.Contains(c.AGENCY))
+                    .Select(c => c.ID).ToList();
+            }
             int success = 0;
             foreach (string account in onlinePlayers)
             {
@@ -1909,11 +1945,7 @@ namespace YYT.Web.Areas.Game.Controllers
                 if (user == null)
                     return false;
 
-                // 踢人范围独立于查询/管理范围：2=整条代理线，1=直属代理。
-                if ((loginUser.KickScope ?? 1) == 2)
-                    return new B_Admin().IsInAgencyLine(ef, loginUser.Accounts, user.AGENCY);
-
-                return user.AGENCY == loginUser.Accounts;
+                return new B_Admin().CanManagePlayer(ef, loginUser, user.AGENCY);
             }
         }
 

@@ -82,6 +82,7 @@ namespace YYT.Web.Areas.Game.Controllers
         {
             M_EasyuiGridData<M_GamePrizeRecord> list = new M_EasyuiGridData<M_GamePrizeRecord>();
             List<object> gameMeta = new List<object>();
+            bool retentionAdjusted = false;
             try
             {
                 M_LoginUser loginUser = WebHelper.GetLoginInfo();
@@ -91,8 +92,19 @@ namespace YYT.Web.Areas.Game.Controllers
 
                 int page = Math.Max(1, form.Q<int>("page", 1));
                 int rows = Math.Max(1, Math.Min(100, form.Q<int>("rows", 20)));
-                DateTime start = form.Q<DateTime>("StartTime", DateTime.Today.AddDays(-30)).Date;
-                DateTime end = form.Q<DateTime>("EndTime", DateTime.Today).Date.AddDays(1);
+                DateTime now = DateTime.Now;
+                DateTime cutoff = B_Records_MySQL.GetRetentionCutoff();
+                DateTime requestedStart = form.Q<DateTime>("StartTime", cutoff);
+                DateTime requestedEnd = form.Q<DateTime>("EndTime", now).Date.AddDays(1);
+                retentionAdjusted = requestedStart < cutoff || requestedEnd < cutoff;
+                DateTime start = requestedStart;
+                DateTime end = requestedEnd;
+                if (start < cutoff)
+                    start = cutoff;
+                if (end > now)
+                    end = now;
+                if (end <= start)
+                    return Json(new { total = 0, rows = new List<M_GamePrizeRecord>(), games = gameMeta, notice = "只能查询最近7天" });
 
                 using (var ef = new GameDbContext())
                 {
@@ -101,7 +113,7 @@ namespace YYT.Web.Areas.Game.Controllers
                         return Json(list);
                     if (loginUser.UserPriv != 0)
                     {
-                        List<string> managed = new B_Admin().GetManagedAgencyAccounts(ef, loginUser);
+                        List<string> managed = new B_Admin().GetManagedPlayerAgencyAccounts(ef, loginUser);
                         if (!managed.Contains(user.AGENCY))
                             return Json(list);
                     }
@@ -130,7 +142,8 @@ namespace YYT.Web.Areas.Game.Controllers
             {
                 LogHelper.WriteLog(typeof(UserRecordController), ex);
             }
-            return Json(new { total = list.total, rows = list.rows ?? new List<M_GamePrizeRecord>(), games = gameMeta });
+            return Json(new { total = list.total, rows = list.rows ?? new List<M_GamePrizeRecord>(), games = gameMeta,
+                notice = retentionAdjusted ? "只能查询最近7天" : "" });
         }
 
 

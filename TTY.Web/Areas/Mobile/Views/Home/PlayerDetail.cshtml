@@ -5,7 +5,6 @@
     string webVer = ConfigHelper.Get("WebVer");
     string playerAccount = (string)(ViewBag.PlayerAccount ?? "");
     bool canModifyPwd = ViewBag.CanModifyPwd == true;
-    bool canControl = ViewBag.CanControl == true;
     Layout = "~/Views/Shared/Layout/_MobileLayout.cshtml";
 }
 
@@ -189,12 +188,6 @@
             <div class="d-row">
                 <span class="d-label">控制状态</span>
                 <span class="d-value muted" id="dControl">--</span>
-                @if (canControl)
-                {
-                    <span class="d-extra">
-                        <button class="d-btn purple" id="btnControl" type="button">设置</button>
-                    </span>
-                }
             </div>
             <div class="d-row"><span class="d-label">剩余分数</span><span class="d-value" id="dScore">--</span></div>
             <div class="d-row"><span class="d-label">剩余金币</span><span class="d-value" id="dCoins">--</span></div>

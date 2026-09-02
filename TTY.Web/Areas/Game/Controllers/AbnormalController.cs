@@ -23,6 +23,8 @@ namespace YYT.Web.Areas.Game.Controllers
             public string Reason { get; set; }
             public string IP { get; set; }
             public string Time { get; set; }
+            public string Operator { get; set; }
+            public string OperationTime { get; set; }
         }
 
         /// <summary>
@@ -43,19 +45,62 @@ namespace YYT.Web.Areas.Game.Controllers
                 List<FrozenAccountRow> rows = new List<FrozenAccountRow>();
                 using (var ef = new GameDbContext())
                 {
+                    B_Admin adminBll = new B_Admin();
+                    List<string> playerAgencies = adminBll.GetManagedPlayerAgencyAccounts(ef, loginUser);
+                    List<string> managedAgents = loginUser.UserPriv == 0
+                        ? ef.Admins.Select(c => c.ID).ToList()
+                        : adminBll.GetManagedAgencyAccounts(ef, loginUser);
+                    managedAgents.RemoveAll(c => string.Equals(c, loginUser.Accounts, StringComparison.OrdinalIgnoreCase));
+
                     // 真实冻结状态：玩家 FROZEN=1，代理 RE_ENABLE=0。
-                    rows.AddRange(ef.Users.Where(c => c.FROZEN == 1).Select(c => new FrozenAccountRow
+                    rows.AddRange(ef.Users.Where(c => c.FROZEN == 1 && playerAgencies.Contains(c.AGENCY)).Select(c => new FrozenAccountRow
                     {
                         ID = c.ID,
                         Type = "玩家",
                         Reason = "账号已冻结"
                     }).ToList());
-                    rows.AddRange(ef.Admins.Where(c => c.RE_ENABLE == 0).Select(c => new FrozenAccountRow
+                    rows.AddRange(ef.Admins.Where(c => c.RE_ENABLE == 0 && managedAgents.Contains(c.ID)).Select(c => new FrozenAccountRow
                     {
                         ID = c.ID,
                         Type = "代理",
                         Reason = "账号已禁用"
                     }).ToList());
+
+                    List<string> visibleIds = rows.Select(c => c.ID).ToList();
+                    List<M_AgencyOptLog> auditLogs = ef.AgencyOptLogs
+                        .Where(c => visibleIds.Contains(c.ID) &&
+                            (c.OPT == B_Users.PlayerFreezeAuditOpt || c.OPT == B_Users.PlayerUnfreezeAuditOpt ||
+                             c.OPT == B_Admin.AgentDisableAuditOpt || c.OPT == B_Admin.AgentEnableAuditOpt))
+                        .OrderByDescending(c => c.REC_TIME)
+                        .ThenByDescending(c => c.LID)
+                        .ToList();
+                    Dictionary<string, M_AgencyOptLog> latestAudit = auditLogs
+                        .GroupBy(c => c.ID)
+                        .ToDictionary(c => c.Key, c => c.First(), StringComparer.OrdinalIgnoreCase);
+                    foreach (FrozenAccountRow row in rows)
+                    {
+                        M_AgencyOptLog audit;
+                        if (!latestAudit.TryGetValue(row.ID, out audit))
+                            continue;
+                        row.Operator = audit.OptID;
+                        row.OperationTime = audit.REC_TIME.ToString("yyyy-MM-dd HH:mm:ss");
+                    }
+
+                    // 登录失败记录也必须服从同一管理范围。
+                    List<string> missRecordIds = records.Select(record => record.ID)
+                        .Where(id => !string.IsNullOrWhiteSpace(id)).Distinct().ToList();
+                    Dictionary<string, string> missRecordAgencies = ef.Users
+                        .Where(user => missRecordIds.Contains(user.ID))
+                        .Select(user => new { user.ID, user.AGENCY })
+                        .ToList()
+                        .ToDictionary(user => user.ID, user => user.AGENCY, StringComparer.OrdinalIgnoreCase);
+                    records = records.Where(record =>
+                    {
+                        string agency;
+                        if (missRecordAgencies.TryGetValue(record.ID, out agency))
+                            return playerAgencies.Contains(agency);
+                        return managedAgents.Contains(record.ID) || loginUser.UserPriv == 0;
+                    }).ToList();
                 }
 
                 // 异常登录锁定也属于冻结明细；同一账号只保留一行并合并原因。
@@ -77,6 +122,8 @@ namespace YYT.Web.Areas.Game.Controllers
                         : row.Reason + "；连续登录失败 " + record.MissCount + " 次";
                     row.IP = record.IPAddr;
                     row.Time = record.LoginTime.ToString("yyyy-MM-dd HH:mm:ss");
+                    if (string.IsNullOrWhiteSpace(row.OperationTime))
+                        row.OperationTime = row.Time;
                 }
 
                 msg.code = 1;
@@ -106,7 +153,7 @@ namespace YYT.Web.Areas.Game.Controllers
             try
             {
                 M_LoginUser loginUser = WebHelper.GetLoginInfo();
-                if (loginUser == null || loginUser.UserPriv != 0)
+                if (loginUser == null)
                 {
                     msg.content = "无权限操作！";
                     return Json(msg);
@@ -119,28 +166,40 @@ namespace YYT.Web.Areas.Game.Controllers
                     return Json(msg);
                 }
 
-                bool changed = new B_LoginMissRecord().Unblock(id);
+                int operationResult = 0;
                 using (var ef = new GameDbContext())
                 {
                     var user = ef.Users.FirstOrDefault(c => c.ID.Equals(id));
-                    if (user != null && user.FROZEN == 1)
+                    if (user != null)
                     {
-                        user.FROZEN = 0;
-                        changed = true;
+                        if (!new B_Admin().CanManagePlayer(ef, loginUser, user.AGENCY))
+                        {
+                            msg.content = "无权限操作！";
+                            return Json(msg);
+                        }
+                        operationResult = new B_Users().FrozenUserWithAudit(loginUser, id, 0);
                     }
                     var admin = ef.Admins.FirstOrDefault(c => c.ID.Equals(id));
-                    if (admin != null && admin.RE_ENABLE == 0)
+                    if (admin != null)
                     {
-                        admin.RE_ENABLE = 1;
-                        changed = true;
+                        if (!new B_Admin().CanManageAgent(ef, loginUser, id))
+                        {
+                            msg.content = "无权限操作！";
+                            return Json(msg);
+                        }
+                        operationResult = new B_Admin().SetAgentEnabledWithAudit(loginUser, id, 1, "禁用已解除");
                     }
-                    if (changed)
-                        ef.SaveChanges();
+                    if (user == null && admin == null && loginUser.UserPriv != 0)
+                    {
+                        msg.content = "无权限操作！";
+                        return Json(msg);
+                    }
                 }
-                if (changed)
+                bool loginUnlocked = new B_LoginMissRecord().Unblock(id);
+                if (operationResult > 0 || loginUnlocked)
                 {
                     msg.code = 1;
-                    msg.content = "账号已成功解封";
+                    msg.content = "操作成功";
                 }
             }
             catch (Exception ex)

@@ -69,7 +69,7 @@
         background-color: white;
     }
 
-    /* 统计卡（对齐参考站 当前押注/今日输赢/总输赢 三卡） */
+    /* 统计卡：当前押注 / 剩余分数 / 剩余金币 / 今日盈亏 / 总盈亏 */
     .stat-cards {
         display: none;
         gap: 8px;
@@ -77,14 +77,16 @@
     }
 
     .stat-cards.show {
-        display: flex;
+        display: grid;
+        grid-template-columns: repeat(5, minmax(72px, 1fr));
+        overflow-x: auto;
     }
 
     .stat-card {
         flex: 1;
         background: #f8f9fa;
         border: 1px solid #eef0f2;
-        border-radius: 10px;
+        border-radius: 6px;
         padding: 12px 6px;
         text-align: center;
         min-width: 0;
@@ -348,18 +350,26 @@
                 </div>
             </div>
 
-            @* 统计卡：剩余金币 / 今日输赢 / 总输赢 *@
+            @* 统计卡：当前押注 / 剩余分数 / 剩余金币 / 今日盈亏 / 总盈亏 *@
             <div class="stat-cards" id="statCards">
+                <div class="stat-card">
+                    <div class="stat-label">当前押注</div>
+                    <div class="stat-value" id="stBet">--</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">剩余分数</div>
+                    <div class="stat-value" id="stScore">--</div>
+                </div>
                 <div class="stat-card">
                     <div class="stat-label">剩余金币</div>
                     <div class="stat-value" id="stCoins">--</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">今日输赢</div>
+                    <div class="stat-label">今日盈亏</div>
                     <div class="stat-value" id="stToday">--</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">总输赢</div>
+                    <div class="stat-label">总盈亏</div>
                     <div class="stat-value" id="stTotal">--</div>
                 </div>
             </div>
@@ -395,7 +405,7 @@
                 <div class="form-row" id="rowGold">
                     <label class="form-label" for="ctrlGold">目标</label>
                     <input type="number" id="ctrlGold" class="input-field" placeholder="必填，累计达到目标后自动失效" inputmode="numeric" autocomplete="off">
-                    <div class="tip-text">温馨提示：吃分 / 放水累计达到目标后自动失效，恢复桌台参数难度</div>
+                    <div class="tip-text">温馨提示：吃分 / 放水累计达到目标后自动失效</div>
                 </div>
 
                 @* 控牌：游戏类型 / 控制牌型。固定控制 1 次，限制在 5 把内。 *@

@@ -16,6 +16,8 @@ namespace YYT.BLL.EF
 {
     public class B_Users
     {
+        public const int PlayerFreezeAuditOpt = 26;
+        public const int PlayerUnfreezeAuditOpt = 27;
         protected IGameServerClient GameServerClient { get; set; }
 
         public B_Users()
@@ -409,7 +411,7 @@ namespace YYT.BLL.EF
             using (var ef = new GameDbContext())
             {
                 // 敏感列仅在有查看权限时才参与查询（与 ApplySensitiveFieldPermissions 同口径，避免密码无谓出库出接口）
-                bool canPwd = loginUser.UserPriv == 0 || loginUser.IsViewPwd == 1 || loginUser.IsViewSafePwd == 1;
+                bool canPwd = loginUser.UserPriv == 0 || loginUser.IsViewPwd == 1;
                 bool canSafePwd = loginUser.UserPriv == 0 || loginUser.IsViewSafePwd == 1;
 
                 var rst = from c in ef.Users
@@ -446,7 +448,7 @@ namespace YYT.BLL.EF
                 // 加权限查询：一条 IN(...) 取代原先逐代理执行 SQL 的 N+1 循环
                 if (loginUser.UserPriv != 0)
                 {
-                    List<string> agencies = new B_Admin().GetManagedAgencyAccounts(ef, loginUser);
+                    List<string> agencies = new B_Admin().GetManagedPlayerAgencyAccounts(ef, loginUser);
                     if (agencies == null || agencies.Count < 1)
                         return list;
                     rst = rst.Where(c => agencies.Contains(c.AGENCY));
@@ -487,7 +489,7 @@ namespace YYT.BLL.EF
             using (var ef = new GameDbContext())
             {
                 // 敏感列仅在有查看权限时才参与查询（与 ApplySensitiveFieldPermissions 同口径）
-                bool canPwd = loginUser.UserPriv == 0 || loginUser.IsViewPwd == 1 || loginUser.IsViewSafePwd == 1;
+                bool canPwd = loginUser.UserPriv == 0 || loginUser.IsViewPwd == 1;
                 bool canSafePwd = loginUser.UserPriv == 0 || loginUser.IsViewSafePwd == 1;
 
                 var rst = from c in ef.Users
@@ -514,7 +516,7 @@ namespace YYT.BLL.EF
 
                 if (loginUser.UserPriv != 0)
                 {
-                    List<string> agencies = new B_Admin().GetManagedAgencyAccounts(ef, loginUser);
+                    List<string> agencies = new B_Admin().GetManagedPlayerAgencyAccounts(ef, loginUser);
                     rst = rst.Where(c => agencies.Contains(c.AGENCY));
                 }
 
@@ -536,15 +538,22 @@ namespace YYT.BLL.EF
         /// user_daily_winloss(UserID,DAY) 索引），禁止把权限范围内全量玩家拉进内存再排序分页。
         /// </summary>
         /// <param name="sort">空/last-time 默认序；win-most 今日赢最多；loss-most 今日输最多；profit-desc 总盈亏降序；profit-asc 总盈亏升序</param>
-        private M_EasyuiGridData<M_Users_DTO> QueryUsersPaged(M_Page mPage, M_Users_DTO entity, M_LoginUser loginUser, bool onlyOffline, bool onlyFrozen, string sort)
+        private M_EasyuiGridData<M_Users_DTO> QueryUsersPaged(M_Page mPage, M_Users_DTO entity, M_LoginUser loginUser, bool onlyOffline, bool onlyFrozen, string sort, bool includeDescendants = false)
         {
             M_EasyuiGridData<M_Users_DTO> list = new M_EasyuiGridData<M_Users_DTO>();
             using (var ef = new GameDbContext())
             {
+                B_Admin adminBll = new B_Admin();
                 List<string> agencies = null;
-                if (loginUser.UserPriv != 0)
+                if (!string.IsNullOrWhiteSpace(entity.AGENCY))
                 {
-                    agencies = new B_Admin().GetManagedAgencyAccounts(ef, loginUser);
+                    agencies = adminBll.GetManagedPlayerAgencyAccounts(ef, loginUser, entity.AGENCY, includeDescendants);
+                    if (agencies == null || agencies.Count < 1)
+                        return list;
+                }
+                else if (loginUser.UserPriv != 0)
+                {
+                    agencies = adminBll.GetManagedPlayerAgencyAccounts(ef, loginUser);
                     if (agencies == null || agencies.Count < 1)
                         return list;
                 }
@@ -560,12 +569,6 @@ namespace YYT.BLL.EF
                     where.Append(" AND NOT (c.INHALL = 1)");
                 if (onlyFrozen)
                     where.Append(" AND c.FROZEN = 1");
-                // 代理过滤必须精确匹配：会员页从“我的代理”进入时只展示该代理的直属会员。
-                if (!string.IsNullOrWhiteSpace(entity.AGENCY))
-                {
-                    where.Append(" AND c.AGENCY = {").Append(args.Count).Append("}");
-                    args.Add(entity.AGENCY.Trim());
-                }
                 if (!string.IsNullOrWhiteSpace(entity.NAME))
                 {
                     where.Append(" AND c.NAME LIKE {").Append(args.Count).Append("}");
@@ -630,9 +633,14 @@ namespace YYT.BLL.EF
                 args.Add(DateTime.Today);
                 string pageSql = "SELECT c.ID, c.NAME, c.AGENCY, c.FROZEN, c.COINS, c.COINS_BUY, c.COINS_BACK," +
                     " r.UserID, c.INHALL, c.GAME_SCORE, c.GRADE, c.SAFE_COINS," +
-                    " IFNULL(w.WINLOSS,0) AS TodayWinLoss, l.LastLoginTime" +
+                    " IFNULL(w.WINLOSS,0) AS TodayWinLoss, IFNULL(d.TodayBuy,0) AS TodayBuy," +
+                    " IFNULL(d.TodayBack,0) AS TodayBack, l.LastLoginTime" +
                     " FROM users c INNER JOIN userrelations r ON r.ID = c.ID" +
                     " LEFT JOIN user_daily_winloss w ON w.UserID = c.ID AND w.DAY = {" + (args.Count - 1) + "}" +
+                    " LEFT JOIN (SELECT GameID," +
+                    " SUM(CASE WHEN RechargeType IN (20,22) OR (RechargeType = 30 AND Processed = 1) THEN Coin ELSE 0 END) AS TodayBuy," +
+                    " SUM(CASE WHEN RechargeType IN (21,23) OR (RechargeType = 31 AND Processed = 1) THEN Coin ELSE 0 END) AS TodayBack" +
+                    " FROM rechargerecords WHERE CreateTime >= CURDATE() GROUP BY GameID) d ON d.GameID = c.ID" +
                     " LEFT JOIN (SELECT UserID, MAX(REC_TIME) AS LastLoginTime FROM `UserOptLog` GROUP BY UserID) l ON l.UserID = c.ID" +
                     " WHERE 1=1" + whereSql + orderClause +
                     " LIMIT " + (pageSize * (pageIndex - 1)) + ", " + pageSize;
@@ -641,11 +649,38 @@ namespace YYT.BLL.EF
                 foreach (M_Users_DTO item in users)
                     item.Profit = item.COINS_BUY - item.COINS_BACK;
                 ApplySensitiveFieldPermissions(users, loginUser);
+                if (onlyFrozen)
+                    FillFreezeAudit(ef, users);
 
                 list.rows = users;
                 list.total = mPage.TotalCount;
             }
             return list;
+        }
+
+        private void FillFreezeAudit(GameDbContext ef, List<M_Users_DTO> users)
+        {
+            if (ef == null || users == null || users.Count == 0)
+                return;
+
+            List<string> userIds = users.Select(c => c.ID).Where(c => !string.IsNullOrWhiteSpace(c)).ToList();
+            List<M_AgencyOptLog> logs = ef.AgencyOptLogs
+                .Where(c => userIds.Contains(c.ID) &&
+                    (c.OPT == PlayerFreezeAuditOpt || c.OPT == PlayerUnfreezeAuditOpt))
+                .OrderByDescending(c => c.REC_TIME)
+                .ThenByDescending(c => c.LID)
+                .ToList();
+            Dictionary<string, M_AgencyOptLog> latest = logs
+                .GroupBy(c => c.ID)
+                .ToDictionary(c => c.Key, c => c.First());
+            foreach (M_Users_DTO user in users)
+            {
+                M_AgencyOptLog log;
+                if (!latest.TryGetValue(user.ID, out log))
+                    continue;
+                user.FrozenOperator = log.OptID;
+                user.FrozenTime = log.REC_TIME;
+            }
         }
 
         /// <summary>手机端：离线玩家分页（支持排序）</summary>
@@ -661,9 +696,9 @@ namespace YYT.BLL.EF
         }
 
         /// <summary>手机端：会员盈亏分页（今日输赢 + 总盈亏，支持排序）</summary>
-        public M_EasyuiGridData<M_Users_DTO> GetMemberWinLossList(M_Page mPage, M_Users_DTO entity, M_LoginUser loginUser, string sort)
+        public M_EasyuiGridData<M_Users_DTO> GetMemberWinLossList(M_Page mPage, M_Users_DTO entity, M_LoginUser loginUser, string sort, bool includeDescendants = false)
         {
-            return QueryUsersPaged(mPage, entity, loginUser, false, false, sort ?? "win-most");
+            return QueryUsersPaged(mPage, entity, loginUser, false, false, sort ?? "win-most", includeDescendants);
         }
 
         /// <summary>
@@ -681,7 +716,7 @@ namespace YYT.BLL.EF
                 if (loginUser == null)
                     return 0;
 
-                List<string> agencies = new B_Admin().GetManagedAgencyAccounts(ef, loginUser);
+                List<string> agencies = new B_Admin().GetManagedPlayerAgencyAccounts(ef, loginUser);
                 if (agencies.Count < 1)
                     return 0;
 
@@ -706,28 +741,28 @@ namespace YYT.BLL.EF
         /// 今日充值/今日退钻 = 当日充退流水合计（TypeFlag 口径与 GetUserPhoneDetail 一致）。
         /// 总盈亏 = 总充值 - 总退钻、今日盈亏 = 今日充值 - 今日退钻 由调用端计算（与用户管理页总盈利同口径）。
         /// </summary>
-        public M_MemberWinLossStats GetMemberWinLossStats(M_LoginUser loginUser, string agency)
+        public M_MemberWinLossStats GetMemberWinLossStats(M_LoginUser loginUser, string agency, bool includeDescendants = false)
         {
             using (var ef = new GameDbContext())
             {
+                B_Admin adminBll = new B_Admin();
                 List<string> agencies = null;
-                if (loginUser != null && loginUser.UserPriv != 0)
+                if (!string.IsNullOrWhiteSpace(agency))
                 {
-                    agencies = new B_Admin().GetManagedAgencyAccounts(ef, loginUser);
+                    agencies = adminBll.GetManagedPlayerAgencyAccounts(ef, loginUser, agency, includeDescendants);
+                    if (agencies == null || agencies.Count < 1)
+                        return new M_MemberWinLossStats();
+                }
+                else if (loginUser != null && loginUser.UserPriv != 0)
+                {
+                    agencies = adminBll.GetManagedPlayerAgencyAccounts(ef, loginUser);
                     if (agencies == null || agencies.Count < 1)
                         return new M_MemberWinLossStats();
                 }
 
                 List<object> args = new List<object>();
                 StringBuilder scope = new StringBuilder();
-                if (!string.IsNullOrWhiteSpace(agency))
-                {
-                    if (agencies != null && !agencies.Contains(agency.Trim()))
-                        return new M_MemberWinLossStats();
-                    scope.Append(" AND c.AGENCY = {").Append(args.Count).Append("}");
-                    args.Add(agency.Trim());
-                }
-                else if (agencies != null)
+                if (agencies != null)
                 {
                     scope.Append(" AND c.AGENCY IN (");
                     for (int i = 0; i < agencies.Count; i++)
@@ -798,12 +833,12 @@ namespace YYT.BLL.EF
                 if (detail == null)
                     return null;
 
-                // 代理线权限：非超管只能看自己线内的玩家（与总控状态查询同口径）
-                if (loginUser.UserPriv > 0 && !new B_Admin().IsInAgencyLine(ef, loginUser.Accounts, detail.AGENCY))
+                // 直属/整线管理范围使用同一口径，避免直属代理查看更深层会员。
+                if (!new B_Admin().CanManagePlayer(ef, loginUser, detail.AGENCY))
                     return null;
 
                 // 密码仅在有权查看时出库（与 GetUsersList/GetUserRowsByIds 同口径）
-                bool canPwd = loginUser.UserPriv == 0 || loginUser.IsViewPwd == 1 || loginUser.IsViewSafePwd == 1;
+                bool canPwd = loginUser.UserPriv == 0 || loginUser.IsViewPwd == 1;
                 if (canPwd)
                     detail.PWD = ef.Users.Where(u => u.ID == target).Select(u => u.PWD).FirstOrDefault();
 
@@ -880,7 +915,7 @@ namespace YYT.BLL.EF
                 // 加权限查询
                 if (loginUser.UserPriv != 0)
                 {
-                    List<string> agencies = new B_Admin().GetManagedAgencyAccounts(ef, loginUser);
+                    List<string> agencies = new B_Admin().GetManagedPlayerAgencyAccounts(ef, loginUser);
                     rst = rst.Where(c => agencies.Contains(c.AGENCY));
                 }
 
@@ -990,7 +1025,7 @@ namespace YYT.BLL.EF
 
             foreach (M_Users_DTO user in users)
             {
-                if (loginUser.IsViewPwd != 1 && loginUser.IsViewSafePwd != 1)
+                if (loginUser.IsViewPwd != 1)
                     user.PWD = null;
                 if (loginUser.IsViewSafePwd != 1)
                     user.SAFE_PWD = null;
@@ -1127,6 +1162,59 @@ namespace YYT.BLL.EF
                 }
             }
             return 0;
+        }
+
+        /// <summary>
+        /// 在同一事务中更新玩家冻结状态并记录实际操作人。
+        /// 返回 -1 表示越权，0 表示目标不存在或保存失败，1 表示操作完成。
+        /// </summary>
+        public int FrozenUserWithAudit(M_LoginUser loginUser, string targetId, int frozen)
+        {
+            if (loginUser == null || string.IsNullOrWhiteSpace(targetId))
+                return -1;
+
+            targetId = targetId.Trim();
+            frozen = frozen == 0 ? 0 : 1;
+            using (var ef = new GameDbContext())
+            {
+                M_Users target = ef.Users.FirstOrDefault(c => c.ID == targetId);
+                if (target == null)
+                    return 0;
+                if (!new B_Admin().CanManagePlayer(ef, loginUser, target.AGENCY))
+                    return -1;
+
+                using (var transaction = ef.Database.BeginTransaction())
+                {
+                    try
+                    {
+                        long beforeFrozen = target.FROZEN == 1 ? 1 : 0;
+                        target.FROZEN = frozen;
+                        DateTime now = DateTime.Now;
+                        ef.AgencyOptLogs.Add(new M_AgencyOptLog
+                        {
+                            OptID = loginUser.Accounts,
+                            SrcUserTitle = loginUser.Accounts,
+                            ID = targetId,
+                            DestUserTitle = frozen == 1 ? "玩家已冻结" : "玩家已解冻",
+                            OPT = frozen == 1 ? PlayerFreezeAuditOpt : PlayerUnfreezeAuditOpt,
+                            COINS = 0,
+                            BEF_COINS = beforeFrozen,
+                            AFT_COINS = frozen,
+                            REC_TIME = now,
+                            WEEK = now.WeekOfYear()
+                        });
+                        ef.SaveChanges();
+                        transaction.Commit();
+                        return 1;
+                    }
+                    catch (Exception ex)
+                    {
+                        transaction.Rollback();
+                        LogHelper.WriteLog(typeof(B_Users), ex);
+                        return 0;
+                    }
+                }
+            }
         }
 
         public int ResetSafePwd(M_Users entity)

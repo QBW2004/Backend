@@ -164,14 +164,11 @@ namespace YYT.Web.Areas.Game.Controllers
                         msg.content = "代理账号不存在！";
                         return Json(msg);
                     }
-                    if (loginUser.UserPriv != 0)
+                    B_Admin adminBll = new B_Admin();
+                    if (!adminBll.CanManageAgent(ef, loginUser, agent.ID, true))
                     {
-                        List<string> managed = new B_Admin().GetManagedAgencyAccounts(ef, loginUser);
-                        if (!managed.Contains(agent.ID))
-                        {
-                            msg.content = "无权查看该代理！";
-                            return Json(msg);
-                        }
+                        msg.content = "无权查看该代理！";
+                        return Json(msg);
                     }
 
                     long remainingScore = ef.Users.Where(u => u.AGENCY == agent.ID)
@@ -187,7 +184,7 @@ namespace YYT.Web.Areas.Game.Controllers
                     msg.datas = new
                     {
                         ID = agent.ID,
-                        PWD = loginUser.UserPriv == 0 ? agent.PWD : null,
+                        PWD = loginUser.UserPriv == 0 || loginUser.IsViewPwd == 1 ? agent.PWD : null,
                         PRIV = agent.PRIV,
                         AGENCY = agent.AGENCY,
                         COINS = agent.COINS ?? 0,
@@ -198,7 +195,9 @@ namespace YYT.Web.Areas.Game.Controllers
                         InviteCode = agent.InviteCode,
                         CreateTime = agent.CreateTime,
                         UpdateTime = agent.UpdateTime,
-                        LastLoginTime = lastLogin
+                        LastLoginTime = lastLogin,
+                        IsCreateAgent = agent.IsCreateAgent == 1 ? 1 : 0,
+                        CanCreateChildAgent = AgencyRules.CanCreateChild(agent.PRIV ?? -1, agent.AGENCY_LIMIT, agent.IsCreateAgent)
                     };
                 }
             }
@@ -270,7 +269,7 @@ namespace YYT.Web.Areas.Game.Controllers
             try
             {
                 M_LoginUser loginUser = WebHelper.GetLoginInfo();
-                if (loginUser == null || loginUser.UserPriv != 0)
+                if (loginUser == null)
                 {
                     msg.content = "无权限操作！";
                     return Json(msg);
@@ -284,33 +283,19 @@ namespace YYT.Web.Areas.Game.Controllers
                     return Json(msg);
                 }
 
-                B_Admin bll = new B_Admin();
-                M_Admin agent = bll.GetSingleOrDefault(new M_Admin { ID = id });
-                if (agent == null)
+                int val = new B_Admin().SetAgentEnabledWithAudit(loginUser, id, 0, banMsg);
+                if (val < 0)
+                {
+                    msg.content = "无权限操作！";
+                }
+                else if (val == 0)
                 {
                     msg.content = "代理账号不存在！";
-                    return Json(msg);
                 }
-
-                int val = bll.SetRecharge(new M_Admin { ID = id, RE_ENABLE = 0 });
-                if (val > 0 || agent.RE_ENABLE == 0)
+                else
                 {
-                    new B_AgencyOptLog().AddAgencyOptLog(new M_AgencyOptLog
-                    {
-                        OptID = loginUser.Accounts,
-                        SrcUserTitle = loginUser.Accounts,
-                        ID = id,
-                        DestUserTitle = string.IsNullOrWhiteSpace(banMsg) ? "该账号已被禁用" : banMsg,
-                        AGENCY = agent.AGENCY,
-                        OPT = 24,
-                        COINS = 0,
-                        BEF_COINS = 1,
-                        AFT_COINS = 0,
-                        REC_TIME = DateTime.Now,
-                        WEEK = DateTime.Now.WeekOfYear()
-                    });
                     msg.code = 1;
-                    msg.content = "禁用成功！";
+                    msg.content = "操作成功";
                 }
             }
             catch (Exception ex)
@@ -331,40 +316,26 @@ namespace YYT.Web.Areas.Game.Controllers
             try
             {
                 M_LoginUser loginUser = WebHelper.GetLoginInfo();
-                if (loginUser == null || loginUser.UserPriv != 0)
+                if (loginUser == null)
                 {
                     msg.content = "无权限操作！";
                     return Json(msg);
                 }
 
                 string id = form.Q<string>("ID");
-                B_Admin bll = new B_Admin();
-                M_Admin agent = bll.GetSingleOrDefault(new M_Admin { ID = id });
-                if (agent == null)
+                int val = new B_Admin().SetAgentEnabledWithAudit(loginUser, id, 1, "禁用已解除");
+                if (val < 0)
+                {
+                    msg.content = "无权限操作！";
+                }
+                else if (val == 0)
                 {
                     msg.content = "代理账号不存在！";
-                    return Json(msg);
                 }
-
-                int val = bll.SetRecharge(new M_Admin { ID = id, RE_ENABLE = 1 });
-                if (val > 0 || agent.RE_ENABLE == 1)
+                else
                 {
-                    new B_AgencyOptLog().AddAgencyOptLog(new M_AgencyOptLog
-                    {
-                        OptID = loginUser.Accounts,
-                        SrcUserTitle = loginUser.Accounts,
-                        ID = id,
-                        DestUserTitle = "禁用已解除",
-                        AGENCY = agent.AGENCY,
-                        OPT = 25,
-                        COINS = 0,
-                        BEF_COINS = 1,
-                        AFT_COINS = 1,
-                        REC_TIME = DateTime.Now,
-                        WEEK = DateTime.Now.WeekOfYear()
-                    });
                     msg.code = 1;
-                    msg.content = "已恢复！";
+                    msg.content = "操作成功";
                 }
             }
             catch (Exception ex)
@@ -423,8 +394,15 @@ namespace YYT.Web.Areas.Game.Controllers
             Msg msg = new Msg(0, "密码修改失败！");
             try
             {
+                M_LoginUser loginUser = WebHelper.GetLoginInfo();
                 string id = form.Q<string>("ID");
                 string pwd = form.Q<string>("PWD");
+
+                if (loginUser == null || (loginUser.UserPriv > 0 && loginUser.IsModifyPwd != 1))
+                {
+                    msg.content = "无权限操作！";
+                    return Json(msg);
+                }
 
                 if (string.IsNullOrWhiteSpace(id))
                 {
@@ -437,12 +415,21 @@ namespace YYT.Web.Areas.Game.Controllers
                     return Json(msg);
                 }
 
+                using (var ef = new GameDbContext())
+                {
+                    if (!new B_Admin().CanManageAgent(ef, loginUser, id))
+                    {
+                        msg.content = "无权限操作！";
+                        return Json(msg);
+                    }
+                }
+
                 M_Admin entity = new M_Admin { ID = id, PWD = pwd };
                 int val = new B_Admin().ChgPwd(entity);
                 if (val > 0)
                 {
                     msg.code = 1;
-                    msg.content = "密码修改成功！";
+                    msg.content = "修改成功";
                 }
             }
             catch (Exception ex)
@@ -583,8 +570,10 @@ namespace YYT.Web.Areas.Game.Controllers
                         return Json(msg);
                     }
                     entity.AGENCY_LIMIT = entity.AGENCY_LIMIT ?? AgencyRules.UnlimitedAgencyLimit;
+                    long createAgentPermission = form.Q<long>("IsCreateAgent", 1) == 0 ? 0 : 1;
                     // 新建普通代理统一使用后台默认权限，不能由客户端伪造权限字段覆盖。
                     ApplyDefaultAgencyPermissions(entity);
+                    entity.IsCreateAgent = createAgentPermission;
                     
                     // 检查代理创建数量限制，AGENCY_LIMIT=0 表示无限制；大于0表示当前代理最多可创建几个直属下级代理。
                     if (loginUser.UserPriv > 0)

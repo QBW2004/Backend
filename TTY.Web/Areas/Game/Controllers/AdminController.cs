@@ -331,7 +331,7 @@ namespace YYT.Web.Areas.Game.Controllers
                     if (val > 0)
                     {
                         msg.code = 1;
-                        msg.content = "开代理权限设置成功！";
+                        msg.content = "保存成功";
                     }
                 }
             }

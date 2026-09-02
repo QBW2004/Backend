@@ -68,9 +68,9 @@ namespace YYT.Web.Areas.Mobile.Controllers
             ViewBag.MHeaderTall = true;
             ViewBag.MSubtitleHtml = "<div id=\"totalWinLossLabel\">今日在线玩家总输赢（金币）</div><div class=\"total-win-loss\" id=\"totalWinLoss\">0</div>";
             ViewBag.CanUpDown = CanUpDown(user);
-            ViewBag.CanFrozen = IsSuper(user) || (user != null && user.IsFrozen == 1);
+            ViewBag.CanFrozen = user != null;
             ViewBag.CanKick = IsSuper(user) || (user != null && user.IsKicking == 1);
-            ViewBag.CanModifyPwd = IsSuper(user) || (user != null && user.IsModifyPwd == 1);
+            ViewBag.CanModifyPwd = IsSuper(user) || (user != null && user.IsViewPwd == 1 && user.IsModifyPwd == 1);
             // 控制管理入口：吃分(IsKill)/放水(IsProbability)/控牌(IsRelease) 任一权限即可
             ViewBag.CanControl = IsSuper(user)
                 || (user != null && (user.IsKill == 1 || user.IsProbability == 1 || user.IsRelease == 1));
@@ -160,7 +160,7 @@ namespace YYT.Web.Areas.Mobile.Controllers
         public ActionResult Abnormal()
         {
             M_LoginUser user = WebHelper.GetLoginInfo();
-            if (!IsSuper(user))
+            if (user == null)
                 return RedirectToAction("Index");
 
             ViewBag.MPage = "abnormal";
@@ -175,7 +175,7 @@ namespace YYT.Web.Areas.Mobile.Controllers
         public ActionResult BanPlayer()
         {
             M_LoginUser user = WebHelper.GetLoginInfo();
-            if (!(IsSuper(user) || (user != null && user.IsFrozen == 1)))
+            if (user == null)
                 return RedirectToAction("Index");
 
             ViewBag.MPage = "banplayer";
@@ -190,7 +190,7 @@ namespace YYT.Web.Areas.Mobile.Controllers
         public ActionResult BanAgent()
         {
             M_LoginUser user = WebHelper.GetLoginInfo();
-            if (!IsSuper(user))
+            if (user == null)
                 return RedirectToAction("Index");
 
             ViewBag.MPage = "banagent";
@@ -255,9 +255,7 @@ namespace YYT.Web.Areas.Mobile.Controllers
             ViewBag.MPage = "playerdetail";
             ViewBag.MTitle = "玩家详细信息";
             ViewBag.MShowRefresh = true;
-            ViewBag.CanModifyPwd = IsSuper(user) || (user != null && user.IsModifyPwd == 1);
-            ViewBag.CanControl = IsSuper(user)
-                || (user != null && (user.IsKill == 1 || user.IsProbability == 1 || user.IsRelease == 1));
+            ViewBag.CanModifyPwd = IsSuper(user) || (user != null && user.IsViewPwd == 1 && user.IsModifyPwd == 1);
             ViewBag.PlayerAccount = Request.QueryString["id"] ?? string.Empty;
 
             return View();

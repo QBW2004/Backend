@@ -97,7 +97,7 @@
             ? '<div class="active-control-status">' + controls.map(function (text) {
                 return '<div class="active-control-status-item">' + M.esc(text) + '</div>';
             }).join('') + '</div>'
-            : '';
+            : '<div class="active-control-status is-empty"></div>';
 
         return '' +
             '<div class="player-card' + (isOnline ? '' : ' offline') + '" data-account="' + M.esc(p.ID) + '">' +
@@ -105,7 +105,7 @@
                     '<span class="player-account player-account-link" data-account="' + M.esc(p.ID) + '">' + M.esc(p.ID) + '</span>' +
                     '<span class="player-name">' + M.esc(p.NAME || p.ID) + '</span>' +
                     blackBadge +
-                    '<span class="agent-line">代理:' + M.esc(p.AGENCY || '--') + '</span>' +
+                    '<span class="agent-line">' + M.esc(p.AGENCY || '--') + '</span>' +
                     '<span class="remaining-score">' + M.num(p.Score != null ? p.Score : (p.GAME_SCORE || 0)) + '分</span>' +
                     '<span class="remaining-diamond">' + M.gold(p.Coins != null ? p.Coins : p.COINS) + '金币</span>' +
                 '</div>' +
@@ -120,9 +120,9 @@
                         '<div class="info-item"><span class="info-label">今日输赢(金币)</span><span class="info-value money-value ' + twColor + '">' + (today > 0 ? '+' : '') + M.gold(today) + '</span></div>' +
                         '<div class="info-item"><span class="info-label">总输赢(金币)</span><span class="info-value money-value ' + ttColor + '">' + (total > 0 ? '+' : '') + M.gold(total) + '</span></div>' +
                     '</div>' +
+                    controlRow +
                     loginRow +
                 '</div>' +
-                controlRow +
             '</div>';
     }
 
@@ -295,7 +295,7 @@
                             '<span class="search-result-name">' + M.esc(p.NAME || '') + '</span>' +
                             '<span class="search-result-status ' + (online ? 'online' : 'offline') + '">' + (online ? '在线' : '离线') + '</span>' +
                         '</div>' +
-                        '<div class="search-result-info">代理: ' + M.esc(p.AGENCY || '--') + ' · 余额: ' + M.gold(p.COINS) + '金币</div>' +
+                        '<div class="search-result-info">' + M.esc(p.AGENCY || '--') + ' · 余额: ' + M.gold(p.COINS) + '金币</div>' +
                         '</div>';
                 }).join(''));
             });

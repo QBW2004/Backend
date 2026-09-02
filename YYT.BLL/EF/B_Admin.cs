@@ -9,6 +9,8 @@ namespace YYT.BLL.EF
 {
     public class B_Admin
     {
+        public const int AgentDisableAuditOpt = 24;
+        public const int AgentEnableAuditOpt = 25;
         public M_Admin GetSingle(M_Admin model)
         {
             using (var ef = new GameDbContext())
@@ -68,6 +70,69 @@ namespace YYT.BLL.EF
             List<string> lineAccounts = GetAgenciesWithPermission(ef, loginUser.Accounts) ?? new List<string>();
 
             return AgencyRules.GetManagedAgencyIds(loginUser.Accounts, loginUser.ManageScope, directAccounts, lineAccounts);
+        }
+
+        /// <summary>
+        /// 返回当前账号可以查询/管理的会员所属代理集合。
+        /// 直属管理只包含自己的会员；整线管理才包含所有下级代理的会员。
+        /// </summary>
+        public List<string> GetManagedPlayerAgencyAccounts(GameDbContext ef, M_LoginUser loginUser)
+        {
+            if (ef == null || loginUser == null || string.IsNullOrWhiteSpace(loginUser.Accounts))
+                return new List<string>();
+            if (loginUser.UserPriv == 0)
+            {
+                List<string> playerAgencies = ef.Users.Select(c => c.AGENCY)
+                    .Where(c => c != null && c != "").ToList();
+                List<string> agentAccounts = ef.Admins.Select(c => c.ID)
+                    .Where(c => c != null && c != "").ToList();
+                return playerAgencies.Concat(agentAccounts).Distinct().ToList();
+            }
+            if (loginUser.ManageScope == 2)
+                return GetAgencyLineAccounts(ef, loginUser.Accounts);
+            return new List<string> { loginUser.Accounts };
+        }
+
+        /// <summary>
+        /// 返回指定代理节点下、且仍在查看者权限内的会员所属代理集合。
+        /// 直属范围不能借由下级代理节点查看更深层会员；整线范围返回该节点整棵子树。
+        /// </summary>
+        public List<string> GetManagedPlayerAgencyAccounts(GameDbContext ef, M_LoginUser loginUser, string anchorAgency, bool includeDescendants = false)
+        {
+            List<string> allowed = GetManagedPlayerAgencyAccounts(ef, loginUser);
+            if (string.IsNullOrWhiteSpace(anchorAgency))
+                return allowed;
+
+            string anchor = anchorAgency.Trim();
+            if (!allowed.Any(c => string.Equals(c, anchor, StringComparison.OrdinalIgnoreCase)))
+                return new List<string>();
+            if (!includeDescendants)
+                return new List<string> { anchor };
+            if (loginUser.UserPriv != 0 && loginUser.ManageScope != 2)
+                return string.Equals(anchor, loginUser.Accounts, StringComparison.OrdinalIgnoreCase)
+                    ? new List<string> { loginUser.Accounts }
+                    : new List<string>();
+
+            HashSet<string> allowedSet = new HashSet<string>(allowed, StringComparer.OrdinalIgnoreCase);
+            return GetAgencyLineAccounts(ef, anchor).Where(allowedSet.Contains).ToList();
+        }
+
+        public bool CanManageAgent(GameDbContext ef, M_LoginUser loginUser, string targetAgent, bool allowSelf = false)
+        {
+            if (ef == null || loginUser == null || string.IsNullOrWhiteSpace(targetAgent))
+                return false;
+            if (!allowSelf && string.Equals(loginUser.Accounts, targetAgent.Trim(), StringComparison.OrdinalIgnoreCase))
+                return false;
+            return loginUser.UserPriv == 0 || GetManagedAgencyAccounts(ef, loginUser)
+                .Any(c => string.Equals(c, targetAgent.Trim(), StringComparison.OrdinalIgnoreCase));
+        }
+
+        public bool CanManagePlayer(GameDbContext ef, M_LoginUser loginUser, string playerAgency)
+        {
+            if (ef == null || loginUser == null || string.IsNullOrWhiteSpace(playerAgency))
+                return false;
+            return loginUser.UserPriv == 0 || GetManagedPlayerAgencyAccounts(ef, loginUser)
+                .Any(c => string.Equals(c, playerAgency.Trim(), StringComparison.OrdinalIgnoreCase));
         }
 
         public bool IsInAgencyLine(GameDbContext ef, string ownerAccount, string targetAgency)
@@ -143,6 +208,8 @@ namespace YYT.BLL.EF
             using (var ef = new GameDbContext())
             {
                 var rst = ef.Admins.Where(c => c.RE_ENABLE == 0);
+                if (loginUser != null)
+                    rst = rst.Where(c => !c.ID.Equals(loginUser.Accounts));
                 if (loginUser != null && loginUser.UserPriv != 0)
                 {
                     List<string> agencies = GetManagedAgencyAccounts(ef, loginUser);
@@ -175,13 +242,13 @@ namespace YYT.BLL.EF
             M_EasyuiGridData<M_AgencyOptLog> list = new M_EasyuiGridData<M_AgencyOptLog>();
             using (var ef = new GameDbContext())
             {
-                var rst = ef.AgencyOptLogs.Where(c => c.OPT == 24 || c.OPT == 25);
+                DateTime cutoff = B_Records_MySQL.GetRetentionCutoff();
+                var rst = ef.AgencyOptLogs.Where(c => c.REC_TIME >= cutoff &&
+                    (c.OPT == AgentDisableAuditOpt || c.OPT == AgentEnableAuditOpt));
                 if (loginUser != null && loginUser.UserPriv != 0)
                 {
                     List<string> agencies = GetManagedAgencyAccounts(ef, loginUser);
-                    List<string> watchAccounts = agencies ?? new List<string>();
-                    watchAccounts.Add(loginUser.Accounts);
-                    rst = rst.Where(c => watchAccounts.Contains(c.OptID) || watchAccounts.Contains(c.ID));
+                    rst = rst.Where(c => agencies.Contains(c.ID));
                 }
 
                 mPage.SetTotalCount(rst.Count());
@@ -191,6 +258,60 @@ namespace YYT.BLL.EF
                 list.total = mPage.TotalCount;
             }
             return list;
+        }
+
+        /// <summary>
+        /// 在同一事务中更新代理登录状态并写入审计日志。
+        /// 返回 -1 表示越权，0 表示目标不存在，1 表示操作完成（包括状态本来就一致）。
+        /// </summary>
+        public int SetAgentEnabledWithAudit(M_LoginUser loginUser, string targetId, long enabled, string reason)
+        {
+            if (loginUser == null || string.IsNullOrWhiteSpace(targetId))
+                return -1;
+
+            targetId = targetId.Trim();
+            using (var ef = new GameDbContext())
+            {
+                M_Admin target = ef.Admins.FirstOrDefault(a => a.ID == targetId);
+                if (target == null)
+                    return 0;
+                if (!CanManageAgent(ef, loginUser, targetId))
+                    return -1;
+
+                using (var transaction = ef.Database.BeginTransaction())
+                {
+                    try
+                    {
+                        long beforeEnabled = target.RE_ENABLE == 0 ? 0 : 1;
+                        target.RE_ENABLE = enabled == 0 ? 0 : 1;
+                        DateTime now = DateTime.Now;
+                        ef.AgencyOptLogs.Add(new M_AgencyOptLog
+                        {
+                            OptID = loginUser.Accounts,
+                            SrcUserTitle = loginUser.Accounts,
+                            ID = targetId,
+                            DestUserTitle = string.IsNullOrWhiteSpace(reason)
+                                ? (enabled == 0 ? "该账号已被禁用" : "禁用已解除")
+                                : reason.Trim(),
+                            OPT = enabled == 0 ? AgentDisableAuditOpt : AgentEnableAuditOpt,
+                            COINS = 0,
+                            BEF_COINS = beforeEnabled,
+                            AFT_COINS = enabled == 0 ? 0 : 1,
+                            REC_TIME = now,
+                            WEEK = now.WeekOfYear()
+                        });
+                        ef.SaveChanges();
+                        transaction.Commit();
+                        return 1;
+                    }
+                    catch (Exception ex)
+                    {
+                        transaction.Rollback();
+                        LogHelper.WriteLog(typeof(B_Admin), ex);
+                        return 0;
+                    }
+                }
+            }
         }
         #endregion
 
@@ -325,6 +446,8 @@ namespace YYT.BLL.EF
                     rst = rst.Where(c => c.ID.Contains(entity.ID));
 
                 // 加权限查询
+                // 代理列表不展示当前登录账号本身，避免把自身误认为可操作的下级代理。
+                rst = rst.Where(c => !c.ID.Equals(loginUser.Accounts));
                 if (loginUser.UserPriv != 0)
                 {
                     List<string> permissions = GetManagedAgencyAccounts(ef, loginUser);

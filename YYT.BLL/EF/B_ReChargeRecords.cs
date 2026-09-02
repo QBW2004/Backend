@@ -36,7 +36,11 @@ namespace YYT.BLL.EF
             M_EasyuiGridData<M_ReChargeRecords> list = new M_EasyuiGridData<M_ReChargeRecords>();
             using (var ef = new GameDbContext())
             {
-                IEnumerable<M_ReChargeRecords> rst = ef.ReChargeRecords;
+                IQueryable<M_ReChargeRecords> rst = ef.ReChargeRecords;
+                DateTime cutoff = B_Records_MySQL.GetRetentionCutoff();
+                DateTime now = DateTime.Now;
+                bool retentionAdjusted = false;
+                rst = rst.Where(c => c.CreateTime >= cutoff && c.CreateTime <= now);
                 //var rst = from c in ef.ReChargeRecords
                 //          select new M_ReChargeRecordsDao
                 //          {
@@ -63,82 +67,57 @@ namespace YYT.BLL.EF
                     rst = rst.Where(c => c.Processed == entity.Processed);
 
                 if (!string.IsNullOrWhiteSpace(entity.StartTime))
-                    rst = rst.Where(c => c.CreateTime>Convert.ToDateTime(entity.StartTime));
+                {
+                    DateTime start = Convert.ToDateTime(entity.StartTime);
+                    if (start < cutoff)
+                    {
+                        start = cutoff;
+                        retentionAdjusted = true;
+                    }
+                    rst = rst.Where(c => c.CreateTime >= start);
+                }
 
                 if (!string.IsNullOrWhiteSpace(entity.EndTime))
-                    rst = rst.Where(c => c.CreateTime < Convert.ToDateTime(entity.EndTime));
+                {
+                    DateTime end = Convert.ToDateTime(entity.EndTime);
+                    if (end > now)
+                        end = now;
+                    if (end < cutoff)
+                        retentionAdjusted = true;
+                    rst = rst.Where(c => c.CreateTime <= end);
+                }
 
                 if (!string.IsNullOrWhiteSpace(entity.Agency))
                     rst = rst.Where(c => c.Agency.Contains(entity.Agency));
                 // 加权限查询（权限边界保持精确匹配）
                 if (loginUser.UserPriv != 0)
                 {
-                    rst = rst.Where(c => c.Agency.Equals(loginUser.Accounts));
+                    List<string> agencies = new B_Admin().GetManagedPlayerAgencyAccounts(ef, loginUser);
+                    rst = rst.Where(c => agencies.Contains(c.Agency));
                 }
               
-                List<M_ReChargeRecords> ListFooter = new List<M_ReChargeRecords>();
-                long? tatolReCharge = 0;
-                long? tatolExCharge = 0;
-                long? tatolGive = 0;
-                long? tatolDelCoins = 0;
-                List<M_ReChargeRecords> ListRecords = new List<M_ReChargeRecords>();
-                ListRecords = rst.ToList();
-                foreach (var item in ListRecords)
-                {
-                    if (item.RechargeType == 20 )
-                    {
-                        tatolReCharge += item.Coin;
-                    }
-                    if(item.RechargeType == 30)
-                    {
-                        if (item.Processed == 1)
-                        {
-                            tatolReCharge += item.Coin;
-                        }
-                    }
-                    if (item.RechargeType == 21)
-                    {
-                        tatolExCharge += item.Coin;
-                    }
-                    if (item.RechargeType == 22)
-                    {
-                        tatolGive += item.Coin;
-                    }
-                    if (item.RechargeType == 23)
-                    {
-                        tatolDelCoins += item.Coin;
-                    }
-                    if (item.RechargeType == 31)
-                    {
-                        if (item.Processed == 3)
-                        {
-                            tatolDelCoins += item.Coin;
-                        }
-                        if (item.Processed == 1)
-                        {
-                            tatolExCharge += item.Coin;
-                        }
-                    }
-                }
+                long tatolReCharge = rst.Where(c => c.RechargeType == 20 || (c.RechargeType == 30 && c.Processed == 1))
+                    .Sum(c => (long?)c.Coin) ?? 0;
+                long tatolExCharge = (rst.Where(c => c.RechargeType == 21).Sum(c => (long?)c.Coin) ?? 0) +
+                    (rst.Where(c => c.RechargeType == 31 && c.Processed == 1).Sum(c => (long?)c.Coin) ?? 0);
+                long tatolGive = rst.Where(c => c.RechargeType == 22).Sum(c => (long?)c.Coin) ?? 0;
+                long tatolDelCoins = (rst.Where(c => c.RechargeType == 23).Sum(c => (long?)c.Coin) ?? 0) +
+                    (rst.Where(c => c.RechargeType == 31 && c.Processed == 3).Sum(c => (long?)c.Coin) ?? 0);
                 M_ReChargeRecords footer = new M_ReChargeRecords();
                 footer.GameID = "后台总充值：" + tatolReCharge;
                 footer.Agency = "后台总兑换：" + tatolExCharge;
                 footer.Operator = "后台总赠送：" + tatolGive;
                 footer.OrderNo = "后台总扣币：" + tatolDelCoins;
                 footer.Processed = 4;
-                ListFooter.Add(footer);
-                // 分页
-                if (ListRecords != null)
-                {
-                    mPage.SetTotalCount(ListRecords.Count());
-                    var users = ListRecords.AsEnumerable()
-                        .OrderByDescending(c => c.CreateTime)
-                        .Skip(mPage.PageSize * (mPage.PageIndex - 1)).Take(mPage.PageSize)
-                        .ToList();
-                    list.footer = ListFooter;
-                    list.rows = users;
-                    list.total = mPage.TotalCount;
-                }
+                mPage.SetTotalCount(rst.Count());
+                List<M_ReChargeRecords> users = rst
+                    .OrderByDescending(c => c.CreateTime)
+                    .Skip(mPage.PageSize * (mPage.PageIndex - 1)).Take(mPage.PageSize)
+                    .ToList();
+                list.footer = new List<M_ReChargeRecords> { footer };
+                list.rows = users;
+                list.total = mPage.TotalCount;
+                list.notice = retentionAdjusted ? "只能查询最近7天" : "";
             }
             return list;
         }
@@ -155,6 +134,9 @@ namespace YYT.BLL.EF
             using (var ef = new GameDbContext())
             {
                 var rst = ef.ReChargeRecords.AsQueryable();
+                DateTime cutoff = B_Records_MySQL.GetRetentionCutoff();
+                DateTime now = DateTime.Now;
+                rst = rst.Where(c => c.CreateTime >= cutoff && c.CreateTime <= now);
 
                 // 搜索统一模糊匹配（LIKE '%kw%'）；权限过滤（下方 Agency=登录账号）保持精确
                 if (!string.IsNullOrWhiteSpace(entity.GameID))
@@ -166,9 +148,19 @@ namespace YYT.BLL.EF
                 if (entity.Processed > -1 && entity.Processed < 3)
                     rst = rst.Where(c => c.Processed == entity.Processed);
                 if (!string.IsNullOrWhiteSpace(entity.StartTime))
-                    rst = rst.Where(c => c.CreateTime > Convert.ToDateTime(entity.StartTime));
+                {
+                    DateTime start = Convert.ToDateTime(entity.StartTime);
+                    if (start < cutoff)
+                        start = cutoff;
+                    rst = rst.Where(c => c.CreateTime >= start);
+                }
                 if (!string.IsNullOrWhiteSpace(entity.EndTime))
-                    rst = rst.Where(c => c.CreateTime < Convert.ToDateTime(entity.EndTime));
+                {
+                    DateTime end = Convert.ToDateTime(entity.EndTime);
+                    if (end > now)
+                        end = now;
+                    rst = rst.Where(c => c.CreateTime <= end);
+                }
                 if (!string.IsNullOrWhiteSpace(entity.Agency))
                     rst = rst.Where(c => c.Agency.Contains(entity.Agency));
                 if (!string.IsNullOrWhiteSpace(entity.Operator))
@@ -177,7 +169,8 @@ namespace YYT.BLL.EF
                 // 加权限查询
                 if (loginUser.UserPriv != 0)
                 {
-                    rst = rst.Where(c => c.Agency.Equals(loginUser.Accounts));
+                    List<string> agencies = new B_Admin().GetManagedPlayerAgencyAccounts(ef, loginUser);
+                    rst = rst.Where(c => agencies.Contains(c.Agency));
                 }
 
                 // 类型筛选
@@ -243,16 +236,16 @@ namespace YYT.BLL.EF
 
         public List<M_ReChargeRecords> GetReChargeRecords(M_ReChargeRecords entity)
         {
-            M_EasyuiGridData<M_ReChargeRecords> list = new M_EasyuiGridData<M_ReChargeRecords>();
             using (var ef = new GameDbContext())
             {
-                var rst = ef.ReChargeRecords.ToList();
+                DateTime cutoff = B_Records_MySQL.GetRetentionCutoff();
+                DateTime now = DateTime.Now;
+                IQueryable<M_ReChargeRecords> query = ef.ReChargeRecords
+                    .Where(c => c.CreateTime >= cutoff && c.CreateTime <= now);
                 if (!string.IsNullOrWhiteSpace(entity.GameID))
-                    rst = rst.Where(c => c.GameID.Equals(entity.GameID)).ToList();
-                list.rows = rst;
-                list.total = rst.Count;
+                    query = query.Where(c => c.GameID == entity.GameID);
+                return query.OrderByDescending(c => c.CreateTime).ToList();
             }
-            return list.rows;
         }
 
         public Msg AddReChargeRecords(GameDbContext ef, M_ReChargeRecords entity)

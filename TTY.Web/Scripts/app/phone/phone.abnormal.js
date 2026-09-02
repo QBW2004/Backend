@@ -32,6 +32,8 @@
                     '<td>' + M.esc(r.ID) + '</td>' +
                     '<td><span class="account-type ' + typeCls + '">' + M.esc(type) + '</span></td>' +
                     '<td>' + M.esc(String(r.Reason || '').replace(/(\d+)/, '<span class="error-count">$1</span>')) + '</td>' +
+                    '<td>' + M.esc(r.Operator || '--') + '</td>' +
+                    '<td>' + M.esc(r.OperationTime || '--') + '</td>' +
                     '<td><button class="unlock-btn" data-id="' + M.esc(r.ID) + '">解冻</button></td>' +
                     '</tr>';
             }).join(''));

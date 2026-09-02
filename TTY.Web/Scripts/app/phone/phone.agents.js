@@ -70,9 +70,10 @@
                 return;
             }
             var a = r.datas;
+            var canViewPwd = a.PWD != null && a.PWD !== '';
             var body = '<div class="agent-detail-modal">' +
                 '<div><span>代理账号</span><b>' + M.esc(a.ID) + '</b></div>' +
-                '<div><span>账号密码</span><b>' + M.esc(a.PWD || '--') + '</b></div>' +
+                (canViewPwd ? '<div><span>账号密码</span><b>' + M.esc(a.PWD) + '</b></div>' : '') +
                 '<div><span>注册时间</span><b>' + M.esc(M.fmtTime(a.CreateTime, true)) + '</b></div>' +
                 '<div><span>代理级别</span><b>' + M.esc(M.privName(a.PRIV)) + '</b></div>' +
                 '<div><span>最后登录</span><b>' + M.esc(M.fmtTime(a.LastLoginTime, true)) + '</b></div>' +
@@ -80,18 +81,26 @@
                 '<div><span>上级代理</span><b>' + M.esc(a.AGENCY || '--') + '</b></div>' +
                 '<div><span>剩余金币</span><b class="blue-text">' + M.gold(a.COINS) + '</b></div>' +
                 '<div><span>剩余分</span><b>' + M.num(a.RemainingScore || 0) + '</b></div>' +
+                '<div class="agent-create-child-row"><span>创建下级</span><label class="m-switch"><input type="checkbox" id="agentCreateChild" ' + (Number(a.IsCreateAgent) === 1 ? 'checked' : '') + '><span></span></label></div>' +
                 '</div>';
             var dlg = M.modal({
                 title: '代理详细信息',
                 bodyHTML: body,
                 actions: [
                     { label: '流水', value: 'records', type: 'secondary' },
-                    { label: '充值', value: 'recharge', type: 'primary' }
+                    { label: '充值', value: 'recharge', type: 'primary' },
+                    { label: '保存', value: 'save-create', type: 'primary' }
                 ],
                 buttons: [{ label: '关闭', value: null, type: 'confirm' }]
             });
             dlg.then(function (value) {
-                if (value === 'records')
+                if (value === 'save-create') {
+                    M.post('/Game/Admin/SetIsCreateAgent', { ID: a.ID, IsCreateAgent: $('#agentCreateChild').is(':checked') ? 1 : 0 })
+                        .then(function (saveRes) {
+                            var save = M.result(saveRes);
+                            M.alert(save.ok ? '保存成功' : save.text, save.ok, save.ok ? '保存成功' : '操作失败');
+                        });
+                } else if (value === 'records')
                     window.location.href = '/Mobile/Home/Records?id=' + encodeURIComponent(a.ID);
                 else if (value === 'recharge')
                     window.location.href = '/Mobile/Home/Recharge?id=' + encodeURIComponent(a.ID) + '&role=agent';

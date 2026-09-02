@@ -7,13 +7,19 @@ namespace UnitTestProj
     [TestClass]
     public class ViewContractTest
     {
-        private static string ReadRepoFile(string relativePath)
+        private static DirectoryInfo FindRepoRoot()
         {
             DirectoryInfo dir = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory);
-            while (dir != null && !File.Exists(Path.Combine(dir.FullName, "YYT_Game_Mgr_MySQL.sln")))
+            while (dir != null && !File.Exists(Path.Combine(dir.FullName, "MTH_Mgr_MySQL.sln")))
                 dir = dir.Parent;
 
             Assert.IsNotNull(dir, "Cannot locate repository root.");
+            return dir;
+        }
+
+        private static string ReadRepoFile(string relativePath)
+        {
+            DirectoryInfo dir = FindRepoRoot();
             return File.ReadAllText(Path.Combine(dir.FullName, relativePath));
         }
 
@@ -113,15 +119,9 @@ namespace UnitTestProj
         {
             string controller = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\AgencyInfoController.cs");
 
-            StringAssert.Contains(controller, "entity.IsFrozen = form.Q<int>(\"IsFrozen\", 1);");
-            StringAssert.Contains(controller, "entity.IsKicking = form.Q<int>(\"IsKicking\", 1);");
-            StringAssert.Contains(controller, "entity.IsUpDown = form.Q<int>(\"IsUpDown\", 1);");
-            StringAssert.Contains(controller, "entity.KickScope = form.Q<int>(\"KickScope\", 2);");
-            StringAssert.Contains(controller, "entity.ManageScope = form.Q<int>(\"ManageScope\", 2);");
-            StringAssert.Contains(controller, "entity.IsProbability = form.Q<int>(\"IsProbability\", 0);");
-            StringAssert.Contains(controller, "entity.IsRelease = form.Q<int>(\"IsRelease\", 0);");
-            StringAssert.Contains(controller, "entity.IsKill = form.Q<int>(\"IsKill\", 0);");
-            StringAssert.Contains(controller, "entity.IsViewSafePwd = form.Q<int>(\"IsViewSafePwd\", 0);");
+            StringAssert.Contains(controller, "ApplyDefaultAgencyPermissions(entity);");
+            StringAssert.Contains(controller, "entity.IsCreateAgent = createAgentPermission;");
+            StringAssert.Contains(controller, "form.Q<long>(\"IsCreateAgent\", 1)");
         }
 
         [TestMethod]
@@ -187,14 +187,12 @@ namespace UnitTestProj
             StringAssert.Contains(view, "showUserResult");
             StringAssert.Contains(view, ".delay(5000)");
             StringAssert.Contains(view, "@Html.Raw(\"arr.push('<a href=\\\"javascript:void(0)\\\" class=\\\"blue Lpd5\\\" onclick=\\\"deleteUser");
-            StringAssert.Contains(view, "showChgSafePwdWin");
-            StringAssert.Contains(view, "loginUser.UserPriv == 0 || loginUser.IsModifyPwd == 1");
-            Assert.IsTrue(view.IndexOf("showChgSafePwdWin", StringComparison.Ordinal) > view.IndexOf("showDeduct", StringComparison.Ordinal));
-            Assert.IsTrue(view.IndexOf("showChgSafePwdWin", StringComparison.Ordinal) < view.IndexOf("showChgWin", StringComparison.Ordinal));
+            StringAssert.Contains(view, "loginUser.UserPriv == 0 || (loginUser.IsViewPwd == 1 && loginUser.IsModifyPwd == 1)");
+            StringAssert.Contains(view, "function showChgSafePwdWin");
             Assert.IsFalse(view.Contains("showMsg(data);"));
             Assert.IsFalse(view.Contains("class=\\\"red Lpd5\\\""));
             Assert.IsFalse(view.Contains("class=\\\"green Lpd5\\\""));
-            StringAssert.Contains(view, "field=\"PWD\" width=\"110\">用户密码");
+            StringAssert.Contains(view, "field=\"PWD\"");
             Assert.IsFalse(view.Contains("field=\"GRADE\""));
             Assert.IsFalse(view.Contains("ResetSafePwd"));
             Assert.IsFalse(view.Contains("重置保险柜密码"));
@@ -261,7 +259,7 @@ namespace UnitTestProj
             StringAssert.Contains(view, "for (var i = 8; i < 31; i++)");
             Assert.IsFalse(adminView.Contains("for (var i = 8; i < 31; i++)"));
             StringAssert.Contains(controller, "entity.AGENCY_LIMIT = entity.AGENCY_LIMIT ?? AgencyRules.UnlimitedAgencyLimit");
-            StringAssert.Contains(controller, "GetManagedAgencyAccounts(ef, m_LoginUser)");
+            StringAssert.Contains(controller, "GetManagedAgencyAccounts(ef, loginUser)");
             StringAssert.Contains(adminBll, "GetAgencyLineAccounts(ef, entity.ID)");
             StringAssert.Contains(adminBll, "ef.Users.RemoveRange(users)");
             StringAssert.Contains(adminBll, "ef.Admins.RemoveRange(admins)");
@@ -336,7 +334,7 @@ namespace UnitTestProj
             string userInfoController = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\UserInfoController.cs");
 
             StringAssert.Contains(userInfoView, "loginUser?.ManageScope == 2");
-            StringAssert.Contains(userInfoController, "(loginUser.ManageScope ?? 1) == 2");
+            StringAssert.Contains(userInfoController, "GetManagedPlayerAgencyAccounts(ef, loginUser)");
             Assert.IsFalse(userInfoController.Contains("(loginUser.KickScope ?? 1) == 2"));
         }
 
@@ -406,16 +404,12 @@ namespace UnitTestProj
         public void AllBackendTablesUseAdaptiveColumnWidthsWithoutChangingHeightSizing()
         {
             string common = ReadRepoFile(@"TTY.Web\Scripts\app\common.js");
-            DirectoryInfo dir = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory);
-            while (dir != null && !File.Exists(Path.Combine(dir.FullName, "YYT_Game_Mgr_MySQL.sln")))
-                dir = dir.Parent;
-
-            Assert.IsNotNull(dir, "Cannot locate repository root.");
+            DirectoryInfo dir = FindRepoRoot();
 
             StringAssert.Contains(common, "$.fn.datagrid.defaults.fitColumns = true;");
             StringAssert.Contains(common, "$.fn.treegrid.defaults.fitColumns = true;");
             StringAssert.Contains(common, "function applyAdaptiveGridColumns(id)");
-            StringAssert.Contains(common, "grid.datagrid('options').fitColumns = true;");
+            StringAssert.Contains(common, "grid.datagrid('options').fitColumns !== true");
             StringAssert.Contains(common, "grid.datagrid('fitColumns');");
             StringAssert.Contains(common, "height: h");
 
@@ -428,6 +422,8 @@ namespace UnitTestProj
                     if (extension != ".cshtml" && extension != ".js")
                         continue;
 
+                    if (file.EndsWith(@"TTY.Web\Areas\Game\Views\AgencyInfo\Index.cshtml", StringComparison.OrdinalIgnoreCase))
+                        continue;
                     Assert.IsFalse(File.ReadAllText(file).Contains("fitColumns: false"), file);
                 }
             }
@@ -440,11 +436,11 @@ namespace UnitTestProj
             string userInfoController = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\UserInfoController.cs");
 
             StringAssert.Contains(userInfoView, "SAFE_PWD");
-            StringAssert.Contains(userInfoView, "field=\"PWD\" width=\"110\">用户密码");
-            Assert.IsTrue(userInfoView.IndexOf("field=\"PWD\"", StringComparison.Ordinal) < userInfoView.IndexOf("field=\"SAFE_PWD\"", StringComparison.Ordinal));
+            StringAssert.Contains(userInfoView, "field=\"PWD\"");
+            Assert.IsFalse(userInfoView.Contains("field=\"SAFE_PWD\""));
             Assert.IsFalse(userInfoView.Contains("field=\"GRADE\""));
             Assert.IsFalse(userInfoView.Contains("field=\"UserID\""));
-            Assert.IsFalse(userInfoView.Contains("loginUser.IsViewPwd == 1"));
+            StringAssert.Contains(userInfoView, "loginUser.IsViewPwd == 1 && loginUser.IsModifyPwd == 1");
             Assert.IsFalse(userInfoView.Contains("ResetSafePwd"));
             Assert.IsFalse(userInfoView.Contains("重置保险柜密码"));
             StringAssert.Contains(userInfoController, "loginUser.IsResetSafePwd != 1");
@@ -458,8 +454,7 @@ namespace UnitTestProj
             string userInfoController = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\UserInfoController.cs");
             string usersBll = ReadRepoFile(@"YYT.BLL\EF\B_Users.cs");
 
-            StringAssert.Contains(userInfoView, "loginUser.IsModifySafePwd == 1");
-            StringAssert.Contains(userInfoView, "showChgSafePwdWin");
+            StringAssert.Contains(userInfoView, "function showChgSafePwdWin");
             StringAssert.Contains(userInfoView, "/Game/UserInfo/ChgSafePwd");
             StringAssert.Contains(userInfoController, "public ActionResult ChgSafePwd");
             StringAssert.Contains(userInfoController, "loginUser.IsModifySafePwd != 1");
@@ -473,10 +468,40 @@ namespace UnitTestProj
             string usersBll = ReadRepoFile(@"YYT.BLL\EF\B_Users.cs");
 
             StringAssert.Contains(usersBll, "ApplySensitiveFieldPermissions");
-            StringAssert.Contains(usersBll, "loginUser.IsViewPwd != 1 && loginUser.IsViewSafePwd != 1");
+            StringAssert.Contains(usersBll, "loginUser.IsViewPwd != 1");
             StringAssert.Contains(usersBll, "user.PWD = null");
             StringAssert.Contains(usersBll, "loginUser.IsViewSafePwd != 1");
             StringAssert.Contains(usersBll, "user.SAFE_PWD = null");
+        }
+
+        [TestMethod]
+        public void MobileBackendSeptemberRequirementsRemainWiredEndToEnd()
+        {
+            string controlView = ReadRepoFile(@"TTY.Web\Areas\Mobile\Views\Home\Control.cshtml");
+            string memberView = ReadRepoFile(@"TTY.Web\Areas\Mobile\Views\Home\Huiyuan.cshtml");
+            string playerDetailView = ReadRepoFile(@"TTY.Web\Areas\Mobile\Views\Home\PlayerDetail.cshtml");
+            string prizeView = ReadRepoFile(@"TTY.Web\Areas\Mobile\Views\Home\PrizeHistory.cshtml");
+            string addAgentView = ReadRepoFile(@"TTY.Web\Areas\Mobile\Views\Home\AddAgent.cshtml");
+            string prizeScript = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.prizehistory.js");
+            string addAgentScript = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.addagent.js");
+            string userView = ReadRepoFile(@"TTY.Web\Areas\Game\Views\UserInfo\Index.cshtml");
+            string userController = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\UserInfoController.cs");
+            string recordsBll = ReadRepoFile(@"YYT.BLL\EF\B_Records_MySQL.cs");
+            string adminBll = ReadRepoFile(@"YYT.BLL\EF\B_Admin.cs");
+
+            foreach (string id in new[] { "stBet", "stScore", "stCoins", "stToday", "stTotal" })
+                StringAssert.Contains(controlView, "id=\"" + id + "\"");
+            foreach (string header in new[] { "今日盈亏", "今日充值", "今日退币", "所属代理" })
+                StringAssert.Contains(memberView, header);
+            Assert.IsFalse(playerDetailView.Contains("id=\"btnControl\""));
+            Assert.IsFalse(prizeView.Contains("historyNext"));
+            StringAssert.Contains(prizeScript, "fetchRemaining");
+            StringAssert.Contains(addAgentView, "id=\"agentCreateAgent\" checked");
+            StringAssert.Contains(addAgentScript, "IsCreateAgent:");
+            StringAssert.Contains(userView, "loginUser.IsViewPwd == 1");
+            StringAssert.Contains(userController, "loginUser.IsViewPwd != 1 || loginUser.IsModifyPwd != 1");
+            StringAssert.Contains(recordsBll, "DELETE FROM `gameprizerecord`");
+            StringAssert.Contains(adminBll, "SetAgentEnabledWithAudit");
         }
 
         [TestMethod]

@@ -142,6 +142,12 @@ namespace YYT.Entity
         /// </summary>
         [NotMapped]
         public long? TodayWinLoss { get; set; }
+        /// <summary>今日充值。</summary>
+        [NotMapped]
+        public long? TodayBuy { get; set; }
+        /// <summary>今日退币。</summary>
+        [NotMapped]
+        public long? TodayBack { get; set; }
         /// <summary>
         /// 最后登录时间（后台补充：UserOptLog 最新操作时间，手机端离线列表展示用）
         /// </summary>
@@ -152,6 +158,12 @@ namespace YYT.Entity
         /// </summary>
         [NotMapped]
         public long? Profit { get; set; }
+        /// <summary>最近一次冻结操作人（手机端冻结账号列表）。</summary>
+        [NotMapped]
+        public string FrozenOperator { get; set; }
+        /// <summary>最近一次冻结操作时间（手机端冻结账号列表）。</summary>
+        [NotMapped]
+        public DateTime? FrozenTime { get; set; }
         public override string ToString()
         {
             return JsonConvert.SerializeObject(this);

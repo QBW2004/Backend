@@ -38,6 +38,7 @@
                     '<td>' + M.esc(a.ID) + '</td>' +
                     '<td class="ban-msg">' + M.esc(log ? (log.DestUserTitle || '--') : '--') + '</td>' +
                     '<td><button class="remove-btn" data-id="' + M.esc(a.ID) + '">恢复</button></td>' +
+                    '<td>' + M.esc(log ? (log.OptID || '--') : '--') + '</td>' +
                     '<td class="ban-time">' + (log ? M.fmtTime(log.REC_TIME, true) : '--') + '</td>' +
                     '</tr>';
             }).join(''));

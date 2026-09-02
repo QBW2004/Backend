@@ -126,7 +126,7 @@ namespace YYT.BLL.EF
                             msg.content = "此账号玩家不存在！";
                             return msg;
                         }
-                        if (loginUser.UserPriv > 0 && !new B_Admin().IsInAgencyLine(ef, loginUser.Accounts, user.AGENCY))
+                        if (!new B_Admin().CanManagePlayer(ef, loginUser, user.AGENCY))
                         {
                             msg.content = "只能控制自己代理线内的玩家！";
                             return msg;
@@ -240,7 +240,7 @@ namespace YYT.BLL.EF
                             return msg;
                         }
                         var user = ef.Users.FirstOrDefault(u => u.ID == row.UserID);
-                        if (user == null || !new B_Admin().IsInAgencyLine(ef, loginUser.Accounts, user.AGENCY))
+                        if (user == null || !new B_Admin().CanManagePlayer(ef, loginUser, user.AGENCY))
                         {
                             msg.content = "只能关闭自己代理线内玩家的控制！";
                             return msg;
@@ -306,7 +306,7 @@ namespace YYT.BLL.EF
 
                     if (loginUser.UserPriv > 0)
                     {
-                        var agencies = new B_Admin().GetAgencyLineAccounts(ef, loginUser.Accounts);
+                        var agencies = new B_Admin().GetManagedPlayerAgencyAccounts(ef, loginUser);
                         rst = rst.Where(c => c.UserID == MACHINE_TARGET || agencies.Contains(c.AGENCY));
                     }
                     if (!string.IsNullOrWhiteSpace(userId))
@@ -385,7 +385,7 @@ namespace YYT.BLL.EF
 
                     if (loginUser.UserPriv > 0)
                     {
-                        var agencies = new B_Admin().GetAgencyLineAccounts(ef, loginUser.Accounts);
+                        var agencies = new B_Admin().GetManagedPlayerAgencyAccounts(ef, loginUser);
                         rst = rst.Where(c => agencies.Contains(c.AGENCY));
                     }
                     if (startTime != null)
@@ -491,6 +491,21 @@ namespace YYT.BLL.EF
                 || mode == (int)EControlMode.TotalCard;
         }
 
+        private static bool CanUseTotalMode(M_LoginUser loginUser, int mode)
+        {
+            if (loginUser == null)
+                return false;
+            if (loginUser.UserPriv == 0)
+                return true;
+            if (mode == (int)EControlMode.TotalKill)
+                return (loginUser.IsKill ?? 0) == 1;
+            if (mode == (int)EControlMode.TotalRelease)
+                return (loginUser.IsProbability ?? 0) == 1;
+            if (mode == (int)EControlMode.TotalCard)
+                return (loginUser.IsRelease ?? 0) == 1;
+            return false;
+        }
+
         /// <summary>
         /// 设置总控：总点杀(4)=鱼机+押注+牌机+拉霸；总放水(5)=鱼机+押注；总控牌(6)=牌机+拉霸。
         /// 累计吃分/放分达到金币阈值(goldThreshold)后自动失效，恢复桌台参数难度。
@@ -594,7 +609,7 @@ namespace YYT.BLL.EF
                         msg.content = "此账号玩家不存在！";
                         return msg;
                     }
-                    if (loginUser.UserPriv > 0 && !new B_Admin().IsInAgencyLine(ef, loginUser.Accounts, user.AGENCY))
+                    if (!new B_Admin().CanManagePlayer(ef, loginUser, user.AGENCY))
                     {
                         msg.content = "只能控制自己代理线内的玩家！";
                         return msg;
@@ -658,9 +673,7 @@ namespace YYT.BLL.EF
             // 下发服务器指令（DB 已落库，玩家下次进游戏时服务端也会按 DB 应用总控）
             Msg tmpMsg = SendTotalUcCommand(mode, strength, cardAction, cardValue, cardNumber, cardTotal, loginUser, target);
             msg.code = 1;
-            msg.content = (tmpMsg != null && tmpMsg.code == 1)
-                ? ModeName(mode) + "已生效！"
-                : ModeName(mode) + "已保存（玩家进入游戏后生效）";
+            msg.content = "操作成功";
             return msg;
         }
 
@@ -688,7 +701,7 @@ namespace YYT.BLL.EF
                     if (loginUser.UserPriv > 0)
                     {
                         var user = ef.Users.FirstOrDefault(u => u.ID == target);
-                        if (user == null || !new B_Admin().IsInAgencyLine(ef, loginUser.Accounts, user.AGENCY))
+                        if (user == null || !new B_Admin().CanManagePlayer(ef, loginUser, user.AGENCY))
                         {
                             msg.content = "只能查询自己代理线内的玩家！";
                             return msg;
@@ -700,6 +713,7 @@ namespace YYT.BLL.EF
                         .ToList()
                         .GroupBy(c => c.ControlMode)
                         .Select(g => g.First())
+                        .Where(c => CanUseTotalMode(loginUser, c.ControlMode))
                         .Select(c => new M_UserControlStatus_DTO
                         {
                             ID = c.ID,
@@ -779,7 +793,7 @@ namespace YYT.BLL.EF
                     if (loginUser.UserPriv > 0)
                     {
                         // 读取接口也必须校验代理线，避免通过伪造 UserIDs 查看线外玩家的控制状态。
-                        List<string> managed = new B_Admin().GetManagedAgencyAccounts(ef, loginUser);
+                        List<string> managed = new B_Admin().GetManagedPlayerAgencyAccounts(ef, loginUser);
                         activeQuery = from c in activeQuery
                                       join u in ef.Users on c.UserID equals u.ID
                                       where managed.Contains(u.AGENCY)
@@ -790,6 +804,7 @@ namespace YYT.BLL.EF
                         .ToList()
                         .GroupBy(c => c.UserID + "_" + c.ControlMode)
                         .Select(g => g.First())
+                        .Where(c => CanUseTotalMode(loginUser, c.ControlMode))
                         .Select(c => new M_UserControlStatus_DTO
                         {
                             ID = c.ID,
@@ -858,6 +873,11 @@ namespace YYT.BLL.EF
                 msg.content = "无效的总控模式！";
                 return msg;
             }
+            if (!CanUseTotalMode(loginUser, mode))
+            {
+                msg.content = "无权限操作！";
+                return msg;
+            }
             if (string.IsNullOrWhiteSpace(userId))
             {
                 msg.content = "请填写玩家账号！";
@@ -871,7 +891,7 @@ namespace YYT.BLL.EF
                     if (loginUser.UserPriv > 0)
                     {
                         var user = ef.Users.FirstOrDefault(u => u.ID == target);
-                        if (user == null || !new B_Admin().IsInAgencyLine(ef, loginUser.Accounts, user.AGENCY))
+                        if (user == null || !new B_Admin().CanManagePlayer(ef, loginUser, user.AGENCY))
                         {
                             msg.content = "只能关闭自己代理线内玩家的控制！";
                             return msg;
@@ -896,9 +916,7 @@ namespace YYT.BLL.EF
                 // 强度/控牌类型 0 表示解除
                 Msg tmpMsg = SendTotalUcCommand(mode, 0, 0, 0, 0, 0, loginUser, target);
                 msg.code = 1;
-                msg.content = (tmpMsg != null && tmpMsg.code == 1)
-                    ? ModeName(mode) + "已关闭！"
-                    : ModeName(mode) + "已关闭（服务器指令未确认，玩家重新进游戏后恢复桌台参数）";
+                msg.content = "移除成功";
             }
             catch (Exception ex)
             {

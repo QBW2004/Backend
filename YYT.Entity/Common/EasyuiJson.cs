@@ -19,6 +19,9 @@ namespace YYT.Entity
 
         [DataMember(Name = "footer")]
         public List<T> footer { get; set; }
+
+        [DataMember(Name = "notice")]
+        public string notice { get; set; }
     }
 
     [DataContract]

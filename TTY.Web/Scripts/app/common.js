@@ -380,6 +380,9 @@ function onLoaded(data) {
     hideLoading();
     //提示消息
     showMsg(data);
+    if (data && data.notice) {
+        alert(data.notice, 'info');
+    }
 }
 //下载文件
 function download(url, para) {

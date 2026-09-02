@@ -6,7 +6,7 @@
 
 @section head {
 <style>
-    /* 盈亏统计卡：两行三列（总盈亏/总充值/总退钻、今日盈亏/今日充值/今日退钻） */
+    /* 盈亏统计卡：两行三列（总盈亏/总充值/总退币、今日盈亏/今日充值/今日退币） */
     .profit-stats-card {
         background-color: white;
         border-radius: 12px;
@@ -112,7 +112,7 @@
         width: 100%;
         border-collapse: collapse;
         table-layout: auto;
-        min-width: 620px;
+        min-width: 1000px;
     }
 
         .member-table th {
@@ -202,7 +202,7 @@
 
     <div class="container">
         <div class="agency-filter-bar" id="agencyFilterBar">
-            <div class="agency-filter-label">当前代理：<strong id="agencyFilterName"></strong>（直属会员）</div>
+            <div class="agency-filter-label">当前代理：<strong id="agencyFilterName"></strong><span id="agencyFilterScope">（直属会员）</span></div>
             <button class="agency-filter-clear" id="agencyFilterClear">查看全部</button>
         </div>
 
@@ -218,7 +218,7 @@
                     <div class="profit-stats-value" id="totalBuy">0</div>
                 </div>
                 <div class="profit-stats-item">
-                    <div class="profit-stats-label">总退钻</div>
+                    <div class="profit-stats-label">总退币</div>
                     <div class="profit-stats-value" id="totalBack">0</div>
                 </div>
             </div>
@@ -232,7 +232,7 @@
                     <div class="profit-stats-value" id="todayBuy">0</div>
                 </div>
                 <div class="profit-stats-item">
-                    <div class="profit-stats-label">今日退钻</div>
+                    <div class="profit-stats-label">今日退币</div>
                     <div class="profit-stats-value" id="todayBack">0</div>
                 </div>
             </div>
@@ -256,7 +256,11 @@
                             <th>剩余分数</th>
                             <th>总盈亏</th>
                             <th>总充值</th>
-                            <th>总退钻</th>
+                            <th>总退币</th>
+                            <th>今日盈亏</th>
+                            <th>今日充值</th>
+                            <th>今日退币</th>
+                            <th>所属代理</th>
                         </tr>
                     </thead>
                     <tbody id="memberList"></tbody>

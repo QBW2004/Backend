@@ -182,7 +182,7 @@ namespace YYT.Web.Areas.Game.Controllers
                     var query = ef.Users.Where(c => c.ID.Contains(keyword));
                     if (loginUser.UserPriv != 0)
                     {
-                        List<string> agencies = new B_Admin().GetManagedAgencyAccounts(ef, loginUser);
+                        List<string> agencies = new B_Admin().GetManagedPlayerAgencyAccounts(ef, loginUser);
                         if (agencies == null || agencies.Count < 1)
                             return Json(list);
 
@@ -334,6 +334,7 @@ namespace YYT.Web.Areas.Game.Controllers
         {
             M_EasyuiGridData<M_ReChargeRecords> list = new M_EasyuiGridData<M_ReChargeRecords>();
             long sumRecharge = 0, sumWithdraw = 0;
+            bool retentionAdjusted = false;
             try
             {
                 M_LoginUser loginUser = WebHelper.GetLoginInfo();
@@ -349,6 +350,14 @@ namespace YYT.Web.Areas.Game.Controllers
                     Operator = form.Q<string>("Operator"),
                     TypeFlag = form.Q<int>("TypeFlag", 0)
                 };
+                DateTime cutoff = B_Records_MySQL.GetRetentionCutoff();
+                DateTime now = DateTime.Now;
+                DateTime requestedStart;
+                DateTime requestedEnd;
+                if (DateTime.TryParse(entity.StartTime, out requestedStart) && requestedStart < cutoff)
+                    retentionAdjusted = true;
+                if (DateTime.TryParse(entity.EndTime, out requestedEnd) && requestedEnd < cutoff)
+                    retentionAdjusted = true;
 
                 list = new B_ReChargeRecords().GetReChargeRecordsForPhone(loginUser, mPage, entity, out sumRecharge, out sumWithdraw);
             }
@@ -357,7 +366,8 @@ namespace YYT.Web.Areas.Game.Controllers
                 LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.RechargeController), ex);
             }
 
-            return Json(new { total = list.total, rows = list.rows, sumRecharge = sumRecharge, sumWithdraw = sumWithdraw });
+            return Json(new { total = list.total, rows = list.rows, sumRecharge = sumRecharge, sumWithdraw = sumWithdraw,
+                notice = retentionAdjusted ? "只能查询最近7天" : "" });
         }
 
         [AjaxOnly]

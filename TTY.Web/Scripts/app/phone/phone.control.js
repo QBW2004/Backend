@@ -204,6 +204,8 @@
 
     function renderPlayer(row) {
         var online = row.INHALL === true;
+        $('#stBet').text(M.gold(row.CurrentBetCoins || 0)).removeClass('positive negative');
+        $('#stScore').text(M.num(row.GAME_SCORE || 0)).removeClass('positive negative');
         $('#stCoins').text(M.gold(row.COINS)).removeClass('positive negative');
         var today = Number(row.TodayWinLoss || 0);
         $('#stToday').text((today > 0 ? '+' : '') + M.gold(today))
@@ -221,7 +223,7 @@
     function renderCtrlStatus(rows) {
         var $el = $('#piControl');
         if (!rows || !rows.length) {
-            $el.attr('class', 'info-value').html('<span class="ctrl-status-empty">无</span>');
+            $el.attr('class', 'info-value').empty();
             return;
         }
         var items = rows.map(function (r) {
@@ -308,7 +310,7 @@
             M.loading('下发中...');
             M.post('/Game/UserInfo/ApplyTotalControl', para).always(M.hideLoading).then(function (res) {
                 var r = M.result(res);
-                M.alert(r.text, r.ok, r.ok ? '操作成功' : '操作失败').then(function () {
+                M.alert(r.ok ? '操作成功' : r.text, r.ok, r.ok ? '操作成功' : '操作失败').then(function () {
                     if (r.ok) {
                         refreshCtrlStatus();
                     }
@@ -325,7 +327,7 @@
             M.loading('处理中...');
             M.post('/Game/UserInfo/CloseTotalControl', { ID: current.ID, Mode: mode }).always(M.hideLoading).then(function (res) {
                 var r = M.result(res);
-                M.alert(r.text, r.ok, r.ok ? '操作成功' : '操作失败').then(function () {
+                M.alert(r.ok ? '移除成功' : r.text, r.ok, r.ok ? '移除成功' : '操作失败').then(function () {
                     if (r.ok) {
                         refreshCtrlStatus();
                     }

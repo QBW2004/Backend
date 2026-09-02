@@ -2,7 +2,7 @@
    玩家详细信息页（独立页面，替代原玩家弹窗里的详情浮层）
    数据源：
      - /Game/UserInfo/GetUserDetail     详情（基础+今日/累计充退+总控状态+邀请码）
-     - /Game/UserInfo/ChgPwd            修改玩家密码（需 IsModifyPwd 权限）
+     - /Game/UserInfo/ChgPwd            修改玩家密码（需查看密码和修改密码权限）
      - /Game/UserRecord/GetUserRecords  当日游戏记录（中奖历史 / 游戏轨迹）
    ============================================================ */
 (function (window, $, M) {
@@ -202,9 +202,6 @@
             if (detail && detail.PWD) copyText(String(detail.PWD));
         });
         $('#btnChgPwd').on('click', changePwd);
-        $('#btnControl').on('click', function () {
-            if (detail) window.location.href = '/Mobile/Home/Control?id=' + encodeURIComponent(detail.ID);
-        });
         $('#btnRecharge').on('click', function () {
             if (detail) window.location.href = '/Mobile/Home/Recharge?id=' + encodeURIComponent(detail.ID) + '&pay=0&role=player';
         });

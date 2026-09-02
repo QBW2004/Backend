@@ -1,10 +1,10 @@
 /* ============================================================
    会员盈亏详情页
    数据源：
-     - /Game/UserInfo/GetMemberWinLossStats  统计卡（总盈亏/总充值/总退钻、今日盈亏/今日充值/今日退钻）
+     - /Game/UserInfo/GetMemberWinLossStats  统计卡（总盈亏/总充值/总退币、今日盈亏/今日充值/今日退币）
      - /Game/UserInfo/GetMemberWinLoss       会员分页（按总盈亏排序）
    支持手机端"我的代理-我的会员-查看"跳转：
-     ?agency=xxx  仅显示该代理的直属会员（头部副标题同步显示 代理名- 会员总数N）
+     ?agency=xxx  默认显示该代理直属会员，可切换查看其管理范围内的全部会员
    ============================================================ */
 (function (window, $, M) {
     'use strict';
@@ -14,8 +14,9 @@
     var totalCount = 0;
     var sort = 'profit-desc';
     var agencyFilter = '';
+    var includeDescendants = false;
 
-    /* 统计卡单项：退钻类(asNegative)以负数展示；盈亏类(colorBySign)按正负着色 */
+    /* 统计卡单项：退币类(asNegative)以负数展示；盈亏类(colorBySign)按正负着色 */
     function setStat(sel, value, colorBySign, asNegative) {
         var n = Number(value || 0);
         if (asNegative) n = -n;
@@ -31,6 +32,7 @@
     function load(page, append) {
         return M.post('/Game/UserInfo/GetMemberWinLoss', {
             srch_ID: '', srch_Agency: agencyFilter,
+            IncludeDescendants: includeDescendants ? 1 : 0,
             sort: sort, page: page, rows: PAGE_SIZE
         }).then(function (list) {
             var rows = (list && list.rows) ? list.rows : [];
@@ -42,6 +44,8 @@
             var html = rows.map(function (u) {
                 var profit = Number(u.Profit || 0);
                 var back = Number(u.COINS_BACK || 0);
+                var today = Number(u.TodayWinLoss || 0);
+                var todayBack = Number(u.TodayBack || 0);
                 return '<tr>' +
                     '<td class="account"><a href="/Mobile/Home/PlayerDetail?id=' + encodeURIComponent(u.ID) + '">' + M.esc(u.ID) + '</a></td>' +
                     '<td>' + M.gold(u.COINS) + '</td>' +
@@ -49,6 +53,10 @@
                     '<td class="' + M.signClass(profit) + '">' + M.signed(profit) + '</td>' +
                     '<td>' + M.gold(u.COINS_BUY) + '</td>' +
                     '<td>' + (back > 0 ? '-' + M.gold(back) : '0') + '</td>' +
+                    '<td class="' + M.signClass(today) + '">' + M.signed(today) + '</td>' +
+                    '<td>' + M.gold(u.TodayBuy) + '</td>' +
+                    '<td>' + (todayBack > 0 ? '-' + M.gold(todayBack) : '0') + '</td>' +
+                    '<td>' + M.esc(u.AGENCY || '--') + '</td>' +
                     '</tr>';
             }).join('');
             if (!append) $body.html(html);
@@ -63,7 +71,10 @@
     }
 
     function loadStats() {
-        return M.post('/Game/UserInfo/GetMemberWinLossStats', { srch_Agency: agencyFilter })
+        return M.post('/Game/UserInfo/GetMemberWinLossStats', {
+            srch_Agency: agencyFilter,
+            IncludeDescendants: includeDescendants ? 1 : 0
+        })
             .then(function (res) {
                 if (!res || res.code !== 1 || !res.datas) return;
                 setStat('#totalProfit', res.datas.TotalProfit, true, false);
@@ -88,8 +99,9 @@
             $('#agencyFilterBar').addClass('show');
         }
         $('#agencyFilterClear').on('click', function () {
-            agencyFilter = '';
-            $('#agencyFilterBar').removeClass('show');
+            includeDescendants = !includeDescendants;
+            $('#agencyFilterScope').text(includeDescendants ? '（全部会员）' : '（直属会员）');
+            $('#agencyFilterClear').text(includeDescendants ? '仅看直属' : '查看全部');
             loadStats();
             load(1, false);
         });
