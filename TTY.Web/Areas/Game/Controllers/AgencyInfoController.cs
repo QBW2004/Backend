@@ -73,13 +73,17 @@ namespace YYT.Web.Areas.Game.Controllers
                         item.UserBalance = (tmp != null ? tmp.UserBalance : 0);
                     }
 
-                    // 代理密码脱敏：非超级管理只有拥有查看代理密码权限时可见，且仅限自己的直属代理
+                    // 代理密码脱敏：非超级管理只有拥有查看代理密码权限时可见，且目标必须在管理范围内
                     if (loginUser.UserPriv != 0)
                     {
-                        foreach (var item in list.rows)
+                        using (var ef = new GameDbContext())
                         {
-                            if (loginUser.IsViewAgentPwd != 1 || !string.Equals(item.AGENCY, loginUser.Accounts, StringComparison.OrdinalIgnoreCase))
-                                item.PWD = null;
+                            foreach (var item in list.rows)
+                            {
+                                if (loginUser.IsViewAgentPwd != 1
+                                    || !new B_Admin().IsTargetAgencyInManagedScope(ef, loginUser, item.ID))
+                                    item.PWD = null;
+                            }
                         }
                     }
                 }
@@ -155,9 +159,8 @@ namespace YYT.Web.Areas.Game.Controllers
 
                         using (var ef = new GameDbContext())
                         {
-                            List<string> managedAgencies = new B_Admin().GetManagedAgencyAccounts(ef, m_LoginUser);
                             M_Admin target = ef.Admins.FirstOrDefault(a => a.ID == id);
-                            if (target == null || !managedAgencies.Contains(id))
+                            if (target == null || !new B_Admin().IsTargetAgencyInManagedScope(ef, m_LoginUser, id))
                             {
                                 msg.content = "只能删除自己管理范围内的下级代理！";
                                 return Json(msg);
@@ -209,7 +212,7 @@ namespace YYT.Web.Areas.Game.Controllers
                     return Json(msg);
                 }
 
-                // 非超级管理：需要修改代理密码权限，且只能修改自己直属代理的密码
+                // 非超级管理：需要修改代理密码权限，且目标代理必须在管理范围内
                 if (m_LoginUser.UserPriv > 0)
                 {
                     if (m_LoginUser.IsModifyAgentPwd != 1)
@@ -221,9 +224,9 @@ namespace YYT.Web.Areas.Game.Controllers
                     using (var ef = new GameDbContext())
                     {
                         M_Admin target = ef.Admins.FirstOrDefault(a => a.ID == id);
-                        if (target == null || !string.Equals(target.AGENCY, m_LoginUser.Accounts, StringComparison.OrdinalIgnoreCase))
+                        if (target == null || !new B_Admin().IsTargetAgencyInManagedScope(ef, m_LoginUser, id))
                         {
-                            msg.content = "只能修改自己直属代理的密码！";
+                            msg.content = "只能修改自己管理范围内代理的密码！";
                             return Json(msg);
                         }
                     }
@@ -434,9 +437,9 @@ namespace YYT.Web.Areas.Game.Controllers
                             entity.IsKill = entity.IsKill ?? 0;
                             entity.IsKicking = entity.IsKicking ?? 0;
                             entity.IsViewSafePwd = entity.IsViewSafePwd ?? 0;
-                            entity.KickScope = entity.KickScope ?? 1;  // 默认只能踢直属
                             entity.IsCreateAgent = entity.IsCreateAgent ?? 1;
                             entity.ManageScope = entity.ManageScope ?? 1;  // 默认只管理直属
+                            entity.KickScope = entity.ManageScope;
                         }
                     }
 
@@ -466,8 +469,8 @@ namespace YYT.Web.Areas.Game.Controllers
             entity.IsDeleteAgent = form.Q<int>("IsDeleteAgent", 0);
             entity.IsViewAgentPwd = form.Q<int>("IsViewAgentPwd", 0);
             entity.IsModifyAgentPwd = form.Q<int>("IsModifyAgentPwd", 0);
-            entity.KickScope = form.Q<int>("KickScope", 2);
             entity.ManageScope = form.Q<int>("ManageScope", 2);
+            entity.KickScope = entity.ManageScope;
         }
 
         [AjaxOnly]

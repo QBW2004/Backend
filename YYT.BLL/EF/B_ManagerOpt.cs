@@ -66,10 +66,11 @@ namespace YYT.BLL.EF
                 }
                 else
                 {
+                    List<string> agencies = new B_Admin().GetManagedAgencyAccounts(ef, loginUser);
 
                     // 查询权限内的所有用户
                     rst = from a in ef.View_ManagerOpts
-                          where a.AGENCY.Equals(loginUser.Accounts)
+                          where agencies.Contains(a.AGENCY)
                           select new View_ManagerOpt_DTO
                           {
                               AGENCY = a.AGENCY,

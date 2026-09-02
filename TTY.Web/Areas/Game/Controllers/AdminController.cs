@@ -47,9 +47,8 @@ namespace YYT.Web.Areas.Game.Controllers
 
             using (var ef = new GameDbContext())
             {
-                List<string> managedAgencies = new B_Admin().GetManagedAgencyAccounts(ef, loginUser);
                 M_Admin target = ef.Admins.FirstOrDefault(a => a.ID == id);
-                if (target == null || !managedAgencies.Contains(id))
+                if (target == null || !new B_Admin().IsTargetAgencyInManagedScope(ef, loginUser, id))
                 {
                     msg.content = "只能设置自己管理范围内的下级代理！";
                     return false;
@@ -238,7 +237,7 @@ namespace YYT.Web.Areas.Game.Controllers
         }
 
         /// <summary>
-        /// 设置踢人范围
+        /// 兼容旧客户端的踢人范围接口（实际同步设置管理范围）
         /// </summary>
         [AjaxOnly]
         [HttpPost]
@@ -256,12 +255,13 @@ namespace YYT.Web.Areas.Game.Controllers
                     if (!CanManagePermissionTarget(m_LoginUser, id, msg))
                         return Json(msg);
 
-                    M_Admin mUsers = new M_Admin { ID = id, KickScope = kickScope };
+                    // 兼容旧客户端：踢人范围不再独立保存，统一写入管理范围。
+                    M_Admin mUsers = new M_Admin { ID = id, ManageScope = kickScope };
                     int val = new B_Admin().SetKickScope(mUsers);
                     if (val > 0)
                     {
                         msg.code = 1;
-                        msg.content = "踢人范围设置成功！";
+                        msg.content = "管理范围设置成功，踢人范围已同步！";
                     }
                 }
             }

@@ -459,6 +459,11 @@ namespace YYT.Web.Areas.Game.Controllers
                 string id = form.Q<string>("ID");
                 if (!string.IsNullOrWhiteSpace(id))
                 {
+                    if (loginUser.UserPriv > 0 && !CanManagePlayer(loginUser, id))
+                    {
+                        msg.content = "只能删除自己管理范围内的用户！";
+                        return Json(msg);
+                    }
                     M_Users mUsers = new M_Users { ID = id };
                     int val = new B_Users().DelUser(mUsers);
                     if (val > 0)
@@ -570,6 +575,11 @@ namespace YYT.Web.Areas.Game.Controllers
                 if (string.IsNullOrWhiteSpace(id))
                 {
                     msg.content = "用户ID不能为空！";
+                    return Json(msg);
+                }
+                if (loginUser.UserPriv > 0 && !CanManagePlayer(loginUser, id))
+                {
+                    msg.content = "只能修改自己管理范围内用户的密码！";
                     return Json(msg);
                 }
                 if (string.IsNullOrWhiteSpace(pwd))
@@ -1377,7 +1387,7 @@ namespace YYT.Web.Areas.Game.Controllers
             {
                 if (loginUser.UserPriv > 0 && !CanManagePlayer(loginUser, userAccount))
                 {
-                    msg.content = "只能踢出自己代理线内的玩家！";
+                    msg.content = "只能踢出自己管理范围内的玩家！";
                     return Json(msg);
                 }
                 msg = KickPlayer(userAccount);
@@ -1443,14 +1453,7 @@ namespace YYT.Web.Areas.Game.Controllers
         {
             using (var ef = new GameDbContext())
             {
-                var user = ef.Users.FirstOrDefault(u => u.ID == userAccount);
-                if (user == null)
-                    return false;
-
-                if ((loginUser.ManageScope ?? 1) == 2)
-                    return new B_Admin().IsInAgencyLine(ef, loginUser.Accounts, user.AGENCY);
-
-                return user.AGENCY == loginUser.Accounts;
+                return new B_Admin().IsUserInManagedScope(ef, loginUser, userAccount);
             }
         }
 

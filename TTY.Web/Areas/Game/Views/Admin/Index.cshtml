@@ -126,7 +126,7 @@
                 arr.push('<a href="javascript:void(0)" class="green Lpd5" onclick="setIsModifyAgentPwd(\'' + rowData.ID + '\',1)">启用修改代理密码</a>');
             else
                 arr.push('<a href="javascript:void(0)" class="red Lpd5" onclick="setIsModifyAgentPwd(\'' + rowData.ID + '\',0)">禁用修改代理密码</a>');
-            arr.push('<a href="javascript:void(0)" class="blue Lpd5" onclick="setKickScope(\'' + rowData.ID + '\',' + (rowData.KickScope == 2 ? 1 : 2) + ')">踢人范围:' + (rowData.KickScope == 2 ? '整条线' : '直属') + '</a>');
+            arr.push('<span class="blue Lpd5">踢人范围:跟随管理范围</span>');
             arr.push('<a href="javascript:void(0)" class="blue Lpd5" onclick="setManageScope(\'' + rowData.ID + '\',' + (rowData.ManageScope == 2 ? 1 : 2) + ')">管理范围:' + (rowData.ManageScope == 2 ? '整条线' : '直属') + '</a>');
 
 
@@ -302,16 +302,6 @@
         function setIsModifyAgentPwd(id, flag) {
             confirm('确认' + (flag == 0 ? '禁用修改代理密码' : '启用修改代理密码') + '所选代理的权限？', function () {
                 request('/Game/Admin/SetIsModifyAgentPwd', { ID: id, IsModifyAgentPwd: flag }, function (data) {
-                    showAdminResult(data);
-                    if (data && data.code == 1) {
-                        $('#tb_AgencyInfo').datagrid('reload');
-                    }
-                });
-            });
-        }
-        function setKickScope(id, scope) {
-            confirm('确认修改所选代理的踢人范围？', function () {
-                request('/Game/Admin/SetKickScope', { ID: id, KickScope: scope }, function (data) {
                     showAdminResult(data);
                     if (data && data.code == 1) {
                         $('#tb_AgencyInfo').datagrid('reload');

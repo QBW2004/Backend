@@ -50,8 +50,7 @@ namespace UnitTestProj
             StringAssert.Contains(view, "/Game/Admin/SetIsViewAgentPwd");
             StringAssert.Contains(view, "setIsModifyAgentPwd");
             StringAssert.Contains(view, "/Game/Admin/SetIsModifyAgentPwd");
-            StringAssert.Contains(view, "setKickScope");
-            StringAssert.Contains(view, "/Game/Admin/SetKickScope");
+            StringAssert.Contains(view, "踢人范围:跟随管理范围");
             StringAssert.Contains(view, "setManageScope");
             StringAssert.Contains(view, "/Game/Admin/SetManageScope");
             StringAssert.Contains(view, "启用删除用户");
@@ -125,7 +124,7 @@ namespace UnitTestProj
             string controller = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\AdminController.cs");
 
             StringAssert.Contains(controller, "private bool CanManagePermissionTarget");
-            StringAssert.Contains(controller, "GetManagedAgencyAccounts(ef, loginUser)");
+            StringAssert.Contains(controller, "IsTargetAgencyInManagedScope(ef, loginUser, id)");
             StringAssert.Contains(controller, "只能设置自己管理范围内的下级代理");
             StringAssert.Contains(controller, "if (!CanManagePermissionTarget(m_LoginUser, id, msg))");
             StringAssert.Contains(controller, "M_Admin mUsers = new M_Admin { ID = id, IsModifyPwd = isModifyPwd };");
@@ -167,22 +166,22 @@ namespace UnitTestProj
             StringAssert.Contains(loginUserEntity, "IsViewAgentPwd");
             StringAssert.Contains(loginUserEntity, "IsModifyAgentPwd");
 
-            // 代理管理页：按权限显示删除/改密入口，改密仅限直属代理行
+            // 代理管理页：按权限显示删除/改密入口，目标范围跟随管理范围
             StringAssert.Contains(agencyView, "canDeleteAgent");
             StringAssert.Contains(agencyView, "canModifyAgentPwd");
             StringAssert.Contains(agencyView, "loginUser?.IsDeleteAgent == 1");
             StringAssert.Contains(agencyView, "loginUser?.IsModifyAgentPwd == 1");
-            StringAssert.Contains(agencyView, "canModifyAgentPwd && (isSuperAdmin || isDirectChild)");
+            StringAssert.Contains(agencyView, "if (canModifyAgentPwd)");
             StringAssert.Contains(agencyView, "if (canDeleteAgent)");
             StringAssert.Contains(agencyView, "loginUser?.IsViewAgentPwd == 1");
 
-            // 服务端：删除代理需要权限；改密仅限直属；列表对代理密码做服务端脱敏
+            // 服务端：删除代理、改密和查看密码均按管理范围校验
             StringAssert.Contains(agencyController, "m_LoginUser.IsDeleteAgent != 1");
             StringAssert.Contains(agencyController, "没有删除代理权限");
             StringAssert.Contains(agencyController, "m_LoginUser.IsModifyAgentPwd != 1");
             StringAssert.Contains(agencyController, "没有修改代理密码权限");
-            StringAssert.Contains(agencyController, "只能修改自己直属代理的密码");
-            StringAssert.Contains(agencyController, "loginUser.IsViewAgentPwd != 1 || !string.Equals(item.AGENCY, loginUser.Accounts, StringComparison.OrdinalIgnoreCase)");
+            StringAssert.Contains(agencyController, "只能修改自己管理范围内代理的密码");
+            StringAssert.Contains(agencyController, "IsTargetAgencyInManagedScope(ef, loginUser, item.ID)");
             StringAssert.Contains(agencyController, "item.PWD = null");
 
             // 数据库脚本包含新增字段

@@ -80,13 +80,12 @@
             var isSuperAdmin = @((loginUser?.UserPriv == 0).ToString().ToLower());
             var canDeleteAgent = @((loginUser?.UserPriv == 0 || loginUser?.IsDeleteAgent == 1).ToString().ToLower());
             var canModifyAgentPwd = @((loginUser?.UserPriv == 0 || loginUser?.IsModifyAgentPwd == 1).ToString().ToLower());
-            var isDirectChild = rowData.AGENCY == "@(loginUser?.Accounts)";
             if (isSelf && !isSuperAdmin)
                 return "";
 
             var features = [];
             var states = [];
-            if (canModifyAgentPwd && (isSuperAdmin || isDirectChild))
+            if (canModifyAgentPwd)
                 features.push('<a href="javascript:void(0)" class="agency-action-link agency-action-feature" onclick="showChgWin(\'' + rowData.ID + '\')">改密码</a>');
             features.push('<a href="javascript:void(0)" class="agency-action-link agency-action-feature" onclick="showCustomerServiceUrl(\'' + rowData.ID + '\')">客服</a>');
             if (!isSelf) {

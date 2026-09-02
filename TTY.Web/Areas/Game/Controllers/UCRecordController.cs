@@ -90,9 +90,9 @@ namespace YYT.Web.Areas.Game.Controllers
                         return Json(msg);
                     }
 
-                    if (loginUser.UserPriv > 0 && !new B_Admin().IsInAgencyLine(ef, loginUser.Accounts, user.AGENCY))
+                    if (loginUser.UserPriv > 0 && !new B_Admin().IsAgencyInManagedScope(ef, loginUser, user.AGENCY))
                     {
-                        msg.content = "只能关闭自己代理线内玩家的点杀！";
+                        msg.content = "只能关闭自己管理范围内玩家的点杀！";
                         return Json(msg);
                     }
                 }

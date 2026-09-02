@@ -70,6 +70,50 @@ namespace YYT.BLL.EF
             return AgencyRules.GetManagedAgencyIds(loginUser.Accounts, loginUser.ManageScope, directAccounts, lineAccounts);
         }
 
+        /// <summary>
+        /// 判断代理账号是否在当前登录代理的管理范围内。
+        /// </summary>
+        public bool IsAgencyInManagedScope(GameDbContext ef, M_LoginUser loginUser, string agencyAccount)
+        {
+            if (ef == null || loginUser == null || string.IsNullOrWhiteSpace(agencyAccount))
+                return false;
+            if (loginUser.UserPriv == 0)
+                return true;
+
+            return GetManagedAgencyAccounts(ef, loginUser)
+                .Any(c => string.Equals(c, agencyAccount, StringComparison.OrdinalIgnoreCase));
+        }
+
+        /// <summary>
+        /// 判断玩家是否在当前登录代理的管理范围内。
+        /// </summary>
+        public bool IsUserInManagedScope(GameDbContext ef, M_LoginUser loginUser, string userId)
+        {
+            if (ef == null || loginUser == null || string.IsNullOrWhiteSpace(userId))
+                return false;
+
+            string agencyAccount = ef.Users
+                .Where(c => c.ID == userId)
+                .Select(c => c.AGENCY)
+                .FirstOrDefault();
+            return IsAgencyInManagedScope(ef, loginUser, agencyAccount);
+        }
+
+        /// <summary>
+        /// 判断目标代理是否在当前登录代理的管理范围内，且不能操作自己。
+        /// </summary>
+        public bool IsTargetAgencyInManagedScope(GameDbContext ef, M_LoginUser loginUser, string agencyId)
+        {
+            if (ef == null || loginUser == null || string.IsNullOrWhiteSpace(agencyId)
+                || string.Equals(loginUser.Accounts, agencyId, StringComparison.OrdinalIgnoreCase))
+                return false;
+            if (loginUser.UserPriv == 0)
+                return ef.Admins.Any(c => c.ID == agencyId);
+
+            return GetManagedAgencyAccounts(ef, loginUser)
+                .Any(c => string.Equals(c, agencyId, StringComparison.OrdinalIgnoreCase));
+        }
+
         public bool IsInAgencyLine(GameDbContext ef, string ownerAccount, string targetAgency)
         {
             if (string.IsNullOrWhiteSpace(ownerAccount) || string.IsNullOrWhiteSpace(targetAgency))
@@ -644,9 +688,21 @@ namespace YYT.BLL.EF
                 var admin = ef.Admins.FirstOrDefault(t => t.ID == entity.ID);
                 if (admin != null)
                 {
-                    if (admin.KickScope == entity.KickScope)
+                    // KickScope 仅作为历史兼容字段，实际范围统一由 ManageScope 决定。
+                    long manageScope = entity.ManageScope ?? admin.ManageScope ?? 1;
+                    bool changed = false;
+                    if (admin.ManageScope != manageScope)
+                    {
+                        admin.ManageScope = manageScope;
+                        changed = true;
+                    }
+                    if (admin.KickScope != manageScope)
+                    {
+                        admin.KickScope = manageScope;
+                        changed = true;
+                    }
+                    if (!changed)
                         return 1;
-                    admin.KickScope = entity.KickScope;
                     admin.UpdateTime = DateTime.Now;
                     return ef.SaveChanges();
                 }
@@ -661,9 +717,20 @@ namespace YYT.BLL.EF
                 var admin = ef.Admins.FirstOrDefault(t => t.ID == entity.ID);
                 if (admin != null)
                 {
-                    if (admin.ManageScope == entity.ManageScope)
+                    bool changed = false;
+                    if (admin.ManageScope != entity.ManageScope)
+                    {
+                        admin.ManageScope = entity.ManageScope;
+                        changed = true;
+                    }
+                    // 踢人范围已统一跟随管理范围，保留字段仅用于兼容旧数据。
+                    if (admin.KickScope != entity.ManageScope)
+                    {
+                        admin.KickScope = entity.ManageScope;
+                        changed = true;
+                    }
+                    if (!changed)
                         return 1;
-                    admin.ManageScope = entity.ManageScope;
                     admin.UpdateTime = DateTime.Now;
                     return ef.SaveChanges();
                 }
