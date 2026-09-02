@@ -758,7 +758,7 @@ namespace YYT.BLL.EF
 
             foreach (M_Users_DTO user in users)
             {
-                if (loginUser.IsViewPwd != 1 && loginUser.IsViewSafePwd != 1)
+                if (loginUser.IsViewPwd != 1)
                     user.PWD = null;
                 if (loginUser.IsViewSafePwd != 1)
                     user.SAFE_PWD = null;
