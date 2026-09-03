@@ -69,7 +69,7 @@
         background-color: white;
     }
 
-    /* 统计卡：当前押注 / 剩余分数 / 剩余金币 / 今日盈亏 / 总盈亏 */
+    /* 统计卡：当前押注 / 今日盈亏 / 总盈亏 */
     .stat-cards {
         display: none;
         gap: 8px;
@@ -78,7 +78,7 @@
 
     .stat-cards.show {
         display: grid;
-        grid-template-columns: repeat(5, minmax(72px, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         overflow-x: auto;
     }
 
@@ -132,6 +132,7 @@
     .player-meta .info-row {
         display: flex;
         align-items: center;
+        min-width: 0;
         padding: 8px 12px;
         background: rgba(0, 122, 255, 0.06);
         border-radius: 8px;
@@ -148,6 +149,11 @@
         text-align: right;
     }
 
+    .player-meta .info-row > span:first-child {
+        flex: 0 0 auto;
+        white-space: nowrap;
+    }
+
     .status-online {
         color: #34c759;
     }
@@ -157,17 +163,25 @@
     }
 
     .ctrl-status-list {
-        width: 100%;
+        flex: 1 1 auto;
+        width: auto;
+        min-width: 0;
         display: flex;
-        flex-direction: column;
+        flex-direction: row;
+        flex-wrap: nowrap;
         gap: 4px;
         align-items: flex-end;
+        justify-content: flex-start;
+        overflow-x: auto;
+        white-space: nowrap;
     }
 
     .ctrl-status-item {
+        flex: 0 0 auto;
         font-size: 13px;
         font-weight: 500;
         color: #ff3b30;
+        white-space: nowrap;
     }
 
     .ctrl-status-empty {
@@ -350,19 +364,11 @@
                 </div>
             </div>
 
-            @* 统计卡：当前押注 / 剩余分数 / 剩余金币 / 今日盈亏 / 总盈亏 *@
+            @* 统计卡：当前押注 / 今日盈亏 / 总盈亏 *@
             <div class="stat-cards" id="statCards">
                 <div class="stat-card">
                     <div class="stat-label">当前押注</div>
                     <div class="stat-value" id="stBet">--</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">剩余分数</div>
-                    <div class="stat-value" id="stScore">--</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">剩余金币</div>
-                    <div class="stat-value" id="stCoins">--</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-label">今日盈亏</div>

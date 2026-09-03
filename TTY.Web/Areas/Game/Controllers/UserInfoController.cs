@@ -66,14 +66,30 @@ namespace YYT.Web.Areas.Game.Controllers
                     .Select(c => c.ID).Distinct().ToList();
                 B_Users usersBll = new B_Users();
                 HashSet<string> visibleIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                Dictionary<string, M_Users_DTO> visibleRows = new Dictionary<string, M_Users_DTO>(StringComparer.OrdinalIgnoreCase);
                 for (int i = 0; i < ids.Count; i += 100)
                 {
-                    foreach (M_Users_DTO row in usersBll.GetUserRowsByIds(ids.Skip(i).Take(100).ToList(), loginUser))
+                    // 游戏服结果已包含当前游戏/桌台等实时字段，此处只补权限、基础资料和输赢统计。
+                    foreach (M_Users_DTO row in usersBll.GetUserRowsByIds(ids.Skip(i).Take(100).ToList(), loginUser, false))
+                    {
                         visibleIds.Add(row.ID);
+                        visibleRows[row.ID] = row;
+                    }
                 }
                 players = players.Where(c => !string.IsNullOrWhiteSpace(c.ID) && visibleIds.Contains(c.ID)).ToList();
-                FillPlayerProfits(players);
-                FillPlayerTodayWinLoss(players);
+                // GetUserRowsByIds 已完成权限裁剪、总盈亏和今日输赢补充，直接复用结果，
+                // 避免在线列表再发起两轮相同的数据库查询。
+                foreach (OnlinePlayerInfo player in players)
+                {
+                    M_Users_DTO row;
+                    if (!visibleRows.TryGetValue(player.ID, out row))
+                        continue;
+                    player.NAME = string.IsNullOrWhiteSpace(row.NAME) ? player.NAME : row.NAME;
+                    player.AGENCY = row.AGENCY;
+                    player.FROZEN = row.FROZEN ?? 0;
+                    player.Profit = row.Profit ?? 0;
+                    player.TodayWinLoss = row.TodayWinLoss ?? 0;
+                }
                 FillPlayerLastLogin(players);
                 msg.code = 1;
                 msg.content = "查询成功！";
@@ -85,65 +101,6 @@ namespace YYT.Web.Areas.Game.Controllers
             }
             return Json(msg);
         }
-        /// <summary>
-        /// 总盈亏 = 购币 - 兑换（与用户管理页的总盈利同口径）
-        /// </summary>
-        private void FillPlayerProfits(List<OnlinePlayerInfo> players)
-        {
-            if (players == null || players.Count < 1)
-                return;
-            M_LoginUser loginUser = WebHelper.GetLoginInfo();
-            if (loginUser == null)
-                return;
-            B_Users bll = new B_Users();
-            List<string> ids = players.Where(c => !string.IsNullOrWhiteSpace(c.ID)).Select(c => c.ID).Distinct().ToList();
-            Dictionary<string, long?> profitMap = new Dictionary<string, long?>(StringComparer.OrdinalIgnoreCase);
-            for (int i = 0; i < ids.Count; i += 100)
-            {
-                List<M_Users_DTO> users = bll.GetUserRowsByIds(ids.Skip(i).Take(100).ToList(), loginUser);
-                foreach (M_Users_DTO user in users)
-                    profitMap[user.ID] = user.Profit;
-            }
-            foreach (OnlinePlayerInfo player in players)
-            {
-                if (player.ID != null && profitMap.TryGetValue(player.ID, out long? profit))
-                    player.Profit = profit ?? 0;
-            }
-        }
-
-        /// <summary>
-        /// 今日盈亏（与用户管理页同口径：user_daily_winloss 当日数据）
-        /// </summary>
-        private void FillPlayerTodayWinLoss(List<OnlinePlayerInfo> players)
-        {
-            if (players == null || players.Count < 1)
-                return;
-            List<string> ids = players.Where(c => !string.IsNullOrWhiteSpace(c.ID)).Select(c => c.ID).Distinct().ToList();
-            if (ids.Count < 1)
-                return;
-            try
-            {
-                using (var ef = new GameDbContext())
-                {
-                    string placeholders = string.Join(",", ids.Select((c, i) => "{" + i + "}"));
-                    string sql = "SELECT UserID, WINLOSS FROM user_daily_winloss WHERE DAY = CURDATE() AND UserID IN (" + placeholders + ")";
-                    Dictionary<string, long> winLossMap = ef.Database.SqlQuery<M_UserDailyWinLoss>(sql, ids.Cast<object>().ToArray())
-                        .ToList()
-                        .GroupBy(c => c.UserID)
-                        .ToDictionary(g => g.Key, g => g.First().WINLOSS);
-                    foreach (OnlinePlayerInfo player in players)
-                    {
-                        if (player.ID != null && winLossMap.TryGetValue(player.ID, out long winLoss))
-                            player.TodayWinLoss = winLoss;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.UserInfoController), $"FillPlayerTodayWinLoss Err >> {ex.Message}");
-            }
-        }
-
         /// <summary>补充最近登录时间，避免在线/离线卡片字段不一致。</summary>
         private void FillPlayerLastLogin(List<OnlinePlayerInfo> players)
         {
@@ -456,7 +413,7 @@ namespace YYT.Web.Areas.Game.Controllers
 
         /// <summary>
         /// 手机端：会员盈亏统计卡（权限范围内，支持代理过滤）。
-        /// 口径：总盈亏 = 总充值 - 总退钻（与用户管理页总盈利同口径），今日盈亏 = 今日充值 - 今日退钻。
+        /// 口径：总盈亏 = 最近 7x24 小时内已生效充值 - 退分，今日盈亏按当日已生效流水计算。
         /// </summary>
         [MemberAuthorize]
         [AjaxOnly]
@@ -1426,8 +1383,9 @@ namespace YYT.Web.Areas.Game.Controllers
             {
                 string id = form.Q<string>("ID");
                 int mode = form.Q<int>("Mode", -1);
+                bool mobileRequest = form.Q<int>("MobileRequest", 0) == 1;
                 M_LoginUser loginUser = WebHelper.GetLoginInfo();
-                msg = new B_UserControl().CloseTotalControl(loginUser, id, mode);
+                msg = new B_UserControl().CloseTotalControl(loginUser, id, mode, mobileRequest);
             }
             catch (Exception ex)
             {

@@ -126,7 +126,8 @@
         if (p === 0) return '管理员';
         if (p === 9) return '副管理';
         if (p === 10) return '运营';
-        if (p > 0) return p + '级代理';
+        if (p === 1) return '特级代理';
+        if (p > 1) return (p - 1) + '级代理';
         return '--';
     };
 
@@ -606,7 +607,7 @@
         $('#logoutBtn').on('click', function () {
             M.closeDrawer();
             M.confirm('确定要退出登录吗？', '退出登录').then(function (ok) {
-                if (ok) window.location.href = '/Login/LoginOut';
+                if (ok) window.location.href = '/Login/LoginOut?view=mobile';
             });
         });
     };

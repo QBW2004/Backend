@@ -217,7 +217,7 @@ namespace YYT.Web.Areas.Mobile.Controllers
 
             ViewBag.MPage = "control";
             ViewBag.MTitle = "控制管理";
-            ViewBag.MSubtitle = "设置吃分、放水、控牌";
+            ViewBag.MSubtitle = null;
             ViewBag.MShowRefresh = false;
             ViewBag.CanKill = canKill;
             ViewBag.CanRelease = canRelease;

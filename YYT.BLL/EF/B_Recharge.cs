@@ -59,6 +59,7 @@ namespace YYT.BLL.EF
         public bool IsRMB { get; set; }
         public int ExchangeRate { get; set; }
         protected IGameServerClient GameServerClient { get; set; }
+        protected bool MobileRequest { get; private set; }
 
 
 
@@ -69,9 +70,15 @@ namespace YYT.BLL.EF
         /// <param name="rechargeUser">充值人</param>
         /// <param name="rechargeTarget">待充值人</param>
         public B_ReChargeBase(M_Admin rechargeUser, M_Recharge rechargeTarget)
+            : this(rechargeUser, rechargeTarget, false)
+        {
+        }
+
+        public B_ReChargeBase(M_Admin rechargeUser, M_Recharge rechargeTarget, bool mobileRequest)
         {
             this.SrcUser = rechargeUser;
             this.ReChargeDataEntity = rechargeTarget;
+            this.MobileRequest = mobileRequest;
             this.OptType = this.ReChargeDataEntity.RechargeType;
             _msg = new Msg(0, "操作失败！");
             this.DebugLog = new StringBuilder();
@@ -693,6 +700,9 @@ namespace YYT.BLL.EF
         {
             try
             {
+                if (this.MobileRequest)
+                    return this.GameServerClient.QueueLockPlayer(this.DestUser.ID);
+
                 // 发送锁定用户指令  指令内容：LK + 玩家账号
                 this.GameServerClient.LockPlayer(this.DestUser.ID);
                 // 无论服务器返回任何结果，均允许充值（用户在线中也可充值）
@@ -728,7 +738,15 @@ namespace YYT.BLL.EF
             try
             {
                 // 发送解锁用户指令  指令内容：UL + 充值0/兑换1+操作结果失败0/成功1  +充值金币数+"/"+ 玩家账号
-                srvCode = this.GameServerClient.UnlockPlayer(type, val, this.ReChargeDataEntity.Coin, this.DestUser.ID);
+                if (this.MobileRequest)
+                {
+                    Msg queued = this.GameServerClient.QueueUnlockPlayer(type, val, this.ReChargeDataEntity.Coin, this.DestUser.ID);
+                    srvCode = queued != null && queued.code == 1 ? "ULQUEUED" : string.Empty;
+                }
+                else
+                {
+                    srvCode = this.GameServerClient.UnlockPlayer(type, val, this.ReChargeDataEntity.Coin, this.DestUser.ID);
+                }
                 AppendDebugLog($" UnLock User >> SrvCode:[{srvCode}] ");
             }
             catch (Exception ex)

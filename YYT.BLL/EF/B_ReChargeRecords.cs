@@ -124,7 +124,8 @@ namespace YYT.BLL.EF
 
         /// <summary>
         /// 手机端：充退记录分页（支持操作人/类型筛选，返回筛选范围内的总充值/总退分，并补充玩家名称与类型名称）
-        /// TypeFlag：0 全部；1 充值类（后台充值/赠送/前端充值）；2 退分类（后台兑换/扣币/前端提现）
+        /// TypeFlag：0 全部；1 充值类（后台充值/赠送/前端充值）；2 退分类（后台兑换/扣币/前端提现）。
+        /// 手机端只展示已经生效的流水（Processed=1），避免未处理/已拒绝订单混入分类和汇总。
         /// </summary>
         public M_EasyuiGridData<M_ReChargeRecords> GetReChargeRecordsForPhone(M_LoginUser loginUser, M_Page mPage, M_ReChargeRecordsDao entity, out long sumRecharge, out long sumWithdraw)
         {
@@ -136,7 +137,7 @@ namespace YYT.BLL.EF
                 var rst = ef.ReChargeRecords.AsQueryable();
                 DateTime cutoff = B_Records_MySQL.GetRetentionCutoff();
                 DateTime now = DateTime.Now;
-                rst = rst.Where(c => c.CreateTime >= cutoff && c.CreateTime <= now);
+                rst = rst.Where(c => c.CreateTime >= cutoff && c.CreateTime <= now && c.Processed == 1);
 
                 // 搜索统一模糊匹配（LIKE '%kw%'）；权限过滤（下方 Agency=登录账号）保持精确
                 if (!string.IsNullOrWhiteSpace(entity.GameID))

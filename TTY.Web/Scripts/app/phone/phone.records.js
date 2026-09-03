@@ -47,9 +47,6 @@
                     var coin = Number(r.Coin || 0);
                     var isOut = Number(r.RechargeType) === 21 || Number(r.RechargeType) === 23 ||
                         (Number(r.RechargeType) === 31 && Number(r.Processed) === 1);
-                    var remark = r.TypeName || '';
-                    if (Number(r.Processed) === 0) remark += '（未处理）';
-                    else if (Number(r.Processed) === 2) remark += '（已拒绝）';
                     return '<tr>' +
                         '<td>' + M.esc(r.Operator || '--') + '</td>' +
                         '<td>' + M.esc(r.GameID || '--') + '</td>' +
@@ -58,7 +55,6 @@
                         '<td class="amount">' + M.gold(r.BEF_COINS) + '</td>' +
                         '<td class="amount">' + M.gold(r.AFT_COINS) + '</td>' +
                         '<td class="time">' + M.fmtTime(r.CreateTime, true) + '</td>' +
-                        '<td>' + M.esc(remark || '--') + '</td>' +
                         '</tr>';
                 }).join(''));
             }

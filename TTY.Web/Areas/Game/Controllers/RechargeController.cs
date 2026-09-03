@@ -79,6 +79,7 @@ namespace YYT.Web.Areas.Game.Controllers
                 EIDType eIDType = (EIDType)idType;
                 int rechargeType = form.Q<int>("payType", -1);// 0：充值  1：兑换
                 int targetType = form.Q<int>("targetType", 0);// 充值的对象类型  -1：用户  2：一般代理  1：总代  9：副管理
+                bool mobileRequest = form.Q<int>("MobileRequest", 0) == 1;
 
                 if (rechargeType == 0)
                     msg.content = "充值" + msg.content;
@@ -147,7 +148,7 @@ namespace YYT.Web.Areas.Game.Controllers
                     M_Admin rechargeUser = loginUser.ToAdminType();
                     EAdminType eAdminType = (EAdminType)targetType;
                     M_Recharge rechargeTarget = new M_Recharge { ID = id, Coin = coin, RechargeType = rechargeType, AdminType = eAdminType, IDType = eIDType };
-                    B_ReChargeBase bll = new B_ReChargeBase(rechargeUser, rechargeTarget);
+                    B_ReChargeBase bll = new B_ReChargeBase(rechargeUser, rechargeTarget, mobileRequest);
                     if (eAdminType == EAdminType.None)
                         msg = bll.PlayerReCharge();
                     else
@@ -348,6 +349,7 @@ namespace YYT.Web.Areas.Game.Controllers
                     StartTime = form.Q<string>("srch_StartTime"),
                     EndTime = form.Q<string>("srch_EndTime"),
                     Operator = form.Q<string>("Operator"),
+                    Processed = -1,
                     TypeFlag = form.Q<int>("TypeFlag", 0)
                 };
                 DateTime cutoff = B_Records_MySQL.GetRetentionCutoff();

@@ -243,6 +243,7 @@ namespace YYT.Web.Controllers
         /// 退出登录
         /// </summary>
         /// <returns></returns>
+        [WithoutLocalization]
         public ActionResult LoginOut()
         {
             try
@@ -257,6 +258,11 @@ namespace YYT.Web.Controllers
                 LogHelper.WriteLog(typeof(YYT.Web.Controllers.LoginController), ex);
             }
 
+            bool mobile = string.Equals(Request.QueryString["view"], "mobile", StringComparison.OrdinalIgnoreCase);
+            if (mobile)
+                return RedirectToAction("Mobile", "Login");
+
+            // 保持桌面端原有行为：直接渲染桌面登录页，避免默认路由将地址折叠到站点根路径。
             return View("Index");
         }
 

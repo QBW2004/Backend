@@ -181,13 +181,13 @@ namespace YYT.Entity
     /// </summary>
     public class M_MemberWinLossStats
     {
-        /// <summary>总充值（users.COINS_BUY 合计）</summary>
+        /// <summary>最近 7x24 小时内已生效充值合计</summary>
         public long? TotalBuy { get; set; }
-        /// <summary>总退钻（users.COINS_BACK 合计）</summary>
+        /// <summary>最近 7x24 小时内已生效退分合计</summary>
         public long? TotalBack { get; set; }
         /// <summary>今日充值（当日充值类流水合计）</summary>
         public long? TodayBuy { get; set; }
-        /// <summary>今日退钻（当日退分类流水合计）</summary>
+        /// <summary>今日退分（当日退分类流水合计）</summary>
         public long? TodayBack { get; set; }
     }
 

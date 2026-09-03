@@ -81,26 +81,45 @@
                 '<div><span>上级代理</span><b>' + M.esc(a.AGENCY || '--') + '</b></div>' +
                 '<div><span>剩余金币</span><b class="blue-text">' + M.gold(a.COINS) + '</b></div>' +
                 '<div><span>剩余分</span><b>' + M.num(a.RemainingScore || 0) + '</b></div>' +
-                '<div class="agent-create-child-row"><span>创建下级</span><label class="m-switch"><input type="checkbox" id="agentCreateChild" ' + (Number(a.IsCreateAgent) === 1 ? 'checked' : '') + '><span></span></label></div>' +
+                '<div class="agent-create-child-row"><span>创建下级</span><label class="m-switch"><input type="checkbox" id="agentCreateChild" ' + (Number(a.IsCreateAgent) === 1 ? 'checked' : '') + '><span></span></label><span class="agent-save-state" id="agentSaveState"></span></div>' +
                 '</div>';
             var dlg = M.modal({
                 title: '代理详细信息',
                 bodyHTML: body,
                 actions: [
                     { label: '流水', value: 'records', type: 'secondary' },
-                    { label: '充值', value: 'recharge', type: 'primary' },
-                    { label: '保存', value: 'save-create', type: 'primary' }
+                    { label: '充值', value: 'recharge', type: 'primary' }
                 ],
-                buttons: [{ label: '关闭', value: null, type: 'confirm' }]
+                buttons: [{ label: '关闭', value: null, type: 'confirm' }],
+                onRender: function ($modal) {
+                    var $toggle = $modal.find('#agentCreateChild');
+                    var savedValue = Number(a.IsCreateAgent) === 1;
+                    $toggle.on('change', function () {
+                        var nextValue = $toggle.is(':checked');
+                        $toggle.prop('disabled', true);
+                        $modal.find('#agentSaveState').text('保存中...');
+                        M.post('/Game/Admin/SetIsCreateAgent', { ID: a.ID, IsCreateAgent: nextValue ? 1 : 0 })
+                            .then(function (saveRes) {
+                                var save = M.result(saveRes);
+                                if (save.ok) {
+                                    savedValue = nextValue;
+                                    $modal.find('#agentSaveState').text('已保存');
+                                    M.toast('保存成功', 'success');
+                                } else {
+                                    $toggle.prop('checked', savedValue);
+                                    $modal.find('#agentSaveState').text(save.text);
+                                    M.toast(save.text, 'error');
+                                }
+                            }, function () {
+                                $toggle.prop('checked', savedValue);
+                                $modal.find('#agentSaveState').text('保存失败');
+                            })
+                            .always(function () { $toggle.prop('disabled', false); });
+                    });
+                }
             });
             dlg.then(function (value) {
-                if (value === 'save-create') {
-                    M.post('/Game/Admin/SetIsCreateAgent', { ID: a.ID, IsCreateAgent: $('#agentCreateChild').is(':checked') ? 1 : 0 })
-                        .then(function (saveRes) {
-                            var save = M.result(saveRes);
-                            M.alert(save.ok ? '保存成功' : save.text, save.ok, save.ok ? '保存成功' : '操作失败');
-                        });
-                } else if (value === 'records')
+                if (value === 'records')
                     window.location.href = '/Mobile/Home/Records?id=' + encodeURIComponent(a.ID);
                 else if (value === 'recharge')
                     window.location.href = '/Mobile/Home/Recharge?id=' + encodeURIComponent(a.ID) + '&role=agent';

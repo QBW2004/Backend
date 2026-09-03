@@ -11,6 +11,7 @@
     var role = 'agent';       // agent=下级代理(targetType 2)  player=玩家(targetType -2)
     var payType = 'recharge'; // recharge=充值(0) withdraw=退分(1)
     var queriedAccount = '';
+    var submitting = false;
 
     function targetType() { return role === 'player' ? -2 : 2; }
     function payTypeCode() { return payType === 'withdraw' ? 1 : 0; }
@@ -19,7 +20,7 @@
         var payLabel = payType === 'withdraw' ? '退分' : '充值';
         $('#amountLabel').text(payLabel + '金币');
         $('#amountInput').attr('placeholder', '请输入' + payLabel + '金币数量');
-        $('#submitBtn').text(payLabel);
+        $('#submitBtn').text(payLabel).toggleClass('is-withdraw', payType === 'withdraw');
     }
 
     function resetQuery() {
@@ -88,27 +89,40 @@
     function submit() {
         var coin = $.trim($('#amountInput').val());
         if (!queriedAccount) { M.toast('请先查询账号信息', 'error'); return; }
-        if (!coin || Number(coin) <= 0) { M.toast('金额不正确，不能为0', 'error'); return; }
+        if (!/^\d+$/.test(coin) || Number(coin) <= 0) { M.toast('金额只能输入正整数', 'error'); return; }
+        if (submitting) return;
 
         var payLabel = payType === 'withdraw' ? '退分' : '充值';
         M.confirm('确定要给 ' + queriedAccount + ' ' + payLabel + ' ' + M.gold(coin) + ' 金币吗？', payLabel + '确认').then(function (ok) {
             if (!ok) return;
+            submitting = true;
+            $('#submitBtn').prop('disabled', true);
             M.loading('处理中...');
+            M.toast('已受理，处理中...', 'info', 1600);
             M.post('/Game/Recharge/SaveCoin', {
                 coin: coin,
                 id: queriedAccount,
                 idType: 0,
                 payType: payTypeCode(),
-                targetType: targetType()
+                targetType: targetType(),
+                MobileRequest: 1
             }).always(M.hideLoading).then(function (res) {
                 var r = M.result(res);
-                M.alert(r.ok ? '操作成功' : r.text, r.ok, r.ok ? '操作成功' : '操作失败').then(function () {
+                var resultText = r.ok
+                    ? payLabel + '成功！已向' + (role === 'player' ? '玩家' : '代理') + queriedAccount + payLabel + M.gold(coin) + '金币。'
+                    : r.text;
+                M.alert(resultText, r.ok, r.ok ? '操作成功' : '操作失败').then(function () {
                     if (r.ok) {
                         $('#amountInput').val('');
                         resetQuery();
                         window.location.reload();
                     }
                 });
+            }, function () {
+                M.toast('操作失败，请稍后重试', 'error');
+            }).always(function () {
+                submitting = false;
+                if (queriedAccount) $('#submitBtn').prop('disabled', false);
             });
         });
     }
@@ -202,6 +216,10 @@
             if (e.keyCode === 13) { e.preventDefault(); queryAccount(); }
         });
         $('#submitBtn').on('click', submit);
+        $('#amountInput').on('input', function () {
+            var value = String($(this).val() || '').replace(/[^0-9]/g, '');
+            if ($(this).val() !== value) $(this).val(value);
+        });
     }
 
     // 脚本在 body 末尾加载，DOM 已就绪；不依赖 jQuery ready

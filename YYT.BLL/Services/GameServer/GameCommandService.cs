@@ -28,5 +28,20 @@ namespace YYT.BLL.Services.GameServer
         {
             return gameServerClient.SetUserControl(args);
         }
+
+        public Msg QueueUserControl(params object[] args)
+        {
+            return gameServerClient.QueueUserControl(args);
+        }
+
+        public Msg QueueLockPlayer(string userAccount)
+        {
+            return gameServerClient.QueueLockPlayer(userAccount);
+        }
+
+        public Msg QueueUnlockPlayer(int rechargeType, int result, long? coins, string userAccount)
+        {
+            return gameServerClient.QueueUnlockPlayer(rechargeType, result, coins, userAccount);
+        }
     }
 }

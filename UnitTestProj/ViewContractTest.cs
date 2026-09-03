@@ -489,8 +489,11 @@ namespace UnitTestProj
             string recordsBll = ReadRepoFile(@"YYT.BLL\EF\B_Records_MySQL.cs");
             string adminBll = ReadRepoFile(@"YYT.BLL\EF\B_Admin.cs");
 
-            foreach (string id in new[] { "stBet", "stScore", "stCoins", "stToday", "stTotal" })
+            foreach (string id in new[] { "stBet", "stToday", "stTotal" })
                 StringAssert.Contains(controlView, "id=\"" + id + "\"");
+            Assert.IsFalse(controlView.Contains("id=\"stScore\""));
+            Assert.IsFalse(controlView.Contains("id=\"stCoins\""));
+            StringAssert.Contains(controlView, "flex-wrap: nowrap");
             foreach (string header in new[] { "今日盈亏", "今日充值", "今日退币", "所属代理" })
                 StringAssert.Contains(memberView, header);
             Assert.IsFalse(playerDetailView.Contains("id=\"btnControl\""));
@@ -534,6 +537,61 @@ namespace UnitTestProj
             StringAssert.Contains(usersBll, "string.Equals(usr.SAFE_PWD, entity.SAFE_PWD)");
             StringAssert.Contains(usersBll, "string.Equals(usr.PWD, entity.PWD)");
             StringAssert.Contains(adminBll, "string.Equals(usr.PWD, entity.PWD)");
+        }
+
+        [TestMethod]
+        public void MobileFastPathAndEffectiveRechargeContractsRemainWired()
+        {
+            string playersScript = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.players.js");
+            string controlScript = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.control.js");
+            string rechargeScript = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.recharge.js");
+            string rechargeController = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\RechargeController.cs");
+            string rechargeView = ReadRepoFile(@"TTY.Web\Areas\Mobile\Views\Home\Recharge.cshtml");
+            string recordsView = ReadRepoFile(@"TTY.Web\Areas\Mobile\Views\Home\Records.cshtml");
+            string rechargeBll = ReadRepoFile(@"YYT.BLL\EF\B_ReChargeRecords.cs");
+            string rechargeBase = ReadRepoFile(@"YYT.BLL\EF\B_Recharge.cs");
+            string userController = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\UserInfoController.cs");
+            string controlBll = ReadRepoFile(@"YYT.BLL\EF\B_UserControl.cs");
+            string indexSql = ReadRepoFile(@"Docs\sql\性能索引.sql");
+
+            StringAssert.Contains(playersScript, "先完成基础首屏");
+            StringAssert.Contains(playersScript, "attachActiveControls");
+            StringAssert.Contains(controlScript, "MobileRequest: 1");
+            StringAssert.Contains(controlBll, "QueueTotalUcCommand");
+            StringAssert.Contains(controlBll, "已受理，处理中");
+            StringAssert.Contains(rechargeScript, "成功！已向");
+            StringAssert.Contains(rechargeScript, "金币。");
+            Assert.IsFalse(rechargeView.Contains("💎"));
+            Assert.IsFalse(recordsView.Contains("<th>备注</th>"));
+            StringAssert.Contains(rechargeBll, "c.Processed == 1");
+            StringAssert.Contains(userController, "visibleRows");
+            StringAssert.Contains(userController, "loginUser, false");
+            StringAssert.Contains(indexSql, "idx_rechargerecords_processed_time_game");
+            StringAssert.Contains(rechargeScript, "MobileRequest: 1");
+            StringAssert.Contains(rechargeBase, "QueueLockPlayer");
+            StringAssert.Contains(rechargeBase, "QueueUnlockPlayer");
+            StringAssert.Contains(rechargeController, "new B_ReChargeBase(rechargeUser, rechargeTarget, mobileRequest)");
+        }
+
+        [TestMethod]
+        public void MobileLevelNamesAndLogoutStayOnMobileLogin()
+        {
+            string phoneCore = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.core.js");
+            string legacyMobileCore = ReadRepoFile(@"TTY.Web\Scripts\app\mobile\mobile.core.js");
+            string loginController = ReadRepoFile(@"TTY.Web\Controllers\LoginController.cs");
+            string desktopView = ReadRepoFile(@"TTY.Web\Views\Mgr\Index.cshtml");
+
+            StringAssert.Contains(phoneCore, "if (p === 1) return '特级代理';");
+            StringAssert.Contains(phoneCore, "if (p > 1) return (p - 1) + '级代理';");
+            StringAssert.Contains(legacyMobileCore, "if (p === 1) return '特级代理';");
+            StringAssert.Contains(phoneCore, "/Login/LoginOut?view=mobile");
+            StringAssert.Contains(legacyMobileCore, "/Login/LoginOut?view=mobile");
+            StringAssert.Contains(loginController, "[WithoutLocalization]");
+            StringAssert.Contains(loginController, "Request.QueryString[\"view\"]");
+            StringAssert.Contains(loginController, "if (mobile)");
+            StringAssert.Contains(loginController, "RedirectToAction(\"Mobile\", \"Login\")");
+            StringAssert.Contains(loginController, "return View(\"Index\")");
+            StringAssert.Contains(desktopView, "Url.Action(\"LoginOut\",\"Login\")");
         }
     }
 }

@@ -50,6 +50,8 @@ CALL `__mth_add_mobile_index_20260902`('useroptlog', 'idx_useroptlog_rectime',
     'ADD INDEX `idx_useroptlog_rectime` (`REC_TIME`)');
 CALL `__mth_add_mobile_index_20260902`('rechargerecords', 'idx_rechargerecords_createtime',
     'ADD INDEX `idx_rechargerecords_createtime` (`CreateTime`)');
+CALL `__mth_add_mobile_index_20260902`('rechargerecords', 'idx_rechargerecords_processed_time_game',
+    'ADD INDEX `idx_rechargerecords_processed_time_game` (`Processed`, `CreateTime`, `GameID`)');
 CALL `__mth_add_mobile_index_20260902`('manageropt', 'idx_manageropt_time',
     'ADD INDEX `idx_manageropt_time` (`TIME`)');
 CALL `__mth_add_mobile_index_20260902`('tablecoinrecord', 'idx_tablecoinrecord_createtime',

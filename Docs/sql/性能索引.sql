@@ -38,6 +38,7 @@ CALL `__mth_add_index`('useroptlog', 'idx_useroptlog_rectime', 'ADD INDEX `idx_u
 CALL `__mth_add_index`('rechargerecords', 'idx_rechargerecords_createtime', 'ADD INDEX `idx_rechargerecords_createtime`(`CreateTime`)');
 CALL `__mth_add_index`('rechargerecords', 'idx_rechargerecords_gameid', 'ADD INDEX `idx_rechargerecords_gameid`(`GameID`)');
 CALL `__mth_add_index`('rechargerecords', 'idx_rechargerecords_agency', 'ADD INDEX `idx_rechargerecords_agency`(`Agency`)');
+CALL `__mth_add_index`('rechargerecords', 'idx_rechargerecords_processed_time_game', 'ADD INDEX `idx_rechargerecords_processed_time_game`(`Processed`,`CreateTime`,`GameID`)');
 
 -- agencyoptlog：按时间的 7 天清理；拉黑/解封记录(OPT=24/25)查询
 CALL `__mth_add_index`('agencyoptlog', 'idx_agencyoptlog_rectime', 'ADD INDEX `idx_agencyoptlog_rectime`(`REC_TIME`)');

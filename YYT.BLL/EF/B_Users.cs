@@ -471,7 +471,7 @@ namespace YYT.BLL.EF
             return list;
         }
 
-        public List<M_Users_DTO> GetUserRowsByIds(List<string> userIds, M_LoginUser loginUser)
+        public List<M_Users_DTO> GetUserRowsByIds(List<string> userIds, M_LoginUser loginUser, bool includeCurrentPlayInfo = true)
         {
             if (userIds == null || userIds.Count < 1 || loginUser == null)
                 return new List<M_Users_DTO>();
@@ -524,7 +524,8 @@ namespace YYT.BLL.EF
                 foreach (M_Users_DTO user in users)
                     user.Profit = user.COINS_BUY - user.COINS_BACK;
 
-                FillCurrentPlayInfo(ef, users);
+                if (includeCurrentPlayInfo)
+                    FillCurrentPlayInfo(ef, users);
                 FillTodayWinLoss(ef, users);
                 ApplySensitiveFieldPermissions(users, loginUser);
                 return users;
@@ -538,7 +539,7 @@ namespace YYT.BLL.EF
         /// user_daily_winloss(UserID,DAY) 索引），禁止把权限范围内全量玩家拉进内存再排序分页。
         /// </summary>
         /// <param name="sort">空/last-time 默认序；win-most 今日赢最多；loss-most 今日输最多；profit-desc 总盈亏降序；profit-asc 总盈亏升序</param>
-        private M_EasyuiGridData<M_Users_DTO> QueryUsersPaged(M_Page mPage, M_Users_DTO entity, M_LoginUser loginUser, bool onlyOffline, bool onlyFrozen, string sort, bool includeDescendants = false)
+        private M_EasyuiGridData<M_Users_DTO> QueryUsersPaged(M_Page mPage, M_Users_DTO entity, M_LoginUser loginUser, bool onlyOffline, bool onlyFrozen, string sort, bool includeDescendants = false, bool rollingFinancials = false)
         {
             M_EasyuiGridData<M_Users_DTO> list = new M_EasyuiGridData<M_Users_DTO>();
             using (var ef = new GameDbContext())
@@ -610,10 +611,14 @@ namespace YYT.BLL.EF
                         orderClause = " ORDER BY IFNULL(w.WINLOSS,0) ASC, r.UserID DESC";
                         break;
                     case "profit-desc":
-                        orderClause = " ORDER BY (IFNULL(c.COINS_BUY,0) - IFNULL(c.COINS_BACK,0)) DESC, r.UserID DESC";
+                        orderClause = rollingFinancials
+                            ? " ORDER BY (IFNULL(d.RollingBuy,0) - IFNULL(d.RollingBack,0)) DESC, r.UserID DESC"
+                            : " ORDER BY (IFNULL(c.COINS_BUY,0) - IFNULL(c.COINS_BACK,0)) DESC, r.UserID DESC";
                         break;
                     case "profit-asc":
-                        orderClause = " ORDER BY (IFNULL(c.COINS_BUY,0) - IFNULL(c.COINS_BACK,0)) ASC, r.UserID DESC";
+                        orderClause = rollingFinancials
+                            ? " ORDER BY (IFNULL(d.RollingBuy,0) - IFNULL(d.RollingBack,0)) ASC, r.UserID DESC"
+                            : " ORDER BY (IFNULL(c.COINS_BUY,0) - IFNULL(c.COINS_BACK,0)) ASC, r.UserID DESC";
                         break;
                     default:
                         // 默认按最后登录时间倒序（无记录的排最后）
@@ -630,17 +635,26 @@ namespace YYT.BLL.EF
                 // 最后登录时间取 UserOptLog 最新操作时间（UserID 存玩家账号）。
                 // ⚠️ whereSql 必须以 WHERE 落地：直接拼在 LEFT JOIN ON 后会把过滤/权限条件
                 // 变成 ON 条件，LEFT JOIN 不命中也保留左表行，等于过滤与代理权限全部失效。
+                int todayArg = args.Count;
                 args.Add(DateTime.Today);
-                string pageSql = "SELECT c.ID, c.NAME, c.AGENCY, c.FROZEN, c.COINS, c.COINS_BUY, c.COINS_BACK," +
+                int cutoffArg = args.Count;
+                args.Add(B_Records_MySQL.GetRetentionCutoff());
+                int nowArg = args.Count;
+                args.Add(DateTime.Now);
+                string buyColumn = rollingFinancials ? "IFNULL(d.RollingBuy,0)" : "c.COINS_BUY";
+                string backColumn = rollingFinancials ? "IFNULL(d.RollingBack,0)" : "c.COINS_BACK";
+                string pageSql = "SELECT c.ID, c.NAME, c.AGENCY, c.FROZEN, c.COINS, " + buyColumn + " AS COINS_BUY, " + backColumn + " AS COINS_BACK," +
                     " r.UserID, c.INHALL, c.GAME_SCORE, c.GRADE, c.SAFE_COINS," +
                     " IFNULL(w.WINLOSS,0) AS TodayWinLoss, IFNULL(d.TodayBuy,0) AS TodayBuy," +
                     " IFNULL(d.TodayBack,0) AS TodayBack, l.LastLoginTime" +
                     " FROM users c INNER JOIN userrelations r ON r.ID = c.ID" +
-                    " LEFT JOIN user_daily_winloss w ON w.UserID = c.ID AND w.DAY = {" + (args.Count - 1) + "}" +
+                    " LEFT JOIN user_daily_winloss w ON w.UserID = c.ID AND w.DAY = {" + todayArg + "}" +
                     " LEFT JOIN (SELECT GameID," +
-                    " SUM(CASE WHEN RechargeType IN (20,22) OR (RechargeType = 30 AND Processed = 1) THEN Coin ELSE 0 END) AS TodayBuy," +
-                    " SUM(CASE WHEN RechargeType IN (21,23) OR (RechargeType = 31 AND Processed = 1) THEN Coin ELSE 0 END) AS TodayBack" +
-                    " FROM rechargerecords WHERE CreateTime >= CURDATE() GROUP BY GameID) d ON d.GameID = c.ID" +
+                    " SUM(CASE WHEN CreateTime >= {" + todayArg + "} AND (RechargeType IN (20,22) OR (RechargeType = 30 AND Processed = 1)) THEN Coin ELSE 0 END) AS TodayBuy," +
+                    " SUM(CASE WHEN CreateTime >= {" + todayArg + "} AND (RechargeType IN (21,23) OR (RechargeType = 31 AND Processed = 1)) THEN Coin ELSE 0 END) AS TodayBack," +
+                    " SUM(CASE WHEN RechargeType IN (20,22,30) AND (RechargeType < 30 OR Processed = 1) THEN Coin ELSE 0 END) AS RollingBuy," +
+                    " SUM(CASE WHEN RechargeType IN (21,23,31) AND (RechargeType < 30 OR Processed = 1) THEN Coin ELSE 0 END) AS RollingBack" +
+                    " FROM rechargerecords WHERE CreateTime >= {" + cutoffArg + "} AND CreateTime <= {" + nowArg + "} AND Processed = 1 GROUP BY GameID) d ON d.GameID = c.ID" +
                     " LEFT JOIN (SELECT UserID, MAX(REC_TIME) AS LastLoginTime FROM `UserOptLog` GROUP BY UserID) l ON l.UserID = c.ID" +
                     " WHERE 1=1" + whereSql + orderClause +
                     " LIMIT " + (pageSize * (pageIndex - 1)) + ", " + pageSize;
@@ -698,7 +712,7 @@ namespace YYT.BLL.EF
         /// <summary>手机端：会员盈亏分页（今日输赢 + 总盈亏，支持排序）</summary>
         public M_EasyuiGridData<M_Users_DTO> GetMemberWinLossList(M_Page mPage, M_Users_DTO entity, M_LoginUser loginUser, string sort, bool includeDescendants = false)
         {
-            return QueryUsersPaged(mPage, entity, loginUser, false, false, sort ?? "win-most", includeDescendants);
+            return QueryUsersPaged(mPage, entity, loginUser, false, false, sort ?? "win-most", includeDescendants, true);
         }
 
         /// <summary>
@@ -737,9 +751,9 @@ namespace YYT.BLL.EF
 
         /// <summary>
         /// 手机端：会员盈亏统计卡聚合（权限范围内，可按代理模糊过滤）。
-        /// 总充值/总退钻 = users.COINS_BUY/COINS_BACK 权限范围合计；
-        /// 今日充值/今日退钻 = 当日充退流水合计（TypeFlag 口径与 GetUserPhoneDetail 一致）。
-        /// 总盈亏 = 总充值 - 总退钻、今日盈亏 = 今日充值 - 今日退钻 由调用端计算（与用户管理页总盈利同口径）。
+        /// 总充值/总退币 = 最近 7x24 小时内已生效充退流水合计；
+        /// 今日充值/今日退分 = 当日充退流水合计（TypeFlag 口径与 GetUserPhoneDetail 一致）。
+        /// 总盈亏 = 总充值 - 总退分、今日盈亏 = 今日充值 - 今日退分 由调用端计算（与用户管理页总盈利同口径）。
         /// </summary>
         public M_MemberWinLossStats GetMemberWinLossStats(M_LoginUser loginUser, string agency, bool includeDescendants = false)
         {
@@ -775,9 +789,19 @@ namespace YYT.BLL.EF
                     scope.Append(")");
                 }
 
+                DateTime cutoff = B_Records_MySQL.GetRetentionCutoff();
+                DateTime now = DateTime.Now;
+                int cutoffIndex = args.Count;
+                args.Add(cutoff);
+                int nowIndex = args.Count;
+                args.Add(now);
                 M_MemberWinLossStats stats = ef.Database.SqlQuery<M_MemberWinLossStats>(
-                    "SELECT IFNULL(SUM(c.COINS_BUY),0) AS TotalBuy, IFNULL(SUM(c.COINS_BACK),0) AS TotalBack" +
-                    " FROM users c INNER JOIN userrelations r ON r.ID = c.ID WHERE 1=1" + scope,
+                    "SELECT IFNULL(SUM(CASE WHEN x.RechargeType IN (20,22,30) THEN x.Coin ELSE 0 END),0) AS TotalBuy," +
+                    " IFNULL(SUM(CASE WHEN x.RechargeType IN (21,23,31) THEN x.Coin ELSE 0 END),0) AS TotalBack" +
+                    " FROM rechargerecords x INNER JOIN users c ON c.ID = x.GameID" +
+                    " INNER JOIN userrelations r ON r.ID = c.ID" +
+                    " WHERE x.CreateTime >= {" + cutoffIndex + "} AND x.CreateTime <= {" + nowIndex + "}" +
+                    " AND x.Processed = 1" + scope,
                     args.ToArray()).FirstOrDefault();
                 if (stats == null)
                     stats = new M_MemberWinLossStats();
@@ -788,7 +812,7 @@ namespace YYT.BLL.EF
                     " IFNULL(SUM(CASE WHEN r.RechargeType IN (21,23) OR (r.RechargeType = 31 AND r.Processed = 1) THEN r.Coin ELSE 0 END),0) AS TodayBack" +
                     " FROM rechargerecords r INNER JOIN users c ON c.ID = r.GameID" +
                     " INNER JOIN userrelations rr ON rr.ID = c.ID" +
-                    " WHERE r.CreateTime >= {" + (args.Count - 1) + "}" + scope,
+                    " WHERE r.CreateTime >= {" + (args.Count - 1) + "} AND r.CreateTime <= {" + nowIndex + "} AND r.Processed = 1" + scope,
                     args.ToArray()).FirstOrDefault();
                 if (today != null)
                 {
@@ -819,9 +843,9 @@ namespace YYT.BLL.EF
                     " IFNULL(w.WINLOSS,0) AS TodayWinLoss," +
                     " l.LastLoginTime," +
                     " (SELECT IFNULL(SUM(CASE WHEN r.RechargeType IN (20,22) OR (r.RechargeType = 30 AND r.Processed = 1) THEN r.Coin ELSE 0 END),0)" +
-                    "   FROM rechargerecords r WHERE r.GameID = c.ID AND r.CreateTime >= CURDATE()) AS TodayBuy," +
+                    "   FROM rechargerecords r WHERE r.GameID = c.ID AND r.CreateTime >= CURDATE() AND r.Processed = 1) AS TodayBuy," +
                     " (SELECT IFNULL(SUM(CASE WHEN r.RechargeType IN (21,23) OR (r.RechargeType = 31 AND r.Processed = 1) THEN r.Coin ELSE 0 END),0)" +
-                    "   FROM rechargerecords r WHERE r.GameID = c.ID AND r.CreateTime >= CURDATE()) AS TodayBack," +
+                    "   FROM rechargerecords r WHERE r.GameID = c.ID AND r.CreateTime >= CURDATE() AND r.Processed = 1) AS TodayBack," +
                     " (SELECT ic.InviteCode FROM invite_codes ic WHERE ic.UsedBy = c.ID AND ic.IsUsed = 1 ORDER BY ic.ID DESC LIMIT 1) AS InviteCode" +
                     " FROM users c" +
                     " LEFT JOIN user_daily_winloss w ON w.UserID = c.ID AND w.DAY = {0}" +

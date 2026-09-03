@@ -87,12 +87,12 @@
         var twColor = today > 0 ? 'positive' : (today < 0 ? 'negative' : '');
         var ttColor = total > 0 ? 'positive' : (total < 0 ? 'negative' : '');
 
-        var blackBadge = (p.FROZEN === 1) ? '<span class="black-listed">拉黑中</span>' : '';
+        var blackBadge = (Number(p.FROZEN) === 1) ? '<span class="black-listed">冻结中</span>' : '';
         var loginRow = p.LastLoginTime
             ? '<div class="info-row login-time-row"><div class="info-item">' + M.ICONS.clock +
                 '<span class="info-label">最后登录</span><span class="info-value">' + M.fmtTime(p.LastLoginTime) + '</span></div></div>'
             : '';
-        var controls = isOnline && p.ActiveControls ? p.ActiveControls : [];
+        var controls = p.ActiveControls || [];
         var controlRow = controls.length
             ? '<div class="active-control-status">' + controls.map(function (text) {
                 return '<div class="active-control-status-item">' + M.esc(text) + '</div>';
@@ -128,6 +128,28 @@
 
     /* ---------------- 在线玩家 ---------------- */
 
+    function attachActiveControls(players) {
+        players = players || [];
+        var ids = players.map(function (p) { return p.ID; }).filter(function (id, index, list) {
+            return id && list.indexOf(id) === index;
+        });
+        if (!ids.length) {
+            players.forEach(function (p) { p.ActiveControls = []; });
+            return $.Deferred().resolve([]).promise();
+        }
+        return M.post('/Game/UserInfo/GetActiveTotalControls', {
+            UserIDs: JSON.stringify(ids)
+        }).then(function (res) {
+            var controls = res && res.code === 1 ? (res.datas || []) : [];
+            var controlMap = groupActiveControls(controls);
+            players.forEach(function (p) { p.ActiveControls = controlMap[p.ID] || []; });
+            return controls;
+        }, function () {
+            players.forEach(function (p) { p.ActiveControls = []; });
+            return [];
+        });
+    }
+
     function loadOnline() {
         return M.post('/Game/UserInfo/GetOnlineUsers', {}, { timeoutMs: 12000 })
             .then(function (res) {
@@ -135,25 +157,6 @@
             }, function () {
                 // 游戏服不可达 / 超时：按空列表处理
                 onlinePlayers = [];
-            })
-            .then(function () {
-                var ids = onlinePlayers.map(function (p) { return p.ID; }).filter(function (id, index, list) {
-                    return id && list.indexOf(id) === index;
-                });
-                if (!ids.length) return [];
-                return M.post('/Game/UserInfo/GetActiveTotalControls', {
-                    UserIDs: JSON.stringify(ids)
-                }).then(function (res) {
-                    return res && res.code === 1 ? (res.datas || []) : [];
-                }, function () {
-                    return [];
-                });
-            })
-            .then(function (controls) {
-                var controlMap = groupActiveControls(controls);
-                onlinePlayers.forEach(function (p) {
-                    p.ActiveControls = controlMap[p.ID] || [];
-                });
             })
             .then(function () {
                 onlineTotalWinLoss = onlinePlayers.reduce(function (sum, p) {
@@ -168,6 +171,11 @@
                     $sec.html(html);
                 }
                 $('#onlinePlayerCount').text(onlinePlayers.length);
+                // 先完成基础首屏，再异步补齐控制状态，避免次要接口阻塞玩家列表展示。
+                return attachActiveControls(onlinePlayers).then(function () {
+                    if (!onlinePlayers.length) return;
+                    $sec.html(onlinePlayers.map(function (p) { return playerCardHTML(p, true); }).join(''));
+                });
             });
     }
 
@@ -198,6 +206,13 @@
             var noMore = loaded >= offlineTotal;
             $('#loadMoreBtn').toggleClass('disabled', noMore).prop('disabled', noMore);
             $('#noMoreData').toggle(noMore && offlineTotal > 0);
+
+            // 首屏先展示基础资料，控制状态随后回填；后续分页保持当前滚动内容不被重排。
+            return attachActiveControls(rows).then(function () {
+                if (!append && rows.length) {
+                    $sec.html(rows.map(function (p) { return playerCardHTML(p, false); }).join(''));
+                }
+            });
         });
     }
 
@@ -275,12 +290,17 @@
             return;
         }
         $box.html('<div class="no-data" style="padding:20px 0;">搜索中...</div>');
-        M.post('/Game/UserInfo/GetUsers', { srch_ID: kw, srch_NAME: '', srch_Agency: '', page: 1, rows: 20 })
-            .then(function (byId) {
-                var rows = (byId && byId.rows) ? byId.rows : [];
-                if (rows.length) return rows;
-                return M.post('/Game/UserInfo/GetUsers', { srch_ID: '', srch_NAME: kw, srch_Agency: '', page: 1, rows: 20 })
-                    .then(function (byName) { return (byName && byName.rows) ? byName.rows : []; });
+        var byId = M.post('/Game/UserInfo/GetUsers', { srch_ID: kw, srch_NAME: '', srch_Agency: '', page: 1, rows: 20 })
+            .then(function (res) { return (res && res.rows) ? res.rows : []; }, function () { return []; });
+        var byName = M.post('/Game/UserInfo/GetUsers', { srch_ID: '', srch_NAME: kw, srch_Agency: '', page: 1, rows: 20 })
+            .then(function (res) { return (res && res.rows) ? res.rows : []; }, function () { return []; });
+        $.when(byId, byName).then(function (idRows, nameRows) {
+                var rows = [];
+                (idRows || []).concat(nameRows || []).forEach(function (row) {
+                    if (!row || !row.ID || rows.some(function (item) { return item.ID === row.ID; })) return;
+                    rows.push(row);
+                });
+                return rows;
             })
             .then(function (rows) {
                 if (!rows.length) {

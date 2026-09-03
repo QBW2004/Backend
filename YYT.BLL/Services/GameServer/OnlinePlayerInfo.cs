@@ -17,6 +17,10 @@ namespace YYT.BLL.Services.GameServer
         [JsonProperty("AGENCY")]
         public string AGENCY { get; set; }
 
+        /// <summary>账号冻结状态：0 正常，1 冻结。</summary>
+        [JsonProperty("FROZEN")]
+        public int FROZEN { get; set; }
+
         [JsonProperty("UserID")]
         public int UserID { get; set; }
 

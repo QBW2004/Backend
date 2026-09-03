@@ -15,6 +15,7 @@
     'use strict';
 
     var current = null; // 当前查询的玩家
+    var submitting = false;
 
     /* ---------------- 控牌参数（移植电脑端 UserInfo/Index.cshtml） ---------------- */
 
@@ -205,8 +206,6 @@
     function renderPlayer(row) {
         var online = row.INHALL === true;
         $('#stBet').text(M.gold(row.CurrentBetCoins || 0)).removeClass('positive negative');
-        $('#stScore').text(M.num(row.GAME_SCORE || 0)).removeClass('positive negative');
-        $('#stCoins').text(M.gold(row.COINS)).removeClass('positive negative');
         var today = Number(row.TodayWinLoss || 0);
         $('#stToday').text((today > 0 ? '+' : '') + M.gold(today))
             .toggleClass('positive', today > 0).toggleClass('negative', today < 0);
@@ -307,14 +306,23 @@
 
         M.confirm(desc, '控制确认').then(function (ok) {
             if (!ok) return;
+            if (submitting) return;
+            submitting = true;
+            $('#applyBtn, #closeCtrlBtn').prop('disabled', true);
             M.loading('下发中...');
+            M.toast('已受理，处理中...', 'info', 1600);
             M.post('/Game/UserInfo/ApplyTotalControl', para).always(M.hideLoading).then(function (res) {
                 var r = M.result(res);
-                M.alert(r.ok ? '操作成功' : r.text, r.ok, r.ok ? '操作成功' : '操作失败').then(function () {
+                M.alert(r.ok ? (r.text || '已受理，处理中') : r.text, r.ok, r.ok ? '操作成功' : '操作失败').then(function () {
                     if (r.ok) {
                         refreshCtrlStatus();
                     }
                 });
+            }, function () {
+                M.toast('操作失败，请稍后重试', 'error');
+            }).always(function () {
+                submitting = false;
+                $('#applyBtn, #closeCtrlBtn').prop('disabled', false);
             });
         });
     }
@@ -324,14 +332,23 @@
         var mode = currentMode();
         M.confirm('确认移除该玩家的' + modeName(mode) + '？', '移除控制').then(function (ok) {
             if (!ok) return;
+            if (submitting) return;
+            submitting = true;
+            $('#applyBtn, #closeCtrlBtn').prop('disabled', true);
             M.loading('处理中...');
-            M.post('/Game/UserInfo/CloseTotalControl', { ID: current.ID, Mode: mode }).always(M.hideLoading).then(function (res) {
+            M.toast('已受理，处理中...', 'info', 1600);
+            M.post('/Game/UserInfo/CloseTotalControl', { ID: current.ID, Mode: mode, MobileRequest: 1 }).always(M.hideLoading).then(function (res) {
                 var r = M.result(res);
-                M.alert(r.ok ? '移除成功' : r.text, r.ok, r.ok ? '移除成功' : '操作失败').then(function () {
+                M.alert(r.ok ? (r.text || '已受理，处理中') : r.text, r.ok, r.ok ? '移除成功' : '操作失败').then(function () {
                     if (r.ok) {
                         refreshCtrlStatus();
                     }
                 });
+            }, function () {
+                M.toast('操作失败，请稍后重试', 'error');
+            }).always(function () {
+                submitting = false;
+                $('#applyBtn, #closeCtrlBtn').prop('disabled', false);
             });
         });
     }

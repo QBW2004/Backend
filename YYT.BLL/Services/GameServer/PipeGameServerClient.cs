@@ -162,6 +162,30 @@ namespace YYT.BLL.Services.GameServer
             }
         }
 
+        public Msg QueueUserControl(params object[] args)
+        {
+            M_GameCommandOutbox command = commandOutbox.Create("UC", GetLastArgAsTarget(args), new { Args = args });
+            if (command == null)
+                return new Msg(0, "指令排队失败！");
+
+            return new Msg(1, "已受理，处理中！")
+            {
+                datas = new { CommandId = command.CommandId }
+            };
+        }
+
+        public Msg QueueLockPlayer(string userAccount)
+        {
+            M_GameCommandOutbox command = commandOutbox.Create("LK", userAccount, new { UserAccount = userAccount });
+            if (command == null)
+                return new Msg(0, "指令排队失败！");
+
+            return new Msg(1, "已受理，处理中！")
+            {
+                datas = new { CommandId = command.CommandId }
+            };
+        }
+
         public Msg LockPlayer(string userAccount)
         {
             M_GameCommandOutbox command = commandOutbox.Create("LK", userAccount, new { UserAccount = userAccount });
@@ -200,6 +224,24 @@ namespace YYT.BLL.Services.GameServer
                 commandOutbox.MarkFailed(command?.CommandId, null, ex.Message);
                 throw;
             }
+        }
+
+        public Msg QueueUnlockPlayer(int rechargeType, int result, long? coins, string userAccount)
+        {
+            M_GameCommandOutbox command = commandOutbox.Create("UL", userAccount, new
+            {
+                RechargeType = rechargeType,
+                Result = result,
+                Coins = coins,
+                UserAccount = userAccount
+            });
+            if (command == null)
+                return new Msg(0, "指令排队失败！");
+
+            return new Msg(1, "已受理，处理中！")
+            {
+                datas = new { CommandId = command.CommandId }
+            };
         }
 
         private static bool IsTransportFailure(string raw)

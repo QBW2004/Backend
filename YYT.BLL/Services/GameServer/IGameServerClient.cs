@@ -12,7 +12,10 @@ namespace YYT.BLL.Services.GameServer
         PlayerRuntimeState QueryPlayerRuntimeState(string userAccount);
         List<OnlinePlayerInfo> QueryAllOnlinePlayers();
         Msg SetUserControl(params object[] args);
+        Msg QueueUserControl(params object[] args);
         Msg LockPlayer(string userAccount);
+        Msg QueueLockPlayer(string userAccount);
         string UnlockPlayer(int rechargeType, int result, long? coins, string userAccount);
+        Msg QueueUnlockPlayer(int rechargeType, int result, long? coins, string userAccount);
     }
 }
