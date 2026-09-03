@@ -135,19 +135,28 @@ namespace UnitTestProj
         public void AgencyCreationDefaultsEnableRequestedOperationalPermissionsOnly()
         {
             string controller = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\AgencyInfoController.cs");
+            string adminBll = ReadRepoFile(@"YYT.BLL\EF\B_Admin.cs");
 
-            StringAssert.Contains(controller, "entity.IsFrozen = form.Q<int>(\"IsFrozen\", 1);");
-            StringAssert.Contains(controller, "entity.IsKicking = form.Q<int>(\"IsKicking\", 1);");
-            StringAssert.Contains(controller, "entity.IsUpDown = form.Q<int>(\"IsUpDown\", 1);");
-            StringAssert.Contains(controller, "entity.KickScope = form.Q<int>(\"KickScope\", 2);");
-            StringAssert.Contains(controller, "entity.ManageScope = form.Q<int>(\"ManageScope\", 2);");
-            StringAssert.Contains(controller, "entity.IsProbability = form.Q<int>(\"IsProbability\", 0);");
-            StringAssert.Contains(controller, "entity.IsRelease = form.Q<int>(\"IsRelease\", 0);");
-            StringAssert.Contains(controller, "entity.IsKill = form.Q<int>(\"IsKill\", 0);");
-            StringAssert.Contains(controller, "entity.IsViewSafePwd = form.Q<int>(\"IsViewSafePwd\", 0);");
-            StringAssert.Contains(controller, "entity.IsDeleteAgent = form.Q<int>(\"IsDeleteAgent\", 0);");
-            StringAssert.Contains(controller, "entity.IsViewAgentPwd = form.Q<int>(\"IsViewAgentPwd\", 0);");
-            StringAssert.Contains(controller, "entity.IsModifyAgentPwd = form.Q<int>(\"IsModifyAgentPwd\", 0);");
+            StringAssert.Contains(adminBll, "ApplyNewAgencyDefaultPermissions(entity);");
+            StringAssert.Contains(adminBll, "entity.IsFrozen = 1;");
+            StringAssert.Contains(adminBll, "entity.IsKill = 1;");
+            StringAssert.Contains(adminBll, "entity.IsUpDown = 1;");
+            StringAssert.Contains(adminBll, "entity.IsKicking = 1;");
+            StringAssert.Contains(adminBll, "entity.ManageScope = 2;");
+            StringAssert.Contains(adminBll, "entity.KickScope = entity.ManageScope;");
+
+            foreach (string permission in new[]
+            {
+                "IsProbability", "IsRelease", "IsDelete", "IsGift", "IsCreateAgent",
+                "IsViewPwd", "IsModifyPwd", "IsResetSafePwd", "IsViewSafePwd",
+                "IsModifySafePwd", "IsDeleteAgent", "IsViewAgentPwd", "IsModifyAgentPwd"
+            })
+            {
+                StringAssert.Contains(adminBll, "entity." + permission + " = 0;");
+            }
+
+            Assert.IsFalse(controller.Contains("form.Q<int>(\"IsFrozen\""));
+            Assert.IsFalse(controller.Contains("entity.IsCreateAgent = entity.IsCreateAgent ?? 1"));
         }
 
         [TestMethod]
