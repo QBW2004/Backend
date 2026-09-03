@@ -664,7 +664,9 @@
     }
 
     // 水果拉霸大转盘 24 面板位：名称按服务端 WheelSurface 映射，v=客户端/服务端写死的倍率(WheelRat，不可改)；
-    // 后台只配「指向概率」：转盘停在该面板位的概率(万分比)，全为 0 或新建桌台时自动使用内置默认 90% 面板表
+    // 后台只配「指向概率」：转盘停在该面板位的概率(万分比)，全为 0 或新建桌台时自动使用内置默认 90% 面板表。
+    // 面板位 9/21 为两个不同送灯位，可分别配置：9→送免费局 1~3 次、21→送免费局 3~6 次（服务端口径，见
+    // ServerHandler.cpp freeLight 分支与《09-水果拉霸玩法规则与倍率表》§4）。
     var GC_LABA_WHEEL_META = [
         { i: 0,  n: '橘子·大', v: 10 },
         { i: 1,  n: '铃铛·大', v: 20 },
@@ -675,7 +677,7 @@
         { i: 6,  n: '柠檬·大', v: 15 },
         { i: 7,  n: '西瓜·大', v: 20 },
         { i: 8,  n: '西瓜·小', v: 3 },
-        { i: 9,  n: '送灯位(免费局)', v: 0 },
+        { i: 9,  n: '送灯·免费局 1~3 次', v: 0 },
         { i: 10, n: '苹果', v: 5 },
         { i: 11, n: '橘子·小', v: 3 },
         { i: 12, n: '橘子·大', v: 10 },
@@ -687,7 +689,7 @@
         { i: 18, n: '柠檬·大', v: 15 },
         { i: 19, n: '星星·小', v: 3 },
         { i: 20, n: '星星·大', v: 30 },
-        { i: 21, n: '送灯位(免费局)', v: 0 },
+        { i: 21, n: '送灯·免费局 3~6 次', v: 0 },
         { i: 22, n: '苹果', v: 5 },
         { i: 23, n: '铃铛·小', v: 3 }
     ];
@@ -792,17 +794,52 @@
         return perWan.toFixed(2);
     }
 
+    // 结果类表"不中奖（余量）"计算（类似牌机的杂牌行）：
+    // 服务端按各结果类出现机会做权重抽样，未命中任何奖励的余量即为"不中奖"，
+    // 故 不中奖 ≈ 10000 − Σ出现机会。留空行使用服务端内置默认出现率(p÷100)参与估算
+    // （占位符即该值）；结果>10000 属合法相对权重（服务端按目标 RTP 整体缩放），仅红字提示不拦截。
+    function gcUpdateNoWinRow(sel, $cell) {
+        var sum = 0;
+        $(sel).each(function () {
+            var v = parseFloat($(this).val());
+            if (isNaN(v) || v <= 0) v = parseFloat($(this).attr('placeholder')) || 0;
+            sum += v;
+        });
+        var remain = Math.round(10000 - sum);
+        $cell.text(remain >= 0 ? remain : '奖励合计 ' + Math.round(sum) + ' 已超 10000（相对权重合法）');
+        $cell.css('color', remain < 0 ? '#d33b3b' : (remain < 1000 ? '#c98f2b' : '#2e9e5b'));
+        return sum;
+    }
+
+    // 刷新两张结果类表的"不中奖（余量）"行（清空/重置等不触发 input 事件时调用）
+    function gcRefreshNoWinRows() {
+        if ($('#gcMx97NoWinRate').length) gcUpdateNoWinRow('#gcMx97ComboTable .gc-combo-rate', $('#gcMx97NoWinRate'));
+        if ($('#gcShzNoWinRate').length) gcUpdateNoWinRow('#gcShzComboTable .gc-shz-rate', $('#gcShzNoWinRate'));
+    }
+
     function gcBuildMx97ComboTable() {
         var $tb = $('#gcMx97ComboTable tbody');
         $tb.empty();
+        // 首行"不中奖（余量）"（类似牌机杂牌）：出现机会由 10000−Σ奖励 实时算出，只读不可填。
+        // 服务端按奖励出现机会权重抽样，未命中即不中奖，此行使整表"每 10000 次"口径完整。
+        $tb.append('<tr>' +
+            '<td style="padding:6px 8px;border:1px solid #e5e9f0;font-size:13px;color:#8a94a1;">不中奖（余量）</td>' +
+            '<td style="padding:6px 8px;border:1px solid #e5e9f0;font-size:12px;color:#8a94a1;text-align:center;">—</td>' +
+            '<td style="padding:6px 8px;border:1px solid #e5e9f0;text-align:center;color:#2e9e5b;font-size:13px;" id="gcMx97NoWinRate">—</td>' +
+            '<td style="padding:6px 8px;border:1px solid #e5e9f0;font-size:12px;color:#8a94a1;text-align:center;">—</td>' +
+            '</tr>');
         $.each(GC_MX97_COMBO_META, function (idx, r) {
             $tb.append('<tr>' +
                 '<td style="padding:6px 8px;border:1px solid #e5e9f0;font-size:13px;color:#36404a;">' + r.n + '</td>' +
                 '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="number" name="Combo' + r.code + '" id="gcMxCombo' + r.code + '" class="gc-input gc-mx97" min="1" step="1" placeholder="' + r.v + '（默认）" /></td>' +
-                '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="number" name="ComboProb' + r.code + '" id="gcMxComboProb' + r.code + '" class="gc-input gc-mx97" min="1" max="10000" step="1" placeholder="' + gcDefRateText(r.p) + '（默认）" /></td>' +
+                '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="number" name="ComboProb' + r.code + '" id="gcMxComboProb' + r.code + '" class="gc-input gc-mx97 gc-combo-rate" min="1" max="10000" step="1" placeholder="' + gcDefRateText(r.p) + '（默认）" /></td>' +
                 '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="number" name="ComboStock' + r.code + '" id="gcMxComboStock' + r.code + '" class="gc-input gc-mx97" min="0" step="1" placeholder="不限" /></td>' +
                 '</tr>');
         });
+        $tb.find('.gc-combo-rate').on('input', function () {
+            gcUpdateNoWinRow('#gcMx97ComboTable .gc-combo-rate', $('#gcMx97NoWinRate'));
+        });
+        gcUpdateNoWinRow('#gcMx97ComboTable .gc-combo-rate', $('#gcMx97NoWinRate'));
     }
 
     // 明星97 RTP/Combo 回显：配置项不存在(null)时留空=用默认/不下发
@@ -826,12 +863,21 @@
             var stock = t['comboStock' + r.code];
             if (stock !== undefined && stock !== null) $('#gcMxComboStock' + r.code).val(stock);
         });
+        gcUpdateNoWinRow('#gcMx97ComboTable .gc-combo-rate', $('#gcMx97NoWinRate'));
     }
 
     // 水浒传 结果类表构建：只读倍率 v + 出现率 ShzRate{code} + 板级库存 ShzStock{code}
     function gcBuildShzComboTable() {
         var $tb = $('#gcShzComboTable tbody');
         $tb.empty();
+        // 首行"不中奖（余量）"（类似牌机杂牌）：出现机会由 10000−Σ奖励 实时算出，只读不可填。
+        // 服务端按奖励出现机会权重抽样，未命中即不中奖，此行使整表"每 10000 次"口径完整。
+        $tb.append('<tr>' +
+            '<td style="padding:6px 8px;border:1px solid #e5e9f0;font-size:13px;color:#8a94a1;">不中奖（余量）</td>' +
+            '<td style="padding:6px 8px;border:1px solid #e5e9f0;font-size:12px;color:#8a94a1;text-align:center;">—</td>' +
+            '<td style="padding:6px 8px;border:1px solid #e5e9f0;text-align:center;color:#2e9e5b;font-size:13px;" id="gcShzNoWinRate">—</td>' +
+            '<td style="padding:6px 8px;border:1px solid #e5e9f0;font-size:12px;color:#8a94a1;text-align:center;">—</td>' +
+            '</tr>');
         $.each(GC_SHZ_COMBO_META, function (idx, r) {
             var stockCell = r.board
                 ? '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="number" name="ShzStock' + r.code + '" id="gcShzStock' + r.code + '" class="gc-input gc-shz" min="0" step="1" placeholder="不限" /></td>'
@@ -839,10 +885,14 @@
             $tb.append('<tr>' +
                 '<td style="padding:6px 8px;border:1px solid #e5e9f0;font-size:13px;color:#36404a;">' + r.n + '</td>' +
                 '<td style="padding:6px 8px;border:1px solid #e5e9f0;font-size:13px;color:#8a94a1;text-align:center;">' + r.v + '</td>' +
-                '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="number" name="ShzRate' + r.code + '" id="gcShzRate' + r.code + '" class="gc-input gc-shz" min="1" max="10000" step="1" placeholder="' + gcDefRateText(r.p) + '（默认）" /></td>' +
+                '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="number" name="ShzRate' + r.code + '" id="gcShzRate' + r.code + '" class="gc-input gc-shz gc-shz-rate" min="1" max="10000" step="1" placeholder="' + gcDefRateText(r.p) + '（默认）" /></td>' +
                 stockCell +
                 '</tr>');
         });
+        $tb.find('.gc-shz-rate').on('input', function () {
+            gcUpdateNoWinRow('#gcShzComboTable .gc-shz-rate', $('#gcShzNoWinRate'));
+        });
+        gcUpdateNoWinRow('#gcShzComboTable .gc-shz-rate', $('#gcShzNoWinRate'));
     }
 
     // 水浒传 RTP/结果类回显：配置项不存在(null)时留空=用默认/不下发
@@ -866,6 +916,7 @@
                 if (stock !== undefined && stock !== null) $('#gcShzStock' + r.code).val(stock);
             }
         });
+        gcUpdateNoWinRow('#gcShzComboTable .gc-shz-rate', $('#gcShzNoWinRate'));
     }
 
     // 水果拉霸 RTP 回显：配置项不存在(null)时留空=用默认/不下发
@@ -902,6 +953,7 @@
 
     // 水果拉霸按图标归类（去掉"面板N ·"前缀，每类一行展示；同类内大在上小在下，按倍率低→高排序）：
     // v=该类固定倍率，panels=该类占用的面板位；类值=该类各面板位合计，保存时均分到各面板位（后端仍是 24 面板位契约）
+    // 面板位 9/21 两个送灯位拆开为独立两行，可分别设置（9→1~3 次免费局 / 21→3~6 次免费局），不再均分绑定。
     var LABA_FRUIT_CATS = [
         { n: '苹果',          v: 5,   panels: [4, 10, 16, 22] },
         { n: '苹果·小',       v: 3,   panels: [5] },
@@ -919,7 +971,8 @@
         { n: '双7·小',        v: 3,   panels: [14] },
         { n: 'BAR·大',        v: 120, panels: [3] },
         { n: 'BAR·小',        v: 50,  panels: [2] },
-        { n: '送灯位(免费局)', v: 0,   panels: [9, 21] }
+        { n: '送灯位·免费局 1~3 次', v: 0, panels: [9] },
+        { n: '送灯位·免费局 3~6 次', v: 0, panels: [21] }
     ];
     function fruitRtpPreview() {
         var c = [0, 0, 0, 0, 0, 0, 0, 0], sum = 0, p9 = 0, p21 = 0;
@@ -1022,7 +1075,7 @@
             sum += parseFloat($('#gcLabaWpCat' + i).val()) || 0;
         });
         var $el = $('#gcLabaPayoutSum');
-        $el.text('结果出现机会合计：' + sum + ' / 10000（全部为 0 时保存会自动使用系统默认 90% 面板表；送灯位(免费局)表示免费局）');
+        $el.text('结果出现机会合计：' + sum + ' / 10000（全部为 0 时保存会自动使用系统默认 90% 面板表；两个送灯位可分别设置，送灯位=中奖后赠送免费局，9 送 1~3 次、21 送 3~6 次）');
         $el.css('color', sum > 10000 ? '#d33b3b' : '#9aa4b1');
     }
 
@@ -1102,12 +1155,12 @@
                 $('#gcShzComboTable').hide();
                 $('#gcMx97ComboTable').show();
                 if ($('#gcMx97ComboTable tbody tr').length === 0) gcBuildMx97ComboTable();
-                $('#gcRtpComboHint').text('奖励倍数和出现机会留空=使用系统默认；每天最多出现次数留空=不限、0=当天不出现（每天 0 点重置）。出现机会只决定各奖励之间的相对比例，总体返还水平仍由上方目标长期返还比例控制；全盘七（348）按全盘七 9 个（329）结算，无需单独配置。');
+                $('#gcRtpComboHint').text('奖励倍数和出现机会留空=使用系统默认；每天最多出现次数留空=不限、0=当天不出现（每天 0 点重置）。表中"不中奖（余量）"行实时显示 10000−奖励合计（留空行按内置默认出现率估算）：服务端按出现机会做权重抽样、未命中奖励即按此比例不中奖（类似牌机杂牌的余量语义）。出现机会只决定各奖励之间的相对比例，总体返还水平仍由上方目标长期返还比例控制；全盘七（348）按全盘七 9 个（329）结算，无需单独配置。');
             } else {
                 $('#gcMx97ComboTable').hide();
                 $('#gcShzComboTable').show();
                 if ($('#gcShzComboTable tbody tr').length === 0) gcBuildShzComboTable();
-                $('#gcRtpComboHint').text('奖励倍数由程序固定，不能调整；只需设置结果出现机会。每天最多出现次数仅对整盘/混合大奖（440-451）生效，留空=不限、0=当天不出现（每天 0 点重置）。出现机会决定各奖励的相对比例，总体返还水平仍由目标长期返还比例控制；纯万能线（430-432）出现机会很低是正常现象。');
+                $('#gcRtpComboHint').text('奖励倍数由程序固定，不能调整；只需设置结果出现机会。每天最多出现次数仅对整盘/混合大奖（440-451）生效，留空=不限、0=当天不出现（每天 0 点重置）。表中"不中奖（余量）"行实时显示 10000−奖励合计（留空行按内置默认出现率估算）：服务端按出现机会做权重抽样、未命中奖励即按此比例不中奖（类似牌机杂牌的余量语义）。出现机会决定各奖励的相对比例，总体返还水平仍由目标长期返还比例控制；纯万能线（430-432）出现机会很低是正常现象。');
             }
         }
         $('#gcRtpBox input, #gcRtpBox select').prop('disabled', !isRtpGame);
@@ -1284,6 +1337,7 @@
         gcBuildPayoutTable();
         gcSyncJoker();
         gcSyncSwitch();
+        gcRefreshNoWinRows();
     }
 
     // 水果拉霸：把转盘权重恢复为内置默认 90% 面板表（8 区高度均衡，理论 RTP≈90%）
@@ -1345,6 +1399,7 @@
             $('#gcRtpWindow').val(GC_SHZ_RTP_DEFAULT.window);
         }
         // 回填后展开高级区，让用户直接看到默认值
+        gcRefreshNoWinRows();
         gcToggleAdv(true);
     }
 
