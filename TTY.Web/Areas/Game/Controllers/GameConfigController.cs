@@ -1798,7 +1798,9 @@ namespace YYT.Web.Areas.Game.Controllers
                 toWrite.Add(new M_GameConfigLaba { GameId = gameId, OptKey = key, OptValue = v, Type = "RTP" });
             }
 
-            // 组合结果配置（300-359）：Combo<code> 赔率>0 / ComboProb<code> 出现率1-10000 / ComboStock<code> 库存≥0
+            // 组合结果配置（300-359）：Combo<code> 赔率>0 / ComboProb<code> 出现率0-10000(0=不出现) / ComboStock<code> 库存≥0
+            // 绝对语义：出现率合计不得超过 10000（每 10000 次最多出现 10000 次）
+            int probSum = 0;
             for (int code = 300; code <= 359; code++)
             {
                 int pay = form.Q<int>("Combo" + code, -1);
@@ -1812,16 +1814,25 @@ namespace YYT.Web.Areas.Game.Controllers
                     msg.content = "结果类 " + code + " 赔率必须大于 0（留空表示用内置默认赔率）！";
                     return msg;
                 }
-                if (prob > 0 && prob <= 10000)
+                if (prob >= 0 && prob <= 10000)   // 0=该牌型不出现（合法显式值）
+                {
                     toWrite.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "ComboProb" + code, OptValue = prob, Type = "Combo" });
+                    probSum += prob;
+                }
                 else if (prob != -1)
                 {
                     msg.code = 0;
-                    msg.content = "结果类 " + code + " 目标出现率须在 1-10000（万分比），留空表示用内置默认出现率！";
+                    msg.content = "结果类 " + code + " 出现率须在 0-10000（万分比，0=不出现），留空表示用内置默认出现率！";
                     return msg;
                 }
                 if (stock >= 0)   // 0=当天禁出，合法
                     toWrite.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "ComboStock" + code, OptValue = stock, Type = "Combo" });
+            }
+            if (probSum > 10000)
+            {
+                msg.code = 0;
+                msg.content = "明星97 出现机会合计 " + probSum + " 超过 10000（每 10000 次最多出现 10000 次），请调小后再保存！";
+                return msg;
             }
 
             // 落库：只删除当前桌台被管理的 OptKey，再按本次配置写入当前 TableIndex。
@@ -1912,16 +1923,21 @@ namespace YYT.Web.Areas.Game.Controllers
                 toWrite.Add(new M_GameConfigLaba { GameId = gameId, OptKey = key, OptValue = v, Type = "RTP" });
             }
 
-            // 组合结果类 400-459：ShzRate{code} 出现率 1-10000 / ShzStock{code} 库存 ≥0（仅板级 440-451）
+            // 组合结果类 400-459：ShzRate{code} 出现率 0-10000(0=不出现) / ShzStock{code} 库存 ≥0（仅板级 440-451）
+            // 绝对语义：出现率合计不得超过 10000（每 10000 次最多出现 10000 次）
+            int rateSum = 0;
             for (int code = ShzComboMin; code <= ShzComboMax; code++)
             {
                 int rate = form.Q<int>("ShzRate" + code, -1);
-                if (rate > 0 && rate <= 10000)
+                if (rate >= 0 && rate <= 10000)   // 0=该牌型不出现（合法显式值）
+                {
                     toWrite.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "ShzRate" + code, OptValue = rate, Type = "ShzCombo" });
+                    rateSum += rate;
+                }
                 else if (rate != -1)
                 {
                     msg.code = 0;
-                    msg.content = "结果类 " + code + " 目标出现率须在 1-10000（万分比），留空表示用内置默认出现率！";
+                    msg.content = "结果类 " + code + " 出现率须在 0-10000（万分比，0=不出现），留空表示用内置默认出现率！";
                     return msg;
                 }
                 if (code >= ShzStockMin && code <= ShzStockMax)
@@ -1930,6 +1946,12 @@ namespace YYT.Web.Areas.Game.Controllers
                     if (stock >= 0)   // 0=当天禁出，合法
                         toWrite.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "ShzStock" + code, OptValue = stock, Type = "ShzCombo" });
                 }
+            }
+            if (rateSum > 10000)
+            {
+                msg.code = 0;
+                msg.content = "水浒传 出现机会合计 " + rateSum + " 超过 10000（每 10000 次最多出现 10000 次），请调小后再保存！";
+                return msg;
             }
 
             // 落库：只替换当前桌台的 RTP/结果类配置，保留其它桌台配置。
@@ -2136,7 +2158,8 @@ namespace YYT.Web.Areas.Game.Controllers
                 {
                     int prob = map.ContainsKey("ShzRate" + code) ? map["ShzRate" + code] : 0;
                     int stock = map.ContainsKey("ShzStock" + code) ? map["ShzStock" + code] : -1;
-                    if (prob > 0 || stock >= 0) add(code, -1, prob, stock);
+                    // 显式配置的 ShzRate=0（该牌型不出现）也要落库，否则中心服不下发、服务端回默认
+                    if (map.ContainsKey("ShzRate" + code) || map.ContainsKey("ShzStock" + code)) add(code, -1, prob, stock);
                 }
             }
             else if (subType == 2)
@@ -2144,7 +2167,7 @@ namespace YYT.Web.Areas.Game.Controllers
                 for (int i = 0; i < 24; i++)
                 {
                     int prob = wheelProbs != null && i < wheelProbs.Length ? wheelProbs[i] : 0;
-                    if (prob > 0) add(100 + i, -1, prob, -1);
+                    if (prob >= 0) add(100 + i, -1, prob, -1);   // 权重 0=该面板位不出现，同样落库
                     int stock = map.ContainsKey("WheelStock" + i) ? map["WheelStock" + i] : -1;
                     if (stock >= 0) add(130 + i, -1, stock, -1);
                 }
