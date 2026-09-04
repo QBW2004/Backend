@@ -1764,9 +1764,9 @@ namespace YYT.Web.Areas.Game.Controllers
         };
 
         /// <summary>
-        /// 保存明星97 RTP 控制配置：校验 + 写 GameConfigLaba(GameId=16, 当前 TableIndex)。
-        /// 留空的 RTP/Combo 项删除对应 OptKey（回内置默认/不限）；
-        /// ComboStock=0（当天禁出）为合法显式值。
+        /// 保存明星97 结果出现率与 RTP 配置：校验 + 写 GameConfigLaba(GameId=16, 当前 TableIndex)。
+        /// 绝对出现率语义：ComboProb{code}=每 10000 次实际出现次数（填多少出现多少），不中奖=10000−Σ；
+        /// RTP 闭环默认关闭（服务端 kp=0），Rtp* 留空即不启用；ComboStock=0（当天禁出）为合法显式值。
         /// </summary>
         private static Msg SaveMx97RtpConfig(FormCollection form, int gameId, int tableIndex)
         {
@@ -1877,9 +1877,9 @@ namespace YYT.Web.Areas.Game.Controllers
         private static readonly int ShzStockMax = 451;
 
         /// <summary>
-        /// 保存水浒传 RTP 控制配置：校验 + 写 GameConfigLaba(GameId=53, 当前 TableIndex)。
-        /// 留空的 RTP/结果类项删除对应 OptKey（回内置默认/不限）；
-        /// ShzStock=0（当天禁出）为合法显式值。
+        /// 保存水浒传 结果出现率与 RTP 配置：校验 + 写 GameConfigLaba(GameId=53, 当前 TableIndex)。
+        /// 绝对出现率语义：ShzRate{code}=每 10000 次实际出现次数（填多少出现多少），不中奖=10000−Σ；
+        /// RTP 闭环默认关闭（服务端 kp=0），Rtp* 留空即不启用；ShzStock=0（当天禁出）为合法显式值。
         /// 赔付表由双端硬编码，无赔率项；结果类 400-459 中未定义间隙（409/419/429/433-439/449/452-459）不接受配置。
         /// </summary>
         private static Msg SaveShzRtpConfig(FormCollection form, int gameId, int tableIndex)
