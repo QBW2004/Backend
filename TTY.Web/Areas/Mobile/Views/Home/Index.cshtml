@@ -29,8 +29,8 @@
     .player-card {
         background: white;
         border-radius: 12px;
-        padding: 12px;
-        margin-bottom: 8px;
+        padding: 10px 12px;
+        margin-bottom: 6px;
         box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         cursor: pointer;
         transition: transform 0.2s, box-shadow 0.2s;
@@ -46,10 +46,10 @@
     }
 
     #onlineTab .player-card {
-        margin-bottom: 16px;
+        margin-bottom: 8px;
         border: 1px solid #e0e0e0;
         box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-        padding: 16px;
+        padding: 10px 12px 10px 14px;
         position: relative;
         border-radius: 0;
     }
@@ -80,16 +80,35 @@
         display: flex;
         align-items: center;
         gap: 8px;
-        margin-bottom: 8px;
-        flex-wrap: wrap;
+        margin-bottom: 6px;
         width: 100%;
+        min-width: 0;
+    }
+
+    .player-identity {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-width: 0;
+        flex: 1 1 auto;
+        overflow: hidden;
+        white-space: nowrap;
+    }
+
+    .player-balances {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        flex: 0 0 auto;
+        min-width: max-content;
+        white-space: nowrap;
     }
 
     .player-account {
         font-size: 15px;
         font-weight: 600;
         color: #1d1d1f;
-        max-width: 100px;
+        max-width: 112px;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -104,7 +123,7 @@
     .player-name {
         font-size: 14px;
         color: #1d1d1f;
-        max-width: 80px;
+        max-width: 88px;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -116,55 +135,45 @@
         color: #666;
         flex: 1 1 auto;
         min-width: 0;
-        max-width: 100%;
-        overflow: visible;
-        text-overflow: clip;
-        white-space: normal;
-        word-break: break-all;
+        max-width: 160px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     .remaining-score {
         font-size: 14px;
         font-weight: 500;
         color: #34c759;
-        padding: 2px 8px;
+        padding: 2px 6px;
         background: rgba(52, 199, 89, 0.1);
         border-radius: 4px;
         flex-shrink: 0;
-        margin-left: auto;
+        margin-left: 0;
     }
 
     .remaining-diamond {
         font-size: 14px;
         font-weight: 500;
         color: #007aff;
-        padding: 2px 8px;
+        padding: 2px 6px;
         background: rgba(0, 122, 255, 0.1);
         border-radius: 4px;
         flex-shrink: 0;
-        margin-left: 8px;
-    }
-
-    .black-listed {
-        color: #ff3b30;
-        font-weight: 500;
-        font-size: 12px;
-        padding: 2px 6px;
-        background: rgba(255, 59, 48, 0.1);
-        border-radius: 4px;
+        margin-left: 0;
     }
 
     .player-info {
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        gap: 6px;
         font-size: 13px;
     }
 
     .info-row {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
-        gap: 8px;
+        gap: 6px;
     }
 
     .info-row.money-row {
@@ -194,8 +203,8 @@
 
     .money-row .info-item {
         background: #f8f9fa;
-        padding: 8px 12px;
-        border-radius: 8px;
+        padding: 5px 8px;
+        border-radius: 6px;
         display: flex;
         flex-direction: row;
         align-items: center;
@@ -207,6 +216,10 @@
         color: #666;
         margin-bottom: 0;
         flex-shrink: 0;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     .money-row .info-value {
@@ -214,11 +227,13 @@
         font-family: -apple-system-monospace, monospace;
         font-weight: 600;
         text-align: right;
+        white-space: nowrap;
+        flex-shrink: 0;
     }
 
     .login-time-row {
         margin-top: 8px;
-        padding-top: 8px;
+        padding-top: 6px;
         border-top: 1px dashed #e0e0e0;
         display: flex;
         justify-content: center;
@@ -227,12 +242,12 @@
     .login-time-row .info-item {
         background: rgba(0, 122, 255, 0.05);
         border-radius: 6px;
-        padding: 6px 10px;
+        padding: 5px 8px;
         display: flex;
         flex-direction: row;
         align-items: center;
         justify-content: center;
-        gap: 8px;
+        gap: 6px;
         width: 100%;
     }
 
@@ -250,8 +265,8 @@
     }
 
     .active-control-status {
-        margin-top: 8px;
-        padding: 8px 10px;
+        margin-top: 4px;
+        padding: 5px 8px;
         border-radius: 8px;
         background: #f8f9fa;
         color: #ff3b30;
@@ -265,9 +280,7 @@
     }
 
     .active-control-status.is-empty {
-        min-height: 16px;
-        padding: 0;
-        background: transparent;
+        display: none;
     }
 
     /* 页签 */
@@ -474,8 +487,18 @@
     }
 
     @@media (max-width: 380px) {
+        .player-card,
+        #onlineTab .player-card {
+            padding-left: 10px;
+            padding-right: 10px;
+        }
+
+        .player-account { max-width: 92px; }
+        .player-name { max-width: 72px; }
+        .agent-line { display: none; }
+
         .money-row .info-value {
-            font-size: 14px;
+            font-size: 13px;
         }
 
         .money-row .info-item {

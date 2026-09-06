@@ -422,14 +422,6 @@
                 showAdminToast('密码不能少于6个字符！', 'warning');
                 return;
             }
-            if (para.RE_PWD.length < 6) {
-                showAdminToast('确认密码不能少于6个字符！', 'warning');
-                return;
-            }
-            if (para.PWD != para.RE_PWD) {
-                showAdminToast('两次输入的密码不一致！', 'warning');
-                return;
-            }
             request('/Game/AgencyInfo/AddAgencyInfo', para, function (data) {
                 //提示消息
                 showAdminResult(data);
@@ -557,12 +549,6 @@
                 <td align="right">密码</td>
                 <td align="left" class="pd5">
                     <input class="easyui-passwordbox win-txt" name="PWD" />
-                </td>
-            </tr>
-            <tr>
-                <td align="right">确认密码</td>
-                <td align="left" class="pd5">
-                    <input class="easyui-passwordbox win-txt" name="RE_PWD" />
                 </td>
             </tr>
             <tr>

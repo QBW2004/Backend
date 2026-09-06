@@ -135,6 +135,32 @@
     }
 
     /* 表格 */
+    .records-table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .records-table-container .records-table {
+        min-width: 760px;
+        table-layout: auto;
+    }
+
+    .records-table th,
+    .records-table td {
+        padding: 10px 12px;
+        font-size: 13px;
+        white-space: nowrap;
+        word-break: normal;
+    }
+
+    .records-table th:nth-child(1) { min-width: 88px; }
+    .records-table th:nth-child(2) { min-width: 104px; }
+    .records-table th:nth-child(3) { min-width: 104px; }
+    .records-table th:nth-child(4) { min-width: 132px; }
+    .records-table th:nth-child(5),
+    .records-table th:nth-child(6) { min-width: 118px; }
+    .records-table th:nth-child(7) { min-width: 150px; }
+
     .table-container table {
         min-width: 640px;
     }
@@ -259,8 +285,8 @@
         </div>
 
         <!-- 表格容器 -->
-        <div class="table-container">
-            <table>
+        <div class="table-container records-table-container">
+            <table class="records-table">
                 <thead>
                     <tr>
                         <th>操作人</th>

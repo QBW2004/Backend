@@ -20,8 +20,13 @@
         margin: 0 auto;
     }
 
+    .input-section {
+        padding: 16px;
+        gap: 10px;
+    }
+
     .form-row {
-        margin-bottom: 12px;
+        margin-bottom: 10px;
     }
 
     .form-row:last-child {
@@ -79,7 +84,7 @@
     .stat-cards.show {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
-        overflow-x: auto;
+        overflow-x: hidden;
     }
 
     .stat-card {
@@ -87,7 +92,7 @@
         background: #f8f9fa;
         border: 1px solid #eef0f2;
         border-radius: 6px;
-        padding: 12px 6px;
+        padding: 9px 6px;
         text-align: center;
         min-width: 0;
     }
@@ -121,8 +126,8 @@
     .player-meta {
         display: none;
         flex-direction: column;
-        gap: 8px;
-        margin-bottom: 12px;
+        gap: 6px;
+        margin-bottom: 10px;
     }
 
     .player-meta.show {
@@ -133,7 +138,7 @@
         display: flex;
         align-items: center;
         min-width: 0;
-        padding: 8px 12px;
+        padding: 7px 10px;
         background: rgba(0, 122, 255, 0.06);
         border-radius: 8px;
         border: 1px solid #eef0f2;
@@ -143,6 +148,7 @@
 
     .player-meta .info-value {
         margin-left: auto;
+        min-width: 0;
         font-size: 14px;
         font-weight: 600;
         color: #1d1d1f;
@@ -164,16 +170,18 @@
 
     .ctrl-status-list {
         flex: 1 1 auto;
-        width: auto;
+        width: 0;
         min-width: 0;
         display: flex;
         flex-direction: row;
         flex-wrap: nowrap;
         gap: 4px;
-        align-items: flex-end;
-        justify-content: flex-start;
+        align-items: center;
+        justify-content: flex-end;
         overflow-x: auto;
         white-space: nowrap;
+        text-align: right;
+        -webkit-overflow-scrolling: touch;
     }
 
     .ctrl-status-item {
@@ -182,6 +190,7 @@
         font-weight: 500;
         color: #ff3b30;
         white-space: nowrap;
+        text-align: right;
     }
 
     .ctrl-status-empty {

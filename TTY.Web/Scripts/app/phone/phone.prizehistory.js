@@ -33,7 +33,7 @@
                     '</tr>';
             }).join('') : '<tr><td colspan="5" class="history-empty">暂无记录</td></tr>';
             return '<div class="game-card"><div class="game-card-header"><span>' + esc(g.Name || ('游戏' + g.GameId)) + '</span><span class="game-count">' + rs.length + '</span></div>' +
-                '<table class="history-table"><thead><tr><th>牌型</th><th>得分</th><th>场次</th><th>是否送奖</th><th>开奖时间</th></tr></thead><tbody>' + body + '</tbody></table></div>';
+                '<div class="history-table-scroll"><table class="history-table"><thead><tr><th>牌型</th><th>得分</th><th>场次</th><th>是否送奖</th><th>开奖时间</th></tr></thead><tbody>' + body + '</tbody></table></div></div>';
         }).join(''));
     }
 

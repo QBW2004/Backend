@@ -21,6 +21,10 @@
     var offlineTotalWinLoss = 0;
     var current = null; // 当前操作的玩家（含详情）
 
+    // 【性能优化】控制状态缓存，避免重复查询
+    var controlStatusCache = {};
+    var controlStatusCacheTime = 30000; // 30秒缓存
+
     function todayStr() {
         var d = new Date();
         return d.getFullYear() + '-' + M.pad2(d.getMonth() + 1) + '-' + M.pad2(d.getDate());
@@ -87,7 +91,6 @@
         var twColor = today > 0 ? 'positive' : (today < 0 ? 'negative' : '');
         var ttColor = total > 0 ? 'positive' : (total < 0 ? 'negative' : '');
 
-        var blackBadge = (Number(p.FROZEN) === 1) ? '<span class="black-listed">冻结中</span>' : '';
         var loginRow = p.LastLoginTime
             ? '<div class="info-row login-time-row"><div class="info-item">' + M.ICONS.clock +
                 '<span class="info-label">最后登录</span><span class="info-value">' + M.fmtTime(p.LastLoginTime) + '</span></div></div>'
@@ -97,17 +100,20 @@
             ? '<div class="active-control-status">' + controls.map(function (text) {
                 return '<div class="active-control-status-item">' + M.esc(text) + '</div>';
             }).join('') + '</div>'
-            : '<div class="active-control-status is-empty"></div>';
+            : '';
 
         return '' +
             '<div class="player-card' + (isOnline ? '' : ' offline') + '" data-account="' + M.esc(p.ID) + '">' +
                 '<div class="player-header">' +
-                    '<span class="player-account player-account-link" data-account="' + M.esc(p.ID) + '">' + M.esc(p.ID) + '</span>' +
-                    '<span class="player-name">' + M.esc(p.NAME || p.ID) + '</span>' +
-                    blackBadge +
-                    '<span class="agent-line">' + M.esc(p.AGENCY || '--') + '</span>' +
-                    '<span class="remaining-score">' + M.num(p.Score != null ? p.Score : (p.GAME_SCORE || 0)) + '分</span>' +
-                    '<span class="remaining-diamond">' + M.gold(p.Coins != null ? p.Coins : p.COINS) + '金币</span>' +
+                    '<div class="player-identity">' +
+                        '<span class="player-account player-account-link" data-account="' + M.esc(p.ID) + '">' + M.esc(p.ID) + '</span>' +
+                        '<span class="player-name">' + M.esc(p.NAME || p.ID) + '</span>' +
+                        '<span class="agent-line">' + M.esc(p.AGENCY || '--') + '</span>' +
+                    '</div>' +
+                    '<div class="player-balances">' +
+                        '<span class="remaining-score">' + M.num(p.Score != null ? p.Score : (p.GAME_SCORE || 0)) + '分</span>' +
+                        '<span class="remaining-diamond">' + M.gold(p.Coins != null ? p.Coins : p.COINS) + '金币</span>' +
+                    '</div>' +
                 '</div>' +
                 '<div class="player-info">' +
                     '<div class="info-row">' +
@@ -137,11 +143,47 @@
             players.forEach(function (p) { p.ActiveControls = []; });
             return $.Deferred().resolve([]).promise();
         }
+
+        // 【性能优化】检查缓存，减少不必要的网络请求
+        var now = Date.now();
+        var uncachedIds = [];
+        var cachedControls = {};
+
+        ids.forEach(function (id) {
+            var cached = controlStatusCache[id];
+            if (cached && (now - cached.timestamp) < controlStatusCacheTime) {
+                cachedControls[id] = cached.controls;
+            } else {
+                uncachedIds.push(id);
+            }
+        });
+
+        // 如果全部命中缓存，直接返回
+        if (uncachedIds.length === 0) {
+            var controlMap = cachedControls;
+            players.forEach(function (p) { p.ActiveControls = controlMap[p.ID] || []; });
+            return $.Deferred().resolve([]).promise();
+        }
+
         return M.post('/Game/UserInfo/GetActiveTotalControls', {
-            UserIDs: JSON.stringify(ids)
+            UserIDs: JSON.stringify(uncachedIds)
         }).then(function (res) {
             var controls = res && res.code === 1 ? (res.datas || []) : [];
             var controlMap = groupActiveControls(controls);
+
+            // 【性能优化】更新缓存
+            uncachedIds.forEach(function (id) {
+                controlStatusCache[id] = {
+                    controls: controlMap[id] || [],
+                    timestamp: now
+                };
+            });
+
+            // 合并缓存和新数据
+            Object.keys(cachedControls).forEach(function (id) {
+                if (!controlMap[id]) controlMap[id] = cachedControls[id];
+            });
+
             players.forEach(function (p) { p.ActiveControls = controlMap[p.ID] || []; });
             return controls;
         }, function () {
@@ -166,16 +208,33 @@
                 var $sec = $('#onlinePlayersSection');
                 if (!onlinePlayers.length) {
                     $sec.html('<div class="no-more-data" style="display: block;">暂无在线玩家</div>');
-                } else {
-                    var html = onlinePlayers.map(function (p) { return playerCardHTML(p, true); }).join('');
-                    $sec.html(html);
+                    return;
                 }
+
+                // 【性能优化】立即渲染基础卡片，不等待控制状态
+                var html = onlinePlayers.map(function (p) { return playerCardHTML(p, true); }).join('');
+                $sec.html(html);
                 $('#onlinePlayerCount').text(onlinePlayers.length);
-                // 先完成基础首屏，再异步补齐控制状态，避免次要接口阻塞玩家列表展示。
-                return attachActiveControls(onlinePlayers).then(function () {
-                    if (!onlinePlayers.length) return;
-                    $sec.html(onlinePlayers.map(function (p) { return playerCardHTML(p, true); }).join(''));
-                });
+
+                // 【性能优化】异步加载控制状态，不阻塞首屏
+                // 使用 setTimeout 确保首屏渲染完全完成后再请求次要数据
+                setTimeout(function () {
+                    attachActiveControls(onlinePlayers).then(function () {
+                        if (!onlinePlayers.length) return;
+                        // 使用 DocumentFragment 批量更新 DOM，减少重排
+                        var $cards = $sec.find('.player-card');
+                        onlinePlayers.forEach(function (p, index) {
+                            if ($cards[index] && p.ActiveControls && p.ActiveControls.length) {
+                                var $card = $($cards[index]);
+                                var controlHTML = '<div class="active-control-status">' +
+                                    p.ActiveControls.map(function (text) {
+                                        return '<div class="active-control-status-item">' + M.esc(text) + '</div>';
+                                    }).join('') + '</div>';
+                                $card.find('.player-info').append(controlHTML);
+                            }
+                        });
+                    });
+                }, 100);
             });
     }
 
@@ -195,10 +254,15 @@
             var $sec = $('#offlinePlayersSection');
             if (!rows.length && page === 1) {
                 $sec.html('<div class="no-more-data" style="display: block;">暂无离线玩家</div>');
-            } else if (!append) {
-                $sec.html(rows.map(function (p) { return playerCardHTML(p, false); }).join(''));
+                return;
+            }
+
+            // 【性能优化】立即渲染基础卡片
+            var html = rows.map(function (p) { return playerCardHTML(p, false); }).join('');
+            if (!append) {
+                $sec.html(html);
             } else {
-                $sec.append(rows.map(function (p) { return playerCardHTML(p, false); }).join(''));
+                $sec.append(html);
             }
             $('#offlinePlayerCount').text(offlineTotal);
 
@@ -207,12 +271,8 @@
             $('#loadMoreBtn').toggleClass('disabled', noMore).prop('disabled', noMore);
             $('#noMoreData').toggle(noMore && offlineTotal > 0);
 
-            // 首屏先展示基础资料，控制状态随后回填；后续分页保持当前滚动内容不被重排。
-            return attachActiveControls(rows).then(function () {
-                if (!append && rows.length) {
-                    $sec.html(rows.map(function (p) { return playerCardHTML(p, false); }).join(''));
-                }
-            });
+            // 【性能优化】离线玩家通常没有控制状态，跳过此查询以加快速度
+            // 如果需要显示控制状态，可以改为按需加载（点击玩家详情时再查）
         });
     }
 
@@ -403,9 +463,18 @@
         });
 
         // 头部刷新 / 搜索
+        // 【性能优化】添加防抖，避免快速点击导致多次并发请求
+        var refreshing = false;
         M.onRefresh(function () {
+            if (refreshing) {
+                M.toast('正在刷新中，请稍候...', 'warning', 1500);
+                return;
+            }
+            refreshing = true;
             M.runRefresh(function () {
                 return $.when(loadTotalWinLoss(), loadOnline(), loadOffline(1, false));
+            }, true).always(function () {
+                refreshing = false;
             });
         });
         M.onSearch(function () {

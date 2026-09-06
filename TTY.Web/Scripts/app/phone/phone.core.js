@@ -393,7 +393,7 @@
         $('#refreshBtn').toggleClass('spin', !!on);
     };
 
-    /** 包装一次“刷新”动作：按钮转圈 + 结束提示 */
+    /** 包装一次“刷新”动作：按钮转圈；silent=false 时显示结束提示 */
     M.runRefresh = function (loader, silent) {
         M.spinRefresh(true);
         return $.when(loader()).always(function () {

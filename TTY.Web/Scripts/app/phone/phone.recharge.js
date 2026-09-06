@@ -98,7 +98,6 @@
             submitting = true;
             $('#submitBtn').prop('disabled', true);
             M.loading('处理中...');
-            M.toast('已受理，处理中...', 'info', 1600);
             M.post('/Game/Recharge/SaveCoin', {
                 coin: coin,
                 id: queriedAccount,
@@ -114,8 +113,9 @@
                 M.alert(resultText, r.ok, r.ok ? '操作成功' : '操作失败').then(function () {
                     if (r.ok) {
                         $('#amountInput').val('');
-                        resetQuery();
-                        window.location.reload();
+                        // 保留当前账号、角色和操作类型，并重新查询余额。
+                        // 这样成功后页面状态与操作前连续，不会回到空白查询页。
+                        queryAccount();
                     }
                 });
             }, function () {
