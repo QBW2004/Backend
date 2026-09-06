@@ -99,7 +99,6 @@
     <Compile Include="EF\M_TransferLog.cs" />
     <Compile Include="EF\M_PlatType.cs" />
     <Compile Include="EF\M_Games.cs" />
-    <Compile Include="EF\M_LabaPara_From_Page.cs" />
     <Compile Include="EF\M_LoginMissRecord.cs" />
     <Compile Include="EF\M_ManagerOpt.cs" />
     <Compile Include="EF\M_MgrPermission.cs" />

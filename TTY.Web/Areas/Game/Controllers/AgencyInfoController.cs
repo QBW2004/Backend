@@ -92,6 +92,20 @@ namespace YYT.Web.Areas.Game.Controllers
                             item.LastLoginTime = loginMap.TryGetValue(item.ID, out login) ? (DateTime?)login : null;
                         }
                     }
+
+                    // 代理密码脱敏：非超级管理只有拥有查看代理密码权限时可见，且目标必须在管理范围内
+                    if (loginUser.UserPriv != 0)
+                    {
+                        using (var ef = new GameDbContext())
+                        {
+                            foreach (var item in list.rows)
+                            {
+                                if (loginUser.IsViewAgentPwd != 1
+                                    || !new B_Admin().IsTargetAgencyInManagedScope(ef, loginUser, item.ID))
+                                    item.PWD = null;
+                            }
+                        }
+                    }
                 }
             }
             catch (Exception ex)
@@ -454,11 +468,9 @@ namespace YYT.Web.Areas.Game.Controllers
                     msg.content = "代理ID不能为空！";
                     return Json(msg);
                 }
+                // 留空表示清除客服链接
                 if (string.IsNullOrWhiteSpace(CustomerServiceUrl))
-                {
-                    msg.content = "客服链接不能为空！";
-                    return Json(msg);
-                }
+                    CustomerServiceUrl = null;
 
                 M_Admin entity = new M_Admin { ID = id, CustomerServiceUrl = CustomerServiceUrl };
                 int val = new B_Admin().ChgCustomerServiceUrl(entity);
@@ -650,7 +662,6 @@ namespace YYT.Web.Areas.Game.Controllers
             entity.KickScope = 2;
             entity.ManageScope = 2;
         }
-
         [AjaxOnly]
         [HttpPost]
         public ActionResult SaveAgencyLimit(FormCollection form)
@@ -732,43 +743,45 @@ namespace YYT.Web.Areas.Game.Controllers
                     msg.content = "代理ID不能为空！";
                     return Json(msg);
                 }
-                
-                if (string.IsNullOrWhiteSpace(inviteCode))
-                {
-                    msg.content = "邀请码不能为空！";
-                    return Json(msg);
-                }
 
-                // 验证邀请码格式：4-8位纯数字（总台可自定义）
-                if (loginUser.UserPriv == 0)
+                // 留空表示清除邀请码，跳过格式与去重校验
+                bool isClearing = string.IsNullOrWhiteSpace(inviteCode);
+                if (isClearing)
+                    inviteCode = null;
+
+                if (!isClearing)
                 {
-                    // 总台可以设置4-8位纯数字
-                    if (!System.Text.RegularExpressions.Regex.IsMatch(inviteCode, @"^\d{4,8}$"))
+                    // 验证邀请码格式：4-8位纯数字（总台可自定义）
+                    if (loginUser.UserPriv == 0)
                     {
-                        msg.content = "邀请码必须是4-8位纯数字！";
+                        // 总台可以设置4-8位纯数字
+                        if (!System.Text.RegularExpressions.Regex.IsMatch(inviteCode, @"^\d{4,8}$"))
+                        {
+                            msg.content = "邀请码必须是4-8位纯数字！";
+                            return Json(msg);
+                        }
+                    }
+                    else
+                    {
+                        // 代理只能使用系统生成的4-5位随机数字
+                        msg.content = "代理不能自定义邀请码！";
                         return Json(msg);
                     }
-                }
-                else
-                {
-                    // 代理只能使用系统生成的4-5位随机数字
-                    msg.content = "代理不能自定义邀请码！";
-                    return Json(msg);
-                }
 
-                string inviteCodeMessage;
-                using (var ef = new GameDbContext())
-                {
-                    bool isValidInviteCode = AgencyRules.TryValidateInviteCode(
-                        inviteCode,
-                        id,
-                        ef.Admins.Select(a => a.ID).ToList(),
-                        ef.Admins.Select(a => new { a.ID, a.InviteCode }).ToList().Select(a => new AgencyRules.InviteCodeOwner(a.ID, a.InviteCode)).ToList(),
-                        out inviteCodeMessage);
-                    if (!isValidInviteCode)
+                    string inviteCodeMessage;
+                    using (var ef = new GameDbContext())
                     {
-                        msg.content = inviteCodeMessage;
-                        return Json(msg);
+                        bool isValidInviteCode = AgencyRules.TryValidateInviteCode(
+                            inviteCode,
+                            id,
+                            ef.Admins.Select(a => a.ID).ToList(),
+                            ef.Admins.Select(a => new { a.ID, a.InviteCode }).ToList().Select(a => new AgencyRules.InviteCodeOwner(a.ID, a.InviteCode)).ToList(),
+                            out inviteCodeMessage);
+                        if (!isValidInviteCode)
+                        {
+                            msg.content = inviteCodeMessage;
+                            return Json(msg);
+                        }
                     }
                 }
 

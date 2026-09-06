@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web.Mvc;
@@ -81,6 +81,9 @@ namespace YYT.Web.Areas.Game.Controllers
                         // 按桌读取 roomtableconfig_bet（押注时长/庄闲和限红/投注档位等桌级押注参数）
                         var betCfgRows = ef.Database.SqlQuery<BetTableCfgBetRow>(
                             "SELECT TableIndex, BetTime, BetMin, BetMax, BankerScoreNeed, ItemSingleScoreLimit, ItemAllScoreLimit, CoinsNeed, OneCoinScore, BetScores, DefaultBetIndex, BetMinVice, BetMaxVice, BetMinDraw, BetMaxDraw FROM roomtableconfig_bet WHERE GAME_ID={0} ORDER BY TableIndex", gameId).ToList();
+                        // 按桌读取 betgamecfg（开奖权重与奖励等玩法扩展配置 JSON）
+                        var betGameCfgRows = ef.Database.SqlQuery<BetGameCfgRow>(
+                            "SELECT TableIndex, CfgJson FROM betgamecfg WHERE GAME_ID={0} ORDER BY TableIndex", gameId).ToList();
                         int bidx = 0;
                         foreach (BetTableCfgRow cfg in cfgRows)
                         {
@@ -118,7 +121,7 @@ namespace YYT.Web.Areas.Game.Controllers
                                 coinNeed = cfg.CoinsNeed,
                                 gameMo = baseRoom == null ? 100 : baseRoom.Game_Mo,
                                 maxSeats = cfg.MaxSeats <= 0 ? 6 : cfg.MaxSeats,
-                                idleFireTimeoutSec = cfg.IdleFireTimeoutSec,
+                                idleFireTimeoutSec = IdleSecToMin(cfg.IdleFireTimeoutSec),
                                 idleFireKickEnabled = cfg.IdleFireKickEnabled,
                                 enabled = cfg.Enabled,
                                 betTime = vBetTime,
@@ -138,7 +141,8 @@ namespace YYT.Web.Areas.Game.Controllers
                                 bankerSiteType = m == null ? 0 : m.BANKER_SITE_TYPE,
                                 bankerPer = m == null ? 0 : m.BANKER_PER,
                                 betPayoutOn = bpr.Any(c => c.Enabled == 1) ? 1 : 0,
-                                betPayout = betPayout
+                                betPayout = betPayout,
+                                betGameCfg = betGameCfgRows.FirstOrDefault(c => c.TableIndex == btIdx)?.CfgJson ?? string.Empty
                             });
                         }
                     }
@@ -148,8 +152,6 @@ namespace YYT.Web.Areas.Game.Controllers
                         // 共享参数(ExCoin/GameMo/ScoreSwitch)从 pararoom base 行取，难度从 paracard 按 ID=gameId*1000+TableIndex 关联，
                         // 赔率从 cardpayoutprofile 按 TableId 关联。
                         M_ParaRoom baseRoom = ef.ParaRoom.FirstOrDefault(c => c.GAME_ID == gameId);
-                        // 房间级入场金币(未配置桌的兜底值)：取 pararoom base 行 COIN_NEED，供表单"房间入场金币"框回显
-                        int roomCoinNeed = baseRoom == null ? 0 : baseRoom.COIN_NEED;
                         List<M_ParaCard> cards = ef.ParaCards
                             .Where(c => c.GAME_ID == gameId)
                             .ToList();
@@ -195,11 +197,10 @@ namespace YYT.Web.Areas.Game.Controllers
                                 exCoin = cardCfg != null ? cardCfg.ExCoin : (baseRoom == null ? 10000 : baseRoom.EX_COIN),
                                 coinSc = cfg.OneCoinScore,
                                 coinNeed = cfg.CoinsNeed,
-                                roomCoinNeed = roomCoinNeed,
                                 gameMo = cardCfg != null ? cardCfg.GameMo : (baseRoom == null ? 0 : baseRoom.Game_Mo),
                                 scoreSwitch = cardCfg != null ? cardCfg.ScoreSwitch : (baseRoom == null ? 0 : baseRoom.scoreSwitch),
                                 maxSeats = cfg.MaxSeats <= 0 ? 6 : cfg.MaxSeats,
-                                idleFireTimeoutSec = cfg.IdleFireTimeoutSec,
+                                idleFireTimeoutSec = IdleSecToMin(cfg.IdleFireTimeoutSec),
                                 idleFireKickEnabled = cfg.IdleFireKickEnabled,
                                 enabled = cfg.Enabled,
                                 cardDif = m == null ? string.Empty : (m.DIF ?? string.Empty),
@@ -241,6 +242,10 @@ namespace YYT.Web.Areas.Game.Controllers
                         // 一房多桌：每张桌独立读取，与服务端 GetRoomTableConfigs 逐行口径一致。
                         var cfgGunSteps = ef.Database.SqlQuery<int>(
                             "SELECT IFNULL(GunPowerStep,0) FROM roomtableconfig WHERE GAME_ID=" + gameId + " ORDER BY TableIndex").ToList();
+                        // 无发炮踢出时间：从 roomtableconfig 按 TableIndex 升序读取回显真实值。
+                        // 原写死 0，导致保存后刷新仍显示 0（误以为未写入）。
+                        var cfgIdleSecs = ef.Database.SqlQuery<int>(
+                            "SELECT IFNULL(IdleFireTimeoutSec,0) FROM roomtableconfig WHERE GAME_ID=" + gameId + " ORDER BY TableIndex").ToList();
                         // 房间加炮幅度(pararoom.scoreSwitch 存显示值×10)：仅当某桌 GunPowerStep=0(未配置)时兜底回显；
                         // 用 SqlQuery 直读标量：EF 实体映射 pararoom 会因 Game_Mo 等 NULL 列抛异常
                         int fishScoreSwRaw = ef.Database.SqlQuery<int>(
@@ -260,7 +265,8 @@ namespace YYT.Web.Areas.Game.Controllers
                                 coinNeed = i < cfgCoinNeeds.Count ? cfgCoinNeeds[i] : 10000,
                                 gameMo = 100,
                                 maxSeats = 6,
-                                idleFireTimeoutSec = 0,
+                                // 踢出时间回显库内真实值（秒→分钟）；踢出开关无独立 UI，按需求默认开启(1)
+                                idleFireTimeoutSec = IdleSecToMin(i < cfgIdleSecs.Count ? cfgIdleSecs[i] : 0),
                                 idleFireKickEnabled = 1,
                                 enabled = i < cfgEnableds.Count ? cfgEnableds[i] : 1,
                                 fishDif = i < cfgFishDifs.Count ? cfgFishDifs[i] : 0,
@@ -273,21 +279,44 @@ namespace YYT.Web.Areas.Game.Controllers
                     {
                         int subType = GetLabaSubType(gameId);
                         string gameName = ef.Games.Where(c => c.GameId == gameId).Select(c => c.Name).FirstOrDefault() ?? ("游戏" + gameId);
-                        // 明星97(GameId=16) RTP/Combo 配置为游戏级（存 TableIndex=0），
-                        // 先一次性读入，供每桌行回显（服务端 GetGameConfigParams 按 GameId 全量合并）。
+                        // 明星97(GameId=16) RTP/Combo 配置按桌存储；TableIndex=0 仅作为
+                        // 兼容旧数据的公共回退，供没有桌级覆盖的桌台回显。
                         Dictionary<string, int> mx97Rtp = null;
                         if (subType == 1)
                         {
                             mx97Rtp = ef.GameConfigLabas
-                                .Where(c => c.GameId == gameId && (c.OptKey.StartsWith("Rtp") || c.OptKey.StartsWith("Combo")))
+                                .Where(c => c.GameId == gameId && c.TableIndex == 0 && (c.OptKey.StartsWith("Rtp") || c.OptKey.StartsWith("Combo")))
                                 .AsEnumerable()
                                 .GroupBy(c => c.OptKey)
                                 .ToDictionary(g => g.Key, g => g.First().OptValue);
                         }
-                        // 从 roomtableconfig 获取桌台列表（对齐一房N桌模型）
+                        // 水果拉霸(GameId=40) RTP 闭环 + 面板日库存按桌存储；TableIndex=0
+                        // 仅作为兼容旧数据的公共回退。
+                        Dictionary<string, int> fruitRtp = null;
+                        if (subType == 2)
+                        {
+                            fruitRtp = ef.GameConfigLabas
+                                .Where(c => c.GameId == gameId && c.TableIndex == 0 && (c.OptKey.StartsWith("Rtp") || c.OptKey.StartsWith("WheelStock")))
+                                .AsEnumerable()
+                                .GroupBy(c => c.OptKey)
+                                .ToDictionary(g => g.Key, g => g.First().OptValue);
+                        }
+                        // 水浒传(GameId=53) RTP 闭环 + 结果类（ShzRate/ShzStock）按桌存储；
+                        // TableIndex=0 仅作为兼容旧数据的公共回退。
+                        Dictionary<string, int> shzRtp = null;
+                        if (subType == 3)
+                        {
+                            shzRtp = ef.GameConfigLabas
+                                .Where(c => c.GameId == gameId && c.TableIndex == 0 && (c.OptKey.StartsWith("Rtp") || c.OptKey.StartsWith("ShzRate") || c.OptKey.StartsWith("ShzStock")))
+                                .AsEnumerable()
+                                .GroupBy(c => c.OptKey)
+                                .ToDictionary(g => g.Key, g => g.First().OptValue);
+                        }
+                        // 从 roomtableconfig 获取桌台列表（对齐一房N桌模型）。
+                        // 允许 0 张桌（不再强制补 TableIndex=0 占位行）：桌台删光后前端显示空列表 + “新建桌台”，
+                        // 避免出现“删不掉的幽灵桌”（假桌台不在 DB，删除永远无法生效）。
                         var tableIdxs = ef.Database.SqlQuery<int>(
                             "SELECT TableIndex FROM roomtableconfig WHERE GAME_ID=" + gameId + " ORDER BY TableIndex").ToList();
-                        if (tableIdxs.Count == 0) tableIdxs.Add(0);
                         foreach (int tIdx in tableIdxs)
                         {
                             int tid = gameId * 1000 + tIdx;
@@ -309,14 +338,6 @@ namespace YYT.Web.Areas.Game.Controllers
                                 "SELECT * FROM paralaba WHERE GAME_ID={0} AND TableIndex={1} LIMIT 1", gameId, tIdx).FirstOrDefault();
                             if (labaPara != null)
                             {
-                                row["dif"] = labaPara.DIF;
-                                row["har"] = labaPara.HAR;
-                                int symMax = subType == 2 ? 7 : (subType == 1 || subType == 3 ? 8 : -1);
-                                for (int p = 0; p <= symMax; p++)
-                                {
-                                    row["payout" + p] = GetLabaParaField(labaPara, "Payout" + p);
-                                    row["prob" + p] = GetLabaParaField(labaPara, "Prob" + p);
-                                }
                                 if (subType == 2)
                                 {
                                     for (int w = 0; w < 24; w++)
@@ -324,34 +345,18 @@ namespace YYT.Web.Areas.Game.Controllers
                                 }
                                 row["minBet"] = labaPara.BetMin > 0 ? (object)(labaPara.BetMin / 10m) : 0m;
                                 row["maxBet"] = labaPara.BetMax > 0 ? (object)(labaPara.BetMax / 10m) : 0m;
-                                row["coinNeed"] = labaPara.CoinsNeed;
+                                row["coinNeed"] = labaPara.CoinsNeed > 0 ? labaPara.CoinsNeed : 0;
                                 row["defaultBetIndex"] = labaPara.DefaultBetIndex;
                                 row["exCoin"] = labaPara.ExCoin > 0 ? labaPara.ExCoin : 1;
                                 row["coinSc"] = labaPara.CoinSc > 0 ? labaPara.CoinSc : 1;
                                 row["gameMo"] = labaPara.GameMo > 0 ? labaPara.GameMo : 1;
+                                // 加芬幅度按桌独立（服务端按桌 GunPowerStep 下发）
                                 row["scoreSwitch"] = labaPara.ScoreSwitchX10 > 0 ? labaPara.ScoreSwitchX10 / 10m : 0.1m;
                             }
                             else
                             {
                                 // 降级：从 gameconfiglaba 读取（兼容迁移过渡期）
                                 List<M_GameConfigLaba> labas = ef.GameConfigLabas.Where(c => c.GameId == gameId && c.TableIndex == tIdx).ToList();
-                                if (subType == 3)
-                                {
-                                    var paraBet = ef.ParaBets.Where(c => c.GAME_ID == gameId && c.ID == tid).FirstOrDefault();
-                                    row["dif"] = paraBet?.DIF ?? 0;
-                                    row["har"] = paraBet?.HAR ?? 0;
-                                }
-                                else
-                                {
-                                    row["dif"] = 0;
-                                    row["har"] = 0;
-                                }
-                                int symMax = subType == 2 ? 7 : (subType == 1 || subType == 3 ? 8 : -1);
-                                for (int p = 0; p <= symMax; p++)
-                                {
-                                    row["payout" + p] = GetLabaOptValue(labas, "Payout" + p);
-                                    row["prob" + p] = GetLabaOptValue(labas, "Prob" + p);
-                                }
                                 if (subType == 2)
                                 {
                                     for (int w = 0; w < 24; w++)
@@ -370,13 +375,61 @@ namespace YYT.Web.Areas.Game.Controllers
                                 row["exCoin"] = exCoinV > 0 ? exCoinV : 1;
                                 row["coinSc"] = coinScV > 0 ? coinScV : 1;
                                 row["gameMo"] = gameMoV > 0 ? gameMoV : 1;
+                                // 加芬幅度按桌独立（服务端按桌 GunPowerStep 下发）
                                 row["scoreSwitch"] = scoreSwU > 0 ? scoreSwU / 10m : 0.1m;
                             }
-                            row["idleFireTimeoutSec"] = 0;
+                            // 无发炮踢出时间：从 roomtableconfig 读回真实值（秒→分钟），0=不踢
+                            int idleSecRow = ef.Database.SqlQuery<int?>(
+                                "SELECT IdleFireTimeoutSec FROM roomtableconfig WHERE GAME_ID={0} AND RoomIndex=0 AND TableIndex={1} LIMIT 1", gameId, tIdx)
+                                .FirstOrDefault() ?? 0;
+                            row["idleFireTimeoutSec"] = IdleSecToMin(idleSecRow);
 
-                            // 明星97：追加 RTP/Combo 配置回显（游戏级，仅 subType==1 有）
-                            if (subType == 1 && mx97Rtp != null)
-                                AddMx97RtpRowFields(row, mx97Rtp);
+                            // 按桌筹码档位(1~5级)：roomtableconfig_bet 优先（与彩金单挑同管道），
+                            // 缺省回退 parabetroom 房间级(base 行) → "1,5,10,15,20"。每桌独立，room 仅作兜底。
+                            string betScores = ef.Database.SqlQuery<string>(
+                                "SELECT BetScores FROM roomtableconfig_bet WHERE GAME_ID={0} AND TableIndex={1} LIMIT 1", gameId, tIdx)
+                                .FirstOrDefault();
+                            if (string.IsNullOrEmpty(betScores))
+                            {
+                                betScores = ef.Database.SqlQuery<string>(
+                                    "SELECT BetScores FROM parabetroom WHERE GAME_ID={0} LIMIT 1", gameId).FirstOrDefault();
+                            }
+                            if (string.IsNullOrEmpty(betScores)) betScores = "1,5,10,15,20";
+                            row["betScores"] = betScores;
+
+                            // 水浒传：赔付表双端硬编码（ShzRules 常量），Payout0~8 输入框置灰防误改
+                            if (subType == 3) row["payoutReadonly"] = true;
+
+                            // 明星97：追加按桌 RTP/Combo 配置回显（仅 subType==1 有）
+                            if (subType == 1)
+                            {
+                                var tableRtp = ef.GameConfigLabas
+                                    .Where(c => c.GameId == gameId && c.TableIndex == tIdx &&
+                                        (c.OptKey.StartsWith("Rtp") || c.OptKey.StartsWith("Combo")))
+                                    .ToDictionary(c => c.OptKey, c => c.OptValue);
+                                if (tableRtp.Count == 0 && mx97Rtp != null) tableRtp = mx97Rtp;
+                                AddMx97RtpRowFields(row, tableRtp);
+                            }
+                            // 水果拉霸：追加按桌 RTP 闭环 + 面板日库存回显（仅 subType==2 有）
+                            if (subType == 2)
+                            {
+                                var tableRtp = ef.GameConfigLabas
+                                    .Where(c => c.GameId == gameId && c.TableIndex == tIdx &&
+                                        (c.OptKey.StartsWith("Rtp") || c.OptKey.StartsWith("WheelStock")))
+                                    .ToDictionary(c => c.OptKey, c => c.OptValue);
+                                if (tableRtp.Count == 0 && fruitRtp != null) tableRtp = fruitRtp;
+                                AddFruitRtpRowFields(row, tableRtp);
+                            }
+                            // 水浒传：追加按桌 RTP 闭环 + 结果类回显（仅 subType==3 有）
+                            if (subType == 3)
+                            {
+                                var tableRtp = ef.GameConfigLabas
+                                    .Where(c => c.GameId == gameId && c.TableIndex == tIdx &&
+                                        (c.OptKey.StartsWith("Rtp") || c.OptKey.StartsWith("ShzRate") || c.OptKey.StartsWith("ShzStock")))
+                                    .ToDictionary(c => c.OptKey, c => c.OptValue);
+                                if (tableRtp.Count == 0 && shzRtp != null) tableRtp = shzRtp;
+                                AddShzRtpRowFields(row, tableRtp);
+                            }
 
                             rows.Add(row);
                         }
@@ -506,6 +559,7 @@ namespace YYT.Web.Areas.Game.Controllers
 							efBet.Database.ExecuteSqlCommand("DELETE FROM parabet WHERE GAME_ID=" + betGid + " AND ID=" + (betGid * 1000 + delIdx));
 							efBet.Database.ExecuteSqlCommand("DELETE FROM cardpayoutprofile WHERE GAME_ID=" + betGid + " AND TableId=" + delIdx);
 							efBet.Database.ExecuteSqlCommand("DELETE FROM roomtableconfig_bet WHERE GAME_ID=" + betGid + " AND TableIndex=" + delIdx);
+							efBet.Database.ExecuteSqlCommand("DELETE FROM betgamecfg WHERE GAME_ID=" + betGid + " AND TableIndex=" + delIdx);
 							// 压实 roomtableconfig.TableIndex 为 0..k-1
 							CompactFishTableIndexes(efBet, betGid);
 							// 压实 parabet ID 为 gameId*1000+0..k-1，与 roomtableconfig 保持同构
@@ -516,6 +570,9 @@ namespace YYT.Web.Areas.Game.Controllers
 							// 压实 roomtableconfig_bet.TableIndex 高位左移(与 cardpayoutprofile 同思路)
 							efBet.Database.ExecuteSqlCommand(
 								"UPDATE roomtableconfig_bet SET TableIndex=TableIndex-1 WHERE GAME_ID=" + betGid + " AND TableIndex>" + delIdx);
+							// 压实 betgamecfg.TableIndex 高位左移
+							efBet.Database.ExecuteSqlCommand(
+								"UPDATE betgamecfg SET TableIndex=TableIndex-1 WHERE GAME_ID=" + betGid + " AND TableIndex>" + delIdx);
 							// 同步 base 行 NUM = 剩余桌台数
 							SyncBetTableNum(efBet, betGid);
 						}
@@ -587,26 +644,11 @@ namespace YYT.Web.Areas.Game.Controllers
                     // ── 构建 gameconfiglaba 参数列表（保留写兼容）──
                     List<M_GameConfigLaba> labaList = new List<M_GameConfigLaba>();
 
-                    int labaSymMax = subType == 2 ? 7 : (subType == 1 || subType == 3 ? 8 : -1);
-                    for (int p = 0; p <= labaSymMax; p++)
-                    {
-                        int val = form.Q<int>("Payout" + p, -1);
-                        if (val >= 0)
-                            labaList.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "Payout" + p, OptValue = val, TIME = DateTime.Now, Type = "Payout" });
-                        int prob = form.Q<int>("Prob" + p, -1);
-                        if (prob > 10000)
-                        {
-                            msg.content = "符号" + p + " 出现率不能超过 10000！";
-                            return Json(msg);
-                        }
-                        if (prob >= 0)
-                            labaList.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "Prob" + p, OptValue = prob, TIME = DateTime.Now, Type = "Payout" });
-                    }
-
                     int[] wheelProbs = new int[24];
                     if (subType == 2)  // 水果拉霸：大转盘 24 面板位指向概率
                     {
                         int wheelSum = 0;
+                        List<int> submittedWheel = new List<int>();
                         for (int w = 0; w < 24; w++)
                         {
                             int wp = form.Q<int>("WheelProb" + w, -1);
@@ -619,7 +661,7 @@ namespace YYT.Web.Areas.Game.Controllers
                             {
                                 wheelSum += wp;
                                 wheelProbs[w] = wp;
-                                labaList.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "WheelProb" + w, OptValue = wp, TIME = DateTime.Now, Type = "Payout" });
+                                submittedWheel.Add(w);
                             }
                         }
                         if (wheelSum > 10000)
@@ -627,13 +669,61 @@ namespace YYT.Web.Areas.Game.Controllers
                             msg.content = "大转盘指向概率合计不能超过 10000！";
                             return Json(msg);
                         }
+                        // 权重全 0（未填/显式清零）→ 兜底为默认面板表：保证新建桌台或清空保存时
+                        // 落库的始终是满足逐区等值约束的合法默认表（原语义"全 0 走服务端内置表"取消）
+                        if (wheelSum == 0)
+                        {
+                            for (int w = 0; w < 24; w++)
+                            {
+                                wheelProbs[w] = FruitPanelDefaultProb[w];
+                                if (!submittedWheel.Contains(w)) submittedWheel.Add(w);
+                            }
+                        }
+                        // 统一只落库一次，避免重复 WheelProb 条目触发 gameconfiglaba 主键(GameId,TableIndex,OptKey)冲突
+                        foreach (int w in submittedWheel)
+                        {
+                            labaList.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "WheelProb" + w, OptValue = wheelProbs[w], TIME = DateTime.Now, Type = "Payout" });
+                        }
                     }
 
                     decimal labaBetMinD = form.Q<decimal>("MinBet", -1m);
                     decimal labaBetMaxD = form.Q<decimal>("MaxBet", -1m);
+                    // 三个拉霸（明星97/水果机/水浒传）最小/最大押分只能为整数
+                    // （与前端 step=1/保存校验一致，权威拦截）
+                    if (subType > 0
+                        && ((labaBetMinD >= 0 && labaBetMinD != Math.Floor(labaBetMinD))
+                            || (labaBetMaxD >= 0 && labaBetMaxD != Math.Floor(labaBetMaxD))))
+                    {
+                        msg.content = "拉霸最小/最大押分只能设置整数！";
+                        return Json(msg);
+                    }
                     int labaCoinsNeed = form.Q<int>("COIN_NEED", -1);
                     int labaDefaultBetIdx = form.Q<int>("defaultBetIndex", -1);
                     int labaExCoin = form.Q<int>("EX_COIN", -1);
+                    // 按桌筹码档位(1~5级)：与押注类同字段 BetScores（逗号串）。null=页面未提交(保留现值)；
+                    // ""或全 0=清除(回退房间级)；1~5 个非负整数，非法值中断保存。
+                    string labaBetScores = form.Q<string>("BetScores", null);
+                    if (labaBetScores != null)
+                    {
+                        string[] tokens = labaBetScores.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                        List<long> chipVals = new List<long>();
+                        foreach (string tk in tokens)
+                        {
+                            long v;
+                            if (!long.TryParse(tk.Trim(), out v) || v < 0)
+                            {
+                                msg.content = "筹码档位必须为不小于 0 的整数，多个筹码用英文逗号分隔！";
+                                return Json(msg);
+                            }
+                            chipVals.Add(v);
+                        }
+                        if (chipVals.Count > 5)
+                        {
+                            msg.content = "筹码档位最多 5 级！";
+                            return Json(msg);
+                        }
+                        labaBetScores = chipVals.Count == 0 || chipVals.All(v => v == 0) ? "" : string.Join(",", chipVals);
+                    }
                     int labaCoinSc = form.Q<int>("COIN_SC", -1);
                     int labaGameMo = form.Q<int>("Game_Mo", -1);
                     decimal labaScoreSw = form.Q<decimal>("scoreSwitch", -1m);
@@ -661,24 +751,12 @@ namespace YYT.Web.Areas.Game.Controllers
                         labaList.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "scoreSwitchX10", OptValue = (int)Math.Round(labaScoreSw * 10m), TIME = DateTime.Now, Type = "Room" });
 
                     // ── 构建 paralaba 结构化参数（新表）──
-                    int labaDif = form.Q<int>("DIF", 0);
-                    int labaHar = form.Q<int>("HAR", 0);
                     M_ParaLaba labaPara = new M_ParaLaba();
                     labaPara.ID = tableId;
                     labaPara.GAME_ID = gameId;
                     labaPara.TableIndex = tableId % 1000;
                     labaPara.SubType = subType;
-                    labaPara.DIF = (subType == 3) ? labaDif : 0;   // 水浒传有独立 DIF/HAR
-                    labaPara.HAR = (subType == 3) ? labaHar : 0;
-                    // 符号赔率
-                    for (int p = 0; p <= labaSymMax; p++)
-                    {
-                        int pv = form.Q<int>("Payout" + p, 0);
-                        typeof(M_ParaLaba).GetProperty("Payout" + p)?.SetValue(labaPara, pv);
-                        int pr = form.Q<int>("Prob" + p, 0);
-                        typeof(M_ParaLaba).GetProperty("Prob" + p)?.SetValue(labaPara, pr);
-                    }
-                    // 大转盘
+                    // 大转盘（水果拉霸）
                     for (int w = 0; w < 24; w++)
                         typeof(M_ParaLaba).GetProperty("WheelProb" + w)?.SetValue(labaPara, wheelProbs[w]);
                     // 押分与兑换
@@ -697,33 +775,57 @@ namespace YYT.Web.Areas.Game.Controllers
                     int rtCoinsNeed = labaCoinsNeed >= 0 ? labaCoinsNeed : 0;
                     // 按桌加炮幅度×10：与 ScoreSwitchX10 同口径(拉霸表单 scoreSwitch 为显示值)
                     int rtGunStep = labaScoreSw >= 0 ? (int)Math.Round(labaScoreSw * 10m) : 1;
+                    // 无发炮踢出时间：后台以分钟编辑，落库为秒；开关默认开启(1)
+                    int rtIdleSec = IdleMinToSec(form.Q<int>("IdleFireTimeoutSec", 0));
+                    int rtIdleKick = form.Q<int>("IdleFireKickEnabled", 1) == 1 ? 1 : 0;
                     using (var efRt = new GameDbContext())
                     {
                         efRt.Database.ExecuteSqlCommand(
                             "DELETE FROM roomtableconfig WHERE GAME_ID=" + gameId + " AND RoomIndex=0 AND TableIndex=" + rtTableIndex);
                         efRt.Database.ExecuteSqlCommand(
                             "INSERT INTO roomtableconfig (GAME_ID, RoomIndex, TableIndex, TableName, Enabled, MaxSeats, OneCoinScore, BetMin, BetMax, CoinsNeed, IdleFireTimeoutSec, IdleFireKickEnabled, GunPowerStep) VALUES (" +
-                            gameId + ",0," + rtTableIndex + ",'" + labaTableName.Replace("'", "''") + "'," + labaEnabled + ",6,1," +
-                            rtBetMin + "," + rtBetMax + "," + rtCoinsNeed + ",0,0," + rtGunStep + ")");
+                            gameId + ",0," + rtTableIndex + ",'" + labaTableName.Replace("'", "''") + "'," + labaEnabled + ",6," + (labaCoinSc > 0 ? labaCoinSc : 1) + "," +
+                            rtBetMin + "," + rtBetMax + "," + rtCoinsNeed + "," + rtIdleSec + "," + rtIdleKick + "," + rtGunStep + ")");
                     }
 
-                    // ── 明星97(GameId=16) RTP 控制配置：游戏级参数写 GameConfigLaba(TableIndex=0)，
+                    // ── 明星97(GameId=16) RTP 控制配置：写入当前桌台的 GameConfigLaba(TableIndex)，
                     // 留空即删除该 OptKey（服务端整包先清空再套用，缺项回内置默认）。
                     // 校验/落库失败则中断本次保存，避免桌台已存而 RTP 未生效的观感问题。
                     if (subType == 1)
                     {
-                        Msg rtpMsg = SaveMx97RtpConfig(form, gameId);
+                        Msg rtpMsg = SaveMx97RtpConfig(form, gameId, tableId % 1000);
+                        if (rtpMsg.code != 1)
+                        {
+                            return Json(rtpMsg);
+                        }
+                    }
+                    // ── 水果拉霸(GameId=40) RTP 控制配置：按当前桌台保存 6 个闭环参数 + WheelStock0..23 面板日库存，
+                    // 含理论 RTP 与目标偏差的黄色回显警告（逐区等值硬门槛已移除，不拦截）。
+                    if (subType == 2)
+                    {
+                        Msg rtpMsg = SaveFruitRtpConfig(form, gameId, wheelProbs, tableId % 1000);
+                        if (rtpMsg.code != 1)
+                        {
+                            return Json(rtpMsg);
+                        }
+                    }
+                    // ── 水浒传(GameId=53) RTP 控制配置：按当前桌台保存闭环参数 Rtp* + 结果类 ShzRate/ShzStock，
+                    // 赔付表双端硬编码（ShzRules 常量）无赔率项；留空即删除该 OptKey。
+                    if (subType == 3)
+                    {
+                        Msg rtpMsg = SaveShzRtpConfig(form, gameId, tableId % 1000);
                         if (rtpMsg.code != 1)
                         {
                             return Json(rtpMsg);
                         }
                     }
 
-                    msg = new B_LabaGamePara().SaveTableFull(tableId, gameId, labaList, labaPara, labaTableName, labaEnabled);
+                    msg = new B_LabaGamePara().SaveTableFull(tableId, gameId, labaList, labaPara, labaTableName, labaEnabled,
+                        labaBetScores, labaDefaultBetIdx >= 0 ? labaDefaultBetIdx : 0);
 
-                    // ── 明星97 保存成功后补发 PC 热更：center UpdateGameConfig → SendExtendedPara，
+                    // ── 保存成功后补发 PC 热更：center UpdateGameConfig → SendExtendedPara，
                     // 游戏服 ResetConfig + ApplyProfile，下一局立即生效（无需重启）。
-                    if (subType == 1 && msg.code == 1)
+                    if ((subType == 1 || subType == 2 || subType == 3) && msg.code == 1)
                     {
                         try
                         {
@@ -748,12 +850,14 @@ namespace YYT.Web.Areas.Game.Controllers
 
                 int maxSeats = gameType == 2 ? 6 : (gameType == 1 ? 0 : 8);
 
-                int idleTimeout = form.Q<int>("IdleFireTimeoutSec", 0);
-                if (idleTimeout < 0)
+                // 后台「无发炮踢出时间」以分钟编辑；落库/下发/服务端均按秒存储与判定（分钟 → 秒）
+                int idleTimeoutMin = form.Q<int>("IdleFireTimeoutSec", 0);
+                if (idleTimeoutMin < 0)
                 {
                     msg.content = "无发炮踢出时间不能为负数！";
                     return Json(msg);
                 }
+                int idleTimeout = IdleMinToSec(idleTimeoutMin);
 
                 decimal minBetDisplay = form.Q<decimal>("MinBet", 0m);
                 decimal maxBetDisplay = form.Q<decimal>("MaxBet", 0m);
@@ -803,6 +907,7 @@ namespace YYT.Web.Areas.Game.Controllers
                     // 押注玩法旧字段已从页面移除：保存时沿用库内原值，不被表单缺省值清零。
                     // 一房N桌模型：专有参数存 base 行(ID=gameId*1000)，所有桌共享，故从 base 行取旧值。
                     // 首次建游戏(base 行不存在)时，这些参数用服务端 GetBetPara 同款默认值，避免全 0。
+                    // 庄闲/和(幸运六狮)、皇冠(彩金单挑)押分限红：页面已放回输入框，缺省沿用 base 行旧值。
                     M_ParaBetRoom oldRoom = null;
                     using (var efOld = new GameDbContext())
                     {
@@ -812,20 +917,51 @@ namespace YYT.Web.Areas.Game.Controllers
                     M_ParaBetRoom room = new M_ParaBetRoom();
                     room.ID = tableId;
                     room.GAME_ID = gameId;
-                    room.BET_TIME = 10;
+                    // 押注玩法设置：倒计时/单门限红/全台限红/抢庄门槛（页面对应字段，缺省沿用 base 行旧值）
+                    room.BET_TIME = form.Q<int>("BET_TIME", oldRoom == null ? 10 : oldRoom.BET_TIME);
                     room.NUM = num;
                     room.BET_MIN = betMin;
                     room.BET_MAX = betMax;
-                    room.BET_MIN_VICE = oldRoom == null ? 10 : oldRoom.BET_MIN_VICE;
-                    room.BET_MAX_VICE = oldRoom == null ? 1000 : oldRoom.BET_MAX_VICE;
+                    // 和门最小押分页面不提供输入，统一沿用 base 行旧值（幸运六狮用，彩金单挑不用）
                     room.BET_MIN_DRAW = oldRoom == null ? 10 : oldRoom.BET_MIN_DRAW;
-                    room.BET_MAX_DRAW = oldRoom == null ? 1000 : oldRoom.BET_MAX_DRAW;
+                    // 庄闲/和(幸运六狮)、皇冠(彩金单挑)押分限红：按游戏决定哪些字段可从页面读取。
+                    // 其他押注玩法无副玩法/和门，沿用 base 行旧值，避免被页面隐藏字段误提交覆盖。
+                    if (gameId == 2)
+                    {
+                        // 彩金单挑：皇冠最小/最大押分(vice)；和门(draw)服务端不使用，沿用库内旧值
+                        room.BET_MIN_VICE = form.Q<int>("BET_MIN_VICE", oldRoom == null ? 10 : oldRoom.BET_MIN_VICE);
+                        room.BET_MAX_VICE = form.Q<int>("BET_MAX_VICE", oldRoom == null ? 1000 : oldRoom.BET_MAX_VICE);
+                        room.BET_MAX_DRAW = oldRoom == null ? 1000 : oldRoom.BET_MAX_DRAW;
+                    }
+                    else if (gameId == 10)
+                    {
+                        // 幸运六狮：庄闲最大押分(vice) + 和最大押分(draw)；庄闲最小沿用库内旧值
+                        room.BET_MIN_VICE = oldRoom == null ? 10 : oldRoom.BET_MIN_VICE;
+                        room.BET_MAX_VICE = form.Q<int>("BET_MAX_VICE", oldRoom == null ? 1000 : oldRoom.BET_MAX_VICE);
+                        room.BET_MAX_DRAW = form.Q<int>("BET_MAX_DRAW", oldRoom == null ? 1000 : oldRoom.BET_MAX_DRAW);
+                    }
+                    else
+                    {
+                        room.BET_MIN_VICE = oldRoom == null ? 10 : oldRoom.BET_MIN_VICE;
+                        room.BET_MAX_VICE = oldRoom == null ? 1000 : oldRoom.BET_MAX_VICE;
+                        room.BET_MAX_DRAW = oldRoom == null ? 1000 : oldRoom.BET_MAX_DRAW;
+                    }
+                    if (room.BET_MAX_VICE < 0 || room.BET_MAX_DRAW < 0 || room.BET_MIN_VICE < 0)
+                    {
+                        msg.content = "庄闲/和/皇冠押分不能为负数！";
+                        return Json(msg);
+                    }
+                    if (gameId == 2 && room.BET_MIN_VICE > room.BET_MAX_VICE)
+                    {
+                        msg.content = "皇冠最小押分不能大于最大押分！";
+                        return Json(msg);
+                    }
                     room.EX_COIN = exCoin;
                     room.COIN_SC = coinSc;
                     room.COIN_NEED = coinNeed;
-                    room.BANKER_SC_NEED = oldRoom == null ? 500000 : oldRoom.BANKER_SC_NEED;
-                    room.SC_LIMIT_SING = oldRoom == null ? 3000 : oldRoom.SC_LIMIT_SING;
-                    room.SC_LIMIT_ALL = oldRoom == null ? 10000 : oldRoom.SC_LIMIT_ALL;
+                    room.BANKER_SC_NEED = form.Q<int>("BANKER_SC_NEED", oldRoom == null ? 500000 : oldRoom.BANKER_SC_NEED);
+                    room.SC_LIMIT_SING = form.Q<int>("SC_LIMIT_SING", oldRoom == null ? 3000 : oldRoom.SC_LIMIT_SING);
+                    room.SC_LIMIT_ALL = form.Q<int>("SC_LIMIT_ALL", oldRoom == null ? 10000 : oldRoom.SC_LIMIT_ALL);
                     room.Game_Mo = gameMo;
                     room.BetScores = (form.Q<string>("BetScores", string.Empty) ?? string.Empty).Trim();
                     if (string.IsNullOrEmpty(room.BetScores)) room.BetScores = oldRoom != null && !string.IsNullOrEmpty(oldRoom.BetScores) ? oldRoom.BetScores : "1,5,10,15,20";
@@ -846,61 +982,26 @@ namespace YYT.Web.Areas.Game.Controllers
                     machine.BANKER_HAR = form.Q<int>("BANKER_HAR", 0);
                     machine.BANKER_SITE_TYPE = form.Q<int>("BANKER_SITE_TYPE", 0);
                     machine.BANKER_PER = form.Q<int>("BANKER_PER", 0);
-
-                    // 押注赔率（每门：出现率万分比 + 倍数），复用 cardpayoutprofile：
-                    // HandType=门索引，PayoutMultiplier=倍率x10，ProbabilityBasis=出现率(万分比)
-                    int betItemCount = GetBetItemCount(gameId);
-                    if (betItemCount > 0)
+                    // 庄家抽水（库内千分比，服务端结算时 /1000）：0~99 对应 0~9.9%
+                    if (machine.BANKER_PER < 0 || machine.BANKER_PER > 99)
                     {
-                        int betPayoutOn = form.Q<int>("BetPayoutOn", 0) == 1 ? 1 : 0;
-                        List<int[]> betProfiles = new List<int[]>();
-                        int betProbSum = 0;
-                        for (int bi = 0; bi < betItemCount; bi++)
-                        {
-                            int prob = (int)Math.Round(form.Q<decimal>("bp" + bi, 0m), MidpointRounding.AwayFromZero);
-                            decimal multD = form.Q<decimal>("bm" + bi, 0m);
-                            int mult = (int)Math.Round(multD * 10m, MidpointRounding.AwayFromZero);
-                            if (prob < 0 || prob > 10000 || mult < 0)
-                            {
-                                msg.content = "押注门出现率须在 0-10000（万分比）之间且倍数不能为负！";
-                                return Json(msg);
-                            }
-                            betProbSum += prob;
-                            betProfiles.Add(new[] { bi, prob, mult });
-                        }
-                        if (betPayoutOn == 1 && betProbSum > 10000)
-                        {
-                            msg.content = "押注门出现率合计 " + betProbSum + " 超过 10000（万分比），请调低后再保存！";
-                            return Json(msg);
-                        }
-
-                        int tIdxBet = tableId % 1000;
-                        using (var efP = new GameDbContext())
-                        {
-                            using (var txP = efP.Database.BeginTransaction())
-                            {
-                                try
-                                {
-                                    efP.Database.ExecuteSqlCommand(
-                                        "DELETE FROM cardpayoutprofile WHERE GAME_ID={0} AND TableId={1}", gameId, tIdxBet);
-                                    foreach (int[] p in betProfiles)
-                                    {
-                                        efP.Database.ExecuteSqlCommand(
-                                            "INSERT INTO cardpayoutprofile (GAME_ID, TableId, HandType, PayoutMultiplier, ProbabilityBasis, StockLimit, StockRemain, Enabled) VALUES ({0},{1},{2},{3},{4},0,0,{5})",
-                                            gameId, tIdxBet, p[0], p[2], p[1], betPayoutOn);
-                                    }
-                                    txP.Commit();
-                                }
-                                catch
-                                {
-                                    txP.Rollback();
-                                    throw;
-                                }
-                            }
-                        }
+                        msg.content = "庄家抽水比例超出范围（0~9.9%）！";
+                        return Json(msg);
                     }
 
-                    msg = new B_BetGamePara().SaveTableFull(room, machine);
+                    // 押注类玩法扩展配置（开奖权重与奖励等 JSON，按桌）：
+                    // 页面按 GAME_ID 渲染的 spec + doors 整包序列化，由 SaveTableFull 事务内 upsert 到 betgamecfg。
+                    // 服务端当前使用内置倍率，doors 段仅作 RTP 核算展示与预留存储，
+                    // spec 段（特殊奖励/庄闲和/彩金奖池）由服务端参数化生效。
+                    // CfgJson 为 VARCHAR(16000)（Poco 1.9.1 MySQL 驱动对 LONGTEXT 提取会崩溃），长度上限 15000。
+                    string betGameCfg = (form.Q<string>("BetGameCfg", string.Empty) ?? string.Empty).Trim();
+                    if (betGameCfg.Length > 15000)
+                    {
+                        msg.content = "玩法配置内容过长，请检查后重试！";
+                        return Json(msg);
+                    }
+
+                    msg = new B_BetGamePara().SaveTableFull(room, machine, betGameCfg);
                 }
                 else if (gameType == 1)
                 {
@@ -913,7 +1014,7 @@ namespace YYT.Web.Areas.Game.Controllers
                     int tIdx = tableId % 1000;
                     string tName = (form.Q<string>("TableName", string.Empty) ?? "").Trim();
                     int tblEnabled = form.Q<int>("Enabled", 1);
-                    int idleSec = form.Q<int>("IdleFireTimeoutSec", 0);
+                    int idleSec = form.Q<int>("IdleFireTimeoutSec", 0) * 60; // 分钟 → 秒
                     int tblIdleKick = form.Q<int>("IdleFireKickEnabled", 1);
                     int tblMaxSeats = form.Q<int>("MaxSeats", 6);
                     // 牌机难度(按桌)：16 位 DIF 串 + 炒场类型，与服务端 GetCardPara 的 id=gameId*1000+i 对齐。
@@ -1041,8 +1142,8 @@ namespace YYT.Web.Areas.Game.Controllers
                         // 服务端 GetCardPara 按 roomMax=1 只读 base 行(ID=gameId*1000)的这些字段，
                         // 必须与本次提交值一致，否则服务端读到的是旧值或自动补建的默认值。
                         // 注意：COIN_NEED 不再随单桌保存同步——入场金币按桌存 roomtableconfig.CoinsNeed，
-                        // 0 值由服务端回退房间级兜底值；房间级兜底仅当表单显式提交 ROOM_COIN_NEED 时更新，
-                        // 避免"保存某张桌导致全部桌子的入场金币变成该桌的值"。
+                        // 0 值由服务端回退房间级兜底值（pararoom base 行 COIN_NEED，默认 10000），
+                        // 后台已不提供"房间入场金币（兜底）"字段，兜底值仅随库保留、不再可改。
                         int baseIdCard = gameId * 1000;
                         int affBase = ef.Database.ExecuteSqlCommand(
                             "UPDATE ParaRoom SET EX_COIN=" + cardExCoin + ",COIN_SC=" + coinSc +
@@ -1052,15 +1153,6 @@ namespace YYT.Web.Areas.Game.Controllers
                             ",MaxSeats=" + tblMaxSeats + ",IdleFireTimeoutSec=" + idleSec +
                             ",IdleFireKickEnabled=" + (tblIdleKick != 0 ? 1 : 0) + ",Enabled=" + (tblEnabled != 0 ? 1 : 0) +
                             ",TableName='" + tName.Replace("'", "''") + "' WHERE GAME_ID=" + gameId + " AND ID=" + baseIdCard);
-                        // 房间级入场金币(未配置桌的兜底值)：仅显式提交 ROOM_COIN_NEED 时更新，
-                        // base 行不存在(首张桌台)时由 SyncCardTableNum 自动 INSERT(COIN_NEED 默认 10000)
-                        int roomCoinNeed = form.Q<int>("ROOM_COIN_NEED", -1);
-                        if (roomCoinNeed >= 0)
-                        {
-                            ef.Database.ExecuteSqlCommand(
-                                "UPDATE ParaRoom SET COIN_NEED=" + roomCoinNeed +
-                                " WHERE GAME_ID=" + gameId + " AND ID=" + baseIdCard);
-                        }
                         if (affBase == 0)
                         {
                             // base 行不存在(首张桌台)时由 SyncCardTableNum 自动 INSERT，此处无需重复
@@ -1102,7 +1194,7 @@ namespace YYT.Web.Areas.Game.Controllers
                     int tIdx = tableId % 1000;
                     string tName = (form.Q<string>("TableName", string.Empty) ?? "").Trim();
                     int tblEnabled = form.Q<int>("Enabled", 1);
-                    int idleSec = form.Q<int>("IdleFireTimeoutSec", 0);
+                    int idleSec = form.Q<int>("IdleFireTimeoutSec", 0) * 60; // 分钟 → 秒
                     int tblIdleKick = form.Q<int>("IdleFireKickEnabled", 1);
                     int tblMaxSeats = form.Q<int>("MaxSeats", 6);
                     // 鱼机难度（机台设定）：0-9级，对应可击杀倍率上限 {0=不限,1=1000,2=300,3=200,4=100,5=40,6=30,7=25,8=20,9=18}；
@@ -1159,7 +1251,7 @@ namespace YYT.Web.Areas.Game.Controllers
                         // 同步 pararoom.NUM = roomtableconfig 条数，保证旧房间参数口径与新按桌配置一致
                         SyncFishTableNum(ef, gameId);
                     }
-                    var srv = new SConnect();   // RP/TC/PA 共用同一连接，减少管道竞争
+                    var srv = new SConnect();   // RP 独立连接；TC/PA 各自 new SConnect（SConnect 每次发送后 finally 关闭管道，无法复用）
                     msg = srv.SendReadString(EScMsgType.RP, gameId);
                     if (msg.code == 1)
                     {
@@ -1175,21 +1267,27 @@ namespace YYT.Web.Areas.Game.Controllers
                                 OneCoinScore = (uint)coinSc,
                                 CoinsNeed = (uint)coinNeed
                             };
-                            srv.SendTcCommand((ushort)gameId, 0, (ushort)tIdx, tName, (byte)(tblEnabled != 0 ? 1 : 0), (uint)idleSec, (byte)(tblIdleKick != 0 ? 1 : 0), (ushort)tblMaxSeats, null, tExt);
+                            // TC 用独立连接：SConnect 发送后 finally 关闭管道，复用 RP 的 srv 会导致重连竞争
+                            // （线上表现为"TC数据发送失败！管道尚未连接"）。
+                            var srvTc = new SConnect();
+                            srvTc.SendTcCommand((ushort)gameId, 0, (ushort)tIdx, tName, (byte)(tblEnabled != 0 ? 1 : 0), (uint)idleSec, (byte)(tblIdleKick != 0 ? 1 : 0), (ushort)tblMaxSeats, null, tExt);
                         }
                         else
                         {
-                            srv.SendTcCommand((ushort)gameId, 0, (ushort)tIdx, tName, (byte)(tblEnabled != 0 ? 1 : 0), (uint)idleSec, (byte)(tblIdleKick != 0 ? 1 : 0), (ushort)tblMaxSeats);
+                            var srvTc = new SConnect();
+                            srvTc.SendTcCommand((ushort)gameId, 0, (ushort)tIdx, tName, (byte)(tblEnabled != 0 ? 1 : 0), (uint)idleSec, (byte)(tblIdleKick != 0 ? 1 : 0), (ushort)tblMaxSeats);
                         }
                         // 鱼机难度热更：PA + gameID(2位) + tableIndex(3位) + DIF + SITE_TYPE。
                         // 中心服 PA 分支调 SetTablePara 下发 COM_TABLE_SET 给子游戏实时生效（AlgPlayerReset_DIF），
                         // 同时 SetTablePara 鱼机分支会调 UpsertFishTablePara 落库，保证 RP 全量重载与重启后一致。
                         try
                         {
-                            var paMsg = srv.SendReadString(EScMsgType.PA,
-                                gameId.ToString().PadLeft(2, '0'),
-                                tIdx.ToString().PadLeft(3, '0'),
-                                fishDif, fishSiteType);
+                        // PA 同 TC：独立连接避免复用已关闭管道导致重连失败
+                        var srvPa = new SConnect();
+                        var paMsg = srvPa.SendReadString(EScMsgType.PA,
+                            gameId.ToString().PadLeft(2, '0'),
+                            tIdx.ToString().PadLeft(3, '0'),
+                            fishDif, fishSiteType);
                             if (paMsg.code != 1)
                             {
                                 LogHelper.WriteLog(typeof(GameConfigController), "鱼机难度热更失败：" + (paMsg.content ?? ""));
@@ -1226,6 +1324,11 @@ namespace YYT.Web.Areas.Game.Controllers
         {
             return System.Array.IndexOf(DecimalBetFishGameIds, gameId) >= 0;
         }
+
+        // 无发炮踢出时间：库/协议/服务端均按秒存储与判定；后台 UI 以分钟编辑。
+        // 回显 秒→分钟（四舍五入，0 保持 0）；保存 分钟→秒。
+        private static int IdleSecToMin(int sec) { return sec <= 0 ? 0 : (sec + 30) / 60; }
+        private static int IdleMinToSec(int min) { return min <= 0 ? 0 : min * 60; }
 
         // 押注类各游戏投注门数：2=彩金单挑(5) 10=幸运六狮(12) 29=金鲨银鲨(8) 47=奔驰宝马(8)
         private static int GetBetItemCount(int gameId)
@@ -1641,51 +1744,40 @@ namespace YYT.Web.Areas.Game.Controllers
             return val != null ? (int)val : 0;
         }
 
-        // ── 明星97(GameId=16) RTP 控制配置（游戏级，存 GameConfigLaba TableIndex=0）──
+        // ── 明星97(GameId=16) RTP 控制配置（按桌存 GameConfigLaba TableIndex）──
         // 见《明星97-RTP控制-后台对接文档》：OptValue 为 int，小数用整数放大表示；
         // 服务端收到整包配置先清空再套用，后台删掉某 OptKey 即回内置默认值。
         private static readonly string[] Mx97RtpKeys =
         {
             "RtpTargetX100", "RtpKp", "RtpDeadband", "RtpDeltaMax",
-            "RtpStockThreshold", "UseOutcomeFirst", "RtpWindow"
+            "RtpStockThreshold", "RtpWindow"
         };
         private static readonly string[] Mx97RtpLabels =
         {
             "目标返奖率", "闭环比例系数", "死区", "单步偏置上限",
-            "大奖库存阈值", "结果优先生成开关", "RTP 统计窗口"
+            "大奖库存阈值", "RTP 统计窗口"
         };
         private static readonly string[] Mx97RtpRanges =
         {
             "5000-12000（9000=90.00%）", "1-500（越大回调越快、波动越大）", "0-200（±0.10% 内不干预）", "1-200（单局最多拉动 0.40）",
-            "≥1（赔率≥该值视为大奖）", "0/1（0=回退旧开奖逻辑）", "≥100000（累计下注量）"
+            "≥1（赔率≥该值视为大奖）", "≥100000（累计下注量）"
         };
 
         /// <summary>
-        /// 保存明星97 RTP 控制配置：校验 + 写 GameConfigLaba(GameId=16, TableIndex=0)。
-        /// 留空的 RTP/Combo 项删除对应 OptKey（回内置默认/不限）；
-        /// UseOutcomeFirst=0（回退旧逻辑）、ComboStock=0（当天禁出）为合法显式值。
+        /// 保存明星97 结果出现率与 RTP 配置：校验 + 写 GameConfigLaba(GameId=16, 当前 TableIndex)。
+        /// 绝对出现率语义：ComboProb{code}=每 10000 次实际出现次数（填多少出现多少），不中奖=10000−Σ；
+        /// RTP 闭环默认关闭（服务端 kp=0），Rtp* 留空即不启用；ComboStock=0（当天禁出）为合法显式值。
         /// </summary>
-        private static Msg SaveMx97RtpConfig(FormCollection form, int gameId)
+        private static Msg SaveMx97RtpConfig(FormCollection form, int gameId, int tableIndex)
         {
             Msg msg = new Msg(1, "RTP 配置保存成功！");
             List<M_GameConfigLaba> toWrite = new List<M_GameConfigLaba>();
 
-            // RTP 闭环参数（7 项）：留空(-1)删除；UseOutcomeFirst 开关恒有值(0/1)
+            // RTP 闭环参数（6 项）：留空(-1)删除
             for (int i = 0; i < Mx97RtpKeys.Length; i++)
             {
                 string key = Mx97RtpKeys[i];
                 int v = form.Q<int>(key, -1);
-                if (key == "UseOutcomeFirst")
-                {
-                    if (v != 0 && v != 1)
-                    {
-                        msg.code = 0;
-                        msg.content = "「结果优先生成开关」取值不合法（0=回退旧开奖逻辑 / 1=结果优先生成）！";
-                        return msg;
-                    }
-                    toWrite.Add(new M_GameConfigLaba { GameId = gameId, OptKey = key, OptValue = v, Type = "RTP" });
-                    continue;
-                }
                 if (v < 0) continue;   // 留空：删除该 OptKey，回内置默认
                 bool ok = true;
                 switch (key)
@@ -1706,7 +1798,9 @@ namespace YYT.Web.Areas.Game.Controllers
                 toWrite.Add(new M_GameConfigLaba { GameId = gameId, OptKey = key, OptValue = v, Type = "RTP" });
             }
 
-            // 组合结果配置（300-359）：Combo<code> 赔率>0 / ComboProb<code> 出现率1-10000 / ComboStock<code> 库存≥0
+            // 组合结果配置（300-359）：Combo<code> 赔率>0 / ComboProb<code> 出现率0-10000(0=不出现) / ComboStock<code> 库存≥0
+            // 绝对语义：出现率合计不得超过 10000（每 10000 次最多出现 10000 次）
+            int probSum = 0;
             for (int code = 300; code <= 359; code++)
             {
                 int pay = form.Q<int>("Combo" + code, -1);
@@ -1720,35 +1814,47 @@ namespace YYT.Web.Areas.Game.Controllers
                     msg.content = "结果类 " + code + " 赔率必须大于 0（留空表示用内置默认赔率）！";
                     return msg;
                 }
-                if (prob > 0 && prob <= 10000)
+                if (prob >= 0 && prob <= 10000)   // 0=该牌型不出现（合法显式值）
+                {
                     toWrite.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "ComboProb" + code, OptValue = prob, Type = "Combo" });
+                    probSum += prob;
+                }
                 else if (prob != -1)
                 {
                     msg.code = 0;
-                    msg.content = "结果类 " + code + " 目标出现率须在 1-10000（万分比），留空表示用内置默认出现率！";
+                    msg.content = "结果类 " + code + " 出现率须在 0-10000（万分比，0=不出现），留空表示用内置默认出现率！";
                     return msg;
                 }
                 if (stock >= 0)   // 0=当天禁出，合法
                     toWrite.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "ComboStock" + code, OptValue = stock, Type = "Combo" });
             }
+            if (probSum > 10000)
+            {
+                msg.code = 0;
+                msg.content = "明星97 出现机会合计 " + probSum + " 超过 10000（每 10000 次最多出现 10000 次），请调小后再保存！";
+                return msg;
+            }
 
-            // 落库：删除该游戏全部被管理 OptKey（含历史遗留的其它 TableIndex 行），
-            // 再按本次配置写入 TableIndex=0（服务端按 GameId 合并读取，TableIndex 不影响语义）。
-            // 被管理命名空间为 Rtp*/Combo*（明星97 专用），LIKE 前缀匹配避免大 IN 参数列表。
+            // 落库：只删除当前桌台被管理的 OptKey，再按本次配置写入当前 TableIndex。
+            // 被管理命名空间为 Rtp*/Combo* + UseOutcomeFirst（明星97 专用），LIKE 前缀匹配避免大 IN 参数列表。
+            // 注意：UseOutcomeFirst 不以 Rtp/Combo 开头，必须单独纳入删除范围，
+            // 否则旧行残留导致重复主键(16-0-UseOutcomeFirst) DbUpdateException，明星97 建/改桌台保存失败。
             using (var ef = new GameDbContext())
             {
                 List<M_GameConfigLaba> olds = ef.GameConfigLabas
-                    .Where(c => c.GameId == gameId && (c.OptKey.StartsWith("Rtp") || c.OptKey.StartsWith("Combo")))
+                    .Where(c => c.GameId == gameId && c.TableIndex == tableIndex &&
+                                (c.OptKey.StartsWith("Rtp") || c.OptKey.StartsWith("Combo") || c.OptKey == "UseOutcomeFirst"))
                     .ToList();
                 ef.GameConfigLabas.RemoveRange(olds);
                 foreach (M_GameConfigLaba row in toWrite)
                 {
                     row.GameId = gameId;
-                    row.TableIndex = 0;
+                    row.TableIndex = tableIndex;
                     row.TIME = DateTime.Now;
                     ef.GameConfigLabas.Add(row);
                 }
                 ef.SaveChanges();
+                SyncLabaRtpProfiles(ef, gameId, tableIndex, toWrite, 1, null);
             }
             return msg;
         }
@@ -1758,7 +1864,7 @@ namespace YYT.Web.Areas.Game.Controllers
         /// </summary>
         private static void AddMx97RtpRowFields(Dictionary<string, object> row, Dictionary<string, int> cfg)
         {
-            string[] rtpRowKeys = { "rtpTargetX100", "rtpKp", "rtpDeadband", "rtpDeltaMax", "rtpStockThreshold", "useOutcomeFirst", "rtpWindow" };
+            string[] rtpRowKeys = { "rtpTargetX100", "rtpKp", "rtpDeadband", "rtpDeltaMax", "rtpStockThreshold", "rtpWindow" };
             for (int i = 0; i < Mx97RtpKeys.Length; i++)
             {
                 int v;
@@ -1770,6 +1876,321 @@ namespace YYT.Web.Areas.Game.Controllers
                 row["combo" + code] = cfg.TryGetValue("Combo" + code, out v) ? (int?)v : null;
                 row["comboProb" + code] = cfg.TryGetValue("ComboProb" + code, out v) ? (int?)v : null;
                 row["comboStock" + code] = cfg.TryGetValue("ComboStock" + code, out v) ? (int?)v : null;
+            }
+        }
+
+        // ── 水浒传(GameId=53) RTP 控制配置（按桌存 GameConfigLaba TableIndex）──
+        // 见《水浒传RTP后台控制系统设计.md》：赔付表双端硬编码（ShzRules 常量），
+        // 闭环参数复用 Rtp* 键名（按 GameId 隔离存储）；结果类 400-459 键 ShzRate{code}/ShzStock{code}。
+        private static readonly int ShzComboMin = 400;
+        private static readonly int ShzComboMax = 459;
+        private static readonly int ShzStockMin = 440;   // 板级事件段：仅全屏同图案 440-448 / 混合 450-451 有库存
+        private static readonly int ShzStockMax = 451;
+
+        /// <summary>
+        /// 保存水浒传 结果出现率与 RTP 配置：校验 + 写 GameConfigLaba(GameId=53, 当前 TableIndex)。
+        /// 绝对出现率语义：ShzRate{code}=每 10000 次实际出现次数（填多少出现多少），不中奖=10000−Σ；
+        /// RTP 闭环默认关闭（服务端 kp=0），Rtp* 留空即不启用；ShzStock=0（当天禁出）为合法显式值。
+        /// 赔付表由双端硬编码，无赔率项；结果类 400-459 中未定义间隙（409/419/429/433-439/449/452-459）不接受配置。
+        /// </summary>
+        private static Msg SaveShzRtpConfig(FormCollection form, int gameId, int tableIndex)
+        {
+            Msg msg = new Msg(1, "水浒传 RTP 配置保存成功！");
+            List<M_GameConfigLaba> toWrite = new List<M_GameConfigLaba>();
+
+            // RTP 闭环参数（6 项）：键名与明星97 相同（Rtp*），按 GameId 隔离存储
+            for (int i = 0; i < Mx97RtpKeys.Length; i++)
+            {
+                string key = Mx97RtpKeys[i];
+                int v = form.Q<int>(key, -1);
+                if (v < 0) continue;   // 留空：删除该 OptKey，回内置默认
+                bool ok = true;
+                switch (key)
+                {
+                    case "RtpTargetX100": ok = v >= 5000 && v <= 12000; break;
+                    case "RtpKp": ok = v >= 1 && v <= 500; break;
+                    case "RtpDeadband": ok = v >= 0 && v <= 200; break;
+                    case "RtpDeltaMax": ok = v >= 1 && v <= 200; break;
+                    case "RtpStockThreshold": ok = v >= 1; break;
+                    case "RtpWindow": ok = v >= 100000; break;
+                }
+                if (!ok)
+                {
+                    msg.code = 0;
+                    msg.content = "RTP 参数「" + Mx97RtpLabels[i] + "」取值不合法，应为 " + Mx97RtpRanges[i] + "！";
+                    return msg;
+                }
+                toWrite.Add(new M_GameConfigLaba { GameId = gameId, OptKey = key, OptValue = v, Type = "RTP" });
+            }
+
+            // 组合结果类 400-459：ShzRate{code} 出现率 0-10000(0=不出现) / ShzStock{code} 库存 ≥0（仅板级 440-451）
+            // 绝对语义：出现率合计不得超过 10000（每 10000 次最多出现 10000 次）
+            int rateSum = 0;
+            for (int code = ShzComboMin; code <= ShzComboMax; code++)
+            {
+                int rate = form.Q<int>("ShzRate" + code, -1);
+                if (rate >= 0 && rate <= 10000)   // 0=该牌型不出现（合法显式值）
+                {
+                    toWrite.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "ShzRate" + code, OptValue = rate, Type = "ShzCombo" });
+                    rateSum += rate;
+                }
+                else if (rate != -1)
+                {
+                    msg.code = 0;
+                    msg.content = "结果类 " + code + " 出现率须在 0-10000（万分比，0=不出现），留空表示用内置默认出现率！";
+                    return msg;
+                }
+                if (code >= ShzStockMin && code <= ShzStockMax)
+                {
+                    int stock = form.Q<int>("ShzStock" + code, -1);
+                    if (stock >= 0)   // 0=当天禁出，合法
+                        toWrite.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "ShzStock" + code, OptValue = stock, Type = "ShzCombo" });
+                }
+            }
+            if (rateSum > 10000)
+            {
+                msg.code = 0;
+                msg.content = "水浒传 出现机会合计 " + rateSum + " 超过 10000（每 10000 次最多出现 10000 次），请调小后再保存！";
+                return msg;
+            }
+
+            // 落库：只替换当前桌台的 RTP/结果类配置，保留其它桌台配置。
+            using (var ef = new GameDbContext())
+            {
+                List<M_GameConfigLaba> olds = ef.GameConfigLabas
+                    .Where(c => c.GameId == gameId && c.TableIndex == tableIndex && (c.OptKey.StartsWith("Rtp") || c.OptKey.StartsWith("ShzRate") || c.OptKey.StartsWith("ShzStock")))
+                    .ToList();
+                ef.GameConfigLabas.RemoveRange(olds);
+                foreach (M_GameConfigLaba row in toWrite)
+                {
+                    row.GameId = gameId;
+                    row.TableIndex = tableIndex;
+                    row.TIME = DateTime.Now;
+                    ef.GameConfigLabas.Add(row);
+                }
+                ef.SaveChanges();
+                SyncLabaRtpProfiles(ef, gameId, tableIndex, toWrite, 3, null);
+            }
+            return msg;
+        }
+
+        /// <summary>
+        /// 把水浒传 RTP/结果类配置回显到桌台行（键名供 ConfigEditor 的 gcFillShz 读取）
+        /// </summary>
+        private static void AddShzRtpRowFields(Dictionary<string, object> row, Dictionary<string, int> cfg)
+        {
+            string[] rtpRowKeys = { "rtpTargetX100", "rtpKp", "rtpDeadband", "rtpDeltaMax", "rtpStockThreshold", "rtpWindow" };
+            for (int i = 0; i < Mx97RtpKeys.Length; i++)
+            {
+                int v;
+                row[rtpRowKeys[i]] = cfg.TryGetValue(Mx97RtpKeys[i], out v) ? (int?)v : null;
+            }
+            for (int code = ShzComboMin; code <= ShzComboMax; code++)
+            {
+                int v;
+                row["shzRate" + code] = cfg.TryGetValue("ShzRate" + code, out v) ? (int?)v : null;
+                if (code >= ShzStockMin && code <= ShzStockMax)
+                    row["shzStock" + code] = cfg.TryGetValue("ShzStock" + code, out v) ? (int?)v : null;
+            }
+        }
+
+        // ── 水果拉霸(GameId=40) RTP 控制配置（按桌存 GameConfigLaba TableIndex）──
+        // 见《10-水果拉霸-RTP返奖率控制系统设计.md》：面板倍率/区域映射为固定常量
+        // （与服务端 FruitRtp kPanelRat/kPanelArea 一致），后台只配权重(万分比)与日库存。
+        private static readonly int[] FruitPanelRat =
+            { 10, 20, 50, 120, 5, 3, 15, 20, 3, 0, 5, 3, 10, 20, 3, 40, 5, 3, 15, 3, 30, 0, 5, 3 };
+        private static readonly int[] FruitPanelArea =
+            { 6, 4, 0, 0, 7, 7, 5, 3, 3, -1, 7, 6, 6, 4, 1, 1, 7, 5, 5, 2, 2, -1, 7, 4 };
+        // 水果拉霸默认面板权重（万分比，合计 10000）：8 押注区 Σ概率×倍率 均≈0.850（偏差 0.01%，
+        // 满足逐区等值硬门槛 ≤5%），送灯位 9/21=50/100（g=0.055），理论 RTP≈89.94%。
+        // 新建桌台或表单权重全 0 保存时兜底使用（替代原"全 0 走服务端内置表"）。
+        private static readonly int[] FruitPanelDefaultProb =
+            { 395, 200, 50, 50, 347, 505, 197, 422, 20, 50, 350, 200, 395, 180, 2700, 10, 350, 433, 283, 2033, 80, 100, 350, 300 };
+        private static readonly string[] FruitRtpKeys =
+        {
+            "RtpTargetX100", "RtpKp", "RtpDeadband", "RtpDeltaMax",
+            "RtpStockThreshold", "RtpWindow"
+        };
+        private static readonly string[] FruitRtpLabels =
+        {
+            "目标返奖率", "闭环比例系数", "死区", "单步偏置上限",
+            "库存管控倍率阈值", "RTP 统计窗口"
+        };
+        private static readonly string[] FruitRtpRanges =
+        {
+            "5000-12000（9000=90.00%）", "0-1000（150=1.5）", "0-2000（100=±1%内不干预）", "0-5000（500=±5%）",
+            "0-120（倍率≥该值受库存约束）", "0-10000000（0=累计）"
+        };
+
+        /// <summary>
+        /// 保存水果拉霸 RTP 控制配置：6 个闭环参数 + WheelStock0..23 面板日库存。
+        /// 逐区等值硬门槛已移除（按运营要求放开）；仍保留理论 RTP 与目标偏差 &gt;3% 的黄色提示（不拦截）。
+        /// 留空即删除对应 OptKey（回内置默认/不限）；WheelStock=0（当天禁出）为合法显式值。
+        /// </summary>
+        private static Msg SaveFruitRtpConfig(FormCollection form, int gameId, int[] wheelProbs, int tableIndex)
+        {
+            Msg msg = new Msg(1, "RTP 配置保存成功！");
+            List<M_GameConfigLaba> toWrite = new List<M_GameConfigLaba>();
+
+            // ① 6 个 RTP 闭环参数：留空(-1)删除；0 为合法显式值（设计文档 §4.1 范围）
+            for (int i = 0; i < FruitRtpKeys.Length; i++)
+            {
+                string key = FruitRtpKeys[i];
+                int v = form.Q<int>(key, -1);
+                if (v < 0) continue;   // 留空：删除该 OptKey，回内置默认
+                bool ok = true;
+                switch (key)
+                {
+                    case "RtpTargetX100": ok = v >= 5000 && v <= 12000; break;
+                    case "RtpKp": ok = v >= 0 && v <= 1000; break;
+                    case "RtpDeadband": ok = v >= 0 && v <= 2000; break;
+                    case "RtpDeltaMax": ok = v >= 0 && v <= 5000; break;
+                    case "RtpStockThreshold": ok = v >= 0 && v <= 120; break;
+                    case "RtpWindow": ok = v >= 0 && v <= 10000000; break;
+                }
+                if (!ok)
+                {
+                    msg.code = 0;
+                    msg.content = "RTP 参数「" + FruitRtpLabels[i] + "」取值不合法，应为 " + FruitRtpRanges[i] + "！";
+                    return msg;
+                }
+                toWrite.Add(new M_GameConfigLaba { GameId = gameId, OptKey = key, OptValue = v, Type = "RTP" });
+            }
+
+            // ② WheelStock0..23：留空(-1)=不限（删除 OptKey），0=当天禁出，>0=日库存
+            for (int w = 0; w < 24; w++)
+            {
+                int st = form.Q<int>("WheelStock" + w, -1);
+                if (st > 1000000)
+                {
+                    msg.code = 0;
+                    msg.content = "面板位 " + w + " 日库存不能超过 1000000！";
+                    return msg;
+                }
+                if (st >= 0)
+                    toWrite.Add(new M_GameConfigLaba { GameId = gameId, OptKey = "WheelStock" + w, OptValue = st, Type = "RTP" });
+            }
+
+            // ③ 理论 RTP 估算（归一化到 10000 后按区求和）：逐区等值硬门槛已按运营要求移除（原偏差>5% 拦截），
+            //    下方保留归一化均值 mean 供 ④ 理论 RTP 与目标偏差的黄色警告使用（只提示不拦截）。
+            int wheelSum = 0;
+            for (int i = 0; i < 24; i++) wheelSum += wheelProbs[i];
+            if (wheelSum > 0)   // 全 0 理论上已被 SaveTableConfig 兜底为 FruitPanelDefaultProb，此处仅为防御
+            {
+                double[] c = new double[8];
+                double norm = 10000.0 / wheelSum;
+                for (int i = 0; i < 24; i++)
+                {
+                    if (FruitPanelArea[i] >= 0)
+                        c[FruitPanelArea[i]] += wheelProbs[i] * norm / 10000.0 * FruitPanelRat[i];
+                }
+                double mean = c.Average();
+                // ④ 理论 RTP 与目标偏差 >3% → 黄色警告（不拦截，闭环会持续纠偏）
+                double g = wheelProbs[9] / 10000.0 * 2.0 + wheelProbs[21] / 10000.0 * 4.5;
+                double rtp = g < 1 ? mean / (1 - g) : 0;
+                int target = form.Q<int>("RtpTargetX100", -1);
+                if (target > 0 && rtp > 0 && Math.Abs(rtp * 10000 - target) / target > 0.03)
+                    msg.content += "（提示：面板表理论RTP=" + (rtp * 100).ToString("F2") + "% 与目标偏差超过3%，闭环将持续纠偏）";
+            }
+
+            // ⑤ 落库：只替换当前桌台的 RTP/库存配置，勿动其它桌台。
+            using (var ef = new GameDbContext())
+            {
+                List<M_GameConfigLaba> olds = ef.GameConfigLabas
+                    .Where(c => c.GameId == gameId && c.TableIndex == tableIndex && (c.OptKey.StartsWith("Rtp") || c.OptKey.StartsWith("WheelStock")))
+                    .ToList();
+                ef.GameConfigLabas.RemoveRange(olds);
+                foreach (M_GameConfigLaba row in toWrite)
+                {
+                    row.GameId = gameId;
+                    row.TableIndex = tableIndex;
+                    row.TIME = DateTime.Now;
+                    ef.GameConfigLabas.Add(row);
+                }
+                ef.SaveChanges();
+                SyncLabaRtpProfiles(ef, gameId, tableIndex, toWrite, 2, wheelProbs);
+            }
+            return msg;
+        }
+
+        /// <summary>
+        /// 将拉霸 RTP 配置同步到已有的 cardpayoutprofile 按桌通道。
+        /// gameconfiglaba 仍保留用于后台回显/兼容；运行时以本表 TableId 为准。
+        /// StockLimit=-1 表示不限库存，0 表示显式禁出。
+        /// </summary>
+        private static void SyncLabaRtpProfiles(GameDbContext ef, int gameId, int tableIndex,
+            List<M_GameConfigLaba> values, int subType, int[] wheelProbs)
+        {
+            string scope = subType == 1 ? "(HandType BETWEEN 210 AND 216 OR HandType BETWEEN 300 AND 359)"
+                : subType == 3 ? "(HandType BETWEEN 210 AND 216 OR HandType BETWEEN 400 AND 459)"
+                : "(HandType BETWEEN 100 AND 123 OR HandType BETWEEN 130 AND 153 OR HandType BETWEEN 210 AND 216)";
+            ef.Database.ExecuteSqlCommand("DELETE FROM cardpayoutprofile WHERE GAME_ID={0} AND TableId={1} AND " + scope,
+                gameId, tableIndex);
+
+            var map = values.GroupBy(v => v.OptKey).ToDictionary(g => g.Key, g => g.Last().OptValue);
+            var rows = new List<string>();
+            Action<int, int, int, int> add = (hand, pay, prob, stock) =>
+            {
+                // cardpayoutprofile 旧表 StockLimit/StockRemain 为 NOT NULL；-1 作为“不限库存”哨兵。
+                string stockSql = stock < 0 ? "-1" : stock.ToString();
+                // int(11) 列不能存无符号 0xFFFFFFFF，使用 INT_MAX 哨兵，中心服读取时还原。
+                string paySql = pay < 0 ? "2147483647" : pay.ToString();
+                rows.Add("(" + gameId + "," + tableIndex + "," + hand + "," + paySql + "," + prob + "," + stockSql + "," + stockSql + ",1)");
+            };
+            int[] rtpHands = { 210, 211, 212, 213, 214, 216 };
+            string[] rtpKeys = { "RtpTargetX100", "RtpKp", "RtpDeadband", "RtpDeltaMax", "RtpStockThreshold", "RtpWindow" };
+            for (int i = 0; i < rtpHands.Length; i++)
+                if (map.ContainsKey(rtpKeys[i])) add(rtpHands[i], map[rtpKeys[i]], 0, -1);
+
+            if (subType == 1)
+            {
+                for (int code = 300; code <= 359; code++)
+                {
+                    int pay = map.ContainsKey("Combo" + code) ? map["Combo" + code] : -1;
+                    int prob = map.ContainsKey("ComboProb" + code) ? map["ComboProb" + code] : 0;
+                    int stock = map.ContainsKey("ComboStock" + code) ? map["ComboStock" + code] : -1;
+                    if (map.ContainsKey("Combo" + code) || map.ContainsKey("ComboProb" + code) || map.ContainsKey("ComboStock" + code)) add(code, pay, prob, stock);
+                }
+            }
+            else if (subType == 3)
+            {
+                for (int code = 400; code <= 459; code++)
+                {
+                    int prob = map.ContainsKey("ShzRate" + code) ? map["ShzRate" + code] : 0;
+                    int stock = map.ContainsKey("ShzStock" + code) ? map["ShzStock" + code] : -1;
+                    // 显式配置的 ShzRate=0（该牌型不出现）也要落库，否则中心服不下发、服务端回默认
+                    if (map.ContainsKey("ShzRate" + code) || map.ContainsKey("ShzStock" + code)) add(code, -1, prob, stock);
+                }
+            }
+            else if (subType == 2)
+            {
+                for (int i = 0; i < 24; i++)
+                {
+                    int prob = wheelProbs != null && i < wheelProbs.Length ? wheelProbs[i] : 0;
+                    if (prob >= 0) add(100 + i, -1, prob, -1);   // 权重 0=该面板位不出现，同样落库
+                    int stock = map.ContainsKey("WheelStock" + i) ? map["WheelStock" + i] : -1;
+                    if (stock >= 0) add(130 + i, -1, stock, -1);
+                }
+            }
+            if (rows.Count > 0)
+                ef.Database.ExecuteSqlCommand("INSERT INTO cardpayoutprofile (GAME_ID,TableId,HandType,PayoutMultiplier,ProbabilityBasis,StockLimit,StockRemain,Enabled) VALUES " + string.Join(",", rows));
+        }
+
+        /// <summary>
+        /// 把水果拉霸 RTP 闭环 + 面板日库存回显到桌台行（键名供 ConfigEditor 的 gcFillFruitRtp 读取）
+        /// </summary>
+        private static void AddFruitRtpRowFields(Dictionary<string, object> row, Dictionary<string, int> cfg)
+        {
+            string[] rtpRowKeys = { "rtpTargetX100", "rtpKp", "rtpDeadband", "rtpDeltaMax", "rtpStockThreshold", "rtpWindow" };
+            for (int i = 0; i < FruitRtpKeys.Length; i++)
+            {
+                int v;
+                row[rtpRowKeys[i]] = cfg.TryGetValue(FruitRtpKeys[i], out v) ? (int?)v : null;
+            }
+            for (int w = 0; w < 24; w++)
+            {
+                int v;
+                row["wheelStock" + w] = cfg.TryGetValue("WheelStock" + w, out v) ? (int?)v : null;
             }
         }
 
@@ -1816,6 +2237,13 @@ namespace YYT.Web.Areas.Game.Controllers
             public int BetMaxVice { get; set; }
             public int BetMinDraw { get; set; }
             public int BetMaxDraw { get; set; }
+        }
+
+        // betgamecfg 押注类玩法扩展配置行映射（原生 SQL 查询用）
+        public class BetGameCfgRow
+        {
+            public int TableIndex { get; set; }
+            public string CfgJson { get; set; }
         }
 
         // roomtableconfig 牌机类桌台行映射（原生 SQL 查询用）

@@ -167,7 +167,7 @@ namespace YYT.Web.Areas.Game.Controllers
                 for (int i = 0; i < Num; i++)
                 {
                     int number = GetRomNum();
-                    string UserName = "VIP" + number;
+                    string UserName = number.ToString();
                     bool isTrue = new B_UserRobot().Exists(new M_UserRobot { UserName = UserName });
                     if(isTrue ==true)
                     {

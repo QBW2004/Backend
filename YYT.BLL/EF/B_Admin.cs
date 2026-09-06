@@ -135,6 +135,50 @@ namespace YYT.BLL.EF
                 .Any(c => string.Equals(c, playerAgency.Trim(), StringComparison.OrdinalIgnoreCase));
         }
 
+        /// <summary>
+        /// 判断代理账号是否在当前登录代理的管理范围内。
+        /// </summary>
+        public bool IsAgencyInManagedScope(GameDbContext ef, M_LoginUser loginUser, string agencyAccount)
+        {
+            if (ef == null || loginUser == null || string.IsNullOrWhiteSpace(agencyAccount))
+                return false;
+            if (loginUser.UserPriv == 0)
+                return true;
+
+            return GetManagedAgencyAccounts(ef, loginUser)
+                .Any(c => string.Equals(c, agencyAccount, StringComparison.OrdinalIgnoreCase));
+        }
+
+        /// <summary>
+        /// 判断玩家是否在当前登录代理的管理范围内。
+        /// </summary>
+        public bool IsUserInManagedScope(GameDbContext ef, M_LoginUser loginUser, string userId)
+        {
+            if (ef == null || loginUser == null || string.IsNullOrWhiteSpace(userId))
+                return false;
+
+            string agencyAccount = ef.Users
+                .Where(c => c.ID == userId)
+                .Select(c => c.AGENCY)
+                .FirstOrDefault();
+            return IsAgencyInManagedScope(ef, loginUser, agencyAccount);
+        }
+
+        /// <summary>
+        /// 判断目标代理是否在当前登录代理的管理范围内，且不能操作自己。
+        /// </summary>
+        public bool IsTargetAgencyInManagedScope(GameDbContext ef, M_LoginUser loginUser, string agencyId)
+        {
+            if (ef == null || loginUser == null || string.IsNullOrWhiteSpace(agencyId)
+                || string.Equals(loginUser.Accounts, agencyId, StringComparison.OrdinalIgnoreCase))
+                return false;
+            if (loginUser.UserPriv == 0)
+                return ef.Admins.Any(c => c.ID == agencyId);
+
+            return GetManagedAgencyAccounts(ef, loginUser)
+                .Any(c => string.Equals(c, agencyId, StringComparison.OrdinalIgnoreCase));
+        }
+
         public bool IsInAgencyLine(GameDbContext ef, string ownerAccount, string targetAgency)
         {
             if (string.IsNullOrWhiteSpace(ownerAccount) || string.IsNullOrWhiteSpace(targetAgency))
@@ -614,49 +658,20 @@ namespace YYT.BLL.EF
         }
 
         /// <summary>
-        /// 解析玩家所属代理的客服链接：自身为空则沿代理层级逐级向上查找；
-        /// 整条代理线仍为空时回退到平台默认（最高级管理员 PRIV==0），再退而取任意已配置的链接。
+        /// 解析玩家所属代理的客服链接：仅取直属代理配置的链接，未配置则返回空串，不做向上回退。
         /// </summary>
         public string ResolveCustomerServiceUrl(string agencyId)
         {
             using (var ef = new GameDbContext())
             {
-                string fromChain = ResolveCustomerServiceUrlFromChain(ef, agencyId);
-                if (!string.IsNullOrWhiteSpace(fromChain))
-                    return fromChain;
+                if (string.IsNullOrWhiteSpace(agencyId))
+                    return string.Empty;
 
-                // 回退一：平台默认（最高级管理员）
-                M_Admin top = ef.Admins
-                    .Where(c => c.PRIV == 0 && c.CustomerServiceUrl != null && c.CustomerServiceUrl != "")
-                    .OrderBy(c => c.ID)
-                    .FirstOrDefault();
-                if (top != null && !string.IsNullOrWhiteSpace(top.CustomerServiceUrl))
-                    return top.CustomerServiceUrl;
-
-                // 回退二：任意已配置链接（按层级由高到低）
-                M_Admin any = ef.Admins
-                    .Where(c => c.CustomerServiceUrl != null && c.CustomerServiceUrl != "")
-                    .OrderBy(c => c.PRIV)
-                    .FirstOrDefault();
-                return any != null ? any.CustomerServiceUrl : string.Empty;
+                M_Admin admin = ef.Admins.FirstOrDefault(c => c.ID.Equals(agencyId));
+                return admin != null && !string.IsNullOrWhiteSpace(admin.CustomerServiceUrl)
+                    ? admin.CustomerServiceUrl
+                    : string.Empty;
             }
-        }
-
-        private string ResolveCustomerServiceUrlFromChain(GameDbContext ef, string agencyId)
-        {
-            HashSet<string> visited = new HashSet<string>();
-            string current = agencyId;
-            int guard = 0;
-            while (!string.IsNullOrWhiteSpace(current) && guard++ < 64 && visited.Add(current))
-            {
-                M_Admin admin = ef.Admins.FirstOrDefault(c => c.ID.Equals(current));
-                if (admin == null)
-                    break;
-                if (!string.IsNullOrWhiteSpace(admin.CustomerServiceUrl))
-                    return admin.CustomerServiceUrl;
-                current = admin.AGENCY;
-            }
-            return null;
         }
 
         public Msg AddAgencyInfo(M_Admin entity)
@@ -682,6 +697,8 @@ namespace YYT.BLL.EF
                     msg.content = inviteCodeMessage;
                     return msg;
                 }
+
+                ApplyNewAgencyDefaultPermissions(entity);
 
                 entity.COINS = entity.COINS ?? 0;
                 entity.COINS_BACK = entity.COINS_BACK ?? 0;
@@ -720,6 +737,30 @@ namespace YYT.BLL.EF
                 }
             }
             return msg;
+        }
+
+        private static void ApplyNewAgencyDefaultPermissions(M_Admin entity)
+        {
+            entity.IsFrozen = 1;
+            entity.IsKill = 1;
+            entity.IsUpDown = 1;
+            entity.IsKicking = 1;
+            entity.ManageScope = 2;
+            entity.KickScope = entity.ManageScope;
+
+            entity.IsProbability = 0;
+            entity.IsRelease = 0;
+            entity.IsDelete = 0;
+            entity.IsGift = 0;
+            entity.IsCreateAgent = 0;
+            entity.IsViewPwd = 0;
+            entity.IsModifyPwd = 0;
+            entity.IsResetSafePwd = 0;
+            entity.IsViewSafePwd = 0;
+            entity.IsModifySafePwd = 0;
+            entity.IsDeleteAgent = 0;
+            entity.IsViewAgentPwd = 0;
+            entity.IsModifyAgentPwd = 0;
         }
 
         public int SaveAgencyLimit(M_Admin entity)
@@ -776,15 +817,19 @@ namespace YYT.BLL.EF
                 var admin = ef.Admins.FirstOrDefault(t => t.ID == entity.ID);
                 if (admin != null)
                 {
-                    string inviteCodeMessage;
-                    bool isValidInviteCode = AgencyRules.TryValidateInviteCode(
-                        entity.InviteCode,
-                        entity.ID,
-                        ef.Admins.Select(a => a.ID).ToList(),
-                        ef.Admins.Select(a => new { a.ID, a.InviteCode }).ToList().Select(a => new AgencyRules.InviteCodeOwner(a.ID, a.InviteCode)).ToList(),
-                        out inviteCodeMessage);
-                    if (!isValidInviteCode)
-                        throw new InvalidOperationException(inviteCodeMessage);
+                    // 留空表示清除邀请码，跳过格式与去重校验
+                    if (!string.IsNullOrWhiteSpace(entity.InviteCode))
+                    {
+                        string inviteCodeMessage;
+                        bool isValidInviteCode = AgencyRules.TryValidateInviteCode(
+                            entity.InviteCode,
+                            entity.ID,
+                            ef.Admins.Select(a => a.ID).ToList(),
+                            ef.Admins.Select(a => new { a.ID, a.InviteCode }).ToList().Select(a => new AgencyRules.InviteCodeOwner(a.ID, a.InviteCode)).ToList(),
+                            out inviteCodeMessage);
+                        if (!isValidInviteCode)
+                            throw new InvalidOperationException(inviteCodeMessage);
+                    }
 
 
                     admin.InviteCode = entity.InviteCode;
@@ -851,9 +896,21 @@ namespace YYT.BLL.EF
                 var admin = ef.Admins.FirstOrDefault(t => t.ID == entity.ID);
                 if (admin != null)
                 {
-                    if (admin.KickScope == entity.KickScope)
+                    // KickScope 仅作为历史兼容字段，实际范围统一由 ManageScope 决定。
+                    long manageScope = entity.ManageScope ?? admin.ManageScope ?? 1;
+                    bool changed = false;
+                    if (admin.ManageScope != manageScope)
+                    {
+                        admin.ManageScope = manageScope;
+                        changed = true;
+                    }
+                    if (admin.KickScope != manageScope)
+                    {
+                        admin.KickScope = manageScope;
+                        changed = true;
+                    }
+                    if (!changed)
                         return 1;
-                    admin.KickScope = entity.KickScope;
                     admin.UpdateTime = DateTime.Now;
                     return ef.SaveChanges();
                 }
@@ -868,9 +925,20 @@ namespace YYT.BLL.EF
                 var admin = ef.Admins.FirstOrDefault(t => t.ID == entity.ID);
                 if (admin != null)
                 {
-                    if (admin.ManageScope == entity.ManageScope)
+                    bool changed = false;
+                    if (admin.ManageScope != entity.ManageScope)
+                    {
+                        admin.ManageScope = entity.ManageScope;
+                        changed = true;
+                    }
+                    // 踢人范围已统一跟随管理范围，保留字段仅用于兼容旧数据。
+                    if (admin.KickScope != entity.ManageScope)
+                    {
+                        admin.KickScope = entity.ManageScope;
+                        changed = true;
+                    }
+                    if (!changed)
                         return 1;
-                    admin.ManageScope = entity.ManageScope;
                     admin.UpdateTime = DateTime.Now;
                     return ef.SaveChanges();
                 }
@@ -990,6 +1058,57 @@ namespace YYT.BLL.EF
                     if (admin.IsModifySafePwd == entity.IsModifySafePwd)
                         return 1;
                     admin.IsModifySafePwd = entity.IsModifySafePwd;
+                    admin.UpdateTime = DateTime.Now;
+                    return ef.SaveChanges();
+                }
+            }
+            return 0;
+        }
+
+        public int SetDeleteAgentPermission(M_Admin entity)
+        {
+            using (var ef = new GameDbContext())
+            {
+                var admin = ef.Admins.FirstOrDefault(t => t.ID == entity.ID);
+                if (admin != null)
+                {
+                    if (admin.IsDeleteAgent == entity.IsDeleteAgent)
+                        return 1;
+                    admin.IsDeleteAgent = entity.IsDeleteAgent;
+                    admin.UpdateTime = DateTime.Now;
+                    return ef.SaveChanges();
+                }
+            }
+            return 0;
+        }
+
+        public int SetViewAgentPwdPermission(M_Admin entity)
+        {
+            using (var ef = new GameDbContext())
+            {
+                var admin = ef.Admins.FirstOrDefault(t => t.ID == entity.ID);
+                if (admin != null)
+                {
+                    if (admin.IsViewAgentPwd == entity.IsViewAgentPwd)
+                        return 1;
+                    admin.IsViewAgentPwd = entity.IsViewAgentPwd;
+                    admin.UpdateTime = DateTime.Now;
+                    return ef.SaveChanges();
+                }
+            }
+            return 0;
+        }
+
+        public int SetModifyAgentPwdPermission(M_Admin entity)
+        {
+            using (var ef = new GameDbContext())
+            {
+                var admin = ef.Admins.FirstOrDefault(t => t.ID == entity.ID);
+                if (admin != null)
+                {
+                    if (admin.IsModifyAgentPwd == entity.IsModifyAgentPwd)
+                        return 1;
+                    admin.IsModifyAgentPwd = entity.IsModifyAgentPwd;
                     admin.UpdateTime = DateTime.Now;
                     return ef.SaveChanges();
                 }

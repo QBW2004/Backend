@@ -162,7 +162,9 @@ namespace YYT.BLL.EF
         /// <param name="laba">paralaba 结构化参数（新表）</param>
         /// <param name="tableName">桌名</param>
         /// <param name="enabled">是否启用</param>
-        public Msg SaveTableFull(int tableId, int gameId, List<M_GameConfigLaba> paras, M_ParaLaba laba, string tableName, int enabled = 1)
+        /// <param name="betScores">按桌筹码档位(1~5级)逗号串，如 "1,5,10,50,100"；null=页面未携带(保留现值)，""=显式清除(回退房间级)</param>
+        /// <param name="defaultBetIndex">默认筹码档位索引(0起)</param>
+        public Msg SaveTableFull(int tableId, int gameId, List<M_GameConfigLaba> paras, M_ParaLaba laba, string tableName, int enabled = 1, string betScores = null, int defaultBetIndex = 0)
         {
             Msg msg = new Msg(0, "保存失败！");
             int tableIndex = tableId % 1000;
@@ -173,9 +175,29 @@ namespace YYT.BLL.EF
                     try
                     {
                         // ── 1. 写 gameconfiglaba（保留兼容）──
+                        // 加芬幅度是游戏级全局参数：中心服 GetGameConfigParams 按 GameId 读全表
+                        // （不按 TableIndex 过滤、无 ORDER BY），同 OptKey 多行时后写覆盖先写，
+                        // 多桌各存一行会互相覆盖导致服务端下发值不可控（改 A 桌被 B 桌旧值覆盖）。
+                        // 统一落 TableIndex=0 单行：保存任意桌台时先清除该游戏其它行的 scoreSwitchX10。
+                        var swPara = paras.FirstOrDefault(p => p.OptKey == "scoreSwitchX10");
+                        if (swPara != null && swPara.OptValue > -1)
+                        {
+                            ef.Database.ExecuteSqlCommand(
+                                "DELETE FROM GameConfigLaba WHERE GameId={0} AND OptKey='scoreSwitchX10'", gameId);
+                            ef.GameConfigLabas.Add(new M_GameConfigLaba
+                            {
+                                GameId = gameId,
+                                TableIndex = 0,
+                                OptKey = "scoreSwitchX10",
+                                OptValue = swPara.OptValue,
+                                TIME = DateTime.Now,
+                                Type = "Room"
+                            });
+                        }
                         var rst = ef.GameConfigLabas.Where(c => c.GameId == gameId && c.TableIndex == tableIndex).ToList();
                         foreach (var p in paras)
                         {
+                            if (p.OptKey == "scoreSwitchX10") continue;  // 已在上方统一落 TableIndex=0
                             var existing = rst.FirstOrDefault(r => r.OptKey == p.OptKey);
                             if (existing != null && p.OptValue > -1)
                             {
@@ -218,6 +240,23 @@ namespace YYT.BLL.EF
                                 laba.BetMin + "," + laba.BetMax + "," + laba.CoinsNeed + "," +
                                 laba.ExCoin + "," + laba.CoinSc + "," + laba.GameMo + "," +
                                 laba.ScoreSwitchX10 + "," + laba.DefaultBetIndex + ")");
+                        }
+
+                        // ── 2.5 按桌筹码档位(1~5级)落库 roomtableconfig_bet（与彩金单挑同表同管道）──
+                        // 中心服 SendExtendedPara 对 0 值字段用 parabetroom base 行补填，故其余列全 0。
+                        // BetScores 为 null 表示页面未携带（保留库内现值，避免旧页面误清）；
+                        // 空串/全 0 表示显式清除（客户端回退房间级 parabetroom 筹码）。
+                        if (betScores != null)
+                        {
+                            ef.Database.ExecuteSqlCommand(
+                                "DELETE FROM roomtableconfig_bet WHERE GAME_ID={0} AND TableIndex={1}", gameId, tableIndex);
+                            if (betScores.Length > 0)
+                            {
+                                int defIdx = defaultBetIndex >= 0 ? defaultBetIndex : 0;
+                                ef.Database.ExecuteSqlCommand(
+                                    "INSERT INTO roomtableconfig_bet (GAME_ID, TableIndex, BetTime, BetMin, BetMax, BankerScoreNeed, ItemSingleScoreLimit, ItemAllScoreLimit, CoinsNeed, OneCoinScore, BetScores, DefaultBetIndex, BetMinVice, BetMaxVice, BetMinDraw, BetMaxDraw) VALUES ({0},{1},0,0,0,0,0,0,0,0,{2},{3},0,0,0,0)",
+                                    gameId, tableIndex, betScores, defIdx);
+                            }
                         }
 
                         // ── 3. 一房N桌同步：pararoom base 行 NUM = roomtableconfig 条数，ROOM_MAX=1 ──
@@ -270,8 +309,21 @@ namespace YYT.BLL.EF
                 try
                 {
                     var srv2 = new SConnect();
+                    // 按桌筹码档位随 TC 押分扩展段下发（与彩金单挑同管道 TcBetExt）：
+                    // center 写 roomtableconfig_bet 并全量重推，客户端下次选桌轮询即生效（热更）。
+                    // betScores==null（页面未携带）时不发扩展段，center 不会触碰该表，保留现值。
+                    SConnect.TcBetExt betExt = null;
+                    if (betScores != null)
+                    {
+                        betExt = new SConnect.TcBetExt
+                        {
+                            BetScores = betScores,
+                            DefaultBetIndex = (byte)(defaultBetIndex >= 0 ? defaultBetIndex : 0),
+                            IncludeViceDraw = false
+                        };
+                    }
                     var tc = srv2.SendTcCommand((ushort)gameId, 0, (ushort)tableIndex,
-                        tableName, (byte)enabled, 0u, 0, 6);
+                        tableName, (byte)enabled, 0u, 0, 6, betExt);
                     if (tc != null && tc.code == 1)
                     {
                         if (msg.code == 0)
@@ -309,6 +361,18 @@ namespace YYT.BLL.EF
             return SaveTableFull(tableId, gameId, paras, null, tableName, enabled);
         }
 
+        /// <summary>
+        /// 拉霸 RTP/结果类配置键判定（按桌存 gameconfiglaba，删除对应桌台时同步删除并压实）：
+        /// Rtp* 三类型通用；Combo*/UseOutcomeFirst 明星97；WheelStock* 水果拉霸；ShzRate*/ShzStock* 水浒传。
+        /// 与 GameConfigController 的 GetTableConfig / Save*RtpConfig 命名空间保持一致。
+        /// </summary>
+        private static bool IsGameLevelLabaKey(string optKey)
+        {
+            if (string.IsNullOrEmpty(optKey)) return false;
+            return optKey.StartsWith("Rtp") || optKey.StartsWith("Combo") || optKey == "UseOutcomeFirst"
+                || optKey.StartsWith("WheelStock") || optKey.StartsWith("ShzRate") || optKey.StartsWith("ShzStock");
+        }
+
         public Msg DeleteTable(int tableId, int gameId)
         {
             Msg msg = new Msg(0, "删除失败！");
@@ -319,8 +383,12 @@ namespace YYT.BLL.EF
                 {
                     try
                     {
-                        // 删 gameconfiglaba（保留兼容）
-                        var toDelete = ef.GameConfigLabas.Where(c => c.GameId == gameId && c.TableIndex == tableIndex).ToList();
+                        // 删除普通桌台参数；RTP/结果类配置在下方按桌删除并压缩。
+                        var toDelete = ef.GameConfigLabas
+                            .Where(c => c.GameId == gameId && c.TableIndex == tableIndex)
+                            .ToList()
+                            .Where(c => !IsGameLevelLabaKey(c.OptKey))
+                            .ToList();
                         if (toDelete.Count > 0)
                         {
                             ef.GameConfigLabas.RemoveRange(toDelete);
@@ -333,6 +401,17 @@ namespace YYT.BLL.EF
                         // 删 roomtableconfig
                         ef.Database.ExecuteSqlCommand(
                             "DELETE FROM roomtableconfig WHERE GAME_ID={0} AND RoomIndex=0 AND TableIndex={1}",
+                            gameId, tableIndex);
+
+                        // 删 roomtableconfig_bet（按桌筹码档位）
+                        ef.Database.ExecuteSqlCommand(
+                            "DELETE FROM roomtableconfig_bet WHERE GAME_ID={0} AND TableIndex={1}",
+                            gameId, tableIndex);
+
+                        // 拉霸 RTP/结果类配置已同步到 cardpayoutprofile，删除桌台时必须同步删除当前桌，
+                        // 否则中心服 RP 会继续把孤儿配置下发给游戏服。
+                        ef.Database.ExecuteSqlCommand(
+                            "DELETE FROM cardpayoutprofile WHERE GAME_ID={0} AND TableId={1}",
                             gameId, tableIndex);
 
                         // 一房N桌同步：压实剩余 TableIndex 为 0..k-1
@@ -352,6 +431,40 @@ namespace YYT.BLL.EF
                             ef.Database.ExecuteSqlCommand(
                                 "UPDATE paralaba SET ID={0},TableIndex={1} WHERE ID={2} AND ID<>{0}", newId, i, labaRows[i]);
                         }
+
+                        // roomtableconfig_bet（按桌筹码）同步压实 TableIndex，保证与 roomtableconfig 对齐
+                        var betIdxRows = ef.Database.SqlQuery<int>(
+                            "SELECT DISTINCT TableIndex FROM roomtableconfig_bet WHERE GAME_ID=" + gameId + " ORDER BY TableIndex").ToList();
+                        for (int i = 0; i < betIdxRows.Count; i++)
+                        {
+                            ef.Database.ExecuteSqlCommand(
+                                "UPDATE roomtableconfig_bet SET TableIndex={0} WHERE GAME_ID={1} AND TableIndex={2} AND TableIndex<>{0}",
+                                i, gameId, betIdxRows[i]);
+                        }
+
+                        // 兼容表中的 RTP/结果类配置也按桌删除并压实，避免删除中间桌后回显/迁移回退错位。
+                        const string rtpScope = "(OptKey LIKE 'Rtp%' OR OptKey LIKE 'Combo%' OR OptKey='UseOutcomeFirst' OR " +
+                            "OptKey LIKE 'WheelStock%' OR OptKey LIKE 'ShzRate%' OR OptKey LIKE 'ShzStock%')";
+                        ef.Database.ExecuteSqlCommand(
+                            "DELETE FROM GameConfigLaba WHERE GameId={0} AND TableIndex={1} AND " + rtpScope,
+                            gameId, tableIndex);
+                        // 先整体移到临时区间，再回写目标桌号，避免主键
+                        // (GameId, TableIndex, OptKey) 在中间桌删除时发生碰撞。
+                        ef.Database.ExecuteSqlCommand(
+                            "UPDATE GameConfigLaba SET TableIndex=TableIndex+100000 WHERE GameId={0} AND TableIndex>{1} AND " + rtpScope,
+                            gameId, tableIndex);
+                        ef.Database.ExecuteSqlCommand(
+                            "UPDATE GameConfigLaba SET TableIndex=TableIndex-100001 WHERE GameId={0} AND TableIndex>{1} AND " + rtpScope,
+                            gameId, tableIndex + 100000);
+
+                        // 删除后将剩余 RTP profile 的 TableId 压实为 0..k-1，与 roomtableconfig 对齐。
+                        // 同样采用临时偏移，避免未来增加 (GAME_ID, TableId, HandType) 唯一索引时冲突。
+                        ef.Database.ExecuteSqlCommand(
+                            "UPDATE cardpayoutprofile SET TableId=TableId+100000 WHERE GAME_ID={0} AND TableId>{1}",
+                            gameId, tableIndex);
+                        ef.Database.ExecuteSqlCommand(
+                            "UPDATE cardpayoutprofile SET TableId=TableId-100001 WHERE GAME_ID={0} AND TableId>{1}",
+                            gameId, tableIndex + 100000);
 
                         // 同步 pararoom base 行 NUM 与 ROOM_MAX=1
                         int cfgCnt = ef.Database.SqlQuery<int>(

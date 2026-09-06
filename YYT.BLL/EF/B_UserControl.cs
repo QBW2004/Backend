@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using YYT.BLL.Services.GameServer;
@@ -128,7 +128,7 @@ namespace YYT.BLL.EF
                         }
                         if (!new B_Admin().CanManagePlayer(ef, loginUser, user.AGENCY))
                         {
-                            msg.content = "只能控制自己代理线内的玩家！";
+                            msg.content = "只能控制自己管理范围内的玩家！";
                             return msg;
                         }
                     }
@@ -242,7 +242,7 @@ namespace YYT.BLL.EF
                         var user = ef.Users.FirstOrDefault(u => u.ID == row.UserID);
                         if (user == null || !new B_Admin().CanManagePlayer(ef, loginUser, user.AGENCY))
                         {
-                            msg.content = "只能关闭自己代理线内玩家的控制！";
+                            msg.content = "只能关闭自己管理范围内玩家的控制！";
                             return msg;
                         }
                     }
@@ -269,7 +269,7 @@ namespace YYT.BLL.EF
         }
 
         /// <summary>
-        /// 分页查询控制记录（代理只能看到机台范围记录与自己代理线内玩家的记录）
+        /// 分页查询控制记录（代理只能看到机台范围记录与自己管理范围内玩家的记录）
         /// </summary>
         public M_EasyuiGridData<M_UserControlStatus_DTO> GetControls(M_Page mPage, string userId, int status, M_LoginUser loginUser)
         {
@@ -611,7 +611,7 @@ namespace YYT.BLL.EF
                     }
                     if (!new B_Admin().CanManagePlayer(ef, loginUser, user.AGENCY))
                     {
-                        msg.content = "只能控制自己代理线内的玩家！";
+                        msg.content = "只能控制自己管理范围内的玩家！";
                         return msg;
                     }
 
@@ -713,7 +713,7 @@ namespace YYT.BLL.EF
                         var user = ef.Users.FirstOrDefault(u => u.ID == target);
                         if (user == null || !new B_Admin().CanManagePlayer(ef, loginUser, user.AGENCY))
                         {
-                            msg.content = "只能查询自己代理线内的玩家！";
+                            msg.content = "只能查询自己管理范围内的玩家！";
                             return msg;
                         }
                     }
@@ -903,7 +903,7 @@ namespace YYT.BLL.EF
                         var user = ef.Users.FirstOrDefault(u => u.ID == target);
                         if (user == null || !new B_Admin().CanManagePlayer(ef, loginUser, user.AGENCY))
                         {
-                            msg.content = "只能关闭自己代理线内玩家的控制！";
+                            msg.content = "只能关闭自己管理范围内玩家的控制！";
                             return msg;
                         }
                     }

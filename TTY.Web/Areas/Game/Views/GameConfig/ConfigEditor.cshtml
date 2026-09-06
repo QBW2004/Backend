@@ -45,7 +45,15 @@
         .gc-toolbar .gc-lbl { font-size: 13px; color: #5a6573; }
         .gc-toolbar #gcTypeSel { width: 160px; }
         .gc-toolbar #gcGameSel { width: 220px; }
-        .gc-hint { font-size: 12px; color: #9aa4b1; margin-top: 4px; }
+        .gc-hint { font-size: 12px; color: #9aa4b1; margin-top: 4px; line-height: 1.6; }
+        .gc-guide { margin: 0 0 14px; padding: 10px 12px; border: 1px solid #dce8ff; border-radius: 6px; background: #f7faff; color: #526173; font-size: 12px; line-height: 1.7; }
+        /* 高级参数折叠引导条：显示在基础信息之后、高级参数区之上，默认收起 */
+        .gc-adv-head { margin: 0 0 12px; padding: 10px 14px; border: 1px dashed #cdd9f7; border-radius: 8px; background: #fbfcff; display: flex; align-items: center; flex-wrap: wrap; gap: 6px 14px; }
+        .gc-adv-head-title { font-size: 13px; font-weight: 600; color: #2f6fed; }
+        .gc-adv-head-title .fa { margin-right: 6px; }
+        .gc-adv-head-link { font-size: 13px; color: #2f6fed; text-decoration: none; border: 1px solid #cdd9f7; border-radius: 14px; padding: 2px 12px; background: #fff; cursor: pointer; }
+        .gc-adv-head-link:hover { background: #ecf2ff; }
+        .gc-adv-head-sub { font-size: 12px; color: #8a94a1; }
         .gc-refresh { width: 30px; height: 30px; line-height: 30px; text-align: center; border-radius: 6px; color: #5a6573; cursor: pointer; transition: background .15s, color .15s; }
         .gc-refresh:hover { background: #ecf2ff; color: #2f6fed; }
         .gc-refresh .fa { margin: 0; color: inherit; }
@@ -100,6 +108,7 @@
                     <div class="gc-para-empty-text">请先在上方选择「游戏类型」与「游戏」，选定后即可配置该游戏的桌台参数。</div>
                 </div>
                 <form id="gcForm">
+                    <div class="gc-guide"><strong>填写提示：</strong>押注/牌机类的“出现机会/权重”是相对值，不是百分比（例如 A=200、B=100，A 约是 B 的 2 倍机会）；<strong>拉霸类游戏（水果拉霸/明星97/水浒传）的“出现机会”=每 10000 次实际出现次数（绝对，填多少就出现多少，其余为不中奖）</strong>。带“×100、×10000、万分比”的参数请按示例填写；留空、0 和默认值的含义以字段下方说明为准。</div>
                     @Html.AntiForgeryToken()
                     <input type="hidden" id="gcId" name="ID" value="-1" />
                     <input type="hidden" id="gcGameId" name="GAME_ID" value="-1" />
@@ -113,7 +122,7 @@
                             <input type="text" id="gcTableName" name="TableName" class="gc-input" maxlength="64" placeholder="请输入桌名" />
                         </div>
                         <div class="gc-field">
-                            <label>桌台开关</label>
+                            <label>是否开放给玩家</label>
                             <div class="gc-switch-inline">
                                 <label class="gc-switch">
                                     <input type="checkbox" id="gcEnabled" checked />
@@ -127,37 +136,34 @@
                     </div>
 
                     <div class="gc-common gc-bet-exchange">
-                    <div class="gc-section-title">下注与兑换</div>
+                    <div class="gc-section-title">下注金额与兑换规则</div>
                     <div class="gc-form-row">
                         <div class="gc-field">
-                            <label id="gcMinBetLbl">最小下注</label>
+                            <label id="gcMinBetLbl">单次最低下注</label>
                             <input type="number" id="gcMinBet" name="MinBet" class="gc-input" step="0.1" min="0" value="0" />
                         </div>
                         <div class="gc-field">
-                            <label id="gcMaxBetLbl">最大下注</label>
+                            <label id="gcMaxBetLbl">单次最高下注</label>
                             <input type="number" id="gcMaxBet" name="MaxBet" class="gc-input" step="0.1" min="0" value="0" />
                         </div>
                     </div>
                     <div class="gc-form-row">
-                        <div class="gc-field gc-hide-12">
+                        <!-- 兑换单位/兑换金币数：全类型(押注/牌机/鱼机/拉霸)隐藏，仅随表单提交保留（gcFill 仍按 base 行值回填，保存写回原值，功能保留） -->
+                        <div class="gc-field" style="display:none">
                             <label>兑换单位</label>
                             <input type="number" id="gcExCoin" name="EX_COIN" class="gc-input" min="1" value="1" />
                         </div>
                         <div class="gc-field">
-                            <label>兑换币值</label>
+                            <label>每个游戏币对应的分值</label>
                             <input type="number" id="gcCoinSc" name="COIN_SC" class="gc-input" min="1" value="1" />
                         </div>
-                        <div class="gc-field gc-hide-12">
+                        <div class="gc-field" style="display:none">
                             <label>兑换金币数</label>
                             <input type="number" id="gcGameMo" name="Game_Mo" class="gc-input" min="0" value="0" />
                         </div>
                         <div class="gc-field">
-                            <label>入场金币</label>
+                            <label>进入房间所需金币</label>
                             <input type="number" id="gcCoinNeed" name="COIN_NEED" class="gc-input" min="0" value="0" />
-                        </div>
-                        <div class="gc-field gc-only-1">
-                            <label title="未配置入场金币(0)的桌台回退到该房间级兜底值，不随单桌保存覆盖">房间入场金币（兜底）</label>
-                            <input type="number" id="gcRoomCoinNeed" name="ROOM_COIN_NEED" class="gc-input" min="0" value="0" />
                         </div>
                         <div class="gc-field gc-only-1 gc-only-2 gc-only-3">
                             <label id="gcScoreSwitchLbl">加炮幅度（0.1-0.9）</label>
@@ -167,30 +173,68 @@
                     </div>
 
                     <div class="gc-only-0">
-                        <div class="gc-section-title">押注赔率（每门：出现率 + 倍数，开桌/每局生效）</div>
+                        <div class="gc-section-title">押注规则与限额</div>
+                        <div class="gc-hint">限红就是“这一局最多能押多少分”：单门限红限制某一个选项，全台总分限红限制所有选项合计。不同游戏可能使用不同的押分区域。</div>
                         <div class="gc-form-row">
                             <div class="gc-field">
-                                <label class="gc-switch">
-                                    <input type="checkbox" id="gcBetPayoutOn" />
-                                    <span class="gc-slider"></span>
-                                </label>
-                                <span class="gc-switch-label">启用后按下表控制各门出现率与倍数；关闭则使用服务端内置赔率（点杀/放水不受影响）</span>
+                                <label>单局押分倒计时(秒)</label>
+                                <input type="number" id="gcBetTime" name="BET_TIME" class="gc-input" min="1" step="1" value="10" />
                             </div>
-                            <input type="hidden" id="gcBetPayoutOnVal" name="BetPayoutOn" value="0" />
+                            <div class="gc-field">
+                                <label>单门最大限红</label>
+                                <input type="number" id="gcScLimitSing" name="SC_LIMIT_SING" class="gc-input" min="0" step="1" value="3000" />
+                            </div>
+                            <div class="gc-field">
+                                <label>全台总分限红</label>
+                                <input type="number" id="gcScLimitAll" name="SC_LIMIT_ALL" class="gc-input" min="0" step="1" value="10000" />
+                            </div>
                         </div>
-                        <table style="width:100%;border-collapse:collapse;margin-bottom:14px;" id="gcBetPayoutTable">
-                            <thead>
-                                <tr style="background:#f5f8ff;color:#5a6573;font-size:13px;">
-                                    <th style="padding:8px;border:1px solid #e5e9f0;text-align:left;">押注门</th>
-                                    <th style="padding:8px;border:1px solid #e5e9f0;">出现率（万分比 0-10000）</th>
-                                    <th style="padding:8px;border:1px solid #e5e9f0;">倍数（押分×倍数=得分，可带一位小数）</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
-                        <div class="gc-hint" id="gcBetPayoutSum"></div>
+                        <div class="gc-form-row gc-bet-banker-row">
+                            <div class="gc-field">
+                                <label>申请当庄所需最低金币（0=关闭抢庄）</label>
+                                <input type="number" id="gcBankerScNeed" name="BANKER_SC_NEED" class="gc-input" min="0" step="1" value="500000" />
+                            </div>
+                        </div>
+                        <div class="gc-form-row gc-bet-banker-row">
+                            <div class="gc-field">
+                                <label>庄家抽水比例（%）</label>
+                                <input type="number" id="gcBankerPer" class="gc-input" min="0" max="9.9" step="0.1" value="3" />
+                                <input type="hidden" id="gcBankerPerRaw" name="BANKER_PER" value="30" />
+                            </div>
+                        </div>
+                        <div class="gc-hint" id="gcBankerPerHint">庄家抽水是从庄家每局净赢利（玩家总投注 − 玩家总赔付）中提取的比例，不是额外向玩家扣款；仅抢庄玩法生效，0 表示不抽水。填 3 就是 3%。</div>
+                        <div class="gc-form-row" id="gcViceDrawRow">
+                            <div class="gc-field" id="gcViceMaxField">
+                                <label id="gcViceMaxLbl">庄/闲单门最高押分</label>
+                                <input type="number" id="gcBetMaxVice" name="BET_MAX_VICE" class="gc-input" min="0" step="1" value="1000" />
+                            </div>
+                            <div class="gc-field" id="gcViceMinField">
+                                <label>皇冠单次最低押分</label>
+                                <input type="number" id="gcBetMinVice" name="BET_MIN_VICE" class="gc-input" min="0" step="1" value="10" />
+                            </div>
+                            <div class="gc-field" id="gcDrawMaxField">
+                                <label>和单门最高押分</label>
+                                <input type="number" id="gcBetMaxDraw" name="BET_MAX_DRAW" class="gc-input" min="0" step="1" value="1000" />
+                            </div>
+                        </div>
+                        <div class="gc-hint" id="gcViceDrawHint">庄/闲、和、皇冠分别代表不同押分区域；这些限额按桌保存，仅对幸运六狮、彩金单挑生效。</div>
 
-                        <div class="gc-section-title">筹码档位</div>
+                        <div class="gc-section-title">特殊结果与奖励出现机会</div>
+                        <div id="gcBetSpecBox"></div>
+
+                        <div class="gc-section-title">各下注选项的赔率与出现机会（用于返奖率估算）</div>
+                        <div class="gc-hint">这张表帮助估算长期返奖率：赔率是中奖后返还倍数，出现机会是相对比例。当前服务端仍按内置倍率开奖，修改这里主要用于试算和保存预留，不代表一定会改变实际开奖。</div>
+                        <div id="gcBetDoorBox"></div>
+                        <div class="gc-hint" id="gcBetDoorHint"></div>
+                        <input type="hidden" id="gcBetGameCfg" name="BetGameCfg" value="" />
+
+                    </div>
+
+                    @*快捷下注金额（1~5 级筹码）：押注类与拉霸类共用同一套输入与保存字段(隐藏域 BetScores)。
+                      押注类按桌落 roomtableconfig_bet（彩金单挑等）；拉霸类同样按桌落 roomtableconfig_bet（复用同一管道）。*@
+                    <div class="gc-only-0 gc-only-3">
+                        <div class="gc-section-title">快捷下注金额（一到五级筹码）</div>
+                        <div class="gc-hint">五档筹码为整数倍率/金额，按桌独立保存并随桌台参数下发客户端；留空或不填视为未配置（客户端回退房间级默认筹码）。</div>
                         <div class="gc-form-row">
                             <div class="gc-field">
                                 <label>默认筹码</label>
@@ -214,7 +258,10 @@
                             </div>
                         </div>
                         <input type="hidden" id="gcBetScores" name="BetScores" value="" />
+                    </div>
 
+                        @*机台设定（系统/庄家难度）：按需求隐藏，字段保留在表单中以维持保存值不被重置*@
+                        <div style="display:none;">
                         <div class="gc-section-title">机台设定（系统/庄家难度）</div>
                         <div class="gc-form-row">
                             <div class="gc-field">
@@ -243,54 +290,50 @@
                                 <label>庄家起伏</label>
                                 <input type="number" id="gcBankerSiteType" name="BANKER_SITE_TYPE" class="gc-input" min="0" max="2" value="0" />
                             </div>
-                            <div class="gc-field">
-                                <label>庄家抽水</label>
-                                <input type="number" id="gcBankerPer" name="BANKER_PER" class="gc-input" min="0" max="99" value="0" />
-                            </div>
                         </div>
-                    </div>
+                        </div>
 
                     <div class="gc-only-1">
-                        <div class="gc-section-title">机台设定（牌型出现率与客户端固定倍数）</div>
+                        <div class="gc-section-title">机台设定（牌型出现机会与固定奖励倍数）</div>
                         <input type="hidden" id="gcPayoutOnVal" name="PayoutOn" value="1" />
                         <table style="width:100%;border-collapse:collapse;margin-bottom:14px;" id="gcPayoutTable">
                             <thead>
                                 <tr style="background:#f5f8ff;color:#5a6573;font-size:13px;">
                                     <th style="padding:8px;border:1px solid #e5e9f0;text-align:left;">牌型</th>
-                                    <th style="padding:8px;border:1px solid #e5e9f0;">出现率（万分比 0-10000）</th>
+                                    <th style="padding:8px;border:1px solid #e5e9f0;">出现机会（每 10000 次的相对单位）</th>
                                     <th style="padding:8px;border:1px solid #e5e9f0;">倍数（客户端写死 · 不可调；ATT3 为小 / 中 / 大）</th>
                                     <th style="padding:8px;border:1px solid #e5e9f0;width:64px;">启用</th>
                                 </tr>
                             </thead>
                             <tbody></tbody>
                         </table>
-                        <div class="gc-hint" id="gcPayoutSum"></div>
+                        <div class="gc-hint" id="gcPayoutSum">倍数由程序固定，页面只展示不能调整；出现机会填 100，表示使用相对权重 100，并不等于固定 1%。</div>
 
-                        <div class="gc-section-title" style="margin-top:16px;">机台设定（鬼牌三段概率）</div>
+                        <div class="gc-section-title" style="margin-top:16px;">机台设定（鬼牌数量出现机会）</div>
                         <input type="hidden" id="gcJokerOnVal" name="JokerOn" value="0" />
                         <div class="gc-form-row">
                             <div class="gc-field">
-                                <label><input type="checkbox" id="gcJokerOn" /> 启用鬼牌三段概率（停用时按机台难度档位的原逻辑出鬼）</label>
+                                <label><input type="checkbox" id="gcJokerOn" /> 启用鬼牌数量出现机会（停用时按机台难度档位的原逻辑出鬼）</label>
                             </div>
                         </div>
                         <div class="gc-form-row">
                             <div class="gc-field">
-                                <label>1 王概率（万分比 0-10000）</label>
+                                <label>1 王出现机会（每 10000 次的相对单位）</label>
                                 <input type="number" id="gcJk1" name="jk1" class="gc-input gc-joker-p" min="0" max="10000" step="1" value="0" />
                             </div>
                             <div class="gc-field">
-                                <label>2 王概率（万分比 0-10000）</label>
+                                <label>2 王出现机会（每 10000 次的相对单位）</label>
                                 <input type="number" id="gcJk2" name="jk2" class="gc-input gc-joker-p" min="0" max="10000" step="1" value="0" />
                             </div>
                             <div class="gc-field">
-                                <label>3 王概率（万分比 0-10000）</label>
+                                <label>3 王出现机会（每 10000 次的相对单位）</label>
                                 <input type="number" id="gcJk3" name="jk3" class="gc-input gc-joker-p" min="0" max="10000" step="1" value="0" />
                             </div>
                         </div>
                         <div class="gc-hint" id="gcJokerSum">说明：作用于可变分支的全局出鬼权重；各牌型硬约束不变（两对永远无鬼、五鬼固定 5 鬼、正宗大四梅无鬼、各牌型鬼数上下限自动限幅）。</div>
 
                         <div id="gcJpBox" style="display:none;">
-                            <div class="gc-section-title" style="margin-top:16px;">彩金奖池（服务端硬编码 · 只读展示，暂不可调）</div>
+                            <div class="gc-section-title" style="margin-top:16px;">彩金奖池（程序固定规则，仅供查看）</div>
                             <div class="gc-hint" id="gcJpRule" style="margin-bottom:8px;"></div>
                             <table style="width:100%;border-collapse:collapse;margin-bottom:14px;" id="gcJpTable">
                                 <thead>
@@ -318,12 +361,12 @@
                     </div>
 
                     <div class="gc-only-2">
-                        <div class="gc-section-title">机台设定（鱼机难度 - 可击杀倍率上限）</div>
+                        <div class="gc-section-title">机台设定（鱼的最高可获得倍率）</div>
                         <div class="gc-form-row">
                             <div class="gc-field">
-                                <label>鱼机难度（倍率上限）</label>
+                                <label>单条鱼最高奖励倍率</label>
                                 <select id="gcFishDif" name="FishDIF" class="gc-select">
-                                    <option value="0">0 级：不限上限</option>
+                                    <option value="0">0 级：不限制最高倍率</option>
                                     <option value="1">1 级：上限 1000</option>
                                     <option value="2">2 级：上限 300</option>
                                     <option value="3">3 级：上限 200</option>
@@ -347,15 +390,22 @@
                         </div>
                     </div>
 
+                    <div class="gc-adv-head" id="gcAdvHead" style="display:none;">
+                        <span class="gc-adv-head-title"><i class="fa fa-cog"></i>高级参数（返奖率 / 转盘概率 / 每日次数）</span>
+                        <a href="javascript:;" class="gc-adv-head-link" id="gcAdvToggle">展开设置</a>
+                        <span class="gc-adv-head-sub">拉霸高级控制：长期返奖率 RTP、结果出现机会、每天最多出现次数。留空=使用系统默认，展开后可按需调整。</span>
+                    </div>
+                    <div class="gc-adv-body" id="gcAdvBody" style="display:none;">
                     <div class="gc-only-3">
                         <div id="gcLabaPayoutBox" style="display:none;">
-                            <div class="gc-section-title" id="gcLabaPayoutTitle">机台设定（符号出现率与倍数）</div>
+                            <div class="gc-section-title" id="gcLabaPayoutTitle">转盘结果出现机会与每日次数限制</div>
                             <table style="width:100%;border-collapse:collapse;margin-bottom:6px;" id="gcLabaPayoutTable">
                                 <thead>
                                     <tr style="background:#f5f8ff;color:#5a6573;font-size:13px;">
                                         <th style="padding:8px;border:1px solid #e5e9f0;text-align:left;" id="gcLabaTh1">符号</th>
-                                        <th style="padding:8px;border:1px solid #e5e9f0;" id="gcLabaTh2">出现率（0-10000 万分比）</th>
-                                        <th style="padding:8px;border:1px solid #e5e9f0;" id="gcLabaTh3">倍数（压分×倍数=得芬）</th>
+                                        <th style="padding:8px;border:1px solid #e5e9f0;" id="gcLabaTh2">结果出现机会（每 10000 次的相对单位）</th>
+                                        <th style="padding:8px;border:1px solid #e5e9f0;" id="gcLabaTh3">奖励倍数（押分 × 倍数 = 获得分值）</th>
+                                        <th style="padding:8px;border:1px solid #e5e9f0;" id="gcLabaTh4">每天最多出现次数（留空不限，0=当天不出现）(不可设置)</th>
                                     </tr>
                                 </thead>
                                 <tbody></tbody>
@@ -363,72 +413,107 @@
                             <div id="gcLabaPayoutSum" style="font-size:12px;color:#9aa4b1;margin-bottom:14px;"></div>
                         </div>
 
-                        <div id="gcMx97RtpBox" style="display:none;">
-                            <div class="gc-section-title">RTP 控制（明星97 · 结果优先生成）</div>
+                        <div id="gcRtpBox" style="display:none;">
+                            <div class="gc-section-title" id="gcRtpTitle">长期返奖率控制（RTP，优先按控制结果生成）</div>
+                            <div class="gc-hint">RTP 可以理解为长期平均返还：玩家累计下注 100 分，理论上平均返还多少分。例如 90% 约等于返还 90 分，不代表每一局都返还 90%。</div>
                             <div class="gc-form-row">
                                 <div class="gc-field">
-                                    <label>目标返奖率（×10000）</label>
-                                    <input type="number" id="gcRtpTargetX100" name="RtpTargetX100" class="gc-input gc-mx97" min="5000" max="12000" step="1" placeholder="9000（默认 90.00%）" />
+                                    <label>目标长期返还比例（×10000，9000=90%）</label>
+                                    <input type="number" id="gcRtpTargetX100" name="RtpTargetX100" class="gc-input gc-mx97 gc-shz" min="5000" max="12000" step="1" placeholder="9000（默认 90.00%）" />
                                 </div>
                                 <div class="gc-field">
-                                    <label>闭环比例系数（×100）</label>
-                                    <input type="number" id="gcRtpKp" name="RtpKp" class="gc-input gc-mx97" min="1" max="500" step="1" placeholder="100（默认）" />
+                                    <label>偏差纠正速度（×100）</label>
+                                    <input type="number" id="gcRtpKp" name="RtpKp" class="gc-input gc-mx97 gc-shz" min="1" max="500" step="1" placeholder="100（默认）" />
                                 </div>
                                 <div class="gc-field">
-                                    <label>死区（×100）</label>
-                                    <input type="number" id="gcRtpDeadband" name="RtpDeadband" class="gc-input gc-mx97" min="0" max="200" step="1" placeholder="10（默认，±0.10% 内不干预）" />
+                                    <label>允许偏差范围（原“死区”，×100）</label>
+                                    <input type="number" id="gcRtpDeadband" name="RtpDeadband" class="gc-input gc-mx97 gc-shz" min="0" max="200" step="1" placeholder="10（默认，±0.10% 内不干预）" />
                                 </div>
                             </div>
                             <div class="gc-form-row">
                                 <div class="gc-field">
-                                    <label>单步偏置上限（×100）</label>
-                                    <input type="number" id="gcRtpDeltaMax" name="RtpDeltaMax" class="gc-input gc-mx97" min="1" max="200" step="1" placeholder="40（默认，单局最多拉动 0.40）" />
+                                    <label>每局最多调整幅度（×100）</label>
+                                    <input type="number" id="gcRtpDeltaMax" name="RtpDeltaMax" class="gc-input gc-mx97 gc-shz" min="1" max="200" step="1" placeholder="40（默认，单局最多拉动 0.40）" />
                                 </div>
                                 <div class="gc-field">
-                                    <label>大奖库存阈值（赔率 ≥ 该值视为大奖）</label>
-                                    <input type="number" id="gcRtpStockThreshold" name="RtpStockThreshold" class="gc-input gc-mx97" min="1" step="1" placeholder="60（默认）" />
+                                    <label>从该倍率起按大奖库存限制</label>
+                                    <input type="number" id="gcRtpStockThreshold" name="RtpStockThreshold" class="gc-input gc-mx97 gc-shz" min="1" step="1" placeholder="60（默认）" />
                                 </div>
                                 <div class="gc-field">
-                                    <label>RTP 统计窗口（累计下注量）</label>
-                                    <input type="number" id="gcRtpWindow" name="RtpWindow" class="gc-input gc-mx97" min="100000" step="1" placeholder="10000000（默认）" />
-                                </div>
-                            </div>
-                            <div class="gc-form-row">
-                                <div class="gc-field">
-                                    <label>结果优先生成</label>
-                                    <div class="gc-switch-inline">
-                                        <label class="gc-switch">
-                                            <input type="checkbox" id="gcUseOutcomeFirst" checked />
-                                            <span class="gc-slider"></span>
-                                        </label>
-                                        <span class="gc-switch-label">关闭 = 回退旧开奖逻辑（应急回滚开关）</span>
-                                    </div>
-                                    <input type="hidden" id="gcUseOutcomeFirstVal" name="UseOutcomeFirst" value="1" />
+                                    <label>用于计算返奖率的累计下注量</label>
+                                    <input type="number" id="gcRtpWindow" name="RtpWindow" class="gc-input gc-mx97 gc-shz" min="100000" step="1" placeholder="10000000（默认）" />
                                 </div>
                             </div>
                             <div class="gc-hint">留空即不下发，用内置默认值；改目标返奖率会自动重标定基础出现率表并在若干万局内收敛（误差 &lt;0.5%）。点杀/控牌等受控局单独记账，不污染自然 RTP；RTP 按房间类型 × 下注档位分池隔离。</div>
 
-                            <div class="gc-section-title" style="margin-top:16px;">奖项配置（结果类 300-359 · 留空即不下发）</div>
+                            <div class="gc-section-title" style="margin-top:16px;">奖励结果设置（留空使用系统默认）</div>
                             <table style="width:100%;border-collapse:collapse;margin-bottom:6px;" id="gcMx97ComboTable">
                                 <thead>
                                     <tr style="background:#f5f8ff;color:#5a6573;font-size:13px;">
-                                        <th style="padding:8px;border:1px solid #e5e9f0;text-align:left;">结果类（code）</th>
-                                        <th style="padding:8px;border:1px solid #e5e9f0;">赔率倍数</th>
-                                        <th style="padding:8px;border:1px solid #e5e9f0;">目标出现率（万分比 1-10000）</th>
-                                        <th style="padding:8px;border:1px solid #e5e9f0;">当日大奖库存（次数）</th>
+                                        <th style="padding:8px;border:1px solid #e5e9f0;text-align:left;">结果名称</th>
+                                        <th style="padding:8px;border:1px solid #e5e9f0;">中奖后返还倍数</th>
+                                        <th style="padding:8px;border:1px solid #e5e9f0;">出现机会（每 10000 次实际出现次数 0-10000，0=不出现）</th>
+                                        <th style="padding:8px;border:1px solid #e5e9f0;">每天最多出现次数（大奖）(不可设置)</th>
                                     </tr>
                                 </thead>
                                 <tbody></tbody>
                             </table>
-                            <div class="gc-hint">赔率/出现率留空=内置默认；库存留空=不限、0=当天禁出（服务器每天 0 点自动重置）。出现率决定各奖项之间的比例形状，总返奖率仍由上方「目标返奖率」锁定；全屏七（348）按 Scatter 9（329）结算，无需单独配置。</div>
+                            <table style="width:100%;border-collapse:collapse;margin-bottom:6px;display:none;" id="gcShzComboTable">
+                                <thead>
+                                    <tr style="background:#f5f8ff;color:#5a6573;font-size:13px;">
+                                        <th style="padding:8px;border:1px solid #e5e9f0;text-align:left;">结果名称</th>
+                                        <th style="padding:8px;border:1px solid #e5e9f0;">奖励倍数（程序固定，只展示）</th>
+                                        <th style="padding:8px;border:1px solid #e5e9f0;">出现机会（每 10000 次实际出现次数 0-10000，0=不出现）</th>
+                                        <th style="padding:8px;border:1px solid #e5e9f0;">每天最多出现次数（整盘大奖）(不可设置)</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                            <div class="gc-hint" id="gcRtpComboHint">奖励倍数和出现机会留空=使用系统默认；填 0=该牌型不出现；每天最多出现次数留空=不限、0=当天不出现（每天 0 点重置）。出现机会=每 10000 次实际出现次数（填 500=实际出现 5%）；不中奖余量=10000−Σ出现机会；出现机会合计>10000 不能保存。返奖率由出现机会与固定赔率直接决定；目标RTP闭环默认关闭，需要自动微调返奖率时设置"偏差纠正速度">0 启用（仅微调）。全盘七（348）按全盘七 9 个（329）结算，无需单独配置。</div>
                         </div>
+
+                        <div id="gcFruitRtpBox" style="display:none;">
+                            <div class="gc-section-title">长期返奖率控制（水果拉霸）(不可设置)</div>
+                            <div class="gc-hint">水果拉霸转盘权重可自由配置（无逐区偏差限制）；下方实时展示 8 个下注区的估算返还供参考，各区差异不影响保存。</div>
+                            <div class="gc-form-row">
+                                <div class="gc-field">
+                                    <label>目标长期返还比例（×10000，9000=90%）</label>
+                                    <input type="number" id="gcFruitRtpTargetX100" name="RtpTargetX100" class="gc-input gc-fruit-rtp" min="5000" max="12000" step="1" placeholder="9000（默认 90.00%）" />
+                                </div>
+                                <div class="gc-field">
+                                    <label>偏差纠正速度（×100）</label>
+                                    <input type="number" id="gcFruitRtpKp" name="RtpKp" class="gc-input gc-fruit-rtp" min="0" max="1000" step="1" placeholder="150（默认 1.5，0=不纠偏）" />
+                                </div>
+                                <div class="gc-field">
+                                    <label>允许偏差范围（原“死区”，×100）</label>
+                                    <input type="number" id="gcFruitRtpDeadband" name="RtpDeadband" class="gc-input gc-fruit-rtp" min="0" max="2000" step="1" placeholder="100（默认，±1% 内不干预）" />
+                                </div>
+                            </div>
+                            <div class="gc-form-row">
+                                <div class="gc-field">
+                                    <label>每局最多调整幅度（×100）</label>
+                                    <input type="number" id="gcFruitRtpDeltaMax" name="RtpDeltaMax" class="gc-input gc-fruit-rtp" min="0" max="5000" step="1" placeholder="500（默认，单局最多拉动 5%）" />
+                                </div>
+                                <div class="gc-field">
+                                    <label>从该倍率起按库存限制</label>
+                                    <input type="number" id="gcFruitRtpStockThreshold" name="RtpStockThreshold" class="gc-input gc-fruit-rtp" min="0" max="120" step="1" placeholder="30（默认）" />
+                                </div>
+                                <div class="gc-field">
+                                    <label>用于计算返奖率的累计下注量</label>
+                                    <input type="number" id="gcFruitRtpWindow" name="RtpWindow" class="gc-input gc-fruit-rtp" min="0" max="10000000" step="1" placeholder="100000（默认，0=累计）" />
+                                </div>
+                            </div>
+                            <div id="gcFruitRtpPreview" style="font-size:12px;color:#9aa4b1;margin-bottom:10px;line-height:1.8;"></div>
+                            <div class="gc-hint">下方实时显示各区返还估算、免费局机会和理论 RTP，各区差异仅作参考不拦截保存。每天最多出现次数留空=不限、0=当天不出现（每天 0 点重置）。这是高级控制功能，建议先用默认表观察一周，再开启“优先按控制结果生成”。</div>
+                        </div>
+                    </div>
                     </div>
 
                     <div class="gc-common">
-                    <div class="gc-section-title">玩法与踢出</div>
+                    <div class="gc-section-title">玩法与闲置处理</div>
                     <div class="gc-form-row">
                         <div class="gc-field">
-                            <label>无发炮踢出时间（秒）</label>
+                            <label>连续不发炮多久后移出（分钟）</label>
                             <input type="number" id="gcIdleSec" name="IdleFireTimeoutSec" class="gc-input" min="0" value="0" />
                             <span class="gc-switch-label">默认开启：玩家长时间不发炮将被踢出，0 表示不踢出</span>
                             <input type="hidden" id="gcIdleKickVal" name="IdleFireKickEnabled" value="1" />
@@ -438,7 +523,7 @@
                 </form>
             </div>
             <div class="gc-foot" id="gcParaFoot">
-                <button type="button" id="gcReset" class="gc-btn gc-btn-default">重置</button>
+                <button type="button" id="gcReset" class="gc-btn gc-btn-default">恢复默认</button>
                 <button type="button" id="gcSave" class="gc-btn gc-btn-primary">保存并热更新</button>
             </div>
         </div>
@@ -578,35 +663,10 @@
         gcFill(GC_TABLES[found]);
     }
 
-    // 拉霸符号出现率/倍数：名称与客户端图标一一对应（水浒传 WM0-8、水果拉霸图集）；
-    // p=默认出现率(万分比)，v=默认倍数（与各拉霸服务端 payoutTable 默认值一致）
-    var GC_LABA_PAYOUT_META = {
-        3: [ // 水浒传
-            { i: 0, n: '双斧(2倍)', p: 6000, v: 2 },
-            { i: 1, n: '双枪(3倍)', p: 2000, v: 3 },
-            { i: 2, n: '大刀(4倍)', p: 1000, v: 4 },
-            { i: 3, n: '鲁智深(5倍)', p: 500, v: 5 },
-            { i: 4, n: '林冲(8倍)', p: 400, v: 8 },
-            { i: 5, n: '宋江(10倍)', p: 60, v: 10 },
-            { i: 6, n: '替天行道旗(15倍)', p: 20, v: 15 },
-            { i: 7, n: '忠义堂(20倍)', p: 10, v: 20 },
-            { i: 8, n: '水浒传龙标·散标(30倍/免费触发)', p: 0, v: 30 }
-        ],
-        1: [ // 明星97（倍数默认为机台实际倍率）
-            { i: 0, n: '樱桃', p: 6000, v: 10 },
-            { i: 1, n: '橘子', p: 2000, v: 10 },
-            { i: 2, n: '蓝莓', p: 1000, v: 14 },
-            { i: 3, n: '铃铛', p: 500, v: 18 },
-            { i: 4, n: '西瓜', p: 400, v: 20 },
-            { i: 5, n: '黄BAR', p: 60, v: 30 },
-            { i: 6, n: '红BAR', p: 20, v: 50 },
-            { i: 7, n: '蓝BAR', p: 10, v: 70 },
-            { i: 8, n: '七', p: 0, v: 80 }
-        ],
-    };
-
     // 水果拉霸大转盘 24 面板位：名称按服务端 WheelSurface 映射，v=客户端/服务端写死的倍率(WheelRat，不可改)；
-    // 后台只配「指向概率」：转盘停在该面板位的概率(万分比)，全为 0 时按服务端内置逻辑开奖
+    // 后台只配「指向概率」：转盘停在该面板位的概率(万分比)，全为 0 或新建桌台时自动使用内置默认 90% 面板表。
+    // 面板位 9/21 为两个不同送灯位，可分别配置：9→送免费局 1~3 次、21→送免费局 3~6 次（服务端口径，见
+    // ServerHandler.cpp freeLight 分支与《09-水果拉霸玩法规则与倍率表》§4）。
     var GC_LABA_WHEEL_META = [
         { i: 0,  n: '橘子·大', v: 10 },
         { i: 1,  n: '铃铛·大', v: 20 },
@@ -617,7 +677,7 @@
         { i: 6,  n: '柠檬·大', v: 15 },
         { i: 7,  n: '西瓜·大', v: 20 },
         { i: 8,  n: '西瓜·小', v: 3 },
-        { i: 9,  n: '送灯位(免费局)', v: 0 },
+        { i: 9,  n: '送灯·免费局 1~3 次', v: 0 },
         { i: 10, n: '苹果', v: 5 },
         { i: 11, n: '橘子·小', v: 3 },
         { i: 12, n: '橘子·大', v: 10 },
@@ -629,45 +689,98 @@
         { i: 18, n: '柠檬·大', v: 15 },
         { i: 19, n: '星星·小', v: 3 },
         { i: 20, n: '星星·大', v: 30 },
-        { i: 21, n: '送灯位(免费局)', v: 0 },
+        { i: 21, n: '送灯·免费局 3~6 次', v: 0 },
         { i: 22, n: '苹果', v: 5 },
         { i: 23, n: '铃铛·小', v: 3 }
     ];
 
     // 明星97 组合结果类（HandType 300-359）：v=内置默认赔率（留空即用默认）；
-    // 出现率默认值由服务端内置，后台只配目标出现率(万分比)；348 为预留，全屏七按 Scatter9 结算。
+    // p=服务端默认出现率（绝对百万分比，÷100 即每 10000 次实际出现次数，如 5425 → 54.25/万次 = 0.54%）。
+    // 后台只配出现率(万分比)，填多少实际就出现多少；348 为预留，全屏七按 Scatter9 结算。
     var GC_MX97_COMBO_META = [
-        { code: 300, n: '纯色三连·樱桃', v: 10 },
-        { code: 301, n: '纯色三连·橘子', v: 10 },
-        { code: 302, n: '纯色三连·蓝莓', v: 14 },
-        { code: 303, n: '纯色三连·铃铛', v: 18 },
-        { code: 304, n: '纯色三连·西瓜', v: 20 },
-        { code: 305, n: '纯色三连·黄BAR', v: 30 },
-        { code: 306, n: '纯色三连·红BAR', v: 50 },
-        { code: 307, n: '纯色三连·蓝BAR', v: 70 },
-        { code: 308, n: '纯色三连·七', v: 80 },
-        { code: 310, n: 'ANY BAR（三色BAR混合一条线）', v: 10 },
-        { code: 311, n: '樱桃 2 连', v: 5 },
-        { code: 312, n: '樱桃 1 连（线首一个樱桃）', v: 2 },
-        { code: 322, n: 'Scatter 全盘 2 个七', v: 2 },
-        { code: 323, n: 'Scatter 全盘 3 个七', v: 5 },
-        { code: 324, n: 'Scatter 全盘 4 个七', v: 20 },
-        { code: 325, n: 'Scatter 全盘 5 个七', v: 40 },
-        { code: 326, n: 'Scatter 全盘 6 个七', v: 60 },
-        { code: 327, n: 'Scatter 全盘 7 个七', v: 80 },
-        { code: 328, n: 'Scatter 全盘 8 个七', v: 100 },
-        { code: 329, n: 'Scatter 全盘 9 个七', v: 200 },
-        { code: 330, n: '全水果（9 格全是水果且不全同）', v: 15 },
-        { code: 340, n: '全屏·樱桃', v: 80 },
-        { code: 341, n: '全屏·橘子', v: 40 },
-        { code: 342, n: '全屏·蓝莓', v: 40 },
-        { code: 343, n: '全屏·铃铛', v: 40 },
-        { code: 344, n: '全屏·西瓜', v: 60 },
-        { code: 345, n: '全屏·黄BAR', v: 60 },
-        { code: 346, n: '全屏·红BAR', v: 90 },
-        { code: 347, n: '全屏·蓝BAR', v: 100 },
-        { code: 350, n: '全屏 ANY BAR（9 格全 BAR 且不全同）', v: 40 }
+        { code: 300, n: '纯色三连·樱桃', v: 10, p: 5425 },
+        { code: 301, n: '纯色三连·橘子', v: 10, p: 5425 },
+        { code: 302, n: '纯色三连·蓝莓', v: 14, p: 3875 },
+        { code: 303, n: '纯色三连·铃铛', v: 18, p: 3100 },
+        { code: 304, n: '纯色三连·西瓜', v: 20, p: 2790 },
+        { code: 305, n: '纯色三连·黄BAR', v: 30, p: 1550 },
+        { code: 306, n: '纯色三连·红BAR', v: 50, p: 775 },
+        { code: 307, n: '纯色三连·蓝BAR', v: 70, p: 465 },
+        { code: 308, n: '纯色三连·七', v: 80, p: 62 },
+        { code: 310, n: 'ANY BAR（三色BAR混合一条线）', v: 10, p: 15499 },
+        { code: 311, n: '樱桃 2 连', v: 5, p: 12399 },
+        { code: 312, n: '樱桃 1 连（线首一个樱桃）', v: 2, p: 54246 },
+        { code: 322, n: 'Scatter 全盘 2 个七', v: 2, p: 1550 },
+        { code: 323, n: 'Scatter 全盘 3 个七', v: 5, p: 620 },
+        { code: 324, n: 'Scatter 全盘 4 个七', v: 20, p: 186 },
+        { code: 325, n: 'Scatter 全盘 5 个七', v: 40, p: 62 },
+        { code: 326, n: 'Scatter 全盘 6 个七', v: 60, p: 19 },
+        { code: 327, n: 'Scatter 全盘 7 个七', v: 80, p: 5 },
+        { code: 328, n: 'Scatter 全盘 8 个七', v: 100, p: 1 },
+        { code: 329, n: 'Scatter 全盘 9 个七', v: 200, p: 0 },
+        { code: 330, n: '全水果（9 格全是水果且不全同）', v: 15, p: 310 },
+        { code: 340, n: '全屏·樱桃', v: 80, p: 9 },
+        { code: 341, n: '全屏·橘子', v: 40, p: 8 },
+        { code: 342, n: '全屏·蓝莓', v: 40, p: 8 },
+        { code: 343, n: '全屏·铃铛', v: 40, p: 8 },
+        { code: 344, n: '全屏·西瓜', v: 60, p: 6 },
+        { code: 345, n: '全屏·黄BAR', v: 60, p: 5 },
+        { code: 346, n: '全屏·红BAR', v: 90, p: 3 },
+        { code: 347, n: '全屏·蓝BAR', v: 100, p: 2 },
+        { code: 350, n: '全屏 ANY BAR（9 格全 BAR 且不全同）', v: 40, p: 62 }
     ];
+
+    // 明星97 结果类表固定按"中奖后返还倍数"升序排列（完全按倍数排、不分组；倍数相同按 code 稳定排序）
+    GC_MX97_COMBO_META.sort(function (a, b) { return (a.v - b.v) || (a.code - b.code); });
+
+    // 水浒传 组合结果类（HandType 400-459）：赔付倍数双端硬编码（ShzRules 常量）不可配，
+    // v=硬编码倍率（仅展示，与 ShzRules kTier/kFullScreen/kFullAllChar/kFullAllWeapon 一致），
+    // p=服务端默认出现率（绝对百万分比，÷100 即每 10000 次实际出现次数，如 929 → 9.29/万次 = 0.093%）。
+    // 只配出现率(万分比 1-10000)，填多少实际就出现多少；库存仅板级类(board=1，440-451)有意义，留空=不限、0=当天禁出。
+    // 编码表见《水浒传RTP后台控制系统设计.md》§5.1；409/419/429/433-439/449/452-459 为未定义间隙不渲染。
+    var GC_SHZ_COMBO_META = [
+        { code: 400, n: '三连·忠义堂', v: 50,   board: 0, p: 929 },
+        { code: 401, n: '三连·替天行道', v: 20,  board: 0, p: 2012 },
+        { code: 402, n: '三连·宋江', v: 15,  board: 0, p: 2631 },
+        { code: 403, n: '三连·林冲', v: 10,  board: 0, p: 3869 },
+        { code: 404, n: '三连·鲁智深', v: 7,   board: 0, p: 5417 },
+        { code: 405, n: '三连·刀', v: 5,   board: 0, p: 7429 },
+        { code: 406, n: '三连·枪', v: 3,   board: 0, p: 11608 },
+        { code: 407, n: '三连·斧', v: 2,   board: 0, p: 17025 },
+        { code: 410, n: '四连·忠义堂', v: 200, board: 0, p: 186 },
+        { code: 411, n: '四连·替天行道', v: 80,  board: 0, p: 402 },
+        { code: 412, n: '四连·宋江', v: 40,  board: 0, p: 526 },
+        { code: 413, n: '四连·林冲', v: 30,  board: 0, p: 774 },
+        { code: 414, n: '四连·鲁智深', v: 20,  board: 0, p: 1083 },
+        { code: 415, n: '四连·刀', v: 15,  board: 0, p: 1486 },
+        { code: 416, n: '四连·枪', v: 10,  board: 0, p: 2322 },
+        { code: 417, n: '四连·斧', v: 5,   board: 0, p: 3405 },
+        { code: 420, n: '五连·忠义堂', v: 1000, board: 0, p: 37 },
+        { code: 421, n: '五连·替天行道', v: 400, board: 0, p: 80 },
+        { code: 422, n: '五连·宋江', v: 200, board: 0, p: 105 },
+        { code: 423, n: '五连·林冲', v: 160, board: 0, p: 155 },
+        { code: 424, n: '五连·鲁智深', v: 100, board: 0, p: 217 },
+        { code: 425, n: '五连·刀', v: 60,  board: 0, p: 297 },
+        { code: 426, n: '五连·枪', v: 40,  board: 0, p: 464 },
+        { code: 427, n: '五连·斧', v: 20,  board: 0, p: 681 },
+        { code: 430, n: '纯万能线·3连（按忠义堂赔付）', v: 50,  board: 0, p: 31 },
+        { code: 431, n: '纯万能线·4连', v: 200, board: 0, p: 6 },
+        { code: 432, n: '纯万能线·5连', v: 1000, board: 0, p: 2 },
+        { code: 440, n: '全屏·水浒传(万能)', v: 5000, board: 1, p: 1 },
+        { code: 441, n: '全屏·忠义堂', v: 2500, board: 1, p: 2 },
+        { code: 442, n: '全屏·替天行道', v: 1000, board: 1, p: 3 },
+        { code: 443, n: '全屏·宋江', v: 500, board: 1, p: 6 },
+        { code: 444, n: '全屏·林冲', v: 400, board: 1, p: 8 },
+        { code: 445, n: '全屏·鲁智深', v: 250, board: 1, p: 11 },
+        { code: 446, n: '全屏·刀', v: 150, board: 1, p: 15 },
+        { code: 447, n: '全屏·枪', v: 100, board: 1, p: 23 },
+        { code: 448, n: '全屏·斧', v: 50,  board: 1, p: 39 },
+        { code: 450, n: '全屏·纯人物混合（宋江/林冲/鲁智深）', v: 50,  board: 1, p: 46 },
+        { code: 451, n: '全屏·纯武器混合（刀/枪/斧）', v: 15,  board: 1, p: 124 }
+    ];
+
+    // 水浒传 结果类表固定按"中奖后返还倍数"升序排列（完全按倍数排、不分组；倍数相同按 code 稳定排序）
+    GC_SHZ_COMBO_META.sort(function (a, b) { return (a.v - b.v) || (a.code - b.code); });
 
     // 拉霸子类型（与后端 GetLabaSubType 对齐）：53=水浒传 16=明星97 40=水果拉霸
     function gcLabaSubType() {
@@ -678,20 +791,78 @@
         return 0;
     }
 
+    // 服务端默认出现率(p, 百万分比) → 每 10000 相对单位占位文案（保留有效精度；p=0 时≈0）
+    function gcDefRateText(p) {
+        if (!p) return '≈0';
+        var perWan = p / 100;
+        if (perWan >= 100) return '' + Math.round(perWan);
+        if (perWan >= 10) return perWan.toFixed(1);
+        return perWan.toFixed(2);
+    }
+
+    // 结果类表"不中奖（余量）"计算（类似牌机的杂牌行）：
+    // 绝对出现率语义：出现机会=每 10000 次实际出现次数，未命中任何奖励的余量即为"不中奖"，
+    // 故 不中奖 = 10000 − Σ出现机会。留空行使用服务端内置默认出现率(p÷100)参与估算
+    // （占位符即该值）；填 0=该牌型不出现；合计>10000 时保存会被拒绝，仅红字提示不拦截。
+    function gcUpdateNoWinRow(sel, $cell) {
+        var sum = 0;
+        $(sel).each(function () {
+            var v = parseFloat($(this).val());
+            if (isNaN(v)) v = parseFloat($(this).attr('placeholder')) || 0;   // 留空=默认；显式 0=不出现
+            sum += v;
+        });
+        var remain = Math.round(10000 - sum);
+        $cell.text(remain >= 0 ? remain : '奖励合计 ' + Math.round(sum) + ' 已超 10000（保存会被拒绝，请调小）');
+        $cell.css('color', remain < 0 ? '#d33b3b' : (remain < 1000 ? '#c98f2b' : '#2e9e5b'));
+        return sum;
+    }
+
+    // 当前生效结果类表的出现机会合计（填值 + 留空行按占位默认值，与"不中奖余量"同口径）
+    function gcActiveComboSum() {
+        var $vis = $('#gcRtpBox table:visible').first();
+        if (!$vis.length) return 0;
+        var sel = ($vis.attr('id') === 'gcMx97ComboTable') ? '.gc-combo-rate' : '.gc-shz-rate';
+        var sum = 0;
+        $vis.find(sel).each(function () {
+            var v = parseFloat($(this).val());
+            if (isNaN(v)) v = parseFloat($(this).attr('placeholder')) || 0;
+            sum += v;
+        });
+        return sum;
+    }
+
+    // 刷新两张结果类表的"不中奖（余量）"行（清空/重置等不触发 input 事件时调用）
+    function gcRefreshNoWinRows() {
+        if ($('#gcMx97NoWinRate').length) gcUpdateNoWinRow('#gcMx97ComboTable .gc-combo-rate', $('#gcMx97NoWinRate'));
+        if ($('#gcShzNoWinRate').length) gcUpdateNoWinRow('#gcShzComboTable .gc-shz-rate', $('#gcShzNoWinRate'));
+    }
+
     function gcBuildMx97ComboTable() {
         var $tb = $('#gcMx97ComboTable tbody');
         $tb.empty();
+        // 首行"不中奖（余量）"（类似牌机杂牌）：出现机会由 10000−Σ奖励 实时算出，只读不可填。
+        // 服务端按奖励出现机会权重抽样，未命中即不中奖，此行使整表"每 10000 次"口径完整。
+        $tb.append('<tr>' +
+            '<td style="padding:6px 8px;border:1px solid #e5e9f0;font-size:13px;color:#8a94a1;">不中奖（余量）</td>' +
+            '<td style="padding:6px 8px;border:1px solid #e5e9f0;font-size:12px;color:#8a94a1;text-align:center;">—</td>' +
+            '<td style="padding:6px 8px;border:1px solid #e5e9f0;text-align:center;color:#2e9e5b;font-size:13px;" id="gcMx97NoWinRate">—</td>' +
+            '<td style="padding:6px 8px;border:1px solid #e5e9f0;font-size:12px;color:#8a94a1;text-align:center;">—</td>' +
+            '</tr>');
         $.each(GC_MX97_COMBO_META, function (idx, r) {
             $tb.append('<tr>' +
-                '<td style="padding:6px 8px;border:1px solid #e5e9f0;font-size:13px;color:#36404a;">' + r.code + ' · ' + r.n + '</td>' +
+                '<td style="padding:6px 8px;border:1px solid #e5e9f0;font-size:13px;color:#36404a;">' + r.n + '</td>' +
                 '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="number" name="Combo' + r.code + '" id="gcMxCombo' + r.code + '" class="gc-input gc-mx97" min="1" step="1" placeholder="' + r.v + '（默认）" /></td>' +
-                '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="number" name="ComboProb' + r.code + '" id="gcMxComboProb' + r.code + '" class="gc-input gc-mx97" min="1" max="10000" step="1" placeholder="默认" /></td>' +
+                '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="number" name="ComboProb' + r.code + '" id="gcMxComboProb' + r.code + '" class="gc-input gc-mx97 gc-combo-rate" min="0" max="10000" step="1" placeholder="' + gcDefRateText(r.p) + '（默认）" /></td>' +
                 '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="number" name="ComboStock' + r.code + '" id="gcMxComboStock' + r.code + '" class="gc-input gc-mx97" min="0" step="1" placeholder="不限" /></td>' +
                 '</tr>');
         });
+        $tb.find('.gc-combo-rate').on('input', function () {
+            gcUpdateNoWinRow('#gcMx97ComboTable .gc-combo-rate', $('#gcMx97NoWinRate'));
+        });
+        gcUpdateNoWinRow('#gcMx97ComboTable .gc-combo-rate', $('#gcMx97NoWinRate'));
     }
 
-    // 明星97 RTP/Combo 回显：配置项不存在(null)时留空=用默认/不下发；UseOutcomeFirst 缺省为 1（结果优先生成）
+    // 明星97 RTP/Combo 回显：配置项不存在(null)时留空=用默认/不下发
     function gcFillMx97(t) {
         if (!t) return;
         var rtpFields = [
@@ -702,8 +873,6 @@
             var v = t[f[1]];
             $('#' + f[0]).val((v !== undefined && v !== null) ? v : '');
         });
-        var uof = t.useOutcomeFirst;
-        $('#gcUseOutcomeFirst').prop('checked', uof === undefined || uof === null || parseInt(uof, 10) === 1);
         gcSyncSwitch();
         gcBuildMx97ComboTable();
         $.each(GC_MX97_COMBO_META, function (idx, r) {
@@ -714,6 +883,147 @@
             var stock = t['comboStock' + r.code];
             if (stock !== undefined && stock !== null) $('#gcMxComboStock' + r.code).val(stock);
         });
+        gcUpdateNoWinRow('#gcMx97ComboTable .gc-combo-rate', $('#gcMx97NoWinRate'));
+    }
+
+    // 水浒传 结果类表构建：只读倍率 v + 出现率 ShzRate{code} + 板级库存 ShzStock{code}
+    function gcBuildShzComboTable() {
+        var $tb = $('#gcShzComboTable tbody');
+        $tb.empty();
+        // 首行"不中奖（余量）"（类似牌机杂牌）：出现机会由 10000−Σ奖励 实时算出，只读不可填。
+        // 服务端按奖励出现机会权重抽样，未命中即不中奖，此行使整表"每 10000 次"口径完整。
+        $tb.append('<tr>' +
+            '<td style="padding:6px 8px;border:1px solid #e5e9f0;font-size:13px;color:#8a94a1;">不中奖（余量）</td>' +
+            '<td style="padding:6px 8px;border:1px solid #e5e9f0;font-size:12px;color:#8a94a1;text-align:center;">—</td>' +
+            '<td style="padding:6px 8px;border:1px solid #e5e9f0;text-align:center;color:#2e9e5b;font-size:13px;" id="gcShzNoWinRate">—</td>' +
+            '<td style="padding:6px 8px;border:1px solid #e5e9f0;font-size:12px;color:#8a94a1;text-align:center;">—</td>' +
+            '</tr>');
+        $.each(GC_SHZ_COMBO_META, function (idx, r) {
+            var stockCell = r.board
+                ? '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="number" name="ShzStock' + r.code + '" id="gcShzStock' + r.code + '" class="gc-input gc-shz" min="0" step="1" placeholder="不限" /></td>'
+                : '<td style="padding:6px 8px;border:1px solid #e5e9f0;font-size:13px;color:#8a94a1;text-align:center;">—</td>';
+            $tb.append('<tr>' +
+                '<td style="padding:6px 8px;border:1px solid #e5e9f0;font-size:13px;color:#36404a;">' + r.n + '</td>' +
+                '<td style="padding:6px 8px;border:1px solid #e5e9f0;font-size:13px;color:#8a94a1;text-align:center;">' + r.v + '</td>' +
+                '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="number" name="ShzRate' + r.code + '" id="gcShzRate' + r.code + '" class="gc-input gc-shz gc-shz-rate" min="0" max="10000" step="1" placeholder="' + gcDefRateText(r.p) + '（默认）" /></td>' +
+                stockCell +
+                '</tr>');
+        });
+        $tb.find('.gc-shz-rate').on('input', function () {
+            gcUpdateNoWinRow('#gcShzComboTable .gc-shz-rate', $('#gcShzNoWinRate'));
+        });
+        gcUpdateNoWinRow('#gcShzComboTable .gc-shz-rate', $('#gcShzNoWinRate'));
+    }
+
+    // 水浒传 RTP/结果类回显：配置项不存在(null)时留空=用默认/不下发
+    function gcFillShz(t) {
+        if (!t) return;
+        var rtpFields = [
+            ['gcRtpTargetX100', 'rtpTargetX100'], ['gcRtpKp', 'rtpKp'], ['gcRtpDeadband', 'rtpDeadband'],
+            ['gcRtpDeltaMax', 'rtpDeltaMax'], ['gcRtpStockThreshold', 'rtpStockThreshold'], ['gcRtpWindow', 'rtpWindow']
+        ];
+        $.each(rtpFields, function (i, f) {
+            var v = t[f[1]];
+            $('#' + f[0]).val((v !== undefined && v !== null) ? v : '');
+        });
+        gcSyncSwitch();
+        gcBuildShzComboTable();
+        $.each(GC_SHZ_COMBO_META, function (idx, r) {
+            var rate = t['shzRate' + r.code];
+            if (rate !== undefined && rate !== null) $('#gcShzRate' + r.code).val(rate);
+            if (r.board) {
+                var stock = t['shzStock' + r.code];
+                if (stock !== undefined && stock !== null) $('#gcShzStock' + r.code).val(stock);
+            }
+        });
+        gcUpdateNoWinRow('#gcShzComboTable .gc-shz-rate', $('#gcShzNoWinRate'));
+    }
+
+    // 水果拉霸 RTP 回显：配置项不存在(null)时留空=用默认/不下发
+    function gcFillFruitRtp(t) {
+        if (!t) return;
+        var rtpFields = [
+            ['gcFruitRtpTargetX100', 'rtpTargetX100'], ['gcFruitRtpKp', 'rtpKp'], ['gcFruitRtpDeadband', 'rtpDeadband'],
+            ['gcFruitRtpDeltaMax', 'rtpDeltaMax'], ['gcFruitRtpStockThreshold', 'rtpStockThreshold'], ['gcFruitRtpWindow', 'rtpWindow']
+        ];
+        $.each(rtpFields, function (i, f) {
+            var v = t[f[1]];
+            $('#' + f[0]).val((v !== undefined && v !== null) ? v : '');
+        });
+        gcSyncSwitch();
+        fruitRtpPreview();
+    }
+
+    // 水果拉霸逐区等值实时核算（与后台 SaveFruitRtpConfig 同公式，设计文档 §2.3/§5.3）：
+    // c_a = Σ_{i∈区a} 权重/10000 × 倍率；送灯率 g = p9×2 + p21×4.5；理论 RTP = mean(c)/(1-g)
+    var FRUIT_RAT = [10, 20, 50, 120, 5, 3, 15, 20, 3, 0, 5, 3, 10, 20, 3, 40, 5, 3, 15, 3, 30, 0, 5, 3];
+    var FRUIT_AREA = [6, 4, 0, 0, 7, 7, 5, 3, 3, -1, 7, 6, 6, 4, 1, 1, 7, 5, 5, 2, 2, -1, 7, 4];
+    var FRUIT_AREA_NAME = ['BAR', '双7', '星', '西瓜', '铃铛', '柠檬', '橘子', '苹果'];
+    // 水果拉霸默认面板权重（万分比，合计 10000）：8 押注区 Σ概率×倍率 均≈0.850（相互偏差 0.01%，
+    // 各区高度均衡），送灯位 9/21=50/100（g=0.055），理论 RTP≈89.94%；
+    // 新建桌台预填 / 权重全 0 保存时兜底使用（与后端 FruitPanelDefaultProb 同值）
+    var GC_LABA_WHEEL_DEFAULT = [395, 200, 50, 50, 347, 505, 197, 422, 20, 50, 350, 200, 395, 180, 2700, 10, 350, 433, 283, 2033, 80, 100, 350, 300];
+
+    // 拉霸 RTP 闭环参数内置默认（与各输入框 placeholder/服务端校验范围一致）：
+    // 明星97(gcRtpBox)与水浒传(gcRtpBox)共用同一组参数，默认值相同；水果拉霸(gcFruitRtpBox)单独一组。
+    // 重置/新建时回填为可见值，使用户直接看到"默认是多少"；留空语义(服务端内置)见各字段说明。
+    var GC_MX97_RTP_DEFAULT = { targetX100: 9000, kp: 100, deadband: 10, deltaMax: 40, stockThreshold: 60, window: 10000000 };
+    var GC_SHZ_RTP_DEFAULT = { targetX100: 9000, kp: 100, deadband: 10, deltaMax: 40, stockThreshold: 60, window: 10000000 };
+    var GC_FRUIT_RTP_DEFAULT = { targetX100: 9000, kp: 150, deadband: 100, deltaMax: 500, stockThreshold: 30, window: 100000 };
+
+    // 水果拉霸按图标归类（去掉"面板N ·"前缀，每类一行展示；同类内大在上小在下，按倍率低→高排序）：
+    // v=该类固定倍率，panels=该类占用的面板位；类值=该类各面板位合计，保存时均分到各面板位（后端仍是 24 面板位契约）
+    // 面板位 9/21 两个送灯位拆开为独立两行，可分别设置（9→1~3 次免费局 / 21→3~6 次免费局），不再均分绑定。
+    var LABA_FRUIT_CATS = [
+        { n: '苹果',          v: 5,   panels: [4, 10, 16, 22] },
+        { n: '苹果·小',       v: 3,   panels: [5] },
+        { n: '橘子·大',       v: 10,  panels: [0, 12] },
+        { n: '橘子·小',       v: 3,   panels: [11] },
+        { n: '柠檬·大',       v: 15,  panels: [6, 18] },
+        { n: '柠檬·小',       v: 3,   panels: [17] },
+        { n: '铃铛·大',       v: 20,  panels: [1, 13] },
+        { n: '铃铛·小',       v: 3,   panels: [23] },
+        { n: '西瓜·大',       v: 20,  panels: [7] },
+        { n: '西瓜·小',       v: 3,   panels: [8] },
+        { n: '星星·大',       v: 30,  panels: [20] },
+        { n: '星星·小',       v: 3,   panels: [19] },
+        { n: '双7·大',        v: 40,  panels: [15] },
+        { n: '双7·小',        v: 3,   panels: [14] },
+        { n: 'BAR·大',        v: 120, panels: [3] },
+        { n: 'BAR·小',        v: 50,  panels: [2] },
+        { n: '送灯位·免费局 1~3 次', v: 0, panels: [9] },
+        { n: '送灯位·免费局 3~6 次', v: 0, panels: [21] }
+    ];
+
+    // 水果拉霸转盘结果表固定按"奖励倍数"升序排列（送灯位 v=0 排最上；同倍数保持原顺序，稳定排序）
+    LABA_FRUIT_CATS.sort(function (a, b) { return a.v - b.v; });
+    function fruitRtpPreview() {
+        var c = [0, 0, 0, 0, 0, 0, 0, 0], sum = 0, p9 = 0, p21 = 0;
+        for (var i = 0; i < 24; i++) {
+            var w = parseInt($('[name=WheelProb' + i + ']').val()) || 0;
+            sum += w;
+            if (i === 9) p9 = w / 10000; else if (i === 21) p21 = w / 10000;
+            else if (FRUIT_AREA[i] >= 0) c[FRUIT_AREA[i]] += w / 10000 * FRUIT_RAT[i];
+        }
+        var g = p9 * 2 + p21 * 4.5;
+        var mean = 0;
+        for (var a = 0; a < 8; a++) mean += c[a];
+        mean /= 8;
+        var rtp = (g < 1 && sum > 0) ? mean / (1 - g) : 0;
+        var maxDev = 0, maxA = -1;
+        for (var a2 = 0; a2 < 8; a2++) {
+            var dev = (mean > 0) ? Math.abs(c[a2] - mean) / mean : 0;
+            if (dev > maxDev) { maxDev = dev; maxA = a2; }
+        }
+        var html = '指向概率合计：' + sum + ' / 10000；送灯率：' + ((p9 + p21) * 100).toFixed(2) + '%；g=' + g.toFixed(4) +
+            '；理论 RTP：<b>' + (rtp * 100).toFixed(2) + '%</b><br/>各区 c_a（Σ概率×倍率）：';
+        for (var a3 = 0; a3 < 8; a3++)
+            html += FRUIT_AREA_NAME[a3] + '=' + c[a3].toFixed(3) + '&nbsp;';
+        if (sum === 0) html += '<br/>（权重全 0：保存时将自动使用内置默认 90% 面板表；新建桌台默认预填该表）';
+        else if (mean > 0 && maxDev > 0.05) html += '<br/><span style="color:#c78a00;">提示：' + FRUIT_AREA_NAME[maxA] +
+            ' 区与其它区差异约 ' + (maxDev * 100).toFixed(1) + '%（无拦截，可自由配置）。</span>';
+        else if (sum > 0) html += '<br/><span style="color:#2e9e5b;">各区返奖接近（差异 ≤5%），配置均衡。</span>';
+        $('#gcFruitRtpPreview').html(html);
     }
 
     function gcBuildLabaPayoutTable(subType) {
@@ -721,58 +1031,74 @@
         var $tb = $('#gcLabaPayoutTable tbody');
         $tb.empty();
         if (st === 2) {
-            // 水果拉霸：机台设定=大转盘指向概率（倍率客户端写死，仅展示）
-            $('#gcLabaPayoutTitle').text('机台设定（大转盘指向概率）');
-            $('#gcLabaTh1').text('面板位');
-            $('#gcLabaTh2').text('指向概率（0-10000 万分比）');
-            $('#gcLabaTh3').text('倍率（客户端写死，不可改）');
+            // 水果拉霸：机台设定=大转盘指向概率（倍率客户端写死，仅展示）+ 每日次数
+            // 按图标归类每类一行（类值=该类各面板位合计）；隐藏逐面板位输入维持后端 24 面板位契约
+            $('#gcLabaPayoutTitle').text('转盘结果出现机会与每日次数限制');
+            $('#gcLabaTh1').text('符号');
+            $('#gcLabaTh2').text('结果出现机会（每 10000 次的相对单位）');
+            $('#gcLabaTh3').text('奖励倍数（程序固定，只展示）');
+            $('#gcLabaTh4').text('每天最多出现次数（留空不限，0=当天不出现）(不可设置)').show();
             $('#gcLabaPayoutBox').show();
-            $.each(GC_LABA_WHEEL_META, function (idx, r) {
+            $.each(LABA_FRUIT_CATS, function (i, c) {
+                var hidden = '';
+                $.each(c.panels, function (j, p) {
+                    hidden += '<input type="hidden" name="WheelProb' + p + '" id="gcLabaWp' + p + '" class="gc-laba-wp" value="0" />'
+                        + '<input type="hidden" name="WheelStock' + p + '" id="gcLabaWs' + p + '" class="gc-laba-ws" value="" />';
+                });
                 $tb.append('<tr>' +
-                    '<td style="padding:6px 8px;border:1px solid #e5e9f0;font-size:13px;color:#36404a;">' + r.i + ' · ' + r.n + '</td>' +
-                    '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="number" name="WheelProb' + r.i + '" id="gcLabaWp' + r.i + '" class="gc-input gc-laba-wp" min="0" max="10000" step="1" value="0" /></td>' +
-                    '<td style="padding:6px 8px;border:1px solid #e5e9f0;font-size:13px;color:#8a94a1;text-align:center;">' + r.v + '</td>' +
+                    '<td style="padding:6px 8px;border:1px solid #e5e9f0;font-size:13px;color:#36404a;">' + c.n + '</td>' +
+                    '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="number" name="WheelProbCat' + i + '" id="gcLabaWpCat' + i + '" class="gc-input gc-laba-wp-cat" min="0" max="10000" step="1" value="0" /></td>' +
+                    '<td style="padding:6px 8px;border:1px solid #e5e9f0;font-size:13px;color:#8a94a1;text-align:center;">' + c.v + '</td>' +
+                    '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="number" name="WheelStockCat' + i + '" id="gcLabaWsCat' + i + '" class="gc-input gc-laba-ws-cat" min="0" max="1000000" step="1" placeholder="不限" />' + hidden + '</td>' +
                     '</tr>');
             });
-            $tb.find('.gc-laba-wp').on('input', gcUpdateLabaWheelSum);
+            $tb.find('.gc-laba-wp-cat, .gc-laba-ws-cat').on('input', function () {
+                gcSyncWheelPanels();
+                gcUpdateLabaWheelSum();
+                fruitRtpPreview();
+            });
+            gcSyncWheelPanels();
             gcUpdateLabaWheelSum();
+            fruitRtpPreview();
             return;
         }
-        $('#gcLabaPayoutTitle').text('机台设定（符号出现率与倍数）');
-        $('#gcLabaTh1').text('符号');
-        $('#gcLabaTh2').text('出现率（0-10000 万分比）');
-        $('#gcLabaTh3').text('倍数（压分×倍数=得分）');
-        var meta = GC_LABA_PAYOUT_META[st];
-        if (!meta) { $('#gcLabaPayoutBox').hide(); return; }
-        $('#gcLabaPayoutBox').show();
-        $.each(meta, function (idx, r) {
-            $tb.append('<tr>' +
-                '<td style="padding:6px 8px;border:1px solid #e5e9f0;font-size:13px;color:#36404a;">' + r.n + '</td>' +
-                '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="number" name="Prob' + r.i + '" id="gcLabaPr' + r.i + '" class="gc-input gc-laba-p" min="0" max="10000" step="1" value="' + r.p + '" /></td>' +
-                '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="number" name="Payout' + r.i + '" id="gcLabaPo' + r.i + '" class="gc-input gc-laba-m" min="0" step="1" value="' + r.v + '" /></td>' +
-                '</tr>');
-        });
-        $tb.find('.gc-laba-p,.gc-laba-m').on('input', function () { gcUpdateLabaPayoutSum(meta); });
-        gcUpdateLabaPayoutSum(meta);
+        // 水浒传/明星97：赔付表由服务端权威（水浒双端硬编码、明星97 走「奖项配置」结果类表），
+        // 无机台设定项；仅水果拉霸有大转盘面板配置
+        $('#gcLabaPayoutBox').hide();
     }
 
-    function gcUpdateLabaPayoutSum(meta) {
-        var sum = 0;
-        $.each(meta, function (idx, r) {
-            sum += parseFloat($('#gcLabaPr' + r.i).val()) || 0;
+    // 把每类"结果出现机会/每日次数"均分到该类各面板位（隐藏输入，维持后端 24 面板位契约）：
+    // 每日次数留空=不限→各面板位留空；非空→均分（余数加到前几个面板位）
+    function gcSyncWheelPanels() {
+        $.each(LABA_FRUIT_CATS, function (i, c) {
+            var n = c.panels.length;
+            var total = parseInt($('#gcLabaWpCat' + i).val(), 10);
+            if (isNaN(total) || total < 0) total = 0;
+            var base = Math.floor(total / n), rem = total % n;
+            $.each(c.panels, function (j, p) {
+                $('#gcLabaWp' + p).val(base + (j < rem ? 1 : 0));
+            });
+            var sv = $('#gcLabaWsCat' + i).val();
+            if (sv === '' || sv === null || sv === undefined) {
+                $.each(c.panels, function (j, p) { $('#gcLabaWs' + p).val(''); });
+            } else {
+                var st = parseInt(sv, 10);
+                if (isNaN(st) || st < 0) st = 0;
+                var sBase = Math.floor(st / n), sRem = st % n;
+                $.each(c.panels, function (j, p) {
+                    $('#gcLabaWs' + p).val(sBase + (j < sRem ? 1 : 0));
+                });
+            }
         });
-        var $el = $('#gcLabaPayoutSum');
-        $el.text('符号出现率合计：' + sum + ' / 10000（未填/余量由未配置符号均分；全为 0 时机台按均匀随机）');
-        $el.css('color', sum > 10000 ? '#d33b3b' : '#9aa4b1');
     }
 
     function gcUpdateLabaWheelSum() {
         var sum = 0;
-        $.each(GC_LABA_WHEEL_META, function (idx, r) {
-            sum += parseFloat($('#gcLabaWp' + r.i).val()) || 0;
+        $.each(LABA_FRUIT_CATS, function (i, c) {
+            sum += parseFloat($('#gcLabaWpCat' + i).val()) || 0;
         });
         var $el = $('#gcLabaPayoutSum');
-        $el.text('指向概率合计：' + sum + ' / 10000（全为 0 时按服务端内置逻辑开奖；送灯位 9/21 中奖为免费局）');
+        $el.text('结果出现机会合计：' + sum + ' / 10000（全部为 0 时保存会自动使用系统默认 90% 面板表；两个送灯位可分别设置，送灯位=中奖后赠送免费局，9 送 1~3 次、21 送 3~6 次）');
         $el.css('color', sum > 10000 ? '#d33b3b' : '#9aa4b1');
     }
 
@@ -780,22 +1106,40 @@
         gcBuildLabaPayoutTable(t.labaSubType);
         var st = parseInt(t.labaSubType, 10);
         if (st === 2) {
-            $.each(GC_LABA_WHEEL_META, function (idx, r) {
-                var wv = t['wheelProb' + r.i];
-                if (wv !== undefined && wv !== null && wv > 0) $('#gcLabaWp' + r.i).val(wv);
+            // 每类回显：结果出现机会=该类各面板位权重之和；每日次数=该类之和（全空=不限）
+            $.each(LABA_FRUIT_CATS, function (i, c) {
+                var pSum = 0, sSum = 0, sAllBlank = true;
+                $.each(c.panels, function (j, p) {
+                    var wv = t['wheelProb' + p];
+                    if (wv !== undefined && wv !== null && wv > 0) pSum += wv;
+                    var sv = t['wheelStock' + p];
+                    if (sv !== undefined && sv !== null && sv >= 0) { sSum += sv; sAllBlank = false; }
+                });
+                $('#gcLabaWpCat' + i).val(pSum);
+                $('#gcLabaWsCat' + i).val(sAllBlank ? '' : sSum);
             });
+            gcSyncWheelPanels();
             gcUpdateLabaWheelSum();
+            fruitRtpPreview();
             return;
         }
-        var meta = GC_LABA_PAYOUT_META[st];
-        if (!meta) return;
-        $.each(meta, function (idx, r) {
-            var v = t['payout' + r.i];
-            if (v !== undefined && v !== null && v > 0) $('#gcLabaPo' + r.i).val(v);
-            var pv = t['prob' + r.i];
-            if (pv !== undefined && pv !== null && pv > 0) $('#gcLabaPr' + r.i).val(pv);
-        });
-        gcUpdateLabaPayoutSum(meta);
+        // 水浒传/明星97：赔付表由服务端权威（水浒双端硬编码、明星97 走「奖项配置」结果类表），无机台设定项
+    }
+
+    // 庄闲/和(幸运六狮)、皇冠(彩金单挑)限红：按游戏动态显示与改名；
+    // 其余押注玩法无副玩法/和门，整行隐藏并禁用 input，避免 serializeObject 误提交覆盖库值
+    function gcApplyViceDraw() {
+        var gid = parseInt($('#gcGameSel').val(), 10);
+        var lion = (gid === 10), crown = (gid === 2);
+        var show = lion || crown;
+        $('#gcViceDrawRow').toggle(show);
+        $('#gcViceDrawHint').toggle(show);
+        if (show) {
+            $('#gcViceMaxLbl').text(crown ? '皇冠单次最高押分' : '庄/闲单门最高押分');
+            $('#gcViceMinField').toggle(crown);
+            $('#gcDrawMaxField').toggle(lion);
+        }
+        $('#gcViceDrawRow input').prop('disabled', !show);
     }
 
     function gcApplyType() {
@@ -805,29 +1149,72 @@
         $('.gc-base-info').show();
         if (type >= 0 && type <= 3) {
             $('.gc-only-' + type).show();
-            // 鱼机(2)/牌机(1)：隐藏 兑换单位、兑换金币数（仅不展示，仍随表单提交，功能保留）
-            $('.gc-hide-12').toggle(!(type === 1 || type === 2));
             if (type === 0) {
-                $('#gcMinBetLbl').text('起押值');
-                $('#gcMaxBetLbl').text('押分限红');
+                $('#gcMinBetLbl').text('最低压分');
+                $('#gcMaxBetLbl').text('最高压分');
             } else {
                 $('#gcMinBetLbl').text('最小押分');
                 $('#gcMaxBetLbl').text('最大押分');
             }
-            $('#gcScoreSwitchLbl').text((type === 1 || type === 3) ? '加芬幅度（点击一次加多少芬）' : '加炮幅度（0.1-0.9）');
+            $('#gcScoreSwitchLbl').text((type === 1 || type === 3) ? '每次增加的分值' : '每次提升的炮值（0.1-0.9）');
             var gcSsMin = (type === 2) ? 0.1 : 1;
             $('#gcScoreSwitch').attr('step', (type === 2) ? '0.1' : '1');
             $('#gcScoreSwitch').attr('min', (type === 2) ? '0.1' : '1');
             $('#gcScoreSwitch').val(gcNormSs($('#gcScoreSwitch').val(), type));
             if (type === 1 && $('#gcPayoutTable tbody tr').length === 0) gcBuildPayoutTable();
             if (type === 1) gcUpdateJpBox(); else $('#gcJpBox').hide();
-            if (type === 0) gcBuildBetPayoutTable();
+            if (type === 0) gcBuildBetSpec();
         }
-        // 明星97 RTP 控制区：仅拉霸 subType==1（GameId=16）显示
+        // 明星97/水浒传 RTP 控制区：共用同一闭环参数面板（结果类表按游戏切换），
+        // 仅拉霸 subType==1/3 显示；与水果拉霸区互斥，不可见一方的 input 置 disabled，
+        // 避免 serializeObject 把另一套同 name 字段误带上
         var isMx97Rtp = (type === 3 && gcLabaSubType() === 1);
-        $('#gcMx97RtpBox').toggle(isMx97Rtp);
-        if (isMx97Rtp && $('#gcMx97ComboTable tbody tr').length === 0) gcBuildMx97ComboTable();
+        var isShzRtp = (type === 3 && gcLabaSubType() === 3);
+        var isRtpGame = isMx97Rtp || isShzRtp;
+        $('#gcRtpBox').toggle(isRtpGame);
+        if (isRtpGame) {
+            $('#gcRtpTitle').text('长期返奖率控制（' + (isMx97Rtp ? '明星97' : '水浒传') + ' · 优先按控制结果生成）(不可设置)');
+            if (isMx97Rtp) {
+                $('#gcShzComboTable').hide();
+                $('#gcMx97ComboTable').show();
+                if ($('#gcMx97ComboTable tbody tr').length === 0) gcBuildMx97ComboTable();
+                $('#gcRtpComboHint').text('奖励倍数和出现机会留空=使用系统默认；填 0=该牌型不出现；每天最多出现次数留空=不限、0=当天不出现（每天 0 点重置）。出现机会=每 10000 次实际出现次数（填 500=实际出现 5%，填多少就出现多少）；表中"不中奖（余量）"=10000−Σ出现机会（留空行按内置默认出现率计算），未命中奖励即按此比例不中奖。出现机会合计>10000 不能保存（每 10000 次最多出现 10000 次）。返奖率由出现机会与固定赔率直接决定；目标RTP闭环默认关闭，需要自动微调返奖率时设置"偏差纠正速度">0 启用（仅微调）。全盘七（348）按全盘七 9 个（329）结算，无需单独配置。');
+            } else {
+                $('#gcMx97ComboTable').hide();
+                $('#gcShzComboTable').show();
+                if ($('#gcShzComboTable tbody tr').length === 0) gcBuildShzComboTable();
+                $('#gcRtpComboHint').text('奖励倍数由程序固定，不能调整；只需设置结果出现机会。出现机会=每 10000 次实际出现次数（填 500=实际出现 5%，填多少就出现多少）；填 0=该牌型不出现；表中"不中奖（余量）"=10000−Σ出现机会（留空行按内置默认出现率计算），未命中奖励即按此比例不中奖。出现机会合计>10000 不能保存（每 10000 次最多出现 10000 次）。返奖率由出现机会与固定赔率直接决定；目标RTP闭环默认关闭，需要自动微调返奖率时设置"偏差纠正速度">0 启用（仅微调）。每天最多出现次数仅对整盘/混合大奖（440-451）生效，留空=不限、0=当天不出现（每天 0 点重置）。纯万能线（430-432）出现机会很低是正常现象。');
+            }
+        }
+        $('#gcRtpBox input, #gcRtpBox select').prop('disabled', !isRtpGame);
+        // 水果拉霸 RTP 控制区：仅拉霸 subType==2（GameId=40）显示
+        var isFruitRtp = (type === 3 && gcLabaSubType() === 2);
+        $('#gcFruitRtpBox').toggle(isFruitRtp);
+        $('#gcFruitRtpBox input, #gcFruitRtpBox select').prop('disabled', !isFruitRtp);
+        // 三个拉霸（明星97/水果机/水浒传）最小/最大押分只能为整数（步进 1；保存时另有整数校验）
+        $('#gcMinBet').attr('step', gcLabaSubType() > 0 ? '1' : '0.1');
+        $('#gcMaxBet').attr('step', gcLabaSubType() > 0 ? '1' : '0.1');
+        gcApplyViceDraw();
         $('#gcNewTable').toggle(true);
+        // 高级参数折叠区联动：非拉霸类型隐藏引导条与容器；拉霸类型显示引导条且默认收起，
+        // 用户点"展开设置"后才展示 RTP/转盘/每日次数（简化日常操作路径）
+        var isLabaType = type === 3;
+        $('#gcAdvHead').toggle(isLabaType);
+        if (!isLabaType) $('#gcAdvBody').hide();
+    }
+
+    // 拉霸高级参数（RTP/转盘概率/每日次数）折叠开关：仅对拉霸类型显示引导条
+    function gcToggleAdv(expand) {
+        var isLaba = gcGetType() === 3;
+        if (!isLaba) { $('#gcAdvHead').hide(); $('#gcAdvBody').hide(); return; }
+        $('#gcAdvHead').show();
+        if (typeof expand === 'boolean') {
+            $('#gcAdvBody').toggle(expand);
+        } else {
+            // 不传参 = 切换
+            $('#gcAdvBody').toggle();
+        }
+        $('#gcAdvToggle').text($('#gcAdvBody').is(':visible') ? '收起设置' : '展开设置');
     }
 
     function gcUpdateSaveBtn() {
@@ -884,7 +1271,6 @@
         $('#gcCoinSc').val(t.coinSc);
         $('#gcExCoin').val(t.exCoin);
         $('#gcCoinNeed').val(t.coinNeed);
-        $('#gcRoomCoinNeed').val(t.roomCoinNeed);
         $('#gcGameMo').val(t.gameMo);
         var gcFillSs = (t.scoreSwitch !== undefined && t.scoreSwitch !== null) ? t.scoreSwitch : 0;
         gcFillSs = gcNormSs(gcFillSs, type);
@@ -892,14 +1278,24 @@
         $('#gcIdleSec').val(t.idleFireTimeoutSec);
         $('#gcEnabled').prop('checked', t.enabled == 1);
         if (type === 0) {
-            gcFillBetPayout(t);
+            gcFillBetSpec(t);
+            $('#gcBetTime').val(t.betTime !== undefined ? t.betTime : 10);
+            $('#gcScLimitSing').val(t.scLimitSing !== undefined ? t.scLimitSing : 3000);
+            $('#gcScLimitAll').val(t.scLimitAll !== undefined ? t.scLimitAll : 10000);
+            $('#gcBankerScNeed').val(t.bankerScNeed !== undefined ? t.bankerScNeed : 500000);
+            $('#gcBetMaxVice').val(t.betMaxVice !== undefined ? t.betMaxVice : 1000);
+            $('#gcBetMaxDraw').val(t.betMaxDraw !== undefined ? t.betMaxDraw : 1000);
+            $('#gcBetMinVice').val(t.betMinVice !== undefined ? t.betMinVice : 10);
             $('#gcDif').val(t.dif);
             $('#gcHar').val(t.har);
             $('#gcSiteType').val(t.siteType);
             $('#gcBankerDif').val(t.bankerDif);
             $('#gcBankerHar').val(t.bankerHar);
             $('#gcBankerSiteType').val(t.bankerSiteType);
-            $('#gcBankerPer').val(t.bankerPer);
+            // 庄家抽水：库内千分比 → 页面百分比显示（30 = 3%）
+            var bpVal = (t.bankerPer !== undefined && t.bankerPer !== null) ? t.bankerPer : 30;
+            $('#gcBankerPer').val(bpVal / 10);
+            $('#gcBankerPerRaw').val(bpVal);
             gcFillChips(t.betScores);
         } else if (type === 1) {
             $('#gcHypeType').val(t.hypeType);
@@ -910,7 +1306,11 @@
             $('#gcFishSiteType').val(1); // 场地类型已隐藏，固定中场地(1)
         } else if (type === 3) {
             gcFillLabaPayout(t);
+            // 拉霸按桌筹码档位(1~5级)：与押注类同管道(roomtableconfig_bet)，回填五个输入框
+            gcFillChips(t.betScores);
             if (gcLabaSubType() === 1) gcFillMx97(t);
+            else if (gcLabaSubType() === 2) gcFillFruitRtp(t);
+            else if (gcLabaSubType() === 3) gcFillShz(t);
         }
         $('#gcCurTableName').text('当前编辑：' + t.tableName);
         gcSyncSwitch();
@@ -937,16 +1337,93 @@
     function gcZeroForm() {
         $('#gcForm input[type=number]').val(0);
         $('#gcForm input[type=text]').val('');
+        $('.gc-laba-ws, .gc-laba-ws-cat').val('');  // 水果每日次数（类别+隐藏面板位）：留空=不限（0=当天禁出，不能误存为 0）
         $('.gc-mx97').val('');           // 明星97 RTP/Combo：留空=不下发用默认，避免误存为 0
+        $('.gc-shz').val('');            // 水浒传 RTP/结果类：同上
+        $('.gc-fruit-rtp').val('');      // 水果拉霸 RTP：同上
         $('#gcCardDif').val('');
         $('#gcEnabled').prop('checked', false);
         $('#gcBetScores').val('');
+        $('#gcBetGameCfg').val('');
         $('#gcPayoutOn').prop('checked', false);
         $('#gcJokerOn').prop('checked', false);
-        $('#gcUseOutcomeFirst').prop('checked', true);
+        $('#gcBetTime').val(10);
+        $('#gcScLimitSing').val(3000);
+        $('#gcScLimitAll').val(10000);
+        $('#gcBankerScNeed').val(500000);
+        $('#gcBetMaxVice').val(1000);
+        $('#gcBetMaxDraw').val(1000);
+        $('#gcBetMinVice').val(10);
+        // 庄家抽水：新桌台默认 3%（库内千分比 30，与服务端 GetBetPara 兜底一致）
+        $('#gcBankerPer').val(3);
+        $('#gcBankerPerRaw').val(30);
         gcBuildPayoutTable();
         gcSyncJoker();
         gcSyncSwitch();
+        gcRefreshNoWinRows();
+    }
+
+    // 水果拉霸：把转盘权重恢复为内置默认 90% 面板表（8 区高度均衡，理论 RTP≈90%）
+    function gcApplyFruitDefaultProb() {
+        if (gcGetType() === 3 && gcLabaSubType() === 2) {
+            if ($('#gcLabaWpCat0').length === 0) gcBuildLabaPayoutTable(2);
+            $.each(LABA_FRUIT_CATS, function (i, c) {
+                var pSum = 0;
+                $.each(c.panels, function (j, p) { pSum += GC_LABA_WHEEL_DEFAULT[p]; });
+                $('#gcLabaWpCat' + i).val(pSum);
+            });
+            gcSyncWheelPanels();
+            gcUpdateLabaWheelSum();
+            fruitRtpPreview();
+        }
+    }
+
+    // 恢复默认：对拉霸三个子游戏回填可见的内置默认值（RTP 闭环参数 / 水果转盘默认 90% 权重 / 明星97 组合默认赔率），
+    // 使用户能直接看到"默认是多少"再决定是否调整；保存时按所见值显式写库，与内置默认等价。
+    // 组合"出现率/每日次数"默认=服务端内置分布/不限，无单一数值可显示 → 保持留空(placeholder 已注明)，
+    // 绝不填 0（0 是合法显式值，语义为"当天禁出/不出现"，会错误覆盖"不限"）。
+    // 隐藏字段（兑换单位 EX_COIN / 兑换金币数 Game_Mo 等）保持 0 = 保存时走服务端兜底默认，不回填 1。
+    // 其它游戏类型维持原语义：清空表单（留空/0 = 服务端兜底默认）。
+    function gcResetForm() {
+        gcZeroForm();
+        if (gcGetType() !== 3) return;          // 非拉霸维持原"清空=默认"
+        // 拉霸可见的押分/兑换默认（最小/最大押分 1、每个游戏币分值 1、进房金币 1、加炮分值 1；与新建桌台一致）
+        $('#gcMinBet').val(1);
+        $('#gcMaxBet').val(1);
+        $('#gcCoinSc').val(1);
+        $('#gcCoinNeed').val(1);
+        $('#gcScoreSwitch').val(1);
+        var st = gcLabaSubType();
+        if (st === 1) {                          // 明星97：RTP 闭环默认 + 组合默认赔率
+            $('#gcRtpTargetX100').val(GC_MX97_RTP_DEFAULT.targetX100);
+            $('#gcRtpKp').val(GC_MX97_RTP_DEFAULT.kp);
+            $('#gcRtpDeadband').val(GC_MX97_RTP_DEFAULT.deadband);
+            $('#gcRtpDeltaMax').val(GC_MX97_RTP_DEFAULT.deltaMax);
+            $('#gcRtpStockThreshold').val(GC_MX97_RTP_DEFAULT.stockThreshold);
+            $('#gcRtpWindow').val(GC_MX97_RTP_DEFAULT.window);
+            if ($('#gcMx97ComboTable tbody tr').length === 0) gcBuildMx97ComboTable();
+            $.each(GC_MX97_COMBO_META, function (i, r) {
+                $('#gcMxCombo' + r.code).val(r.v);   // 组合默认赔率（出现率留空=服务端内置）
+            });
+        } else if (st === 2) {                   // 水果拉霸：RTP 闭环默认 + 默认 90% 转盘权重
+            $('#gcFruitRtpTargetX100').val(GC_FRUIT_RTP_DEFAULT.targetX100);
+            $('#gcFruitRtpKp').val(GC_FRUIT_RTP_DEFAULT.kp);
+            $('#gcFruitRtpDeadband').val(GC_FRUIT_RTP_DEFAULT.deadband);
+            $('#gcFruitRtpDeltaMax').val(GC_FRUIT_RTP_DEFAULT.deltaMax);
+            $('#gcFruitRtpStockThreshold').val(GC_FRUIT_RTP_DEFAULT.stockThreshold);
+            $('#gcFruitRtpWindow').val(GC_FRUIT_RTP_DEFAULT.window);
+            gcApplyFruitDefaultProb();
+        } else if (st === 3) {                   // 水浒传：RTP 闭环默认（结果类出现率服务端内置，保持留空）
+            $('#gcRtpTargetX100').val(GC_SHZ_RTP_DEFAULT.targetX100);
+            $('#gcRtpKp').val(GC_SHZ_RTP_DEFAULT.kp);
+            $('#gcRtpDeadband').val(GC_SHZ_RTP_DEFAULT.deadband);
+            $('#gcRtpDeltaMax').val(GC_SHZ_RTP_DEFAULT.deltaMax);
+            $('#gcRtpStockThreshold').val(GC_SHZ_RTP_DEFAULT.stockThreshold);
+            $('#gcRtpWindow').val(GC_SHZ_RTP_DEFAULT.window);
+        }
+        // 回填后展开高级区，让用户直接看到默认值
+        gcRefreshNoWinRows();
+        gcToggleAdv(true);
     }
 
     function gcNewTable() {
@@ -970,14 +1447,18 @@
         $('#gcGameType').val(type);
         $('#gcTableName').val('');
         gcApplyType();
-        $('#gcCurTableName').text(src ? '新建桌台（已套用最近桌台参数，填写桌名即可保存）' : '新建桌台');
+        // 水果拉霸：权重固定为默认面板表（8 区高度均衡，理论 RTP≈90%），不复用最近桌台的权重
+        gcApplyFruitDefaultProb();
+        // 新建桌台：RTP/组合等高级项保持"留空=系统默认"（不显式写库），让游戏服内置默认跟随版本演进；
+        // 需要看到并落库内置默认数值时，点"恢复默认"按钮即可
+        $('#gcCurTableName').text(src ? '新建桌台（已套用最近桌台参数，拉霸权重使用默认 90% 面板表，填写桌名即可保存）' : '新建桌台（RTP 等高级项保持系统默认，可点“恢复默认”查看默认值）');
         gcSyncSwitch();
         gcUpdateSaveBtn();
     }
 
-    // 牌机/拉霸新桌台默认值（715Web 文档：下注与兑换）
+    // 牌机/拉霸新桌台默认值（715Web 文档：下注与兑换）；拉霸最小/最大押分只能整数，默认 1
     function gcApplyCardDefaults() {
-        $('#gcMinBet').val(0.1);
+        $('#gcMinBet').val(gcLabaSubType() > 0 ? 1 : 0.1);
         $('#gcMaxBet').val(1);
         $('#gcExCoin').val(1);
         $('#gcCoinSc').val(1);
@@ -989,73 +1470,366 @@
     function gcSyncSwitch() {
         $('#gcEnabledVal').val($('#gcEnabled').is(':checked') ? 1 : 0);
         $('#gcPayoutOnVal').val(1);
-        $('#gcBetPayoutOnVal').val($('#gcBetPayoutOn').is(':checked') ? 1 : 0);
-        $('#gcUseOutcomeFirstVal').val($('#gcUseOutcomeFirst').is(':checked') ? 1 : 0);
     }
 
-    // 押注类每门赔率配置：门名按服务端门索引顺序；m 为默认倍数（内置赔率表参考值）
-    var GC_BET_PAYOUT_META = {
-        2:  [{ n: '黑桃', m: 3.8 }, { n: '红桃', m: 3.8 }, { n: '梅花', m: 4 }, { n: '方块', m: 4 }, { n: '皇冠', m: 20 }],
-        10: [{ n: '黄兔子', m: 0 }, { n: '绿兔子', m: 0 }, { n: '红兔子', m: 0 },
-             { n: '黄猴子', m: 0 }, { n: '绿猴子', m: 0 }, { n: '红猴子', m: 0 },
-             { n: '黄熊猫', m: 0 }, { n: '绿熊猫', m: 0 }, { n: '红熊猫', m: 0 },
-             { n: '黄狮子', m: 0 }, { n: '绿狮子', m: 0 }, { n: '红狮子', m: 0 }],
-        29: [{ n: '门1', m: 3 }, { n: '门2', m: 6 }, { n: '门3', m: 12 }, { n: '门4', m: 24 },
-             { n: '门5', m: 48 }, { n: '门6', m: 10 }, { n: '门7', m: 6 }, { n: '门8', m: 4 }],
-        47: [{ n: '门1', m: 3 }, { n: '门2', m: 6 }, { n: '门3', m: 12 }, { n: '门4', m: 24 },
-             { n: '门5', m: 48 }, { n: '门6', m: 10 }, { n: '门7', m: 6 }, { n: '门8', m: 4 }]
+    // ==================== 押注类开奖权重与奖励配置（按 GAME_ID 2/10/29/47） ====================
+    // doors：每门赔率权重表（min~max赔率 + 权重万分比）。服务端当前使用内置倍率，
+    // 该表仅作 RTP 实时核算展示与预留存储；spec：特殊奖励/庄闲和/彩金奖池等玩法配置（服务端参数化生效）。
+    var GC_BET_DOOR_META = {
+        2: { fixedOdd: true, doors: [
+            { n: '黑桃', odd: 3.8, w: 2550 }, { n: '红桃', odd: 3.8, w: 2550 },
+            { n: '梅花', odd: 4, w: 2350 }, { n: '方块', odd: 4, w: 2350 },
+            { n: '皇冠王', odd: 20, w: 200 }
+        ]},
+        10: { doors: [ // 索引顺序与服务端 12 门一致：黄/绿/红 × 兔/猴/熊猫/狮；倍率=服务端内置各动物档位区间(4~8/7~13/12~23/25~46)
+            { n: '黄兔', minOdd: 4, maxOdd: 8, minW: 90, maxW: 125 },
+            { n: '绿兔', minOdd: 4, maxOdd: 8, minW: 75, maxW: 105 },
+            { n: '红兔', minOdd: 4, maxOdd: 8, minW: 120, maxW: 155 },
+            { n: '黄猴', minOdd: 7, maxOdd: 13, minW: 52, maxW: 70 },
+            { n: '绿猴', minOdd: 7, maxOdd: 13, minW: 44, maxW: 62 },
+            { n: '红猴', minOdd: 7, maxOdd: 13, minW: 62, maxW: 86 },
+            { n: '黄熊猫', minOdd: 12, maxOdd: 23, minW: 30, maxW: 43 },
+            { n: '绿熊猫', minOdd: 12, maxOdd: 23, minW: 25, maxW: 38 },
+            { n: '红熊猫', minOdd: 12, maxOdd: 23, minW: 36, maxW: 52 },
+            { n: '黄狮', minOdd: 25, maxOdd: 46, minW: 13, maxW: 22 },
+            { n: '绿狮', minOdd: 25, maxOdd: 46, minW: 11, maxW: 18 },
+            { n: '红狮', minOdd: 25, maxOdd: 46, minW: 15, maxW: 26 }
+        ]},
+        29: { doors: [ // 倍率=服务端内置 6 组表逐门 min~max（门1~门8）
+            { n: '狮子', minOdd: 3, maxOdd: 4, w: 70 }, { n: '老鹰', minOdd: 6, maxOdd: 7, w: 70 },
+            { n: '熊猫', minOdd: 10, maxOdd: 12, w: 68 }, { n: '孔雀', minOdd: 24, maxOdd: 48, w: 68 },
+            { n: '猴子', minOdd: 22, maxOdd: 48, w: 72 }, { n: '白鸽', minOdd: 10, maxOdd: 12, w: 72 },
+            { n: '兔子', minOdd: 6, maxOdd: 7, w: 78 }, { n: '燕子', minOdd: 3, maxOdd: 4, w: 78 }
+        ]},
+        47: { doors: [ // 倍率=服务端内置 6 组表逐门 min~max；顺序=客户端 BMW_GameController.ItemIndexToType(0~7)：马自达/标致/大众/奔驰/宝马/福特/丰田/本田
+            { n: '马自达', minOdd: 3, maxOdd: 4, w: 70 }, { n: '标致', minOdd: 6, maxOdd: 7, w: 70 },
+            { n: '大众', minOdd: 10, maxOdd: 12, w: 68 }, { n: '奔驰', minOdd: 24, maxOdd: 48, w: 68 },
+            { n: '宝马', minOdd: 22, maxOdd: 48, w: 72 }, { n: '福特', minOdd: 10, maxOdd: 12, w: 72 },
+            { n: '丰田', minOdd: 6, maxOdd: 7, w: 78 }, { n: '本田', minOdd: 3, maxOdd: 4, w: 78 }
+        ]}
+    };
+    // spec 字段定义：id=JSON 键，lbl=页面标签，def=默认值（未配置时服务端使用内置行为，等价默认见注释），cls=输入类型
+    var GC_BET_SPEC_META = {
+        47: {
+            title: '奔驰宝马 · 皇冠钻石特殊奖励（出现机会填 0=关闭）',
+            desc: '游戏规则：8 门车标押注转盘；触发皇冠按权重随机点亮勾选车标（多门同步中奖）；触发钻石直接结算区间内随机倍率彩金大奖。',
+            fields: [
+                { id: 'goldW', lbl: '皇冠触发出现机会（每 10000 次）', def: 700, hint: '默认 700 ≈ 现有 4%+2%+1% 三档小/中/大灯合计' },
+                { id: 'goldLampMin', lbl: '皇冠随机灯数下限(1~8)', def: 1 },
+                { id: 'goldLampMax', lbl: '皇冠随机灯数上限(1~8)', def: 8 },
+                { id: 'silverW', lbl: '钻石触发出现机会（每 10000 次）', def: 300, hint: '默认 300 = 现有 3%' },
+                { id: 'silverRateMin', lbl: '钻石随机倍率下限(5~99)', def: 5 },
+                { id: 'silverRateMax', lbl: '钻石随机倍率上限(5~99)', def: 99 }
+            ],
+            doorsLabel: '皇冠可随机点亮车标'
+        },
+        29: {
+            title: '金鲨银鲨 · 双鲨特殊奖励（出现机会填 0=关闭）',
+            desc: '规则：8 门动物押注；开出金鲨按权重随机点亮勾选门类追加奖励；开出银鲨直接结算区间内随机倍率彩金大奖。',
+            fields: [
+                { id: 'goldW', lbl: '金鲨触发出现机会（每 10000 次）', def: 700, hint: '默认 700 ≈ 现有 4%+2%+1% 三档小/中/大灯合计' },
+                { id: 'goldLampMin', lbl: '金鲨随机灯数下限(1~8)', def: 1 },
+                { id: 'goldLampMax', lbl: '金鲨随机灯数上限(1~8)', def: 8 },
+                { id: 'silverW', lbl: '银鲨触发出现机会（每 10000 次）', def: 300, hint: '默认 300 = 现有 3%' },
+                { id: 'silverRateMin', lbl: '银鲨随机倍率下限(5~99)', def: 5 },
+                { id: 'silverRateMax', lbl: '银鲨随机倍率上限(5~99)', def: 99 }
+            ],
+            doorsLabel: '金鲨可随机点亮门类'
+        },
+        10: {
+            title: '森林舞会 · 庄闲和赔付与特殊奖励配置',
+            desc: '规则：每局庄闲和概率在设置区间内随机；大三元/大四喜/霹雳闪电/幸运送灯按权重分档触发（权重=0 关闭对应档）。',
+            fields: [
+                { id: 'bankOddZhuang', lbl: '庄赔率', def: 2 },
+                { id: 'bankOddHe', lbl: '和赔率', def: 8 },
+                { id: 'bankOddXian', lbl: '闲赔率', def: 2 },
+                { id: 'probZhuangMin', lbl: '庄出现比例下限（%）', def: 40 },
+                { id: 'probZhuangMax', lbl: '庄出现比例上限（%）', def: 47 },
+                { id: 'probXianMin', lbl: '闲出现比例下限（%）', def: 40 },
+                { id: 'probXianMax', lbl: '闲出现比例上限（%）', def: 47 },
+                { id: 'probHeMin', lbl: '和出现比例下限（%）', def: 1 },
+                { id: 'probHeMax', lbl: '和出现比例上限（%）', def: 6 },
+                { id: 'litW', lbl: '幸运送灯触发出现机会（每 10000 次）', def: 1500, hint: '个人补灯/JPx2/JPx3 档（现有 15%）' },
+                { id: 'midW', lbl: '中等奖励触发出现机会（每 10000 次）', def: 800, hint: 'JPx4/JPx5/个人彩金/全体JPx2/全体送灯档（现有 8%）' },
+                { id: 'largeW', lbl: '大奖触发出现机会（每 10000 次）', def: 400, hint: '大三元/大四喜/闪电/全体彩金档（现有 4%）' },
+                { id: 'dsyW', lbl: '大三元在大奖中的占比（每 10000）', def: 6000, hint: '大奖档内同色奖占比阈值（现有 60%）' },
+                { id: 'dsxW', lbl: '大四喜在大奖中的占比（每 10000）', def: 1000, hint: '大奖档内同类奖占比阈值（现有 10%）' },
+                { id: 'pldW', lbl: '霹雳闪电在大奖中的占比（每 10000）', def: 1000, hint: '大奖档内JP倍率奖占比阈值（现有 10%）' },
+                { id: 'xysdW', lbl: '幸运送灯在大奖中的占比（每 10000）', def: 0, hint: '大奖档内全体送灯占比阈值（默认0=关闭）' },
+                { id: 'dsyBonus', lbl: '大三元 额外加成(%)', def: 30, hint: '0=不额外加成' },
+                { id: 'dsxBonus', lbl: '大四喜 额外加成(%)', def: 50, hint: '0=不额外加成' },
+                { id: 'pldRate', lbl: '闪电倍率(总倍率)', def: 3, hint: '现有 JPx3 即总倍率 3' }
+            ]
+        },
+        2: {
+            title: '彩金单挑 · 彩金奖池（派送出现机会填 0=关闭）',
+            desc: '规则：每局全局押注按设置比例抽水存入彩金池；派送权重设置 0 永久关闭彩金发放，抽水仍正常累计。',
+            fields: [
+                { id: 'poolRate', lbl: '每局押注抽水存入彩金池比例(%)', def: 2, hint: '默认 2%（服务端未配置时为 0.2%）' },
+                { id: 'jpW', lbl: '彩金随机派送出现机会（每 10000 次）', def: 100, hint: '默认 100 = 现有 1%' }
+            ]
+        }
     };
 
-    function gcGetBetPayoutMeta() {
+    var GC_BET_CFG = null; // 当前编辑桌台的玩法配置 {spec:{...}, doors:[...]}
+
+    function gcGetBetDoorMeta() {
         var gameId = parseInt($('#gcGameId').val(), 10);
-        return GC_BET_PAYOUT_META[gameId] || null;
+        return GC_BET_DOOR_META[gameId] || null;
     }
 
-    function gcBuildBetPayoutTable() {
-        var meta = gcGetBetPayoutMeta();
-        var $tb = $('#gcBetPayoutTable tbody');
-        $tb.empty();
-        if (!meta) {
-            $('#gcBetPayoutSum').text('');
+    function gcGetBetSpecMeta() {
+        var gameId = parseInt($('#gcGameId').val(), 10);
+        return GC_BET_SPEC_META[gameId] || null;
+    }
+
+    // 渲染「开奖权重与奖励配置」区块（按游戏）
+    function gcBuildBetSpec() {
+        var sm = gcGetBetSpecMeta();
+        var $box = $('#gcBetSpecBox');
+        $box.empty();
+        if (!sm) {
+            $('#gcBetDoorBox').empty();
+            $('#gcBetDoorHint').text('');
             return;
         }
-        $.each(meta, function (i, r) {
-            $tb.append('<tr>' +
-                '<td style="padding:6px 8px;border:1px solid #e5e9f0;font-size:13px;color:#36404a;">' + r.n + '</td>' +
-                '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="number" name="bp' + i + '" id="gcBp' + i + '" class="gc-input gc-betpayout-p" min="0" max="10000" step="1" value="0" /></td>' +
-                '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="number" name="bm' + i + '" id="gcBm' + i + '" class="gc-input gc-betpayout-m" min="0" step="0.1" value="' + r.m + '" /></td>' +
-                '</tr>');
+        var html = '<div style="border:1px solid #e5e9f0;border-radius:6px;padding:12px 14px;margin-bottom:14px;background:#fafcff;">';
+        html += '<div style="font-size:13px;font-weight:600;color:#2f6fed;margin-bottom:4px;">' + sm.title + '</div>';
+        html += '<div style="font-size:12px;color:#8a94a1;margin-bottom:12px;">' + sm.desc + '</div>';
+        html += '<div style="display:flex;flex-wrap:wrap;gap:10px 18px;">';
+        $.each(sm.fields, function (i, f) {
+            html += '<div class="gc-field" style="flex:0 0 210px;margin-bottom:8px;">' +
+                '<label>' + f.lbl + (f.hint ? ' <span style="color:#c2c9d4;font-weight:400;cursor:help;" title="' + f.hint + '">ⓘ</span>' : '') + '</label>' +
+                '<input type="number" class="gc-input gc-betspec" data-id="' + f.id + '" min="0" step="1" value="' + f.def + '" />' +
+                '</div>';
         });
-        $tb.find('.gc-betpayout-p,.gc-betpayout-m').on('input', gcUpdateBetPayoutSum);
-        gcUpdateBetPayoutSum();
+        html += '</div>';
+        if (sm.doorsLabel) {
+            var dm = gcGetBetDoorMeta();
+            html += '<div style="margin-top:10px;font-size:12px;color:#5a6573;">' + sm.doorsLabel + '</div>';
+            html += '<div style="display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:6px;">';
+            $.each(dm.doors, function (i, d) {
+                html += '<label style="display:flex;align-items:center;gap:4px;font-size:13px;color:#36404a;"><input type="checkbox" class="gc-betspec-door" data-idx="' + i + '" checked /> ' + d.n + '</label>';
+            });
+            html += '</div>';
+        }
+        html += '</div>';
+        $box.html(html);
+        gcBuildBetDoorTable();
     }
 
-    function gcUpdateBetPayoutSum() {
-        var meta = gcGetBetPayoutMeta();
-        if (!meta) return;
-        var sum = 0, rtp = 0;
-        $.each(meta, function (i) {
-            var p = parseFloat($('#gcBp' + i).val()) || 0;
-            var m = parseFloat($('#gcBm' + i).val()) || 0;
-            sum += p;
-            rtp += p / 10000 * m;
+    // 渲染「押注门赔率权重配置」表（RTP 实时核算，服务端当前内置倍率仅展示预留）
+    function gcBuildBetDoorTable() {
+        var dm = gcGetBetDoorMeta();
+        var $box = $('#gcBetDoorBox');
+        $box.empty();
+        if (!dm) {
+            $('#gcBetDoorHint').text('');
+            return;
+        }
+        var fixed = !!dm.fixedOdd;
+        var hasMinW = dm.doors[0] && dm.doors[0].minW !== undefined;
+        // 展示按倍率从低到高排序（仅调整行显示顺序；data-idx 仍为真实门索引，
+        // RTP 核算与保存收集按索引取数，不破坏服务端按位置消费权重的语义）
+        var sortedDoors = dm.doors.map(function (d, i) { return { d: d, i: i }; }).sort(function (a, b) {
+            var ka = a.d.minOdd !== undefined ? a.d.minOdd : (a.d.odd || 0);
+            var kb = b.d.minOdd !== undefined ? b.d.minOdd : (b.d.odd || 0);
+            if (ka !== kb) return ka - kb;
+            var ma = a.d.maxOdd !== undefined ? a.d.maxOdd : ka;
+            var mb = b.d.maxOdd !== undefined ? b.d.maxOdd : kb;
+            if (ma !== mb) return ma - mb;
+            return a.i - b.i;
         });
-        var $el = $('#gcBetPayoutSum');
-        $el.text('各门出现率合计：' + sum + ' / 10000（需大于 0 且不超过 10000 才生效），均匀押注理论返奖率 RTP ≈ ' + (rtp * 100 / meta.length).toFixed(1) + '%');
-        $el.css('color', sum > 10000 ? '#d33b3b' : '#9aa4b1');
+        var html = '<table style="width:100%;border-collapse:collapse;margin-bottom:8px;">';
+        html += '<thead><tr style="background:#f5f8ff;color:#5a6573;font-size:13px;">' +
+            '<th style="padding:8px;border:1px solid #e5e9f0;text-align:left;">押注门</th>' +
+            (fixed
+                ? '<th style="padding:8px;border:1px solid #e5e9f0;">固定倍率</th>'
+                : '<th style="padding:8px;border:1px solid #e5e9f0;">最小赔率</th><th style="padding:8px;border:1px solid #e5e9f0;">最大赔率</th>') +
+            (hasMinW
+                ? '<th style="padding:8px;border:1px solid #e5e9f0;">权重最小(万)</th><th style="padding:8px;border:1px solid #e5e9f0;">权重最大(万)</th>'
+                : '<th style="padding:8px;border:1px solid #e5e9f0;">权重(万分)</th>') +
+            '<th style="padding:8px;border:1px solid #e5e9f0;">单门RTP(%)</th></tr></thead><tbody>';
+        $.each(sortedDoors, function (_, s) {
+            var i = s.i, d = s.d;
+            html += '<tr>' +
+                '<td style="padding:6px 8px;border:1px solid #e5e9f0;font-size:13px;color:#36404a;">' + d.n + '</td>';
+            // 赔率（min/max/固定）只读展示：服务端当前使用内置倍率，仅作 RTP 核算参考，不可调整
+            var roStyle = 'readonly style="background:#f7f9fc;color:#8a94a1;"';
+            if (fixed) {
+                html += '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="number" class="gc-input gc-betdoor gc-betdoor-odd" data-idx="' + i + '" min="0" step="0.1" value="' + d.odd + '" ' + roStyle + ' /></td>';
+            } else {
+                html += '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="number" class="gc-input gc-betdoor gc-betdoor-minodd" data-idx="' + i + '" min="0" step="0.1" value="' + d.minOdd + '" ' + roStyle + ' /></td>' +
+                    '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="number" class="gc-input gc-betdoor gc-betdoor-maxodd" data-idx="' + i + '" min="0" step="0.1" value="' + d.maxOdd + '" ' + roStyle + ' /></td>';
+            }
+            if (hasMinW) {
+                html += '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="number" class="gc-input gc-betdoor gc-betdoor-minw" data-idx="' + i + '" min="0" step="1" value="' + d.minW + '" /></td>' +
+                    '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="number" class="gc-input gc-betdoor gc-betdoor-maxw" data-idx="' + i + '" min="0" step="1" value="' + d.maxW + '" /></td>';
+            } else {
+                html += '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="number" class="gc-input gc-betdoor gc-betdoor-w" data-idx="' + i + '" min="0" step="1" value="' + d.w + '" /></td>';
+            }
+            html += '<td style="padding:6px 8px;border:1px solid #e5e9f0;font-size:12px;color:#009944;text-align:center;" class="gc-betdoor-rtp" data-idx="' + i + '">-</td></tr>';
+        });
+        html += '<tr style="background:#d6eaf8;font-weight:600;">' +
+            '<td style="padding:6px 8px;border:1px solid #e5e9f0;">全局合计</td>' +
+            (fixed ? '<td style="padding:6px 8px;border:1px solid #e5e9f0;">-</td>' : '<td style="padding:6px 8px;border:1px solid #e5e9f0;">-</td><td style="padding:6px 8px;border:1px solid #e5e9f0;">-</td>') +
+            (hasMinW
+                ? '<td style="padding:6px 8px;border:1px solid #e5e9f0;" id="gcBetDoorSumMinW">-</td><td style="padding:6px 8px;border:1px solid #e5e9f0;" id="gcBetDoorSumMaxW">-</td>'
+                : '<td style="padding:6px 8px;border:1px solid #e5e9f0;" id="gcBetDoorSumW">-</td>') +
+            '<td style="padding:6px 8px;border:1px solid #e5e9f0;" id="gcBetDoorRtp">-</td></tr>';
+        html += '</tbody></table>';
+        $box.html(html);
+        $box.find('.gc-betdoor').on('input', gcUpdateBetDoorRtp);
+        gcUpdateBetDoorRtp();
+        $('#gcBetDoorHint').text('赔率（倍率）为只读展示，来自服务端内置规则；出现机会用于估算各下注门的相对比例。保存后会热更新可配置部分，全部填 0 时回退服务端默认机会。');
     }
 
-    function gcFillBetPayout(t) {
-        gcBuildBetPayoutTable();
-        var meta = gcGetBetPayoutMeta();
-        if (!meta) return;
-        $('#gcBetPayoutOn').prop('checked', t.betPayoutOn == 1);
-        var po = t.betPayout || {};
-        $.each(meta, function (i, r) {
-            if (po['p' + i] !== undefined) $('#gcBp' + i).val(po['p' + i]);
-            if (po['m' + i] !== undefined) $('#gcBm' + i).val(po['m' + i] / 10);
+    // RTP 实时核算（算法与参考 HTML 一致：单门RTP=权重/10000×赔率×100，全局=各门合计+特殊奖励贡献）
+    function gcUpdateBetDoorRtp() {
+        var sm = gcGetBetSpecMeta();
+        var dm = gcGetBetDoorMeta();
+        if (!sm || !dm) return;
+        var spec = {};
+        $.each(sm.fields, function (i, f) {
+            spec[f.id] = parseFloat($('.gc-betspec[data-id="' + f.id + '"]').val()) || 0;
         });
-        gcUpdateBetPayoutSum();
+        var fixed = !!dm.fixedOdd;
+        var hasMinW = dm.doors[0] && dm.doors[0].minW !== undefined;
+        var sumW = 0, sumMinW = 0, sumMaxW = 0, rtpMin = 0, rtpMax = 0;
+        $.each(dm.doors, function (i, d) {
+            var oMin, oMax, w, wMin, wMax, r1, r2, $rtp = $('.gc-betdoor-rtp[data-idx="' + i + '"]');
+            if (fixed) {
+                oMin = oMax = parseFloat($('.gc-betdoor-odd[data-idx="' + i + '"]').val()) || 0;
+                w = parseFloat($('.gc-betdoor-w[data-idx="' + i + '"]').val()) || 0;
+                sumW += w;
+                r1 = (w / 10000) * oMin * 100;
+                $rtp.text(r1.toFixed(2));
+                rtpMin += r1; rtpMax += r1;
+                return;
+            }
+            oMin = parseFloat($('.gc-betdoor-minodd[data-idx="' + i + '"]').val()) || 0;
+            oMax = parseFloat($('.gc-betdoor-maxodd[data-idx="' + i + '"]').val()) || 0;
+            if (hasMinW) {
+                wMin = parseFloat($('.gc-betdoor-minw[data-idx="' + i + '"]').val()) || 0;
+                wMax = parseFloat($('.gc-betdoor-maxw[data-idx="' + i + '"]').val()) || 0;
+                sumMinW += wMin; sumMaxW += wMax;
+                r1 = (wMin / 10000) * oMin * 100;
+                r2 = (wMax / 10000) * oMax * 100;
+                $rtp.text(r1.toFixed(2) + '~' + r2.toFixed(2));
+            } else {
+                w = parseFloat($('.gc-betdoor-w[data-idx="' + i + '"]').val()) || 0;
+                sumW += w;
+                r1 = (w / 10000) * oMin * 100;
+                r2 = (w / 10000) * oMax * 100;
+                $rtp.text(r1.toFixed(2) + '~' + r2.toFixed(2));
+            }
+            rtpMin += r1; rtpMax += r2;
+        });
+        // 特殊奖励对全局 RTP 的贡献（移植参考 HTML：皇冠/钻石、四大奖励、彩金派送）
+        var specRtp = 0;
+        var gid = parseInt($('#gcGameId').val(), 10);
+        if (gid === 47 || gid === 29) {
+            var lampAvg = ((spec.goldLampMin || 1) + (spec.goldLampMax || 1)) / 2;
+            var silAvg = ((spec.silverRateMin || 1) + (spec.silverRateMax || 1)) / 2;
+            specRtp = (spec.goldW / 10000) * lampAvg * 100 + (spec.silverW / 10000) * silAvg * 100;
+        } else if (gid === 10) {
+            specRtp = (spec.dsyW / 10000) * (spec.dsyBonus || 0) * 100 +
+                (spec.dsxW / 10000) * (spec.dsxBonus || 0) * 100 +
+                (spec.pldW / 10000) * (spec.pldRate || 0) * 100 +
+                (spec.xysdW / 10000) * 30 * 100;
+        } else if (gid === 2) {
+            specRtp = (spec.jpW / 10000) * 52 * 100;
+        }
+        var totalMin = rtpMin + specRtp;
+        var totalMax = rtpMax + specRtp;
+        if (hasMinW) {
+            $('#gcBetDoorSumMinW').text(sumMinW.toFixed(2));
+            $('#gcBetDoorSumMaxW').text(sumMaxW.toFixed(2));
+            $('#gcBetDoorSumMinW').css('color', sumMinW > 10000 ? '#d33b3b' : '');
+            $('#gcBetDoorSumMaxW').css('color', sumMaxW > 10000 ? '#d33b3b' : '');
+        } else {
+            $('#gcBetDoorSumW').text(sumW.toFixed(2));
+            $('#gcBetDoorSumW').css('color', sumW > 10000 ? '#d33b3b' : '');
+        }
+        $('#gcBetDoorRtp').text(totalMin.toFixed(2) + ' ~ ' + totalMax.toFixed(2) + '（含特殊奖励 ' + specRtp.toFixed(2) + '）');
+    }
+
+    // 收集页面配置为 JSON（spec + doors），写入隐藏域随表单提交
+    function gcCollectBetSpec() {
+        var sm = gcGetBetSpecMeta();
+        var dm = gcGetBetDoorMeta();
+        if (!sm || !dm) {
+            $('#gcBetGameCfg').val('');
+            return;
+        }
+        var cfg = { ver: 1, spec: {}, doors: [] };
+        $.each(sm.fields, function (i, f) {
+            cfg.spec[f.id] = parseFloat($('.gc-betspec[data-id="' + f.id + '"]').val()) || 0;
+        });
+        if (sm.doorsLabel) {
+            var arr = [];
+            $.each(dm.doors, function (i, d) {
+                arr.push($('.gc-betspec-door[data-idx="' + i + '"]').is(':checked') ? 1 : 0);
+            });
+            cfg.spec.goldDoors = arr;
+        }
+        $.each(dm.doors, function (i, d) {
+            var row = {};
+            if (dm.fixedOdd) {
+                row.odd = parseFloat($('.gc-betdoor-odd[data-idx="' + i + '"]').val()) || 0;
+                row.weight = parseFloat($('.gc-betdoor-w[data-idx="' + i + '"]').val()) || 0;
+            } else if (d.minW !== undefined) {
+                row.minOdd = parseFloat($('.gc-betdoor-minodd[data-idx="' + i + '"]').val()) || 0;
+                row.maxOdd = parseFloat($('.gc-betdoor-maxodd[data-idx="' + i + '"]').val()) || 0;
+                row.minW = parseFloat($('.gc-betdoor-minw[data-idx="' + i + '"]').val()) || 0;
+                row.maxW = parseFloat($('.gc-betdoor-maxw[data-idx="' + i + '"]').val()) || 0;
+            } else {
+                row.minOdd = parseFloat($('.gc-betdoor-minodd[data-idx="' + i + '"]').val()) || 0;
+                row.maxOdd = parseFloat($('.gc-betdoor-maxodd[data-idx="' + i + '"]').val()) || 0;
+                row.weight = parseFloat($('.gc-betdoor-w[data-idx="' + i + '"]').val()) || 0;
+            }
+            cfg.doors.push(row);
+        });
+        $('#gcBetGameCfg').val(JSON.stringify(cfg));
+    }
+
+    function gcFillBetSpec(t) {
+        gcBuildBetSpec();
+        var sm = gcGetBetSpecMeta();
+        if (!sm) return;
+        var cfg = t.betGameCfg;
+        if (typeof cfg === 'string' && cfg) {
+            try { cfg = JSON.parse(cfg); } catch (e) { cfg = null; }
+        }
+        if (!cfg || typeof cfg !== 'object') cfg = {};
+        var spec = cfg.spec || {};
+        $.each(sm.fields, function (i, f) {
+            var v = spec[f.id];
+            if (v !== undefined && v !== null) $('.gc-betspec[data-id="' + f.id + '"]').val(v);
+        });
+        if (sm.doorsLabel && spec.goldDoors) {
+            $.each(spec.goldDoors, function (i, v) {
+                $('.gc-betspec-door[data-idx="' + i + '"]').prop('checked', v == 1);
+            });
+        }
+        var dm = gcGetBetDoorMeta();
+        var doors = cfg.doors;
+        if (dm && doors && doors.length > 0) {
+            $.each(doors, function (i, d) {
+                if (i >= dm.doors.length || !d) return;
+                // 只回填可编辑权重（weight/minW/maxW）；最小/最大赔率为只读展示列，
+                // 恒显服务端内置区间（GC_BET_DOOR_META），不被库内旧 doors 残留值覆盖
+                if (dm.fixedOdd) {
+                    if (d.weight !== undefined) $('.gc-betdoor-w[data-idx="' + i + '"]').val(d.weight);
+                } else if (dm.doors[i].minW !== undefined) {
+                    if (d.minW !== undefined) $('.gc-betdoor-minw[data-idx="' + i + '"]').val(d.minW);
+                    if (d.maxW !== undefined) $('.gc-betdoor-maxw[data-idx="' + i + '"]').val(d.maxW);
+                } else {
+                    if (d.weight !== undefined) $('.gc-betdoor-w[data-idx="' + i + '"]').val(d.weight);
+                }
+            });
+        }
+        gcUpdateBetDoorRtp();
     }
 
     // 牌型行：ht=服务端 te_CardsType 枚举索引(0..12)，name=各服务端注释里的规范名，
@@ -1088,6 +1862,21 @@
             middle: [0, 1, 2, 3, 5, 7, 10, 50, 50, 120, 400, 200, 1000],
             big:    [0, 1, 2, 3, 6, 8, 12, 60, 60, 140, 500, 250, 1000]
         }
+    };
+
+    // 机台“有效出牌率”交付系数（按牌型索引 0..12，ht0 杂牌不用）。
+    // 扑克保留换牌机制下，客户端自动保留 × 服务端二手生成存在结构性交付损耗：
+    // 抽中的牌型不一定能真正开出（全保留按一手结算 / 鬼牌数不符 / dis_flag 随机补牌）。
+    // 系数 = 实测开出率 / 配置出现率，由服务端真实算法 + 客户端自动保留策略模拟 200 万局得出：
+    //   phenix/king3/dazhi/nba = 实测；att3 = 按 phenix 近似（ATT3 客户端保留策略未在本仓库）。
+    //   nba 已于 2026-08 修复三条换牌死循环 bug + srand(1) 后重新实测校准。
+    // 后台“实际预计RTP” = Σ(出现率/10000 × 倍数 × 交付系数)；理论RTP = Σ(出现率/10000 × 倍数)。
+    var GC_DELIVERY_FACTOR = {
+        phenix: [0, 1.30, 0.84, 0.83, 0.73, 0.65, 0.57, 0.64, 0.58, 0.55, 0.38, 0.43, 0.00],
+        king3:  [0, 1.31, 0.82, 0.84, 0.75, 0.62, 0.51, 0.64, 0.66, 0.57, 0.93, 0.48, 0.00],
+        dazhi:  [0, 1.28, 0.84, 0.83, 0.74, 0.54, 0.53, 0.63, 0.55, 0.17, 1.15, 0.19, 0.00],
+        nba:    [0, 1.259, 1.156, 0.857, 0.742, 0.607, 0.573, 0.643, 0.708, 0.330, 0.805, 0.185, 0.000],
+        att3:   [0, 1.30, 0.84, 0.83, 0.73, 0.65, 0.57, 0.64, 0.58, 0.55, 0.38, 0.43, 0.00]
     };
 
     function gcGetMagKey() {
@@ -1161,18 +1950,28 @@
 
     function gcUpdatePayoutSum() {
         var winSum = 0;
-        var rtp = 0;
+        var rtp = 0;      // 理论返奖率：Σ(出现率×倍数)
+        var rtpReal = 0;  // 机台实际预计返奖率：Σ(出现率×倍数×交付系数)
+        var key = gcGetMagKey();
+        var effTab = GC_DELIVERY_FACTOR[key] || GC_DELIVERY_FACTOR.phenix;
         $.each(GC_PAYOUT_ROWS, function (i, r) {
             if (r.ht !== 0 && !$('#gcHeChk' + r.ht).is(':checked')) return; // 停用行不计入
             var p = parseFloat($('#gcHp' + r.ht).val()) || 0;
             var m = parseFloat($('#gcHm' + r.ht).attr('data-rtp-m')) || 0;
             if (r.ht !== 0) winSum += p;
             rtp += p / 10000 * m;
+            rtpReal += p / 10000 * m * (effTab[r.ht] !== undefined ? effTab[r.ht] : 1);
         });
         var $el = $('#gcPayoutSum');
+        var estTag = (key === 'att3') ? '（att3 按 phenix 近似，待实测校准）' : '';
+        var color = rtpReal >= 100 ? '#d33b3b' : (rtpReal > 98 ? '#c98f2b' : '#9aa4b1');
         $el.text('中奖牌型出现率合计（仅启用行）：' + winSum + ' / 10000（余量自动落入杂牌）；' +
-            gcGetMagRtpNote() + '，理论返奖率 RTP ≈ ' + (rtp * 100).toFixed(2) + '%');
-        $el.css('color', winSum > 10000 ? '#d33b3b' : '#9aa4b1');
+            gcGetMagRtpNote() + '，理论返奖率 RTP ≈ ' + (rtp * 100).toFixed(2) + '%' +
+            '，机台实际预计 RTP ≈ ' + (rtpReal * 100).toFixed(2) + '%' + estTag);
+        $el.css('color', winSum > 10000 ? '#d33b3b' : color);
+        if (winSum > 10000) {
+            $el.css('color', '#d33b3b');
+        }
     }
 
     function gcFillPayout(t) {
@@ -1272,6 +2071,11 @@
             showToast('最小值不能大于最大值！', 'warning');
             return;
         }
+        // 三个拉霸（明星97/水果机/水浒传）最小/最大押分只能为整数
+        if (gcLabaSubType() > 0 && (Math.floor(minBet) !== minBet || Math.floor(maxBet) !== maxBet)) {
+            showToast('拉霸最小/最大押分只能设置整数！', 'warning');
+            return;
+        }
         if (type === 1 || type === 2 || type === 3) { // gcCardStepInvalid
             var gcSs = parseFloat($('#gcScoreSwitch').val());
             var gcSsBad = (type === 2) ? (isNaN(gcSs) || gcSs < 0.1) : (isNaN(gcSs) || gcSs < 1 || Math.floor(gcSs) !== gcSs);
@@ -1282,8 +2086,32 @@
         }
         gcSyncSwitch();
         gcCollectChips();
+        if (gcGetType() === 0) gcCollectBetSpec();
+        // 庄家抽水：页面以百分比显示，落库前换算为千分比（×10，服务端按 /1000 计算）
+        if (gcGetType() === 0) {
+            var bpDisp = parseFloat($('#gcBankerPer').val());
+            if (isNaN(bpDisp) || bpDisp < 0) {
+                showToast('庄家抽水比例不能为负数！', 'warning');
+                return;
+            }
+            if (bpDisp > 9.9) {
+                showToast('庄家抽水比例最大 9.9%（库内千分比 99）！', 'warning');
+                return;
+            }
+            $('#gcBankerPerRaw').val(Math.round(bpDisp * 10));
+        }
         var savedId = parseInt($('#gcId').val(), 10);
         var wasNew = isNaN(savedId) || savedId < 0;
+        // 明星97/水浒传：出现机会合计>10000 不允许保存（绝对语义，每 10000 次最多出现 10000 次）
+        if (type === 3 && (gcLabaSubType() === 1 || gcLabaSubType() === 3)) {
+            var comboSum = gcActiveComboSum();
+            if (comboSum > 10000) {
+                showToast('出现机会合计 ' + Math.round(comboSum) + ' 超过 10000（每 10000 次最多出现 10000 次），请调小后再保存！', 'warning');
+                return;
+            }
+        }
+        // 水果拉霸：保存前把每类合计均分到隐藏的 24 面板位输入（后端按 WheelProb0~23 契约落库）
+        gcSyncWheelPanels();
         var para = $('#gcForm').serializeObject();
         para.__RequestVerificationToken = $('#gcForm [name="__RequestVerificationToken"]').val();
         request(GC_URL.save, para, function (data) {
@@ -1331,20 +2159,28 @@
         $('#gcGameSel').on('change', function () { gcLoadTables(); });
         $('#gcRefresh').on('click', function () { gcLoadTables(); });
         $('#gcDelete').on('click', gcDelete);
-        $('#gcReset').on('click', gcZeroForm);
+        $('#gcReset').on('click', function () {
+            // 恢复默认会把当前表单所有参数改为出厂默认（保存后即覆盖当前桌台配置），二次确认防止误触
+            var isEditing = parseInt($('#gcId').val(), 10) >= 0;
+            confirm(isEditing
+                ? '确定将该桌台所有参数恢复为默认值吗？\n点击确认后表单将回填默认值，保存即覆盖当前桌台的已配置参数。'
+                : '确定将表单恢复为默认值吗？', function () { gcResetForm(); });
+        });
         $('#gcSave').on('click', gcSave);
         $('#gcNewTable').on('click', gcNewTable);
+        $('#gcAdvToggle').on('click', function () { gcToggleAdv(!$('#gcAdvBody').is(':visible')); });
         $('#gcEnabled').on('change', gcSyncSwitch);
         $('#gcPayoutOn').on('change', gcSyncSwitch);
         $('#gcJokerOn').on('change', gcSyncJoker);
         $('.gc-joker-p').on('input', gcSyncJoker);
-        $('#gcBetPayoutOn').on('change', gcSyncSwitch);
-        $('#gcUseOutcomeFirst').on('change', gcSyncSwitch);
         $('#gcTableList').on('click', 'li', function () {
             $('#gcTableList li').removeClass('active');
             $(this).addClass('active');
             var idx = parseInt($(this).attr('data-idx'), 10);
             if (!isNaN(idx)) gcFill(GC_TABLES[idx]);
         });
+        // 高级参数折叠引导条初始状态：默认收起，切换类型时 gcApplyType 已同步隐藏/折叠
+        gcToggleAdv(false);
+        $('#gcTypeSel').on('change', function () { gcToggleAdv(false); });
     });
 </script>

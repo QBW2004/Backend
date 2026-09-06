@@ -152,18 +152,18 @@ namespace YYT.BLL.EF
             DateTime sTime = DateTime.Parse(DateTime.Now.ToString("yyyy-MM-dd"));
             DateTime eTime = DateTime.Parse(DateTime.Now.ToString("yyyy-MM-dd 23:59:59"));
 
-          
-            // 充值订单
+            // 充值订单（仅统计今日 00:00-23:59，按天自动重置）
             IQueryable<M_ReChargeRecords> records = from r in ef.ReChargeRecords
                                                     where r.RechargeType != 21 // 1微信充值  2支付宝充值  20后台充值  21后台兑换
                                                     select r;
             records = records.Where(p => p.RechargeType != 22);
             records = records.Where(p => p.RechargeType != 31);
+            records = records.Where(c => c.CreateTime >= sTime && c.CreateTime <= eTime);
             // 今日充值
-            long? coins = records.Where(c => c.CreateTime >= sTime && c.CreateTime <= eTime).Sum(c => c.Coin);
+            long? coins = records.Sum(c => c.Coin);
             this.reportList.Add(new M_Reports { ReportType = ERePortType.RechargeReport, Title = "今日充值额度", Val = (coins ?? 0) });
 
-            // 处理、未处理订单分类数量统计
+            // 今日处理、未处理订单分类数量统计
             IQueryable<M_SumOrders> orders = null;
             if (LoginUser.UserPriv == 0)
             {
@@ -188,9 +188,9 @@ namespace YYT.BLL.EF
                 var noProcessedRst = orders.Where(c => c.Processed == 0).SingleOrDefault();
                 int noProcessedCount = noProcessedRst != null ? noProcessedRst.Count : 0;
 
-                this.reportList.Add(new M_Reports { ReportType = ERePortType.RechargeReport, Title = "充值兑换订单", Val = totalCount });
-                this.reportList.Add(new M_Reports { ReportType = ERePortType.RechargeReport, Title = "已处理订单数", Val = processedCount });
-                this.reportList.Add(new M_Reports { ReportType = ERePortType.RechargeReport, Title = "未处理订单数", Val = noProcessedCount });
+                this.reportList.Add(new M_Reports { ReportType = ERePortType.RechargeReport, Title = "今日充值兑换订单", Val = totalCount });
+                this.reportList.Add(new M_Reports { ReportType = ERePortType.RechargeReport, Title = "今日已处理订单数", Val = processedCount });
+                this.reportList.Add(new M_Reports { ReportType = ERePortType.RechargeReport, Title = "今日未处理订单数", Val = noProcessedCount });
             }
         }
         /// <summary>
@@ -221,12 +221,40 @@ namespace YYT.BLL.EF
             _sumCoinsBuy += usrs.Sum(c => c.COINS_BUY) ?? 0;//总充值
             _sumCoinsBack += usrs.Sum(c => c.COINS_BACK) ?? 0;//总兑换
 
-            _sumGain += (_sumCoinsBuy - _sumCoinsBack);//总盈利
+            // 总盈利 = 权限范围内所有用户「总盈亏」之和（user_daily_winloss 全量 SUM，与用户管理页总盈亏同口径）
+            _sumGain = SumUserDailyWinLoss(ef);
 
             this.reportList.Add(new M_Reports { ReportType = ERePortType.EarningsReport, Title = "总充值", Val = _sumCoinsBuy });
             this.reportList.Add(new M_Reports { ReportType = ERePortType.EarningsReport, Title = "总兑换", Val = _sumCoinsBack });
             this.reportList.Add(new M_Reports { ReportType = ERePortType.EarningsReport, Title = "玩家总余额", Val = _sumCoins });
-            this.reportList.Add(new M_Reports { ReportType = ERePortType.EarningsReport, Title = "总赢利", Val = _sumGain });
+            this.reportList.Add(new M_Reports { ReportType = ERePortType.EarningsReport, Title = "总盈亏", Val = _sumGain });
+        }
+
+        /// <summary>
+        /// 权限范围内所有用户「总盈亏」之和 = user_daily_winloss 全量 SUM（与用户管理页总盈亏同口径）
+        /// 超管统计全部用户；非超管按管理范围（整条线 GetManagedAgencyAccounts）过滤用户后求和
+        /// </summary>
+        private long SumUserDailyWinLoss(GameDbContext ef)
+        {
+            if (LoginUser.UserPriv == 0)
+            {
+                return ef.Database.SqlQuery<long?>("SELECT IFNULL(SUM(WINLOSS),0) FROM user_daily_winloss").FirstOrDefault() ?? 0;
+            }
+
+            List<string> agencies = new B_Admin().GetManagedAgencyAccounts(ef, LoginUser);
+            if (agencies == null || agencies.Count < 1)
+                return 0;
+
+            List<string> userIds = ef.Users
+                .Where(c => agencies.Contains(c.AGENCY))
+                .Select(c => c.ID)
+                .ToList();
+            if (userIds.Count < 1)
+                return 0;
+
+            string placeholders = string.Join(",", userIds.Select((c, i) => "{" + i + "}"));
+            string sql = "SELECT IFNULL(SUM(WINLOSS),0) FROM user_daily_winloss WHERE UserID IN (" + placeholders + ")";
+            return ef.Database.SqlQuery<long?>(sql, userIds.Cast<object>().ToArray()).FirstOrDefault() ?? 0;
         }
         #endregion
 

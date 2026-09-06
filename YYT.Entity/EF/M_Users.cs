@@ -154,7 +154,7 @@ namespace YYT.Entity
         [NotMapped]
         public DateTime? LastLoginTime { get; set; }
         /// <summary>
-        /// 玩家盈利
+        /// 总盈亏（SUM user_daily_winloss 全量，与在线用户页同口径）
         /// </summary>
         [NotMapped]
         public long? Profit { get; set; }

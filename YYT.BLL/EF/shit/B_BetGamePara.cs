@@ -16,7 +16,7 @@ namespace YYT.BLL.EF
     {
         public B_BetGamePara() : base() { }
 
-        public Msg SaveTableFull(M_ParaBetRoom room, M_ParaBet machine)
+        public Msg SaveTableFull(M_ParaBetRoom room, M_ParaBet machine, string betGameCfg = null)
         {
             Msg result = new Msg(0, "保存失败！");
             if (room == null || machine == null)
@@ -67,7 +67,9 @@ namespace YYT.BLL.EF
                         }
                         else
                         {
-                            // 已有 base 行：更新专有参数(每桌保存时都会刷新 base 行，以最后一次为准)
+                            // 已有 base 行：更新房级共享默认参数。
+                            // 注意：筹码档位(BetScores/DefaultBetIndex)按桌唯一权威在 roomtableconfig_bet，
+                            // 不允许用任意单桌保存的值覆盖 base 行，否则改一张桌会污染全游戏默认档位。
                             rst.GAME_ID = room.GAME_ID;
                             rst.BET_TIME = room.BET_TIME;
                             rst.BET_MIN = room.BET_MIN;
@@ -83,8 +85,6 @@ namespace YYT.BLL.EF
                             rst.SC_LIMIT_SING = room.SC_LIMIT_SING;
                             rst.SC_LIMIT_ALL = room.SC_LIMIT_ALL;
                             rst.Game_Mo = room.Game_Mo;
-                            rst.BetScores = room.BetScores;
-                            rst.DefaultBetIndex = room.DefaultBetIndex;
                             rst.TableName = room.TableName;
                             rst.IdleFireTimeoutSec = room.IdleFireTimeoutSec;
                             rst.IdleFireKickEnabled = room.IdleFireKickEnabled;
@@ -146,6 +146,20 @@ namespace YYT.BLL.EF
                             room.BetScores ?? string.Empty, room.DefaultBetIndex ?? 0,
                             room.BET_MIN_VICE, room.BET_MAX_VICE, room.BET_MIN_DRAW, room.BET_MAX_DRAW);
 
+                        // 押注类玩法扩展配置(开奖权重与奖励 JSON)按桌 upsert：
+                        // betGameCfg 为 null 表示页面未携带(保持库内现值)；空串表示清除；非空则整包覆盖。
+                        if (betGameCfg != null)
+                        {
+                            ef.Database.ExecuteSqlCommand(
+                                "DELETE FROM betgamecfg WHERE GAME_ID={0} AND TableIndex={1}", room.GAME_ID, tIdx);
+                            if (betGameCfg.Length > 0)
+                            {
+                                ef.Database.ExecuteSqlCommand(
+                                    "INSERT INTO betgamecfg (GAME_ID, TableIndex, CfgJson) VALUES ({0},{1},{2})",
+                                    room.GAME_ID, tIdx, betGameCfg);
+                            }
+                        }
+
                         trans.Commit();
                     }
                     catch (Exception ex)
@@ -160,8 +174,9 @@ namespace YYT.BLL.EF
             }
             Msg hot = PushHotUpdate(room.GAME_ID, EGameType.Bet, machine);
             // 押分扩展：随 TC 一并下发按桌押分参数，center 写入 roomtableconfig_bet 并全量重推。
-            // 字段顺序须与 center 的 TC 押分扩展解析一致；GAME_ID=10(幸运六狮)为 layoutTag==1，
-            // 需追加庄闲/和 4 个副游戏限红字段。
+            // 字段顺序须与 center 的 TC 押分扩展解析一致；layoutTag==1 的游戏需追加
+            // 4 个副游戏限红字段(庄闲/和)：GAME_ID=2(彩金单挑,皇冠副门) 与 GAME_ID=10(幸运六狮)。
+            // 与 center 端 BetLayoutTag() 保持一致，否则中心服按 layoutTag==1 解析会错位。
             // 专有参数从 base 行取(所有桌共享)，room 此处携带的是本次提交的桌台值。
             var betExt = new SConnect.TcBetExt
             {
@@ -175,7 +190,7 @@ namespace YYT.BLL.EF
                 OneCoinScore = (uint)room.COIN_SC,
                 BetScores = room.BetScores ?? string.Empty,
                 DefaultBetIndex = (byte)(room.DefaultBetIndex ?? 0),
-                IncludeViceDraw = room.GAME_ID == 10,
+                IncludeViceDraw = room.GAME_ID == 10 || room.GAME_ID == 2,
                 BetMinVice = (uint)room.BET_MIN_VICE,
                 BetMaxVice = (uint)room.BET_MAX_VICE,
                 BetMinDraw = (uint)room.BET_MIN_DRAW,
@@ -285,8 +300,12 @@ namespace YYT.BLL.EF
                     rst.SC_LIMIT_SING = entity.SC_LIMIT_SING;
                     rst.SC_LIMIT_ALL = entity.SC_LIMIT_ALL;
                     rst.Game_Mo = entity.Game_Mo;
-                    rst.BetScores = entity.BetScores;
-                    rst.DefaultBetIndex = entity.DefaultBetIndex;
+                    // base 行(ID=gameId*1000)只作游戏默认档位，不允许被单条保存覆盖（与 SaveTableFull 同口径）
+                    if (entity.ID != entity.GAME_ID * 1000)
+                    {
+                        rst.BetScores = entity.BetScores;
+                        rst.DefaultBetIndex = entity.DefaultBetIndex;
+                    }
                     ef.Entry(rst).State = EntityState.Modified;
                 }
                 else
@@ -354,8 +373,12 @@ namespace YYT.BLL.EF
                                 rst.SC_LIMIT_SING = entity.SC_LIMIT_SING;
                                 rst.SC_LIMIT_ALL = entity.SC_LIMIT_ALL;
                                 rst.Game_Mo = entity.Game_Mo;
-                                rst.BetScores = entity.BetScores;
-                                rst.DefaultBetIndex = entity.DefaultBetIndex;
+                                // base 行(ID=gameId*1000)只作游戏默认档位，不允许被单条保存覆盖（与 SaveTableFull 同口径）
+                                if (entity.ID != entity.GAME_ID * 1000)
+                                {
+                                    rst.BetScores = entity.BetScores;
+                                    rst.DefaultBetIndex = entity.DefaultBetIndex;
+                                }
                                 ef.Entry(rst).State = EntityState.Modified;
                             }
                             else

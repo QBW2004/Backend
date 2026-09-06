@@ -126,7 +126,7 @@
                     } else if (newValue == 1) {
                         $('#addRobotNo').combobox('loadData', getComboSelData(2,1))
                     } else {
-                        // 鱼机一桌6个座位，机器人数可选范围 1~6
+                        // 鱼机/拉霸一桌6个座位，机器人数可选范围 1~6
                         $('#addRobotNo').combobox('loadData', getComboSelData(7,1))
                     }
                 })
@@ -143,7 +143,8 @@
                 { id: -1, text: '请选择游戏类型', selected: true },
                 { id: 0, text: '押注类' },
                 { id: 1, text: '牌机类' },
-                { id: 2, text: '鱼机类' }
+                { id: 2, text: '鱼机类' },
+                { id: 3, text: '拉霸类' }
             ];
         }
         function fmtGameType(value, rowData, rowIndex) {
@@ -153,6 +154,8 @@
                 return '<span>牌机类</span>';
             else if (value == 2)
                 return '<span>鱼机类</span>';
+            else if (value == 3)
+                return '<span>拉霸类</span>';
         }
 
         function fmtRobotNo(value, rowData, rowIndex) {

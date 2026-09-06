@@ -565,21 +565,6 @@
             };
             openWin(para);
         }
-        function showRateCtrlWinBet(uid) {
-            var para = {
-                winId: '#chgRateWinBet',
-                title: '【注机控制】',
-                iconCls: 'icon-chart_curve',
-                callBack: function () {
-                    $('#txtE_ID11').textbox('setValue', uid);
-                    $('#hfID11').val(uid);
-                    $('#selE_Action2').combobox('loadData', actionSelDataBet());
-                    $('#selE_Val2').combobox('loadData', getComboValKill());
-                    loadGoldLimit(uid, 'numGoldLimit2');
-                }
-            };
-            openWin(para);
-        }
         function showRateCtrlWinPAIJI(uid) {
             var para = {
                 winId: '#chgRateWinPAIJI',
@@ -673,12 +658,9 @@
                     $('#chgCtrlSelect').data('uid', uid);
                     var canFish = @Html.Raw((loginUser.UserPriv == 0 || loginUser.IsKill == 1 || loginUser.IsProbability == 1) ? "true" : "false");
                     var canPaiJi = @Html.Raw((loginUser.UserPriv == 0 || loginUser.IsRelease == 1) ? "true" : "false");
-                    var canBet = @Html.Raw((loginUser.UserPriv == 0 || loginUser.IsKill == 1 || loginUser.IsProbability == 1) ? "true" : "false");
                     if (canFish) $('#btnFishCtrl').show(); else $('#btnFishCtrl').hide();
                     if (canPaiJi) $('#btnPaiJiCtrl').show(); else $('#btnPaiJiCtrl').hide();
-                    if (canBet) $('#btnBetCtrl').show(); else $('#btnBetCtrl').hide();
-                    var canLaba = canBet;
-                    if (canLaba) $('#btnLabaCtrl').show(); else $('#btnLabaCtrl').hide();
+                    @*拉霸控制已收编进总控（吃分/控牌），不再单独显示入口*@
                     var canTotal = @Html.Raw((loginUser.UserPriv == 0 || loginUser.IsKill == 1 || loginUser.IsProbability == 1 || loginUser.IsRelease == 1) ? "true" : "false");
                     if (canTotal) $('#btnTotalCtrl').show(); else $('#btnTotalCtrl').hide();
                 }
@@ -690,7 +672,6 @@
             $('#chgCtrlSelect').dialog('close');
             if (type == 'fish') showRateCtrlWin(uid);
             else if (type == 'paiji') showRateCtrlWinPAIJI(uid);
-            else if (type == 'bet') showRateCtrlWinBet(uid);
             else if (type == 'laba') showRateCtrlWinLaba(uid);
             else if (type == 'total') showTotalCtrlWin(uid);
         }
@@ -772,6 +753,9 @@
                     bindTotalCardAction($('#selE_Action_Total').combobox('getValue'));
                     $('#selE_Number_Total').combobox('loadData', valSelData());
                     $('#selE_Total_Total').combobox('loadData', valSelDataPAIJI1());
+                    // 次数/总次数默认值：次数=1，总次数=五把之内(id5)。loadData 未必自动选中首项，故显式指定。
+                    $('#selE_Number_Total').combobox('setValue', 1);
+                    $('#selE_Total_Total').combobox('setValue', 5);
                     $('#selE_Strength_Total').combobox('loadData', getComboValKill_Total());
                     $('#numGold_Total').numberbox('setValue', 0);
                     $('#selE_Mode_Total').combobox({ onChange: bindTotalMode });
@@ -796,12 +780,12 @@
                         // 控牌：显示控牌值 + 次数/总次数（牌机消耗后未回写，此处为下发时的配置值）
                         html += '<div style="margin:2px 0;">'
                             + totalModeName(r.ControlMode)
-                            + '（控牌值 ' + r.LimitCoins + '）'
+                            + '（控牌值 ' + labaTypeName(r.GameId, r.LimitCoins) + '）'
                             + ' 次数 ' + r.CardNumber + '/' + r.CardTotal
                             + '</div>';
                     } else {
                         var isRelease = (r.ControlMode == 5);
-                        var progress = isRelease ? r.GrantedCoins : -r.ConsumedCoins;
+                        var progress = isRelease ? r.GrantedCoins : r.ConsumedCoins;
                         html += '<div style="margin:2px 0;">'
                             + totalModeName(r.ControlMode)
                             + '（强度 ' + r.LimitCoins + '）'
@@ -869,20 +853,6 @@
             return items;
         }
 
-        function actionSelDataBet() {
-            var items = [];
-            @if (loginUser.UserPriv == 0 || loginUser.IsKill == 1)
-            {
-                @Html.Raw("items.push({ id: 3, text: '注机点杀' });");
-            }
-            @if (loginUser.UserPriv == 0 || loginUser.IsProbability == 1)
-            {
-                @Html.Raw("items.push({ id: 4, text: '注机放水' });");
-            }
-            if (items.length > 0) items[0].selected = true;
-            return items;
-        }
-
         function actionSelDataLaba() {
             return [
                 { id: 15, text: '水浒传控牌', selected: true },
@@ -901,35 +871,84 @@
             return valSelDataShz();
         }
         function valSelDataShz() {
+            @*水浒传控牌=按结果类 code 强制（与游戏配置页奖励结果设置/服务端 ShzRtp::ComboToClass 一致）：
+               400-407三连 410-417四连 420-427五连 430-432纯万能线 440-448全屏 450/451全屏混合；10=关闭。
+               控牌值兼容旧值 0-7（中间行五连符号）*@
             var arr = [];
-            arr.push({ id: 0, text: '双斧(2倍)' });
-            arr.push({ id: 1, text: '双枪(3倍)' });
-            arr.push({ id: 2, text: '大刀(4倍)' });
-            arr.push({ id: 3, text: '鲁智深(5倍)' });
-            arr.push({ id: 4, text: '林冲(8倍)' });
-            arr.push({ id: 5, text: '宋江(10倍)' });
-            arr.push({ id: 6, text: '替天行道旗(15倍)' });
-            arr.push({ id: 7, text: '忠义堂(20倍)' });
-            arr.push({ id: 8, text: '水浒传龙标·散标(30倍/免费触发)' });
+            arr.push({ id: 407, text: '三连·斧(2倍)' });
+            arr.push({ id: 406, text: '三连·枪(3倍)' });
+            arr.push({ id: 405, text: '三连·刀(5倍)' });
+            arr.push({ id: 417, text: '四连·斧(5倍)' });
+            arr.push({ id: 404, text: '三连·鲁智深(7倍)' });
+            arr.push({ id: 403, text: '三连·林冲(10倍)' });
+            arr.push({ id: 416, text: '四连·枪(10倍)' });
+            arr.push({ id: 402, text: '三连·宋江(15倍)' });
+            arr.push({ id: 415, text: '四连·刀(15倍)' });
+            arr.push({ id: 451, text: '全屏·纯武器混合(15倍)' });
+            arr.push({ id: 401, text: '三连·替天行道(20倍)' });
+            arr.push({ id: 414, text: '四连·鲁智深(20倍)' });
+            arr.push({ id: 427, text: '五连·斧(20倍)' });
+            arr.push({ id: 413, text: '四连·林冲(30倍)' });
+            arr.push({ id: 412, text: '四连·宋江(40倍)' });
+            arr.push({ id: 426, text: '五连·枪(40倍)' });
+            arr.push({ id: 400, text: '三连·忠义堂(50倍)' });
+            arr.push({ id: 430, text: '纯万能线·3连(按忠义堂50倍)' });
+            arr.push({ id: 450, text: '全屏·纯人物混合(50倍)' });
+            arr.push({ id: 425, text: '五连·刀(60倍)' });
+            arr.push({ id: 411, text: '四连·替天行道(80倍)' });
+            arr.push({ id: 424, text: '五连·鲁智深(100倍)' });
+            arr.push({ id: 423, text: '五连·林冲(160倍)' });
+            arr.push({ id: 410, text: '四连·忠义堂(200倍)' });
+            arr.push({ id: 422, text: '五连·宋江(200倍)' });
+            arr.push({ id: 431, text: '纯万能线·4连(按忠义堂200倍)' });
+            arr.push({ id: 448, text: '全屏·斧(230倍)' });
+            arr.push({ id: 421, text: '五连·替天行道(400倍)' });
+            arr.push({ id: 447, text: '全屏·枪(460倍)' });
             arr.push({ id: 10, text: '关闭控制' });
             return arr;
         }
         function valSelDataMx97() {
+            @*明星97控牌=按结果类 code 强制（与游戏配置页奖励结果设置/服务端 Mx97Rtp::ComboToClass 一致）：
+               300-308纯色三连 310 ANY BAR 311/312樱桃2/1连 322-329 Scatter 330全水果 340-347全屏 350全屏BAR；10=关闭。
+               控牌值兼容旧值 0-8（单线三连符号）*@
             var arr = [];
-            arr.push({ id: 0, text: '樱桃(10倍)' });
-            arr.push({ id: 1, text: '橘子(10倍)' });
-            arr.push({ id: 2, text: '蓝莓(14倍)' });
-            arr.push({ id: 3, text: '铃铛(18倍)' });
-            arr.push({ id: 4, text: '西瓜(20倍)' });
-            arr.push({ id: 5, text: '黄BAR(30倍)' });
-            arr.push({ id: 6, text: '红BAR(50倍)' });
-            arr.push({ id: 7, text: '蓝BAR(70倍)' });
-            arr.push({ id: 8, text: '七(80倍+)' });
+            arr.push({ id: 300, text: '纯色三连·樱桃(10倍)' });
+            arr.push({ id: 301, text: '纯色三连·橘子(10倍)' });
+            arr.push({ id: 302, text: '纯色三连·蓝莓(14倍)' });
+            arr.push({ id: 303, text: '纯色三连·铃铛(18倍)' });
+            arr.push({ id: 304, text: '纯色三连·西瓜(20倍)' });
+            arr.push({ id: 305, text: '纯色三连·黄BAR(30倍)' });
+            arr.push({ id: 306, text: '纯色三连·红BAR(50倍)' });
+            arr.push({ id: 307, text: '纯色三连·蓝BAR(70倍)' });
+            arr.push({ id: 308, text: '纯色三连·七(80倍+)' });
+            arr.push({ id: 310, text: 'ANY BAR(10倍)' });
+            arr.push({ id: 311, text: '樱桃2连(5倍)' });
+            arr.push({ id: 312, text: '樱桃1连(2倍)' });
+            arr.push({ id: 322, text: 'Scatter 全盘2个七(2倍)' });
+            arr.push({ id: 323, text: 'Scatter 全盘3个七(5倍)' });
+            arr.push({ id: 324, text: 'Scatter 全盘4个七(20倍)' });
+            arr.push({ id: 325, text: 'Scatter 全盘5个七(40倍)' });
+            arr.push({ id: 326, text: 'Scatter 全盘6个七(60倍)' });
+            arr.push({ id: 327, text: 'Scatter 全盘7个七(80倍)' });
+            arr.push({ id: 328, text: 'Scatter 全盘8个七(100倍)' });
+            arr.push({ id: 329, text: 'Scatter 全盘9个七(200倍)' });
+            arr.push({ id: 330, text: '全水果(15倍)' });
+            arr.push({ id: 340, text: '全屏·樱桃(160倍)' });
+            arr.push({ id: 341, text: '全屏·橘子(120倍)' });
+            arr.push({ id: 342, text: '全屏·蓝莓(152倍)' });
+            arr.push({ id: 343, text: '全屏·铃铛(184倍)' });
+            arr.push({ id: 344, text: '全屏·西瓜(220倍)' });
+            arr.push({ id: 345, text: '全屏·黄BAR(300倍)' });
+            arr.push({ id: 346, text: '全屏·红BAR(490倍)' });
+            arr.push({ id: 347, text: '全屏·蓝BAR(660倍)' });
+            arr.push({ id: 350, text: '全屏 ANY BAR(40倍)' });
             arr.push({ id: 10, text: '关闭控制' });
             return arr;
         }
         function valSelDataFruit() {
-            @*水果拉霸控牌=强制大转盘指向面板位（与机台设定的 24 面板位一致）；id=30+面板位，10=关闭*@
+            @*水果拉霸控牌=强制大转盘指向面板位（与机台设定的 24 面板位一致）；id=30+面板位，10=关闭；
+               按倍率小到大排（送灯位无倍率=免费局排最后；同倍率按面板位），控牌值不变。
+               文本不再带"面板X"前缀（面板位仍由 id=30+面板位 编码，回显同文本）*@
             var panels = [
                 '橘子·大(10倍)', '铃铛·大(20倍)', 'BAR·小(50倍)', 'BAR·大(120倍)', '苹果(5倍)', '苹果·小(3倍)',
                 '柠檬·大(15倍)', '西瓜·大(20倍)', '西瓜·小(3倍)', '送灯位(免费局)', '苹果(5倍)', '橘子·小(3倍)',
@@ -937,10 +956,36 @@
                 '柠檬·大(15倍)', '星星·小(3倍)', '星星·大(30倍)', '送灯位(免费局)', '苹果(5倍)', '铃铛·小(3倍)'
             ];
             var arr = [];
-            for (var i = 0; i < panels.length; i++)
-                arr.push({ id: 30 + i, text: '面板' + i + ' · ' + panels[i] });
+            for (var i = 0; i < panels.length; i++) {
+                var m = /\((\d+)倍\)/.exec(panels[i]);
+                arr.push({ id: 30 + i, text: panels[i], mag: m ? parseInt(m[1]) : 9999 });
+            }
+            arr.sort(function (a, b) {
+                if (a.mag != b.mag) return a.mag - b.mag;
+                return (a.id - 30) - (b.id - 30);
+            });
             arr.push({ id: 10, text: '关闭控制' });
             return arr;
+        }
+
+        @*拉霸控牌值回显图标名（与控牌下拉/服务端映射一致；cardAction 15=水浒传 16=明星97 17=水果拉霸）*@
+        function labaTypeName(action, value) {
+            action = parseInt(action); value = parseInt(value);
+            if (value == 10) return '关闭';
+            var list = null;
+            if (action == 15) list = valSelDataShz();
+            else if (action == 16) list = valSelDataMx97();
+            else if (action == 17) list = valSelDataFruit();
+            if (list) {
+                for (var i = 0; i < list.length; i++)
+                    if (list[i].id == value) return list[i].text;
+                // 兼容旧控牌值：水浒传 0-7=中间行五连符号；明星97 0-8=单线三连符号
+                if (action == 15 && value >= 0 && value <= 7)
+                    return '五连·' + ['忠义堂(1000倍)', '替天行道(400倍)', '宋江(200倍)', '林冲(160倍)', '鲁智深(100倍)', '刀(60倍)', '枪(40倍)', '斧(20倍)'][value];
+                if (action == 16 && value >= 0 && value <= 8)
+                    return '三连·' + ['樱桃(10倍)', '橘子(10倍)', '蓝莓(14倍)', '铃铛(18倍)', '西瓜(20倍)', '黄BAR(30倍)', '红BAR(50倍)', '蓝BAR(70倍)', '七(80倍+)'][value];
+            }
+            return String(value);
         }
 
         function actionSelDataPAIJI() {
@@ -999,8 +1044,12 @@
             var arr = [];
             for (var i = 0; i < TC_CARD_TYPES.length; i++) {
                 var t = TC_CARD_TYPES[i];
-                if (cardAction == 5 && t.ht == 12) continue; // 大字板五鬼已下线
-                arr.push({ id: t.ht, text: t.name + '(' + mags[t.ht] + '倍)' });
+                // 隐藏牌型：杂牌(0)/五鬼(12)；大四梅(8)仅火凤凰保留（大字板五鬼已下线）
+                if (t.ht == 0 || t.ht == 12) continue;
+                if (t.ht == 8 && cardAction != 14) continue;
+                var item = { id: t.ht, text: t.name + '(' + mags[t.ht] + '倍)' };
+                if (t.ht == 4) item.selected = true; // 默认选中杂顺
+                arr.push(item);
             }
             arr.push({ id: 99, text: '关闭控制' });
             return arr;
@@ -1058,18 +1107,6 @@
                         $('#chgRateWin').dialog('close');
                         $('#form3').form('reset');
                         refreshChangedUserRow(para.ID, 500);
-                    }
-                });");
-        }
-        function SaveUserRateBet() {
-            @Html.Raw(@"       var para = $('#form11').serializeObject();
-                request('/Game/UserInfo/ChgUserRateBet', para, function (data) {
-                    //提示消息
-                    showUserResult(data);
-                    if (data && data.code == 1) {
-                        $('#chgRateWinBet').dialog('close');
-                        $('#form11').form('reset');
-                        refreshChangedUserRow(para.ID11, 500);
                     }
                 });");
         }
@@ -1153,12 +1190,7 @@
                     $('#selE_Val1').combobox('loadData', getComboValKill());
                 } else if (newValue == 2) {
                     $('#selE_Val1').combobox('loadData', getComboValPut());
-                } else if (newValue == 3) {
-                    $('#selE_Val2').combobox('loadData', getComboValKill());
-                } else {
-                    $('#selE_Val2').combobox('loadData', getComboValPut());
                 }
-
             }
         }
 
@@ -1351,8 +1383,8 @@
             <th field="CurrentWinLose" width="90" formatter="fmtCoins" hidden="true">当前输赢</th>
             <th field="COINS_BUY" width="70" formatter="fmtCoins">充值</th>
             <th field="COINS_BACK" width="60" formatter="fmtCoins">兑换</th>
-            <th field="TodayWinLoss" width="60" formatter="fmtWinLoss">今日盈亏</th>
-            <th field="Profit" width="70" formatter="fmtWinLoss">总盈利</th>
+            <th field="TodayWinLoss" width="60" formatter="fmtWinLoss" sortable="true" order="desc">今日盈亏</th>
+            <th field="Profit" width="70" formatter="fmtWinLoss" sortable="true" order="desc">总盈亏</th>
             @if (loginUser.UserPriv == 0 || loginUser.IsViewPwd == 1)
             {
                 <th field="PWD" width="75">用户密码</th>
@@ -1437,10 +1469,6 @@
     <br/>
     <a id="btnPaiJiCtrl" href="javascript:void(0);" class="easyui-linkbutton" onclick="subCtrlClick('paiji')" data-options="plain:true,iconCls:'icon-chart_curve'" style="margin:8px;width:140px;">牌机控制</a>
     <br/>
-    <a id="btnBetCtrl" href="javascript:void(0);" class="easyui-linkbutton" onclick="subCtrlClick('bet')" data-options="plain:true,iconCls:'icon-chart_curve'" style="margin:8px;width:140px;">注机控制</a>
-    <br/>
-    <a id="btnLabaCtrl" href="javascript:void(0);" class="easyui-linkbutton" onclick="subCtrlClick('laba')" data-options="plain:true,iconCls:'icon-chart_curve'" style="margin:8px;width:140px;">拉霸控制</a>
-    <br/>
     <a id="btnTotalCtrl" href="javascript:void(0);" class="easyui-linkbutton" onclick="subCtrlClick('total')" data-options="plain:true,iconCls:'icon-chart_curve'" style="margin:8px;width:140px;">总控</a>
 </div>
 
@@ -1489,51 +1517,6 @@
     </form>
 </div>
 
-
-@*修改注机控制窗口*@
-<div id="chgRateWinBet" class="hide">
-    <form id="form11">
-        <table cellpadding="0" cellspacing="0" border="0" width="100%" align="center">
-            <tr>
-                <td colspan="2" align="left" style="padding-left: 50px;color:#999;">
-                    <p style="margin-left:-35px;">温馨提示:修改后即时生效</p>
-                </td>
-            </tr>
-            <tr>
-                <td align="right">用户账号</td>
-                <td align="left" class="pd5">
-                    <input class="easyui-textbox win-txt" id="txtE_ID11" disabled />
-                </td>
-            </tr>
-            <tr>
-                <td align="right">功能</td>
-                <td align="left" class="pd5">
-                    <select class="easyui-combobox win-txt" id="selE_Action2" name="Action11" data-options="valueField:'id',textField:'text',panelHeight:150,data:actionSelDataBet(),onChange:bindAction"></select>
-                </td>
-            </tr>
-            <tr>
-                <td align="right">控值</td>
-                <td align="left" class="pd5">
-                    <select class="easyui-combobox win-txt" id="selE_Val2" name="Val11" data-options="valueField:'id',textField:'text',panelHeight:150,data:getComboValKill()"></select>
-
-                </td>
-            </tr>
-            <tr>
-                <td align="right">目标</td>
-                <td align="left" class="pd5">
-                    <input class="easyui-numberbox win-txt" id="numGoldLimit2" name="GoldLimit11" data-options="min:0,precision:0,prompt:'0=不限制'" style="width:150px;" />
-                    <span style="color:#999;font-size:12px;">金币上限到达后恢复正常吞吐币，0=不限制</span>
-                </td>
-            </tr>
-            <tr>
-                <td align="center" colspan="2" class="pd5">
-                    <input type="hidden" id="hfID11" name="ID11" value="0" />
-                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="SaveUserRateBet()" data-options="plain:true,iconCls:'icon-save'">保存</a>
-                </td>
-            </tr>
-        </table>
-    </form>
-</div>
 
 @*修改牌机控制窗口*@
 
