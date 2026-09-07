@@ -539,10 +539,7 @@ namespace YYT.Web.Areas.Game.Controllers
             Msg msg = new Msg(0, "代理添加失败！");
             try
             {
-                // 手机端只输入一次密码；桌面端仍可提交并校验确认密码。
-                if (string.IsNullOrWhiteSpace(form["RE_PWD"]) && !string.IsNullOrWhiteSpace(form["PWD"]))
-                    form.Set("RE_PWD", form["PWD"]);
-
+                // 添加代理只要求输入一次密码(手机端与桌面弹窗均不提交 RE_PWD)。
                 M_Admin entity = new M_Admin();
                 if (TryUpdateModel<M_Admin>(entity) && ModelState.IsValid)
                 {

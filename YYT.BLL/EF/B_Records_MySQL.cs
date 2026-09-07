@@ -94,9 +94,11 @@ namespace YYT.BLL.EF
                 DateTime cutoff = GetRetentionCutoff();
                 DateTime now = DateTime.Now;
                 bool retentionAdjusted = false;
+                // EF6 不允许在 LINQ-to-Entities 里投影映射实体（NotSupportedException），
+                // 这里先投影匿名类型保持 SQL 下推，分页 ToList 后再转成 M_AgencyOptLog。
                 var rst = from a in ef.AgencyOptLogs
                           join b in ef.Admins on a.OptID equals b.ID
-                          select new M_AgencyOptLog
+                          select new
                           {
                               LID = a.LID,
                               OptID = a.OptID,
@@ -111,7 +113,6 @@ namespace YYT.BLL.EF
                               AFT_COINS = a.AFT_COINS,
                               WEEK = a.WEEK
                           };
-
                 if (!string.IsNullOrWhiteSpace(queryPara.ID))
                     rst = rst.Where(c => c.ID.Equals(queryPara.ID) || c.OptID.Equals(queryPara.ID));
                 rst = rst.Where(c => c.REC_TIME >= cutoff && c.REC_TIME <= now);
@@ -154,6 +155,22 @@ namespace YYT.BLL.EF
                     var agencies = rst
                         .OrderByDescending(c => c.LID)
                         .Skip(mPage.PageSize * (mPage.PageIndex - 1)).Take(mPage.PageSize)
+                        .ToList()
+                        .Select(x => new M_AgencyOptLog
+                        {
+                            LID = x.LID,
+                            OptID = x.OptID,
+                            ID = x.ID,
+                            SrcUserTitle = x.SrcUserTitle,
+                            DestUserTitle = x.DestUserTitle,
+                            AGENCY = x.AGENCY,
+                            REC_TIME = x.REC_TIME,
+                            OPT = x.OPT,
+                            COINS = x.COINS,
+                            BEF_COINS = x.BEF_COINS,
+                            AFT_COINS = x.AFT_COINS,
+                            WEEK = x.WEEK
+                        })
                         .ToList();
                     list.rows = agencies;
                     list.total = mPage.TotalCount;
@@ -172,12 +189,14 @@ namespace YYT.BLL.EF
                 DateTime cutoff = GetRetentionCutoff();
                 DateTime now = DateTime.Now;
                 bool retentionAdjusted = false;
-                // 全部条件/Join/分页下推 SQL；games 表按 GameId 主键联查，无索引回表风险
+                // EF6 不允许在 LINQ-to-Entities 里投影映射实体（NotSupportedException），
+                // 匿名投影下推全部过滤条件，物化后转实体再做 FillEnterLeave 配对与内存分页
+                //（7 天保留窗口内数据量有限，配对需要全量，不能只取当前页）。
                 var rst = from a in ef.UserOptLogs
                           join b in ef.Users on a.UserID equals b.ID
                           join c in ef.Games on a.GAME_TYPE equals c.GameId into r
                           from g in r.DefaultIfEmpty()
-                          select new M_UserOptLog
+                          select new
                           {
                               LID = a.LID,
                               UserID = a.UserID,
@@ -227,7 +246,26 @@ namespace YYT.BLL.EF
 
                 if (rst != null)
                 {
-                    List<M_UserOptLog> all = rst.ToList();
+                    List<M_UserOptLog> all = rst
+                        .ToList()
+                        .Select(x => new M_UserOptLog
+                        {
+                            LID = x.LID,
+                            UserID = x.UserID,
+                            AGENCY = x.AGENCY,
+                            OPT = x.OPT,
+                            OPT_COINS = x.OPT_COINS,
+                            COINS = x.COINS,
+                            SCORE = x.SCORE,
+                            ROOM = x.ROOM,
+                            TABLE_ID = x.TABLE_ID,
+                            SEAT_ID = x.SEAT_ID,
+                            GameName = x.GameName,
+                            GAME_TYPE = x.GAME_TYPE,
+                            REC_TIME = x.REC_TIME,
+                            REC_WEEK = x.REC_WEEK
+                        })
+                        .ToList();
                     FillEnterLeave(all);
                     mPage.SetTotalCount(all.Count);
                     var users = all

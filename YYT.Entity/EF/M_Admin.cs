@@ -28,9 +28,10 @@ namespace YYT.Entity
 
         /// <summary>
         /// 确认密码（仅用于前端验证，不映射到数据库）
+        /// 说明: 不在此做 [Compare] 校验——表单可不传 RE_PWD(只输一次密码)。
+        /// 需要校验的场景由各自 Action 手工比较 PWD/RE_PWD。
         /// </summary>
         [NotMapped]
-        [Compare("PWD", ErrorMessage = "两次输入的密码不一致")]
         public string RE_PWD { get; set; }
 
         /// <summary>

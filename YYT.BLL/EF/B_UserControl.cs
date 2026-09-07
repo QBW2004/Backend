@@ -683,7 +683,7 @@ namespace YYT.BLL.EF
                 return msg;
             }
             msg.code = 1;
-            msg.content = mobileFixedCard ? "已受理，处理中！" : "操作成功";
+            msg.content = "操作成功";
             return msg;
         }
 
@@ -934,7 +934,7 @@ namespace YYT.BLL.EF
                     return msg;
                 }
                 msg.code = 1;
-                msg.content = mobileRequest ? "已受理，处理中！" : "移除成功";
+                msg.content = "移除成功";
             }
             catch (Exception ex)
             {

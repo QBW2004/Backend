@@ -95,6 +95,9 @@
             ? '<div class="info-row login-time-row"><div class="info-item">' + M.ICONS.clock +
                 '<span class="info-label">最后登录</span><span class="info-value">' + M.fmtTime(p.LastLoginTime) + '</span></div></div>'
             : '';
+        var frozenBadge = (Number(p.FROZEN) === 1)
+            ? '<span class="black-listed">冻结中</span>'
+            : '';
         var controls = p.ActiveControls || [];
         var controlRow = controls.length
             ? '<div class="active-control-status">' + controls.map(function (text) {
@@ -108,6 +111,7 @@
                     '<div class="player-identity">' +
                         '<span class="player-account player-account-link" data-account="' + M.esc(p.ID) + '">' + M.esc(p.ID) + '</span>' +
                         '<span class="player-name">' + M.esc(p.NAME || p.ID) + '</span>' +
+                        frozenBadge +
                         '<span class="agent-line">' + M.esc(p.AGENCY || '--') + '</span>' +
                     '</div>' +
                     '<div class="player-balances">' +
@@ -133,6 +137,36 @@
     }
 
     /* ---------------- 在线玩家 ---------------- */
+
+    /**
+     * 控制状态异步回填：基础卡渲染后，把查到的控制状态行插进对应卡片。
+     * 分页追加后 $sec 内含多页卡片，不能用数组下标对应，故按 data-account 遍历定位。
+     */
+    function applyActiveControls($sec, players) {
+        players = players || [];
+        players.forEach(function (p) {
+            if (!p || !p.ID || !p.ActiveControls || !p.ActiveControls.length) return;
+            var $card = null;
+            $sec.find('.player-card').each(function () {
+                if ($(this).data('account') === p.ID) {
+                    $card = $(this);
+                    return false;
+                }
+            });
+            if (!$card || $card.find('.active-control-status').length) return;
+            var controlHTML = '<div class="active-control-status">' +
+                p.ActiveControls.map(function (text) {
+                    return '<div class="active-control-status-item">' + M.esc(text) + '</div>';
+                }).join('') +
+                '</div>';
+            var $login = $card.find('.login-time-row').first();
+            if ($login.length) {
+                $login.before(controlHTML); // 控制状态行应在最后登录行之前
+            } else {
+                $card.find('.player-info').append(controlHTML);
+            }
+        });
+    }
 
     function attachActiveControls(players) {
         players = players || [];
@@ -221,18 +255,7 @@
                 setTimeout(function () {
                     attachActiveControls(onlinePlayers).then(function () {
                         if (!onlinePlayers.length) return;
-                        // 使用 DocumentFragment 批量更新 DOM，减少重排
-                        var $cards = $sec.find('.player-card');
-                        onlinePlayers.forEach(function (p, index) {
-                            if ($cards[index] && p.ActiveControls && p.ActiveControls.length) {
-                                var $card = $($cards[index]);
-                                var controlHTML = '<div class="active-control-status">' +
-                                    p.ActiveControls.map(function (text) {
-                                        return '<div class="active-control-status-item">' + M.esc(text) + '</div>';
-                                    }).join('') + '</div>';
-                                $card.find('.player-info').append(controlHTML);
-                            }
-                        });
+                        applyActiveControls($sec, onlinePlayers);
                     });
                 }, 100);
             });
@@ -271,8 +294,17 @@
             $('#loadMoreBtn').toggleClass('disabled', noMore).prop('disabled', noMore);
             $('#noMoreData').toggle(noMore && offlineTotal > 0);
 
-            // 【性能优化】离线玩家通常没有控制状态，跳过此查询以加快速度
-            // 如果需要显示控制状态，可以改为按需加载（点击玩家详情时再查）
+            // 【性能优化】先渲染基础卡片，控制状态随后异步补齐——
+            // 总控（吃分/放水/控牌）记录存在 usercontrolstatus，与玩家是否在线无关，
+            // 离线玩家同样可能有正在执行的控，不能整页跳过查询。
+            // 每页仅补一次当前页（≤PAGE_SIZE 个 ID）的查询，开销可控，不阻塞首屏。
+            if (rows.length) {
+                setTimeout(function () {
+                    attachActiveControls(rows).then(function () {
+                        applyActiveControls($sec, rows);
+                    });
+                }, 50);
+            }
         });
     }
 

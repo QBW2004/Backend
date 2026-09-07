@@ -643,7 +643,9 @@ namespace UnitTestProj
             StringAssert.Contains(playersScript, "attachActiveControls");
             StringAssert.Contains(controlScript, "MobileRequest: 1");
             StringAssert.Contains(controlBll, "QueueTotalUcCommand");
-            StringAssert.Contains(controlBll, "已受理，处理中");
+            StringAssert.Contains(controlScript, "r.text || '操作成功'");
+            Assert.IsFalse(controlScript.Contains("已受理"));
+            Assert.IsFalse(controlBll.Contains("已受理"));
             StringAssert.Contains(rechargeScript, "成功！已向");
             StringAssert.Contains(rechargeScript, "金币。");
             Assert.IsFalse(rechargeView.Contains("💎"));
