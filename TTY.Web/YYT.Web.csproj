@@ -1590,6 +1590,7 @@
     <Content Include="Scripts\app\phone\phone.addagent.js" />
 
     <Content Include="Scripts\app\phone\phone.agents.js" />
+    <Content Include="Scripts\app\phone\phone.agentflow.js" />
 
     <Content Include="Scripts\app\phone\phone.players.js" />
     <Content Include="Scripts\app\phone\phone.prizehistory.js" />
@@ -1605,6 +1606,7 @@
     <Content Include="Areas\Mobile\Views\Home\Recharge.cshtml" />
     <Content Include="Areas\Mobile\Views\Home\Records.cshtml" />
     <Content Include="Areas\Mobile\Views\Home\PrizeHistory.cshtml" />
+    <Content Include="Areas\Mobile\Views\Home\AgentFlow.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />

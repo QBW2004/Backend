@@ -87,7 +87,7 @@
                 title: '代理详细信息',
                 bodyHTML: body,
                 actions: [
-                    { label: '流水', value: 'records', type: 'secondary' },
+                    { label: '流水', value: 'flow', type: 'secondary' },
                     { label: '充值', value: 'recharge', type: 'primary' }
                 ],
                 buttons: [{ label: '关闭', value: null, type: 'confirm' }],
@@ -119,8 +119,8 @@
                 }
             });
             dlg.then(function (value) {
-                if (value === 'records')
-                    window.location.href = '/Mobile/Home/Records?id=' + encodeURIComponent(a.ID);
+                if (value === 'flow')
+                    window.location.href = '/Mobile/Home/AgentFlow?id=' + encodeURIComponent(a.ID);
                 else if (value === 'recharge')
                     window.location.href = '/Mobile/Home/Recharge?id=' + encodeURIComponent(a.ID) + '&role=agent';
             });

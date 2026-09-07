@@ -1,0 +1,290 @@
+﻿@{
+    /* 代理流水（展示单个代理的资金流入流出记录） */
+    string webVer = ConfigHelper.Get("WebVer");
+    string today = DateTime.Now.ToString("yyyy-MM-dd");
+    Layout = "~/Views/Shared/Layout/_MobileLayout.cshtml";
+}
+
+@section head {
+<style>
+    .container {
+        padding: 16px;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    /* 代理信息卡片 */
+    .agent-info-card {
+        background: white;
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 16px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .agent-info-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 12px;
+    }
+
+    .agent-info-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .agent-info-row:last-child {
+        border-bottom: none;
+    }
+
+    .agent-info-label {
+        font-size: 14px;
+        color: #666;
+    }
+
+    .agent-info-value {
+        font-size: 14px;
+        color: #333;
+        font-weight: 500;
+    }
+
+    .agent-info-value.highlight {
+        color: #007aff;
+        font-weight: 600;
+    }
+
+    /* 筛选控件 */
+    .filter-container {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-bottom: 16px;
+        background-color: white;
+        padding: 16px;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .filter-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .filter-item {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        flex: 1;
+        min-width: 140px;
+    }
+
+    .filter-label {
+        font-size: 14px;
+        color: #666;
+    }
+
+    .filter-input {
+        padding: 8px 12px;
+        border: 1px solid #e5e5e5;
+        border-radius: 6px;
+        font-size: 14px;
+        color: #333;
+        width: 100%;
+    }
+
+    .filter-btn {
+        padding: 8px 16px;
+        background-color: #007aff;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.3s;
+        margin-top: auto;
+        width: 120px;
+        -webkit-appearance: none;
+        appearance: none;
+    }
+
+    .filter-btn:hover {
+        background-color: #0066cc;
+    }
+
+    /* 表格 */
+    .flow-table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .flow-table-container .flow-table {
+        min-width: 720px;
+        table-layout: auto;
+    }
+
+    .flow-table th,
+    .flow-table td {
+        padding: 10px 8px;
+        font-size: 13px;
+        white-space: nowrap;
+    }
+
+    .flow-table th:nth-child(1) { min-width: 130px; }
+    .flow-table th:nth-child(2) { min-width: 90px; }
+    .flow-table th:nth-child(3) { min-width: 90px; }
+    .flow-table th:nth-child(4) { min-width: 90px; }
+    .flow-table th:nth-child(5) { min-width: 90px; }
+    .flow-table th:nth-child(6) { min-width: 120px; }
+
+    .amount {
+        font-family: -apple-system-monospace, monospace;
+        font-weight: 500;
+    }
+
+    .amount.positive {
+        color: #34c759;
+    }
+
+    .amount.negative {
+        color: #ff3b30;
+    }
+
+    .flow-direction {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    .flow-direction.in {
+        background-color: rgba(52, 199, 89, 0.1);
+        color: #34c759;
+    }
+
+    .flow-direction.out {
+        background-color: rgba(255, 59, 48, 0.1);
+        color: #ff3b30;
+    }
+
+    .time {
+        color: #666;
+        white-space: nowrap;
+    }
+
+    /* 分页控件 */
+    .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 20px;
+        gap: 8px;
+    }
+
+    .pagination-btn {
+        padding: 8px 16px;
+        border: 1px solid #e5e5e5;
+        border-radius: 6px;
+        background-color: white;
+        color: #333;
+        cursor: pointer;
+        transition: all 0.3s;
+        -webkit-appearance: none;
+        appearance: none;
+    }
+
+    .pagination-btn:hover {
+        background-color: #f5f5f7;
+    }
+
+    .pagination-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .pagination-info {
+        color: #666;
+        font-size: 14px;
+    }
+
+    @@media (max-width: 768px) {
+        .container {
+            padding: 12px;
+        }
+
+        .filter-row .filter-item {
+            min-width: 0;
+            width: calc(50% - 6px);
+        }
+    }
+</style>
+}
+
+    <div class="container">
+        <!-- 代理信息卡片 -->
+        <div class="agent-info-card" id="agentInfoCard" style="display: none;">
+            <div class="agent-info-title">代理信息</div>
+            <div class="agent-info-row">
+                <span class="agent-info-label">代理账号:</span>
+                <span class="agent-info-value highlight" id="agentAccount">--</span>
+            </div>
+            <div class="agent-info-row">
+                <span class="agent-info-label">当前金币:</span>
+                <span class="agent-info-value" id="agentCoins">--</span>
+            </div>
+        </div>
+
+        <!-- 筛选控件 -->
+        <div class="filter-container">
+            <div class="filter-row">
+                <div class="filter-item">
+                    <div class="filter-label">开始日期</div>
+                    <input type="date" id="startDate" class="filter-input" value="@today">
+                </div>
+                <div class="filter-item">
+                    <div class="filter-label">结束日期</div>
+                    <input type="date" id="endDate" class="filter-input" value="@today">
+                </div>
+                <button class="filter-btn" id="filterBtn">筛选</button>
+            </div>
+        </div>
+
+        <!-- 表格容器 -->
+        <div class="table-container flow-table-container">
+            <table class="flow-table">
+                <thead>
+                    <tr>
+                        <th>日期</th>
+                        <th>代理账号</th>
+                        <th>转石</th>
+                        <th>财务总石</th>
+                        <th>流向</th>
+                        <th>备注</th>
+                    </tr>
+                </thead>
+                <tbody id="flowTableBody"></tbody>
+            </table>
+            <div class="no-data" id="noData" style="display: block;">暂无流水记录</div>
+        </div>
+
+        <!-- 分页控件 -->
+        <div class="pagination">
+            <button class="pagination-btn" id="prevBtn" disabled>上一页</button>
+            <div class="pagination-info" id="paginationInfo">第 1 页 / 共 0 页</div>
+            <button class="pagination-btn" id="nextBtn" disabled>下一页</button>
+        </div>
+    </div>
+
+@section scripts {
+    <script>
+        window.MPagePreset = { agentId: '@Html.Raw(HttpUtility.JavaScriptStringEncode((string)(ViewBag.AgentId ?? "")))' };
+    </script>
+    <script src="@Url.Content("~/Scripts/app/phone/phone.agentflow.js?v=" + webVer)"></script>
+}

@@ -271,6 +271,17 @@ namespace YYT.Web.Areas.Mobile.Controllers
             ViewBag.Today = DateTime.Now.ToString("yyyy-MM-dd");
             return View();
         }
+
+        /// <summary>代理流水（展示单个代理的资金流入流出记录）。</summary>
+        public ActionResult AgentFlow()
+        {
+            ViewBag.MPage = "agentflow";
+            ViewBag.MTitle = "代理流水";
+            ViewBag.MSubtitle = "查看代理资金流向";
+            ViewBag.MShowRefresh = true;
+            ViewBag.AgentId = Request.QueryString["id"] ?? string.Empty;
+            return View();
+        }
         #endregion
     }
 }
