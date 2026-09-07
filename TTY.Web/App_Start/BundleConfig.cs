@@ -50,13 +50,10 @@ namespace YYT.Web
             //    "~/Content/css/login.css"
             //    ));
             bundles.Add(new StyleBundle("~/res/login-css").Include(
-                "~/Content/css/bootstrap.min.css",
-                "~/Content/css/font-awesome.css",
                 "~/Content/css/login.css"
                 ));
             bundles.Add(new ScriptBundle("~/res/login-js").Include(
                 "~/Scripts/jquery-{version}.js",
-                "~/Scripts/bootstrap.js",
                 "~/Scripts/app/login.js"
                 ));
             /*****************************************************************************************************************************************/
