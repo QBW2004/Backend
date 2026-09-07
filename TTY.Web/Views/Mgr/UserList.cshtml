@@ -5,97 +5,90 @@
 
 @section include_res
 {
+    <link href="@Url.Content("~/Content/css/ios-page.css?v=" + ConfigHelper.Get("WebVer"))" rel="stylesheet" />
     <script src="@Url.Content("~/Scripts/app/user.mgr.js?v=" + ConfigHelper.Get("WebVer"))"></script>
 }
 
-<!--查询条件-->
-<form id="frm_srch">
-    <table width="100%" border="0" align="center" cellpadding="0" cellspacing="0" class="titleQueBg" style="height:40px;">
-        <tr>
-            <td>
-                <div class="left">
-                    &nbsp;角色
-                    <select class="easyui-combotree" id="selRole" name="RoleID" data-options="valueField:'id',textField:'text',data:[]" style="width:155px;"></select>
-                </div>
-                <div class="left">
-                    &nbsp;用户名/账号
-                    <input type="text" class="easyui-textbox" id="txtUsrNameOrAccounts" name="usrNameOrAccounts" style="width:152px;" />
-                </div>
-                <div id="box_5" class="left Lmg10">
-                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="queryData();" data-options="plain:true,iconCls:'icon-search'">查找</a>
-                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="showAddUser();" data-options="plain:true,iconCls:'icon-add'">新增用户</a>
-                </div>
-            </td>
-        </tr>
-    </table>
-</form>
-<!-- form end -->
-<!--数据列表-->
-<table id="tb_Users">
-    <thead>
-        <tr>
-            <th field="RowIndex" width="65" align="center">序号</th>
-            <th field="RoleName" width="85" align="center">角色</th>
-            <th field="Accounts" width="80" align="center">账号</th>
-            <th field="UserName" width="85" align="center">名字</th>
-            <th field="IsDel" width="120" align="center" formatter="formateStatus">状态</th>
-            <th field="Remark" width="120" align="center">备注信息</th>
-            <!-- 操作列默认隐藏（通过 user.mgr.js 中 hideColumn 控制），需要时去掉那行 hideColumn 即可恢复 -->
-            <th field="UserID" width="85" align="center" formatter="formateOpt">操作</th>
-        </tr>
-    </thead>
-</table>
+<!-- iOS 风格用户管理(参照 178 附件"会员盈亏详情"页) -->
+<div class="container">
+    <!-- 统计卡 -->
+    <div class="stats-grid" id="statsGrid"></div>
 
-<!-- 添加用户窗口 -->
-<div id="addUserWin" class="hide">
-    <form id="form2">
-        <table cellpadding="0" cellspacing="0" border="0" width="100%">
-            <tr id="trTip1">
-                <td colspan="2" align="left" style="padding-left: 50px;color:#999;">
-                    <p style="margin-left:-35px;">温馨提示：请牢记用户密码。</p>
-                </td>
-            </tr>
-            <tr id="trTip2" class="hide">
-                <td colspan="2" align="left" style="padding-left: 50px;color:#999;">
-                    <p style="margin-left:-35px;">温馨提示：不填写密码时为不修改密码。</p>
-                </td>
-            </tr>
-            <tr>
-                <td align="right" width="35%">角色：</td>
-                <td align="left">
-                    <select class="easyui-combotree" id="selUserRole" name="RoleID" data-options="valueField:'id',textField:'text'"></select>
-                </td>
-            </tr>
-            <tr>
-                <td align="right">用户名：</td>
-                <td align="left">
-                    <input class="easyui-textbox win-txt" id="txtUName" name="UName" />
-                </td>
-            </tr>
-            <tr>
-                <td align="right">账号：</td>
-                <td align="left">
-                    <input class="easyui-textbox win-txt" id="txtUAccounts" name="UAccounts" />
-                </td>
-            </tr>
-            <tr>
-                <td align="right">密码：</td>
-                <td align="left">
-                    <input class="easyui-textbox win-txt" id="txtUPwd" name="UPwd" />
-                </td>
-            </tr>
-            <tr>
-                <td align="right">备注信息：</td>
-                <td align="left">
-                    <input class="easyui-textbox win-txt" id="txtRemark" name="Remark" />
-                </td>
-            </tr>
-            <tr>
-                <td align="center" colspan="2" class="pd5">
-                    <input type="hidden" id="hfUserID" name="UserID" value="0" />
-                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="SaveUser()" data-options="plain:true,iconCls:'icon-save'">保存</a>
-                </td>
-            </tr>
-        </table>
-    </form>
+    <!-- 筛选行 -->
+    <div class="filter-row">
+        <select class="ios-select" id="selRole" style="min-width:120px;"></select>
+        <input type="text" class="ios-input" id="txtUsrNameOrAccounts" placeholder="用户名/账号" style="flex:1;min-width:120px;" />
+        <button type="button" class="ios-btn secondary" id="btnSearch">查找</button>
+        <button type="button" class="ios-btn primary" id="btnAdd">新增用户</button>
+    </div>
+
+    <!-- 数据表格 -->
+    <div class="table-container">
+        <div class="table-scroll">
+            <table class="data-table" id="tbUsers">
+                <thead>
+                    <tr>
+                        <th>序号</th>
+                        <th>角色</th>
+                        <th>账号</th>
+                        <th>名字</th>
+                        <th>状态</th>
+                        <th>备注信息</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="tbUsersBody"></tbody>
+            </table>
+        </div>
+    </div>
+    <div class="scroll-hint">左右滑动查看更多数据</div>
+</div>
+
+<!-- 新增/编辑用户弹窗 -->
+<div class="modal-overlay" id="userModal">
+    <div class="modal-card">
+        <div class="modal-head">
+            <div class="modal-title" id="userModalTitle">新增用户</div>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="form-label">角色</label>
+                <select class="form-control" id="fRoleID"></select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">用户名</label>
+                <input type="text" class="form-control" id="fUName" placeholder="请输入用户名" autocomplete="off" />
+            </div>
+            <div class="form-group">
+                <label class="form-label">账号</label>
+                <input type="text" class="form-control" id="fUAccounts" placeholder="请输入账号" autocomplete="off" />
+            </div>
+            <div class="form-group">
+                <label class="form-label">密码<span class="form-tip" id="pwdTip">(编辑时留空则不修改)</span></label>
+                <input type="text" class="form-control" id="fUPwd" placeholder="请输入密码" autocomplete="off" />
+            </div>
+            <div class="form-group">
+                <label class="form-label">备注信息</label>
+                <input type="text" class="form-control" id="fRemark" placeholder="请输入备注" autocomplete="off" />
+            </div>
+        </div>
+        <div class="modal-foot">
+            <button type="button" class="ios-btn secondary" id="btnModalCancel">取消</button>
+            <button type="button" class="ios-btn primary" id="btnModalSave">保存</button>
+        </div>
+    </div>
+</div>
+
+<!-- 删除确认弹窗 -->
+<div class="modal-overlay" id="delModal">
+    <div class="modal-card">
+        <div class="modal-body center">
+            <div class="modal-title">确认删除</div>
+            <div class="modal-message">删除后不可恢复，确定删除该用户？</div>
+        </div>
+        <div class="modal-foot">
+            <button type="button" class="ios-btn secondary" id="btnDelCancel">取消</button>
+            <button type="button" class="ios-btn danger" id="btnDelOk">删除</button>
+        </div>
+    </div>
 </div>

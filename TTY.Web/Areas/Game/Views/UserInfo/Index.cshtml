@@ -5,6 +5,7 @@
 }
 
 @section include_res{
+    <link href="@Url.Content("~/Content/css/ios-page.css?v=" + ConfigHelper.Get("WebVer"))" rel="stylesheet" />
     <script>
     var canKickWholeLine = @((loginUser?.UserPriv == 0 || loginUser?.ManageScope == 2).ToString().ToLower());
     var loginAgencyAccount = "@(loginUser?.Accounts)";
@@ -154,6 +155,39 @@
             footer.Profit += Number(rows[i].Profit || 0);
         }
         $('#tb_UserInfo').datagrid('reloadFooter', [footer]);
+        renderUserInfoStats(); // iOS 顶部统计卡随合计一起刷新
+    }
+    // iOS 顶部统计卡(按当前页 rows 计算,与页脚合计口径一致)
+    function renderUserInfoStats() {
+        var $box = $('#statsGrid');
+        var grid = $('#tb_UserInfo');
+        if ($box.length < 1 || !grid.data('datagrid')) { return; }
+        var rows = grid.datagrid('getRows') || [];
+        var total = 0, online = 0, frozen = 0, coins = 0, today = 0, profit = 0;
+        for (var i = 0; i < rows.length; i++) {
+            var r = rows[i];
+            if (!r || r.FROZEN == 2) { continue; } // 合计/占位行不计
+            total++;
+            if (Number(r.INHALL) == 1) online++;
+            if (Number(r.FROZEN) == 1) frozen++;
+            coins += Number(r.COINS || 0);
+            today += Number(r.TodayWinLoss || 0);
+            profit += Number(r.Profit || 0);
+        }
+        var fmt = function (v) { return (v || 0).toLocaleString(); };
+        var cls = function (v) { return v > 0 ? 'positive' : (v < 0 ? 'negative' : ''); };
+        var defs = [
+            { label: '用户总数', value: fmt(total), cls: '' },
+            { label: '在线', value: fmt(online), cls: online > 0 ? '' : '' },
+            { label: '冻结', value: fmt(frozen), cls: frozen > 0 ? 'negative' : '' },
+            { label: '总余额', value: fmt(coins), cls: '' },
+            { label: '今日盈亏', value: fmt(today), cls: cls(today) },
+            { label: '总盈亏', value: fmt(profit), cls: cls(profit) }
+        ];
+        $box.html(defs.map(function (s) {
+            return '<div class="stat-box"><div class="stat-label">' + s.label + '</div>' +
+                '<div class="stat-value ' + s.cls + '">' + s.value + '</div></div>';
+        }).join(''));
     }
     function refreshChangedUserRow(id, delay) {
         if (!id) {
@@ -198,6 +232,7 @@
                 onLoadSuccess: function (data) {
                     if (window.onLoaded) onLoaded(data);
                     bindRowClickMenu();
+                    renderUserInfoStats(); // 初次加载/查询后渲染统计卡
                 }
             });
         } else {
@@ -1320,51 +1355,30 @@
 }
 
 @*查询条件*@
-<form id="frm_srch">
-    <table width="100%" border="0" cellpadding="0" cellspacing="0" class="titleQueBg" style="height:40px;">
-        <tr>
-            <td>
-                <div class="left Lpd5">
-                    用户账号
-                    <input type="text" class="easyui-textbox" name="srch_ID" />
-                </div>
-                <div class="left Lpd5">
-                    昵称
-                    <input type="text" class="easyui-textbox" name="srch_NAME" />
-                </div>
-                <div class="left Lpd5">
-                    所属代理
-                    <input type="text" class="easyui-textbox" name="srch_Agency" />
-                </div>
-                @*<div class="left Lpd5">
-                        开始时间
-                        <input class="easyui-datetimebox" name="srch_StartTime"
-                               data-options="required:true,showSeconds:false" value="3/4/2010 2:3" style="width:150px">
-                    </div>
-                    <div class="left Lpd5">
-                        结束时间
-                        <input class="easyui-datetimebox" name="srch_EndTime"
-                               data-options="required:true,showSeconds:false" value="3/4/2010 2:3" style="width:150px">
-                    </div>*@
-                <div class="left Lmg10">
-                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="queryData();" data-options="plain:true,iconCls:'icon-search'">查找</a>
-                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="showAddUser();" data-options="plain:true,iconCls:'icon-add'">添加用户</a>
-                    @if (loginUser?.UserPriv == 0)
-                    {
-                        <a href="javascript:void(0);" class="easyui-linkbutton" onclick="kickPlayer();" data-options="plain:true,iconCls:'icon-user_cross'">剔除所有人</a>
-                    }
-                    @if (loginUser?.UserPriv == 1 && loginUser?.IsKicking == 1)
-                    {
-                        <a href="javascript:void(0);" class="easyui-linkbutton" onclick="kickPlayer();" data-options="plain:true,iconCls:'icon-user_cross'">@(loginUser?.ManageScope == 2 ? "剔除整条线在线玩家" : "剔除直属在线玩家")</a>
-                    }
-                </div>
-            </td>
-        </tr>
-    </table>
-</form>
+<div class="container">
+    <!-- iOS 顶部统计卡(由 renderUserInfoStats 填充) -->
+    <div class="stats-grid" id="statsGrid"></div>
+
+    <form id="frm_srch" class="filter-row">
+        <input type="text" class="ios-input" name="srch_ID" placeholder="用户账号" style="flex:1;min-width:90px;" />
+        <input type="text" class="ios-input" name="srch_NAME" placeholder="昵称" style="flex:1;min-width:80px;" />
+        <input type="text" class="ios-input" name="srch_Agency" placeholder="所属代理" style="flex:1;min-width:80px;" />
+        <button type="button" class="ios-btn secondary" onclick="queryData();">查找</button>
+        <button type="button" class="ios-btn primary" onclick="showAddUser();">添加用户</button>
+        @if (loginUser?.UserPriv == 0)
+        {
+            <button type="button" class="ios-btn danger-outline" onclick="kickPlayer();">剔除所有人</button>
+        }
+        @if (loginUser?.UserPriv == 1 && loginUser?.IsKicking == 1)
+        {
+            <button type="button" class="ios-btn danger-outline" onclick="kickPlayer();">@(loginUser?.ManageScope == 2 ? "剔除整条线在线玩家" : "剔除直属在线玩家")</button>
+        }
+    </form>
 
 @*查询代理的信息*@
-<table id="tb_UserInfo">
+<div class="table-container">
+    <div class="table-scroll">
+    <table id="tb_UserInfo">
     <thead>
         <tr>
             <th data-options="field:'ck',checkbox:true"></th>
@@ -1399,7 +1413,11 @@
 
         </tr>
     </thead>
-</table>
+    </table>
+    </div>
+    </div>
+    <div class="scroll-hint">左右滑动查看更多数据</div>
+</div>
 
 @*修改密码窗口*@
 <div id="chgWin" class="hide">

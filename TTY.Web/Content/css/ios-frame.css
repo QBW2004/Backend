@@ -1,0 +1,393 @@
+/* ============================================================
+   框架 iOS 化 (参照 178 附件 index.html)
+   作用于父框架 Mgr/Index.cshtml,仅做视觉换皮。
+   必须保留 frame.js 依赖的选择器/ID: #side-menu / .menu-item /
+   .nav-header / .content-tabs / .page-tabs / .menu-tab /
+   .J_tabLeft / .J_tabRight / #content-main / .J_iframe / #skin-list
+   ============================================================ */
+:root {
+    --primary: #007aff;
+    --primary-dark: #0056b3;
+    --primary-light: rgba(0, 122, 255, 0.1);
+    --success: #34c759;
+    --danger: #ff3b30;
+    --warning: #ff9500;
+    --text-primary: #1d1d1f;
+    --text-body: #333;
+    --text-secondary: #666;
+    --text-tertiary: #86868b;
+    --bg-page: #f5f7fa;
+    --bg-hover: #f5f5f7;
+    --border-light: #eaeaea;
+    --border: #e5e5e5;
+    --r-lg: 8px;
+    --r-xl: 12px;
+    --r-pill: 16px;
+    --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+html, body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+    background-color: var(--bg-page) !important;
+}
+body { color: var(--text-body); }
+
+/* 中和 3 款旧皮肤主题对 iOS 风格的影响 */
+body.skin-1 #page-wrapper, body.skin-3 #page-wrapper { background: var(--bg-page) !important; }
+body.skin-1 .content-tabs, body.skin-3 .content-tabs { background: #fff !important; border-bottom: 1px solid var(--border-light) !important; }
+body.skin-1 .menu-tab.active, body.skin-3 .menu-tab.active { background: var(--primary) !important; color: #fff !important; border-color: var(--primary); }
+body.skin-1 .navbar-static-side, body.skin-3 .navbar-static-side { background: #fff !important; }
+
+/* #wrapper 深色底 -> 浅色 */
+#wrapper { background: var(--bg-page) !important; }
+
+/* 隐藏左上角缩放滑块(固定定位会挡住 iOS 顶栏的汉堡按钮,导致侧边栏打不开) */
+#zoomWrap { display: none !important; }
+
+/* ============================================================
+   侧边栏 -> 白色抽屉(默认收起,汉堡按钮展开)
+   ============================================================ */
+body.fixed-sidebar .navbar-static-side {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 280px !important;
+    height: 100% !important;
+    background: #fff !important;
+    z-index: 1200 !important;
+    margin: 0 !important;
+    box-shadow: 2px 0 6px rgba(0, 0, 0, 0.08);
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    /* 整栏不滚动:滚动条隔离到蓝色头像区块下方,由 #side-menu 单独滚动 */
+    overflow: hidden;
+}
+body.ios-sidebar-open .navbar-static-side { transform: translateX(0); }
+
+/* 抽屉遮罩(调淡,避免打开抽屉时内容区大面积变暗) */
+#sidebarOverlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.22);
+    z-index: 1100;
+}
+body.ios-sidebar-open #sidebarOverlay { display: block; }
+
+/* 中和 mini-navbar(折叠菜单)副作用,抽屉模式恒为展开态 */
+body.mini-navbar .navbar-static-side { width: 280px !important; }
+body.mini-navbar.ios-sidebar-open .navbar-static-side { transform: translateX(0); }
+body.mini-navbar .nav-header { padding: 24px 16px !important; background: linear-gradient(180deg, #007aff 0%, #0056b3 100%) !important; }
+body.mini-navbar #side-menu > li > a { padding: 12px 16px !important; }
+body.mini-navbar #side-menu .nav-label { display: inline !important; }
+body.mini-navbar #side-menu .nav-second-level { display: block !important; }
+body.mini-navbar #page-wrapper { margin-left: 0 !important; }
+
+/* 侧边栏头部(头像+账号) */
+.nav-header {
+    background: linear-gradient(180deg, #007aff 0%, #0056b3 100%) !important;
+    padding: 24px 16px !important;
+    margin: 0 !important;
+    text-align: center;
+    color: #fff;
+    height: auto !important;
+    /* 固定顶部,不随菜单滚动 */
+    flex: 0 0 auto;
+}
+.nav-header .header-box { text-align: center; }
+.nav-header .img-circle {
+    border: 2px solid rgba(255, 255, 255, 0.6);
+    border-radius: 50% !important;
+    display: inline-block;
+}
+.nav-header .profile-element { margin-top: 10px !important; }
+.nav-header .text-muted {
+    color: #fff !important;
+    font-size: 16px !important;
+    font-weight: 600;
+}
+.nav-header .caret { border-top-color: rgba(255, 255, 255, 0.85); }
+.nav-header .dropdown-menu { margin: 6px auto 0 !important; }
+
+/* 侧边栏菜单(蓝色头像区块下方独立滚动,滚动条只出现在这里) */
+#side-menu { background: #fff; padding: 8px 0; overflow-y: auto; overflow-x: hidden; min-height: 0; }
+#side-menu > li > a {
+    color: var(--text-body) !important;
+    font-size: 15px !important;
+    font-weight: 500 !important;
+    padding: 12px 16px !important;
+    border: none !important;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+#side-menu > li > a > i.fa:first-child { width: 20px; text-align: center; color: var(--primary); font-size: 16px; }
+#side-menu > li > a .fa.arrow { margin-left: auto; color: #bbb; font-size: 12px; }
+#side-menu > li.active > a { background: #e8f1ff !important; color: var(--primary) !important; }
+#side-menu > li > a:hover { background: var(--bg-hover) !important; color: var(--primary) !important; }
+/* 二级菜单 */
+#side-menu .nav-second-level { background: #fff !important; border-left: none !important; }
+#side-menu .nav-second-level li a {
+    color: var(--text-secondary) !important;
+    font-size: 14px !important;
+    padding: 10px 16px 10px 46px !important;
+    border-left: none !important;
+}
+#side-menu .nav-second-level li a:hover { color: var(--primary) !important; background: var(--bg-hover); }
+
+/* ============================================================
+   iOS 蓝色顶栏(新增,挂在 #page-wrapper 顶部)
+   ============================================================ */
+.ios-header {
+    background: linear-gradient(180deg, #007aff 0%, #0056b3 100%);
+    color: #fff;
+    height: 80px;
+    flex: 0 0 80px;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+.ios-header-inner {
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+.ios-header-btn {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    min-width: 40px;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    padding: 0 12px;
+    font-size: 16px;
+}
+.ios-header-btn:hover { background: rgba(255, 255, 255, 0.3); }
+.ios-header-btn:active { transform: scale(0.96); }
+.ios-header-center {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    max-width: 55%;
+    width: 100%;
+}
+.ios-header-title {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+.ios-header-subtitle {
+    font-size: 12px;
+    opacity: 0.85;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+.ios-header-actions { margin-left: auto; display: flex; gap: 8px; }
+
+/* ============================================================
+   标签条 iOS 化(胶囊标签)
+   ============================================================ */
+.content-tabs {
+    background: #fff !important;
+    border-bottom: 1px solid var(--border-light) !important;
+    height: 44px !important;
+    line-height: 44px !important;
+    margin: 0 !important;
+    padding: 0 6px !important;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+.page-tabs { flex: 1; min-width: 0; overflow: hidden; }
+.page-tabs-content {
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+    transition: margin-left 0.3s;
+}
+.menu-tab {
+    display: inline-flex !important;
+    align-items: center;
+    padding: 5px 14px !important;
+    margin: 0 3px !important;
+    border-radius: 16px !important;
+    font-size: 13px !important;
+    line-height: 22px !important;
+    color: var(--text-secondary) !important;
+    background: var(--bg-hover);
+    border: 1px solid var(--border-light);
+    white-space: nowrap;
+}
+.menu-tab.active {
+    background: var(--primary) !important;
+    color: #fff !important;
+    border-color: var(--primary);
+}
+.menu-tab i.fa-times-circle { margin-left: 2px; color: rgba(255, 255, 255, 0.85); font-size: 12px; }
+.menu-tab:not(.active) i.fa-times-circle { color: #bbb; }
+
+/* 标签左右滚动按钮 */
+.roll-nav.roll-left, .roll-nav.roll-right {
+    background: #fff !important;
+    border: none !important;
+    color: var(--text-secondary) !important;
+    width: 32px !important;
+    height: 32px !important;
+    line-height: 32px !important;
+    text-align: center;
+    padding: 0 !important;
+    border-radius: 50% !important;
+    margin: 0 2px !important;
+}
+.roll-nav.roll-left:hover, .roll-nav.roll-right:hover { background: var(--bg-hover) !important; color: var(--primary) !important; }
+
+/* 右侧操作按钮(返回首页/修改密码/主题/退出) */
+.r-btn-1, .r-btn-2, .r-btn-3, .r-btn-4 {
+    background: #fff !important;
+    border: none !important;
+    color: var(--text-secondary) !important;
+    font-size: 13px !important;
+    padding: 0 10px !important;
+    height: 44px;
+    line-height: 44px;
+    margin: 0 !important;
+}
+.r-btn-1:hover, .r-btn-2:hover, .r-btn-3:hover, .r-btn-4:hover { color: var(--primary) !important; background: var(--bg-hover) !important; }
+.r-btn-1 i, .r-btn-2 i, .r-btn-3 i, .r-btn-4 i { margin-right: 4px; }
+
+/* ============================================================
+   内容区布局:flex 列,内容区自动吸收顶栏+标签条高度
+   ============================================================ */
+body.full-height-layout #page-wrapper {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: var(--bg-page) !important;
+}
+#content-main {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: auto !important;
+    overflow: hidden;
+}
+#content-main .J_iframe { height: 100% !important; width: 100% !important; border: none; }
+
+/* 页脚隐藏 */
+.footer { display: none !important; }
+
+/* ============================================================
+   响应式
+   ============================================================ */
+@media (max-width: 768px) {
+    .ios-header { height: 72px; flex-basis: 72px; }
+    .ios-header-title { font-size: 15px; }
+    .ios-header-subtitle { font-size: 11px; }
+    .r-btn-1, .r-btn-2, .r-btn-3, .r-btn-4 { font-size: 12px !important; padding: 0 6px !important; }
+}
+
+/* ============================================================
+   移除顶部标签栏(整条隐藏,标签机制后台保留) + 侧边栏底部功能
+   ============================================================ */
+.content-tabs { display: none !important; }
+
+/* 侧边栏 flex 布局,功能按钮贴底 */
+body.fixed-sidebar .navbar-static-side { display: flex; flex-direction: column; }
+#side-menu { flex: 1; }
+
+.sidebar-footer {
+    margin-top: auto;
+    padding: 8px 0 16px;
+    border-top: 1px solid var(--border-light);
+}
+.sidebar-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 8px 16px;
+    padding: 11px;
+    background: var(--bg-hover);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-body);
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.sidebar-action-btn:hover { background: var(--border-light); text-decoration: none; }
+.sidebar-action-btn i { margin-right: 8px; font-size: 16px; color: var(--primary); }
+.sidebar-action-btn.logout { color: var(--danger); border-color: rgba(255, 59, 48, 0.25); }
+.sidebar-action-btn.logout i { color: var(--danger); }
+
+/* 主题切换(已隐藏,保留样式备用) */
+
+/* ============================================================
+   侧边栏优化:中和 style.css 深色菜单背景(黑色阴影区块)、
+   修复下拉子菜单宽度与展开箭头位置
+   ============================================================ */
+/* 1) 中和所有 li 的深色背景(style.css `.nav > li.active` = #293846) */
+#side-menu > li,
+#side-menu .nav-second-level li { background: transparent !important; }
+#side-menu > li.active,
+#side-menu .nav-second-level li.active { background: transparent !important; }
+
+/* 2) 子菜单宽度铺满抽屉(style.css 锁死 178px),取消 max-height 避免出现子菜单自身滚动条 */
+#side-menu .nav-second-level { width: 100% !important; max-height: none !important; }
+
+/* 3) 展开箭头:去掉 float,靠 margin-left:auto 贴右 */
+#side-menu > li > a .fa.arrow { float: none; margin-left: auto !important; }
+
+/* 4) 激活的子菜单项:实心浅蓝底+蓝字(既无深色块,也不至于白字白底看不清) */
+#side-menu .nav-second-level li.active > a { background: #e8f1ff !important; color: var(--primary) !important; }
+#side-menu > li.active > a { background: #e8f1ff !important; color: var(--primary) !important; }
+
+/* ============================================================
+   兜底:清除侧边栏一切可能产生深色的样式(背景/阴影/伪元素/hover)
+   ============================================================ */
+.navbar-static-side,
+.navbar-static-side * { box-shadow: none !important; }
+.navbar-static-side { box-shadow: 2px 0 6px rgba(0, 0, 0, 0.08) !important; }
+.navbar-static-side li,
+.navbar-static-side li.active,
+.navbar-static-side .nav-second-level li,
+.navbar-static-side .nav-second-level li.active { background-color: transparent !important; background-image: none !important; }
+.navbar-static-side .nav-second-level { background-color: #ffffff !important; background-image: none !important; }
+.navbar-static-side a:hover { background-color: rgba(0, 0, 0, 0.05) !important; }
+.navbar-static-side *::before,
+.navbar-static-side *::after { background-image: none !important; }
+
+/* ============================================================
+   点击后的 :focus/:active 深色背景修复
+   (style.css `.navbar-default .nav > li > a:focus` = #293846,
+    焦点保持到点击别处,导致"点击后挪开鼠标仍是深色")
+   ============================================================ */
+.navbar-static-side a:focus,
+.navbar-static-side a:active { background-color: transparent !important; color: var(--text-body) !important; outline: none !important; box-shadow: none !important; }
+#side-menu .nav-second-level li a:focus { background-color: transparent !important; color: var(--text-secondary) !important; }
+/* 激活项即使处于 focus 也保持浅蓝高亮 */
+#side-menu > li.active > a:focus,
+#side-menu .nav-second-level li.active > a:focus { background-color: #e8f1ff !important; color: var(--primary) !important; }
+
+

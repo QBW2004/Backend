@@ -6,6 +6,7 @@
 }
 
 @section include_res{
+    <link href="@Url.Content("~/Content/css/ios-page.css?v=" + ConfigHelper.Get("WebVer"))" rel="stylesheet" />
     <script>
         $(function () {
             // 加载指定的模块
@@ -54,21 +55,42 @@
                     idField: 'ID',
                     rowStyler: agencyRowStyler,
                     onBeforeLoad: setGridSize,
-                    onLoadSuccess: function () {
-                        $('#tb_AgencyInfo').datagrid('getPanel').addClass('agency-info-grid');
-                        onLoaded();
-                        setTimeout(function () {
-                            autoFitAgencyColumns();
-                            bindAgencyRowNumberToggle();
-                            updateAgencyRowNumbers();
-                        }, 0);
-                    }
+                onLoadSuccess: function () {
+                    $('#tb_AgencyInfo').datagrid('getPanel').addClass('agency-info-grid');
+                    onLoaded();
+                    renderAgencyStats(); // iOS 代理统计条
+                    setTimeout(function () {
+                        autoFitAgencyColumns();
+                        bindAgencyRowNumberToggle();
+                        updateAgencyRowNumbers();
+                    }, 0);
+                }
                 });
             } else {
                 $('#tb_AgencyInfo').datagrid('load', para);
             }
         }
         //格式化
+        // iOS 代理统计条(按当前页 rows 计算:总数/总余额/总充值/总盈利)
+        function renderAgencyStats() {
+            var grid = $('#tb_AgencyInfo');
+            if (!grid.data('datagrid')) { return; }
+            var rows = grid.datagrid('getRows') || [];
+            var total = rows.length, coins = 0, recharge = 0, profit = 0;
+            for (var i = 0; i < rows.length; i++) {
+                var r = rows[i];
+                if (!r) { continue; }
+                coins += Number(r.COINS || 0);
+                recharge += Number(r.RECHARGE || 0);
+                profit += Number(r.Profit || 0);
+            }
+            var fmt = function (v) { return (v || 0).toLocaleString(); };
+            $('#stTotal').text(fmt(total));
+            $('#stCoins').text(fmt(coins));
+            $('#stRecharge').text(fmt(recharge));
+            var $p = $('#stProfit').text(fmt(profit)).removeClass('positive negative');
+            if (profit > 0) { $p.addClass('positive'); } else if (profit < 0) { $p.addClass('negative'); }
+        }
         function fmtRechargeSwitch(value, rowData, rowIndex) {
             if (value == 1)
                 return '<span class="agency-state-on">开</span>';
@@ -281,7 +303,7 @@
         }
 
         function quickQuery(account) {
-            $('#txtS_Agency').textbox('setValue', account);
+            $('#txtS_Agency').val(account);
             queryData();
         }
 
@@ -575,32 +597,32 @@
 }
 
 @*查询条件*@
-<form id="frm_srch">
-    <table width="100%" border="0" cellpadding="0" cellspacing="0" class="titleQueBg" style="height:40px;">
-        <tr>
-            <td>
-                <div class="left Lpd5">
-                    代理账号：
-                    <input type="text" class="easyui-textbox" name="ID" />
-                </div>
-                <div class="left Lpd5">
-                    所属代理：
-                    <input type="text" class="easyui-textbox" name="Agency" id="txtS_Agency" />
-                </div>
-                <div class="left Lmg10">
-                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="queryData();" data-options="plain:true,iconCls:'icon-search'">查找</a>
-                    @if ((bool)(ViewBag.CanCreateChildAgent ?? false))
-                    {
-                        <a href="javascript:void(0);" class="easyui-linkbutton" onclick="showAddWin();" data-options="plain:true,iconCls:'icon-add'">添加代理</a>
-                    }
-                </div>
-            </td>
-        </tr>
-    </table>
-</form>
+<div class="container">
+    <!-- 代理统计条(renderAgencyStats 填充) -->
+    <div class="stats-container">
+        <div class="stats-title">代理统计</div>
+        <div class="stats-info" id="statsInfo">
+            <div class="stats-item"><span class="stats-label">代理总数:</span><span class="stats-value" id="stTotal">0</span></div>
+            <div class="stats-item"><span class="stats-label">总余额:</span><span class="stats-value diamond" id="stCoins">0</span></div>
+            <div class="stats-item"><span class="stats-label">总充值:</span><span class="stats-value" id="stRecharge">0</span></div>
+            <div class="stats-item"><span class="stats-label">总盈利:</span><span class="stats-value" id="stProfit">0</span></div>
+        </div>
+    </div>
+
+    <form id="frm_srch" class="filter-row">
+        <input type="text" class="ios-input" name="ID" placeholder="代理账号" style="flex:1;min-width:110px;" />
+        <input type="text" class="ios-input" name="Agency" id="txtS_Agency" placeholder="所属代理" style="flex:1;min-width:110px;" />
+        <button type="button" class="ios-btn secondary" onclick="queryData();">查找</button>
+        @if ((bool)(ViewBag.CanCreateChildAgent ?? false))
+        {
+            <button type="button" class="ios-btn primary" onclick="showAddWin();">添加代理</button>
+        }
+    </form>
 
 @*查询代理的信息*@
-<table id="tb_AgencyInfo">
+<div class="table-container">
+    <div class="table-scroll">
+    <table id="tb_AgencyInfo">
     <thead>
         <tr>
             <th field="ID" width="85" formatter="fmtID">代理账号</th>
@@ -632,7 +654,11 @@
             <th field="OPT" width="520" formatter="fmtOpt">操作</th>
         </tr>
     </thead>
-</table>
+    </table>
+    </div>
+    </div>
+    <div class="scroll-hint">左右滑动查看更多数据</div>
+</div>
 
 @*修改窗口*@
 <div id="chgWin" class="hide">

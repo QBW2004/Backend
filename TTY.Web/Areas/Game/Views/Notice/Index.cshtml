@@ -5,6 +5,7 @@
 }
 
 @section include_res{
+    <link href="@Url.Content("~/Content/css/ios-page.css?v=" + ConfigHelper.Get("WebVer"))" rel="stylesheet" />
     <script>
         $(function () {
             // 加载指定的模块
@@ -48,7 +49,10 @@
                     pageList: [10, 20, 50],
                     idField: 'ID',
                     onBeforeLoad: setGridSize,
-                    onLoadSuccess: onLoaded
+                    onLoadSuccess: function () {
+                        onLoaded();
+                        renderNoticeStats(); // iOS 统计条
+                    }
                 });
             } else {
                 $('#tb_Notice').datagrid('load', para);
@@ -60,6 +64,14 @@
             arr.push('<a href="javascript:void(0)" class="blue Lpd5" onclick="updateNotice(\'' + rowData.ID + '\')">修改</a>');
             arr.push('<a href="javascript:void(0)" class="blue Lpd5" onclick="delNotic(\'' + rowData.ID + '\')">删除</a>');
             return arr.join('  ');
+        }
+
+        // iOS 统计条(公告总数)
+        function renderNoticeStats() {
+            var grid = $('#tb_Notice');
+            if (!grid.data('datagrid')) { return; }
+            var rows = grid.datagrid('getRows') || [];
+            $('#stTotal').text(rows.length);
         }
 
         function delNotic(id) {
@@ -131,27 +143,25 @@
 }
 
 @*查询条件*@
-<form id="frm_srch">
-    <table width="100%" border="0" cellpadding="0" cellspacing="0" class="titleQueBg" style="height:40px;">
-        <tr>
-            <td>
+<div class="container">
+    <!-- 公告统计条 -->
+    <div class="stats-container">
+        <div class="stats-title">公告列表</div>
+        <div class="stats-info">
+            <div class="stats-item"><span class="stats-label">公告总数:</span><span class="stats-value" id="stTotal">0</span></div>
+        </div>
+    </div>
 
-                <div class="left Lpd5">
-                    标题
-                    <input type="text" class="easyui-textbox" name="TITLE" />
-                </div>
-
-                <div class="left Lmg10">
-                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="queryData();" data-options="plain:true,iconCls:'icon-search'">查找</a>
-                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="showAddNotice();" data-options="plain:true,iconCls:'icon-add'">添加公告</a>
-                </div>
-            </td>
-        </tr>
-    </table>
-</form>
+    <form id="frm_srch" class="filter-row">
+        <input type="text" class="ios-input" name="TITLE" placeholder="标题" style="flex:1;min-width:120px;" />
+        <button type="button" class="ios-btn secondary" onclick="queryData();">查找</button>
+        <button type="button" class="ios-btn primary" onclick="showAddNotice();">添加公告</button>
+    </form>
 
 @*查询的信息*@
-<table id="tb_Notice">
+<div class="table-container">
+    <div class="table-scroll">
+    <table id="tb_Notice">
     <thead>
         <tr>
             <th field="ID" width="110">ID</th>
@@ -161,7 +171,11 @@
 
         </tr>
     </thead>
-</table>
+    </table>
+    </div>
+    </div>
+    <div class="scroll-hint">左右滑动查看更多数据</div>
+</div>
 
 
 @*添加窗口*@

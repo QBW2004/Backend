@@ -70,6 +70,7 @@
         }
     </style>
     @Styles.Render("~/res/frame-css")
+    <link href="@Url.Content("~/Content/css/ios-frame.css?v=" + ConfigHelper.Get("WebVer"))" rel="stylesheet" />
 </head>
 <body class="fixed-sidebar full-height-layout gray-bg">
     <!-- 缩放滑块（固定在 wrapper 外部，避免被缩放影响） -->
@@ -80,6 +81,9 @@
     </div>
 
     <div id="wrapper">
+        <!-- 抽屉遮罩:必须放在 #wrapper 内,否则 #wrapper 的 transform 层叠上下文会把侧边栏(z-index 1200)
+             隔离在遮罩(1100)之下,导致点菜单被遮罩拦截 -->
+        <div id="sidebarOverlay"></div>
         <!--左侧导航开始-->
         <nav class="navbar-default navbar-static-side" role="navigation">
             <div class="nav-header">
@@ -217,10 +221,31 @@
 
             </ul>
 
+            <!-- 侧边栏底部功能按钮(替代原顶部标签栏右侧按钮) -->
+            <div class="sidebar-footer">
+                <a href="@Url.Action("Home","Mgr")" data-id="0" class="sidebar-action-btn menu-item" title="返回首页"><i class="fa fa-home"></i>返回首页</a>
+                <a href="@Url.Action("ResetPwd","Login")" class="sidebar-action-btn menu-item" title="修改密码"><i class="fa fa-lock"></i>修改密码</a>
+                <a href="@Url.Action("LoginOut","Login")" class="sidebar-action-btn logout" title="退出系统"><i class="fa fa-sign-out"></i>退出系统</a>
+            </div>
+
         </nav>
         <!--左侧导航结束-->
         <!--右侧部分开始-->
         <div id="page-wrapper" class="gray-bg dashbard-1">
+
+            <!-- iOS 蓝色顶栏 -->
+            <div class="ios-header">
+                <div class="ios-header-inner">
+                    <button type="button" class="ios-header-btn" id="sidebarToggle" title="菜单"><i class="fa fa-bars"></i></button>
+                    <div class="ios-header-center">
+                        <div class="ios-header-title" id="appTitle">管理后台</div>
+                        <div class="ios-header-subtitle" id="appSubtitle">@(loginUser?.Accounts)</div>
+                    </div>
+                    <div class="ios-header-actions">
+                        <button type="button" class="ios-header-btn" id="btnRefreshTab" title="刷新当前页"><i class="fa fa-refresh"></i></button>
+                    </div>
+                </div>
+            </div>
 
             <div class="row content-tabs">
                 <button class="roll-nav roll-left J_tabLeft">
@@ -238,31 +263,9 @@
                 <!-- 右侧操作按钮开始 -->
                 <a href="@Url.Action("Home","Mgr")" data-id="0" class="roll-nav menu-item r-btn-1"><i class="fa fa fa-home"></i>&nbsp;返回首页</a>
                 <a href="@Url.Action("ResetPwd","Login")" class="roll-nav menu-item r-btn-2"><i class="fa fa fa-lock"></i>&nbsp;修改密码</a>
-                <a href="javascript:void(0);" class="roll-nav dropdown r-btn-3" id="btn-set-skin" data-toggle="dropdown" aria-expanded="false"><i class="fa fa fa-tasks"></i>&nbsp;切换主题</a>
                 <a href="@Url.Action("LoginOut","Login")" class="roll-nav menu-item r-btn-4"><i class="fa fa fa-sign-out"></i>&nbsp;退出系统</a>
-                @*<a href="javascript:void(0);" onclick="CHEN()" class="roll-nav menu-item r-btn-4"><i class="fa fa fa-sign-out"></i>&nbsp;切换英文</a>*@
+                <!-- 切换主题已移至侧边栏底部(见 .sidebar-footer 的 #skin-list) -->
                 <!-- 右侧操作按钮结束 -->
-
-                <!--右侧边栏开始-->
-                <div class="dropdown-menu animated flipInY skin-box">
-                    <div class="panel panel-primary">
-                        <div class="panel-heading"><h3 class="fa fa-gear" style="font-weight: 600;">主题设置</h3></div>
-                        <div class="panel-body" style="padding:2px !important;">
-                            <div class="skin-setttings" id="skin-list">
-                                <div class="setings-item default-skin nb" data-skin="">
-                                    默认皮肤
-                                </div>
-                                <div class="setings-item blue-skin nb" data-skin="skin-1">
-                                    蓝色主题
-                                </div>
-                                <div class="setings-item yellow-skin nb" data-skin="skin-3">
-                                    黄色主题
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <!--右侧边栏结束-->
 
             </div>
             <!--内容开始-->
@@ -470,6 +473,42 @@
                 });
             }
         })();
+    </script>
+
+    <script>
+        // ========== iOS 抽屉 / 顶栏 ==========
+        $(function () {
+            var $body = $('body');
+            // 汉堡按钮开合抽屉
+            $('#sidebarToggle').on('click', function () {
+                $body.toggleClass('ios-sidebar-open');
+            });
+            // 遮罩点击关闭抽屉
+            $('#sidebarOverlay').on('click', function () {
+                $body.removeClass('ios-sidebar-open');
+            });
+            // 点击菜单项后收起抽屉
+            $(document).on('click', '.menu-item', function () {
+                $body.removeClass('ios-sidebar-open');
+            });
+            // 顶栏刷新按钮:刷新当前可见的 iframe
+            $('#btnRefreshTab').on('click', function () {
+                var f = $('.J_iframe:visible').get(0);
+                if (f) { try { f.contentWindow.location.reload(true); } catch (e) { } }
+            });
+            // 顶栏标题随激活标签同步
+            var box = document.querySelector('.page-tabs-content');
+            function syncTitle() {
+                var el = box ? box.querySelector('.menu-tab.active') : null;
+                var title = el ? el.textContent.replace(/[\s\u00d7\u2715]+$/, '').trim() : '管理后台';
+                var t = document.getElementById('appTitle');
+                if (t) t.textContent = title || '管理后台';
+            }
+            if (box) {
+                new MutationObserver(syncTitle).observe(box, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+            }
+            syncTitle();
+        });
     </script>
 </body>
 </html>

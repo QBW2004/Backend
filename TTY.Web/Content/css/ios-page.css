@@ -1,0 +1,392 @@
+/* ============================================================
+   内容页 iOS 化 (参照 178 附件 huiyuanyingkui 页)
+   由各页面 include_res 引入;覆盖 _ContentLayout / layout.css
+   ============================================================ */
+:root {
+    --primary: #007aff;
+    --primary-dark: #0056b3;
+    --primary-light: rgba(0, 122, 255, 0.1);
+    --success: #34c759;
+    --success-light: rgba(52, 199, 89, 0.1);
+    --danger: #ff3b30;
+    --danger-light: rgba(255, 59, 48, 0.1);
+    --warning: #ff9500;
+    --text-primary: #1d1d1f;
+    --text-body: #333;
+    --text-secondary: #666;
+    --text-tertiary: #86868b;
+    --text-disabled: #999;
+    --bg-page: #f5f7fa;
+    --bg-soft: #f8f9fa;
+    --bg-hover: #f5f5f7;
+    --border-light: #eaeaea;
+    --border: #e5e5e5;
+    --r-md: 6px;
+    --r-lg: 8px;
+    --r-xl: 12px;
+    --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.1);
+    --shadow-modal: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+html, body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+    background-color: var(--bg-page) !important;
+}
+body {
+    padding: 0 !important;
+    color: var(--text-body);
+    font-size: 14px !important;
+}
+
+/* 隐藏框架页面自带的 .title-map 面包屑(顶栏已显示页面标题) */
+.title-map { display: none !important; }
+
+/* 容器:手机风 600px 居中 */
+.container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 16px;
+    box-sizing: border-box;
+}
+
+/* ============================================================
+   统计卡(6 个,3 列网格)
+   ============================================================ */
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+.stat-box {
+    background: #fff;
+    border-radius: 8px;
+    padding: 12px 8px;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+.stat-box .stat-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+.stat-box .stat-value {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+}
+.stat-value.positive { color: var(--success); }
+.stat-value.negative { color: var(--danger); }
+
+/* ============================================================
+   标题行 / 筛选行
+   ============================================================ */
+.page-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+.page-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+.filter-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+/* iOS 控件 */
+.ios-select, .ios-input {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    background: #fff;
+    color: #333;
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 36px;
+    box-sizing: border-box;
+}
+.ios-select:focus, .ios-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.1);
+}
+.ios-input::placeholder { color: var(--text-disabled); }
+select.ios-select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 14px;
+    padding-right: 30px;
+}
+
+.ios-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    height: 36px;
+    white-space: nowrap;
+    box-sizing: border-box;
+}
+.ios-btn:active { transform: scale(0.98); }
+.ios-btn.primary { background: var(--primary); color: #fff; }
+.ios-btn.primary:hover { background: var(--primary-dark); }
+.ios-btn.secondary { background: var(--bg-hover); color: var(--primary); border: 1px solid var(--border); }
+.ios-btn.secondary:hover { background: var(--border-light); }
+.ios-btn.danger { background: var(--danger); color: #fff; }
+.ios-btn.danger:hover { background: #e63028; }
+.ios-btn.danger-outline { background: var(--danger-light); color: var(--danger); border: 1px solid rgba(255, 59, 48, 0.2); }
+
+/* ============================================================
+   白底表格卡
+   ============================================================ */
+.table-container {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+    margin-bottom: 16px;
+}
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+table.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    min-width: 760px;
+}
+table.data-table th, table.data-table td {
+    padding: 12px 8px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-light);
+    white-space: nowrap;
+}
+table.data-table th {
+    background: var(--bg-soft);
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 13px;
+}
+table.data-table td { color: var(--text-body); }
+table.data-table tr:last-child td { border-bottom: none; }
+table.data-table tr:hover td { background: var(--bg-hover); }
+
+.amount { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-weight: 500; }
+.positive { color: var(--success); }
+.negative { color: var(--danger); }
+
+/* 状态标签 */
+.tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+}
+.tag.ok { background: var(--success-light); color: var(--success); }
+.tag.bad { background: var(--danger-light); color: var(--danger); }
+
+/* 表格内操作按钮 */
+.row-btn {
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: filter 0.2s;
+}
+.row-btn:hover { filter: brightness(0.95); }
+.row-btn.edit { background: var(--primary-light); color: var(--primary); border: 1px solid rgba(0, 122, 255, 0.2); }
+.row-btn.del { background: var(--danger-light); color: var(--danger); border: 1px solid rgba(255, 59, 48, 0.2); }
+
+/* 空状态 */
+.no-data { text-align: center; color: var(--text-disabled); font-size: 14px; padding: 40px 16px; }
+
+/* 底部提示 */
+.scroll-hint {
+    text-align: center;
+    color: var(--text-tertiary);
+    font-size: 12px;
+    padding: 8px;
+}
+
+/* ============================================================
+   iOS 弹窗
+   ============================================================ */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    padding: 16px;
+}
+.modal-overlay.show { display: flex; }
+.modal-card {
+    background: #fff;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 340px;
+    overflow: hidden;
+    box-shadow: var(--shadow-modal);
+    animation: modalIn 0.3s ease;
+}
+@keyframes modalIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.modal-head {
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+    text-align: center;
+}
+.modal-title { font-size: 17px; font-weight: 600; color: var(--text-primary); }
+.modal-body { padding: 16px; }
+.modal-body.center { text-align: center; padding: 24px 16px 16px; }
+.modal-message { font-size: 14px; color: var(--text-body); margin-top: 8px; }
+.modal-foot {
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 10px;
+}
+.modal-foot .ios-btn { flex: 1; }
+
+/* 表单 */
+.form-group { margin-bottom: 14px; }
+.form-label {
+    display: block;
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    font-weight: 500;
+}
+.form-tip { font-size: 12px; color: var(--text-tertiary); font-weight: 400; margin-left: 4px; }
+.form-control {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    background: #fff;
+    color: #333;
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+    box-sizing: border-box;
+    height: 38px;
+}
+.form-control:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.1);
+}
+select.form-control {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 14px;
+    padding-right: 30px;
+}
+
+/* ============================================================
+   响应式
+   ============================================================ */
+@media (max-width: 380px) {
+    .container { padding: 8px; }
+    .stats-grid { gap: 6px; }
+    .stat-box { padding: 10px 4px; }
+    .stat-box .stat-value { font-size: 16px; }
+}
+
+/* ============================================================
+   easyui datagrid iOS 化(仅本文件引入的页面生效,如 Game/UserInfo)
+   ============================================================ */
+.table-scroll .datagrid-wrap {
+    border-radius: 12px;
+    overflow: hidden;
+    background: #fff;
+    border: none !important;
+}
+.table-scroll .datagrid-header { background: #f8f9fa !important; border-color: #eaeaea; }
+.table-scroll .datagrid-header td,
+.table-scroll .datagrid-header th {
+    background: #f8f9fa !important;
+    color: #666;
+    font-weight: 600;
+    font-size: 13px;
+    border-color: #eaeaea;
+}
+.table-scroll .datagrid-btable td {
+    color: #333;
+    font-size: 13px;
+    border-color: #eaeaea;
+}
+.table-scroll .datagrid-body { border-color: #eaeaea; }
+.table-scroll .datagrid-row-alt { background: #fafbfc; }
+.table-scroll .datagrid-row-over { background: #f5f5f7 !important; }
+.table-scroll .datagrid-row-selected { background: rgba(0, 122, 255, 0.08) !important; }
+.table-scroll .datagrid-pager { background: #fff !important; border-color: #eaeaea; }
+.table-scroll .pagination-page-list,
+.table-scroll .pagination input {
+    border-radius: 6px;
+    border-color: #e5e5e5;
+}
+.table-scroll .l-btn { border-radius: 6px; }
+
+/* ============================================================
+   代理统计条(参照附件 wodedaili 页 .stats-container)
+   ============================================================ */
+.stats-container {
+    background: #fff;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow-card);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+.stats-title { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+.stats-info { display: flex; gap: 16px; flex-wrap: wrap; }
+.stats-item { display: flex; align-items: center; gap: 4px; font-size: 14px; }
+.stats-label { color: var(--text-secondary); }
+.stats-value { font-weight: 600; color: var(--text-primary); }
+.stats-value.diamond { color: var(--primary); }
+.stats-value.pool { color: var(--warning); }
+
+/* ============================================================
+   独立表单卡(修改密码等页面)
+   ============================================================ */
+.ios-form-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: var(--shadow-card);
+    max-width: 360px;
+    margin: 32px auto;
+}
+.ios-form-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    text-align: center;
+    margin-bottom: 20px;
+}

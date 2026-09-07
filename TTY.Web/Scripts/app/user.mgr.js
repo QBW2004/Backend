@@ -1,193 +1,208 @@
-﻿
+﻿/* ============================================================
+   用户管理(iOS 风格版)
+   依赖 common.js 的 request / showToast;不使用 easyui。
+   接口:GetRoleList / GetUserList / AddUser / EditUser / DelUser
+   ============================================================ */
 $(function () {
-    // 加载指定的模块
-    easyloader.load(['textbox', 'linkbutton', 'combotree', 'datagrid'], function () {
-        //适应窗口大小变化
-        $(window).resize(function () {
-            if ($('body').data('grid-init')) {
-                setGridSize();
+    var roleList = [];      // 平铺角色 [{id,text}]
+    var users = [];         // 当前用户列表(GetUserList rows)
+    var editingUserId = 0;  // 0=新增, >0=编辑
+    var deleteUserId = 0;
+
+    // HTML 转义,防注入
+    function esc(s) {
+        return String(s == null ? '' : s)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+    // 统一提示(成功/失败)
+    function notify(data) {
+        var ok = data && data.code == 1;
+        showToast(ok ? ((data && data.content) || '操作成功') : ((data && (data.msg || data.content)) || '操作失败'), ok ? 'success' : 'error');
+        return ok;
+    }
+
+    // ---------- 加载角色(树 -> 平铺) ----------
+    function loadRoles(fn) {
+        request('/Mgr/GetRoleList', {}, function (data) {
+            roleList = [];
+            if (data && data.children) {
+                data.children.forEach(function (group) {
+                    // 分组本身也是可选角色(如"系统管理员")
+                    if (group && group.id != null && group.text) {
+                        roleList.push({ id: group.id, text: group.text });
+                    }
+                    (group.children || []).forEach(function (leaf) {
+                        if (leaf && leaf.id != null && leaf.text) {
+                            roleList.push({ id: leaf.id, text: leaf.text });
+                        }
+                    });
+                });
+            }
+            if (typeof fn === 'function') fn();
+        });
+    }
+
+    // ---------- 渲染两个角色下拉 ----------
+    function renderRoleSelects() {
+        var opts = roleList.map(function (r) {
+            return '<option value="' + r.id + '">' + esc(r.text) + '</option>';
+        }).join('');
+        $('#selRole').html('<option value="0">全部角色</option>' + opts);
+        $('#fRoleID').html(opts);
+    }
+
+    // ---------- 加载用户 ----------
+    function loadUsers() {
+        var para = {
+            RoleID: parseInt($('#selRole').val() || '0', 10),
+            usrNameOrAccounts: $.trim($('#txtUsrNameOrAccounts').val() || '')
+        };
+        request('/Mgr/GetUserList', para, function (data) {
+            if (data && data.code == -1) return; // 超时已由 request 处理
+            users = (data && data.rows) ? data.rows : [];
+            renderStats();
+            renderTable();
+        });
+    }
+
+    // ---------- 统计卡 ----------
+    function renderStats() {
+        var total = users.length;
+        var normal = users.filter(function (u) { return u.IsDel == 0; }).length;
+        var disabled = total - normal;
+        var admin = users.filter(function (u) { return String(u.Roles).split(',').indexOf('1') >= 0; }).length;
+        var other = total - admin;
+        var defs = [
+            { label: '用户总数', value: total, cls: '' },
+            { label: '正常用户', value: normal, cls: '' },
+            { label: '禁用用户', value: disabled, cls: disabled > 0 ? 'negative' : '' },
+            { label: '角色数', value: roleList.length, cls: '' },
+            { label: '管理员', value: admin, cls: '' },
+            { label: '其他角色', value: other, cls: '' }
+        ];
+        $('#statsGrid').html(defs.map(function (s) {
+            return '<div class="stat-box"><div class="stat-label">' + s.label + '</div>' +
+                '<div class="stat-value ' + s.cls + '">' + s.value + '</div></div>';
+        }).join(''));
+    }
+
+    // ---------- 数据表格 ----------
+    function renderTable() {
+        if (!users.length) {
+            $('#tbUsersBody').html('<tr><td colspan="7" class="no-data">暂无数据</td></tr>');
+            return;
+        }
+        $('#tbUsersBody').html(users.map(function (u, i) {
+            var status = u.IsDel == 1
+                ? '<span class="tag bad">禁用</span>'
+                : '<span class="tag ok">正常</span>';
+            var opt = '';
+            if (u.UserID != 1) { // 系统管理员账号不允许编辑/删除(沿用原逻辑)
+                opt = '<button type="button" class="row-btn edit" data-id="' + u.UserID + '" onclick="openEdit(this)">编辑</button> ' +
+                      '<button type="button" class="row-btn del" data-id="' + u.UserID + '" onclick="askDelete(this)">删除</button>';
+            }
+            return '<tr>'
+                + '<td>' + (u.RowIndex || (i + 1)) + '</td>'
+                + '<td>' + esc(u.RoleName || '') + '</td>'
+                + '<td class="amount">' + esc(u.Accounts || '') + '</td>'
+                + '<td>' + esc(u.UserName || '') + '</td>'
+                + '<td>' + status + '</td>'
+                + '<td>' + esc(u.Remark || '') + '</td>'
+                + '<td>' + opt + '</td>'
+                + '</tr>';
+        }).join(''));
+    }
+
+    // ---------- 新增 / 编辑弹窗 ----------
+    window.openAdd = function () {
+        editingUserId = 0;
+        $('#userModalTitle').text('新增用户');
+        $('#pwdTip').hide();
+        $('#fUName').val('');
+        $('#fUAccounts').val('');
+        $('#fUPwd').val('');
+        $('#fRemark').val('');
+        if (roleList.length) $('#fRoleID').val(roleList[0].id);
+        $('#userModal').addClass('show');
+        $('#fUName').focus();
+    };
+
+    window.openEdit = function (btn) {
+        var id = parseInt($(btn).attr('data-id'), 10);
+        var u = users.filter(function (x) { return x.UserID == id; })[0];
+        if (!u) return;
+        editingUserId = id;
+        $('#userModalTitle').text('编辑用户');
+        $('#pwdTip').show();
+        $('#fUName').val(u.UserName || '');
+        $('#fUAccounts').val(u.Accounts || '');
+        $('#fUPwd').val('');
+        $('#fRemark').val(u.Remark || '');
+        if (u.Roles) {
+            var firstRole = String(u.Roles).split(',')[0];
+            $('#fRoleID').val(firstRole);
+        }
+        $('#userModal').addClass('show');
+        $('#fUName').focus();
+    };
+
+    window.closeUserModal = function () { $('#userModal').removeClass('show'); };
+
+    // ---------- 保存 ----------
+    function saveUser() {
+        var para = {
+            RoleID: parseInt($('#fRoleID').val() || '0', 10),
+            UName: $.trim($('#fUName').val()),
+            UAccounts: $.trim($('#fUAccounts').val()),
+            UPwd: $('#fUPwd').val(),
+            Remark: $.trim($('#fRemark').val()),
+            UserID: editingUserId
+        };
+        if (!para.RoleID) { showToast('请选择角色', 'warning'); return; }
+        if (!para.UName) { showToast('请填写用户名', 'warning'); return; }
+        if (!para.UAccounts) { showToast('请填写账号', 'warning'); return; }
+        var url = editingUserId > 0 ? '/Mgr/EditUser' : '/Mgr/AddUser';
+        request(url, para, function (data) {
+            if (notify(data)) {
+                closeUserModal();
+                loadUsers();
             }
         });
-        //初始化插件
-        pluginInit();
-        //绑定查询用角色下拉
-        bindQerySelRole();
-        binSelRoles();
-        //初始化查询
-        queryData();
+    }
+
+    // ---------- 删除 ----------
+    window.askDelete = function (btn) {
+        deleteUserId = parseInt($(btn).attr('data-id'), 10);
+        $('#delModal').addClass('show');
+    };
+    function closeDelModal() { $('#delModal').removeClass('show'); }
+    function doDelete() {
+        closeDelModal();
+        request('/Mgr/DelUser', { UserID: deleteUserId }, function (data) {
+            if (notify(data)) {
+                loadUsers();
+            }
+        });
+    }
+
+    // ---------- 事件绑定 ----------
+    $('#btnSearch').click(loadUsers);
+    $('#selRole').change(loadUsers);
+    $('#txtUsrNameOrAccounts').keydown(function (e) { if (e.keyCode === 13) loadUsers(); });
+    $('#btnAdd').click(openAdd);
+    $('#btnModalSave').click(saveUser);
+    $('#btnModalCancel').click(closeUserModal);
+    $('#btnDelOk').click(doDelete);
+    $('#btnDelCancel').click(closeDelModal);
+    // 点击遮罩空白处关闭
+    $('.modal-overlay').click(function (e) {
+        if (e.target === this) $(this).removeClass('show');
+    });
+
+    // ---------- 初始化 ----------
+    loadRoles(function () {
+        renderRoleSelects();
+        loadUsers();
     });
 });
-
-//重置表格大小
-function setGridSize() {
-    var w = $(window).width() - 8;
-    var h = $(window).height() - 77;
-    resizeGrid('tb_Users', 'auto', h);
-}
-var selectRoleId = 0;
-//查询数据
-function queryData() {
-    var para = $("#frm_srch").serializeObject();
-    if ($('#tree_roles').hasClass('tree')) {
-        var node = $('#tree_roles').tree('getSelected');
-        if (node != null) {
-            para.RoleID = node.id;
-            selectRoleId = node.id;
-        }
-    }
-    bindGridData(para);
-}
-//绑定表格数据
-function bindGridData(para) {
-    if (!$('body').data('grid-init')) {
-        $('#tb_Users').datagrid({
-            url: "/Mgr/GetUserList",
-            queryParams: $.extend({}, para),
-            pagination: true,
-            fitColumns: true,
-            singleSelect: true,
-            height: 768,
-            pageSize: 1000,
-            pageList: [1000],
-            idField: 'UserID',
-            onBeforeLoad: setGridSize,
-            onLoadSuccess: onLoaded
-        });
-        //隐藏操作列（需要时去掉此行即可恢复显示）
-        $('#tb_Users').datagrid('hideColumn', 'UserID');
-    } else {
-        $('#tb_Users').datagrid('load', para);
-    }
-}
-// 格式化
-function formateStatus(value, rowData, rowIndex) {
-    if (value == 1)
-        return '<span class="red">禁用</span>';
-    else
-        return '<span class="green">正常</span>';
-}
-function formateOpt(value, rowData, rowIndex) {
-    var arr = [];
-    if (rowData.UserID != 1) {
-        arr.push('<a href="javascript:void(0)" onclick="showAddUser(' + rowData.UserID + ')">编辑</a>');
-        arr.push('<a class="Lmg10" href="javascript:void(0)" onclick="deleteUser(' + rowData.UserID + ')">删除</a>');
-    }
-    return arr.join('');
-}
-
-//获取角色数据
-function getRolesData(fn) {
-    request('/Mgr/GetRoleList', {}, function (data) {
-        //提示消息
-        showMsg(data);
-        if (data.code)
-            return;
-        if (typeof fn == "function") {
-            fn(data);
-        }
-    });
-}
-//绑定查询条件中角色下拉
-function bindQerySelRole() {
-    getRolesData(function (data) {
-        data.text = '----全部数据----';
-        $('#selRole').combotree('loadData', [data]);
-    });
-}
-//绑定角色下拉列表
-function binSelRoles() {
-    $('#selUserRole').combotree('clear');
-    getRolesData(function (data) {
-        $('#selUserRole').combotree('loadData', data.children);
-    });
-}
-
-//显示用户添加窗口
-function showAddUser(userID) {
-    easyloader.load(['dialog', 'form'], function () {
-        $('#txtUName,#txtUAccounts,#txtUPwd,#txtRemark,#hfUserID').val('');
-
-        if (!$('#addUserWin').hasClass('easyui-dialog')) {
-            $('#addUserWin').dialog({
-                title: '【添加用户】',
-                iconCls: 'icon-user_add',
-                width: 350,
-                height: 350,
-                resizable: false,
-                modal: true
-            });
-        } else {
-            $('#addUserWin').dialog('open');
-        }
-
-        var pWin = $('#addUserWin').closest('.window');
-        $('#trTip1,#trTip2').toggleClass('hide');
-        //传用户ID时为编辑状态
-        if (typeof userID != 'undefined' && parseInt(userID, 10) > 0) {
-            pWin.find('.panel-title').text('【编辑用户】');
-            pWin.find('.panel-icon').removeClass('icon-user_add').addClass('icon-user_edit');
-
-            //编辑用户信息
-            var rowIndex = $('#tb_Users').datagrid('getRowIndex', userID);//id是关键字值
-            var data = $('#tb_Users').datagrid('getData').rows[rowIndex];
-
-            //角色
-            var tr = $('#selUserRole').combotree('tree');
-            var sel_node = tr.tree('find', parseInt(data.Roles, 10));
-            if (sel_node != null) {
-                $('#selUserRole').combotree('setText', sel_node.text).combotree('setValue', sel_node.id);
-            }
-            $('#txtUName').textbox('setValue', data.UserName);
-            $('#txtUAccounts').textbox('setValue', data.Accounts);
-            $('#txtUPwd').textbox('setValue', '');
-            $('#txtRemark').textbox('setValue', data.Remark);
-            $('#hfUserID').val(userID);
-        } else {
-            //角色
-            var treeData = $('#selUserRole').combotree('options').data;
-            if (treeData != null && treeData.length > 0) {
-                var selectData = treeData[0];
-                $('#selUserRole').combotree('setText', selectData.text).combotree('setValue', selectData.id);
-            }
-
-            $('#selUserRole').combotree('setValue', "1");
-            $('#hfUserID').val(0);
-            pWin.find('.panel-title').text('【添加用户】');
-            pWin.find('.panel-icon').removeClass('icon-user_edit').addClass('icon-user_add');
-
-            //添加用户信息
-            $('#txtUPwd').textbox('setValue', randomStr(6));
-        }
-    });
-}
-//保存用户信息
-function SaveUser() {
-    var para = $('#form2').serializeObject();
-
-    var url = '/Mgr/AddUser';
-    if (parseInt(para.UserID, 10) > 0)
-        url = '/Mgr/EditUser';
-
-    request(url, para, function (data) {
-        //提示消息
-        showMsg(data);
-        if (data && data.code == 1) {
-            $('#addUserWin').dialog('close');
-            $('#form2').form('reset');
-            queryData();//重新加载表格数据
-        }
-    });
-}
-
-//删除用户
-function deleteUser(userID) {
-    confirm('确认删除用户？', function () {
-        request('/Mgr/DelUser', { UserID: userID }, function (data) {
-            //提示消息
-            showMsg(data);
-            if (data && data.code == 1) {
-                queryData();//重新加载表格数据
-            }
-        });
-    });
-}
