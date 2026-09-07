@@ -372,6 +372,18 @@ select.form-control {
 .stats-value.diamond { color: var(--primary); }
 .stats-value.pool { color: var(--warning); }
 
+/* 筛选栏内的附加控件组(自动刷新/计数等) */
+.filter-extra {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    flex-wrap: wrap;
+    white-space: nowrap;
+}
+.filter-extra input[type="checkbox"] { width: 15px; height: 15px; vertical-align: middle; margin-right: 2px; }
+
 /* ============================================================
    独立表单卡(修改密码等页面)
    ============================================================ */

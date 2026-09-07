@@ -6,6 +6,7 @@
 }
 
 @section include_res{
+    <link href="@Url.Content("~/Content/css/ios-page.css?v=" + ConfigHelper.Get("WebVer"))" rel="stylesheet" />
     <script>
     var canKickWholeLine = @((loginUser?.UserPriv == 0 || loginUser?.ManageScope == 2).ToString().ToLower());
     var loginAgencyAccount = "@(loginUser?.Accounts)";
@@ -86,12 +87,36 @@
                 attachTotalCtrl(rows, function () {
                     $('#tb_OnlineUsers').datagrid('loadData', { total: rows.length, rows: rows });
                     $('#spCount').text('共 ' + rows.length + ' 人在线');
+                    renderOnlineStats(); // iOS 统计条
                     bindOnlineRowClick();
                 });
             } else {
                 showMsg(data);
             }
         });
+    }
+
+    // iOS 统计条(按当前在线列表计算)
+    function renderOnlineStats() {
+        var grid = $('#tb_OnlineUsers');
+        if (!grid.data('datagrid')) { return; }
+        var rows = grid.datagrid('getRows') || [];
+        var total = rows.length, bet = 0, coins = 0, today = 0, profit = 0;
+        for (var i = 0; i < rows.length; i++) {
+            var r = rows[i];
+            if (!r) { continue; }
+            bet += Number(r.CurBet || 0);
+            coins += Number(r.Coins || 0);
+            today += Number(r.TodayWinLoss || 0);
+            profit += Number(r.Profit || 0);
+        }
+        var fmt = function (v) { return (v || 0).toLocaleString(); };
+        var cls = function (v) { return v > 0 ? 'positive' : (v < 0 ? 'negative' : ''); };
+        $('#stTotal').text(fmt(total));
+        $('#stBet').text(fmt(bet));
+        $('#stCoins').text(fmt(coins));
+        $('#stToday').text(fmt(today)).removeClass('positive negative').addClass(cls(today));
+        $('#stProfit').text(fmt(profit)).removeClass('positive negative').addClass(cls(profit));
     }
 
     @*为在线列表附加总控状态文本（一次批量查询后写入每行的 TotalCtrl 字段）*@
@@ -1108,42 +1133,38 @@
     </style>
 }
 
-<form id="frm_srch">
-    <table width="100%" border="0" cellpadding="0" cellspacing="0" class="titleQueBg" style="height:40px;">
-        <tr>
-            <td>
-                <div class="left Lpd5">
-                    用户账号
-                    <input type="text" class="easyui-textbox" name="srch_ID" />
-                </div>
-                <div class="left Lpd5">
-                    昵称
-                    <input type="text" class="easyui-textbox" name="srch_NAME" />
-                </div>
-                <div class="left Lpd5">
-                    所属代理
-                    <input type="text" class="easyui-textbox" name="srch_Agency" />
-                </div>
-                <div class="left Lmg10">
-                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="queryData();" data-options="plain:true,iconCls:'icon-search'">查找</a>
-                </div>
-                <div class="left Lmg10" style="line-height:32px;">
-                    <label><input type="checkbox" id="chkAutoRefresh" onclick="toggleAutoRefresh();" /> 自动刷新</label>
-                    <select id="selRefreshSec" onchange="toggleAutoRefresh();">
-                        <option value="5">5秒</option>
-                        <option value="10" selected>10秒</option>
-                        <option value="30">30秒</option>
-                    </select>
-                </div>
-                <div class="left Lmg10" style="line-height:32px;color:#666;">
-                    <span id="spCount"></span>
-                </div>
-            </td>
-        </tr>
-    </table>
-</form>
+<div class="container">
+    <!-- 在线统计条(renderOnlineStats 填充) -->
+    <div class="stats-container">
+        <div class="stats-title">在线统计</div>
+        <div class="stats-info">
+            <div class="stats-item"><span class="stats-label">在线:</span><span class="stats-value" id="stTotal">0</span></div>
+            <div class="stats-item"><span class="stats-label">总压分:</span><span class="stats-value" id="stBet">0</span></div>
+            <div class="stats-item"><span class="stats-label">总剩余分:</span><span class="stats-value" id="stCoins">0</span></div>
+            <div class="stats-item"><span class="stats-label">今日盈亏:</span><span class="stats-value" id="stToday">0</span></div>
+            <div class="stats-item"><span class="stats-label">总盈亏:</span><span class="stats-value" id="stProfit">0</span></div>
+        </div>
+    </div>
 
-<table id="tb_OnlineUsers">
+    <form id="frm_srch" class="filter-row">
+        <input type="text" class="ios-input" name="srch_ID" placeholder="用户账号" style="flex:1;min-width:90px;" />
+        <input type="text" class="ios-input" name="srch_NAME" placeholder="昵称" style="flex:1;min-width:80px;" />
+        <input type="text" class="ios-input" name="srch_Agency" placeholder="所属代理" style="flex:1;min-width:80px;" />
+        <button type="button" class="ios-btn secondary" onclick="queryData();">查找</button>
+        <span class="filter-extra">
+            <label><input type="checkbox" id="chkAutoRefresh" onclick="toggleAutoRefresh();" /> 自动刷新</label>
+            <select id="selRefreshSec" class="ios-select" onchange="toggleAutoRefresh();" style="height:28px;padding:2px 24px 2px 8px;font-size:12px;">
+                <option value="5">5秒</option>
+                <option value="10" selected>10秒</option>
+                <option value="30">30秒</option>
+            </select>
+            <span id="spCount" style="color:#666;"></span>
+        </span>
+    </form>
+
+<div class="table-container">
+    <div class="table-scroll">
+    <table id="tb_OnlineUsers">
     <thead>
         <tr>
             <th field="ID" width="95">用户账号</th>
@@ -1160,7 +1181,11 @@
             <th field="TotalCtrl" width="200" formatter="fmtTotalCtrl">控制</th>
         </tr>
     </thead>
-</table>
+    </table>
+    </div>
+    </div>
+    <div class="scroll-hint">左右滑动查看更多数据</div>
+</div>
 
 @*修改密码窗口*@
 <div id="chgWin" class="hide">
