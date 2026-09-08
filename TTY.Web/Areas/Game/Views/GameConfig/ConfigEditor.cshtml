@@ -3,6 +3,7 @@
     ViewBag.RouteMap = "游戏配置";
 }
 @section include_res{
+    <link href="@Url.Content("~/Content/css/ios-page.css?v=" + ConfigHelper.Get("WebVer"))" rel="stylesheet" />
     <style>
         .gc-wrap { padding: 16px; box-sizing: border-box; }
         .gc-tip { display: none; }
@@ -66,12 +67,80 @@
         .gc-para-empty-text { font-size: 13px; color: #9aa4b1; max-width: 380px; margin: 0 auto; line-height: 1.7; }
         .gc-switch-inline { display: flex; align-items: center; height: 36px; gap: 12px; }
         .gc-switch-inline .gc-switch-label { margin-left: 0; }
+        /* ---- iOS 风格统一(与其余后台页一致):字体/圆角/卡片 ---- */
+        .gc-wrap { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        .gc-card { border-radius: 12px; }
+        .gc-input, .gc-select { border-radius: 8px; }
+        .gc-para-empty-icon { color: #007aff; background: rgba(0, 122, 255, 0.08); box-shadow: inset 0 0 0 1px rgba(0, 122, 255, 0.2); }
+
+        /* ---- 布局:与已改好的用户/代理等页面同宽 600px 居中 ---- */
+        .gc-wrap { max-width: 600px; margin: 0 auto; }
+        .gc-right { width: 100%; }
+
+        /* ---- 桌台列表:页内左侧抽屉 ---- */
+        .gc-sidebar {
+            position: fixed; top: 0; left: 0; bottom: 0; width: 280px;
+            background: #fff; z-index: 1200; margin: 0;
+            box-shadow: 2px 0 6px rgba(0, 0, 0, 0.08);
+            transform: translateX(-100%); transition: transform 0.3s ease;
+            display: flex; flex-direction: column;
+        }
+        body.gc-sidebar-open .gc-sidebar { transform: translateX(0); }
+        .gc-sidebar .gc-card-hd { flex: 0 0 auto; padding: 16px; }
+        .gc-sidebar .gc-card-bd { flex: 1 1 auto; overflow-y: auto; min-height: 0; padding: 0; }
+        #gcSidebarOverlay {
+            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.22); z-index: 1100;
+        }
+        body.gc-sidebar-open #gcSidebarOverlay { display: block; }
+        /* 唤出按钮:位于"游戏类型:"左边,与 600px 内容对齐 */
+        .gc-sidebar-toggle {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 36px; height: 36px; border-radius: 8px; border: 1px solid #e5e5e5;
+            background: #f0f0f5; color: #333; cursor: pointer; font-size: 15px; flex-shrink: 0;
+        }
+        .gc-sidebar-toggle:hover { background: #e5e9f0; color: #007aff; }
+
+        /* ---- 主色统一 iOS 蓝 #007aff ---- */
+        .gc-btn-primary { background: #007aff; }
+        .gc-btn-primary:hover { background: #0056b3; }
+        .gc-btn[disabled] { opacity: 0.6; cursor: not-allowed; }
+        .gc-section-title { color: #007aff; border-left-color: #007aff; }
+        .gc-card-hd .fa { color: #007aff; }
+        .gc-tablelist li.active { background: rgba(0, 122, 255, 0.08); color: #007aff; }
+        .gc-input:focus, .gc-select:focus { border-color: #007aff; box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.12); }
+        .gc-switch input:checked + .gc-slider { background: #007aff; }
+        .gc-newbtn { color: #007aff; border-color: rgba(0, 122, 255, 0.3); background: rgba(0, 122, 255, 0.06); }
+        .gc-newbtn:hover { background: #007aff; border-color: #007aff; }
+        .gc-refresh:hover { color: #007aff; }
+        .gc-btn-default:hover { border-color: #007aff; color: #007aff; }
+
+        /* ---- 窄屏响应式:工具栏换行/字段单列 ---- */
+        @@media (max-width: 768px) {
+            .gc-toolbar { flex-wrap: wrap; }
+            .gc-form-row { flex-direction: column; }
+            .gc-wrap { padding: 8px; }
+        }
     </style>
 }
 <div class="gc-wrap">
     <div id="gcEncodingNotice" class="gc-tip" data-encoding="UTF-8-BOM">本视图文件必须保存为 UTF-8 带签名(BOM) 编码，避免中文乱码与路由异常。</div>
 
+    <!-- 桌台列表:页内左侧抽屉 -->
+    <div id="gcSidebarOverlay"></div>
+    <aside class="gc-sidebar" id="gcSidebar">
+        <div class="gc-card-hd">
+            <span><i class="fa fa-th-list"></i>桌台列表</span>
+            <a href="javascript:;" id="gcNewTable" class="gc-newbtn" title="新建桌台"><i class="fa fa-plus"></i>新建桌台</a>
+        </div>
+        <div class="gc-card-bd" style="padding:0;">
+            <ul id="gcTableList" class="gc-tablelist"></ul>
+            <div id="gcTableEmpty" class="gc-empty">请选择上方游戏以加载桌台。</div>
+        </div>
+    </aside>
+
     <div class="gc-toolbar">
+        <button type="button" id="gcSidebarToggle" class="gc-sidebar-toggle" title="桌台列表"><i class="fa fa-bars"></i></button>
         <span class="gc-lbl">游戏类型：</span>
         <select id="gcTypeSel" class="gc-select">
             <option value="-1">请选择类型</option>
@@ -80,19 +149,7 @@
         <select id="gcGameSel" class="gc-select"></select>
     </div>
 
-    <div class="gc-grid">
-        <div class="gc-card gc-left">
-            <div class="gc-card-hd">
-                <span><i class="fa fa-th-list"></i>桌台列表</span>
-                <a href="javascript:;" id="gcNewTable" class="gc-newbtn" title="新建桌台"><i class="fa fa-plus"></i>新建桌台</a>
-            </div>
-            <div class="gc-card-bd" style="padding:0;">
-                <ul id="gcTableList" class="gc-tablelist"></ul>
-                <div id="gcTableEmpty" class="gc-empty">请选择上方游戏以加载桌台。</div>
-            </div>
-        </div>
-
-        <div class="gc-card gc-right">
+    <div class="gc-card gc-right">
             <div class="gc-card-hd">
                 <span><i class="fa fa-sliders"></i>桌台参数</span>
                 <span style="display:flex;align-items:center;gap:6px;">
@@ -527,7 +584,6 @@
                 <button type="button" id="gcSave" class="gc-btn gc-btn-primary">保存并热更新</button>
             </div>
         </div>
-    </div>
 </div>
 
 <script>
@@ -661,6 +717,7 @@
         $('#gcTableList li').removeClass('active');
         $('#gcTableList li[data-idx="' + found + '"]').addClass('active');
         gcFill(GC_TABLES[found]);
+        $('body').removeClass('gc-sidebar-open'); // 选中后自动收起抽屉
     }
 
     // 水果拉霸大转盘 24 面板位：名称按服务端 WheelSurface 映射，v=客户端/服务端写死的倍率(WheelRat，不可改)；
@@ -1454,6 +1511,7 @@
         $('#gcCurTableName').text(src ? '新建桌台（已套用最近桌台参数，拉霸权重使用默认 90% 面板表，填写桌名即可保存）' : '新建桌台（RTP 等高级项保持系统默认，可点“恢复默认”查看默认值）');
         gcSyncSwitch();
         gcUpdateSaveBtn();
+        $('body').removeClass('gc-sidebar-open'); // 新建后收起抽屉
     }
 
     // 牌机/拉霸新桌台默认值（715Web 文档：下注与兑换）；拉霸最小/最大押分只能整数，默认 1
@@ -2112,6 +2170,10 @@
         }
         // 水果拉霸：保存前把每类合计均分到隐藏的 24 面板位输入（后端按 WheelProb0~23 契约落库）
         gcSyncWheelPanels();
+        var $saveBtn = $('#gcSave');
+        if ($saveBtn.data('gc-saving')) { return; } // 防重复提交
+        var saveOrigText = $saveBtn.text();
+        $saveBtn.data('gc-saving', true).prop('disabled', true).text('保存中...');
         var para = $('#gcForm').serializeObject();
         para.__RequestVerificationToken = $('#gcForm [name="__RequestVerificationToken"]').val();
         request(GC_URL.save, para, function (data) {
@@ -2122,6 +2184,7 @@
                     else gcSelectTableById(savedId);
                 });
             }
+            $saveBtn.data('gc-saving', false).prop('disabled', false).text(saveOrigText);
         });
     }
 
@@ -2167,6 +2230,9 @@
                 : '确定将表单恢复为默认值吗？', function () { gcResetForm(); });
         });
         $('#gcSave').on('click', gcSave);
+        // 桌台列表抽屉:唤出按钮 / 遮罩关闭
+        $('#gcSidebarToggle').on('click', function () { $('body').toggleClass('gc-sidebar-open'); });
+        $('#gcSidebarOverlay').on('click', function () { $('body').removeClass('gc-sidebar-open'); });
         $('#gcNewTable').on('click', gcNewTable);
         $('#gcAdvToggle').on('click', function () { gcToggleAdv(!$('#gcAdvBody').is(':visible')); });
         $('#gcEnabled').on('change', gcSyncSwitch);
@@ -2178,6 +2244,7 @@
             $(this).addClass('active');
             var idx = parseInt($(this).attr('data-idx'), 10);
             if (!isNaN(idx)) gcFill(GC_TABLES[idx]);
+            $('body').removeClass('gc-sidebar-open'); // 选中后自动收起抽屉
         });
         // 高级参数折叠引导条初始状态：默认收起，切换类型时 gcApplyType 已同步隐藏/折叠
         gcToggleAdv(false);
