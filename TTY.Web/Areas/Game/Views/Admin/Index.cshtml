@@ -6,6 +6,7 @@
 }
 
 @section include_res{
+    <link href="@Url.Content("~/Content/css/ios-page.css?v=" + ConfigHelper.Get("WebVer"))" rel="stylesheet" />
     <script>
         $(function () {
             // 加载指定的模块
@@ -55,6 +56,7 @@
                     onLoadSuccess: function () {
                         $('#tb_AgencyInfo').datagrid('getPanel').addClass('admin-perm-grid');
                         onLoaded();
+                        renderAdminPermStats(); // iOS 统计条
                         setTimeout(function () {
                             autoFitAgencyColumns();
                             bindAgencyRowNumberToggle();
@@ -64,6 +66,24 @@
             } else {
                 $('#tb_AgencyInfo').datagrid('load', para);
             }
+        }
+        //iOS 统计条(代理总数/管理员/级代理/启用/禁用)
+        function renderAdminPermStats() {
+            var grid = $('#tb_AgencyInfo');
+            if (!grid.data('datagrid')) { return; }
+            var rows = grid.datagrid('getRows') || [];
+            var total = rows.length, admin = 0, agent = 0, enabled = 0, disabled = 0;
+            for (var i = 0; i < rows.length; i++) {
+                var r = rows[i];
+                if (!r) { continue; }
+                if (Number(r.PRIV) == 0) { admin++; } else { agent++; }
+                if (Number(r.RE_ENABLE) == 1) { enabled++; } else { disabled++; }
+            }
+            $('#stTotal').text(total);
+            $('#stAdmin').text(admin);
+            $('#stAgent').text(agent);
+            $('#stEnabled').text(enabled);
+            $('#stDisabled').text(disabled);
         }
         //格式化
         function fmtRechargeSwitch(value, rowData, rowIndex) {
@@ -471,7 +491,7 @@
         }
 
         function quickQuery(account) {
-            $('#txtS_Agency').textbox('setValue', account);
+            $('#txtS_Agency').val(account);
             queryData();
         }
         function setRecharge(id, flag) {
@@ -585,32 +605,29 @@
 }
 
 @*查询条件*@
-<form id="frm_srch">
-    <table width="100%" border="0" cellpadding="0" cellspacing="0" class="titleQueBg" style="height:40px;">
-        <tr>
-            <td>
-                <div class="left Lpd5">
-                    代理账号
-                    <input type="text" class="easyui-textbox" name="ID" />
-                </div>
-                <div class="left Lpd5">
-                    所属代理
-                    <input type="text" class="easyui-textbox" name="Agency" id="txtS_Agency" />
-                </div>
-                <div class="left Lmg10">
-                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="queryData();" data-options="plain:true,iconCls:'icon-search'">查找</a>
-                    @*@if (loginUser?.UserPriv < 3)
-                    {
-                        <a href="javascript:void(0);" class="easyui-linkbutton" onclick="showAddWin();" data-options="plain:true,iconCls:'icon-add'">添加代理</a>
-                    }*@
-                </div>
-            </td>
-        </tr>
-    </table>
-</form>
+<div class="container">
+    <!-- 权限统计条(renderAdminPermStats 填充) -->
+    <div class="stats-container">
+        <div class="stats-title">代理权限统计</div>
+        <div class="stats-info">
+            <div class="stats-item"><span class="stats-label">代理总数:</span><span class="stats-value" id="stTotal">0</span></div>
+            <div class="stats-item"><span class="stats-label">管理员:</span><span class="stats-value" id="stAdmin">0</span></div>
+            <div class="stats-item"><span class="stats-label">级代理:</span><span class="stats-value" id="stAgent">0</span></div>
+            <div class="stats-item"><span class="stats-label">启用:</span><span class="stats-value positive" id="stEnabled">0</span></div>
+            <div class="stats-item"><span class="stats-label">禁用:</span><span class="stats-value negative" id="stDisabled">0</span></div>
+        </div>
+    </div>
+
+    <form id="frm_srch" class="filter-row">
+        <input type="text" class="ios-input" name="ID" placeholder="代理账号" style="flex:1;min-width:110px;" />
+        <input type="text" class="ios-input" name="Agency" id="txtS_Agency" placeholder="所属代理" style="flex:1;min-width:110px;" />
+        <button type="button" class="ios-btn secondary" onclick="queryData();">查找</button>
+    </form>
 
 @*查询代理的信息*@
-<table id="tb_AgencyInfo">
+<div class="table-container">
+    <div class="table-scroll">
+    <table id="tb_AgencyInfo">
     <thead>
         <tr>
             <th field="ID" width="85" formatter="fmtID">代理账号</th>
@@ -621,7 +638,11 @@
             <th field="PWD" width="520" formatter="fmtOpt">操作</th>
         </tr>
     </thead>
-</table>
+    </table>
+    </div>
+    </div>
+    <div class="scroll-hint">左右滑动查看更多数据</div>
+</div>
 
 @*修改窗口*@
 <div id="chgWin" class="hide">

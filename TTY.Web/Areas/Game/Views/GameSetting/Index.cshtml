@@ -5,6 +5,7 @@
 }
 
 @section include_res{
+    <link href="@Url.Content("~/Content/css/ios-page.css?v=" + ConfigHelper.Get("WebVer"))" rel="stylesheet" />
     <script>
     $(function () {
         // 加载指定的模块
@@ -48,7 +49,10 @@
                 pageList: [10, 20, 50],
                 idField: 'ID',
                 onBeforeLoad: setGridSize,
-                onLoadSuccess: onLoaded
+                onLoadSuccess: function () {
+                    onLoaded();
+                    renderGameSettingStats(); // iOS 统计条
+                }
             });
         } else {
             $('#tb_PlatType').datagrid('load', para);
@@ -96,6 +100,22 @@
                 { id: 3, text: '拉霸类' }
             ];
         }
+        //iOS 统计条(游戏总数/启用/禁用/机器人总数量)
+        function renderGameSettingStats() {
+            var grid = $('#tb_PlatType');
+            if (!grid.data('datagrid')) { return; }
+            var rows = grid.datagrid('getRows') || [];
+            var total = rows.length, enabled = 0, disabled = 0, num = 0;
+            for (var i = 0; i < rows.length; i++) {
+                var r = rows[i] || {};
+                if (Number(r.Enable) == 1) { enabled++; } else { disabled++; }
+                num += Number(r.Num || 0);
+            }
+            $('#stTotal').text(total);
+            $('#stEnabled').text(enabled);
+            $('#stDisabled').text(disabled);
+            $('#stNum').text(num.toLocaleString());
+        }
         function fmtGameType(value, rowData, rowIndex) {
             if (value == 0)
                 return '<span>押注类</span>';
@@ -138,41 +158,54 @@
 }
 
 @*查询条件*@
-<form id="frm_srch">
-    <table width="100%" border="0" cellpadding="0" cellspacing="0" class="titleQueBg" style="height:40px;">
-        <tr>
-            <td>
+<div class="container">
+    <!-- 游戏设置统计条(renderGameSettingStats 填充) -->
+    <div class="stats-container">
+        <div class="stats-title">游戏设置</div>
+        <div class="stats-info">
+            <div class="stats-item"><span class="stats-label">游戏总数:</span><span class="stats-value" id="stTotal">0</span></div>
+            <div class="stats-item"><span class="stats-label">启用:</span><span class="stats-value positive" id="stEnabled">0</span></div>
+            <div class="stats-item"><span class="stats-label">禁用:</span><span class="stats-value negative" id="stDisabled">0</span></div>
+            <div class="stats-item"><span class="stats-label">机器人总数量:</span><span class="stats-value" id="stNum">0</span></div>
+        </div>
+    </div>
 
-                <div class="left Lpd5">
-                    游戏类型
-                    <select class="easyui-combobox win-txt" id="addGameType" name="GameType" data-options="valueField:'id',textField:'text',panelHeight:150,data:actionSelData1()"></select>
-                </div>
-                <div class="left Lpd5">
-                    游戏名称
-                    <input type="text" class="easyui-textbox" name="Name" />
-                </div>
-                <div class="left Lmg10">
-                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="queryData();" data-options="plain:true,iconCls:'icon-search'">查找</a>
+    <form id="frm_srch" class="filter-row">
+        <select id="addGameType" name="GameType" class="ios-select" style="min-width:110px;"></select>
+        <input type="text" class="ios-input" name="Name" placeholder="游戏名称" style="flex:1;min-width:100px;" />
+        <button type="button" class="ios-btn secondary" onclick="queryData();">查找</button>
+    </form>
+    <script>
+        // 游戏类型下拉:由 actionSelData1 填充(替代原 easyui-combobox)
+        (function () {
+            var opts = (typeof actionSelData1 === 'function') ? actionSelData1() : [];
+            var html = '';
+            for (var i = 0; i < opts.length; i++) {
+                html += '<option value="' + opts[i].id + '"' + (opts[i].selected ? ' selected' : '') + '>' + opts[i].text + '</option>';
+            }
+            $('#addGameType').html(html);
+        })();
+    </script>
 
-                </div>
-            </td>
-        </tr>
-    </table>
-</form>
-
-@*查询游戏的信息*@
-<table id="tb_PlatType">
-    <thead>
-        <tr>
-            <th field="GameId" width="150">游戏ID</th>
-            <th field="GameType" width="150" formatter="fmtGameType">游戏类型</th>
-            <th field="Name" width="150">游戏名称</th>
-            <th field="Enable" width="150" formatter="fmtEnable">是否启用</th>
-            <th field="Num" width="150">机器人数量</th>
-            <th field="PWD" width="150"  align="center" formatter="fmtOpt">操作</th>
-        </tr>
-    </thead>
-</table>
+    @*查询游戏的信息*@
+    <div class="table-container">
+        <div class="table-scroll">
+        <table id="tb_PlatType">
+            <thead>
+                <tr>
+                    <th field="GameId" width="150">游戏ID</th>
+                    <th field="GameType" width="150" formatter="fmtGameType">游戏类型</th>
+                    <th field="Name" width="150">游戏名称</th>
+                    <th field="Enable" width="150" formatter="fmtEnable">是否启用</th>
+                    <th field="Num" width="150">机器人数量</th>
+                    <th field="PWD" width="150"  align="center" formatter="fmtOpt">操作</th>
+                </tr>
+            </thead>
+        </table>
+        </div>
+    </div>
+    <div class="scroll-hint">左右滑动查看更多数据</div>
+</div>
 
 
 @*设置游戏机器人数量窗口*@

@@ -7,6 +7,7 @@
 }
 <script src="~/Scripts/jquery.form.js"></script>
 @section include_res{
+    <link href="@Url.Content("~/Content/css/ios-page.css?v=" + ConfigHelper.Get("WebVer"))" rel="stylesheet" />
     <script>
         $(function () {
             // 加载指定的模块
@@ -54,7 +55,10 @@
                     idField: 'ID',
 
                     onBeforeLoad: setGridSize,
-                    onLoadSuccess: onLoaded
+                    onLoadSuccess: function () {
+                        onLoaded();
+                        renderUserRobotStats(); // iOS 统计条
+                    }
                 });
             } else {
                 $('#tb_Robot').datagrid('load', para);
@@ -226,6 +230,21 @@
         }
 
 
+        //iOS 统计条(机器人总数/总金币/平均等级)
+        function renderUserRobotStats() {
+            var grid = $('#tb_Robot');
+            if (!grid.data('datagrid')) { return; }
+            var rows = grid.datagrid('getRows') || [];
+            var total = rows.length, gold = 0, lev = 0;
+            for (var i = 0; i < rows.length; i++) {
+                var r = rows[i] || {};
+                gold += Number(r.Gold || 0);
+                lev += Number(r.Lev || 0);
+            }
+            $('#stTotal').text(total);
+            $('#stGold').text(gold.toLocaleString());
+            $('#stLev').text(total > 0 ? Math.round(lev / total) : 0);
+        }
         function fmtOpt(value, rowData, rowIndex) {
             var arr = [];
             arr.push('<a href="javascript:void(0)" class="blue Lpd5" onclick="showUpdate(\'' + rowData.ID + '\')">修改</a>');
@@ -254,47 +273,50 @@
     </script>
 }
 
-<form id="frm_srch">
-    <table width="100%" border="0" cellpadding="0" cellspacing="0" class="titleQueBg" style="height:40px;">
-        <tr>
-            <td>
-                <div class="left Lpd5">
-                    机器人账户
-                    <input type="text" class="easyui-textbox" name="UserName" id="txt_UserName" />
-                </div>
-                <div class="left Lpd5">
-                    机器人昵称
-                    <input type="text" class="easyui-textbox" name="UserNick" id="txt_UserNick" />
-                </div>
+<div class="container">
+    <!-- 机器人统计条(renderUserRobotStats 填充) -->
+    <div class="stats-container">
+        <div class="stats-title">机器人统计</div>
+        <div class="stats-info">
+            <div class="stats-item"><span class="stats-label">机器人总数:</span><span class="stats-value" id="stTotal">0</span></div>
+            <div class="stats-item"><span class="stats-label">总金币:</span><span class="stats-value diamond" id="stGold">0</span></div>
+            <div class="stats-item"><span class="stats-label">平均等级:</span><span class="stats-value" id="stLev">0</span></div>
+        </div>
+    </div>
 
-                <div class="left Lmg10">
-                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="queryData();" data-options="plain:true,iconCls:'icon-search'">查找</a>
-                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="showAddWin();" data-options="plain:true,iconCls:'icon-add'">添加机器人</a>
-                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="batchAdd();" data-options="plain:true">批量添加</a>
-                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="batchUpdate();" data-options="plain:true">批量修改</a>
-                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="batchDelete();" data-options="plain:true">批量删除</a>
-                </div>
-            </td>
-        </tr>
-    </table>
-</form>
-<table id="tb_Robot">
-    <thead>
-        <tr>
-            <th data-options="field:'ck',checkbox:true"></th>
-            <th field="ID" width="110">机器人用户编号</th>
-            <th field="UserName" width="110">机器人账户</th>
-            <th field="UserNick" width="110">机器人昵称</th>
-            <th field="Ico" width="110">头像编号</th>
-            <th field="Lev" width="110">等级</th>
-            <th field="Sex" width="110">性别</th>
-            <th field="Gold" width="110">金币</th>
-            <th field="PWD" width="150" align="center" formatter="fmtOpt">操作</th>
+    <form id="frm_srch" class="filter-row">
+        <input type="text" class="ios-input" name="UserName" id="txt_UserName" placeholder="机器人账户" style="flex:1;min-width:100px;" />
+        <input type="text" class="ios-input" name="UserNick" id="txt_UserNick" placeholder="机器人昵称" style="flex:1;min-width:100px;" />
+        <button type="button" class="ios-btn secondary" onclick="queryData();">查找</button>
+        <button type="button" class="ios-btn primary" onclick="showAddWin();">添加机器人</button>
+        <button type="button" class="ios-btn secondary" onclick="batchAdd();">批量添加</button>
+        <button type="button" class="ios-btn secondary" onclick="batchUpdate();">批量修改</button>
+        <button type="button" class="ios-btn danger-outline" onclick="batchDelete();">批量删除</button>
+    </form>
+
+    <div class="table-container">
+        <div class="table-scroll">
+        <table id="tb_Robot">
+            <thead>
+                <tr>
+                    <th data-options="field:'ck',checkbox:true"></th>
+                    <th field="ID" width="110">机器人用户编号</th>
+                    <th field="UserName" width="110">机器人账户</th>
+                    <th field="UserNick" width="110">机器人昵称</th>
+                    <th field="Ico" width="110">头像编号</th>
+                    <th field="Lev" width="110">等级</th>
+                    <th field="Sex" width="110">性别</th>
+                    <th field="Gold" width="110">金币</th>
+                    <th field="PWD" width="150" align="center" formatter="fmtOpt">操作</th>
 
 
-        </tr>
-    </thead>
-</table>
+                </tr>
+            </thead>
+        </table>
+        </div>
+    </div>
+    <div class="scroll-hint">左右滑动查看更多数据</div>
+</div>
 
 
 @*添加机器人窗口*@

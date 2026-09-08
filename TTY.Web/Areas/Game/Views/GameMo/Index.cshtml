@@ -7,6 +7,7 @@
 }
 <script src="~/Scripts/jquery.form.js"></script>
 @section include_res{
+    <link href="@Url.Content("~/Content/css/ios-page.css?v=" + ConfigHelper.Get("WebVer"))" rel="stylesheet" />
     <script>
         $(function () {
             // 加载指定的模块
@@ -50,13 +51,30 @@
                     pageList: [10, 20, 50],
                     idField: 'ID',
                     onBeforeLoad: setGridSize,
-                    onLoadSuccess: onLoaded
+                    onLoadSuccess: function () {
+                        onLoaded();
+                        renderGameMoStats(); // iOS 统计条
+                    }
                 });
             } else {
                 $('#tb_GameMo').datagrid('load', para);
             }
         }
 
+        // iOS 统计条(游戏模式总数/真钱/金币)
+        function renderGameMoStats() {
+            var grid = $('#tb_GameMo');
+            if (!grid.data('datagrid')) { return; }
+            var rows = grid.datagrid('getRows') || [];
+            var total = rows.length, real = 0, gold = 0;
+            for (var i = 0; i < rows.length; i++) {
+                if (rows[i] && Number(rows[i].GameMoType) == 1) real++;
+            }
+            gold = total - real;
+            $('#stTotal').text(total);
+            $('#stReal').text(real);
+            $('#stGold').text(gold);
+        }
         function fmtOpt(value, rowData, rowIndex) {
             var arr = [];
             if (rowData.GameMoType == 0) {
@@ -88,25 +106,32 @@
     </script>
 }
 
-<form id="frm_srch">
-    <table width="100%" border="0" cellpadding="0" cellspacing="0" class="titleQueBg" style="height:40px;">
-        <tr>
-            <td>
-            </td>
-        </tr>
-    </table>
-</form>
-<table id="tb_GameMo">
-    <thead>
-        <tr>
-            <th field="GameMoName" width="110">名称</th>
-            <th field="GameMoType" width="220" formatter="fmtEnable">值</th>
+<div class="container">
+    <!-- 游戏模式统计条(renderGameMoStats 填充) -->
+    <div class="stats-container">
+        <div class="stats-title">游戏模式</div>
+        <div class="stats-info">
+            <div class="stats-item"><span class="stats-label">模式总数:</span><span class="stats-value" id="stTotal">0</span></div>
+            <div class="stats-item"><span class="stats-label">真钱模式:</span><span class="stats-value positive" id="stReal">0</span></div>
+            <div class="stats-item"><span class="stats-label">金币模式:</span><span class="stats-value" id="stGold">0</span></div>
+        </div>
+    </div>
 
-            <th field="Id" width="110" align="center" formatter="fmtOpt">操作</th>
-        </tr>
-    </thead>
-</table>
+    <div class="table-container">
+        <div class="table-scroll">
+        <table id="tb_GameMo">
+            <thead>
+                <tr>
+                    <th field="GameMoName" width="110">名称</th>
+                    <th field="GameMoType" width="220" formatter="fmtEnable">值</th>
 
-}
+                    <th field="Id" width="110" align="center" formatter="fmtOpt">操作</th>
+                </tr>
+            </thead>
+        </table>
+        </div>
+    </div>
+    <div class="scroll-hint">左右滑动查看更多数据</div>
+</div>
 
 

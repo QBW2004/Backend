@@ -7,6 +7,7 @@
 }
 <script src="~/Scripts/jquery.form.js"></script>
 @section include_res{
+    <link href="@Url.Content("~/Content/css/ios-page.css?v=" + ConfigHelper.Get("WebVer"))" rel="stylesheet" />
     <script>
         $(function () {
             // 加载指定的模块
@@ -53,7 +54,10 @@
                     pageList: [10, 20, 50],
                     idField: 'ID',
                     onBeforeLoad: setGridSize,
-                    onLoadSuccess: onLoaded
+                    onLoadSuccess: function () {
+                        onLoaded();
+                        renderRobotStats(); // iOS 统计条
+                    }
                 });
             } else {
                 $('#tb_Robot').datagrid('load', para);
@@ -147,6 +151,19 @@
                 { id: 3, text: '拉霸类' }
             ];
         }
+        //iOS 统计条(配置总数/总机器人数/平均每桌)
+        function renderRobotStats() {
+            var grid = $('#tb_Robot');
+            if (!grid.data('datagrid')) { return; }
+            var rows = grid.datagrid('getRows') || [];
+            var total = rows.length, robots = 0;
+            for (var i = 0; i < rows.length; i++) {
+                robots += Number((rows[i] || {}).ROBOT_NO || 0);
+            }
+            $('#stTotal').text(total);
+            $('#stRobots').text(robots.toLocaleString());
+            $('#stAvg').text(total > 0 ? Math.round(robots / total) : 0);
+        }
         function fmtGameType(value, rowData, rowIndex) {
             if (value == 0)
                 return '<span>押注类</span>';
@@ -200,38 +217,42 @@
     </script>
 }
 
-<form id="frm_srch">
-    <table width="100%" border="0" cellpadding="0" cellspacing="0" class="titleQueBg" style="height:40px;">
-        <tr>
-            <td>
-                <div class="left Lpd5">
-                    游戏名称
-                    <input type="text" class="easyui-textbox" name="GameName" id="txtS_GameName" />
-                </div>
-                <div class="left Lpd5">
-                    桌子名称
-                    <input type="text" class="easyui-textbox" name="TABLE_NAME" id="txtS_TABLE_NAME" />
-                </div>
-                <div class="left Lmg10">
-                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="queryData();" data-options="plain:true,iconCls:'icon-search'">查找</a>
-                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="showAddWin();" data-options="plain:true,iconCls:'icon-add'">添加机器人</a>
-                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="deleteAllRobot();" data-options="plain:true,iconCls:'icon-remove'">删除全部机器人</a>
-                </div>
-            </td>
-        </tr>
-    </table>
-</form>
-<table id="tb_Robot">
-    <thead>
-        <tr>
-            <th field="GAME_TYPE" width="110" formatter="fmtGameType">游戏类型</th>
-            <th field="GAME_NAME" width="110">游戏名称</th>
-            <th field="TABLE_NAME" width="150">桌子名称</th>
-            <th field="ROBOT_NO" width="110"  formatter="fmtRobotNo">机器人数</th>
-            <th field="ID" width="110" align="center" formatter="fmtOpt">操作</th>
-        </tr>
-    </thead>
-</table>
+<div class="container">
+    <!-- 机器人统计条(renderRobotStats 填充) -->
+    <div class="stats-container">
+        <div class="stats-title">机器人统计</div>
+        <div class="stats-info">
+            <div class="stats-item"><span class="stats-label">配置总数:</span><span class="stats-value" id="stTotal">0</span></div>
+            <div class="stats-item"><span class="stats-label">总机器人数:</span><span class="stats-value diamond" id="stRobots">0</span></div>
+            <div class="stats-item"><span class="stats-label">平均每桌:</span><span class="stats-value" id="stAvg">0</span></div>
+        </div>
+    </div>
+
+    <form id="frm_srch" class="filter-row">
+        <input type="text" class="ios-input" name="GameName" id="txtS_GameName" placeholder="游戏名称" style="flex:1;min-width:100px;" />
+        <input type="text" class="ios-input" name="TABLE_NAME" id="txtS_TABLE_NAME" placeholder="桌子名称" style="flex:1;min-width:100px;" />
+        <button type="button" class="ios-btn secondary" onclick="queryData();">查找</button>
+        <button type="button" class="ios-btn primary" onclick="showAddWin();">添加机器人</button>
+        <button type="button" class="ios-btn danger-outline" onclick="deleteAllRobot();">删除全部机器人</button>
+    </form>
+
+    <div class="table-container">
+        <div class="table-scroll">
+        <table id="tb_Robot">
+            <thead>
+                <tr>
+                    <th field="GAME_TYPE" width="110" formatter="fmtGameType">游戏类型</th>
+                    <th field="GAME_NAME" width="110">游戏名称</th>
+                    <th field="TABLE_NAME" width="150">桌子名称</th>
+                    <th field="ROBOT_NO" width="110"  formatter="fmtRobotNo">机器人数</th>
+                    <th field="ID" width="110" align="center" formatter="fmtOpt">操作</th>
+                </tr>
+            </thead>
+        </table>
+        </div>
+    </div>
+    <div class="scroll-hint">左右滑动查看更多数据</div>
+</div>
 
 
 @*添加机器人窗口*@
