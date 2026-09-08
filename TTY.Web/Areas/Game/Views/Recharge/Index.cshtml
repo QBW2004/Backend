@@ -362,19 +362,23 @@
         .recharge-tip-row td { padding-left: 100px; color: var(--text-tertiary); font-size: 13px; }
         .coin-tip { display: inline-block; padding-left: 14px; color: var(--danger); white-space: nowrap; font-size: 13px; }
 
-        /* 账号下拉 / 金额输入 easyui 控件圆角化 */
-        .recharge-form .combo, .recharge-form .numberbox { height: 38px; border-radius: 8px; border-color: var(--border); }
-        .recharge-form .combo .combo-text,
-        .recharge-form .numberbox-text { height: 36px !important; font-size: 15px; border-radius: 8px 0 0 8px; color: var(--text-body); }
-        .recharge-form .combo .combo-arrow,
-        .recharge-form .numberbox .numberbox-arrow { height: 36px !important; border-radius: 0 8px 8px 0; background-color: #fff; }
+        /* 账号下拉 / 金额输入 easyui 控件圆角化(内部 input 类名均为 textbox-text) */
+        .recharge-form .combo, .recharge-form .numberbox { height: 38px; border-radius: 8px; border-color: var(--border); overflow: hidden; }
+        .recharge-form .combo .textbox-text,
+        .recharge-form .numberbox .textbox-text { height: 36px !important; font-size: 15px; color: var(--text-body); }
 
-        /* 确定按钮 → iOS 蓝 */
-        #btnSaveCoin.l-btn { background: var(--primary); border: none; border-radius: 8px; height: 38px; padding: 0 44px; font-size: 15px; }
-        #btnSaveCoin.l-btn:hover { background: var(--primary-dark); }
-        #btnSaveCoin.l-btn-disabled, #btnSaveCoin.l-btn-disabled:hover { background: #c8d0da; opacity: 1; }
+        /* 账号下拉 / 金额输入 固定 iOS 宽度(覆盖 easyui 按克隆空元素测量的内联宽度) */
+        .recharge-form .combo,
+        .recharge-form .numberbox { width: 240px !important; box-sizing: border-box; }
+        .recharge-form .combo .textbox-text,
+        .recharge-form .numberbox .textbox-text { width: 100% !important; box-sizing: border-box; }
+
+        /* 确定按钮 → iOS 蓝 (!important 压过 layout.css 的 .l-btn-plain 灰底/灰边/hover 收缩规则) */
+        #btnSaveCoin.l-btn { background: var(--primary) !important; border: none !important; border-radius: 8px; height: 38px; padding: 0 44px !important; font-size: 15px; }
+        #btnSaveCoin.l-btn:hover { background: var(--primary-dark) !important; }
+        #btnSaveCoin.l-btn-disabled, #btnSaveCoin.l-btn-disabled:hover { background: #c8d0da !important; opacity: 1; }
         #btnSaveCoin .l-btn-icon { display: none; }
-        #btnSaveCoin .l-btn-text { margin: 0 !important; padding: 0; color: #fff; }
+        #btnSaveCoin .l-btn-text { margin: 0 !important; padding: 0; color: #fff; line-height: 38px !important; }
     </style>
 }
 
