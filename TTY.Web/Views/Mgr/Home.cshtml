@@ -1,204 +1,223 @@
 ﻿@{
     Layout = null;
     M_LoginUser loginUser = WebHelper.GetLoginInfo();
+    string _account = loginUser != null ? (loginUser.UserName ?? loginUser.Accounts) : "";
+    string _role = (loginUser != null && loginUser.UserPriv == 0) ? "超级管理员" : "管理员";
 }
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    @Styles.Render("~/res/easyui-css")
+    <link href="@Url.Content("~/Content/css/ios-page.css?v=" + ConfigHelper.Get("WebVer"))" rel="stylesheet" />
     <link href="@Url.Content("~/Content/css/font-awesome.css")" rel="stylesheet" />
-    <link href="@Url.Content("~/Content/css/animate.css")" rel="stylesheet" />
-    <link href="@Url.Content("~/Content/css/style.css")" rel="stylesheet" />
-    <link href="@Url.Content("~/Content/bootstrap.min.css")" rel="stylesheet" />
     <script src="@Url.Content("~/Scripts/jquery-2.1.4.min.js")"></script>
-    <script src="@Url.Content("~/Scripts/easyloader.js")"></script>
-    <script src="@Url.Content("~/Scripts/bootstrap.min.js")"></script>
     <script src="@Url.Content("~/Scripts/app/common.js")?v=@(System.IO.File.GetLastWriteTimeUtc(Server.MapPath("~/Scripts/app/common.js")).Ticks)"></script>
     <style>
-        body {
-            font-family: "open sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+        /* ===== 首页 iOS 化 ===== */
+        body { padding-top: 16px; }
+
+        /* 欢迎区 */
+        .home-welcome {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            background: linear-gradient(135deg, #007aff, #0056b3);
+            border-radius: 12px;
+            padding: 18px 20px;
+            margin-bottom: 16px;
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.25);
+        }
+        .hw-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.25);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 600;
+            flex: 0 0 auto;
+        }
+        .hw-title { font-size: 17px; font-weight: 600; }
+        .hw-sub { font-size: 13px; opacity: 0.85; margin-top: 3px; }
+
+        /* 快捷入口 */
+        .home-quick {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .quick-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            background: #fff;
+            border-radius: 10px;
+            padding: 14px 6px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            text-decoration: none;
+            color: var(--text-primary);
+            transition: transform 0.15s;
+            cursor: pointer;
+        }
+        .quick-item:hover { text-decoration: none; color: var(--primary); transform: translateY(-1px); }
+        .quick-item i {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: var(--primary-light);
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 17px;
+        }
+        .quick-item span { font-size: 13px; }
+
+        /* 统计卡 */
+        .home-card {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: var(--shadow-card);
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .hc-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+            padding-bottom: 10px;
+            margin-bottom: 6px;
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .hc-title i { color: var(--primary); }
+        .hc-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 9px 2px;
+            border-bottom: 1px solid var(--border-light);
             font-size: 14px;
-            color: #676a6c;
-            overflow-x: hidden;
         }
-        /* WIDGETS */
-        .widget {
-            border-radius: 5px;
-            padding: 15px 20px;
-            margin-bottom: 10px;
-            margin-top: 10px;
+        .hc-row:last-child { border-bottom: none; }
+        .hcr-label { color: var(--text-secondary); }
+        .hcr-val {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-family: ui-monospace, "SF Mono", Menlo, monospace;
         }
-
-            .widget.style1 h2 {
-                font-size: 30px;
-            }
-
-            .widget h2,
-            .widget h3 {
-                margin-top: 5px;
-                margin-bottom: 0;
-            }
-
-        .widget-text-box {
-            padding: 20px;
-            border: 1px solid #e7eaec;
-            background: #ffffff;
-        }
-
-        .widget-head-color-box {
-            border-radius: 5px 5px 0px 0px;
-            margin-top: 10px;
-        }
-
-        .widget .flot-chart {
-            height: 100px;
-        }
-
-        .vertical-align div {
-            display: inline-block;
-            vertical-align: middle;
-        }
-
-        .vertical-align h2,
-        .vertical-align h3 {
-            margin: 0;
-        }
-
-        .todo-list {
-            list-style: none outside none;
-            margin: 0;
-            padding: 0;
-            font-size: 14px;
-        }
-
-            .todo-list.small-list {
-                font-size: 12px;
-            }
-
-                .todo-list.small-list > li {
-                    background: #f3f3f4;
-                    border-left: none;
-                    border-right: none;
-                    border-radius: 4px;
-                    color: inherit;
-                    margin-bottom: 2px;
-                    padding: 6px 6px 6px 12px;
-                }
-
-                .todo-list.small-list .btn-xs,
-                .todo-list.small-list .btn-group-xs > .btn {
-                    border-radius: 5px;
-                    font-size: 10px;
-                    line-height: 1.5;
-                    padding: 1px 2px 1px 5px;
-                }
-
-            .todo-list > li {
-                background: #f3f3f4;
-                border-left: 6px solid #e7eaec;
-                border-right: 6px solid #e7eaec;
-                border-radius: 4px;
-                color: inherit;
-                margin-bottom: 2px;
-                padding: 10px;
-            }
-
-            .todo-list .handle {
-                cursor: move;
-                display: inline-block;
-                font-size: 16px;
-                margin: 0 5px;
-            }
-
-            .todo-list > li .label {
-                font-size: 9px;
-                margin-left: 10px;
-            }
-
-        .check-link {
-            font-size: 16px;
-        }
-
-        .todo-completed {
-            text-decoration: line-through;
-        }
-
-        .geo-statistic h1 {
-            font-size: 36px;
-            margin-bottom: 0;
-        }
-
-        .glyphicon.fa {
-            font-family: "FontAwesome";
-        }
-
-        .widget {
-            height: 209px !important;
-        }
+        .hcr-val.pos { color: var(--success); }
+        .hcr-val.neg { color: var(--danger); }
     </style>
     <script>
         $(function () {
+            // 欢迎区: 问候语 + 日期
+            (function renderWelcome() {
+                var now = new Date();
+                var h = now.getHours();
+                var greet = h < 6 ? '凌晨好' : h < 12 ? '上午好' : h < 14 ? '中午好' : h < 18 ? '下午好' : '晚上好';
+                var weeks = ['日', '一', '二', '三', '四', '五', '六'];
+                $('#hwSub').text(greet + '，今天是 ' + now.getFullYear() + '年' + (now.getMonth() + 1) + '月' + now.getDate() + '日 星期' + weeks[now.getDay()]);
+            })();
 
+            // 统计数据: /api/Reports 每 10 秒自动刷新
             function getReport() {
                 request('/api/Reports', {}, function (_msg) {
-                    setTimeout(function () {
-                        $('#rptList_1,#rptList_2,#rptList_3').empty();
-                        var arr_1 = [];
-                        var arr_2 = [];
-                        var arr_3 = [];
-                        var row;
-                        var data = _msg.datas;
-
-                        for (var i = 0; i < data.length; i++) {
-                            row = data[i];
-                            if (row.ReportType == 1)
-                                arr_1.push('<li><span class="fa fa-caret-right"></span> <label>' + data[i].Title + '：</label>' + (data[i].Title == '今日充值额度' ? top.goldFormat(data[i].Val):data[i].Val) + '</li>');
-                            else if (row.ReportType == 2)
-                                arr_2.push('<li><span class="fa fa-caret-right"></span> <label>' + data[i].Title + '：</label>' + top.goldFormat(data[i].Val) + '</li>');
-                            else if (row.ReportType == 3)
-                                arr_3.push('<li><span class="fa fa-caret-right"></span> <label>' + data[i].Title + '：</label>' + data[i].Val + '人</li>');
+                    var data = (_msg && _msg.datas) || [];
+                    var map = { 1: [], 2: [], 3: [] };
+                    for (var i = 0; i < data.length; i++) {
+                        var row = data[i];
+                        var html;
+                        if (row.ReportType == 1) {
+                            // 充值信息: 额度用金币格式, 订单数为普通数字
+                            html = row.Title == '今日充值额度'
+                                ? '<span class="hcr-val">' + top.goldFormat(row.Val) + '</span>'
+                                : '<span class="hcr-val">' + row.Val + '</span>';
+                        } else if (row.ReportType == 2) {
+                            // 平台盈利: 金币格式, 总盈亏正绿负红
+                            var cls = '';
+                            if (row.Title == '总盈亏') {
+                                var v = parseFloat(row.Val);
+                                cls = v > 0 ? ' pos' : (v < 0 ? ' neg' : '');
+                            }
+                            html = '<span class="hcr-val' + cls + '">' + top.goldFormat(row.Val) + '</span>';
+                        } else {
+                            // 人员信息: 人数
+                            html = '<span class="hcr-val">' + row.Val + '人</span>';
                         }
-                        $('#rptList_1').html(arr_1.join(''));
-                        $('#rptList_2').html(arr_2.join(''));
-                        $('#rptList_3').html(arr_3.join(''));
-                    }, 100)
-                },'GET');
+                        map[row.ReportType].push('<div class="hc-row"><span class="hcr-label">' + row.Title + '</span>' + html + '</div>');
+                    }
+                    $('#rptList_1').html(map[1].join(''));
+                    $('#rptList_2').html(map[2].join(''));
+                    $('#rptList_3').html(map[3].join(''));
+
+                    var now = new Date();
+                    function pad(n) { return n < 10 ? '0' + n : n; }
+                    $('#hwTime').text('更新于 ' + pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds()));
+                }, 'GET');
             }
             setTimeout(getReport, 100);
-            setInterval(function () {
-                getReport();
-            }, 1000 * 10);
-
+            setInterval(getReport, 1000 * 10);
         });
+
+        // 快捷入口: 模拟点击父框架侧边栏对应菜单项来切换 tab
+        function homeOpen(a) {
+            var href = $(a).attr('href');
+            if (window.parent && parent.jQuery) {
+                var $m = parent.jQuery('.menu-item[href="' + href + '"]');
+                if ($m.length > 0) {
+                    $m.trigger('click');
+                    return false;
+                }
+            }
+            return true;
+        }
     </script>
 </head>
-<body class="gray-bg">
-    <div class="wrapper wrapper-content animated fadeInRight">
-        <div class="row">
-            <div class="col-sm-4">
-                <div class="widget lazur-bg p-xl">
-                    <h4 i18n="i18n.Personnelinformation"><span class="fa fa-pie-chart m-r-xs"></span>人员信息</h4>
-                    <ul class="list-unstyled m-t-md" id="rptList_3"></ul>
-                </div>
+<body>
+    <div class="container">
+        <div class="home-welcome">
+            <div class="hw-avatar">@(_account.Length > 0 ? _account.Substring(0, 1).ToUpper() : "A")</div>
+            <div>
+                <div class="hw-title">欢迎回来，@_account</div>
+                <div class="hw-sub">@_role · <span id="hwSub"></span> · <span id="hwTime">--</span></div>
             </div>
-            <div class="col-sm-4">
-                <div class="widget yellow-bg p-xl">
-                    <h4 i18n="i18n.Platformprofitability"><span class="fa fa-pie-chart m-r-xs"></span>平台盈利</h4>
-                    <ul class="list-unstyled m-t-md" id="rptList_2"></ul>
-                </div>
-            </div>
-            @if (loginUser != null && loginUser.UserPriv == 0)
-            {
-                <div class="col-sm-4">
-                    <div class="widget navy-bg p-xl">
-                        <h4 i18n="i18n.Rechargeinformation"><span class="fa fa-cny m-r-xs"></span>充值信息</h4>
-                        <ul class="list-unstyled m-t-md" id="rptList_1"></ul>
-                    </div>
-                </div>
-            }
         </div>
+
+        <div class="home-quick">
+            <a class="quick-item" href="/Game/ReCharge" onclick="return homeOpen(this)"><i class="fa fa-credit-card"></i><span>账户充值</span></a>
+            <a class="quick-item" href="/Game/UserInfo" onclick="return homeOpen(this)"><i class="fa fa-user"></i><span>用户管理</span></a>
+            <a class="quick-item" href="/Game/AgencyInfo" onclick="return homeOpen(this)"><i class="fa fa-sitemap"></i><span>代理管理</span></a>
+            <a class="quick-item" href="@Url.Action("Index", "GameConfig", new { area = "Game" })" onclick="return homeOpen(this)"><i class="fa fa-cog"></i><span>游戏配置</span></a>
+            <a class="quick-item" href="/Game/Recharge/Records" onclick="return homeOpen(this)"><i class="fa fa-list-alt"></i><span>充值记录</span></a>
+            <a class="quick-item" href="/Game/GameSetting" onclick="return homeOpen(this)"><i class="fa fa-gamepad"></i><span>游戏设置</span></a>
+        </div>
+
+        <div class="home-card">
+            <div class="hc-title"><i class="fa fa-users"></i>人员信息</div>
+            <div id="rptList_3"></div>
+        </div>
+        <div class="home-card">
+            <div class="hc-title"><i class="fa fa-line-chart"></i>平台盈利</div>
+            <div id="rptList_2"></div>
+        </div>
+        @if (loginUser != null && loginUser.UserPriv == 0)
+        {
+        <div class="home-card">
+            <div class="hc-title"><i class="fa fa-cny"></i>充值信息</div>
+            <div id="rptList_1"></div>
+        </div>
+        }
     </div>
 </body>
 </html>
