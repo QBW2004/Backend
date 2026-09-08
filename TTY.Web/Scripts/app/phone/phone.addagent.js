@@ -11,15 +11,17 @@
         $btn.prop('disabled', on);
     }
 
+    var ACCOUNT_RE = /^[a-zA-Z0-9]{3,50}$/;
+    var PWD_RE = /^[a-zA-Z0-9]{6,50}$/;
+
     function submitForm() {
         var account = $.trim($('#agentAccount').val());
         var password = $('#agentPassword').val();
 
         if (!account) { M.toast('请输入代理账号', 'error'); return; }
-        if (account.length < 6) { M.toast('账号长度不能小于6个字符', 'error'); return; }
+        if (!ACCOUNT_RE.test(account)) { M.toast('账号需为 3-50 位字母或数字', 'error'); return; }
         if (!password) { M.toast('请输入密码', 'error'); return; }
-        if (password.length < 6) { M.toast('密码长度不能小于6个字符', 'error'); return; }
-        if (!/^[a-zA-Z0-9]+$/.test(password)) { M.toast('密码只能是英文字母和数字', 'error'); return; }
+        if (!PWD_RE.test(password)) { M.toast('密码需为 6-50 位字母或数字', 'error'); return; }
         setSubmitting(true);
         M.post('/Game/AgencyInfo/AddAgencyInfo', {
             FLAG: 0,
