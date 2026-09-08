@@ -6,6 +6,7 @@
 }
 
 @section include_res{
+    <link href="@Url.Content("~/Content/css/ios-page.css?v=" + ConfigHelper.Get("WebVer"))" rel="stylesheet" />
 <script>
         $(function () {
             // 加载指定的模块
@@ -50,7 +51,10 @@
                     pageList: [10, 20, 50],
                     idField: 'USER',
                     onBeforeLoad: setGridSize,
-                    onLoadSuccess: onLoaded
+                    onLoadSuccess: function () {
+                        if (typeof onLoaded === 'function') onLoaded();
+                        renderRechargeRecordsStats();
+                    }
                 });
             } else {
                 $('#tb_ReChargeRecords').datagrid('load', para);
@@ -121,6 +125,24 @@
         function fmtCoins(value, rowData, rowIndex) {
             return top.goldFormat(value);
     }
+
+        // 充值记录统计（按当前页 rows 计算）
+        function renderRechargeRecordsStats() {
+            var rows = [];
+            try { rows = $('#tb_ReChargeRecords').datagrid('getRows') || []; } catch (e) { }
+            var total = rows.length;
+            var coinTotal = 0, done = 0, pending = 0;
+            $.each(rows, function (i, r) {
+                var c = parseFloat(r.Coin);
+                if (!isNaN(c)) coinTotal += c;
+                if (r.Processed == 1) done++;
+                else if (r.Processed == 0) pending++;
+            });
+            $('#stRechargeTotal').text(total);
+            $('#stRechargeCoin').text(top.goldFormat(coinTotal));
+            $('#stRechargeDone').text(done);
+            $('#stRechargePending').text(pending);
+        }
 
 
 
@@ -220,59 +242,36 @@
 </script>
 }
 @*查询条件*@
-<form id="frm_srch">
-    <table width="100%" border="0" cellpadding="0" cellspacing="0" class="titleQueBg" style="height:40px;">
-        <tr>
-            <td>
-                <div class="left Lpd5">
-                    用户账号
-                    <input type="text" class="easyui-textbox" name="ID" />
-                </div>
-                <div class="left Lpd5">
-                    所属代理
-                    <input type="text" class="easyui-textbox" name="Agency" />
-                </div>
-                <div class="left Lpd5">
-                    订单编号
-                    <input type="text" class="easyui-textbox" name="OrderNo" />
-                </div>
-                <div class="left Lpd5">
-                    (收款)支付宝/微信号
-                    <input type="text" class="easyui-textbox" name="PayNo" />
-                </div>
-                <div class="left Lpd5">
-                    处理状态
-                    <select class="easyui-combobox" name="Processed" data-options="editable:false,panelHeight:130" style="width:155px;">
-                        <option value="-1" selected="selected">--全部--</option>
-                        <option value="0">未处理</option>
-                        <option value="1">已处理</option>
-                    </select>
-                </div>
-                <div class="left Lpd5">
-                    开始时间
-                    <input class="easyui-datetimebox" data-options="onShowPanel:function(){ $(this).datetimebox('spinner').timespinner('setValue','00:00:00'); }" name="srch_StartTime" id="srch_StartTime"
-                           style="width:150px">
-                </div>
-                <div class="left Lpd5">
-                    结束时间
-                    <input class="easyui-datetimebox" data-options="onShowPanel:function(){ $(this).datetimebox('spinner').timespinner('setValue','23:59:59'); }" name="srch_EndTime" id="srch_EndTime"
-                           style="width:150px">
-                </div>
-                <div class="left Lmg10">
-                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="queryData();" data-options="plain:true,iconCls:'icon-search'">查找</a>
-                </div>
-                @if (loginUser != null)
-                {
-                <div class="left Lmg10">
-                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="clearRecords();" data-options="plain:true,iconCls:'icon-remove'">清理记录</a>
-                </div>
-                }
-            </td>
-        </tr>
-    </table>
-</form>
+<div class="container">
+    <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);">
+        <div class="stat-box"><div class="stat-value" id="stRechargeTotal">0</div><div class="stat-label">记录总数</div></div>
+        <div class="stat-box"><div class="stat-value" id="stRechargeCoin">0</div><div class="stat-label">充值总量</div></div>
+        <div class="stat-box"><div class="stat-value" id="stRechargeDone">0</div><div class="stat-label">已处理</div></div>
+        <div class="stat-box"><div class="stat-value" id="stRechargePending">0</div><div class="stat-label">待处理</div></div>
+    </div>
+
+    <form id="frm_srch" class="filter-row">
+        <input type="text" class="ios-input" name="ID" placeholder="用户账号" style="flex:1 1 100px;min-width:96px;" />
+        <input type="text" class="ios-input" name="Agency" placeholder="所属代理" style="flex:1 1 100px;min-width:96px;" />
+        <input type="text" class="ios-input" name="OrderNo" placeholder="订单编号" style="flex:1 1 120px;min-width:120px;" />
+        <input type="text" class="ios-input" name="PayNo" placeholder="支付宝/微信号" style="flex:1 1 120px;min-width:120px;" />
+        <select name="Processed" class="ios-select" style="min-width:96px;">
+            <option value="-1" selected="selected">--全部--</option>
+            <option value="0">未处理</option>
+            <option value="1">已处理</option>
+        </select>
+        <input class="easyui-datetimebox filter-datetime" data-options="onShowPanel:function(){ $(this).datetimebox('spinner').timespinner('setValue','00:00:00'); }" name="srch_StartTime" id="srch_StartTime" style="width:150px">
+        <input class="easyui-datetimebox filter-datetime" data-options="onShowPanel:function(){ $(this).datetimebox('spinner').timespinner('setValue','23:59:59'); }" name="srch_EndTime" id="srch_EndTime" style="width:150px">
+        <button type="button" class="ios-btn" onclick="queryData();">查找</button>
+        @if (loginUser != null)
+        {
+            <button type="button" class="ios-btn danger-outline" onclick="clearRecords();">清理记录</button>
+        }
+    </form>
 
 @*点杀记录信息*@
+<div class="table-container">
+<div class="table-scroll">
 <table id="tb_ReChargeRecords">
     <thead>
         <tr>
@@ -292,3 +291,6 @@
     </thead>
 
 </table>
+</div>
+    <div class="scroll-hint">↔ 左右滑动查看更多数据</div>
+</div>

@@ -154,6 +154,27 @@ select.ios-select {
 .ios-btn.danger:hover { background: #e63028; }
 .ios-btn.danger-outline { background: var(--danger-light); color: var(--danger); border: 1px solid rgba(255, 59, 48, 0.2); }
 
+/* easyui 下拉/日期框在 iOS 筛选栏中的圆角覆盖（保留 easyui 交互与选择器） */
+.filter-row .combo {
+    border-radius: 8px;
+    height: 36px;
+    box-sizing: border-box;
+    border-color: var(--border);
+}
+.filter-row .combo .combo-text {
+    height: 34px !important;
+    line-height: 34px !important;
+    border-radius: 8px 0 0 8px;
+    font-size: 14px;
+    color: #333;
+}
+.filter-row .combo .combo-arrow {
+    height: 34px !important;
+    border-radius: 0 8px 8px 0;
+    width: 22px;
+    background-color: #fff;
+}
+
 /* ============================================================
    白底表格卡
    ============================================================ */

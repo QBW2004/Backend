@@ -7,6 +7,7 @@
 }
 
 @section include_res{
+    <link href="@Url.Content("~/Content/css/ios-page.css?v=" + ConfigHelper.Get("WebVer"))" rel="stylesheet" />
     <script>
       
         var currentRechargeType = null;
@@ -334,19 +335,52 @@
         .center { text-align: center; }
         .hide { display: none; }
         .tree-file { background: url('/Content/easyui/themes/icons/user_suit.png') no-repeat center center !important; }
-        .tree-node-selected { color: #ff0000 !important; }
-        .recharge-form { margin: 20px; padding: 20px; width: 560px; }
-        .recharge-form table { width: 100%; }
-        .recharge-label { width: 86px; text-align: right; white-space: nowrap; color: #333; }
+
+        /* ===== iOS 化(账户充值页) ===== */
+        /* 充值对象 / 充值区域 两个面板合成一张白卡片 */
+        #main.easyui-layout { background: transparent; }
+        #main .layout-panel { border-color: var(--border-light) !important; }
+        #main .layout-panel-west { border-radius: 12px 0 0 12px; overflow: hidden; }
+        #main .layout-panel-center { border-radius: 0 12px 12px 0; }
+        #main .layout-split-west { background: #fff; border-color: var(--border-light); }
+        #main .layout-panel-west .panel-header,
+        #main .layout-panel-center .panel-header { background: var(--bg-soft); border-color: var(--border-light); }
+        #main .layout-panel-title { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+
+        /* 左侧充值对象树 */
+        #typeTree { padding: 10px 6px; }
+        #typeTree .tree-node { border-radius: 8px; color: #333; }
+        #typeTree .tree-node-selected { background: var(--primary-light); border: none; }
+        #typeTree .tree-node-selected .tree-title { color: var(--primary) !important; }
+
+        /* 充值表单 */
+        .recharge-form { margin: 0 auto; padding: 28px 24px; width: 100%; max-width: 560px; box-sizing: border-box; }
+        .recharge-form table { width: 100%; border-collapse: collapse; }
+        .recharge-form table td { padding: 14px 4px; }
+        .recharge-label { width: 92px; text-align: right; white-space: nowrap; color: var(--text-secondary); font-size: 14px; }
         .recharge-field { text-align: left; }
-        .recharge-tip-row td { padding-left: 96px; color: #999; }
-        .coin-tip { display: inline-block; padding-left: 14px; color: #c00; white-space: nowrap; }
-        .account-combo { width: 180px; }
+        .recharge-tip-row td { padding-left: 100px; color: var(--text-tertiary); font-size: 13px; }
+        .coin-tip { display: inline-block; padding-left: 14px; color: var(--danger); white-space: nowrap; font-size: 13px; }
+
+        /* 账号下拉 / 金额输入 easyui 控件圆角化 */
+        .recharge-form .combo, .recharge-form .numberbox { height: 38px; border-radius: 8px; border-color: var(--border); }
+        .recharge-form .combo .combo-text,
+        .recharge-form .numberbox-text { height: 36px !important; font-size: 15px; border-radius: 8px 0 0 8px; color: var(--text-body); }
+        .recharge-form .combo .combo-arrow,
+        .recharge-form .numberbox .numberbox-arrow { height: 36px !important; border-radius: 0 8px 8px 0; background-color: #fff; }
+
+        /* 确定按钮 → iOS 蓝 */
+        #btnSaveCoin.l-btn { background: var(--primary); border: none; border-radius: 8px; height: 38px; padding: 0 44px; font-size: 15px; }
+        #btnSaveCoin.l-btn:hover { background: var(--primary-dark); }
+        #btnSaveCoin.l-btn-disabled, #btnSaveCoin.l-btn-disabled:hover { background: #c8d0da; opacity: 1; }
+        #btnSaveCoin .l-btn-icon { display: none; }
+        #btnSaveCoin .l-btn-text { margin: 0 !important; padding: 0; color: #fff; }
     </style>
 }
 
+<div class="container">
 <div id="main" class="easyui-layout" style="height:768px;width:100%;">
-    <div data-options="region:'west',title:'【充值对象】',split:true,collapsible:false" style="width:150px;">
+    <div data-options="region:'west',title:'【充值对象】',split:true,collapsible:false" style="width:200px;">
         <ul id="typeTree"></ul>
     </div>
     <div data-options="region:'center',title:'【充值区域】',collapsible:false">
@@ -404,4 +438,5 @@
             <h4 style="margin:10px;color:#f00;">对不起，没有充值权限！</h4>
         }
     </div>
+</div>
 </div>
