@@ -6,6 +6,7 @@
 }
 
 @section include_res{
+    <link href="@Url.Content("~/Content/css/ios-page.css?v=" + ConfigHelper.Get("WebVer"))" rel="stylesheet" />
     <script>
         $(function () {
             // 加载指定的模块
@@ -93,35 +94,44 @@
     </script>
     <style>
         ul, ul li { list-style: none; margin: 0; padding: 0; }
-        ul li { display: inline; padding: 10px; }
-        .w_90 { width: 90px; }
-        .w_200 { width: 200px; }
-        #txtContents p { padding: 5px; margin: 0; border-bottom: 1px solid #efefef; background: #ffffff; }
-        #txtContents p:hover { background: #efefef; }
+        /* ===== iOS 化(实时分数页) ===== */
+        #main.easyui-layout { background: transparent; }
+        #main .layout-panel { border-color: var(--border-light) !important; }
+        #main .layout-panel-center { border-radius: 12px; }
+        #main .layout-panel-center .panel-header { background: var(--bg-soft); border-color: var(--border-light); }
+        #main .layout-panel-title { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+        .oc-tip { padding: 12px 16px; color: var(--text-tertiary); font-size: 13px; }
+        #form1 { padding: 12px 16px 4px; }
+        #form1 ul li { display: inline-block; padding: 6px 8px 6px 0; vertical-align: middle; }
+        #form1 .ios-select { min-width: 110px; }
+        #form1 .ios-input { width: 200px; }
+        #txtContents { border-radius: 12px; background: #fff; box-shadow: var(--shadow-card); margin: 4px 16px 16px; box-sizing: border-box; }
+        #txtContents p { padding: 8px 12px; margin: 0; border-bottom: 1px solid var(--border-light); background: #fff; font-size: 13px; line-height: 20px; }
+        #txtContents p:first-child { border-radius: 12px 12px 0 0; }
+        #txtContents p:hover { background: var(--bg-hover); }
     </style>
 }
+<div class="container">
 <div id="main" class="easyui-layout" style="height:768px;width:100%;">
     <div data-options="region:'center',title:'【内容区域】',collapsible:false">
         @if (loginUser != null && loginUser.UserPriv == 0)
         {
             <div>
                 <form id="form1">
-                    <p style="padding-left: 10px;">
-                        提示：该功能用于实时查询玩家分数，只能用于总管理。
-                    </p>
+                    <div class="oc-tip">提示：该功能用于实时查询玩家分数，只能用于总管理。</div>
                     <ul>
-                        <li style="padding-right:0;">
-                            <select class="easyui-combobox w_90" data-options="panelHeight:120,editable:false" name="idType">
+                        <li>
+                            <select class="ios-select" name="idType">
                                 <option value="0" selected>用户账号</option>
                                 <option value="1">用户ID</option>
                             </select>
                         </li>
-                        <li style="padding-left:0;">
+                        <li>
                             ：
-                            <input type="text" class="easyui-textbox w_200" name="UserID" data-options="required:true, missingMessage:'不能为空'" />
+                            <input type="text" class="ios-input" name="UserID" placeholder="请输入" />
                         </li>
                         <li>
-                            <a href="javascript:void(0);" class="easyui-linkbutton" onclick="getUserData()" data-options="plain:true,iconCls:'icon-search'">查询</a>
+                            <button type="button" class="ios-btn" onclick="getUserData();">查询</button>
                         </li>
                     </ul>
                 </form>
@@ -131,4 +141,5 @@
             </div>
         }
     </div>
+</div>
 </div>

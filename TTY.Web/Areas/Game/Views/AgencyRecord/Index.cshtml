@@ -5,6 +5,7 @@
     M_LoginUser loginUser = WebHelper.GetLoginInfo();
 }
 @section include_res{
+    <link href="@Url.Content("~/Content/css/ios-page.css?v=" + ConfigHelper.Get("WebVer"))" rel="stylesheet" />
     <script>
         $(function () {
             // 加载指定的模块
@@ -51,7 +52,10 @@
                     pageList: [10, 20, 50],
                     idField: 'USER',
                     onBeforeLoad: setGridSize,
-                    onLoadSuccess: onLoaded
+                    onLoadSuccess: function () {
+                        if (typeof onLoaded === 'function') onLoaded();
+                        renderAgencyRecordStats();
+                    }
                 });
             } else {
                 $('#tb_AgencyRecords').datagrid('load', para);
@@ -113,46 +117,53 @@
                 });
             });
         }
+        // 代理记录统计（按当前页 rows 计算）
+        function renderAgencyRecordStats() {
+            var rows = [];
+            try { rows = $('#tb_AgencyRecords').datagrid('getRows') || []; } catch (e) { }
+            var total = rows.length, rc = 0, ex = 0, login = 0;
+            $.each(rows, function (i, r) {
+                var o = parseInt(r.OPT, 10);
+                if (o == 0) rc++;
+                else if (o == 1) ex++;
+                else if (o == 2 || o == 3) login++;
+            });
+            $('#stARTotal').text(total);
+            $('#stARRecharge').text(rc);
+            $('#stARExchange').text(ex);
+            $('#stARLogin').text(login);
+        }
     </script>
 }
-@*查询条件*@
-<form id="frm_srch">
-    <table width="100%" border="0" cellpadding="0" cellspacing="0" class="titleQueBg" style="height:40px;">
-        <tr>
-            <td>
-                <div class="left Lpd5">
-                    搜索账号
-                    <input type="text" class="easyui-textbox" name="ID" />
-                </div>
-                <div class="left Lpd5">
-                    操作类型
-                    <select class="easyui-combobox" data-options="panelHeight:180,editable:false" name="OPT" style="width:155px;">
-                        <option value="-1" selected>-- 全部 --</option>
-                        <option value="0">充值</option>
-                        <option value="1">兑换</option>
-                        <option value="2">登录</option>
-                        <option value="3">退出</option>
-                    </select>
-                </div>
-                <div class="left Lpd5">
-                    时间
-                    <input type="text" class="easyui-datebox" name="TIME" value="return GetDate()" />
-                </div>
-                <div class="left Lmg10">
-                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="queryData();" data-options="plain:true,iconCls:'icon-search'">查找</a>
-                </div>
-                @if (loginUser != null && loginUser.UserPriv == 0)
-                {
-                <div class="left Lmg10">
-                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="clearRecords();" data-options="plain:true,iconCls:'icon-remove'">清理记录</a>
-                </div>
-                }
-            </td>
-        </tr>
-    </table>
-</form>
+<div class="container">
+    <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);">
+        <div class="stat-box"><div class="stat-value" id="stARTotal">0</div><div class="stat-label">记录总数</div></div>
+        <div class="stat-box"><div class="stat-value" id="stARRecharge">0</div><div class="stat-label">充值</div></div>
+        <div class="stat-box"><div class="stat-value" id="stARExchange">0</div><div class="stat-label">兑换</div></div>
+        <div class="stat-box"><div class="stat-value" id="stARLogin">0</div><div class="stat-label">登录·退出</div></div>
+    </div>
+
+    <form id="frm_srch" class="filter-row">
+        <input type="text" class="ios-input" name="ID" placeholder="搜索账号" style="flex:1 1 110px;min-width:110px;" />
+        <select name="OPT" class="ios-select" style="min-width:96px;">
+            <option value="-1" selected>-- 全部 --</option>
+            <option value="0">充值</option>
+            <option value="1">兑换</option>
+            <option value="2">登录</option>
+            <option value="3">退出</option>
+        </select>
+        <label class="filter-label">时间：</label>
+        <input type="text" class="easyui-datebox filter-datetime" name="TIME" value="return GetDate()" style="width:135px">
+        <button type="button" class="ios-btn" onclick="queryData();">查找</button>
+        @if (loginUser != null && loginUser.UserPriv == 0)
+        {
+            <button type="button" class="ios-btn danger-outline" onclick="clearRecords();">清理记录</button>
+        }
+    </form>
 
 @*查询代理的信息*@
+<div class="table-container">
+<div class="table-scroll">
 <table id="tb_AgencyRecords">
     <thead>
         <tr>
@@ -162,3 +173,7 @@
         </tr>
     </thead>
 </table>
+</div>
+    <div class="scroll-hint">↔ 左右滑动查看更多数据</div>
+</div>
+</div>

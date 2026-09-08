@@ -102,6 +102,11 @@ body {
     flex-wrap: wrap;
     margin-bottom: 12px;
 }
+.filter-label {
+    font-size: 14px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
 
 /* iOS 控件 */
 .ios-select, .ios-input {

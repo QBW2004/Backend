@@ -5,6 +5,7 @@
     M_LoginUser loginUser = WebHelper.GetLoginInfo();
 }
 @section include_res{
+    <link href="@Url.Content("~/Content/css/ios-page.css?v=" + ConfigHelper.Get("WebVer"))" rel="stylesheet" />
     <script>
         $(function () {
             // 加载指定的模块
@@ -48,7 +49,10 @@
                     pageList: [10, 20, 50],
                     idField: 'USER',
                     onBeforeLoad: setGridSize,
-                    onLoadSuccess: onLoaded
+                    onLoadSuccess: function () {
+                        if (typeof onLoaded === 'function') onLoaded();
+                        renderUCRecordStats();
+                    }
                 });
             } else {
                 $('#tb_UCRecords').datagrid('load', para);
@@ -78,6 +82,22 @@
             if (!value) return '<span style="color:#bbb;">--</span>';
             return value;
         }
+        // 点杀记录统计（按当前页 rows 计算）
+        function renderUCRecordStats() {
+            var rows = [];
+            try { rows = $('#tb_UCRecords').datagrid('getRows') || []; } catch (e) { }
+            var total = rows.length, kill = 0, release = 0, control = 0;
+            $.each(rows, function (i, r) {
+                var o = parseInt(r.Opt, 10);
+                if (o == 1 || o == 3 || o == 21) kill++;
+                else if (o == 2 || o == 4 || o == 22) release++;
+                else if ((o >= 5 && o <= 17) || o == 23) control++;
+            });
+            $('#stUCTotal').text(total);
+            $('#stUCKill').text(kill);
+            $('#stUCRelease').text(release);
+            $('#stUCControl').text(control);
+        }
         function clearRecords() {
             $.messager.confirm('确认', '确定要清空全部点杀记录吗？此操作不可恢复！', function (r) {
                 if (!r) return;
@@ -94,34 +114,26 @@
         }
     </script>
 }
-@*查询条件*@
-<form id="frm_srch">
-    <table width="100%" border="0" cellpadding="0" cellspacing="0" class="titleQueBg" style="height:40px;">
-        <tr>
-            <td>
-                <div class="left Lpd5">
-                    用户账号：
-                    <input type="text" class="easyui-textbox" name="ID" />
-                </div>
-                @*<div class="left Lpd5">
-                    代理：
-                    <input type="text" class="easyui-textbox" name="AGENCY" />
-                </div>*@
-                <div class="left Lmg10">
-                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="queryData();" data-options="plain:true,iconCls:'icon-search'">查找</a>
-                </div>
-                @if (loginUser != null && loginUser.UserPriv == 0)
-                {
-                <div class="left Lmg10">
-                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="clearRecords();" data-options="plain:true,iconCls:'icon-remove'">清理记录</a>
-                </div>
-                }
-            </td>
-        </tr>
-    </table>
-</form>
+<div class="container">
+    <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);">
+        <div class="stat-box"><div class="stat-value" id="stUCTotal">0</div><div class="stat-label">记录总数</div></div>
+        <div class="stat-box"><div class="stat-value" id="stUCKill">0</div><div class="stat-label">点杀</div></div>
+        <div class="stat-box"><div class="stat-value" id="stUCRelease">0</div><div class="stat-label">放水</div></div>
+        <div class="stat-box"><div class="stat-value" id="stUCControl">0</div><div class="stat-label">控牌</div></div>
+    </div>
+
+    <form id="frm_srch" class="filter-row">
+        <input type="text" class="ios-input" name="ID" placeholder="用户账号" style="flex:1 1 160px;min-width:160px;" />
+        <button type="button" class="ios-btn" onclick="queryData();">查找</button>
+        @if (loginUser != null && loginUser.UserPriv == 0)
+        {
+            <button type="button" class="ios-btn danger-outline" onclick="clearRecords();">清理记录</button>
+        }
+    </form>
 
 @*点杀记录信息*@
+<div class="table-container">
+<div class="table-scroll">
 <table id="tb_UCRecords">
     <thead>
         <tr>
@@ -135,3 +147,7 @@
         </tr>
     </thead>
 </table>
+</div>
+    <div class="scroll-hint">↔ 左右滑动查看更多数据</div>
+</div>
+</div>
