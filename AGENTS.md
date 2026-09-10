@@ -1,6 +1,6 @@
 # AGENTS.md — MTH-Backend（MTH 游戏平台运营后台）
 
-> 供 AI 代理 / 新成员快速上手。最后核实时间：**2026-08-29**（含线上服务器实况调查，调查方式见文末）。
+> 供 AI 代理 / 新成员快速上手。最后核实时间：**2026-09-10**（线上部署 1.0.35；服务器实况调查为 2026-08-29，调查方式见文末）。
 
 ## 项目是什么
 
@@ -89,8 +89,8 @@ ssh -i "$HOME\.ssh\mht-server-ed25519" -o IdentitiesOnly=yes administrator@134.1
 | 磁盘 | 仅 C:（338/360 GB 空闲）。**没有 D 盘** |
 | IIS | `Default Web Site` → `C:\Backend`，绑定 `*:80` + `*:8081`，应用池 DefaultAppPool（v4.0 / 64 位），运行正常，本机探测 HTTP 200 |
 | 公网 | 80 / 8081 均可达（返回 302 跳登录页） |
-| 部署版本 | **WebVer = 1.0.23**（2026-09-02 部署，手机端权限策略 + 记录 7×24 窗口与 gameprizerecord 清理，备份 `C:\Backend_backup_20260902_201631`，部署前库备份 `C:\mth_backup_20260902_201442.sql`）；此前 1.0.22（2026-09-01 部署，权限/中奖页终版）；1.0.20（2026-08-31 部署，手机端改版，备份 `C:\Backend_backup_20260831_011351`）。SQL 补丁已全部执行：性能索引（`Docs/sql/性能索引.sql`）、`Docs/sql/线上games名称修正.sql`（games.Name 正常 UTF-8 中文）、`Docs/sql/手机端后台权限与记录保留-20260902.sql`（幂等，gameprizerecord 表 + 记录清理索引已就位）；`usercontrolstatus`/`usercontrolvalue` 表线上已存在 |
-| MySQL | 5.7.44，服务名 `MySQL57`，`C:\mysql\bin\mysqld.exe --defaults-file=C:\mysql\my.ini`，库 mth，`lower_case_table_names=1`，users≈124 行 / admin≈7 行（数据量很小） |
+| 部署版本 | **WebVer = 1.0.35**（2026-09-10 部署，代理列表继承链展示/统计 + 会员盈亏改实际游戏输赢口径 + 代理流水日期区间与「代/玩」流向 + 充值页余额实时刷新，备份 `C:\Backend_backup_20260910_213641`）；同日此前 1.0.33（备份 `C:\Backend_backup_20260910_121647`、`..._120736`、`..._020837`）；1.0.23（2026-09-02 部署，手机端权限策略 + 记录 7×24 窗口与 gameprizerecord 清理，备份 `C:\Backend_backup_20260902_201631`，部署前库备份 `C:\mth_backup_20260902_201442.sql`）；1.0.20（2026-08-31 部署，手机端改版）。SQL 补丁已全部执行：性能索引（`Docs/sql/性能索引.sql`）、`Docs/sql/线上games名称修正.sql`（games.Name 正常 UTF-8 中文）、`Docs/sql/手机端后台权限与记录保留-20260902.sql`（幂等，gameprizerecord 表 + 记录清理索引已就位）；`usercontrolstatus`/`usercontrolvalue` 表线上已存在。1.0.35 未新增 SQL 补丁（复用 `idx_udw_day` 等既有索引） |
+| MySQL | 5.7.44，服务名 `MySQL57`，`C:\mysql\bin\mysqld.exe --defaults-file=C:\mysql\my.ini`，库 mth，`lower_case_table_names=1`，users≈191 行 / admin≈31 行（PRIV>0 的代理 30 行，数据量很小） |
 | 端口监听 | 80、8081（HTTP.sys）、3306、3389(RDP) |
 | 中心服 | **本机没有**：找不到 `ServerCenterNew.exe`（扫到两层深度）、无 `mynamedpipe`/`MTH_RobotPipe` 命名管道、无 8020/8021/9000 监听 |
 | 其他 | 防火墙三档全启用；装有 Chrome（有人 RDP 使用）；无相关计划任务 |
@@ -118,6 +118,8 @@ ssh -i "$HOME\.ssh\mht-server-ed25519" -o IdentitiesOnly=yes administrator@134.1
 - 数据库结构变更参考根目录 `mth.sql` + `docker/mysql/init/` 迁移补丁的顺序加载机制。
 - 读接口禁止全量 `ToList()` 后内存分页/排序/求和——玩家与记录类查询一律 SQL 下推（参考 `B_Users.QueryUsersPaged` / `B_ReChargeRecords.GetReChargeRecordsForPhone`，见 `Docs/手机端性能优化-20260829.md`）。`/Game`、`/Mobile` 已改只读会话，往这两个区域加写 Session 的代码需先确认（当前仅 `Game/UserInfo/Register` 例外可写）。
 - **线上部署前先在 MySQL57 对 mth 库执行 `Docs/sql/性能索引.sql`**（幂等；核心表二级索引 + user_daily_winloss.UserID 字符集对齐，未执行则新查询走不了索引）。
+- 单测用 `"C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\CommonExtensions\Microsoft\TestWindow\vstest.console.exe" UnitTestProj/bin/Release/UnitTestProj.dll` 跑。**24 个走库的用例会失败**（`Recharge_Test_*`、`GetAgenciesBy*`、`CoinReports`、`Exchange_Test_2`、`GetBetParams` 等）——根因是 `UnitTestProj/App.config` 的 `<system.data><DbProviderFactories>` 只注册了 SQLite，MySQL 仅注册在 `<entityFramework>` 段，`DbProviderFactories.GetFactory("MySql.Data.MySqlClient")` 直接抛 ArgumentException，且连接串指向已失效的 `192.168.0.101`。属既有环境问题（该文件自首次提交未改过），不是代码回归；纯逻辑与视图契约用例（`AgencyRulesTest`、`ViewContractTest`）可正常跑。
+- 部署脚本里没有 `deploy.ps1` 的自动同步：线上用的是 `C:\Users\Administrator\Desktop\deploy.ps1`，与仓库 `Tools/deploy/deploy.ps1` 内容一致（2026-09-10 校验）。改仓库脚本后记得同步过去，否则线上跑的仍是旧逻辑。
 
 ## 调查方式（可复现）
 
