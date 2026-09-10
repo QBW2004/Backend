@@ -100,8 +100,10 @@
 
     .filter-bottom-row {
         display: flex;
+        flex-wrap: wrap;
         justify-content: space-between;
         align-items: center;
+        gap: 8px 12px;
         width: 100%;
     }
 
@@ -109,16 +111,24 @@
         display: flex;
         align-items: center;
         margin-top: 8px;
-        flex: 1;
+        /* flex-basis:auto：占位按内容自然宽度算，和"筛选"按钮一行放不下时
+           整块换到下一行，而不是被压缩到几个字宽把标签挤成多行 */
+        flex: 1 1 auto;
         flex-wrap: wrap;
+        min-width: 0;
     }
 
+    /* 统计项整体不收缩、不拆行：中文可在任意两字间断行，
+       本行还要和"筛选"按钮分宽度，窄屏上"总充值（币）:"曾被拆成
+       "总充值" / "（币）:" 两行。放不下时整项换行（由 .stats-container 负责）。 */
     .stats-item {
         display: flex;
         align-items: center;
         margin-right: 20px;
         font-size: 14px;
         color: #666;
+        white-space: nowrap;
+        flex-shrink: 0;
     }
 
     .stats-value {
@@ -231,6 +241,11 @@
             min-width: 0;
             width: calc(50% - 6px);
         }
+
+        /* 日期区间占满整行，不再和筛选按钮分宽度（按钮在 .filter-bottom-row 里） */
+        .m-date-field {
+            width: 100%;
+        }
     }
 </style>
 }
@@ -245,14 +260,12 @@
 
         <!-- 筛选控件 -->
         <div class="filter-container">
-            <div class="filter-row">
-                <div class="filter-item">
-                    <div class="filter-label">开始日期</div>
-                    <input type="date" id="startDate" class="filter-input" value="@today">
-                </div>
-                <div class="filter-item">
-                    <div class="filter-label">结束日期</div>
-                    <input type="date" id="endDate" class="filter-input" value="@today">
+            <div class="m-date-field">
+                <div class="m-date-label">日期</div>
+                <div class="m-date-range">
+                    <input type="date" id="startDate" value="@today">
+                    <span class="m-date-range-sep">至</span>
+                    <input type="date" id="endDate" value="@today">
                 </div>
             </div>
             <div class="filter-row">
@@ -274,10 +287,10 @@
             <div class="filter-bottom-row">
                 <div class="stats-container">
                     <div class="stats-item">
-                        总充值（金币）: <span class="stats-value positive" id="totalRecharge">0</span>
+                        总充值（币）: <span class="stats-value positive" id="totalRecharge">0</span>
                     </div>
                     <div class="stats-item">
-                        总退分（金币）: <span class="stats-value negative" id="totalWithdraw">0</span>
+                        总退分（币）: <span class="stats-value negative" id="totalWithdraw">0</span>
                     </div>
                 </div>
                 <button class="filter-btn" id="filterBtn">筛选</button>
@@ -292,9 +305,9 @@
                         <th>操作人</th>
                         <th>玩家账号</th>
                         <th>玩家名称</th>
-                        <th>充退数量（金币）</th>
-                        <th>充退前金币</th>
-                        <th>充退后金币</th>
+                        <th>充退数量（币）</th>
+                        <th>充退前币</th>
+                        <th>充退后币</th>
                         <th>充退时间</th>
                     </tr>
                 </thead>

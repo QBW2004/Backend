@@ -233,6 +233,7 @@
      * @param {Object} o
      *   title, subtitle, bodyHTML
      *   actions: [{label, type, value}]  竖排大按钮（.modal-action-btn）
+     *   actionsInline: true 时动作按钮并排一行、宽度均分（只有两个动作时用）
      *   buttons: [{label, type, value}]  底部按钮（.modal-btn.confirm）
      *   onRender($modal): 弹窗渲染后回调
      *   beforeClose(value, $modal): 返回 false 可阻止关闭（用于表单校验）
@@ -265,7 +266,7 @@
         }
 
         if (o.actions && o.actions.length) {
-            var $acts = $('<div class="modal-actions"></div>');
+            var $acts = $('<div class="modal-actions' + (o.actionsInline ? ' inline' : '') + '"></div>');
             $.each(o.actions, function (i, a) {
                 var $b = $('<button type="button" class="modal-action-btn ' + (a.type || '') + '"></button>');
                 $b.text(a.label);
@@ -366,6 +367,129 @@
         });
     };
 
+    /* ---------------- 控牌牌型表（控制页与玩家列表共用，移植电脑端 UserInfo/Index.cshtml） ---------------- */
+
+    // 牌机 13 种牌型（与服务端 te_CardsType 枚举 0..12 一致）
+    var TC_CARD_TYPES = [
+        { ht: 0, name: '杂牌' }, { ht: 1, name: '对子' }, { ht: 2, name: '两对' },
+        { ht: 3, name: '三条' }, { ht: 4, name: '杂顺' }, { ht: 5, name: '同花' },
+        { ht: 6, name: '葫芦' }, { ht: 7, name: '小四梅' }, { ht: 8, name: '大四梅' },
+        { ht: 9, name: '同花顺' }, { ht: 10, name: '五梅' }, { ht: 11, name: '同花大顺' },
+        { ht: 12, name: '五鬼' }
+    ];
+    // 各牌机游戏倍率（与台机设定 GC_MAG_TAB 一致；ATT3 取 middle 档）
+    var TC_MAG_TAB = {
+        phenix: [0, 1, 2, 3, 5, 7, 10, 40, 80, 120, 250, 500, 1000],
+        king3:  [0, 1, 2, 3, 5, 7, 10, 60, 60, 120, 250, 500, 1000],
+        dazhi:  [0, 1, 2, 3, 5, 7, 15, 65, 65, 150, 350, 250, 350],
+        nba:    [0, 1, 2, 3, 5, 7, 10, 50, 50, 100, 400, 200, 1000],
+        att3:   [0, 1, 2, 3, 5, 7, 10, 50, 50, 120, 400, 200, 1000]
+    };
+
+    function tcMagKey(action) {
+        if (action == 5) return 'dazhi';
+        if (action == 7) return 'att3';
+        if (action == 12) return 'king3';
+        if (action == 13) return 'nba';
+        return 'phenix';
+    }
+
+    // 牌机型(5-14)牌型下拉：0-12 + 99 关闭控制（大字板五鬼已下线）
+    function cardTypeDataForPaiji(action) {
+        var mags = TC_MAG_TAB[tcMagKey(action)];
+        var arr = [];
+        for (var i = 0; i < TC_CARD_TYPES.length; i++) {
+            var t = TC_CARD_TYPES[i];
+            if (action == 5 && t.ht == 12) continue;
+            arr.push({ id: t.ht, text: t.name + '(' + mags[t.ht] + '倍)' });
+        }
+        arr.push({ id: 99, text: '关闭控制' });
+        return arr;
+    }
+
+    function cardTypeDataForShz() {
+        return [
+            { id: 0, text: '双斧(2倍)' }, { id: 1, text: '双枪(3倍)' }, { id: 2, text: '大刀(4倍)' },
+            { id: 3, text: '鲁智深(5倍)' }, { id: 4, text: '林冲(8倍)' }, { id: 5, text: '宋江(10倍)' },
+            { id: 6, text: '替天行道旗(15倍)' }, { id: 7, text: '忠义堂(20倍)' },
+            { id: 8, text: '水浒传龙标·散标(30倍/免费触发)' }, { id: 10, text: '关闭控制' }
+        ];
+    }
+
+    function cardTypeDataForMx97() {
+        return [
+            { id: 0, text: '樱桃(10倍)' }, { id: 1, text: '橘子(10倍)' }, { id: 2, text: '蓝莓(14倍)' },
+            { id: 3, text: '铃铛(18倍)' }, { id: 4, text: '西瓜(20倍)' }, { id: 5, text: '黄BAR(30倍)' },
+            { id: 6, text: '红BAR(50倍)' }, { id: 7, text: '蓝BAR(70倍)' }, { id: 8, text: '七(80倍+)' },
+            { id: 10, text: '关闭控制' }
+        ];
+    }
+
+    // 水果拉霸控牌=强制大转盘指向面板位（与机台设定的 24 面板位一致）；id=30+面板位，10=关闭
+    function cardTypeDataForFruit() {
+        var panels = [
+            '橘子·大(10倍)', '铃铛·大(20倍)', 'BAR·小(50倍)', 'BAR·大(120倍)', '苹果(5倍)', '苹果·小(3倍)',
+            '柠檬·大(15倍)', '西瓜·大(20倍)', '西瓜·小(3倍)', '送灯位(免费局)', '苹果(5倍)', '橘子·小(3倍)',
+            '橘子·大(10倍)', '铃铛·大(20倍)', '双7·小(3倍)', '双7·大(40倍)', '苹果(5倍)', '柠檬·小(3倍)',
+            '柠檬·大(15倍)', '星星·小(3倍)', '星星·大(30倍)', '送灯位(免费局)', '苹果(5倍)', '铃铛·小(3倍)'
+        ];
+        var arr = [];
+        for (var i = 0; i < panels.length; i++)
+            arr.push({ id: 30 + i, text: '面板' + i + ' · ' + panels[i] });
+        arr.push({ id: 10, text: '关闭控制' });
+        return arr;
+    }
+
+    M.CARD_ACTIONS = [
+        { id: 5, text: '大字版控制' }, { id: 7, text: 'ATT3控制' }, { id: 12, text: '金皇冠' },
+        { id: 13, text: 'NBA' }, { id: 14, text: '火凤凰' }, { id: 15, text: '水浒传' },
+        { id: 16, text: '明星97' }, { id: 17, text: '水果拉霸' }
+    ];
+
+    /** 控牌游戏(GameId/cardAction) -> 名称，如 5 -> “大字版控制” */
+    M.cardActionName = function (action) {
+        for (var i = 0; i < M.CARD_ACTIONS.length; i++)
+            if (M.CARD_ACTIONS[i].id == action) return M.CARD_ACTIONS[i].text;
+        return '游戏' + action;
+    };
+
+    /** 指定游戏的牌型下拉数据（含倍率文案） */
+    M.cardTypeData = function (action) {
+        action = parseInt(action, 10);
+        if (action == 15) return cardTypeDataForShz();
+        if (action == 16) return cardTypeDataForMx97();
+        if (action == 17) return cardTypeDataForFruit();
+        return cardTypeDataForPaiji(action);
+    };
+
+    /** 牌型值 -> 名称，如 大字版控制(5) + 9 -> “同花顺(150倍)” */
+    M.cardTypeName = function (action, value) {
+        var rows = M.cardTypeData(action);
+        for (var i = 0; i < rows.length; i++)
+            if (rows[i].id == value) return rows[i].text;
+        return '牌型' + value;
+    };
+
+    /**
+     * 控牌参数主体（不含"（1次/5把）"后缀，供各页套自己的外层格式）：
+     * “大字版控制 同花顺(150倍)”。
+     * GameId<5 属历史/异常数据，没有游戏类型可映射，退回只显示牌型值。
+     */
+    M.cardControlParams = function (gameId, cardValue) {
+        if (parseInt(gameId, 10) >= 5) {
+            return M.cardActionName(gameId) + ' ' + M.cardTypeName(gameId, cardValue);
+        }
+        return '控牌值 ' + M.num(cardValue);
+    };
+
+    /**
+     * 控牌完整参数文案（控制页状态行与玩家列表卡片共用）：
+     * “大字版控制 同花顺(150倍)（1次/5把）”。
+     */
+    M.cardControlText = function (gameId, cardValue) {
+        return M.cardControlParams(gameId, cardValue) + '（1次/5把）';
+    };
+
     /* ---------------- 代理详细信息弹窗 ---------------- */
 
     /**
@@ -391,13 +515,14 @@
                 '<div><span>最后登录</span><b>' + M.esc(M.fmtTime(a.LastLoginTime, true)) + '</b></div>' +
                 '<div><span>邀请码</span><b>' + M.esc(a.InviteCode || '--') + '</b></div>' +
                 '<div><span>上级代理</span><b>' + M.esc(a.AGENCY || '--') + '</b></div>' +
-                '<div><span>剩余金币</span><b class="blue-text">' + M.gold(a.COINS) + '</b></div>' +
+                '<div><span>剩余币</span><b class="blue-text">' + M.gold(a.COINS) + '</b></div>' +
                 '<div><span>剩余分</span><b>' + M.num(a.RemainingScore || 0) + '</b></div>' +
                 '<div class="agent-create-child-row"><span>创建下级</span><label class="m-switch"><input type="checkbox" id="agentCreateChild" ' + (Number(a.IsCreateAgent) === 1 ? 'checked' : '') + '><span></span></label><span class="agent-save-state" id="agentSaveState"></span></div>' +
                 '</div>';
             var dlg = M.modal({
                 title: '代理详细信息',
                 bodyHTML: body,
+                actionsInline: true,
                 actions: [
                     { label: '流水', value: 'flow', type: 'secondary' },
                     { label: '充值', value: 'recharge', type: 'primary' }

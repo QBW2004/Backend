@@ -15,6 +15,10 @@ namespace YYT.Web.Areas.Game.Controllers
     [MemberAuthorize]
     public class UserRecordController : BaseController
     {
+        // 中奖记录页不展示的游戏：八爪鱼（42）按运营要求去掉卡片与记录。
+        // 只作用于本页，不动 games.Enable——该字段同时决定游戏配置/游戏记录/鱼机控制等页面的可见性。
+        private static readonly int[] PrizeHistoryExcludedGameIds = { 42 };
+
         // GET: Game/UserRecord
         public ActionResult Index()
         {
@@ -118,7 +122,8 @@ namespace YYT.Web.Areas.Game.Controllers
                             return Json(list);
                     }
 
-                    List<M_Games> games = ef.Games.Where(g => g.Enable == 1 && g.GameType != 0)
+                    List<M_Games> games = ef.Games.Where(g => g.Enable == 1 && g.GameType != 0
+                            && !PrizeHistoryExcludedGameIds.Contains(g.GameId))
                         .OrderBy(g => g.GameType).ThenBy(g => g.GameId).ToList();
                     gameMeta = games.Select(g => (object)new { GameId = g.GameId, Name = g.Name, GameType = g.GameType }).ToList();
                     List<int> gameIds = games.Select(g => g.GameId).ToList();

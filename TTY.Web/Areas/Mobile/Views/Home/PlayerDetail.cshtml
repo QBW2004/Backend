@@ -1,7 +1,7 @@
 ﻿@{
     /* 玩家详细信息（独立页面，替代原玩家弹窗里的详情浮层）
        数据源：/Game/UserInfo/GetUserDetail（含总控状态 Controls）
-       操作：密码修改 /Game/UserInfo/ChgPwd；游戏记录 /Game/UserRecord/GetUserRecords */
+       操作：密码修改 /Game/UserInfo/ChgPwd；游戏记录 /Mobile/Home/GameRecord */
     string webVer = ConfigHelper.Get("WebVer");
     string playerAccount = (string)(ViewBag.PlayerAccount ?? "");
     bool canModifyPwd = ViewBag.CanModifyPwd == true;
@@ -190,7 +190,7 @@
                 <span class="d-value muted" id="dControl">--</span>
             </div>
             <div class="d-row"><span class="d-label">剩余分数</span><span class="d-value" id="dScore">--</span></div>
-            <div class="d-row"><span class="d-label">剩余金币</span><span class="d-value" id="dCoins">--</span></div>
+            <div class="d-row"><span class="d-label">剩余币</span><span class="d-value" id="dCoins">--</span></div>
             <div class="d-row"><span class="d-label">今日充值</span><span class="d-value" id="dTodayBuy">--</span></div>
             <div class="d-row"><span class="d-label">今日退分</span><span class="d-value" id="dTodayBack">--</span></div>
             <div class="d-row"><span class="d-label">今日盈亏</span><span class="d-value" id="dTodayWinLoss">--</span></div>
@@ -204,7 +204,7 @@
         <div class="page-actions">
             <button class="page-action-btn primary" id="btnRecharge" type="button" disabled>充值</button>
             <button class="page-action-btn orange" id="btnPrizeHistory" type="button" disabled>中奖历史</button>
-            <button class="page-action-btn purple" id="btnGameTrack" type="button" disabled>游戏轨迹</button>
+            <button class="page-action-btn purple" id="btnGameTrack" type="button" disabled>游戏记录</button>
         </div>
     </div>
 

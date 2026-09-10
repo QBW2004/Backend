@@ -14,9 +14,7 @@
     /* ---------------- 数据 ---------------- */
 
     function fetchAgencies(query) {
-        // IncludeDescendants=1：下钻某个代理时返回其名下整条继承链，而不是只看一层；
-        // 这样“下级代理”的数量与下钻后实际看到的行数保持一致。
-        return M.post('/Game/AgencyInfo/GetAgencies', $.extend({ ID: '', Agency: '', page: 1, rows: FETCH_ROWS, IncludeDescendants: 1 }, query || {}));
+        return M.post('/Game/AgencyInfo/GetAgencies', $.extend({ ID: '', Agency: '', page: 1, rows: FETCH_ROWS }, query || {}));
     }
 
     function fetchAllOnce() {
@@ -48,12 +46,8 @@
         $('#noData').hide();
         $body.html(rows.map(function (a) {
             var subCount = Number(a.SubAgencyCount || 0);
-            // 继承链缩进：下级代理按层级内缩，直观体现“谁开的代理挂在谁名下”。
-            var depth = Number(a.AgencyTreeDepth || 0);
-            var indent = depth > 0 ? ' style="padding-left:' + (depth * 12) + 'px;"' : '';
-            var branch = depth > 0 ? '<span class="agent-tree-branch">└</span>' : '';
             return '<tr data-id="' + M.esc(a.ID) + '">' +
-                '<td class="account-cell"><span class="agent-detail-btn" data-id="' + M.esc(a.ID) + '"' + indent + '>' + branch + M.esc(a.ID) + '</span></td>' +
+                '<td class="account-cell"><span class="agent-detail-btn" data-id="' + M.esc(a.ID) + '">' + M.esc(a.ID) + '</span></td>' +
                 '<td>' + M.gold(a.COINS) + '</td>' +
                 '<td>' + (subCount > 0
                     ? '<span class="sub-agents-btn" data-id="' + M.esc(a.ID) + '">' + subCount + '个</span>'
@@ -133,7 +127,7 @@
                 return '<div class="search-result-item" data-id="' + M.esc(a.ID) + '" data-name="' + M.esc(a.ID) + '">' +
                     '<div class="search-result-row"><span class="search-result-label">账号</span><span class="search-result-value">' + M.esc(a.ID) + '</span></div>' +
                     '<div class="search-result-row"><span class="search-result-label">邀请码</span><span class="search-result-value">' + M.esc(a.InviteCode || '--') + '</span></div>' +
-                    '<div class="search-result-row"><span class="search-result-label">剩余金币</span><span class="search-result-value">' + M.gold(a.COINS) + '</span></div>' +
+                    '<div class="search-result-row"><span class="search-result-label">剩余币</span><span class="search-result-value">' + M.gold(a.COINS) + '</span></div>' +
                     '<div class="search-result-row"><span class="search-result-label">注册时间</span><span class="search-result-value">' + M.fmtTime(a.CreateTime) + '</span></div>' +
                     '</div>';
             }).join(''));

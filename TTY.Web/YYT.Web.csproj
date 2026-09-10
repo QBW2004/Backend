@@ -1594,6 +1594,7 @@
 
     <Content Include="Scripts\app\phone\phone.players.js" />
     <Content Include="Scripts\app\phone\phone.prizehistory.js" />
+    <Content Include="Scripts\app\phone\phone.gamerecord.js" />
 
     <Content Include="Scripts\app\phone\phone.core.js" />
     <Content Include="Scripts\app\mobile\mobile.players.js" />
@@ -1607,6 +1608,7 @@
     <Content Include="Areas\Mobile\Views\Home\Records.cshtml" />
     <Content Include="Areas\Mobile\Views\Home\PrizeHistory.cshtml" />
     <Content Include="Areas\Mobile\Views\Home\AgentFlow.cshtml" />
+    <Content Include="Areas\Mobile\Views\Home\GameRecord.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />

@@ -69,34 +69,6 @@
         box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
 
-    .filter-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 12px;
-    }
-
-    .filter-item {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        flex: 1;
-        min-width: 140px;
-    }
-
-    .filter-label {
-        font-size: 14px;
-        color: #666;
-    }
-
-    .filter-input {
-        padding: 8px 12px;
-        border: 1px solid #e5e5e5;
-        border-radius: 6px;
-        font-size: 14px;
-        color: #333;
-        width: 100%;
-    }
-
     .filter-btn {
         padding: 8px 16px;
         background-color: #007aff;
@@ -106,7 +78,6 @@
         cursor: pointer;
         font-weight: 500;
         transition: all 0.3s;
-        margin-top: auto;
         width: 120px;
         -webkit-appearance: none;
         appearance: none;
@@ -114,6 +85,12 @@
 
     .filter-btn:hover {
         background-color: #0066cc;
+    }
+
+    /* 查询按钮独占一行、靠右对齐（日期区间条已占满上一行） */
+    .filter-actions {
+        display: flex;
+        justify-content: flex-end;
     }
 
     /* 表格 */
@@ -220,11 +197,6 @@
         .container {
             padding: 12px;
         }
-
-        .filter-row .filter-item {
-            min-width: 0;
-            width: calc(50% - 6px);
-        }
     }
 </style>
 }
@@ -238,22 +210,22 @@
                 <span class="agent-info-value highlight" id="agentAccount">--</span>
             </div>
             <div class="agent-info-row">
-                <span class="agent-info-label">当前金币:</span>
+                <span class="agent-info-label">当前币:</span>
                 <span class="agent-info-value" id="agentCoins">--</span>
             </div>
         </div>
 
         <!-- 筛选控件 -->
         <div class="filter-container">
-            <div class="filter-row">
-                <div class="filter-item">
-                    <div class="filter-label">开始日期</div>
-                    <input type="date" id="startDate" class="filter-input" value="@today">
+            <div class="m-date-field">
+                <div class="m-date-label">日期</div>
+                <div class="m-date-range">
+                    <input type="date" id="startDate" value="@today">
+                    <span class="m-date-range-sep">至</span>
+                    <input type="date" id="endDate" value="@today">
                 </div>
-                <div class="filter-item">
-                    <div class="filter-label">结束日期</div>
-                    <input type="date" id="endDate" class="filter-input" value="@today">
-                </div>
+            </div>
+            <div class="filter-actions">
                 <button class="filter-btn" id="filterBtn">筛选</button>
             </div>
         </div>
@@ -265,8 +237,8 @@
                     <tr>
                         <th>日期</th>
                         <th>代理账号</th>
-                        <th>金币</th>
-                        <th>剩余金币</th>
+                        <th>币</th>
+                        <th>剩余币</th>
                         <th>来源</th>
                         <th>流向</th>
                     </tr>

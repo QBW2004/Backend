@@ -597,6 +597,17 @@ namespace UnitTestProj
         }
 
         [TestMethod]
+        public void PrizeHistoryExcludesConfiguredGamesFromListAndRecords()
+        {
+            string userRecordController = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\UserRecordController.cs");
+
+            // 游戏 42 不再出现在中奖记录的卡片与记录里；且不得靠改 games.Enable 实现
+            //（该字段同时控制游戏配置、游戏记录、鱼机控制等页面）。
+            StringAssert.Contains(userRecordController, "PrizeHistoryExcludedGameIds = { 42 }");
+            StringAssert.Contains(userRecordController, "!PrizeHistoryExcludedGameIds.Contains(g.GameId)");
+        }
+
+        [TestMethod]
         public void CoinOperationsRejectNonPositiveAmountsAndQueryRequiresUpDownPermission()
         {
             string userInfoController = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\UserInfoController.cs");
@@ -632,6 +643,7 @@ namespace UnitTestProj
         public void MobileFastPathAndEffectiveRechargeContractsRemainWired()
         {
             string playersScript = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.players.js");
+            string detailScript = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.playerdetail.js");
             string controlScript = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.control.js");
             string rechargeScript = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.recharge.js");
             string rechargeController = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\RechargeController.cs");
@@ -647,20 +659,21 @@ namespace UnitTestProj
             StringAssert.Contains(playersScript, "attachActiveControls");
             // 玩家列表卡片不再展示冻结状态（冻结账号只在冻结明细/冻结账号页查看）
             Assert.IsFalse(playersScript.Contains("冻结中"));
-            // 列表里的控制状态文案与控制管理页同口径，不再出现"X中..."过程性前缀
-            StringAssert.Contains(playersScript, "'目标 ' + M.gold(control.TargetCoins)");
+            // 列表里的控制状态带"吃分中/放水中/控牌中"执行中前缀，明细与控制管理页同口径
+            StringAssert.Contains(playersScript, "'吃分中... 目标 ' + M.gold(control.TargetCoins)");
+            StringAssert.Contains(playersScript, "'放水中... 目标 ' + M.gold(control.TargetCoins)");
+            StringAssert.Contains(playersScript, "'控牌中... ' + M.cardControlText(control.GameId, control.LimitCoins)");
             StringAssert.Contains(playersScript, "已吃分 ");
             StringAssert.Contains(playersScript, "已放分 ");
-            Assert.IsFalse(playersScript.Contains("吃分中"));
-            Assert.IsFalse(playersScript.Contains("放水中"));
-            Assert.IsFalse(playersScript.Contains("控牌中"));
+            // 玩家详情页控制状态文案：吃分/放水必须闭合「（目标 N 已吃分/已放分 N）」
+            StringAssert.Contains(detailScript, "分 ' + M.gold(progress) + '）'");
             StringAssert.Contains(controlScript, "MobileRequest: 1");
             StringAssert.Contains(controlBll, "QueueTotalUcCommand");
             StringAssert.Contains(controlScript, "r.text || '操作成功'");
             Assert.IsFalse(controlScript.Contains("已受理"));
             Assert.IsFalse(controlBll.Contains("已受理"));
             StringAssert.Contains(rechargeScript, "成功！已向");
-            StringAssert.Contains(rechargeScript, "金币。");
+            StringAssert.Contains(rechargeScript, "币。");
             Assert.IsFalse(rechargeView.Contains("💎"));
             Assert.IsFalse(recordsView.Contains("<th>备注</th>"));
             StringAssert.Contains(rechargeBll, "c.Processed == 1");
@@ -671,6 +684,40 @@ namespace UnitTestProj
             StringAssert.Contains(rechargeBase, "QueueLockPlayer");
             StringAssert.Contains(rechargeBase, "QueueUnlockPlayer");
             StringAssert.Contains(rechargeController, "new B_ReChargeBase(rechargeUser, rechargeTarget, mobileRequest)");
+        }
+
+        [TestMethod]
+        public void CardControlNamingIsSharedBetweenControlAndPlayerList()
+        {
+            string phoneCore = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.core.js");
+            string playersScript = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.players.js");
+            string controlScript = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.control.js");
+            string detailScript = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.playerdetail.js");
+
+            // 牌型/倍率表只在 phone.core.js 存一份，控制页与玩家列表共用
+            StringAssert.Contains(phoneCore, "M.CARD_ACTIONS = [");
+            StringAssert.Contains(phoneCore, "M.cardActionName = function (action)");
+            StringAssert.Contains(phoneCore, "M.cardTypeName = function (action, value)");
+            StringAssert.Contains(phoneCore, "M.cardTypeData = function (action)");
+            StringAssert.Contains(phoneCore, "M.cardControlParams = function (gameId, cardValue)");
+            StringAssert.Contains(phoneCore, "M.cardControlText = function (gameId, cardValue)");
+            // 大字版控制同花顺 = 150 倍（dazhi 档），与控制页下拉同源
+            StringAssert.Contains(phoneCore, "dazhi:  [0, 1, 2, 3, 5, 7, 15, 65, 65, 150, 350, 250, 350]");
+
+            // 控制页不再自带一份牌型表，改用共享 API
+            Assert.IsFalse(controlScript.Contains("var CARD_ACTIONS = ["));
+            Assert.IsFalse(controlScript.Contains("var TC_CARD_TYPES = ["));
+            Assert.IsFalse(controlScript.Contains("var TC_MAG_TAB = {"));
+            StringAssert.Contains(controlScript, "M.cardControlText(gameId, killRatio)");
+            StringAssert.Contains(controlScript, "M.CARD_ACTIONS");
+
+            // 玩家列表控牌状态用同一份命名，不再显示裸控牌值
+            Assert.IsFalse(playersScript.Contains("'控牌中... 控牌值 '"));
+            StringAssert.Contains(playersScript, "M.cardControlText(control.GameId, control.LimitCoins)");
+
+            // 玩家详情页同样不再显示裸控牌值
+            Assert.IsFalse(detailScript.Contains("'控牌（控牌值 '"));
+            StringAssert.Contains(detailScript, "M.cardControlParams(r.GameId, r.LimitCoins)");
         }
 
         [TestMethod]
@@ -710,6 +757,9 @@ namespace UnitTestProj
             StringAssert.Contains(phoneCore, "'/Mobile/Home/AgentFlow?id='");
             StringAssert.Contains(phoneCore, "'/Mobile/Home/Recharge?id='");
             StringAssert.Contains(agentsScript, "M.showAgentDetail(id)");
+            // 弹窗内「流水 / 充值」并排一行，样式由 phone.css 提供
+            StringAssert.Contains(phoneCore, "actionsInline: true");
+            StringAssert.Contains(phoneCss, ".modal-actions.inline {");
             // 弹窗样式已收敛到 phone.css，页面不得再各自复制一份
             StringAssert.Contains(phoneCss, ".agent-detail-modal");
             StringAssert.Contains(phoneCss, ".m-switch input:checked + span");
@@ -718,7 +768,7 @@ namespace UnitTestProj
         }
 
         [TestMethod]
-        public void MobileAgentListShowsWholeInheritanceChain()
+        public void MobileAgentListShowsDirectChildrenOnly()
         {
             string agentsScript = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.agents.js");
             string agentsView = ReadRepoFile(@"TTY.Web\Areas\Mobile\Views\Home\Agents.cshtml");
@@ -726,22 +776,24 @@ namespace UnitTestProj
             string adminBll = ReadRepoFile(@"YYT.BLL\EF\B_Admin.cs");
             string rules = ReadRepoFile(@"YYT.BLL\EF\AgencyRules.cs");
 
-            // 手机端下钻某个代理时取整条继承链，而不是只看直属一层
-            StringAssert.Contains(agentsScript, "IncludeDescendants: 1");
-            StringAssert.Contains(controller, "form.Q<int>(\"IncludeDescendants\", 0) == 1");
-            StringAssert.Contains(adminBll, "GetAgencyList(M_Page mPage, M_Admin entity, M_LoginUser loginUser, bool includeDescendants)");
-            StringAssert.Contains(adminBll, "AgencyRules.CollectDescendants(links, entity.AGENCY)");
+            // 手机端下钻只看直属下级，不带整条链参数
+            Assert.IsFalse(agentsScript.Contains("IncludeDescendants"));
+            Assert.IsFalse(controller.Contains("IncludeDescendants"));
+            StringAssert.Contains(adminBll, "rst.Where(c => c.AGENCY.Equals(entity.AGENCY));");
 
-            // “下级代理”数量按整条继承链统计，且统计基准是权限范围内的全量代理，
-            // 避免下钻后该层下级不在结果集里而整列显示 0 个
-            StringAssert.Contains(rules, "BuildDescendantCounts(IEnumerable<AgencyLink> links)");
-            StringAssert.Contains(adminBll, "AgencyRules.BuildDescendantCounts(links)");
-            StringAssert.Contains(adminBll, "chainCounts.TryGetValue(agency.ID, out chainCount)");
+            // “下级代理”数量只统计直属下级，不含更深层级
+            StringAssert.Contains(rules, "BuildDirectChildCounts(IEnumerable<AgencyLink> links)");
+            StringAssert.Contains(adminBll, "AgencyRules.BuildDirectChildCounts(links)");
+            StringAssert.Contains(adminBll, "childCounts.TryGetValue(agency.ID, out childCount)");
 
-            // 列表按层级内缩，直观体现“谁开的代理挂在谁名下”
-            StringAssert.Contains(agentsScript, "a.AgencyTreeDepth");
-            StringAssert.Contains(agentsScript, "agent-tree-branch");
-            StringAssert.Contains(agentsView, ".agent-tree-branch");
+            // 数量基准是权限范围内的全量代理，避免下钻后该层下级不在结果集里而整列显示 0 个
+            StringAssert.Contains(adminBll, "var scoped = loginUser.UserPriv == 0");
+            StringAssert.Contains(adminBll, "List<AgencyRules.AgencyLink> links = scoped");
+
+            // 账号列不再做树状缩进
+            Assert.IsFalse(agentsScript.Contains("agent-tree-branch"));
+            Assert.IsFalse(agentsScript.Contains("AgencyTreeDepth"));
+            Assert.IsFalse(agentsView.Contains(".agent-tree-branch"));
         }
 
         [TestMethod]
@@ -763,6 +815,92 @@ namespace UnitTestProj
             StringAssert.Contains(loginController, "RedirectToAction(\"Mobile\", \"Login\")");
             StringAssert.Contains(loginController, "return View(\"Index\")");
             StringAssert.Contains(desktopView, "Url.Action(\"LoginOut\",\"Login\")");
+        }
+
+        [TestMethod]
+        public void MobileGameRecordOpensDedicatedPageInsteadOfModal()
+        {
+            string playersScript = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.players.js");
+            string detailScript = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.playerdetail.js");
+            string recordScript = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.gamerecord.js");
+            string recordView = ReadRepoFile(@"TTY.Web\Areas\Mobile\Views\Home\GameRecord.cshtml");
+            string controller = ReadRepoFile(@"TTY.Web\Areas\Mobile\Controllers\HomeController.cs");
+            string csproj = ReadRepoFile(@"TTY.Web\YYT.Web.csproj");
+
+            // 玩家列表弹窗与玩家详情页的入口都改为跳转独立页面，不再弹窗展示记录
+            StringAssert.Contains(playersScript, "function showGameRecord()");
+            StringAssert.Contains(playersScript, "'/Mobile/Home/GameRecord?id=' + encodeURIComponent(current.ID)");
+            StringAssert.Contains(detailScript, "function showGameRecord()");
+            StringAssert.Contains(detailScript, "'/Mobile/Home/GameRecord?id=' + encodeURIComponent(detail.ID)");
+            Assert.IsFalse(playersScript.Contains("showGameTrack"));
+            Assert.IsFalse(detailScript.Contains("showGameTrack"));
+            // 记录浮层下线后，两个页面不再内联拼记录内容/弹窗标题
+            Assert.IsFalse(playersScript.Contains("的今日游戏记录:"));
+            Assert.IsFalse(detailScript.Contains("的今日游戏轨迹:"));
+            Assert.IsFalse(playersScript.Contains("loadPlayerRecords"));
+            Assert.IsFalse(detailScript.Contains("loadPlayerRecords"));
+
+            // 独立页面外壳：日期筛选 + 表格 + 分页，数据仍走电脑端同款接口
+            StringAssert.Contains(controller, "public ActionResult GameRecord()");
+            StringAssert.Contains(controller, "ViewBag.Today = DateTime.Now.ToString(\"yyyy-MM-dd\")");
+            StringAssert.Contains(recordView, "id=\"recordDate\"");
+            StringAssert.Contains(recordView, "id=\"recordTableBody\"");
+            StringAssert.Contains(recordView, "id=\"prevBtn\"");
+            StringAssert.Contains(recordView, "id=\"nextBtn\"");
+            StringAssert.Contains(recordScript, "'/Game/UserRecord/GetUserRecords'");
+            // 列口径与电脑端"玩家记录"页一致：桌台号/位置号按 +1 展示，得分只取离开记录
+            StringAssert.Contains(recordScript, "(Number(rowData.TABLE_ID) + 1) + '号桌子'");
+            StringAssert.Contains(recordScript, "(Number(rowData.SEAT_ID) + 1) + '号位置'");
+            StringAssert.Contains(recordScript, "Number(rowData.LeaveCoins || 0) - Number(rowData.EnterCoins || 0)");
+
+            // 新增文件必须登记进老式 csproj，否则部署产物缺文件
+            StringAssert.Contains(csproj, @"Areas\Mobile\Views\Home\GameRecord.cshtml");
+            StringAssert.Contains(csproj, @"Scripts\app\phone\phone.gamerecord.js");
+        }
+
+        [TestMethod]
+        public void MobileWinLossAlwaysRendersGreenWhenWinningRedWhenLosing()
+        {
+            string phoneCss = ReadRepoFile(@"TTY.Web\Content\css\phone.css");
+            string controlView = ReadRepoFile(@"TTY.Web\Areas\Mobile\Views\Home\Control.cshtml");
+            string playersView = ReadRepoFile(@"TTY.Web\Areas\Mobile\Views\Home\Index.cshtml");
+            string huiyuanView = ReadRepoFile(@"TTY.Web\Areas\Mobile\Views\Home\Huiyuan.cshtml");
+            string detailScript = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.playerdetail.js");
+
+            // phone.css 先于各视图 head 里的 <style> 加载，而数值单元格常写成
+            // .member-table td{color:#333} / .info-value{color:#1d1d1f}，
+            // 不加 !important 盈亏会被覆盖成普通文字色（会员盈亏列表、玩家列表都中过招）
+            StringAssert.Contains(phoneCss, ".positive {\r\n    color: #34c759 !important;");
+            StringAssert.Contains(phoneCss, ".negative {\r\n    color: #ff3b30 !important;");
+
+            // 亏一律红色：不得残留把"输/亏"画成橙色的旧配色
+            Assert.IsFalse(controlView.Contains(".stat-value.negative {\r\n        color: #ff9500;"));
+            Assert.IsFalse(playersView.Contains(".total-win-loss.negative {\r\n        color: #ff9500;"));
+            StringAssert.Contains(controlView, ".stat-value.negative {");
+            StringAssert.Contains(playersView, ".total-win-loss.negative {");
+            // 页面自定义的着色规则必须落在 .positive/.negative 上，才能被上面的全站约定接管
+            StringAssert.Contains(huiyuanView, ".profit-stats-value.positive {");
+            StringAssert.Contains(huiyuanView, ".profit-stats-value.negative {");
+            // 玩家详情页 0 不上色（曾把 0 当成赢画成绿色），与列表页 M.signClass 同源
+            StringAssert.Contains(detailScript, "M.signClass(n)");
+        }
+
+        [TestMethod]
+        public void MobileBanPagesDoNotRepeatTitleBelowHeader()
+        {
+            string banPlayerView = ReadRepoFile(@"TTY.Web\Areas\Mobile\Views\Home\BanPlayer.cshtml");
+            string banAgentView = ReadRepoFile(@"TTY.Web\Areas\Mobile\Views\Home\BanAgent.cshtml");
+            string controller = ReadRepoFile(@"TTY.Web\Areas\Mobile\Controllers\HomeController.cs");
+
+            // 页面标题只在蓝色头部出现一次（_MobileLayout 的 h1 取 ViewBag.MTitle），内容区不再重复一行同名标题
+            StringAssert.Contains(controller, "ViewBag.MTitle = \"冻结账号\";");
+            StringAssert.Contains(controller, "ViewBag.MTitle = \"禁用代理\";");
+            Assert.IsFalse(banPlayerView.Contains("class=\"section-title\">冻结账号"));
+            Assert.IsFalse(banAgentView.Contains("class=\"section-title\">禁用代理"));
+
+            // 页面级 .section-title 覆盖只服务于那行重复标题，删标题时一并删除，别留死代码
+            Assert.IsFalse(banPlayerView.Contains(".section-title"));
+            Assert.IsFalse(banAgentView.Contains(".section-title"));
         }
     }
 }

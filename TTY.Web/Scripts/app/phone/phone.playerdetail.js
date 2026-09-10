@@ -3,7 +3,7 @@
    数据源：
      - /Game/UserInfo/GetUserDetail     详情（基础+今日/累计充退+总控状态+邀请码）
      - /Game/UserInfo/ChgPwd            修改玩家密码（需查看密码和修改密码权限）
-     - /Game/UserRecord/GetUserRecords  当日游戏记录（中奖历史 / 游戏轨迹）
+   操作：中奖历史 /Mobile/Home/PrizeHistory，游戏记录 /Mobile/Home/GameRecord
    ============================================================ */
 (function (window, $, M) {
     'use strict';
@@ -11,20 +11,16 @@
     var account = (window.MPagePreset && window.MPagePreset.account) || '';
     var detail = null;
 
-    function todayStr() {
-        var d = new Date();
-        return d.getFullYear() + '-' + M.pad2(d.getMonth() + 1) + '-' + M.pad2(d.getDate());
-    }
-
     /* ---------------- 渲染 ---------------- */
 
     function setMoney(sel, v) {
         $(sel).text(M.gold(v));
     }
 
+    /* 盈亏着色：正绿负红，0 保持普通文字色（与列表页 M.signClass 同一口径） */
     function setSigned(sel, v) {
         var n = Number(v || 0);
-        $(sel).html('<span class="' + (n >= 0 ? 'positive' : 'negative') + '">' + (n > 0 ? '+' : '') + M.gold(n) + '</span>');
+        $(sel).html('<span class="' + M.signClass(n) + '">' + (n > 0 ? '+' : '') + M.gold(n) + '</span>');
     }
 
     function renderCtrlStatus(rows) {
@@ -36,13 +32,14 @@
         var items = rows.map(function (r) {
             var mode = Number(r.ControlMode);
             if (mode == 6) {
-                return '控牌（控牌值 ' + M.esc(r.LimitCoins) + '，1次/5把）';
+                // 与控制页/玩家列表同一份牌型命名，不显示裸控牌值
+                return '控牌（' + M.cardControlParams(r.GameId, r.LimitCoins) + '，1次/5把）';
             }
             var isRelease = (mode == 5);
             var progress = isRelease ? Number(r.GrantedCoins || 0) : -Number(r.ConsumedCoins || 0);
             var name = mode == 4 ? '吃分' : '放水';
             return name + '（目标 ' + M.esc(r.TargetCoins) +
-                ' 已' + (isRelease ? '放' : '吃') + '分 ' + M.gold(progress);
+                ' 已' + (isRelease ? '放' : '吃') + '分 ' + M.gold(progress) + '）';
         });
         $el.attr('class', 'd-value ctrl-status-list')
             .html(items.map(function (t) { return '<span class="ctrl-status-item">' + M.esc(t) + '</span>'; }).join(''));
@@ -155,44 +152,15 @@
         });
     }
 
-    /** 玩家当日游戏记录（中奖历史 / 游戏轨迹共用） */
-    function loadPlayerRecords(acc) {
-        return M.post('/Game/UserRecord/GetUserRecords', { ID: acc, TIME: todayStr(), page: 1, rows: 20 })
-            .then(function (list) {
-                return (list && list.rows) ? list.rows : [];
-            }, function () {
-                return [];
-            });
-    }
-
     function showPrizeHistory() {
         if (!detail) return;
         window.location.href = '/Mobile/Home/PrizeHistory?id=' + encodeURIComponent(detail.ID);
     }
 
-    function showGameTrack() {
+    /** 游戏记录：独立页面展示（原弹窗浮层已下线） */
+    function showGameRecord() {
         if (!detail) return;
-        M.loading('查询中...');
-        loadPlayerRecords(detail.ID).always(M.hideLoading).then(function (rows) {
-            var body;
-            if (!rows.length) {
-                body = '<div class="modal-message" style="margin-bottom:0;">今日暂无记录</div>';
-            } else {
-                var lines = rows.map(function (r) {
-                    return '<div>' + M.fmtTime(r.REC_TIME) + ' - ' + M.esc(r.GameName || M.gameName(r.GAME_TYPE)) +
-                        ' 机台 ' + M.esc(r.TABLE_ID != null ? r.TABLE_ID : '--') +
-                        ' 押注 ' + M.gold(r.OPT_COINS) +
-                        ' 输赢 <span class="' + (Number(r.SCORE || 0) >= 0 ? 'positive' : 'negative') + '">' + M.gold(r.SCORE) + '</span></div>';
-                }).join('');
-                body = '<div style="width:100%; font-family:ui-monospace,monospace; background:#f8f9fa; padding:12px; border-radius:8px; border-left:4px solid #5856D6; font-size:13px; line-height:1.7; max-height:320px; overflow-y:auto; text-align:left;">' +
-                    '账号 ' + M.esc(detail.ID) + ' 的今日游戏轨迹:' + lines + '</div>';
-            }
-            M.modal({
-                title: '游戏轨迹',
-                bodyHTML: body,
-                buttons: [{ label: '关闭', value: null, type: 'confirm' }]
-            });
-        });
+        window.location.href = '/Mobile/Home/GameRecord?id=' + encodeURIComponent(detail.ID);
     }
 
     /* ---------------- 初始化 ---------------- */
@@ -206,7 +174,7 @@
             if (detail) window.location.href = '/Mobile/Home/Recharge?id=' + encodeURIComponent(detail.ID) + '&pay=0&role=player';
         });
         $('#btnPrizeHistory').on('click', showPrizeHistory);
-        $('#btnGameTrack').on('click', showGameTrack);
+        $('#btnGameTrack').on('click', showGameRecord);
 
         M.onRefresh(function () {
             M.runRefresh(function () { return load(); });

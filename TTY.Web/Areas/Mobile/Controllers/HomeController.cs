@@ -66,7 +66,7 @@ namespace YYT.Web.Areas.Mobile.Controllers
             ViewBag.MShowRefresh = true;
             ViewBag.MShowSearch = true;
             ViewBag.MHeaderTall = true;
-            ViewBag.MSubtitleHtml = "<div id=\"totalWinLossLabel\">今日在线玩家总输赢（金币）</div><div class=\"total-win-loss\" id=\"totalWinLoss\">0</div>";
+            ViewBag.MSubtitleHtml = "<div id=\"totalWinLossLabel\">今日在线玩家总输赢（币）</div><div class=\"total-win-loss\" id=\"totalWinLoss\">0</div>";
             ViewBag.CanUpDown = CanUpDown(user);
             ViewBag.CanFrozen = user != null;
             ViewBag.CanKick = IsSuper(user) || (user != null && user.IsKicking == 1);
@@ -123,7 +123,7 @@ namespace YYT.Web.Areas.Mobile.Controllers
             ViewBag.MTitle = "充值管理";
             ViewBag.MShowRefresh = false;
             ViewBag.OwnCoins = GetOwnCoins(user);
-            ViewBag.MSubtitleHtml = "当前金币余额: <span class=\"diamond-count\" id=\"currentDiamond\">" + ViewBag.OwnCoins + "</span>";
+            ViewBag.MSubtitleHtml = "当前币余额: <span class=\"diamond-count\" id=\"currentDiamond\">" + ViewBag.OwnCoins + "</span>";
             ViewBag.IsSuper = IsSuper(user);
 
             // 可操作对象范围，与桌面端 RechargeController.GetTreeDataByPermission 保持一致：
@@ -143,7 +143,7 @@ namespace YYT.Web.Areas.Mobile.Controllers
         }
 
         /// <summary>
-        /// 充值页页头"当前金币余额"实时刷新接口：每次实时查库返回登录账号最新余额。
+        /// 充值页页头"当前币余额"实时刷新接口：每次实时查库返回登录账号最新余额。
         /// 余额会随本账号上下分（代理扣/加）及上级给本账号充值而变化，页面轮询此接口即可保持实时。
         /// </summary>
         [AjaxOnly]
@@ -281,6 +281,21 @@ namespace YYT.Web.Areas.Mobile.Controllers
             ViewBag.MShowRefresh = true;
             ViewBag.PlayerAccount = Request.QueryString["id"] ?? string.Empty;
             ViewBag.Today = DateTime.Now.ToString("yyyy-MM-dd");
+            return View();
+        }
+
+        /// <summary>
+        /// 玩家游戏记录（独立手机页面，替代原玩家弹窗里的记录浮层）。
+        /// 数据由 /Game/UserRecord/GetUserRecords 提供；?id= 指定玩家账号。
+        /// </summary>
+        public ActionResult GameRecord()
+        {
+            ViewBag.MPage = "gamerecord";
+            ViewBag.MTitle = "游戏记录";
+            ViewBag.MShowRefresh = true;
+            ViewBag.Today = DateTime.Now.ToString("yyyy-MM-dd");
+            ViewBag.PlayerAccount = Request.QueryString["id"] ?? string.Empty;
+
             return View();
         }
 

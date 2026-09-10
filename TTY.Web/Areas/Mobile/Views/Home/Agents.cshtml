@@ -6,11 +6,16 @@
 
 @section head {
 <style>
-    /* 代理统计 */
+    /* 代理统计。
+       ⚠️ 中文标签必须 nowrap、统计项必须不可收缩：flex 项默认可收缩到 min-content，
+       而中文能在任意两字之间断行，窄屏（≤400px）或总币位数多时"代理统计/代理总数/总金币"
+       会被拆成"代理统"+"计"这样两行，看起来字挤成一团。放不下时改由整项换行。 */
     .stats-container {
         display: flex;
+        flex-wrap: wrap;
         justify-content: space-between;
         align-items: center;
+        gap: 10px 16px;
         margin-bottom: 16px;
         background-color: white;
         border-radius: 12px;
@@ -22,28 +27,35 @@
         font-size: 18px;
         font-weight: 600;
         color: #333;
+        white-space: nowrap;
     }
 
     .stats-info {
         display: flex;
-        gap: 16px;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 10px 16px;
+        min-width: 0;
     }
 
     .stats-item {
         display: flex;
         align-items: center;
         gap: 6px;
+        flex-shrink: 0;
     }
 
     .stats-label {
         font-size: 14px;
         color: #666;
+        white-space: nowrap;
     }
 
     .stats-value {
         font-size: 16px;
         font-weight: 600;
         color: #333;
+        white-space: nowrap;
     }
 
     .stats-value.diamond {
@@ -183,13 +195,6 @@
         color: #007aff;
         font-weight: 600;
         cursor: pointer;
-        display: inline-block;
-    }
-
-    /* 继承链缩进：下级代理挂在上级账号下方，层级越深越内缩 */
-    .agent-tree-branch {
-        color: #c0c4cc;
-        margin-right: 4px;
     }
 
     /* 代理详细信息弹窗样式在 phone.css（代理流水页共用同一个弹窗） */
@@ -447,7 +452,7 @@
                     <div class="stats-value" id="totalAgents">0</div>
                 </div>
                 <div class="stats-item">
-                    <div class="stats-label">总金币:</div>
+                    <div class="stats-label">总币:</div>
                     <div class="stats-value diamond" id="totalDiamonds">0</div>
                 </div>
             </div>
@@ -461,7 +466,7 @@
                 <thead>
                     <tr>
                         <th>账号</th>
-                        <th>剩余金币</th>
+                        <th>剩余币</th>
                         <th>下级代理</th>
                         <th>我的会员</th>
                         <th>邀请码</th>

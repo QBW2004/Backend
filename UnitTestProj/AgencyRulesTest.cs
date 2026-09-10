@@ -133,9 +133,9 @@ namespace UnitTestProj
         }
 
         [TestMethod]
-        public void DescendantCountsCoverWholeChainInsteadOfDirectChildrenOnly()
+        public void DirectChildCountsExcludeDeeperLevels()
         {
-            // 1688 → a147852 → a1231 → a1232，验证“下级代理”统计的是整条继承链。
+            // 1688 → a147852 → a1231 → a1232，每个代理只统计自己的直属下级。
             List<AgencyRules.AgencyLink> links = new List<AgencyRules.AgencyLink>
             {
                 new AgencyRules.AgencyLink("1688", "atmadmin"),
@@ -145,49 +145,30 @@ namespace UnitTestProj
                 new AgencyRules.AgencyLink("a1232", "a1231"),
             };
 
-            Dictionary<string, int> counts = AgencyRules.BuildDescendantCounts(links);
+            Dictionary<string, int> counts = AgencyRules.BuildDirectChildCounts(links);
 
-            Assert.AreEqual(4, counts["1688"]);
-            Assert.AreEqual(2, counts["a147852"]);
+            // 1688 的直属只有 10086 与 a147852；a147852 的直属只有 a1231（a1232 不算）。
+            Assert.AreEqual(2, counts["1688"]);
+            Assert.AreEqual(1, counts["a147852"]);
             Assert.AreEqual(1, counts["a1231"]);
-            Assert.AreEqual(0, counts["a1232"]);
+            Assert.IsFalse(counts.ContainsKey("a1232"));
         }
 
         [TestMethod]
-        public void CollectDescendantsReturnsWholeSubtreeUnderDrillDownNode()
+        public void DirectChildCountsIgnoreRootAndSelfParentedRows()
         {
             List<AgencyRules.AgencyLink> links = new List<AgencyRules.AgencyLink>
             {
-                new AgencyRules.AgencyLink("1688", "atmadmin"),
-                new AgencyRules.AgencyLink("10086", "1688"),
-                new AgencyRules.AgencyLink("8888", "1688"),
-                new AgencyRules.AgencyLink("a1231", "10086"),
-                new AgencyRules.AgencyLink("a1232", "a1231"),
+                new AgencyRules.AgencyLink("atmadmin", ""),
+                new AgencyRules.AgencyLink("selfloop", "selfloop"),
+                new AgencyRules.AgencyLink("child", "atmadmin"),
             };
 
-            CollectionAssert.AreEquivalent(
-                new[] { "10086", "8888", "a1231", "a1232" },
-                AgencyRules.CollectDescendants(links, "1688").ToArray());
-            CollectionAssert.AreEquivalent(
-                new[] { "a1231", "a1232" },
-                AgencyRules.CollectDescendants(links, "10086").ToArray());
-            Assert.AreEqual(0, AgencyRules.CollectDescendants(links, "a1232").Count);
-        }
+            Dictionary<string, int> counts = AgencyRules.BuildDirectChildCounts(links);
 
-        [TestMethod]
-        public void DescendantCountsSurviveCyclicParentData()
-        {
-            // 历史脏数据可能形成环形上下级关系，统计不能无限递归。
-            List<AgencyRules.AgencyLink> links = new List<AgencyRules.AgencyLink>
-            {
-                new AgencyRules.AgencyLink("a", "b"),
-                new AgencyRules.AgencyLink("b", "a"),
-            };
-
-            Dictionary<string, int> counts = AgencyRules.BuildDescendantCounts(links);
-
-            Assert.IsTrue(counts.ContainsKey("a"));
-            Assert.IsTrue(counts.ContainsKey("b"));
+            Assert.AreEqual(1, counts["atmadmin"]);
+            // 自己指向自己的脏数据不应把自己算成下级
+            Assert.IsFalse(counts.ContainsKey("selfloop"));
         }
 
         private sealed class FixedRandom : System.Random

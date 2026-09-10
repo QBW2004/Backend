@@ -7,9 +7,9 @@
 @section head {
 <style>
     .container { padding: 12px; max-width: 720px; margin: 0 auto; }
-    .history-filter { display:flex; gap:8px; margin-bottom:12px; }
-    .history-filter input { flex:1; min-width:0; height:40px; border:1px solid #ddd; border-radius:8px; padding:0 10px; }
-    .history-filter button { height:40px; border:0; border-radius:8px; background:#007aff; color:#fff; padding:0 16px; }
+    .history-filter { margin-bottom:12px; }
+    .history-filter-actions { display:flex; justify-content:flex-end; margin-top:8px; }
+    .history-filter button { height:40px; border:0; border-radius:8px; background:#007aff; color:#fff; padding:0 16px; font-size:14px; }
     .game-card { background:#fff; border-radius:12px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,.08); overflow:hidden; }
     .game-card-header { display:flex; align-items:center; justify-content:space-between; padding:14px 16px; font-weight:600; border-bottom:1px solid #eee; }
     .game-count { color:#8e8e93; font-size:13px; font-weight:400; }
@@ -28,9 +28,14 @@
 
 <div class="container">
     <div class="history-filter">
-        <input type="date" id="historyStart" value="@ViewBag.Today" />
-        <input type="date" id="historyEnd" value="@ViewBag.Today" />
-        <button type="button" id="historyQueryBtn">查询</button>
+        <div class="m-date-range">
+            <input type="date" id="historyStart" value="@ViewBag.Today" />
+            <span class="m-date-range-sep">至</span>
+            <input type="date" id="historyEnd" value="@ViewBag.Today" />
+        </div>
+        <div class="history-filter-actions">
+            <button type="button" id="historyQueryBtn">查询</button>
+        </div>
     </div>
     <div class="history-summary" id="historySummary">--</div>
     <div id="prizeHistoryList"></div>

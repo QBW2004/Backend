@@ -18,8 +18,8 @@
 
     function refreshAmountUi() {
         var payLabel = payType === 'withdraw' ? '退分' : '充值';
-        $('#amountLabel').text(payLabel + '金币');
-        $('#amountInput').attr('placeholder', '请输入' + payLabel + '金币数量');
+        $('#amountLabel').text(payLabel + '币');
+        $('#amountInput').attr('placeholder', '请输入' + payLabel + '币数量');
         $('#submitBtn').text(payLabel).toggleClass('is-withdraw', payType === 'withdraw');
     }
 
@@ -32,7 +32,7 @@
     /* ---------------- 页头余额实时刷新 ---------------- */
 
     /**
-     * 重新查库刷新页头"当前金币余额"。
+     * 重新查库刷新页头"当前币余额"。
      * 余额会随本账号上下分（代理扣/加）或上级给本账号充值而变化，不能只靠页面初次渲染。
      */
     function refreshOwnCoins() {
@@ -108,7 +108,7 @@
         if (submitting) return;
 
         var payLabel = payType === 'withdraw' ? '退分' : '充值';
-        M.confirm('确定要给 ' + queriedAccount + ' ' + payLabel + ' ' + M.gold(coin) + ' 金币吗？', payLabel + '确认').then(function (ok) {
+        M.confirm('确定要给 ' + queriedAccount + ' ' + payLabel + ' ' + M.gold(coin) + ' 币吗？', payLabel + '确认').then(function (ok) {
             if (!ok) return;
             submitting = true;
             $('#submitBtn').prop('disabled', true);
@@ -123,7 +123,7 @@
             }).always(M.hideLoading).then(function (res) {
                 var r = M.result(res);
                 var resultText = r.ok
-                    ? payLabel + '成功！已向' + (role === 'player' ? '玩家' : '代理') + queriedAccount + payLabel + M.gold(coin) + '金币。'
+                    ? payLabel + '成功！已向' + (role === 'player' ? '玩家' : '代理') + queriedAccount + payLabel + M.gold(coin) + '币。'
                     : r.text;
                 M.alert(resultText, r.ok, r.ok ? '操作成功' : '操作失败').then(function () {
                     if (r.ok) {

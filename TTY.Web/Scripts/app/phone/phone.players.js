@@ -6,7 +6,6 @@
      - /Game/UserInfo/GetOfflineUsers   离线玩家分页（支持排序）
      - /Game/UserInfo/GetUsers          搜索玩家
      - /Game/UserInfo/GetVisibleUserRows  按账号取玩家详情
-     - /Game/UserRecord/GetUserRecords  玩家当日游戏记录（中奖历史 / 游戏记录）
    ============================================================ */
 (function (window, $, M) {
     'use strict';
@@ -25,16 +24,11 @@
     var controlStatusCache = {};
     var controlStatusCacheTime = 30000; // 30秒缓存
 
-    function todayStr() {
-        var d = new Date();
-        return d.getFullYear() + '-' + M.pad2(d.getMonth() + 1) + '-' + M.pad2(d.getDate());
-    }
-
     /* ---------------- 头部总输赢 ---------------- */
 
     function renderTotalWinLoss(isOnline) {
         var total = isOnline ? onlineTotalWinLoss : offlineTotalWinLoss;
-        $('#totalWinLossLabel').text(isOnline ? '今日在线玩家总输赢（金币）' : '今日所有玩家总输赢（金币）');
+        $('#totalWinLossLabel').text(isOnline ? '今日在线玩家总输赢（币）' : '今日所有玩家总输赢（币）');
         var $el = $('#totalWinLoss');
         $el.text(M.gold(total));
         $el.removeClass('positive negative');
@@ -52,22 +46,24 @@
     /* ---------------- 在线玩家控制状态 ---------------- */
 
     /**
-     * 控制状态文案：与控制管理页（phone.control.js）保持同一口径——
-     * 吃分/放水为「目标 N 已吃分/已放分 N」，控牌为「控牌值 N（1次/5把）」。
-     * 刻意不带"进行中…"这类过程性前缀，避免同一个控制在两个页面出现两种说法。
+     * 控制状态文案：前缀标明控制正在执行（吃分中/放水中/控牌中），
+     * 明细部分与控制管理页（phone.control.js）保持同一口径——
+     * 吃分/放水为「目标 N 已吃分/已放分 N」，
+     * 控牌为「大字版控制 同花顺(150倍)（1次/5把）」
+     * （牌型表见 phone.core.js 的 M.cardControlText，与控制页共用）。
      */
     function activeControlText(control) {
         var mode = Number(control.ControlMode);
         if (mode === 4) {
-            return '目标 ' + M.gold(control.TargetCoins) +
+            return '吃分中... 目标 ' + M.gold(control.TargetCoins) +
                 ' 已吃分 ' + M.gold(-Number(control.ConsumedCoins || 0));
         }
         if (mode === 5) {
-            return '目标 ' + M.gold(control.TargetCoins) +
+            return '放水中... 目标 ' + M.gold(control.TargetCoins) +
                 ' 已放分 ' + M.gold(control.GrantedCoins);
         }
         if (mode === 6) {
-            return '控牌值 ' + M.num(control.LimitCoins) + '（1次/5把）';
+            return '控牌中... ' + M.cardControlText(control.GameId, control.LimitCoins);
         }
         return '';
     }
@@ -118,7 +114,7 @@
                     '</div>' +
                     '<div class="player-balances">' +
                         '<span class="remaining-score">' + M.num(p.Score != null ? p.Score : (p.GAME_SCORE || 0)) + '分</span>' +
-                        '<span class="remaining-diamond">' + M.gold(p.Coins != null ? p.Coins : p.COINS) + '金币</span>' +
+                        '<span class="remaining-diamond">' + M.gold(p.Coins != null ? p.Coins : p.COINS) + '币</span>' +
                     '</div>' +
                 '</div>' +
                 '<div class="player-info">' +
@@ -129,8 +125,8 @@
                         '<div class="info-item"><span class="info-label">押注</span><span class="info-value money-value">' + M.esc(betText) + '</span></div>' +
                     '</div>' +
                     '<div class="info-row money-row">' +
-                        '<div class="info-item"><span class="info-label">今日输赢(金币)</span><span class="info-value money-value ' + twColor + '">' + (today > 0 ? '+' : '') + M.gold(today) + '</span></div>' +
-                        '<div class="info-item"><span class="info-label">总输赢(金币)</span><span class="info-value money-value ' + ttColor + '">' + (total > 0 ? '+' : '') + M.gold(total) + '</span></div>' +
+                        '<div class="info-item"><span class="info-label">今日输赢(币)</span><span class="info-value money-value ' + twColor + '">' + (today > 0 ? '+' : '') + M.gold(today) + '</span></div>' +
+                        '<div class="info-item"><span class="info-label">总输赢(币)</span><span class="info-value money-value ' + ttColor + '">' + (total > 0 ? '+' : '') + M.gold(total) + '</span></div>' +
                     '</div>' +
                     controlRow +
                     loginRow +
@@ -338,44 +334,15 @@
         $('#playerModal').removeClass('show');
     }
 
-    /** 玩家当日游戏记录（中奖历史 / 游戏记录共用） */
-    function loadPlayerRecords(account) {
-        return M.post('/Game/UserRecord/GetUserRecords', { ID: account, TIME: todayStr(), page: 1, rows: 20 })
-            .then(function (list) {
-                return (list && list.rows) ? list.rows : [];
-            }, function () {
-                return [];
-            });
-    }
-
     function showPrizeHistory() {
         if (!current) return;
         window.location.href = '/Mobile/Home/PrizeHistory?id=' + encodeURIComponent(current.ID);
     }
 
-    function showGameTrack() {
+    /** 游戏记录：独立页面展示（原弹窗浮层已下线） */
+    function showGameRecord() {
         if (!current) return;
-        M.loading('查询中...');
-        loadPlayerRecords(current.ID).always(M.hideLoading).then(function (rows) {
-            var body;
-            if (!rows.length) {
-                body = '<div class="modal-message" style="margin-bottom:0;">今日暂无记录</div>';
-            } else {
-                var lines = rows.map(function (r) {
-                    return '<div>' + M.fmtTime(r.REC_TIME) + ' - ' + M.esc(r.GameName || M.gameName(r.GAME_TYPE)) +
-                        ' 机台 ' + M.esc(r.TABLE_ID != null ? r.TABLE_ID : '--') +
-                        ' 押注 ' + M.gold(r.OPT_COINS) +
-                        ' 输赢 <span class="' + (Number(r.SCORE || 0) >= 0 ? 'positive' : 'negative') + '">' + M.gold(r.SCORE) + '</span></div>';
-                }).join('');
-                body = '<div style="width:100%; font-family:ui-monospace,monospace; background:#f8f9fa; padding:12px; border-radius:8px; border-left:4px solid #5856D6; font-size:13px; line-height:1.7; max-height:320px; overflow-y:auto; text-align:left;">' +
-                    '账号 ' + M.esc(current.ID) + ' 的今日游戏记录:' + lines + '</div>';
-            }
-            M.modal({
-                title: '游戏记录',
-                bodyHTML: body,
-                buttons: [{ label: '关闭', value: null, type: 'confirm' }]
-            });
-        });
+        window.location.href = '/Mobile/Home/GameRecord?id=' + encodeURIComponent(current.ID);
     }
 
     /* ---------------- 搜索 ---------------- */
@@ -413,7 +380,7 @@
                             '<span class="search-result-name">' + M.esc(p.NAME || '') + '</span>' +
                             '<span class="search-result-status ' + (online ? 'online' : 'offline') + '">' + (online ? '在线' : '离线') + '</span>' +
                         '</div>' +
-                        '<div class="search-result-info">' + M.esc(p.AGENCY || '--') + ' · 余额: ' + M.gold(p.COINS) + '金币</div>' +
+                        '<div class="search-result-info">' + M.esc(p.AGENCY || '--') + ' · 余额: ' + M.gold(p.COINS) + '币</div>' +
                         '</div>';
                 }).join(''));
             });
@@ -483,7 +450,7 @@
             window.location.href = '/Mobile/Home/PlayerDetail?id=' + encodeURIComponent(current.ID);
         });
         $('#modalPrizeHistoryBtn').on('click', showPrizeHistory);
-        $('#modalTrackBtn').on('click', showGameTrack);
+        $('#modalTrackBtn').on('click', showGameRecord);
 
         // 搜索弹窗
         $('#searchModalCancelBtn').on('click', function () { $('#searchModal').removeClass('show'); });

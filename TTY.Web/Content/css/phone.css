@@ -38,12 +38,16 @@ textarea {
     appearance: none;
 }
 
+/* 盈亏着色（赢绿亏红）是全站约定，必须压过页面自定义的数值颜色：
+   本文件先于各视图 head 里的 <style> 加载，而数值单元格常写成
+   .member-table td{color:#333} / .info-value{color:#1d1d1f} 这类同优先级或更高优先级的规则，
+   不加 !important 盈亏会被覆盖成普通文字色。 */
 .positive {
-    color: #34c759;
+    color: #34c759 !important;
 }
 
 .negative {
-    color: #ff3b30;
+    color: #ff3b30 !important;
 }
 
 /* 图标全部是装饰：命中测试统一交给父级按钮/链接。部分安卓内核（微信 X5、
@@ -552,6 +556,73 @@ button, a {
     border-color: rgba(255, 59, 48, 0.3);
 }
 
+/* ---------------- 日期区间筛选 ---------------- */
+/* 原生 date 控件的内容宽度是固定的（Chrome 里 14px 字体约 135px，13px 约 120px），
+   再窄就会把年份裁掉。早期把「开始日期」「结束日期」两个 date 和 120px 的筛选按钮
+   塞进同一个 flex 行，输入框被压到 85px，日期文本被裁、控件互相压叠。
+   现在改成：日期区间独占整行（[date] 至 [date]），按钮一律移到下一行。 */
+.m-date-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+    min-width: 0;
+}
+
+.m-date-label {
+    font-size: 14px;
+    color: #666;
+}
+
+.m-date-range {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    width: 100%;
+}
+
+/* 单独一个日期（如游戏记录页）和区间里的两个日期共用同一套外观 */
+.m-date-field > input[type="date"],
+.m-date-range input[type="date"] {
+    height: 40px;
+    padding: 0 8px;
+    border: 1px solid #e5e5e5;
+    border-radius: 8px;
+    background-color: #fff;
+    color: #333;
+    font-size: 14px;
+}
+
+.m-date-field > input[type="date"] {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* flex-basis:auto 让基准宽度等于控件自身的固有宽度（= 完整显示日期的宽度），
+   于是换行判断天然按各浏览器的真实字体宽度来：两个日期放得下就同行平分，
+   放不下才各占一行。不再需要靠屏幕宽度猜断点，任何字体/机型都不会压出裁剪。
+   min-width:0 保证极端窄屏下宁可换行也不会溢出父容器。 */
+.m-date-range input[type="date"] {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.m-date-range-sep {
+    flex: 0 0 auto;
+    color: #8e8e93;
+    font-size: 13px;
+}
+
+.m-date-field > input[type="date"]::-webkit-calendar-picker-indicator,
+.m-date-range input[type="date"]::-webkit-calendar-picker-indicator {
+    /* 默认图标偏宽，小屏上会挤掉日期文本，收窄到 16px 换取约 4px 余量 */
+    width: 16px;
+    height: 16px;
+    margin-left: 2px;
+    opacity: 0.55;
+}
+
 /* ---------------- 表格 ---------------- */
 .table-container {
     background-color: white;
@@ -711,6 +782,20 @@ button, a {
 /* 带动作按钮的弹窗（玩家操作面板等） */
 .modal-actions {
     padding: 16px;
+}
+
+/* 动作按钮并排一行、宽度均分（代理详细信息弹窗的「流水 / 充值」） */
+.modal-actions.inline {
+    display: flex;
+    gap: 10px;
+}
+
+.modal-actions.inline .modal-action-btn {
+    flex: 1;
+    min-width: 0;
+    /* 并排两枚按钮时压缩上下留白，行高比竖排大按钮更紧凑 */
+    padding: 8px 16px;
+    margin-bottom: 0;
 }
 
 .modal-action-btn {
@@ -1026,6 +1111,18 @@ button, a {
         padding: 10px;
     }
 
+    /* 320px 屏上两个 date 各只剩约 120px，再压内边距和字号
+       （13px 字号下固有宽度约 120px）给日期文本留余量 */
+    .m-date-range {
+        gap: 6px;
+    }
+
+    .m-date-field > input[type="date"],
+    .m-date-range input[type="date"] {
+        padding: 0 4px;
+        font-size: 13px;
+    }
+
     .table-container table td {
         padding: 12px 8px;
         font-size: 14px;
@@ -1035,5 +1132,18 @@ button, a {
         padding: 3px 6px;
         font-size: 12px;
         max-width: 60px;
+    }
+}
+
+/* 一行放不下两个完整日期时（实测约 355px 以下）改为上下两行。
+   此时「至」会孤立地留在第一行末尾、指向不明，直接隐藏：两行本身
+   就是开始/结束的自然顺序。日期各占整行，宽度充足，自然也不会被裁。 */
+@media (max-width: 355px) {
+    .m-date-range-sep {
+        display: none;
+    }
+
+    .m-date-range input[type="date"] {
+        flex: 1 1 100%;
     }
 }

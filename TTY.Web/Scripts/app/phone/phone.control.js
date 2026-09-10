@@ -1,4 +1,4 @@
-/* ============================================================
+﻿/* ============================================================
    控制管理页（吃分 / 放水 / 控牌，对齐电脑端总控窗口）
    页面框架对齐参考站送奖管理：账号查询 → 统计卡 → 控制类型 → 动态参数 →
    应用控制。房间锁定 1 个，无场次。
@@ -17,97 +17,9 @@
     var current = null; // 当前查询的玩家
     var submitting = false;
 
-    /* ---------------- 控牌参数（移植电脑端 UserInfo/Index.cshtml） ---------------- */
-
-    // 牌机 13 种牌型（与服务端 te_CardsType 枚举 0..12 一致）
-    var TC_CARD_TYPES = [
-        { ht: 0, name: '杂牌' }, { ht: 1, name: '对子' }, { ht: 2, name: '两对' },
-        { ht: 3, name: '三条' }, { ht: 4, name: '杂顺' }, { ht: 5, name: '同花' },
-        { ht: 6, name: '葫芦' }, { ht: 7, name: '小四梅' }, { ht: 8, name: '大四梅' },
-        { ht: 9, name: '同花顺' }, { ht: 10, name: '五梅' }, { ht: 11, name: '同花大顺' },
-        { ht: 12, name: '五鬼' }
-    ];
-    // 各牌机游戏倍率（与台机设定 GC_MAG_TAB 一致；ATT3 取 middle 档）
-    var TC_MAG_TAB = {
-        phenix: [0, 1, 2, 3, 5, 7, 10, 40, 80, 120, 250, 500, 1000],
-        king3:  [0, 1, 2, 3, 5, 7, 10, 60, 60, 120, 250, 500, 1000],
-        dazhi:  [0, 1, 2, 3, 5, 7, 15, 65, 65, 150, 350, 250, 350],
-        nba:    [0, 1, 2, 3, 5, 7, 10, 50, 50, 100, 400, 200, 1000],
-        att3:   [0, 1, 2, 3, 5, 7, 10, 50, 50, 120, 400, 200, 1000]
-    };
-
-    function tcMagKey(action) {
-        if (action == 5) return 'dazhi';
-        if (action == 7) return 'att3';
-        if (action == 12) return 'king3';
-        if (action == 13) return 'nba';
-        return 'phenix';
-    }
-
-    // 牌机型(5-14)牌型下拉：0-12 + 99 关闭控制（大字板五鬼已下线）
-    function cardTypeDataForPaiji(action) {
-        var mags = TC_MAG_TAB[tcMagKey(action)];
-        var arr = [];
-        for (var i = 0; i < TC_CARD_TYPES.length; i++) {
-            var t = TC_CARD_TYPES[i];
-            if (action == 5 && t.ht == 12) continue;
-            arr.push({ id: t.ht, text: t.name + '(' + mags[t.ht] + '倍)' });
-        }
-        arr.push({ id: 99, text: '关闭控制' });
-        return arr;
-    }
-
-    function cardTypeDataForShz() {
-        return [
-            { id: 0, text: '双斧(2倍)' }, { id: 1, text: '双枪(3倍)' }, { id: 2, text: '大刀(4倍)' },
-            { id: 3, text: '鲁智深(5倍)' }, { id: 4, text: '林冲(8倍)' }, { id: 5, text: '宋江(10倍)' },
-            { id: 6, text: '替天行道旗(15倍)' }, { id: 7, text: '忠义堂(20倍)' },
-            { id: 8, text: '水浒传龙标·散标(30倍/免费触发)' }, { id: 10, text: '关闭控制' }
-        ];
-    }
-
-    function cardTypeDataForMx97() {
-        return [
-            { id: 0, text: '樱桃(10倍)' }, { id: 1, text: '橘子(10倍)' }, { id: 2, text: '蓝莓(14倍)' },
-            { id: 3, text: '铃铛(18倍)' }, { id: 4, text: '西瓜(20倍)' }, { id: 5, text: '黄BAR(30倍)' },
-            { id: 6, text: '红BAR(50倍)' }, { id: 7, text: '蓝BAR(70倍)' }, { id: 8, text: '七(80倍+)' },
-            { id: 10, text: '关闭控制' }
-        ];
-    }
-
-    // 水果拉霸控牌=强制大转盘指向面板位（与机台设定的 24 面板位一致）；id=30+面板位，10=关闭
-    function cardTypeDataForFruit() {
-        var panels = [
-            '橘子·大(10倍)', '铃铛·大(20倍)', 'BAR·小(50倍)', 'BAR·大(120倍)', '苹果(5倍)', '苹果·小(3倍)',
-            '柠檬·大(15倍)', '西瓜·大(20倍)', '西瓜·小(3倍)', '送灯位(免费局)', '苹果(5倍)', '橘子·小(3倍)',
-            '橘子·大(10倍)', '铃铛·大(20倍)', '双7·小(3倍)', '双7·大(40倍)', '苹果(5倍)', '柠檬·小(3倍)',
-            '柠檬·大(15倍)', '星星·小(3倍)', '星星·大(30倍)', '送灯位(免费局)', '苹果(5倍)', '铃铛·小(3倍)'
-        ];
-        var arr = [];
-        for (var i = 0; i < panels.length; i++)
-            arr.push({ id: 30 + i, text: '面板' + i + ' · ' + panels[i] });
-        arr.push({ id: 10, text: '关闭控制' });
-        return arr;
-    }
-
-    var CARD_ACTIONS = [
-        { id: 5, text: '大字版控制' }, { id: 7, text: 'ATT3控制' }, { id: 12, text: '金皇冠' },
-        { id: 13, text: 'NBA' }, { id: 14, text: '火凤凰' }, { id: 15, text: '水浒传' },
-        { id: 16, text: '明星97' }, { id: 17, text: '水果拉霸' }
-    ];
-
-    function cardActionName(action) {
-        for (var i = 0; i < CARD_ACTIONS.length; i++)
-            if (CARD_ACTIONS[i].id == action) return CARD_ACTIONS[i].text;
-        return '游戏' + action;
-    }
-
-    function cardTypeName(action, value) {
-        var rows = cardTypeData(parseInt(action, 10));
-        for (var i = 0; i < rows.length; i++)
-            if (rows[i].id == value) return rows[i].text;
-        return '牌型' + value;
-    }
+    /* ---------------- 控牌参数 ---------------- */
+    /* 牌型表与命名（M.CARD_ACTIONS / M.cardActionName / M.cardTypeData / M.cardControlText）
+       已移到 phone.core.js，与玩家列表卡片共用同一份，避免两个页面各维护一份倍率表。 */
 
     function fillSelect($sel, rows, keepValue) {
         var prev = keepValue ? $sel.val() : null;
@@ -117,13 +29,6 @@
         if (prev != null && $sel.find('option[value="' + $.escapeSelector(String(prev)) + '"]').length) {
             $sel.val(prev);
         }
-    }
-
-    function cardTypeData(action) {
-        if (action == 15) return cardTypeDataForShz();
-        if (action == 16) return cardTypeDataForMx97();
-        if (action == 17) return cardTypeDataForFruit();
-        return cardTypeDataForPaiji(action);
     }
 
     function modeName(mode) {
@@ -237,11 +142,8 @@
     function ctrlParamText(mode, gameId, killRatio, targetCoins, cardNumber, cardTotal) {
         mode = parseInt(mode, 10);
         if (mode == 6) {
-            // 历史/异常数据可能没有游戏类型（GameId<5），只显示牌型值
-            if (parseInt(gameId, 10) >= 5) {
-                return cardActionName(gameId) + ' ' + cardTypeName(gameId, killRatio) + '（1次/5把）';
-            }
-            return '控牌值 ' + M.esc(killRatio) + '（1次/5把）';
+            // 与玩家列表卡片同一份文案（含 GameId<5 的历史数据回退）
+            return M.cardControlText(gameId, killRatio);
         }
         return '目标 ' + M.gold(targetCoins);
     }
@@ -268,8 +170,8 @@
         $('#rowGold').toggle(!isCard);
         $('#rowCardAction, #rowCardValue').toggle(isCard);
         if (isCard) {
-            fillSelect($('#ctrlCardAction'), CARD_ACTIONS, true);
-            fillSelect($('#ctrlCardValue'), cardTypeData(parseInt($('#ctrlCardAction').val(), 10)), false);
+            fillSelect($('#ctrlCardAction'), M.CARD_ACTIONS, true);
+            fillSelect($('#ctrlCardValue'), M.cardTypeData(parseInt($('#ctrlCardAction').val(), 10)), false);
         }
     }
 
@@ -300,8 +202,8 @@
         }
 
         var desc = mode == 6
-            ? '对玩家 ' + current.ID + ' 执行 控牌（' + cardActionName(para.CardAction) +
-              ' ' + cardTypeName(para.CardAction, para.CardValue) + '，1 次（5 把之内））？'
+            ? '对玩家 ' + current.ID + ' 执行 控牌（' + M.cardActionName(para.CardAction) +
+              ' ' + M.cardTypeName(para.CardAction, para.CardValue) + '，1 次（5 把之内））？'
             : '对玩家 ' + current.ID + ' 执行 ' + modeName(mode) + '（目标 ' + M.gold(para.GoldThreshold) + '）？';
 
         M.confirm(desc, '控制确认').then(function (ok) {
@@ -386,7 +288,7 @@
         });
         $('#ctrlMode').on('change', bindMode);
         $('#ctrlCardAction').on('change', function () {
-            fillSelect($('#ctrlCardValue'), cardTypeData(parseInt($(this).val(), 10)), false);
+            fillSelect($('#ctrlCardValue'), M.cardTypeData(parseInt($(this).val(), 10)), false);
         });
         $('#applyBtn').on('click', applyControl);
         $('#closeCtrlBtn').on('click', closeControl);

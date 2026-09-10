@@ -477,15 +477,6 @@ namespace YYT.BLL.EF
 
         public M_EasyuiGridData<M_Admin> GetAgencyList(M_Page mPage, M_Admin entity, M_LoginUser loginUser)
         {
-            return GetAgencyList(mPage, entity, loginUser, false);
-        }
-
-        /// <param name="includeDescendants">
-        /// 为 true 时 AGENCY 条件按“整条继承链”展开：返回该代理名下所有层级的代理，用于手机端下钻查看整棵子树。
-        /// 为 false 时 AGENCY 仍是精确的直属上级匹配（桌面端“所属代理”查询依赖该语义）。
-        /// </param>
-        public M_EasyuiGridData<M_Admin> GetAgencyList(M_Page mPage, M_Admin entity, M_LoginUser loginUser, bool includeDescendants)
-        {
             M_EasyuiGridData<M_Admin> list = new M_EasyuiGridData<M_Admin>();
             using (var ef = new GameDbContext())
             {
@@ -502,30 +493,20 @@ namespace YYT.BLL.EF
                     scoped = scoped.Where(c => permissions.Contains(c.ID));
                 }
 
-                // 继承链统计与展开都以“权限范围内的全部代理”为基准，而不是当前筛选后的行集：
-                // 否则下钻到某一层时，该层的下级不在结果集里，“下级代理”会全部显示 0 个，链路直接断掉。
+                // 直属下级数量以“权限范围内的全部代理”为基准统计，而不是当前筛选后的行集：
+                // 否则下钻到某一层时，该层的下级不在结果集里，“下级代理”会整列显示 0 个。
                 // 代理表数据量很小（几十行），一次性取出上下级关系即可，避免逐个账号调用递归存储过程。
                 List<AgencyRules.AgencyLink> links = scoped
                     .Select(c => new { c.ID, c.AGENCY })
                     .ToList()
                     .Select(a => new AgencyRules.AgencyLink(a.ID, a.AGENCY))
                     .ToList();
-                Dictionary<string, int> chainCounts = AgencyRules.BuildDescendantCounts(links);
+                Dictionary<string, int> childCounts = AgencyRules.BuildDirectChildCounts(links);
 
                 var rst = scoped;
                 // AGENCY 是下级下钻的父节点导航，保持精确；ID 是账号搜索，统一模糊匹配（LIKE '%kw%'）
                 if (!string.IsNullOrWhiteSpace(entity.AGENCY))
-                {
-                    if (includeDescendants)
-                    {
-                        HashSet<string> chain = AgencyRules.CollectDescendants(links, entity.AGENCY);
-                        rst = rst.Where(c => chain.Contains(c.ID));
-                    }
-                    else
-                    {
-                        rst = rst.Where(c => c.AGENCY.Equals(entity.AGENCY));
-                    }
-                }
+                    rst = rst.Where(c => c.AGENCY.Equals(entity.AGENCY));
                 if (!string.IsNullOrWhiteSpace(entity.ID))
                     rst = rst.Where(c => c.ID.Contains(entity.ID));
 
@@ -536,7 +517,7 @@ namespace YYT.BLL.EF
                 // 分页
                 if (rst != null)
                 {
-                    var orderedUsers = BuildAgencyTreeRows(rst.ToList(), loginUser, chainCounts);
+                    var orderedUsers = BuildAgencyTreeRows(rst.ToList(), loginUser, childCounts);
                     mPage.SetTotalCount(orderedUsers.Count);
                     list.rows = orderedUsers
                         .Skip(mPage.PageSize * (mPage.PageIndex - 1)).Take(mPage.PageSize)
@@ -547,7 +528,7 @@ namespace YYT.BLL.EF
             return list;
         }
 
-        private List<M_Admin> BuildAgencyTreeRows(List<M_Admin> agencies, M_LoginUser loginUser, Dictionary<string, int> chainCounts)
+        private List<M_Admin> BuildAgencyTreeRows(List<M_Admin> agencies, M_LoginUser loginUser, Dictionary<string, int> childCounts)
         {
             List<M_Admin> ordered = new List<M_Admin>();
             if (agencies == null || agencies.Count == 0)
@@ -580,7 +561,7 @@ namespace YYT.BLL.EF
 
             foreach (M_Admin root in roots)
             {
-                AppendAgencyTree(root, children, visited, ordered, groupIndex, 0, chainCounts);
+                AppendAgencyTree(root, children, visited, ordered, groupIndex, 0, childCounts);
                 groupIndex++;
             }
 
@@ -588,7 +569,7 @@ namespace YYT.BLL.EF
             {
                 if (visited.Contains(agency.ID))
                     continue;
-                AppendAgencyTree(agency, children, visited, ordered, groupIndex, 0, chainCounts);
+                AppendAgencyTree(agency, children, visited, ordered, groupIndex, 0, childCounts);
                 groupIndex++;
             }
 
@@ -602,7 +583,7 @@ namespace YYT.BLL.EF
             List<M_Admin> ordered,
             int groupIndex,
             int depth,
-            Dictionary<string, int> chainCounts)
+            Dictionary<string, int> childCounts)
         {
             if (agency == null || string.IsNullOrWhiteSpace(agency.ID) || visited.Contains(agency.ID))
                 return;
@@ -611,10 +592,10 @@ namespace YYT.BLL.EF
             agency.AgencyGroupIndex = groupIndex;
             agency.AgencyTreeDepth = depth;
             agency.HasChildAgency = children.ContainsKey(agency.ID) && children[agency.ID].Any(c => !visited.Contains(c.ID));
-            // 下级代理数量按整条继承链统计（含各级下级），保证下钻后仍能看到“谁名下挂了多少代理”。
-            int chainCount;
-            agency.SubAgencyCount = chainCounts.TryGetValue(agency.ID, out chainCount)
-                ? chainCount
+            // 下级代理数量只统计直属下级，不含更深层级；基准是权限范围内的全表，下钻后不会归零。
+            int childCount;
+            agency.SubAgencyCount = childCounts.TryGetValue(agency.ID, out childCount)
+                ? childCount
                 : (children.ContainsKey(agency.ID) ? children[agency.ID].Count : 0);
             agency.CanCreateChildAgent = AgencyRules.CanCreateChild(agency.PRIV ?? -1, agency.AGENCY_LIMIT, agency.IsCreateAgent);
             ordered.Add(agency);
@@ -624,7 +605,7 @@ namespace YYT.BLL.EF
                 return;
 
             foreach (M_Admin child in childRows)
-                AppendAgencyTree(child, children, visited, ordered, groupIndex, depth + 1, chainCounts);
+                AppendAgencyTree(child, children, visited, ordered, groupIndex, depth + 1, childCounts);
         }
 
         public List<M_AgencyProfit> GetAgencyProfits(M_LoginUser loginUser)
