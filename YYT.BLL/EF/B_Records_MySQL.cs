@@ -111,7 +111,10 @@ namespace YYT.BLL.EF
                               COINS = a.COINS,
                               BEF_COINS = a.BEF_COINS,
                               AFT_COINS = a.AFT_COINS,
-                              WEEK = a.WEEK
+                              WEEK = a.WEEK,
+                              // 手机端流水页用：被操作账号(ID)是玩家还是代理。
+                              // 账号在 users / admin 两表间不重复，按主键存在性判定，避免依赖显示用职务文案。
+                              DestIsPlayer = ef.Users.Any(u => u.ID == a.ID)
                           };
                 if (!string.IsNullOrWhiteSpace(queryPara.ID))
                     rst = rst.Where(c => c.ID.Equals(queryPara.ID) || c.OptID.Equals(queryPara.ID));
@@ -124,10 +127,14 @@ namespace YYT.BLL.EF
                         begin = cutoff;
                         retentionAdjusted = true;
                     }
-                    DateTime end = queryPara.S_TIME.Date.AddDays(1);
+                    // E_TIME > S_TIME 时按 [S_TIME, E_TIME] 区间过滤（手机流水页跨天查询）
+                    bool dateRange = queryPara.E_TIME > queryPara.S_TIME;
+                    DateTime end = dateRange
+                        ? queryPara.E_TIME.Date.AddDays(1)
+                        : queryPara.S_TIME.Date.AddDays(1);
                     if (end > now)
                         end = now;
-                    if (queryPara.S_TIME.Date.AddDays(1) < cutoff)
+                    if ((dateRange ? queryPara.E_TIME.Date.AddDays(1) : queryPara.S_TIME.Date.AddDays(1)) < cutoff)
                         retentionAdjusted = true;
                     if (end <= begin)
                     {
@@ -169,7 +176,8 @@ namespace YYT.BLL.EF
                             COINS = x.COINS,
                             BEF_COINS = x.BEF_COINS,
                             AFT_COINS = x.AFT_COINS,
-                            WEEK = x.WEEK
+                            WEEK = x.WEEK,
+                            DestIsPlayer = x.DestIsPlayer
                         })
                         .ToList();
                     list.rows = agencies;

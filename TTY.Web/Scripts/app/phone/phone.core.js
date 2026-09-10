@@ -366,6 +366,79 @@
         });
     };
 
+    /* ---------------- 代理详细信息弹窗 ---------------- */
+
+    /**
+     * 代理详细信息弹窗（我的代理页、代理流水页共用）。
+     * 弹窗内可继续前往该代理的流水页 / 充值页；创建下级开关受后端权限校验。
+     */
+    M.showAgentDetail = function (id) {
+        if (!id) return;
+        M.loading('查询代理信息...');
+        return M.post('/Game/AgencyInfo/GetAgencyDetail', { ID: id }).always(M.hideLoading).then(function (res) {
+            var r = M.result(res);
+            if (!r.ok || !r.datas) {
+                M.alert(r.text, false, '查询失败');
+                return;
+            }
+            var a = r.datas;
+            var canViewPwd = a.PWD != null && a.PWD !== '';
+            var body = '<div class="agent-detail-modal">' +
+                '<div><span>代理账号</span><b>' + M.esc(a.ID) + '</b></div>' +
+                (canViewPwd ? '<div><span>账号密码</span><b>' + M.esc(a.PWD) + '</b></div>' : '') +
+                '<div><span>注册时间</span><b>' + M.esc(M.fmtTime(a.CreateTime, true)) + '</b></div>' +
+                '<div><span>代理级别</span><b>' + M.esc(M.privName(a.PRIV)) + '</b></div>' +
+                '<div><span>最后登录</span><b>' + M.esc(M.fmtTime(a.LastLoginTime, true)) + '</b></div>' +
+                '<div><span>邀请码</span><b>' + M.esc(a.InviteCode || '--') + '</b></div>' +
+                '<div><span>上级代理</span><b>' + M.esc(a.AGENCY || '--') + '</b></div>' +
+                '<div><span>剩余金币</span><b class="blue-text">' + M.gold(a.COINS) + '</b></div>' +
+                '<div><span>剩余分</span><b>' + M.num(a.RemainingScore || 0) + '</b></div>' +
+                '<div class="agent-create-child-row"><span>创建下级</span><label class="m-switch"><input type="checkbox" id="agentCreateChild" ' + (Number(a.IsCreateAgent) === 1 ? 'checked' : '') + '><span></span></label><span class="agent-save-state" id="agentSaveState"></span></div>' +
+                '</div>';
+            var dlg = M.modal({
+                title: '代理详细信息',
+                bodyHTML: body,
+                actions: [
+                    { label: '流水', value: 'flow', type: 'secondary' },
+                    { label: '充值', value: 'recharge', type: 'primary' }
+                ],
+                buttons: [{ label: '关闭', value: null, type: 'confirm' }],
+                onRender: function ($modal) {
+                    var $toggle = $modal.find('#agentCreateChild');
+                    var savedValue = Number(a.IsCreateAgent) === 1;
+                    $toggle.on('change', function () {
+                        var nextValue = $toggle.is(':checked');
+                        $toggle.prop('disabled', true);
+                        $modal.find('#agentSaveState').text('保存中...');
+                        M.post('/Game/Admin/SetIsCreateAgent', { ID: a.ID, IsCreateAgent: nextValue ? 1 : 0 })
+                            .then(function (saveRes) {
+                                var save = M.result(saveRes);
+                                if (save.ok) {
+                                    savedValue = nextValue;
+                                    $modal.find('#agentSaveState').text('已保存');
+                                    M.toast('保存成功', 'success');
+                                } else {
+                                    $toggle.prop('checked', savedValue);
+                                    $modal.find('#agentSaveState').text(save.text);
+                                    M.toast(save.text, 'error');
+                                }
+                            }, function () {
+                                $toggle.prop('checked', savedValue);
+                                $modal.find('#agentSaveState').text('保存失败');
+                            })
+                            .always(function () { $toggle.prop('disabled', false); });
+                    });
+                }
+            });
+            dlg.then(function (value) {
+                if (value === 'flow')
+                    window.location.href = '/Mobile/Home/AgentFlow?id=' + encodeURIComponent(a.ID);
+                else if (value === 'recharge')
+                    window.location.href = '/Mobile/Home/Recharge?id=' + encodeURIComponent(a.ID) + '&role=agent';
+            });
+        });
+    };
+
     /* ---------------- 抽屉 ---------------- */
 
     M.openDrawer = function () {

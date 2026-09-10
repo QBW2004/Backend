@@ -183,35 +183,16 @@
         color: #007aff;
         font-weight: 600;
         cursor: pointer;
+        display: inline-block;
     }
 
-    .agent-detail-modal {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        text-align: left;
+    /* 继承链缩进：下级代理挂在上级账号下方，层级越深越内缩 */
+    .agent-tree-branch {
+        color: #c0c4cc;
+        margin-right: 4px;
     }
 
-    .agent-detail-modal > div {
-        display: flex;
-        justify-content: space-between;
-        gap: 12px;
-        border-bottom: 1px solid #f0f0f0;
-        padding-bottom: 8px;
-    }
-
-    .agent-detail-modal span { color: #888; }
-    .agent-detail-modal b { color: #333; text-align: right; word-break: break-all; }
-    .agent-detail-modal .blue-text { color: #007aff; }
-
-    .agent-create-child-row { align-items: center; }
-    .agent-save-state { color: #34c759; font-size: 12px; margin-left: auto; }
-    .m-switch { position: relative; width: 46px; height: 26px; display: inline-block; }
-    .m-switch input { opacity: 0; width: 0; height: 0; }
-    .m-switch span { position: absolute; inset: 0; background: #d1d1d6; border-radius: 13px; transition: .2s; }
-    .m-switch span:before { content: ''; position: absolute; width: 22px; height: 22px; left: 2px; top: 2px; background: #fff; border-radius: 50%; transition: .2s; box-shadow: 0 1px 2px rgba(0,0,0,.2); }
-    .m-switch input:checked + span { background: #34c759; }
-    .m-switch input:checked + span:before { transform: translateX(20px); }
+    /* 代理详细信息弹窗样式在 phone.css（代理流水页共用同一个弹窗） */
 
     /* 搜索弹窗 */
     .search-modal-overlay {

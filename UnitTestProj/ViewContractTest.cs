@@ -146,6 +146,9 @@ namespace UnitTestProj
             StringAssert.Contains(controller, "ApplyDefaultAgencyPermissions(entity);");
             StringAssert.Contains(controller, "entity.IsCreateAgent = createAgentPermission;");
             StringAssert.Contains(controller, "form.Q<long>(\"IsCreateAgent\", 1)");
+            // 1.0.23 权限设计：BLL 新建代理默认权限不得清零 IsCreateAgent，请求值须透传并由 ?? 1 兜底缺省
+            StringAssert.Contains(adminBll, "entity.IsCreateAgent = entity.IsCreateAgent ?? 1;");
+            Assert.IsFalse(adminBll.Contains("entity.IsCreateAgent = 0;"));
         }
 
         [TestMethod]
@@ -390,7 +393,7 @@ namespace UnitTestProj
         }
 
         [TestMethod]
-        public void MobileAddAgentUsesSinglePasswordAndBackfillsMissingConfirmation()
+        public void MobileAddAgentUsesSinglePasswordWithoutConfirmationBackfill()
         {
             string view = ReadRepoFile(@"TTY.Web\Areas\Mobile\Views\Home\AddAgent.cshtml");
             string script = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.addagent.js");
@@ -399,7 +402,8 @@ namespace UnitTestProj
             Assert.IsFalse(view.Contains("agentPassword2"));
             Assert.IsFalse(script.Contains("password2"));
             Assert.IsFalse(script.Contains("RE_PWD:"));
-            StringAssert.Contains(controller, "form.Set(\"RE_PWD\", form[\"PWD\"])");
+            // 1.0.28 起后端已去除 RE_PWD 补值逻辑（实体不再 [Compare] 校验），保持无补值
+            Assert.IsFalse(controller.Contains("form.Set(\"RE_PWD\""));
         }
 
         [TestMethod]
@@ -641,6 +645,15 @@ namespace UnitTestProj
 
             StringAssert.Contains(playersScript, "立即渲染基础卡片，不等待控制状态");
             StringAssert.Contains(playersScript, "attachActiveControls");
+            // 玩家列表卡片不再展示冻结状态（冻结账号只在冻结明细/冻结账号页查看）
+            Assert.IsFalse(playersScript.Contains("冻结中"));
+            // 列表里的控制状态文案与控制管理页同口径，不再出现"X中..."过程性前缀
+            StringAssert.Contains(playersScript, "'目标 ' + M.gold(control.TargetCoins)");
+            StringAssert.Contains(playersScript, "已吃分 ");
+            StringAssert.Contains(playersScript, "已放分 ");
+            Assert.IsFalse(playersScript.Contains("吃分中"));
+            Assert.IsFalse(playersScript.Contains("放水中"));
+            Assert.IsFalse(playersScript.Contains("控牌中"));
             StringAssert.Contains(controlScript, "MobileRequest: 1");
             StringAssert.Contains(controlBll, "QueueTotalUcCommand");
             StringAssert.Contains(controlScript, "r.text || '操作成功'");
@@ -658,6 +671,77 @@ namespace UnitTestProj
             StringAssert.Contains(rechargeBase, "QueueLockPlayer");
             StringAssert.Contains(rechargeBase, "QueueUnlockPlayer");
             StringAssert.Contains(rechargeController, "new B_ReChargeBase(rechargeUser, rechargeTarget, mobileRequest)");
+        }
+
+        [TestMethod]
+        public void AgentFlowShowsCounterpartyAccountWithRolePrefixAndNavigation()
+        {
+            string flowScript = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.agentflow.js");
+            string flowView = ReadRepoFile(@"TTY.Web\Areas\Mobile\Views\Home\AgentFlow.cshtml");
+            string agentsScript = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.agents.js");
+            string phoneCore = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.core.js");
+            string phoneCss = ReadRepoFile(@"TTY.Web\Content\css\phone.css");
+            string recordsBll = ReadRepoFile(@"YYT.BLL\EF\B_Records_MySQL.cs");
+            string recordEntity = ReadRepoFile(@"YYT.Entity\EF\M_Record.cs");
+
+            // 流向列展示“代 账号 / 玩 账号”，不再出现“流入/流出”字样
+            Assert.IsFalse(flowScript.Contains("流入"));
+            Assert.IsFalse(flowScript.Contains("流出"));
+            StringAssert.Contains(flowScript, "PREFIX_AGENT = '代 '");
+            StringAssert.Contains(flowScript, "PREFIX_PLAYER = '玩 '");
+            // 来源列只显示账号，不拼职务后缀
+            Assert.IsFalse(flowScript.Contains("SrcUserTitle"));
+            Assert.IsFalse(flowScript.Contains("DestUserTitle]"));
+            // 玩家账号跳玩家详情页，代理账号走弹窗
+            StringAssert.Contains(flowScript, "/Mobile/Home/PlayerDetail?id=' +");
+            StringAssert.Contains(flowScript, "flow-account-link agent");
+            StringAssert.Contains(flowScript, "M.showAgentDetail(");
+            StringAssert.Contains(flowView, ".flow-account-link.player");
+
+            // 玩家/代理由服务端按账号归属判定（users/admin 主键存在性），前端不猜文案
+            StringAssert.Contains(recordEntity, "public bool DestIsPlayer { get; set; }");
+            StringAssert.Contains(recordsBll, "DestIsPlayer = ef.Users.Any(u => u.ID == a.ID)");
+            StringAssert.Contains(flowScript, "rowData.DestIsPlayer");
+
+            // 代理详情弹窗由 phone.core.js 提供，代理页与流水页共用同一实现
+            StringAssert.Contains(phoneCore, "M.showAgentDetail = function (id)");
+            StringAssert.Contains(phoneCore, "/Game/AgencyInfo/GetAgencyDetail");
+            StringAssert.Contains(phoneCore, "/Game/Admin/SetIsCreateAgent");
+            StringAssert.Contains(phoneCore, "'/Mobile/Home/AgentFlow?id='");
+            StringAssert.Contains(phoneCore, "'/Mobile/Home/Recharge?id='");
+            StringAssert.Contains(agentsScript, "M.showAgentDetail(id)");
+            // 弹窗样式已收敛到 phone.css，页面不得再各自复制一份
+            StringAssert.Contains(phoneCss, ".agent-detail-modal");
+            StringAssert.Contains(phoneCss, ".m-switch input:checked + span");
+            // 流水页自身不再重复定义弹窗样式
+            Assert.IsFalse(flowView.Contains(".agent-detail-modal {"));
+        }
+
+        [TestMethod]
+        public void MobileAgentListShowsWholeInheritanceChain()
+        {
+            string agentsScript = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.agents.js");
+            string agentsView = ReadRepoFile(@"TTY.Web\Areas\Mobile\Views\Home\Agents.cshtml");
+            string controller = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\AgencyInfoController.cs");
+            string adminBll = ReadRepoFile(@"YYT.BLL\EF\B_Admin.cs");
+            string rules = ReadRepoFile(@"YYT.BLL\EF\AgencyRules.cs");
+
+            // 手机端下钻某个代理时取整条继承链，而不是只看直属一层
+            StringAssert.Contains(agentsScript, "IncludeDescendants: 1");
+            StringAssert.Contains(controller, "form.Q<int>(\"IncludeDescendants\", 0) == 1");
+            StringAssert.Contains(adminBll, "GetAgencyList(M_Page mPage, M_Admin entity, M_LoginUser loginUser, bool includeDescendants)");
+            StringAssert.Contains(adminBll, "AgencyRules.CollectDescendants(links, entity.AGENCY)");
+
+            // “下级代理”数量按整条继承链统计，且统计基准是权限范围内的全量代理，
+            // 避免下钻后该层下级不在结果集里而整列显示 0 个
+            StringAssert.Contains(rules, "BuildDescendantCounts(IEnumerable<AgencyLink> links)");
+            StringAssert.Contains(adminBll, "AgencyRules.BuildDescendantCounts(links)");
+            StringAssert.Contains(adminBll, "chainCounts.TryGetValue(agency.ID, out chainCount)");
+
+            // 列表按层级内缩，直观体现“谁开的代理挂在谁名下”
+            StringAssert.Contains(agentsScript, "a.AgencyTreeDepth");
+            StringAssert.Contains(agentsScript, "agent-tree-branch");
+            StringAssert.Contains(agentsView, ".agent-tree-branch");
         }
 
         [TestMethod]

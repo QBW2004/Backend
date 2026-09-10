@@ -189,6 +189,10 @@ namespace YYT.Entity
         public long? TodayBuy { get; set; }
         /// <summary>今日退分（当日退分类流水合计）</summary>
         public long? TodayBack { get; set; }
+        /// <summary>总盈亏（累计实际游戏输赢：user_daily_winloss 全量合计，玩过才有记录）</summary>
+        public long? TotalWinLoss { get; set; }
+        /// <summary>今日盈亏（当日实际游戏输赢：user_daily_winloss 当日合计，玩过才有记录）</summary>
+        public long? TodayWinLoss { get; set; }
     }
 
     /// <summary>

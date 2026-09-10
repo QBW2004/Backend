@@ -51,18 +51,23 @@
 
     /* ---------------- 在线玩家控制状态 ---------------- */
 
+    /**
+     * 控制状态文案：与控制管理页（phone.control.js）保持同一口径——
+     * 吃分/放水为「目标 N 已吃分/已放分 N」，控牌为「控牌值 N（1次/5把）」。
+     * 刻意不带"进行中…"这类过程性前缀，避免同一个控制在两个页面出现两种说法。
+     */
     function activeControlText(control) {
         var mode = Number(control.ControlMode);
         if (mode === 4) {
-            return '吃分中... 吃分目标 ' + M.gold(control.TargetCoins) +
-                ' / 已吃 ' + M.gold(-Number(control.ConsumedCoins || 0));
+            return '目标 ' + M.gold(control.TargetCoins) +
+                ' 已吃分 ' + M.gold(-Number(control.ConsumedCoins || 0));
         }
         if (mode === 5) {
-            return '放水中... 放水目标 ' + M.gold(control.TargetCoins) +
-                ' / 已放 ' + M.gold(control.GrantedCoins);
+            return '目标 ' + M.gold(control.TargetCoins) +
+                ' 已放分 ' + M.gold(control.GrantedCoins);
         }
         if (mode === 6) {
-            return '控牌中... 控牌值 ' + M.num(control.LimitCoins) + '（1次/5把）';
+            return '控牌值 ' + M.num(control.LimitCoins) + '（1次/5把）';
         }
         return '';
     }
@@ -91,13 +96,11 @@
         var twColor = today > 0 ? 'positive' : (today < 0 ? 'negative' : '');
         var ttColor = total > 0 ? 'positive' : (total < 0 ? 'negative' : '');
 
-        var loginRow = p.LastLoginTime
-            ? '<div class="info-row login-time-row"><div class="info-item">' + M.ICONS.clock +
-                '<span class="info-label">最后登录</span><span class="info-value">' + M.fmtTime(p.LastLoginTime) + '</span></div></div>'
-            : '';
-        var frozenBadge = (Number(p.FROZEN) === 1)
-            ? '<span class="black-listed">冻结中</span>'
-            : '';
+        // 最后登录行常驻显示：无记录时兜底 2000-01-01（UserOptLog 仅保留7天，老玩家无数据）
+        var loginTimeText = p.LastLoginTime ? M.fmtTime(p.LastLoginTime) : '2000-01-01';
+        var loginRow = '<div class="info-row login-time-row"><div class="info-item">' + M.ICONS.clock +
+            '<span class="info-label">最后登录</span><span class="info-value">' + loginTimeText + '</span></div></div>';
+        // 冻结状态不在玩家列表展示（冻结账号统一在"冻结明细/冻结账号"页查看）
         var controls = p.ActiveControls || [];
         var controlRow = controls.length
             ? '<div class="active-control-status">' + controls.map(function (text) {
@@ -111,7 +114,6 @@
                     '<div class="player-identity">' +
                         '<span class="player-account player-account-link" data-account="' + M.esc(p.ID) + '">' + M.esc(p.ID) + '</span>' +
                         '<span class="player-name">' + M.esc(p.NAME || p.ID) + '</span>' +
-                        frozenBadge +
                         '<span class="agent-line">' + M.esc(p.AGENCY || '--') + '</span>' +
                     '</div>' +
                     '<div class="player-balances">' +
@@ -141,6 +143,8 @@
     /**
      * 控制状态异步回填：基础卡渲染后，把查到的控制状态行插进对应卡片。
      * 分页追加后 $sec 内含多页卡片，不能用数组下标对应，故按 data-account 遍历定位。
+     * ⚠️ 用 attr() 取原始字符串而非 data()：jQuery 的 data() 会把纯数字账号（如 95000066）
+     * 自动转成 number，导致与 p.ID（字符串）严格比较恒不相等，控制状态行插不进去。
      */
     function applyActiveControls($sec, players) {
         players = players || [];
@@ -148,7 +152,7 @@
             if (!p || !p.ID || !p.ActiveControls || !p.ActiveControls.length) return;
             var $card = null;
             $sec.find('.player-card').each(function () {
-                if ($(this).data('account') === p.ID) {
+                if (String($(this).attr('data-account')) === String(p.ID)) {
                     $card = $(this);
                     return false;
                 }
@@ -311,6 +315,8 @@
     /* ---------------- 玩家操作弹窗 ---------------- */
 
     function openPlayerModal(account) {
+        // 纯数字账号经 jQuery data() 会变成 number，先字符串化再入参/入 JSON
+        account = String(account == null ? '' : account);
         M.loading('加载玩家信息...');
         M.post('/Game/UserInfo/GetVisibleUserRows', { UserIDs: JSON.stringify([account]) })
             .always(M.hideLoading)

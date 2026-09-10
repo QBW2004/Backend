@@ -1,5 +1,5 @@
 ﻿@{
-    /* 代理流水（展示单个代理的资金流入流出记录） */
+    /* 代理流水（展示单个代理与对方账号之间的资金变动记录） */
     string webVer = ConfigHelper.Get("WebVer");
     string today = DateTime.Now.ToString("yyyy-MM-dd");
     Layout = "~/Views/Shared/Layout/_MobileLayout.cshtml";
@@ -138,8 +138,8 @@
     .flow-table th:nth-child(2) { min-width: 90px; }
     .flow-table th:nth-child(3) { min-width: 90px; }
     .flow-table th:nth-child(4) { min-width: 90px; }
-    .flow-table th:nth-child(5) { min-width: 160px; }
-    .flow-table th:nth-child(6) { min-width: 90px; }
+    .flow-table th:nth-child(5) { min-width: 120px; }
+    .flow-table th:nth-child(6) { min-width: 130px; }
 
     .amount {
         font-family: -apple-system-monospace, monospace;
@@ -154,24 +154,26 @@
         color: #ff3b30;
     }
 
-    .flow-direction {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        padding: 2px 8px;
-        border-radius: 4px;
-        font-size: 12px;
+    /* 流向列：代 xxx 弹代理详情、玩 xxx 跳玩家详情页 */
+    .flow-account-link {
+        display: inline-block;
+        font-size: 13px;
         font-weight: 500;
+        white-space: nowrap;
     }
 
-    .flow-direction.in {
-        background-color: rgba(52, 199, 89, 0.1);
-        color: #34c759;
+    .flow-account-link.agent {
+        color: #007aff;
+        cursor: pointer;
     }
 
-    .flow-direction.out {
-        background-color: rgba(255, 59, 48, 0.1);
-        color: #ff3b30;
+    .flow-account-link.agent:active {
+        opacity: 0.6;
+    }
+
+    .flow-account-link.player {
+        color: #007aff;
+        text-decoration: underline;
     }
 
     .time {

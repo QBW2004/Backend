@@ -142,6 +142,18 @@ namespace YYT.Web.Areas.Mobile.Controllers
             return View();
         }
 
+        /// <summary>
+        /// 充值页页头"当前金币余额"实时刷新接口：每次实时查库返回登录账号最新余额。
+        /// 余额会随本账号上下分（代理扣/加）及上级给本账号充值而变化，页面轮询此接口即可保持实时。
+        /// </summary>
+        [AjaxOnly]
+        [HttpPost]
+        public ActionResult GetOwnCoinsJson()
+        {
+            M_LoginUser user = WebHelper.GetLoginInfo();
+            return Json(new { code = 1, msg = "ok", coins = GetOwnCoins(user) });
+        }
+
         /// <summary>充退记录</summary>
         public ActionResult Records()
         {
@@ -272,7 +284,7 @@ namespace YYT.Web.Areas.Mobile.Controllers
             return View();
         }
 
-        /// <summary>代理流水（展示单个代理的资金流入流出记录）。</summary>
+        /// <summary>代理流水（按代理查看与对方账号之间的资金变动记录）。</summary>
         public ActionResult AgentFlow()
         {
             ViewBag.MPage = "agentflow";

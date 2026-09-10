@@ -14,7 +14,9 @@
     /* ---------------- 数据 ---------------- */
 
     function fetchAgencies(query) {
-        return M.post('/Game/AgencyInfo/GetAgencies', $.extend({ ID: '', Agency: '', page: 1, rows: FETCH_ROWS }, query || {}));
+        // IncludeDescendants=1：下钻某个代理时返回其名下整条继承链，而不是只看一层；
+        // 这样“下级代理”的数量与下钻后实际看到的行数保持一致。
+        return M.post('/Game/AgencyInfo/GetAgencies', $.extend({ ID: '', Agency: '', page: 1, rows: FETCH_ROWS, IncludeDescendants: 1 }, query || {}));
     }
 
     function fetchAllOnce() {
@@ -46,8 +48,12 @@
         $('#noData').hide();
         $body.html(rows.map(function (a) {
             var subCount = Number(a.SubAgencyCount || 0);
+            // 继承链缩进：下级代理按层级内缩，直观体现“谁开的代理挂在谁名下”。
+            var depth = Number(a.AgencyTreeDepth || 0);
+            var indent = depth > 0 ? ' style="padding-left:' + (depth * 12) + 'px;"' : '';
+            var branch = depth > 0 ? '<span class="agent-tree-branch">└</span>' : '';
             return '<tr data-id="' + M.esc(a.ID) + '">' +
-                '<td class="account-cell"><span class="agent-detail-btn" data-id="' + M.esc(a.ID) + '">' + M.esc(a.ID) + '</span></td>' +
+                '<td class="account-cell"><span class="agent-detail-btn" data-id="' + M.esc(a.ID) + '"' + indent + '>' + branch + M.esc(a.ID) + '</span></td>' +
                 '<td>' + M.gold(a.COINS) + '</td>' +
                 '<td>' + (subCount > 0
                     ? '<span class="sub-agents-btn" data-id="' + M.esc(a.ID) + '">' + subCount + '个</span>'
@@ -61,70 +67,8 @@
     }
 
     function showAgentDetail(id) {
-        if (!id) return;
-        M.loading('查询代理信息...');
-        M.post('/Game/AgencyInfo/GetAgencyDetail', { ID: id }).always(M.hideLoading).then(function (res) {
-            var r = M.result(res);
-            if (!r.ok || !r.datas) {
-                M.alert(r.text, false, '查询失败');
-                return;
-            }
-            var a = r.datas;
-            var canViewPwd = a.PWD != null && a.PWD !== '';
-            var body = '<div class="agent-detail-modal">' +
-                '<div><span>代理账号</span><b>' + M.esc(a.ID) + '</b></div>' +
-                (canViewPwd ? '<div><span>账号密码</span><b>' + M.esc(a.PWD) + '</b></div>' : '') +
-                '<div><span>注册时间</span><b>' + M.esc(M.fmtTime(a.CreateTime, true)) + '</b></div>' +
-                '<div><span>代理级别</span><b>' + M.esc(M.privName(a.PRIV)) + '</b></div>' +
-                '<div><span>最后登录</span><b>' + M.esc(M.fmtTime(a.LastLoginTime, true)) + '</b></div>' +
-                '<div><span>邀请码</span><b>' + M.esc(a.InviteCode || '--') + '</b></div>' +
-                '<div><span>上级代理</span><b>' + M.esc(a.AGENCY || '--') + '</b></div>' +
-                '<div><span>剩余金币</span><b class="blue-text">' + M.gold(a.COINS) + '</b></div>' +
-                '<div><span>剩余分</span><b>' + M.num(a.RemainingScore || 0) + '</b></div>' +
-                '<div class="agent-create-child-row"><span>创建下级</span><label class="m-switch"><input type="checkbox" id="agentCreateChild" ' + (Number(a.IsCreateAgent) === 1 ? 'checked' : '') + '><span></span></label><span class="agent-save-state" id="agentSaveState"></span></div>' +
-                '</div>';
-            var dlg = M.modal({
-                title: '代理详细信息',
-                bodyHTML: body,
-                actions: [
-                    { label: '流水', value: 'flow', type: 'secondary' },
-                    { label: '充值', value: 'recharge', type: 'primary' }
-                ],
-                buttons: [{ label: '关闭', value: null, type: 'confirm' }],
-                onRender: function ($modal) {
-                    var $toggle = $modal.find('#agentCreateChild');
-                    var savedValue = Number(a.IsCreateAgent) === 1;
-                    $toggle.on('change', function () {
-                        var nextValue = $toggle.is(':checked');
-                        $toggle.prop('disabled', true);
-                        $modal.find('#agentSaveState').text('保存中...');
-                        M.post('/Game/Admin/SetIsCreateAgent', { ID: a.ID, IsCreateAgent: nextValue ? 1 : 0 })
-                            .then(function (saveRes) {
-                                var save = M.result(saveRes);
-                                if (save.ok) {
-                                    savedValue = nextValue;
-                                    $modal.find('#agentSaveState').text('已保存');
-                                    M.toast('保存成功', 'success');
-                                } else {
-                                    $toggle.prop('checked', savedValue);
-                                    $modal.find('#agentSaveState').text(save.text);
-                                    M.toast(save.text, 'error');
-                                }
-                            }, function () {
-                                $toggle.prop('checked', savedValue);
-                                $modal.find('#agentSaveState').text('保存失败');
-                            })
-                            .always(function () { $toggle.prop('disabled', false); });
-                    });
-                }
-            });
-            dlg.then(function (value) {
-                if (value === 'flow')
-                    window.location.href = '/Mobile/Home/AgentFlow?id=' + encodeURIComponent(a.ID);
-                else if (value === 'recharge')
-                    window.location.href = '/Mobile/Home/Recharge?id=' + encodeURIComponent(a.ID) + '&role=agent';
-            });
-        });
+        // 弹窗实现见 phone.core.js（代理流水页共用）
+        M.showAgentDetail(id);
     }
 
     function renderStats(list) {

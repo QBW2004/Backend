@@ -410,7 +410,9 @@ namespace YYT.Web.Areas.Game.Controllers
 
         /// <summary>
         /// 手机端：会员盈亏统计卡（权限范围内，支持代理过滤）。
-        /// 口径：总盈亏 = 最近 7x24 小时内已生效充值 - 退分，今日盈亏按当日已生效流水计算。
+        /// 口径：总盈亏/今日盈亏 = 实际游戏输赢（user_daily_winloss 累计/当日），赢正输负，
+        /// 只有真正玩过游戏产生结算的会员才有记录，不按充值/退币差额统计；
+        /// 总充值/总退币 = 最近 7x24 小时内已生效充退流水，今日充值/今日退分 = 当日已生效充退流水。
         /// </summary>
         [MemberAuthorize]
         [AjaxOnly]
@@ -427,20 +429,17 @@ namespace YYT.Web.Areas.Game.Controllers
                 string agency = form.Q<string>("srch_Agency");
                 bool includeDescendants = form.Q<int>("IncludeDescendants", 0) == 1;
                 M_MemberWinLossStats stats = new B_Users().GetMemberWinLossStats(loginUser, agency, includeDescendants);
-                long totalBuy = stats.TotalBuy ?? 0;
-                long totalBack = stats.TotalBack ?? 0;
-                long todayBuy = stats.TodayBuy ?? 0;
-                long todayBack = stats.TodayBack ?? 0;
                 msg.code = 1;
                 msg.content = "查询成功！";
                 msg.datas = new
                 {
-                    TotalBuy = totalBuy,
-                    TotalBack = totalBack,
-                    TotalProfit = totalBuy - totalBack,
-                    TodayBuy = todayBuy,
-                    TodayBack = todayBack,
-                    TodayProfit = todayBuy - todayBack
+                    TotalBuy = stats.TotalBuy ?? 0,
+                    TotalBack = stats.TotalBack ?? 0,
+                    TodayBuy = stats.TodayBuy ?? 0,
+                    TodayBack = stats.TodayBack ?? 0,
+                    // 盈亏按实际游戏输赢统计（user_daily_winloss），不再按充值/退币差额
+                    TotalWinLoss = stats.TotalWinLoss ?? 0,
+                    TodayWinLoss = stats.TodayWinLoss ?? 0
                 };
             }
             catch (Exception ex)

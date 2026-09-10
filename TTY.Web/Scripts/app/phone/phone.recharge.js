@@ -29,6 +29,21 @@
         $('#submitBtn').prop('disabled', true);
     }
 
+    /* ---------------- 页头余额实时刷新 ---------------- */
+
+    /**
+     * 重新查库刷新页头"当前金币余额"。
+     * 余额会随本账号上下分（代理扣/加）或上级给本账号充值而变化，不能只靠页面初次渲染。
+     */
+    function refreshOwnCoins() {
+        if (document.hidden) return;
+        M.post('/Mobile/Home/GetOwnCoinsJson', {}).then(function (res) {
+            if (res && typeof res.coins !== 'undefined') {
+                $('#currentDiamond').text(M.gold(res.coins));
+            }
+        });
+    }
+
     /* ---------------- 历史账号 ---------------- */
 
     function renderHistory() {
@@ -116,6 +131,8 @@
                         // 保留当前账号、角色和操作类型，并重新查询余额。
                         // 这样成功后页面状态与操作前连续，不会回到空白查询页。
                         queryAccount();
+                        // 本账号余额已因上下分变化，即时刷新页头余额
+                        refreshOwnCoins();
                     }
                 });
             }, function () {
@@ -132,6 +149,10 @@
     function initPage() {
         refreshAmountUi();
         renderHistory();
+
+        // 页头余额实时化：除操作成功后即时刷新外，停留页面期间定时轮询，
+        // 覆盖上级在其它端（如桌面充值管理）给本账号充退、兑换结算等外部变化。
+        setInterval(refreshOwnCoins, 15000);
 
         // 预填（从玩家列表跳转过来）
         var preset = window.MPagePreset || {};

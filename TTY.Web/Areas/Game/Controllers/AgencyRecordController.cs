@@ -50,6 +50,8 @@ namespace YYT.Web.Areas.Game.Controllers
                 string agency = form.Q<string>("AGENCY");
                 int opt = form.Q<int>("OPT");
                 DateTime date = form.Q<DateTime>("TIME", DateTime.Now);
+                // 可选结束日期：手机流水页支持日期区间（同一天时与 TIME 一致，兼容桌面只传 TIME）
+                DateTime endDate = form.Q<DateTime>("END", date);
                 int pageIndex = form.Q<int>("page", 1);
                 int pageSize = form.Q<int>("rows", 10);
                 int week = date.WeekOfYear(System.Globalization.CalendarWeekRule.FirstDay, DayOfWeek.Monday);
@@ -58,7 +60,7 @@ namespace YYT.Web.Areas.Game.Controllers
                 if (loginUser != null)
                 {
                     M_Page mPage = new M_Page(pageIndex, pageSize);
-                    M_S_Record entity = new M_S_Record { S_TIME = date, ID = id, E_TIME = date, WEEK = week, AGENCY = agency, OPT = opt};
+                    M_S_Record entity = new M_S_Record { S_TIME = date, ID = id, E_TIME = endDate, WEEK = week, AGENCY = agency, OPT = opt};
                     list = new B_Records_MySQL().Get_AgencyRecords(loginUser, mPage, entity);
                 }
             }

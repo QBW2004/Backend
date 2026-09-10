@@ -1,7 +1,7 @@
 /* ============================================================
-   代理流水页（展示单个代理的资金流入流出记录）
+   代理流水页（展示单个代理与对方账号之间的资金变动记录）
    数据源：/Game/AgencyRecord/GetAgencyRecords
-   交互：日期筛选、分页浏览
+   交互：日期筛选、分页浏览；流向列可点击（代账号弹代理详情、玩账号跳玩家详情）
    列：日期 / 代理账号 / 金币(COINS) / 剩余金币(AFT_COINS) / 来源 / 流向
 
    OPT 取值（见 B_Recharge.AddAgentOptLog：OPT = RechargeType + 20）：
@@ -17,24 +17,25 @@
     var agentId = '';
 
     /* 资金记录：有金币变动，COINS 为操作金币量 */
-    var OPT_IN = { '0': 1, '20': 1, '22': 1 };      // 流入：充值/赠送
-    var OPT_OUT = { '1': 1, '21': 1, '23': 1 };     // 流出：兑换/扣币
+    var OPT_IN = { '0': 1, '20': 1, '22': 1 };      // 充值/赠送：被操作账号收到金币
+    var OPT_OUT = { '1': 1, '21': 1, '23': 1 };     // 兑换/扣币：金币回到操作人账号
 
-    /* 操作类型文案（非资金记录也用于“来源”辅助说明） */
-    var OPT_TEXT = {
-        '0': '充值', '1': '兑换', '2': '登录', '3': '退出',
-        '20': '充值', '21': '兑换', '22': '赠送', '23': '扣币',
-        '24': '代理禁用', '25': '代理解禁',
-        '26': '玩家冻结', '27': '玩家解冻'
-    };
+    /* 玩家在日志里的职务文案（M_Admin/EAdminType 翻译结果）；
+       服务端 DestIsPlayer 缺失时的兼容判定，正常走服务端字段。 */
+    var PLAYER_TITLE = '用户';
+
+    /* 流向账号前缀：后台账号标“代”，玩家账号标“玩” */
+    var PREFIX_AGENT = '代 ';
+    var PREFIX_PLAYER = '玩 ';
 
     /* ---------------- 数据 ---------------- */
 
     function fetchAgentFlow(params) {
+        // 日期参数必须是 "yyyy-MM-dd" 字符串（TIME=开始日, END=结束日），
+        // 传 Date 对象会被 jQuery 序列化成无法解析的英文日期导致服务端日期过滤失效。
         return M.post('/Game/AgencyRecord/GetAgencyRecords', $.extend({
             ID: agentId,
             OPT: -1,
-            TIME: new Date(),
             page: currentPage,
             rows: pageSize
         }, params || {}));
@@ -66,27 +67,52 @@
         return OPT_IN[optKey(rowData)] === 1;
     }
 
-    /* 来源：记录中“对方”账号。流入=转出方(OptID)，流出=接收方(ID) */
-    function getSource(rowData) {
+    /* 来源：本次资金变动的转出方账号（充值/赠送为操作人，兑换/扣币为被操作账号）。
+       这里直接显示账号，不拼“总代理/代理”等职务后缀。 */
+    function getSourceAccount(rowData) {
         var opt = optKey(rowData);
-        if (isInRecord(rowData)) {
-            return rowData.OptID + '[' + M.esc(rowData.SrcUserTitle) + ']';
-        }
-        if (OPT_OUT[opt] === 1) {
-            return rowData.ID + '[' + M.esc(rowData.DestUserTitle) + ']';
-        }
-        return '--';
+        if (OPT_IN[opt] === 1) return rowData.OptID;
+        if (OPT_OUT[opt] === 1) return rowData.ID;
+        return '';
     }
 
-    function getFlowDirection(rowData) {
+    /* 被操作账号（ID）是否玩家：以服务端 DestIsPlayer 为准，
+       字段缺失时退回职务文案判定，保证旧接口响应也能正确显示。 */
+    function isPlayerAccount(rowData) {
+        if (rowData.DestIsPlayer === true || rowData.DestIsPlayer === 1) return true;
+        if (rowData.DestIsPlayer === false || rowData.DestIsPlayer === 0) return false;
+        return String(rowData.DestUserTitle || '') === PLAYER_TITLE;
+    }
+
+    /* 流向：本次资金变动的接收方账号，代理显示“代 xxx”、玩家显示“玩 xxx”。
+       充值/赠送收币的是被操作账号，兑换/扣币收币的是操作人（后台账号，必为代理）。 */
+    function getTargetInfo(rowData) {
         var opt = optKey(rowData);
         if (OPT_IN[opt] === 1) {
-            return '<span class="flow-direction in">流入 ↓</span>';
+            return { account: rowData.ID, isPlayer: isPlayerAccount(rowData) };
         }
         if (OPT_OUT[opt] === 1) {
-            return '<span class="flow-direction out">流出 ↑</span>';
+            return { account: rowData.OptID, isPlayer: false };
         }
-        return '<span class="flow-direction" style="background:#f0f0f0;color:#666;">--</span>';
+        return null;
+    }
+
+    function renderSource(rowData) {
+        var account = getSourceAccount(rowData);
+        return account ? M.esc(account) : '--';
+    }
+
+    function renderTarget(rowData) {
+        var target = getTargetInfo(rowData);
+        if (!target || !target.account) return '--';
+        var account = String(target.account);
+        if (target.isPlayer) {
+            // 玩家账号：与超链接一致，点击跳玩家详细信息页
+            return '<a class="flow-account-link player" href="/Mobile/Home/PlayerDetail?id=' +
+                encodeURIComponent(account) + '">' + PREFIX_PLAYER + M.esc(account) + '</a>';
+        }
+        return '<span class="flow-account-link agent" data-agent="' + M.esc(account) + '">' +
+            PREFIX_AGENT + M.esc(account) + '</span>';
     }
 
     function renderRows(rows) {
@@ -98,11 +124,10 @@
         }
         $('#noData').hide();
         $body.html(rows.map(function (r) {
-            var opt = optKey(r);
             var isMoney = isMoneyRecord(r);
             var isIn = isInRecord(r);
             var amount = isMoney ? Number(r.COINS || 0) : 0;
-            // 金币：流入为正、流出为负；剩余金币 = 操作后余额
+            // 金币：收币为正、付币为负；剩余金币 = 操作后余额
             var amountHtml = isMoney
                 ? '<span class="amount ' + (isIn ? 'positive' : 'negative') + '">' +
                       (isIn ? '+' : '-') + M.gold(Math.abs(amount)) + '</span>'
@@ -114,8 +139,8 @@
                 '<td>' + M.esc(agentId) + '</td>' +
                 '<td>' + amountHtml + '</td>' +
                 '<td>' + remainHtml + '</td>' +
-                '<td>' + M.esc(getSource(r)) + '</td>' +
-                '<td>' + getFlowDirection(r) + '</td>' +
+                '<td class="flow-source">' + renderSource(r) + '</td>' +
+                '<td class="flow-target">' + renderTarget(r) + '</td>' +
                 '</tr>';
         }).join(''));
     }
@@ -134,13 +159,19 @@
 
         var startDate = $('#startDate').val();
         var endDate = $('#endDate').val();
-
-        var queryTime = new Date();
-        if (startDate) {
-            queryTime = new Date(startDate);
+        if (!startDate) {
+            var d = new Date();
+            startDate = d.getFullYear() + '-' + M.pad2(d.getMonth() + 1) + '-' + M.pad2(d.getDate());
         }
+        if (!endDate) endDate = startDate;
 
-        fetchAgentFlow({ TIME: queryTime, page: currentPage })
+        // 服务端按 TIME(开始日) ~ END(结束日) 过滤；不传 Date 对象，
+        // 避免 jQuery 序列化成不可解析的日期字符串。日期筛选/分页全在服务端完成。
+        fetchAgentFlow({
+            TIME: startDate,
+            END: endDate,
+            page: currentPage
+        })
             .always(function() {
                 if (showLoading !== false) {
                     M.hideLoading();
@@ -149,17 +180,6 @@
             .then(function (res) {
                 var rows = (res && res.rows) ? res.rows : [];
                 var total = res ? Number(res.total || 0) : 0;
-
-                // 根据日期范围筛选
-                if (startDate && endDate) {
-                    var start = new Date(startDate).getTime();
-                    var end = new Date(endDate + ' 23:59:59').getTime();
-                    rows = rows.filter(function(r) {
-                        var recTime = new Date(r.REC_TIME).getTime();
-                        return recTime >= start && recTime <= end;
-                    });
-                    total = rows.length;
-                }
 
                 renderRows(rows);
                 renderPagination(total);
@@ -192,6 +212,11 @@
 
         // 加载流水数据
         loadData();
+
+        // 流向里的代理账号：弹出代理详细信息，可继续查看该代理的流水/充值
+        $('#flowTableBody').on('click', '.flow-account-link.agent', function () {
+            M.showAgentDetail(String($(this).data('agent') || ''));
+        });
 
         // 筛选按钮
         $('#filterBtn').on('click', function() {

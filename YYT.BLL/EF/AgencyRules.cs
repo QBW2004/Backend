@@ -81,6 +81,109 @@ namespace YYT.BLL.EF
             return agencyIds.ToList();
         }
 
+        /// <summary>
+        /// 统计每个代理名下整条继承链的下级代理数量（不含自身）。
+        /// 传入的 links 必须覆盖同一权限范围内的全部代理，否则深层下级会被漏算。
+        /// </summary>
+        public static Dictionary<string, int> BuildDescendantCounts(IEnumerable<AgencyLink> links)
+        {
+            Dictionary<string, List<string>> children = BuildChildrenMap(links);
+            Dictionary<string, int> counts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            foreach (string agencyId in children.Keys)
+                CountDescendants(agencyId, children, counts, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+            return counts;
+        }
+
+        /// <summary>
+        /// 收集某个代理名下整条继承链的代理账号（不含自身），用于下钻展示整棵子树。
+        /// </summary>
+        public static HashSet<string> CollectDescendants(IEnumerable<AgencyLink> links, string rootAgencyId)
+        {
+            HashSet<string> descendants = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (string.IsNullOrWhiteSpace(rootAgencyId))
+                return descendants;
+
+            Dictionary<string, List<string>> children = BuildChildrenMap(links);
+            CollectDescendants(rootAgencyId.Trim(), children, descendants, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+            descendants.Remove(rootAgencyId.Trim());
+            return descendants;
+        }
+
+        private static Dictionary<string, List<string>> BuildChildrenMap(IEnumerable<AgencyLink> links)
+        {
+            Dictionary<string, List<string>> children = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+            foreach (AgencyLink link in links ?? Enumerable.Empty<AgencyLink>())
+            {
+                if (link == null || string.IsNullOrWhiteSpace(link.AgencyId))
+                    continue;
+                if (!children.ContainsKey(link.AgencyId))
+                    children[link.AgencyId] = new List<string>();
+            }
+
+            foreach (AgencyLink link in links ?? Enumerable.Empty<AgencyLink>())
+            {
+                if (link == null || string.IsNullOrWhiteSpace(link.AgencyId))
+                    continue;
+                string parent = link.ParentAgencyId == null ? string.Empty : link.ParentAgencyId.Trim();
+                if (parent.Length == 0 || string.Equals(parent, link.AgencyId, StringComparison.OrdinalIgnoreCase))
+                    continue;
+                if (!children.ContainsKey(parent))
+                    continue;
+                children[parent].Add(link.AgencyId);
+            }
+
+            return children;
+        }
+
+        private static int CountDescendants(
+            string agencyId,
+            Dictionary<string, List<string>> children,
+            Dictionary<string, int> counts,
+            HashSet<string> visiting)
+        {
+            int cached;
+            if (counts.TryGetValue(agencyId, out cached))
+                return cached;
+
+            // 历史脏数据可能出现环形上下级关系，visited 兜底避免递归失控。
+            if (!visiting.Add(agencyId))
+                return 0;
+
+            int total = 0;
+            List<string> childRows;
+            if (children.TryGetValue(agencyId, out childRows))
+            {
+                foreach (string child in childRows)
+                    total += 1 + CountDescendants(child, children, counts, visiting);
+            }
+
+            visiting.Remove(agencyId);
+            counts[agencyId] = total;
+            return total;
+        }
+
+        private static void CollectDescendants(
+            string agencyId,
+            Dictionary<string, List<string>> children,
+            HashSet<string> descendants,
+            HashSet<string> visiting)
+        {
+            if (!visiting.Add(agencyId))
+                return;
+
+            List<string> childRows;
+            if (children.TryGetValue(agencyId, out childRows))
+            {
+                foreach (string child in childRows)
+                {
+                    if (descendants.Add(child))
+                        CollectDescendants(child, children, descendants, visiting);
+                }
+            }
+
+            visiting.Remove(agencyId);
+        }
+
         public static bool TryValidateInviteCode(
             string inviteCode,
             string currentAgencyId,
@@ -196,6 +299,19 @@ namespace YYT.BLL.EF
 
             public string AgencyId { get; private set; }
             public string InviteCode { get; private set; }
+        }
+
+        /// <summary>代理上下级关系：AgencyId 的直接上级账号为 ParentAgencyId。</summary>
+        public sealed class AgencyLink
+        {
+            public AgencyLink(string agencyId, string parentAgencyId)
+            {
+                AgencyId = agencyId;
+                ParentAgencyId = parentAgencyId;
+            }
+
+            public string AgencyId { get; private set; }
+            public string ParentAgencyId { get; private set; }
         }
     }
 }

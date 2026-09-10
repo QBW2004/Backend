@@ -45,6 +45,8 @@ namespace YYT.Web.Areas.Game.Controllers
                 string agency = form.Q<string>("Agency");
                 int pageIndex = form.Q<int>("page", 1);
                 int pageSize = form.Q<int>("rows", 10);
+                // 手机端下钻要求看到该代理名下的整条继承链；桌面端“所属代理”仍是精确的直属查询，故由调用方显式声明。
+                bool includeDescendants = form.Q<int>("IncludeDescendants", 0) == 1;
                 M_LoginUser loginUser = WebHelper.GetLoginInfo();
                 if (loginUser == null)
                     return Json(list);
@@ -60,7 +62,7 @@ namespace YYT.Web.Areas.Game.Controllers
                 // 2 ~ 8 一般代理
                 // 9 副管理
                 // 10 运营
-                list = bll.GetAgencyList(mPage, mAdmin, loginUser);
+                list = bll.GetAgencyList(mPage, mAdmin, loginUser, includeDescendants);
 
                 if (list != null && list.rows != null)
                 {

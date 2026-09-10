@@ -538,7 +538,10 @@ namespace YYT.BLL.EF
         /// user_daily_winloss(UserID,DAY) 索引），禁止把权限范围内全量玩家拉进内存再排序分页。
         /// </summary>
         /// <param name="sort">空/last-time 默认序；win-most 今日赢最多；loss-most 今日输最多；profit-desc 总盈亏降序；profit-asc 总盈亏升序</param>
-        private M_EasyuiGridData<M_Users_DTO> QueryUsersPaged(M_Page mPage, M_Users_DTO entity, M_LoginUser loginUser, bool onlyOffline, bool onlyFrozen, string sort, bool includeDescendants = false, bool rollingFinancials = false)
+        /// <param name="rollingFinancials">true 时充退列取最近 7x24h 流水（rechargerecords），false 取 users 累计列</param>
+        /// <param name="gameWinLossProfit">true（会员盈亏详情页）时：总盈亏(Profit) 与 profit 排序改为实际游戏累计输赢
+        /// （SUM user_daily_winloss 全量，与 FillTotalWinLoss 同口径），不再按充值/退币差额——没玩过游戏的玩家无记录即为 0</param>
+        private M_EasyuiGridData<M_Users_DTO> QueryUsersPaged(M_Page mPage, M_Users_DTO entity, M_LoginUser loginUser, bool onlyOffline, bool onlyFrozen, string sort, bool includeDescendants = false, bool rollingFinancials = false, bool gameWinLossProfit = false)
         {
             M_EasyuiGridData<M_Users_DTO> list = new M_EasyuiGridData<M_Users_DTO>();
             using (var ef = new GameDbContext())
@@ -599,6 +602,13 @@ namespace YYT.BLL.EF
                 string whereSql = where.ToString();
                 object[] baseArgs = args.ToArray();
 
+                // 盈亏排序键：默认按充值/退币差额（与列口径一致）；会员盈亏详情页（gameWinLossProfit）
+                // 按实际游戏累计输赢排序（user_daily_winloss 全量，赢正输负）。
+                string profitExpr = gameWinLossProfit
+                    ? "IFNULL(tg.TotalWl,0)"
+                    : (rollingFinancials
+                        ? "(IFNULL(d.RollingBuy,0) - IFNULL(d.RollingBack,0))"
+                        : "(IFNULL(c.COINS_BUY,0) - IFNULL(c.COINS_BACK,0))");
                 // 排序口径与原内存排序一致，UserID 作稳定次序
                 string orderClause;
                 switch (sort)
@@ -610,14 +620,10 @@ namespace YYT.BLL.EF
                         orderClause = " ORDER BY IFNULL(w.WINLOSS,0) ASC, r.UserID DESC";
                         break;
                     case "profit-desc":
-                        orderClause = rollingFinancials
-                            ? " ORDER BY (IFNULL(d.RollingBuy,0) - IFNULL(d.RollingBack,0)) DESC, r.UserID DESC"
-                            : " ORDER BY (IFNULL(c.COINS_BUY,0) - IFNULL(c.COINS_BACK,0)) DESC, r.UserID DESC";
+                        orderClause = " ORDER BY " + profitExpr + " DESC, r.UserID DESC";
                         break;
                     case "profit-asc":
-                        orderClause = rollingFinancials
-                            ? " ORDER BY (IFNULL(d.RollingBuy,0) - IFNULL(d.RollingBack,0)) ASC, r.UserID DESC"
-                            : " ORDER BY (IFNULL(c.COINS_BUY,0) - IFNULL(c.COINS_BACK,0)) ASC, r.UserID DESC";
+                        orderClause = " ORDER BY " + profitExpr + " ASC, r.UserID DESC";
                         break;
                     default:
                         // 默认按最后登录时间倒序（无记录的排最后）
@@ -642,12 +648,18 @@ namespace YYT.BLL.EF
                 args.Add(DateTime.Now);
                 string buyColumn = rollingFinancials ? "IFNULL(d.RollingBuy,0)" : "c.COINS_BUY";
                 string backColumn = rollingFinancials ? "IFNULL(d.RollingBack,0)" : "c.COINS_BACK";
+                // 盈亏详情页：附全量累计游戏输赢子查询，映射到 Profit（总盈亏列）；
+                // 今日盈亏列沿用 w.WINLOSS（user_daily_winloss 当日记录，玩过才有）。
+                string profitJoin = gameWinLossProfit
+                    ? " LEFT JOIN (SELECT UserID, SUM(WINLOSS) AS TotalWl FROM user_daily_winloss GROUP BY UserID) tg ON tg.UserID = c.ID"
+                    : "";
+                string profitColumn = gameWinLossProfit ? ", IFNULL(tg.TotalWl,0) AS Profit" : "";
                 string pageSql = "SELECT c.ID, c.NAME, c.AGENCY, c.FROZEN, c.COINS, " + buyColumn + " AS COINS_BUY, " + backColumn + " AS COINS_BACK," +
-                    " r.UserID, c.INHALL, c.GAME_SCORE, c.GRADE, c.SAFE_COINS," +
-                    " IFNULL(w.WINLOSS,0) AS TodayWinLoss, IFNULL(d.TodayBuy,0) AS TodayBuy," +
+                    " r.UserID, c.INHALL, c.GAME_SCORE, c.GRADE, c.SAFE_COINS" + profitColumn +
+                    ", IFNULL(w.WINLOSS,0) AS TodayWinLoss, IFNULL(d.TodayBuy,0) AS TodayBuy," +
                     " IFNULL(d.TodayBack,0) AS TodayBack, l.LastLoginTime" +
                     " FROM users c INNER JOIN userrelations r ON r.ID = c.ID" +
-                    " LEFT JOIN user_daily_winloss w ON w.UserID = c.ID AND w.DAY = {" + todayArg + "}" +
+                    " LEFT JOIN user_daily_winloss w ON w.UserID = c.ID AND w.DAY = {" + todayArg + "}" + profitJoin +
                     " LEFT JOIN (SELECT GameID," +
                     " SUM(CASE WHEN CreateTime >= {" + todayArg + "} AND (RechargeType IN (20,22) OR (RechargeType = 30 AND Processed = 1)) THEN Coin ELSE 0 END) AS TodayBuy," +
                     " SUM(CASE WHEN CreateTime >= {" + todayArg + "} AND (RechargeType IN (21,23) OR (RechargeType = 31 AND Processed = 1)) THEN Coin ELSE 0 END) AS TodayBack," +
@@ -660,7 +672,11 @@ namespace YYT.BLL.EF
                 List<M_Users_DTO> users = ef.Database.SqlQuery<M_Users_DTO>(pageSql, args.ToArray()).ToList();
 
                 foreach (M_Users_DTO item in users)
-                    item.Profit = item.COINS_BUY - item.COINS_BACK;
+                {
+                    // 盈亏详情页 Profit 已由 SQL 的 tg.TotalWl（累计游戏输赢）直接映射，不再按充退差额覆盖
+                    if (!gameWinLossProfit)
+                        item.Profit = item.COINS_BUY - item.COINS_BACK;
+                }
                 ApplySensitiveFieldPermissions(users, loginUser);
                 if (onlyFrozen)
                     FillFreezeAudit(ef, users);
@@ -708,10 +724,11 @@ namespace YYT.BLL.EF
             return QueryUsersPaged(mPage, entity, loginUser, false, true, null);
         }
 
-        /// <summary>手机端：会员盈亏分页（今日输赢 + 总盈亏，支持排序）</summary>
+        /// <summary>手机端：会员盈亏分页（今日输赢 + 总盈亏，支持排序）。盈亏=实际游戏输赢，不按充值退币。</summary>
         public M_EasyuiGridData<M_Users_DTO> GetMemberWinLossList(M_Page mPage, M_Users_DTO entity, M_LoginUser loginUser, string sort, bool includeDescendants = false)
         {
-            return QueryUsersPaged(mPage, entity, loginUser, false, false, sort ?? "win-most", includeDescendants, true);
+            // 总盈亏/今日盈亏均取 user_daily_winloss（累计/当日）：没玩过游戏的玩家没有记录，盈亏为 0
+            return QueryUsersPaged(mPage, entity, loginUser, false, false, sort ?? "profit-desc", includeDescendants, true, true);
         }
 
         /// <summary>
@@ -752,7 +769,8 @@ namespace YYT.BLL.EF
         /// 手机端：会员盈亏统计卡聚合（权限范围内，可按代理模糊过滤）。
         /// 总充值/总退币 = 最近 7x24 小时内已生效充退流水合计；
         /// 今日充值/今日退分 = 当日充退流水合计（TypeFlag 口径与 GetUserPhoneDetail 一致）。
-        /// 总盈亏 = 总充值 - 总退分、今日盈亏 = 今日充值 - 今日退分 由调用端计算（与用户管理页总盈利同口径）。
+        /// 总盈亏/今日盈亏 = 实际游戏输赢（user_daily_winloss 累计 / 当日）：
+        /// 只有真正玩过游戏产生结算的玩家才有记录，没玩的玩家不计入盈亏，与充值退币无关。
         /// </summary>
         public M_MemberWinLossStats GetMemberWinLossStats(M_LoginUser loginUser, string agency, bool includeDescendants = false)
         {
@@ -818,6 +836,41 @@ namespace YYT.BLL.EF
                     stats.TodayBuy = today.TodayBuy;
                     stats.TodayBack = today.TodayBack;
                 }
+
+                // 盈亏 = 实际游戏输赢（user_daily_winloss），不按充值/退币统计；
+                // 范围与上方充退聚合一致（agencies=null 表示超管全量）。跨天记录逐条带出，玩家没玩的天数没有行，天然不计。
+                long totalWinLoss = 0;
+                long todayWinLoss = 0;
+                if (agencies == null || agencies.Count < 1)
+                {
+                    // 超管全量：直接整表聚合；当日口径可走 idx_udw_day 索引
+                    totalWinLoss = ef.Database.SqlQuery<long>(
+                        "SELECT CAST(IFNULL(SUM(WINLOSS),0) AS SIGNED) FROM user_daily_winloss").FirstOrDefault();
+                    todayWinLoss = ef.Database.SqlQuery<long>(
+                        "SELECT CAST(IFNULL(SUM(WINLOSS),0) AS SIGNED) FROM user_daily_winloss WHERE DAY = CURDATE()").FirstOrDefault();
+                }
+                else
+                {
+                    for (int i = 0; i < agencies.Count; i += 300)
+                    {
+                        List<string> chunk = agencies.Skip(i).Take(300).ToList();
+                        string placeholders = string.Join(",", chunk.Select((c, j) => "{" + j + "}"));
+                        object[] chunkArgs = chunk.Cast<object>().ToArray();
+                        string joins = " FROM user_daily_winloss w" +
+                                       " INNER JOIN UserRelations r ON r.UserID = w.UserID" +
+                                       " INNER JOIN Users u ON u.ID = r.ID";
+                        totalWinLoss += ef.Database.SqlQuery<long>(
+                            "SELECT CAST(IFNULL(SUM(w.WINLOSS),0) AS SIGNED)" + joins +
+                            " WHERE u.AGENCY IN (" + placeholders + ")",
+                            chunkArgs).FirstOrDefault();
+                        todayWinLoss += ef.Database.SqlQuery<long>(
+                            "SELECT CAST(IFNULL(SUM(w.WINLOSS),0) AS SIGNED)" + joins +
+                            " WHERE u.AGENCY IN (" + placeholders + ") AND w.DAY = CURDATE()",
+                            chunkArgs).FirstOrDefault();
+                    }
+                }
+                stats.TotalWinLoss = totalWinLoss;
+                stats.TodayWinLoss = todayWinLoss;
                 return stats;
             }
         }

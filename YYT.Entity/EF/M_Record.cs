@@ -122,6 +122,13 @@ namespace YYT.Entity
         /// </summary>
         public int WEEK { get; set; }
 
+        /// <summary>
+        /// 被操作账号（ID）是否玩家：手机端流水页据此显示“玩 账号”并跳玩家详情，
+        /// 否则为“代 账号”并弹出代理详情。账号在 users / admin 两表间不重复，由服务端判定。
+        /// </summary>
+        [NotMapped]
+        public bool DestIsPlayer { get; set; }
+
         public override string ToString()
         {
             return JsonConvert.SerializeObject(this);

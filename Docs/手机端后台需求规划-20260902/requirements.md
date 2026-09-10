@@ -54,6 +54,10 @@
 7. **When** 修改玩家登录密码，**if** `Permission_Policy` 的 `IsViewPwd` 或 `IsModifyPwd` 任一关闭，**the system shall** 隐藏修改入口并拒绝接口请求。
 8. **When** 展示安全密码，**the system shall** 继续独立遵守 `IsViewSafePwd`，不得因登录密码权限开启而自动泄露安全密码。
 9. **When** 打开玩家详情，**the system shall** 将控制状态作为信息展示；只有存在对应控制权限时才显示对应设置入口。
+10. **When** `Mobile_Admin_UI` 展示代理列表或下钻某个代理，**the system shall** 按代理上下级继承链展示该代理名下的全部层级，任意层级的代理都归类到开启它的上级名下，不得只显示直属一层。
+11. **When** 展示“下级代理”数量，**the system shall** 统计该代理整条继承链上的下级代理总数（不含自身），而不是仅统计直属下级。
+12. **When** 下钻某个代理后展示其下级列表，**the system shall** 让列表中的“下级代理”数量与该代理在下钻前显示的数量一致，不得因下钻而全部归零。
+13. **When** 展示代理列表行，**the system shall** 按继承层级缩进呈现上下级关系，使“谁开的代理挂在谁名下”可直接辨认。
 
 ### Requirement 3: Permission_Policy 与管理范围
 
