@@ -1,6 +1,6 @@
 # AGENTS.md — MTH-Backend（MTH 游戏平台运营后台）
 
-> 供 AI 代理 / 新成员快速上手。最后核实时间：**2026-09-10**（线上部署 1.0.35；服务器实况调查为 2026-08-29，调查方式见文末）。
+> 供 AI 代理 / 新成员快速上手。最后核实时间：**2026-09-10**（线上部署 1.0.36；服务器实况调查为 2026-08-29，调查方式见文末）。
 
 ## 项目是什么
 
@@ -17,7 +17,7 @@ ASP.NET **MVC5 + .NET Framework 4.x（目标 4.8）**，EF6 + **MySQL 5.7**（�
 | `TTY.Web/` | **Web 主站**，项目文件是 `TTY.Web/YYT.Web.csproj`（⚠️ 目录叫 TTY.Web，项目名/程序集叫 YYT.Web） |
 | `TTY.Web/Controllers/` | 根级：`LoginController`（桌面登录）、`MgrController`（后台框架页/主入口）、`Common`、`Validator`（验证码）、`Api/`（WebAPI：`/api/PayOrderNotify`、`/api/DPayOrderNotify` 支付回调等） |
 | `TTY.Web/Areas/Game/` | 桌面后台业务接口（约 25 个 Controller：用户、代理、充值、游戏配置、机器人、公告…），JSON 接口为主 |
-| `TTY.Web/Areas/Mobile/` | 手机端后台（分支 `Add-Phone-Support` 正在做的 1:1 复刻改造，见 `.zcode/plans/plan-sess_4fe235af-*.md`），`Views/Home/` 已有 11 页 |
+| `TTY.Web/Areas/Mobile/` | 手机端后台（分支 `Add-Phone-Support` 正在做的 1:1 复刻改造，见 `.zcode/plans/plan-sess_4fe235af-*.md`），`Views/Home/` 已有 14 页 |
 | `YYT.BLL/` | 业务层。`EF/` 为 EF6 实体+操作类（`GameDbContext` 等），`Services/GameServer/` 为游戏服指令通道（见下文） |
 | `YYT.Entity/` | 实体与枚举（`M_LoginUser`、`TipMsg`、`EServerData` 等） |
 | `YYT.Common/` | `ConfigHelper`/`CacheHelper`/`WebHelper`（Session 登录态）等基础设施 |
@@ -89,7 +89,7 @@ ssh -i "$HOME\.ssh\mht-server-ed25519" -o IdentitiesOnly=yes administrator@134.1
 | 磁盘 | 仅 C:（338/360 GB 空闲）。**没有 D 盘** |
 | IIS | `Default Web Site` → `C:\Backend`，绑定 `*:80` + `*:8081`，应用池 DefaultAppPool（v4.0 / 64 位），运行正常，本机探测 HTTP 200 |
 | 公网 | 80 / 8081 均可达（返回 302 跳登录页） |
-| 部署版本 | **WebVer = 1.0.35**（2026-09-10 部署，代理列表继承链展示/统计 + 会员盈亏改实际游戏输赢口径 + 代理流水日期区间与「代/玩」流向 + 充值页余额实时刷新，备份 `C:\Backend_backup_20260910_213641`）；同日此前 1.0.33（备份 `C:\Backend_backup_20260910_121647`、`..._120736`、`..._020837`）；1.0.23（2026-09-02 部署，手机端权限策略 + 记录 7×24 窗口与 gameprizerecord 清理，备份 `C:\Backend_backup_20260902_201631`，部署前库备份 `C:\mth_backup_20260902_201442.sql`）；1.0.20（2026-08-31 部署，手机端改版）。SQL 补丁已全部执行：性能索引（`Docs/sql/性能索引.sql`）、`Docs/sql/线上games名称修正.sql`（games.Name 正常 UTF-8 中文）、`Docs/sql/手机端后台权限与记录保留-20260902.sql`（幂等，gameprizerecord 表 + 记录清理索引已就位）；`usercontrolstatus`/`usercontrolvalue` 表线上已存在。1.0.35 未新增 SQL 补丁（复用 `idx_udw_day` 等既有索引） |
+| 部署版本 | **WebVer = 1.0.36**（2026-09-10 部署，手机端新增「游戏记录」独立页 + 代理「下级代理」回归直属口径 + 中奖记录排除八爪鱼 GameId=42 + 全站金额文案简化为「币」，备份 `C:\Backend_backup_20260910_234906`）；同日此前 1.0.35（代理列表继承链展示/统计 + 会员盈亏改实际游戏输赢口径 + 代理流水日期区间与「代/玩」流向 + 充值页余额实时刷新，备份 `C:\Backend_backup_20260910_213641`）、1.0.33（备份 `..._121647`、`..._120736`、`..._020837`）；1.0.23（2026-09-02 部署，手机端权限策略 + 记录 7×24 窗口与 gameprizerecord 清理，备份 `C:\Backend_backup_20260902_201631`，部署前库备份 `C:\mth_backup_20260902_201442.sql`）；1.0.20（2026-08-31 部署，手机端改版）。SQL 补丁已全部执行：性能索引（`Docs/sql/性能索引.sql`）、`Docs/sql/线上games名称修正.sql`（games.Name 正常 UTF-8 中文）、`Docs/sql/手机端后台权限与记录保留-20260902.sql`（幂等，gameprizerecord 表 + 记录清理索引已就位）；`usercontrolstatus`/`usercontrolvalue` 表线上已存在。1.0.36 与 1.0.35 均未新增 SQL 补丁（复用 `idx_udw_day` 等既有索引） |
 | MySQL | 5.7.44，服务名 `MySQL57`，`C:\mysql\bin\mysqld.exe --defaults-file=C:\mysql\my.ini`，库 mth，`lower_case_table_names=1`，users≈191 行 / admin≈31 行（PRIV>0 的代理 30 行，数据量很小） |
 | 端口监听 | 80、8081（HTTP.sys）、3306、3389(RDP) |
 | 中心服 | **本机没有**：找不到 `ServerCenterNew.exe`（扫到两层深度）、无 `mynamedpipe`/`MTH_RobotPipe` 命名管道、无 8020/8021/9000 监听 |
@@ -114,7 +114,7 @@ ssh -i "$HOME\.ssh\mht-server-ed25519" -o IdentitiesOnly=yes administrator@134.1
 - 应用池必须 64 位（x64 SQLite.Interop）。
 - **SSH 远程执行 PowerShell 时是 32 位进程**：`Import-Module WebAdministration` 后 `Get-Website` 返回空、`Get-Process` 拿不到 64 位进程路径。要用 `C:\Windows\Sysnative\WindowsPowerShell\v1.0\powershell.exe` 起真正的 64 位会话。长脚本用 `scp` 传 `-File` 执行（cmd 有 8191 字符限制，`-EncodedCommand` 太长会报"命令行太长"）。
 - `deploy.ps1` 已内置 WOW64 逃离（Sysnative），直接在服务器本地跑没问题。
-- 分支现状（2026-08-29）：`Add-Phone-Support` 上有大量未提交改动（手机端 12 页改造 + AbnormalController + phone.css/js + MobileOnlyAttribute 等），工作区不要随意 checkout/reset。
+- 分支现状（2026-09-10）：`Add-Phone-Support` 上此前的系列改动已全部提交并部署（最新 1.0.36，`a80351f`），工作区干净。
 - 数据库结构变更参考根目录 `mth.sql` + `docker/mysql/init/` 迁移补丁的顺序加载机制。
 - 读接口禁止全量 `ToList()` 后内存分页/排序/求和——玩家与记录类查询一律 SQL 下推（参考 `B_Users.QueryUsersPaged` / `B_ReChargeRecords.GetReChargeRecordsForPhone`，见 `Docs/手机端性能优化-20260829.md`）。`/Game`、`/Mobile` 已改只读会话，往这两个区域加写 Session 的代码需先确认（当前仅 `Game/UserInfo/Register` 例外可写）。
 - **线上部署前先在 MySQL57 对 mth 库执行 `Docs/sql/性能索引.sql`**（幂等；核心表二级索引 + user_daily_winloss.UserID 字符集对齐，未执行则新查询走不了索引）。
