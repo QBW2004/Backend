@@ -171,6 +171,33 @@ namespace UnitTestProj
             Assert.IsFalse(counts.ContainsKey("selfloop"));
         }
 
+        [TestMethod]
+        public void BanRecordAccessFollowsOperatorTopAgentAndSuperAdmin()
+        {
+            // 总台：全部可见
+            Assert.IsTrue(AgencyRules.CanAccessBanRecord(0, "atmadmin", "a1231", false));
+
+            // 操作人本人：可见（不看层级，也不要求目标在本线内）
+            Assert.IsTrue(AgencyRules.CanAccessBanRecord(3, "a1231", "a1231", false));
+            Assert.IsTrue(AgencyRules.CanAccessBanRecord(4, "a1231", "A1231", false));
+
+            // 特级代理（PRIV=1）：只看得见本线内的记录
+            Assert.IsTrue(AgencyRules.CanAccessBanRecord(1, "1688", "a147852", true));
+            Assert.IsFalse(AgencyRules.CanAccessBanRecord(1, "1688", "a147852", false));
+
+            // 普通代理：不是自己操作的记录一律看不见——含操作人的直接上级、被封账号的直接上级、副管理/运营
+            Assert.IsFalse(AgencyRules.CanAccessBanRecord(2, "a147852", "a1231", true));
+            Assert.IsFalse(AgencyRules.CanAccessBanRecord(3, "a1231", "a147852", true));
+            Assert.IsFalse(AgencyRules.CanAccessBanRecord(9, "fuguan", "a1231", true));
+            Assert.IsFalse(AgencyRules.CanAccessBanRecord(10, "yunying", "a1231", true));
+
+            // 查不到操作人（操作日志已过期）时：非特权一律看不见，特级仍限本线内
+            Assert.IsFalse(AgencyRules.CanAccessBanRecord(2, "a147852", null, true));
+            Assert.IsFalse(AgencyRules.CanAccessBanRecord(2, "a147852", "", true));
+            Assert.IsTrue(AgencyRules.CanAccessBanRecord(1, "1688", null, true));
+            Assert.IsFalse(AgencyRules.CanAccessBanRecord(1, "1688", "", false));
+        }
+
         private sealed class FixedRandom : System.Random
         {
             private readonly Queue<int> offsets;

@@ -210,6 +210,10 @@ namespace YYT.BLL.EF
         }
       
 
+        /// <summary>
+        /// 只改启用状态，不写审计日志也不做权限校验。界面（含桌面端启用/禁用）一律走
+        /// <see cref="SetAgentEnabledWithAudit"/>，否则封禁记录没有操作人、且能绕过封禁记录归属口径。
+        /// </summary>
         public int SetRecharge(M_Admin entity)
         {
             using (var ef = new GameDbContext())
@@ -244,25 +248,44 @@ namespace YYT.BLL.EF
 
         #region 手机端扩展（封禁代理列表 / 禁用记录）
         /// <summary>
-        /// 手机端：封禁中的代理分页（RE_ENABLE = 0 即禁止登录）。非超管仅返回自己权限线内的代理。
+        /// 手机端：封禁中的代理分页（RE_ENABLE = 0 即禁止登录）。
+        /// 可见口径：总台全部；特级代理限自己整条线内；其余代理只能看自己封的（见 CanAccessBanRecord）。
         /// </summary>
         public M_EasyuiGridData<M_Admin> GetBannedAgenciesList(M_Page mPage, M_LoginUser loginUser)
         {
             M_EasyuiGridData<M_Admin> list = new M_EasyuiGridData<M_Admin>();
+            List<M_Admin> rows = new List<M_Admin>();
             using (var ef = new GameDbContext())
             {
-                var rst = ef.Admins.Where(c => c.RE_ENABLE == 0);
                 if (loginUser != null)
-                    rst = rst.Where(c => !c.ID.Equals(loginUser.Accounts));
-                if (loginUser != null && loginUser.UserPriv != 0)
                 {
-                    List<string> agencies = GetManagedAgencyAccounts(ef, loginUser);
-                    rst = agencies.Count > 0
-                        ? rst.Where(c => agencies.Contains(c.ID))
-                        : rst.Where(c => false);
+                    var rst = ef.Admins.Where(c => c.RE_ENABLE == 0 && !c.ID.Equals(loginUser.Accounts));
+                    int priv = loginUser.UserPriv ?? -1;
+                    if (priv == AgencyRules.SuperAdminPriv)
+                    {
+                        rows = rst.OrderBy(c => c.ID).ToList();
+                    }
+                    else if (priv == AgencyRules.TopAgentPriv)
+                    {
+                        List<string> line = GetAgencyLineAccounts(ef, loginUser.Accounts);
+                        rows = line.Count > 0
+                            ? rst.Where(c => line.Contains(c.ID)).OrderBy(c => c.ID).ToList()
+                            : new List<M_Admin>();
+                    }
+                    else
+                    {
+                        // 只有最近一次禁用操作是自己做的才可见；查不到操作人的记录（操作日志已过期）不返回
+                        List<M_Admin> banned = rst.OrderBy(c => c.ID).ToList();
+                        Dictionary<string, string> operators = GetLatestBanOperators(ef, banned.Select(c => c.ID), AgentDisableAuditOpt);
+                        rows = banned.Where(c =>
+                        {
+                            string op;
+                            return operators.TryGetValue(c.ID, out op)
+                                && string.Equals(op, loginUser.Accounts, StringComparison.OrdinalIgnoreCase);
+                        }).ToList();
+                    }
                 }
 
-                List<M_Admin> rows = rst.OrderBy(c => c.ID).ToList();
                 if (mPage != null)
                 {
                     mPage.SetTotalCount(rows.Count);
@@ -280,6 +303,7 @@ namespace YYT.BLL.EF
 
         /// <summary>
         /// 手机端：代理禁用/恢复记录分页（OPT 24=禁用 25=恢复，禁用代理页据此展示封号提示与时间）。
+        /// 与禁用列表同口径：总台全部；特级代理限自己整条线；其余只返回自己操作的记录。
         /// </summary>
         public M_EasyuiGridData<M_AgencyOptLog> GetBlacklistRecords(M_Page mPage, M_LoginUser loginUser)
         {
@@ -289,10 +313,20 @@ namespace YYT.BLL.EF
                 DateTime cutoff = B_Records_MySQL.GetRetentionCutoff();
                 var rst = ef.AgencyOptLogs.Where(c => c.REC_TIME >= cutoff &&
                     (c.OPT == AgentDisableAuditOpt || c.OPT == AgentEnableAuditOpt));
-                if (loginUser != null && loginUser.UserPriv != 0)
+                if (loginUser != null && (loginUser.UserPriv ?? -1) != AgencyRules.SuperAdminPriv)
                 {
-                    List<string> agencies = GetManagedAgencyAccounts(ef, loginUser);
-                    rst = rst.Where(c => agencies.Contains(c.ID));
+                    if ((loginUser.UserPriv ?? -1) == AgencyRules.TopAgentPriv)
+                    {
+                        List<string> line = GetAgencyLineAccounts(ef, loginUser.Accounts);
+                        if (line.Count < 1)
+                            return list;
+                        rst = rst.Where(c => line.Contains(c.ID));
+                    }
+                    else
+                    {
+                        string me = loginUser.Accounts;
+                        rst = rst.Where(c => c.OptID == me);
+                    }
                 }
 
                 mPage.SetTotalCount(rst.Count());
@@ -302,6 +336,139 @@ namespace YYT.BLL.EF
                 list.total = mPage.TotalCount;
             }
             return list;
+        }
+
+        /// <summary>
+        /// 代理封禁/解除的资格判定：封禁按管理范围校验；解除「已处于禁用态」的账号按封禁记录归属
+        /// （操作人本人、特级代理本线内、总台）；本就未禁用的重复解除仍按管理范围。
+        /// </summary>
+        public bool CanOperateAgentEnabled(GameDbContext ef, M_LoginUser loginUser, string targetId, long enabled)
+        {
+            if (ef == null || loginUser == null || string.IsNullOrWhiteSpace(targetId))
+                return false;
+
+            M_Admin target = ef.Admins.FirstOrDefault(a => a.ID == targetId.Trim());
+            return target != null && CanOperateAgentEnabled(ef, loginUser, target, enabled);
+        }
+
+        public bool CanOperateAgentEnabled(GameDbContext ef, M_LoginUser loginUser, M_Admin target, long enabled)
+        {
+            if (ef == null || loginUser == null || target == null || string.IsNullOrWhiteSpace(target.ID))
+                return false;
+            if (enabled != 0 && target.RE_ENABLE == 0)
+                return CanAccessBanRecord(ef, loginUser, target.ID, AgentDisableAuditOpt);
+            return CanManageAgent(ef, loginUser, target.ID);
+        }
+
+        /// <summary>
+        /// 封禁/冻结记录（opt=24 代理禁用 / 26 玩家冻结）的查看与解除口径。
+        /// targetAccount 传被封的代理账号，或玩家所属代理账号。
+        /// </summary>
+        public bool CanAccessBanRecord(GameDbContext ef, M_LoginUser loginUser, string targetAccount, int opt)
+        {
+            if (ef == null || loginUser == null || string.IsNullOrWhiteSpace(targetAccount))
+                return false;
+
+            int priv = loginUser.UserPriv ?? -1;
+            if (priv == AgencyRules.SuperAdminPriv)
+                return true;
+
+            string target = targetAccount.Trim();
+            string operatorAccount = GetLatestBanOperator(ef, target, opt);
+            bool targetInLine = priv == AgencyRules.TopAgentPriv
+                && IsInAgencyLine(ef, loginUser.Accounts, target);
+            return AgencyRules.CanAccessBanRecord(loginUser.UserPriv, loginUser.Accounts, operatorAccount, targetInLine);
+        }
+
+        /// <summary>目标账号最近一次封禁类操作（opt）的操作人账号；查不到（含日志已过期）返回空串。</summary>
+        public string GetLatestBanOperator(GameDbContext ef, string targetId, int opt)
+        {
+            if (ef == null || string.IsNullOrWhiteSpace(targetId))
+                return string.Empty;
+
+            string account = targetId.Trim();
+            M_AgencyOptLog latest = ef.AgencyOptLogs
+                .Where(c => c.ID == account && c.OPT == opt)
+                .OrderByDescending(c => c.REC_TIME)
+                .ThenByDescending(c => c.LID)
+                .FirstOrDefault();
+            return latest == null || latest.OptID == null ? string.Empty : latest.OptID.Trim();
+        }
+
+        /// <summary>
+        /// 批量取各目标账号最近一次封禁类操作（opt）的操作人账号。
+        /// 只传当前处于封禁/冻结态的目标（量级很小），非特权账号据此筛出"自己操作的"记录。
+        /// </summary>
+        public static Dictionary<string, string> GetLatestBanOperators(GameDbContext ef, IEnumerable<string> targetIds, int opt)
+        {
+            Dictionary<string, string> result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            if (ef == null)
+                return result;
+
+            List<string> ids = (targetIds ?? Enumerable.Empty<string>())
+                .Where(c => !string.IsNullOrWhiteSpace(c))
+                .Select(c => c.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            if (ids.Count < 1)
+                return result;
+
+            // 分块查询，避免 IN 参数过长（投影用匿名类型：EF6 不允许在查询里构造映射实体）
+            List<M_AgencyOptLog> logs = new List<M_AgencyOptLog>();
+            for (int i = 0; i < ids.Count; i += 300)
+            {
+                List<string> chunk = ids.Skip(i).Take(300).ToList();
+                var rows = ef.AgencyOptLogs
+                    .Where(c => chunk.Contains(c.ID) && c.OPT == opt)
+                    .Select(c => new { c.ID, c.OptID, c.REC_TIME, c.LID })
+                    .ToList();
+                foreach (var row in rows)
+                {
+                    logs.Add(new M_AgencyOptLog
+                    {
+                        ID = row.ID,
+                        OptID = row.OptID,
+                        REC_TIME = row.REC_TIME,
+                        LID = row.LID
+                    });
+                }
+            }
+
+            foreach (M_AgencyOptLog log in logs.OrderByDescending(c => c.REC_TIME).ThenByDescending(c => c.LID))
+            {
+                if (!result.ContainsKey(log.ID))
+                    result[log.ID] = log.OptID == null ? string.Empty : log.OptID.Trim();
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// 返回"最近一次封禁类操作（opt）由 opAccount 执行"的目标账号集合；
+        /// 非特权账号的可见范围即由此产生（只看得见自己封的）。
+        /// </summary>
+        public List<string> GetBanTargetsOwnedBy(GameDbContext ef, string opAccount, int opt)
+        {
+            List<string> owned = new List<string>();
+            if (ef == null || string.IsNullOrWhiteSpace(opAccount))
+                return owned;
+
+            string owner = opAccount.Trim();
+            List<string> candidates = ef.AgencyOptLogs
+                .Where(c => c.OptID == owner && c.OPT == opt)
+                .Select(c => c.ID)
+                .Distinct()
+                .ToList();
+            if (candidates.Count < 1)
+                return owned;
+
+            Dictionary<string, string> latest = GetLatestBanOperators(ef, candidates, opt);
+            foreach (string id in candidates)
+            {
+                string op;
+                if (latest.TryGetValue(id, out op) && string.Equals(op, owner, StringComparison.OrdinalIgnoreCase))
+                    owned.Add(id);
+            }
+            return owned;
         }
 
         /// <summary>
@@ -319,7 +486,7 @@ namespace YYT.BLL.EF
                 M_Admin target = ef.Admins.FirstOrDefault(a => a.ID == targetId);
                 if (target == null)
                     return 0;
-                if (!CanManageAgent(ef, loginUser, targetId))
+                if (!CanOperateAgentEnabled(ef, loginUser, target, enabled))
                     return -1;
 
                 using (var transaction = ef.Database.BeginTransaction())

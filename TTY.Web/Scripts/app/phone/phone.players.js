@@ -239,6 +239,8 @@
                     return sum + Number(p.TodayWinLoss || 0);
                 }, 0);
                 if ($('.tab[data-tab="online"]').hasClass('active')) renderTotalWinLoss(true);
+                // 角标先更新：空列表时原写法提前 return，会把上一次的人数留在页面上
+                $('#onlinePlayerCount').text(onlinePlayers.length);
                 var $sec = $('#onlinePlayersSection');
                 if (!onlinePlayers.length) {
                     $sec.html('<div class="no-more-data" style="display: block;">暂无在线玩家</div>');
@@ -248,7 +250,6 @@
                 // 【性能优化】立即渲染基础卡片，不等待控制状态
                 var html = onlinePlayers.map(function (p) { return playerCardHTML(p, true); }).join('');
                 $sec.html(html);
-                $('#onlinePlayerCount').text(onlinePlayers.length);
 
                 // 【性能优化】异步加载控制状态，不阻塞首屏
                 // 使用 setTimeout 确保首屏渲染完全完成后再请求次要数据
@@ -386,6 +387,30 @@
             });
     }
 
+    /* ---------------- 刷新 ---------------- */
+
+    var refreshing = false;
+
+    /** 在线玩家数据（头部总输赢 + 在线卡片） */
+    function reloadOnline() {
+        return $.when(loadTotalWinLoss(), loadOnline());
+    }
+
+    /** 本页全部数据（头部刷新按钮用：离线列表一并回到第一页） */
+    function reloadAll() {
+        return $.when(loadTotalWinLoss(), loadOnline(), loadOffline(1, false));
+    }
+
+    /** 带转圈与防并发的一次刷新；quiet=true 时不弹"正在刷新中"提示 */
+    function runRefresh(loader, quiet) {
+        if (refreshing) {
+            if (!quiet) M.toast('正在刷新中，请稍候...', 'warning', 1500);
+            return;
+        }
+        refreshing = true;
+        M.runRefresh(loader, true).always(function () { refreshing = false; });
+    }
+
     /* ---------------- 初始化 ---------------- */
 
     function initPage() {
@@ -469,19 +494,7 @@
 
         // 头部刷新 / 搜索
         // 【性能优化】添加防抖，避免快速点击导致多次并发请求
-        var refreshing = false;
-        M.onRefresh(function () {
-            if (refreshing) {
-                M.toast('正在刷新中，请稍候...', 'warning', 1500);
-                return;
-            }
-            refreshing = true;
-            M.runRefresh(function () {
-                return $.when(loadTotalWinLoss(), loadOnline(), loadOffline(1, false));
-            }, true).always(function () {
-                refreshing = false;
-            });
-        });
+        M.onRefresh(function () { runRefresh(reloadAll, false); });
         M.onSearch(function () {
             $('#searchInput').val('');
             $('#searchResults').empty();
@@ -489,10 +502,21 @@
             setTimeout(function () { $('#searchInput').focus(); }, 120);
         });
 
+        // 从"我的代理 / 我的会员 / 充值管理"返回本页：这些页面改过余额、输赢等数据，
+        // 而返回多为 bfcache 恢复（页面不重新加载、JS 状态原样保留），显示的还是旧数据，
+        // 需主动重拉。标记由 phone.core.js 在离开那几个页面时写入；若返回是整页重新
+        // 加载，数据本来就是新的，只清标记不重复请求（见下方初始加载）。
+        // 只补在线数据：离线列表可能已翻到第 N 页，重拉会把列表打回第一页。
+        $(window).on('pageshow', function () {
+            if (!M.consumePlayersStale()) return;
+            runRefresh(reloadOnline, true);
+        });
+
         // 初始加载(离线列表一并拉取:徽标进页即显示离线总数,切到离线页签无需再等待)
         loadTotalWinLoss();
         loadOnline();
         loadOffline(1, false);
+        M.consumePlayersStale(); // 整页新加载：数据已是新的，丢弃上一页留下的标记
     }
 
     // 脚本在 body 末尾加载，DOM 已就绪；不依赖 jQuery ready

@@ -902,5 +902,115 @@ namespace UnitTestProj
             Assert.IsFalse(banPlayerView.Contains(".section-title"));
             Assert.IsFalse(banAgentView.Contains(".section-title"));
         }
+
+        [TestMethod]
+        public void MobilePlayerListRefreshesAfterReturningFromSubPages()
+        {
+            string phoneCore = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.core.js");
+            string playersScript = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.players.js");
+            string controller = ReadRepoFile(@"TTY.Web\Areas\Mobile\Controllers\HomeController.cs");
+            string layout = ReadRepoFile(@"TTY.Web\Views\Shared\Layout\_MobileLayout.cshtml");
+
+            // 标记名单的键必须是各页真实的 ViewBag.MPage（布局注入 MConfig.page 后由 core 比对）
+            StringAssert.Contains(layout, "page: '@Html.Raw(mPage)',");
+            StringAssert.Contains(controller, "ViewBag.MPage = \"agents\";");
+            StringAssert.Contains(controller, "ViewBag.MPage = \"huiyuan\";");
+            StringAssert.Contains(controller, "ViewBag.MPage = \"recharge\";");
+            StringAssert.Contains(phoneCore, "var PLAYERS_STALE_PAGES = { agents: true, huiyuan: true, recharge: true };");
+
+            // 我的代理/我的会员/充值管理会改余额与输赢，进入这些页面时就给玩家列表留标记：
+            // 返回多为 bfcache 恢复，页面不重新加载，页面内变量传不过去，只能用存储传递
+            StringAssert.Contains(phoneCore, "function isPlayersStalePage() {");
+            StringAssert.Contains(phoneCore, "if (isPlayersStalePage()) M.markPlayersStale();");
+            // 标记不能放在 pagehide：实测（Chromium）返回导航里恢复页面的 pageshow 早于
+            // 离开页面的 pagehide，标记会晚一步写入、列表页看不到；所以是"进入 + 点返回"两处
+            StringAssert.Contains(phoneCore, "// 补一次标记：本页若是 bfcache 恢复的，进入时那次标记已被列表页消费掉");
+            StringAssert.Contains(phoneCore, "M.consumePlayersStale = function ()");
+
+            // 玩家列表页消费标记：缓存恢复时重拉在线数据；整页新加载时数据本来就是新的，只清标记
+            StringAssert.Contains(playersScript, "$(window).on('pageshow', function () {");
+            StringAssert.Contains(playersScript, "if (!M.consumePlayersStale()) return;");
+            StringAssert.Contains(playersScript, "runRefresh(reloadOnline, true);");
+            StringAssert.Contains(playersScript, "M.consumePlayersStale(); // 整页新加载");
+            // 返回时只补在线数据：离线列表可能已翻到第 N 页，整体重拉会把列表打回第一页
+            StringAssert.Contains(playersScript, "function reloadOnline() {");
+            StringAssert.Contains(playersScript, "return $.when(loadTotalWinLoss(), loadOnline());");
+            // 在线人数角标在空列表时也要归零（原写法在 return 之后，人数会停在上一次的值）
+            StringAssert.Contains(playersScript, "$('#onlinePlayerCount').text(onlinePlayers.length);");
+        }
+
+        [TestMethod]
+        public void BanAndFreezeRecordsVisibleToOperatorTopAgentAndSuperAdminOnly()
+        {
+            string rules = ReadRepoFile(@"YYT.BLL\EF\AgencyRules.cs");
+            string adminBll = ReadRepoFile(@"YYT.BLL\EF\B_Admin.cs");
+            string usersBll = ReadRepoFile(@"YYT.BLL\EF\B_Users.cs");
+            string agencyController = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\AgencyInfoController.cs");
+            string abnormalController = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\AbnormalController.cs");
+
+            // 口径只允许一处实现：AgencyRules.CanAccessBanRecord
+            StringAssert.Contains(rules, "public static bool CanAccessBanRecord(int? viewerPriv, string viewerAccount, string operatorAccount, bool targetInViewerLine)");
+            StringAssert.Contains(rules, "return priv == TopAgentPriv && targetInViewerLine;");
+
+            // 代理禁用列表/记录：总台全量、特级限本线、其余按"最近一次禁用操作人 = 自己"过滤
+            StringAssert.Contains(adminBll, "operators.TryGetValue(c.ID, out op)");
+            StringAssert.Contains(adminBll, "rst.Where(c => c.OptID == me);");
+            StringAssert.Contains(adminBll, "if (loginUser != null && (loginUser.UserPriv ?? -1) != AgencyRules.SuperAdminPriv)");
+            StringAssert.Contains(adminBll, "if (enabled != 0 && target.RE_ENABLE == 0)");
+            StringAssert.Contains(adminBll, "return CanAccessBanRecord(ef, loginUser, target.ID, AgentDisableAuditOpt);");
+
+            // 玩家冻结列表/解冻：同一口径（冻结本身仍按管理范围）
+            StringAssert.Contains(usersBll, "adminBll.GetBanTargetsOwnedBy(ef, loginUser.Accounts, PlayerFreezeAuditOpt);");
+            StringAssert.Contains(usersBll, "if (frozen == 0 && target.FROZEN == 1)");
+            StringAssert.Contains(usersBll, "return CanAccessPlayerFreezeRecord(ef, loginUser, target.AGENCY);");
+
+            // 冻结明细：冻结/禁用行按新口径，连续登录失败行保持管理范围
+            StringAssert.Contains(abnormalController, "GetBanTargetsOwnedBy(ef, loginUser.Accounts, B_Users.PlayerFreezeAuditOpt)");
+            StringAssert.Contains(abnormalController, "GetBanTargetsOwnedBy(ef, loginUser.Accounts, B_Admin.AgentDisableAuditOpt)");
+            StringAssert.Contains(abnormalController, "userBll.CanOperatePlayerFreeze(ef, loginUser, user, 0)");
+
+            // 桌面端「启用/禁用」必须走带审计的同一入口：否则记录无操作人（谁都看不到）且能绕过解除口径
+            StringAssert.Contains(agencyController, "SetAgentEnabledWithAudit(m_LoginUser, id, enabled,");
+            Assert.IsFalse(agencyController.Contains("new B_Admin().SetRecharge(mUsers)"));
+        }
+
+        /// <summary>取出 CSS 中某个选择器的声明块（选择器独占一行、以 " {" 结尾）</summary>
+        private static string ExtractCssBlock(string css, string selector)
+        {
+            int start = css.IndexOf(selector + " {", StringComparison.Ordinal);
+            Assert.IsTrue(start >= 0, selector + " not found in phone.css");
+            int end = css.IndexOf('}', start);
+            Assert.IsTrue(end > start, selector + " block is not closed");
+            return css.Substring(start, end - start);
+        }
+
+        [TestMethod]
+        public void MobileModalLocksPageScrollSoDialogButtonsStayTappable()
+        {
+            string phoneCore = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.core.js");
+            string phoneCss = ReadRepoFile(@"TTY.Web\Content\css\phone.css");
+
+            // 老安卓内核给 position:fixed 弹窗做命中测试时按文档坐标算：页面滚到中下部再打开弹窗，
+            // 点确定/取消没有反应，必须把页面滚回顶部才点得中。修复=弹窗打开期间锁住背景滚动并让
+            // 文档滚动量归零（命中区与视觉位置一致），关闭时还原滚动位置。
+            StringAssert.Contains(phoneCore, "function lockPageScroll() {");
+            StringAssert.Contains(phoneCore, "if (scrollLockCount++ > 0) return;");
+            StringAssert.Contains(phoneCore, "s.position = 'fixed';");
+            StringAssert.Contains(phoneCore, "if (y) window.scrollTo(0, 0);");
+            StringAssert.Contains(phoneCore, "function unlockPageScroll() {");
+            StringAssert.Contains(phoneCore, "if (scrollLockCount === 0 || --scrollLockCount > 0) return;");
+            StringAssert.Contains(phoneCore, "if (y) window.scrollTo(0, y);");
+            // 弹窗会叠加（充值确认 → 结果提示），计数配对，最后一个关闭才解锁
+            StringAssert.Contains(phoneCore, "lockPageScroll();");
+            StringAssert.Contains(phoneCore, "unlockPageScroll();");
+
+            // 遮罩自身也加固：独立合成层（命中测试走屏幕坐标）+ 超长弹窗可滚动
+            string overlayBlock = ExtractCssBlock(phoneCss, ".modal-overlay");
+            StringAssert.Contains(overlayBlock, "position: fixed;");
+            StringAssert.Contains(overlayBlock, "overflow-y: auto;");
+            StringAssert.Contains(overlayBlock, "translateZ(0);");
+            // 超高时从头显示（align-items:center 会把顶部裁掉且滚不到）
+            StringAssert.Contains(ExtractCssBlock(phoneCss, ".modal-content"), "margin: auto;");
+        }
     }
 }

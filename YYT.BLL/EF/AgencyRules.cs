@@ -8,6 +8,10 @@ namespace YYT.BLL.EF
     public static class AgencyRules
     {
         public const int UnlimitedAgencyLimit = 0;
+        /// <summary>总台（超级管理）层级。</summary>
+        public const int SuperAdminPriv = 0;
+        /// <summary>特级代理（总代）层级。</summary>
+        public const int TopAgentPriv = 1;
         public const string InviteCodeEmptyMessage = "邀请码不能为空！";
         public const string InviteCodeFormatMessage = "邀请码必须是4-8位纯数字！";
         public const string InviteCodeMatchesAccountMessage = "邀请码不能和代理账号相同，请更换邀请码";
@@ -101,6 +105,27 @@ namespace YYT.BLL.EF
                 counts[parent] = counts.TryGetValue(parent, out current) ? current + 1 : 1;
             }
             return counts;
+        }
+
+        /// <summary>
+        /// 封禁/冻结记录的查看与解除口径：记录的操作人本人、特级代理（限自己整条线内）、总台。
+        /// 中间层级一律不可见——包括操作人的直接上级、被封账号的直接上级。
+        /// </summary>
+        /// <param name="viewerPriv">查看者层级（0 总台 / 1 特级代理 / 其余为普通代理等）</param>
+        /// <param name="viewerAccount">查看者账号</param>
+        /// <param name="operatorAccount">记录的最近一次封禁类操作的操作人账号（查不到传空）</param>
+        /// <param name="targetInViewerLine">被封/被冻账号是否在查看者整条线内</param>
+        public static bool CanAccessBanRecord(int? viewerPriv, string viewerAccount, string operatorAccount, bool targetInViewerLine)
+        {
+            int priv = viewerPriv ?? -1;
+            if (priv == SuperAdminPriv)
+                return true;
+
+            if (!string.IsNullOrWhiteSpace(viewerAccount)
+                && string.Equals(viewerAccount, operatorAccount, StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            return priv == TopAgentPriv && targetInViewerLine;
         }
 
         public static bool TryValidateInviteCode(

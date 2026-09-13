@@ -228,6 +228,49 @@
 
     /* ---------------- 弹窗（参考站 modal-overlay 结构） ---------------- */
 
+    /*
+     * 弹窗期间的背景滚动锁。
+     * 部分老安卓内核（微信 X5 / 老 WebKit）给 position:fixed 元素做触摸命中测试时按
+     * "文档坐标"算，命中区不随页面滚动更新：页面滚到中下部再打开弹窗，点确定/取消
+     * 毫无反应（弹窗视觉位置一直是对的），必须把页面滚回顶部才点得中。
+     * 所以打开弹窗时把 body 固定住（用负 top 保持视觉位置），并把文档滚动量归零，
+     * 让命中区与视觉位置一致；关闭时还原滚动位置。
+     * 弹窗会叠加（确认框点确定后接着弹结果框），用计数配对加减，最后一个关闭才解锁。
+     */
+    var scrollLockCount = 0;
+    var scrollLockY = 0;
+
+    function lockPageScroll() {
+        if (scrollLockCount++ > 0) return;
+        var y = window.pageYOffset ||
+            (document.documentElement ? document.documentElement.scrollTop : 0) ||
+            (document.body ? document.body.scrollTop : 0) || 0;
+        scrollLockY = y;
+        var s = document.body.style;
+        s.position = 'fixed';
+        s.top = -y + 'px';
+        s.left = '0';
+        s.right = '0';
+        s.width = '100%';
+        s.overflow = 'hidden';
+        // 滚动量归零：老内核按文档坐标命中，滚动量非 0 时弹窗按钮点不中
+        if (y) window.scrollTo(0, 0);
+    }
+
+    function unlockPageScroll() {
+        if (scrollLockCount === 0 || --scrollLockCount > 0) return;
+        var y = scrollLockY;
+        scrollLockY = 0;
+        var s = document.body.style;
+        s.position = '';
+        s.top = '';
+        s.left = '';
+        s.right = '';
+        s.width = '';
+        s.overflow = '';
+        if (y) window.scrollTo(0, y);
+    }
+
     /**
      * 通用弹窗。
      * @param {Object} o
@@ -261,6 +304,7 @@
             if (o.beforeClose && o.beforeClose(value, $modal) === false) return;
             settled = true;
             $overlay.removeClass('show');
+            unlockPageScroll();
             setTimeout(function () { $overlay.remove(); }, 100);
             dfd.resolve(value);
         }
@@ -290,6 +334,8 @@
         $overlay.on('click', function (e) {
             if (e.target === $overlay[0]) close(null);
         });
+        // 先锁住背景滚动再挂弹窗：页面滚到中下部时打开的弹窗，按钮才点得中（见上）
+        lockPageScroll();
         $('body').append($overlay);
         $overlay.addClass('show');
 
@@ -750,12 +796,50 @@
         return '游戏' + id;
     };
 
+    /* ---------------- 玩家列表刷新标记 ---------------- */
+
+    // 玩家列表页（Index，即在线玩家页）的子页面里，操作会改变列表展示数据的那些。
+    // 进入这些页面即给列表页留一个"需要刷新"标记；列表页恢复时消费并重拉数据。
+    // 注意不能在离开页面的时机（pagehide）打标记：实测（Chromium）返回导航里恢复页面的
+    // pageshow 先于离开页面的 pagehide，标记会晚一步写入、列表页看不到它。
+    var PLAYERS_STALE_KEY = 'm_players_stale';
+    var PLAYERS_STALE_PAGES = { agents: true, huiyuan: true, recharge: true };
+
+    /** 当前页面是否属于"返回列表页时需要刷新"的那几个 */
+    function isPlayersStalePage() {
+        return !!PLAYERS_STALE_PAGES[MConfig.page];
+    }
+
+    /**
+     * 标记玩家列表数据已过期。返回列表页大多是 bfcache 恢复（页面不重新加载、
+     * JS 状态原样保留），页面内变量传不过去，只能借用跨导航的存储。
+     */
+    M.markPlayersStale = function () {
+        try { localStorage.setItem(PLAYERS_STALE_KEY, '1'); } catch (e) { }
+    };
+
+    /** 取走过期标记；返回 true 表示列表页需要重新拉数据 */
+    M.consumePlayersStale = function () {
+        try {
+            if (localStorage.getItem(PLAYERS_STALE_KEY) !== '1') return false;
+            localStorage.removeItem(PLAYERS_STALE_KEY);
+            return true;
+        } catch (e) {
+            return false;
+        }
+    };
+
     /* ---------------- 全局初始化 ---------------- */
 
     M.initShell = function () {
         $('#menuBtn').on('click', M.openDrawer);
         $('#sidebarOverlay').on('click', M.closeDrawer);
         $('#sidebarCloseBtn').on('click', M.closeDrawer);
+
+        // 进入"我的代理 / 我的会员 / 充值管理"即标记玩家列表数据过期——这几个页面
+        // 会改余额与输赢，返回列表页时要重拉（见 phone.players.js 的 pageshow）。
+        // 标记放在进入时机而不是离开时机：恢复页面的 pageshow 早于离开页面的 pagehide。
+        if (isPlayersStalePage()) M.markPlayersStale();
 
         // 返回按钮：导航锁防连点——back() 是异步遍历，遍历提交前的连点会被
         // 内核丢弃或连跳多条历史。正常导航会触发 pagehide，此时取消兜底定时器
@@ -776,6 +860,8 @@
             if (navLocked) return;
             navLocked = true;
             $backBtn.addClass('navigating');
+            // 补一次标记：本页若是 bfcache 恢复的，进入时那次标记已被列表页消费掉
+            if (isPlayersStalePage()) M.markPlayersStale();
             if (window.history.length > 1) {
                 window.history.back();
                 backTimer = setTimeout(function () {

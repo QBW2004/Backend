@@ -1,6 +1,6 @@
 # AGENTS.md — MTH-Backend（MTH 游戏平台运营后台）
 
-> 供 AI 代理 / 新成员快速上手。最后核实时间：**2026-09-10**（线上部署 1.0.36；服务器实况调查为 2026-08-29，调查方式见文末）。
+> 供 AI 代理 / 新成员快速上手。最后核实时间：**2026-09-13**（线上已迁移到新服务器 `8.218.67.82`；App 前台、App 游戏连接、后台域名三条链路均已打通验证，剩余 2 项待办见「已知未闭合项」；线上部署 1.0.38）。
 
 ## 项目是什么
 
@@ -55,6 +55,10 @@ POST 未登录 → HTTP 200 返回 `TipMsg.MSG_LOGIN_TIMEOUT`（前端约定 `co
 
 **手机端适配**：`BaseController` 用 UA 正则识别手机浏览器（平板按 PC），选择记在 Cookie `mth_view`（30 天）；`/Mgr/Index` 命中手机 UA 自动跳 `/Mobile/Home/Index`，可用 `?view=pc|mobile` 强制切换。
 
+**手机端弹窗的滚动锁**（2026-09-13 起，见 `phone.core.js` 的 `lockPageScroll`/`unlockPageScroll`）：部分老安卓内核给 `position: fixed` 弹窗做触摸命中测试时按"文档坐标"算，命中区不随页面滚动更新 —— 页面滚到中下部后再打开弹窗，弹窗看着正常但**点确定/取消毫无反应**，必须把页面滚回顶部才点得中（充值、控制两页最先暴露）。因此 `M.modal` 打开期间会把 `body` 固定住（负 `top` 保留视觉位置）并把文档滚动量归零，关闭时还原滚动位置；弹窗会叠加（确认 → 结果提示），用计数配对加解锁。`.modal-overlay` 另加了独立合成层与 `overflow-y: auto`（超长弹窗可从头滚到底）。改弹窗样式/结构时别把这两条约束去掉，防回退断言见 `ViewContractTest.MobileModalLocksPageScrollSoDialogButtonsStayTappable`。
+
+**封禁/冻结记录的可见口径**（2026-09-13 起，见 `AgencyRules.CanAccessBanRecord`）：代理封禁（`admin.RE_ENABLE=0`）与玩家冻结（`users.FROZEN=1`）的记录，**只有记录的操作人本人、特级代理（`PRIV=1`，限自己整条线内）、总台（`PRIV=0`）能查看和解除**；中间任何层级（含操作人的直接上级、被封账号的直接上级）都看不到。操作人取 `AgencyOptLog` 中该账号最近一条封禁类操作的 `OptID`（代理 `OPT=24`、玩家 `OPT=26`）；该表只留 7 天，超期后查不到操作人的记录只有特级/总台可见可解除。封禁/冻结**动作本身**仍按管理范围（`CanManageAgent`/`CanManagePlayer`，`ManageScope` 1 直属 / 2 整线），改的只是可见与解除。桌面端启用/禁用走 `B_Admin.SetAgentEnabledWithAudit`（写审计日志），不要再走无审计的 `SetRecharge`。
+
 **与游戏中心服通信**：`YYT.Remote.SConnect` 连命名管道 `\\.\pipe\mynamedpipe`（配置键 `serverName`/`pipeName`，机器人走 `robotPipeName`=`MTH_RobotPipe`），发 `Config/MsgDefine.config` 定义的 XML 指令。BLL 侧封装为 `GameCommandService` + `gamecommandoutbox` 发件箱表，`PipeGameServerClient` 实际发管道，失败可由重试服务补偿。
 
 **定时任务**（`Global.asax` `Application_Start`，间隔=appSettings `Timer`=60s）：
@@ -71,39 +75,61 @@ POST 未登录 → HTTP 200 返回 `TipMsg.MSG_LOGIN_TIMEOUT`（前端约定 `co
 
 1. 本地 `Tools\dev\build.bat` 编译（`Tools\deploy\pack.ps1 -Version x.x.x` 打包），把**整个 TTY.Web 目录**（源码+bin+Views+Web.config）打成 zip 上传服务器（不走 VS 发布精简流程——这是既有习惯）。
 2. 服务器上管理员运行：`powershell -ExecutionPolicy Bypass -File deploy.ps1 -SourcePath C:\...\TTY.Web.zip [-Yes]`
-   自动：备份旧版到 `C:\Backend_backup_<时间戳>` → robocopy /MIR 到 `C:\Backend`（保留 `App_Data`/`Logs`/`Upload`）→ 校验应用池 v4.0/64 位 → 站点绑 8081 → 放行防火墙 → 回收应用池 → HTTP 探测。
+   自动：备份旧版到 `C:\Backend_backup_<时间戳>` → robocopy /MIR 到 `C:\Backend`（保留 `App_Data`/`Logs`/`Upload`）→ 校验应用池 v4.0/64 位 → 站点绑目标端口 → 放行防火墙 → 回收应用池 → HTTP 探测。
+   ⚠️ 脚本默认 `-Port 8081`（历史值）；**新机 8080 才是对 App/nginx 的业务口**，需要时显式传 `-Port 8080`（脚本只新增绑定、不动已有绑定，所以两个端口会同时可用）。
 3. `server_deploy_check.ps1` 可一键收集服务器部署情况（注意：SSH 远程执行时它是 32 位 PowerShell，IIS 检测会拿空结果，见"坑"节）。
-4. 首次搭环境用 `env-check.ps1`（补 .NET 4.8 / VC++ 运行库 / IIS / MySQL 5.7）；Server 2012 R2 缺 UCRT 用 `fix-legacy-ucrt.ps1`。中心服 `ServerCenterNew.exe` **不在本仓库**，需单独部署。
+4. 首次搭环境用 `env-check.ps1`（补 .NET 4.8 / VC++ 运行库 / IIS / MySQL 5.7）；Server 2012 R2 缺 UCRT 用 `fix-legacy-ucrt.ps1`。中心服 `ServerCenterNew.exe` **不在本仓库**，需单独部署（新机游戏服与本后台**同机**，见"线上服务器实况"）。
 
-## 线上服务器实况（134.122.203.112）
+## 线上服务器实况（8.218.67.82 — 2026-09-11 迁移，9-13 复核）
 
-连接（PowerShell）：
+> 2026-09-11 线上整体换了服务器：**旧的 `134.122.203.102`（游戏服，已失联）与 `134.122.203.112`（后台/后作全栈）全部由新机 `8.218.67.82` 取代**。本节是迁移当天的实机核实结果。历史调查（.112）已归档在本节末尾。
+
+连接：
+
 ```powershell
-ssh -i "$HOME\.ssh\mht-server-ed25519" -o IdentitiesOnly=yes administrator@134.122.203.112
+ssh administrator@8.218.67.82      # 密码方式（服务器还有 RDP 3389）
+ssh mth-server                     # 免密：本机 ~/.ssh/mht-server-ed25519 已装到服务器（2026-09-13）
 ```
-（Git Bash 把密钥路径写成 `~/.ssh/mht-server-ed25519`；sshd 是 32 位 OpenSSH 装在 `Program Files (x86)`）
 
-| 项 | 现状（2026-08-29 调查） |
+| 项 | 现状（2026-09-13 实机核实） |
 |---|---|
-| 系统 | Windows Server 2012 R2（6.3.9600），12 核 / 24GB，时区 UTC+8，上次开机 2026-08-26 |
-| 磁盘 | 仅 C:（338/360 GB 空闲）。**没有 D 盘** |
-| IIS | `Default Web Site` → `C:\Backend`，绑定 `*:80` + `*:8081`，应用池 DefaultAppPool（v4.0 / 64 位），运行正常，本机探测 HTTP 200 |
-| 公网 | 80 / 8081 均可达（返回 302 跳登录页） |
-| 部署版本 | **WebVer = 1.0.36**（2026-09-10 部署，手机端新增「游戏记录」独立页 + 代理「下级代理」回归直属口径 + 中奖记录排除八爪鱼 GameId=42 + 全站金额文案简化为「币」，备份 `C:\Backend_backup_20260910_234906`）；同日此前 1.0.35（代理列表继承链展示/统计 + 会员盈亏改实际游戏输赢口径 + 代理流水日期区间与「代/玩」流向 + 充值页余额实时刷新，备份 `C:\Backend_backup_20260910_213641`）、1.0.33（备份 `..._121647`、`..._120736`、`..._020837`）；1.0.23（2026-09-02 部署，手机端权限策略 + 记录 7×24 窗口与 gameprizerecord 清理，备份 `C:\Backend_backup_20260902_201631`，部署前库备份 `C:\mth_backup_20260902_201442.sql`）；1.0.20（2026-08-31 部署，手机端改版）。SQL 补丁已全部执行：性能索引（`Docs/sql/性能索引.sql`）、`Docs/sql/线上games名称修正.sql`（games.Name 正常 UTF-8 中文）、`Docs/sql/手机端后台权限与记录保留-20260902.sql`（幂等，gameprizerecord 表 + 记录清理索引已就位）；`usercontrolstatus`/`usercontrolvalue` 表线上已存在。1.0.36 与 1.0.35 均未新增 SQL 补丁（复用 `idx_udw_day` 等既有索引） |
-| MySQL | 5.7.44，服务名 `MySQL57`，`C:\mysql\bin\mysqld.exe --defaults-file=C:\mysql\my.ini`，库 mth，`lower_case_table_names=1`，users≈191 行 / admin≈31 行（PRIV>0 的代理 30 行，数据量很小） |
-| 端口监听 | 80、8081（HTTP.sys）、3306、3389(RDP) |
-| 中心服 | **本机没有**：找不到 `ServerCenterNew.exe`（扫到两层深度）、无 `mynamedpipe`/`MTH_RobotPipe` 命名管道、无 8020/8021/9000 监听 |
-| 其他 | 防火墙三档全启用；装有 Chrome（有人 RDP 使用）；无相关计划任务 |
+| 系统 | Windows Server 2019 Datacenter（10.0.17763），阿里云 ECS（`iZadhbme469z51Z`），8 核 / 16GB，仅 C 盘（可用 232GB） |
+| 站点 | IIS `Default Web Site` → **`C:\Backend`**，绑定 `http/*:80:` + `*:8080:` + `*:8081:`，应用池 DefaultAppPool（v4.0 / 64 位），运行正常 |
+| 部署版本 | **WebVer = 1.0.38**（2026-09-13 部署，备份 `C:\Backend_backup_20260913_141256`；与仓库 `TTY.Web/Web.config` 一致；`phone.core.js` / `phone.css` 的 MD5 与仓库逐字节一致，CDN 侧 `?v=1.0.38` 已取到新内容） |
+| MySQL | 5.7.44，服务 `MySQL57`，`C:\mysql`，库 `mth`（**58 表，与旧服一致**：users 191 / admin 31 / games 21 / rechargercounts 37 / roomtableconfig 95 / cardpayoutprofile 806 / userscoresnapshotledger 97494），`lower_case_table_names=1`，`utf8mb4/utf8mb4_unicode_ci` |
+| 数据来源 | 本次从 `.112` 用 `mysqldump --single-transaction --hex-blob --routines --triggers` 全量导出（8.2MB，`C:\Users\Administrator\mth_migrate.sql` 留档）。旧服 `Web.config`、`Config\*`、`Upload\`(13 文件)、`servers.ini` 一并迁移 |
+| 网络入口 | **App 前台**：`https://x.52.dyj.wang` → DNS A `94.103.6.39`（Ubuntu 22.04 + Nginx 1.18 中转，只开 22/80/443，Let's Encrypt 证书至 2026-12-10 自动续期，`/proxy-health` 返回 `nginx ok`，证书校验通过）→ 反代 `http://8.218.67.82:8080`。**后台**：`abc.12.sqrdwj.top` → 阿里云 ESA CDN → 回源 `http://8.218.67.82:80`（**必须用 80，不能用 8080/443**），已修复并验证：`/zh-CN/Login/Index` → 200 后台登录页。**App HTTP 接口**：`http://8.218.67.82:8081`（充值/客服/活动等，App 直连） |
+| 防火墙 | 自定义入站规则：`MTH-Backend HTTP 80`(Any)、`Allow Nginx Proxy 8080`(**仅 94.103.6.39**)、`MTH-Backend HTTP 8081`(Any)、`MTH-GameServer TCP 9000/9100/9102/9103/9109/9200/9203/9204/9208/9209/9300/9302/9305/9307/9309/9315/9316/9321/9400/9402/9403`(Any，游戏服客户端直连用) |
+| 同机游戏服 | 本仓库产物也在这台：`C:\Server\`（中心服 + 21 子游戏 + `ServerManager`），登录游戏服与后台的**管道通道因此天然可用**（`Web.config serverName="."` 指本机，`pipeName=mynamedpipe`） |
+| 环境 | .NET Framework 4.8 (528049) 已装；VC++ 2015-2022 x64 (14.44.35211) 已装；7-Zip 已装；OS 语言中文（控制台 936） |
+| 与 .112 的差异 | `UploadPath` 由 `D:\Uploads` 改为 **`C:\Backend\Upload`**（新机无 D 盘），并把旧服 Upload 里 13 个文件拷了过来 |
 
-### 线上风险/待办（调查发现，未做任何修改）
+### 已知未闭合项（2026-09-12 复核）
 
-1. **MySQL 3306 公网可直接连通**（本机外测通）。连接串账号是 root，仅靠密码防护。建议改为仅监听 127.0.0.1 或防火墙收紧 3306 来源。
-2. **游戏控制类功能在这台机器上不可用**：无中心服、无管道（Web.config `serverName="."` 指本机）。踢人/机器人/热更推送等管道指令会失败；中心服要么部署在别的机器（需把 `serverName` 改成对方主机名并打通管道权限），要么尚未迁移。
-3. **`UploadPath=D:\Uploads` 但服务器没有 D 盘** → 涉及图片/文件上传的功能会失败。改为存在的目录（如 `C:\Uploads`）并放好权限。
-4. **支付回调仍指旧服**：`PayOrderNotify`/`DPayOrderNotify` = `http://175.178.196.75:8081/api/...`（Web.config 里连同第三方支付参数都是旧值）。切流量前必须确认回调地址与公网 IP（134.122.203.112）一致。
-5. **分支尚未合并**：手机端适配（`Add-Phone-Support`）代码已随 1.0.20 部署到线上，但分支本身尚未合并回 `master`。
-6. 日志每 60s 刷 `Legacy UserLockRecord cannot be migrated because coin amount was not found {...}`——定时任务对旧锁定记录的无害告警，量大需清理/降级。
-7. `Config/MsgDefine.config`、Web.config 含生产密钥（支付 shop_key、api token、DB 密码）。**不要**把它们写进文档/日志/对外输出。
+> 面向运维/运营的**易读版待办文档**见游戏服仓库 `MTH-Server/docs/线上迁移待办-2026-09-11.md`（现象/原因/修法/验证四段式，含各控制台入口）。
+
+1. **支付回调仍是旧服地址**（⚠️ 最要紧，涉及充值到账）：`PayOrderNotify`/`DPayOrderNotify` = `http://175.178.196.75:8081/api/...`（该机已无响应，**会导致充值不到账**）；`WebHost=http://www.dyj.wang`、`Andriod_Url/PC_Url=www.scuyco.top:8080/Upload/yhyl.apk`（**该下载地址当前访问不通**）、`RecordDbPath=C:\Users\Administrator\Proj\`（目录不存在）等历史值也需按新架构确认后再改，**别盲改支付参数**（第三方商户后台可能也要同步登记新回调）。
+2. **客户端服务器域名 `bbs.1.mmssxxa.xin` 仍无 A 记录**：解析链 `bbs.1.mmssxxa.xin` → CNAME `bbs.1.mmssxxa.xin.a3.initzz.com` → 无 A（权威 NS `eiger/swan.ns.edgegslb.com`）。若线上 APK 已带该域名则玩家无法连服；需把 A 记录指向 `8.218.67.82`（直连，**不要套 CDN 代理——CDN 不转发游戏 TCP 端口**）或重发包。
+3. **【已修复】后台域名 `abc.12.sqrdwj.top` 已回源成功**：CDN（阿里云 ESA）回源配置改为 **协议 HTTP + 端口 80**（源站 `8.218.67.82`）后，`https://abc.12.sqrdwj.top/zh-CN/Login/Index` → **200**（后台登录页 5412 字节），`/` → 302 跳登录页；源站 IIS 日志可见 CDN 边缘节点（`163.181.x.x`）从 80 端口取到全部页面与静态资源。**踩坑记录**：回源**不能用 8080**（该端口防火墙只放行 nginx `94.103.6.39`，CDN 节点会被丢包 —— 实测 `DROP TCP 163.181.x.x → 8080`，正是 522 的成因），也**不能用 443**（源站 IIS 只监听 80/8080/8081）。
+4. **【已修复】游戏服客户端直连端口已放通**：从独立机器（旧服 `.112`）实测 `8.218.67.82` 的 21 个游戏端口全部可连（9000、9100/9102/9103/9109、9200/9203/9204/9208/9209、9300/9302/9305/9307/9309/9315/9316/9321、9400/9402/9403）+ 8081 + 80；`8080`/`3306` 仍正确对外关闭。
+5. **【已修复】`x.52.dyj.wang` HTTPS 已恢复**：DNS 已改回直连 `94.103.6.39`，证书校验通过（Let's Encrypt，至 2026-12-10 自动续期），`/proxy-health` → `nginx ok`、登录页 → 200。
+6. **旧机 `.112` 仍在运行**（游戏服 + 后台 + MySQL 全部照旧，数据仍在写入），未做任何停用操作；`.102` 已完全失联（SSH/HTTP 全不通）。确认新机稳定后再决定旧机下线时机。
+7. 部署脚本已同步到新机：`C:\Users\Administrator\Desktop\deploy\`（`deploy.ps1`/`deploy.bat`/`pack.ps1`）与 `server-env\`（`env-check.ps1` 等）——与仓库 `Tools\` 同款。新机 `env-check-report.txt` 里 .NET 4.8 的 FAIL 是 8/30 的旧报告，实际 9/11 复查已满足。
+
+### 迁移当天（2026-09-11）实际执行的步骤
+
+1. 旧服 `.112` 只读采集 + 导出：`mysqldump mth` → 下载；`Web.config`/`Config\*`/`Upload\`/`C:\Server\servers.ini` → 下载。
+2. 本地 `TTY.Web` 打 zip（排除 Logs/obj/.db/pdb，24.2MB）→ 上传 `C:\Users\Administrator\backend.zip`。
+3. 服务器上解压 → `robocopy /E` 到 `C:\Backend`（保留 `App_Data`/`Logs`/`Upload`）→ `UploadPath` 改 `C:\Backend\Upload`（原文件备份为 `Web.config.orig_before_migration`）。
+4. IIS：站点物理路径指 `C:\Backend`，应用池设 v4.0/64 位，新增 8080、8081 绑定，回收应用池。
+5. `mysql mth < mth_migrate.sql`（58 表，行数与旧服一致）。
+6. 防火墙：新增/调整 80、8081、8080（后者只放行 nginx `94.103.6.39`）与全部游戏端口。
+7. 验证：本机 `http://127.0.0.1:8080/zh-CN/Login/Index` → 200；外网 `https://x.52.dyj.wang/...` → 200（经 nginx）；`C:\Backend\Logs\yyt_20260911.log` 有正常业务日志。
+8. 遗留：`C:\Users\Administrator\` 下保留 `backend.zip`、`upload.zip`、`mth_migrate.sql` 与各步骤 `.log` 作为回滚资料。
+
+### 历史实况（旧机 134.122.203.112，2026-08-29 / 09-10 —— 已停用）
+
+Windows Server 2012 R2，IIS `Default Web Site` → `C:\Backend` 绑 `*:80` + `*:8081`，MySQL 5.7.44（`MySQL57`，`C:\mysql`，库 mth，users 191 / admin 31），WebVer 1.0.36，部署备份目录 `C:\Backend_backup_<时间戳>`（自 8/26 起共 31 次）。**该机后期实为"全栈机"**：除后台外还跑着中心服 `ServerCenterNew` + 20 个子游戏（`C:\Server`，`MTH_Daemon` 计划任务，监听 9000 与 91xx-94xx）+ `mynamedpipe` 命名管道；3306 曾被公网探测可达。原始 `.112` 的 `Web.config serverName="."` 与本机部署是自洽的。
 
 ## 日常工作须知（坑清单）
 
@@ -114,13 +140,19 @@ ssh -i "$HOME\.ssh\mht-server-ed25519" -o IdentitiesOnly=yes administrator@134.1
 - 应用池必须 64 位（x64 SQLite.Interop）。
 - **SSH 远程执行 PowerShell 时是 32 位进程**：`Import-Module WebAdministration` 后 `Get-Website` 返回空、`Get-Process` 拿不到 64 位进程路径。要用 `C:\Windows\Sysnative\WindowsPowerShell\v1.0\powershell.exe` 起真正的 64 位会话。长脚本用 `scp` 传 `-File` 执行（cmd 有 8191 字符限制，`-EncodedCommand` 太长会报"命令行太长"）。
 - `deploy.ps1` 已内置 WOW64 逃离（Sysnative），直接在服务器本地跑没问题。
-- 分支现状（2026-09-10）：`Add-Phone-Support` 上此前的系列改动已全部提交并部署（最新 1.0.36，`a80351f`），工作区干净。
+- 分支现状（2026-09-13）：`Add-Phone-Support` 上此前的系列改动已全部提交并部署（最新 1.0.38；1.0.37 的「返回列表刷新」与「封禁/冻结记录可见口径」两批、1.0.38 的弹窗滚动锁修复均已上线，见 `Docs/手机端后台需求规划-20260902/tasks.md` 第 12–14 节）。
 - 数据库结构变更参考根目录 `mth.sql` + `docker/mysql/init/` 迁移补丁的顺序加载机制。
 - 读接口禁止全量 `ToList()` 后内存分页/排序/求和——玩家与记录类查询一律 SQL 下推（参考 `B_Users.QueryUsersPaged` / `B_ReChargeRecords.GetReChargeRecordsForPhone`，见 `Docs/手机端性能优化-20260829.md`）。`/Game`、`/Mobile` 已改只读会话，往这两个区域加写 Session 的代码需先确认（当前仅 `Game/UserInfo/Register` 例外可写）。
 - **线上部署前先在 MySQL57 对 mth 库执行 `Docs/sql/性能索引.sql`**（幂等；核心表二级索引 + user_daily_winloss.UserID 字符集对齐，未执行则新查询走不了索引）。
 - 单测用 `"C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\CommonExtensions\Microsoft\TestWindow\vstest.console.exe" UnitTestProj/bin/Release/UnitTestProj.dll` 跑。**24 个走库的用例会失败**（`Recharge_Test_*`、`GetAgenciesBy*`、`CoinReports`、`Exchange_Test_2`、`GetBetParams` 等）——根因是 `UnitTestProj/App.config` 的 `<system.data><DbProviderFactories>` 只注册了 SQLite，MySQL 仅注册在 `<entityFramework>` 段，`DbProviderFactories.GetFactory("MySql.Data.MySqlClient")` 直接抛 ArgumentException，且连接串指向已失效的 `192.168.0.101`。属既有环境问题（该文件自首次提交未改过），不是代码回归；纯逻辑与视图契约用例（`AgencyRulesTest`、`ViewContractTest`）可正常跑。
-- 部署脚本里没有 `deploy.ps1` 的自动同步：线上用的是 `C:\Users\Administrator\Desktop\deploy.ps1`，与仓库 `Tools/deploy/deploy.ps1` 内容一致（2026-09-10 校验）。改仓库脚本后记得同步过去，否则线上跑的仍是旧逻辑。
+- 部署脚本里没有 `deploy.ps1` 的自动同步：线上用的是 `C:\Users\Administrator\Desktop\deploy\deploy.ps1`（新机；旧机是桌面根下的 `deploy.ps1`），与仓库 `Tools/deploy/deploy.ps1` 内容一致。改仓库脚本后记得同步过去，否则线上跑的仍是旧逻辑。
+- **后台与游戏服同机**（新架构）：`Web.config serverName="."` + `pipeName=mynamedpipe` 指向本机中心服，所以"踢人/机器人/热更推送"是否可用取决于 `C:\Server` 里中心服进程在不在（见仓库 MTH-Server 的 AGENTS.md），不是配置问题。
+- **上传目录**：新机 `UploadPath=C:\Backend\Upload`（旧机写的 `D:\Uploads` 在新机不存在，迁移时已改）。改主机时别忘这条。
+- **站点有三个入口端口，别搞混**（2026-09-12 排 522 时踩过）：**8080** 只给 nginx 链路（防火墙精确白名单只放行 `94.103.6.39`）；**80** 给 CDN 回源与直访（对所有来源开放）；**8081** 是 App 的 HTTP 接口。给 CDN 配 8080 回源会被防火墙丢包直接 522。部署时传 `-Port 8080` 是安全的（2026-09-13 实测：`Add-FirewallPort` 只要发现该端口已有规则就直接返回，不会把白名单放宽，部署后从公网测 8080 仍是超时丢弃）。
+- **CDN 回源协议必须选 HTTP**：源站 IIS 只监听 80/8080/8081，**没有 443**。"跟随客户端协议"会让 CDN 用 443 回源而失败。
 
 ## 调查方式（可复现）
 
-2026-08-29 通过上述 SSH 只读采集：系统/磁盘/WMI 硬件信息、WebAdministration 站点与应用池、进程路径、netstat 监听端口、`C:\Backend` bin 时间戳与 Web.config 关键项（密码已脱敏）、MySQL 服务与 `SELECT VERSION()/SHOW TABLES/行数`、命名管道枚举、防火墙状态、部署备份目录、最近日志尾部；另从本机外网探测 80/8081（HTTP 302）与 3306（TCP 可达）。未在服务器上做任何写操作（临时脚本已删除）。
+**2026-09-11（新机 `8.218.67.82` 迁移与核查）**：SSH 密码登录 `administrator@8.218.67.82`（本机 Git Bash 无 sshpass 时用 Python `paramiko`）；远程 PowerShell 长脚本用 base64 `-EncodedCommand` 或先 `scp` 再 `-File`（cmd 会吃反斜杠、8191 字符上限会报"命令行太长"）；远程脚本文件保持**纯 ASCII**（PS 5.1 把无 BOM UTF-8 当 GBK 读，中文会解析失败）。采集项：`Get-Process`/`Get-NetTCPConnection -State Listen`/`Get-ScheduledTask`/`Get-NetFirewallRule`(+PortFilter/AddressFilter)/IIS `appcmd list sites|vdirs|apppool`/`C:\inetpub\logs\LogFiles\W3SVC1`（`s-port`+`c-ip` 判定流量来源）/`C:\Backend\Logs\yyt_*.log`；DB 用 `mysql -N -e "show databases / 行数"` 与 `mysqldump --single-transaction --hex-blob` 迁移。**哈希比对**本地 `md5sum` 与服务器 `Get-FileHash -Algorithm MD5` 逐文件核对（YYT.*.dll 6 个 + exe）。外网侧用 `curl --noproxy '*'`（本机 DNS 在代理域 `198.18.x.x`，Python socket 测外网是假阳性）与 DoH（cloudflare/alidns）解析域名，避免本地 DNS 污染。
+
+**2026-08-29（旧机 `.112` 只读采集，已归档）**：系统/磁盘/WMI 硬件信息、WebAdministration 站点与应用池、进程路径、netstat 监听端口、`C:\Backend` bin 时间戳与 Web.config 关键项（密码已脱敏）、MySQL 服务与 `SELECT VERSION()/SHOW TABLES/行数`、命名管道枚举、防火墙状态、部署备份目录、最近日志尾部；另从本机外网探测 80/8081（HTTP 302）与 3306（TCP 可达）。除 2026-09-11 的迁移外未在旧机做写操作。

@@ -548,6 +548,8 @@ namespace YYT.BLL.EF
             {
                 B_Admin adminBll = new B_Admin();
                 List<string> agencies = null;
+                // 冻结记录的可见口径：非特级/总台的代理只看自己冻的（下方追加 ID 过滤）
+                List<string> frozenRecordIds = null;
                 if (!string.IsNullOrWhiteSpace(entity.AGENCY))
                 {
                     agencies = adminBll.GetManagedPlayerAgencyAccounts(ef, loginUser, entity.AGENCY, includeDescendants);
@@ -559,6 +561,25 @@ namespace YYT.BLL.EF
                     agencies = adminBll.GetManagedPlayerAgencyAccounts(ef, loginUser);
                     if (agencies == null || agencies.Count < 1)
                         return list;
+                }
+
+                if (onlyFrozen && loginUser != null)
+                {
+                    int priv = loginUser.UserPriv ?? -1;
+                    if (priv == AgencyRules.TopAgentPriv && string.IsNullOrWhiteSpace(entity.AGENCY))
+                    {
+                        // 特级代理：整条线内的冻结记录都可见（不受 ManageScope 限制）
+                        agencies = adminBll.GetAgencyLineAccounts(ef, loginUser.Accounts);
+                        if (agencies.Count < 1)
+                            return list;
+                    }
+                    else if (priv != AgencyRules.SuperAdminPriv && priv != AgencyRules.TopAgentPriv)
+                    {
+                        // 其余代理：只有"最近一次冻结操作是自己做的"才可见；查不到操作人的记录（日志已过期）不返回
+                        frozenRecordIds = adminBll.GetBanTargetsOwnedBy(ef, loginUser.Accounts, PlayerFreezeAuditOpt);
+                        if (frozenRecordIds.Count < 1)
+                            return list;
+                    }
                 }
 
                 int pageIndex = mPage != null && mPage.PageIndex > 0 ? mPage.PageIndex : 1;
@@ -596,6 +617,18 @@ namespace YYT.BLL.EF
                             where.Append(",");
                         where.Append("{").Append(args.Count).Append("}");
                         args.Add(agencies[i]);
+                    }
+                    where.Append(")");
+                }
+                if (frozenRecordIds != null)
+                {
+                    where.Append(" AND c.ID IN (");
+                    for (int i = 0; i < frozenRecordIds.Count; i++)
+                    {
+                        if (i > 0)
+                            where.Append(",");
+                        where.Append("{").Append(args.Count).Append("}");
+                        args.Add(frozenRecordIds[i]);
                     }
                     where.Append(")");
                 }
@@ -1266,6 +1299,27 @@ namespace YYT.BLL.EF
         }
 
         /// <summary>
+        /// 玩家冻结/解冻的操作资格：冻结按管理范围；解冻「已处于冻结态」的账号按冻结记录归属
+        /// （操作人本人、特级代理本线内、总台）；本就未冻结的账号（如仅登录失败锁定）仍按管理范围。
+        /// </summary>
+        public bool CanOperatePlayerFreeze(GameDbContext ef, M_LoginUser loginUser, M_Users target, int frozen)
+        {
+            if (ef == null || loginUser == null || target == null)
+                return false;
+            if (frozen == 0 && target.FROZEN == 1)
+                return CanAccessPlayerFreezeRecord(ef, loginUser, target.AGENCY);
+            return new B_Admin().CanManagePlayer(ef, loginUser, target.AGENCY);
+        }
+
+        /// <summary>
+        /// 玩家冻结记录的查看与解除口径：操作人本人、特级代理（限自己整条线内）、总台。
+        /// </summary>
+        public bool CanAccessPlayerFreezeRecord(GameDbContext ef, M_LoginUser loginUser, string playerAgency)
+        {
+            return new B_Admin().CanAccessBanRecord(ef, loginUser, playerAgency, PlayerFreezeAuditOpt);
+        }
+
+        /// <summary>
         /// 在同一事务中更新玩家冻结状态并记录实际操作人。
         /// 返回 -1 表示越权，0 表示目标不存在或保存失败，1 表示操作完成。
         /// </summary>
@@ -1281,7 +1335,7 @@ namespace YYT.BLL.EF
                 M_Users target = ef.Users.FirstOrDefault(c => c.ID == targetId);
                 if (target == null)
                     return 0;
-                if (!new B_Admin().CanManagePlayer(ef, loginUser, target.AGENCY))
+                if (!CanOperatePlayerFreeze(ef, loginUser, target, frozen))
                     return -1;
 
                 using (var transaction = ef.Database.BeginTransaction())

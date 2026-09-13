@@ -685,6 +685,13 @@ button, a {
     z-index: 100;
     justify-content: center;
     align-items: center;
+    /* 弹窗比屏幕高时（小屏 + 键盘）允许滚动，否则顶部/底部按钮会被裁掉点不到 */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    /* 独立合成层：老安卓内核里 fixed 元素的触摸命中区不随页面滚动更新，
+       单独成层后命中测试按屏幕坐标走，避免"页面滚下去后弹窗按钮点不动" */
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
 }
 
 .modal-overlay.show {
@@ -698,6 +705,8 @@ button, a {
     width: 90%;
     max-width: 320px;
     overflow: hidden;
+    /* 与遮罩的 overflow-y:auto 配合：内容不超高时居中，超高时可从头滚到底 */
+    margin: auto;
 }
 
 .modal-header {

@@ -135,9 +135,16 @@ namespace YYT.Web.Areas.Game.Controllers
                         return Json(msg);
                     }
 
-                    M_Admin mUsers = new M_Admin { ID = id, RE_ENABLE = re_enable };
-                    int val = new B_Admin().SetRecharge(mUsers);
-                    if (val > 0)
+                    // 与手机端同口径：写审计日志（桌面端的禁用/启用也要有操作人，否则记录无归属），
+                    // 解除「已处于禁用态」的账号按封禁记录归属校验（操作人本人、特级代理本线内、总台）
+                    long enabled = re_enable == 0 ? 0 : 1;
+                    int val = new B_Admin().SetAgentEnabledWithAudit(m_LoginUser, id, enabled,
+                        enabled == 0 ? "该账号已被禁用" : "禁用已解除");
+                    if (val < 0)
+                    {
+                        msg.content = "无权限操作！";
+                    }
+                    else if (val > 0)
                     {
                         msg.code = 1;
                         msg.content = "设置成功！";

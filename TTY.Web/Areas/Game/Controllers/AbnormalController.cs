@@ -27,6 +27,26 @@ namespace YYT.Web.Areas.Game.Controllers
             public string OperationTime { get; set; }
         }
 
+        private static void AddFrozenPlayerRows(List<FrozenAccountRow> rows, IQueryable<M_Users> query)
+        {
+            rows.AddRange(query.Select(c => new FrozenAccountRow
+            {
+                ID = c.ID,
+                Type = "玩家",
+                Reason = "账号已冻结"
+            }).ToList());
+        }
+
+        private static void AddBannedAgentRows(List<FrozenAccountRow> rows, IQueryable<M_Admin> query)
+        {
+            rows.AddRange(query.Select(c => new FrozenAccountRow
+            {
+                ID = c.ID,
+                Type = "代理",
+                Reason = "账号已禁用"
+            }).ToList());
+        }
+
         /// <summary>
         /// 异常账号统计 + 列表（玩家账号 / 代理账号分类计数）
         /// </summary>
@@ -46,25 +66,42 @@ namespace YYT.Web.Areas.Game.Controllers
                 using (var ef = new GameDbContext())
                 {
                     B_Admin adminBll = new B_Admin();
+                    // 登录失败行仍按管理范围裁剪
                     List<string> playerAgencies = adminBll.GetManagedPlayerAgencyAccounts(ef, loginUser);
                     List<string> managedAgents = loginUser.UserPriv == 0
                         ? ef.Admins.Select(c => c.ID).ToList()
                         : adminBll.GetManagedAgencyAccounts(ef, loginUser);
-                    managedAgents.RemoveAll(c => string.Equals(c, loginUser.Accounts, StringComparison.OrdinalIgnoreCase));
+                    managedAgents.RemoveAll(c => string.Equals(loginUser.Accounts, c, StringComparison.OrdinalIgnoreCase));
 
                     // 真实冻结状态：玩家 FROZEN=1，代理 RE_ENABLE=0。
-                    rows.AddRange(ef.Users.Where(c => c.FROZEN == 1 && playerAgencies.Contains(c.AGENCY)).Select(c => new FrozenAccountRow
+                    // 可见口径：总台全部；特级代理限自己整条线；其余代理只看自己冻结/禁用的。
+                    int priv = loginUser.UserPriv ?? -1;
+                    if (priv == AgencyRules.SuperAdminPriv)
                     {
-                        ID = c.ID,
-                        Type = "玩家",
-                        Reason = "账号已冻结"
-                    }).ToList());
-                    rows.AddRange(ef.Admins.Where(c => c.RE_ENABLE == 0 && managedAgents.Contains(c.ID)).Select(c => new FrozenAccountRow
+                        AddFrozenPlayerRows(rows, ef.Users.Where(c => c.FROZEN == 1));
+                        AddBannedAgentRows(rows, ef.Admins.Where(c => c.RE_ENABLE == 0 && !c.ID.Equals(loginUser.Accounts)));
+                    }
+                    else if (priv == AgencyRules.TopAgentPriv)
                     {
-                        ID = c.ID,
-                        Type = "代理",
-                        Reason = "账号已禁用"
-                    }).ToList());
+                        List<string> line = adminBll.GetAgencyLineAccounts(ef, loginUser.Accounts);
+                        if (line.Count > 0)
+                        {
+                            AddFrozenPlayerRows(rows, ef.Users.Where(c => c.FROZEN == 1 && line.Contains(c.AGENCY)));
+                            AddBannedAgentRows(rows, ef.Admins.Where(c => c.RE_ENABLE == 0 && line.Contains(c.ID)
+                                && !c.ID.Equals(loginUser.Accounts)));
+                        }
+                    }
+                    else
+                    {
+                        List<string> ownedPlayers = adminBll.GetBanTargetsOwnedBy(ef, loginUser.Accounts, B_Users.PlayerFreezeAuditOpt);
+                        if (ownedPlayers.Count > 0)
+                            AddFrozenPlayerRows(rows, ef.Users.Where(c => c.FROZEN == 1 && ownedPlayers.Contains(c.ID)));
+
+                        List<string> ownedAgents = adminBll.GetBanTargetsOwnedBy(ef, loginUser.Accounts, B_Admin.AgentDisableAuditOpt);
+                        if (ownedAgents.Count > 0)
+                            AddBannedAgentRows(rows, ef.Admins.Where(c => c.RE_ENABLE == 0 && ownedAgents.Contains(c.ID)
+                                && !c.ID.Equals(loginUser.Accounts)));
+                    }
 
                     List<string> visibleIds = rows.Select(c => c.ID).ToList();
                     List<M_AgencyOptLog> auditLogs = ef.AgencyOptLogs
@@ -172,22 +209,24 @@ namespace YYT.Web.Areas.Game.Controllers
                     var user = ef.Users.FirstOrDefault(c => c.ID.Equals(id));
                     if (user != null)
                     {
-                        if (!new B_Admin().CanManagePlayer(ef, loginUser, user.AGENCY))
+                        B_Users userBll = new B_Users();
+                        if (!userBll.CanOperatePlayerFreeze(ef, loginUser, user, 0))
                         {
                             msg.content = "无权限操作！";
                             return Json(msg);
                         }
-                        operationResult = new B_Users().FrozenUserWithAudit(loginUser, id, 0);
+                        operationResult = userBll.FrozenUserWithAudit(loginUser, id, 0);
                     }
                     var admin = ef.Admins.FirstOrDefault(c => c.ID.Equals(id));
                     if (admin != null)
                     {
-                        if (!new B_Admin().CanManageAgent(ef, loginUser, id))
+                        B_Admin adminBll = new B_Admin();
+                        if (!adminBll.CanOperateAgentEnabled(ef, loginUser, admin, 1))
                         {
                             msg.content = "无权限操作！";
                             return Json(msg);
                         }
-                        operationResult = new B_Admin().SetAgentEnabledWithAudit(loginUser, id, 1, "禁用已解除");
+                        operationResult = adminBll.SetAgentEnabledWithAudit(loginUser, id, 1, "禁用已解除");
                     }
                     if (user == null && admin == null && loginUser.UserPriv != 0)
                     {

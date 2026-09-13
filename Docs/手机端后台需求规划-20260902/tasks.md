@@ -147,6 +147,34 @@
 - 2026-09-03 增量：控制页统计卡仅保留当前押注、今日盈亏、总盈亏；当前控制状态单行横向滚动显示，避免窄屏换行或挤压。
 - 2026-09-03 增量：手机端代理级别按新称谓显示（`PRIV=1` 为“特级代理”，后续依次为 1 级、2 级代理）；手机退出显式携带 `view=mobile` 并回到 `/Login/Mobile`，桌面退出保持 `/Login/Index`。
 
+## 12. 2026-09-12 本轮增量（返回玩家列表时刷新在线数据）
+
+- 手机端"我的代理 / 我的会员 / 充值管理"进入即写入 `localStorage` 的 `m_players_stale` 标记；玩家列表页（在线玩家页）恢复时消费标记并重拉在线数据（头部总输赢 + 在线卡片 + 在线人数角标）。离线列表不重拉，避免把已翻到第 N 页的列表打回第一页。
+- 打标记的时机只能取"进入页面"与"点返回按钮"两处，**不能放在 `pagehide`**：实测（Chromium 140）返回导航中恢复页面的 `pageshow` 先于离开页面的 `pagehide`，标记会晚一步写入、列表页看不到它（且会残留到下一次返回，造成白刷）。该结论以断言形式固化在 `ViewContractTest.MobilePlayerListRefreshesAfterReturningFromSubPages`。
+- 在线人数角标改为在"暂无在线玩家"分支之前更新：原写法提前 `return`，人数会停在上一次的值。
+- 验证：`Tools\dev\build.bat` Release 构建通过；`ViewContractTest` 38/38 通过；另用无后端桩页 + headless Chromium 跑通 13 项断言（进入即打标记、bfcache 恢复后恰好重拉一次在线数据、整页重载不重复请求、离线列表不重拉、标记无残留可重复刷新、非名单页面不标记）。
+- WebVer 1.0.37（尚未部署）。
+
+## 13. 2026-09-12 本轮增量（封禁/冻结记录的可见与解除口径）
+
+- 口径从"管理范围可见"改为"按记录归属"：一条封禁/冻结记录，只有**记录的操作人本人、特级代理（`PRIV=1`，限自己整条线内）、总台（`PRIV=0`）**能查看和解除；中间任何层级都看不到——包括操作人的直接上级、被封账号的直接上级（1 级封的 2 级看不到，2 级封的 1 级也看不到）。
+- 落地判据：记录的操作人 = `AgencyOptLog` 中该账号**最近一条封禁类操作**的 `OptID`（代理禁用 `OPT=24`，玩家冻结 `OPT=26`）。操作日志只保留 7 天，超期后查不到操作人的记录只有特级/总台可见可解除（操作人列显示 `--`，与现状一致）；本轮不加字段、不动表结构。
+- 影响范围：手机端「禁用代理」列表与封禁记录、「冻结账号」列表、「冻结明细」里的玩家/代理行，以及对应的解除入口（代理解除禁用、玩家解冻、异常账号解封）。「冻结明细」里"连续登录失败"这类无操作人的风控行仍按原管理范围显示。
+- **封禁/冻结这个动作本身的范围不变**：仍只能操作自己管理范围内的账号（`CanManageAgent`/`CanManagePlayer`，`ManageScope` 1 直属 / 2 整线）；改的只是看得见谁、能解除谁。
+- 桌面端 `/Game/AgencyInfo/SetRecharge`（代理管理、权限设置页里的启用/禁用）原先既不校验权限也不写日志：既能绕过上述口径，产生的封禁记录又没有操作人（等于谁都看不到）；改为走 `B_Admin.SetAgentEnabledWithAudit`（同口径 + 写审计日志）。
+- 口径只允许一处实现 `AgencyRules.CanAccessBanRecord`；纯规则用例见 `AgencyRulesTest.BanRecordAccessFollowsOperatorTopAgentAndSuperAdmin`，防回退契约见 `ViewContractTest.BanAndFreezeRecordsVisibleToOperatorTopAgentAndSuperAdminOnly`。
+- 未做（需要时再提）：桌面端列表里"账号状态"列与启用/解冻按钮仍照旧渲染，越权点击由服务端拦下并提示"无权限操作！"，未做逐行隐藏；长期固化"谁封的 + 封号提示"需要给 `admin` 表加字段。
+- 验证：`Tools\dev\build.bat` Release 构建通过；`AgencyRulesTest` + `ViewContractTest` 52/52 通过。走库路径未在本机实测（本机没有 MySQL/Docker 在运行，测试工程 `MySql.Data.MySqlClient` 未注册为既有环境问题）。
+
+## 14. 2026-09-13 本轮增量（弹窗在页面滚动后点不动的修复）
+
+- 现象（充值、控制两页最先暴露）：页面滚到中下部再点「充值 / 应用控制」弹出确认框，弹窗看着正常，但点「确定 / 取消」毫无反应；把页面滚回顶部后再点才有效。页面在顶部时一次都不会复现。
+- 根因：部分老安卓内核（微信 X5 / 老 WebKit，本站已为同类问题打过 SVG 与头部按钮的命中测试补丁）给 `position: fixed` 元素做触摸命中测试时按**文档坐标**算，命中区不随页面滚动更新 —— 视觉位置在视口中央，可点区域却停在"滚动量为 0 时"的位置，两者相差正好一个滚动量。本地用页内探针复现该算法：滚动量非 0 时"文档坐标命中"与"视口坐标命中"命中的不是同一个元素。
+- 修复（`phone.core.js` + `phone.css`）：`M.modal` 打开期间锁住背景滚动 —— `body` 置为 `position: fixed` 并用负 `top` 保留原视觉位置，同时把文档滚动量归零（命中区与视觉位置一致），关闭时清除样式并把滚动位置还原；弹窗会叠加（充值确认 → 结果提示），用计数配对，最后一个关闭才解锁。`.modal-overlay` 另加独立合成层（`translateZ(0)`，强制命中测试走屏幕坐标）与 `overflow-y: auto` + `.modal-content{margin:auto}`（超长弹窗可从头滚到底，原先内容超屏时顶部/底部会被裁掉且滚不到）。
+- 防回退：`ViewContractTest.MobileModalLocksPageScrollSoDialogButtonsStayTappable`。
+- 验证：`Tools\dev\build.bat` Release 构建通过；`ViewContractTest` + `AgencyRulesTest` 53/53 通过（全量 82 项中 58 通过、24 失败，失败仍为测试工程未注册 `MySql.Data.MySqlClient` 的既有环境问题）；另用真实 `phone.css` + `phone.core.js` 搭本地页在 Chromium 实测：滚动到页面底部打开确认框 → 锁定生效（文档滚动量 0、按钮在视口内命中测试正确）→ 点确定成功 → 嵌套结果框 → 关闭后滚动位置精确还原（1663 → 1663）；输入框弹窗自动聚焦与取消路径同样正常。
+- 部署：WebVer 1.0.38，`C:\Backend`（备份 `C:\Backend_backup_20260913_141256`）；线上 `phone.core.js` / `phone.css` MD5 与仓库一致，CDN `?v=1.0.38` 已取到新内容。
+
 ## 10. 2026-09-02 本地验证记录
 
 - `Tools\dev\build.bat` Release 构建成功，产物为 `TTY.Web\bin\YYT.Web.dll`。
