@@ -175,6 +175,14 @@
 - 验证：`Tools\dev\build.bat` Release 构建通过；`ViewContractTest` + `AgencyRulesTest` 53/53 通过（全量 82 项中 58 通过、24 失败，失败仍为测试工程未注册 `MySql.Data.MySqlClient` 的既有环境问题）；另用真实 `phone.css` + `phone.core.js` 搭本地页在 Chromium 实测：滚动到页面底部打开确认框 → 锁定生效（文档滚动量 0、按钮在视口内命中测试正确）→ 点确定成功 → 嵌套结果框 → 关闭后滚动位置精确还原（1663 → 1663）；输入框弹窗自动聚焦与取消路径同样正常。
 - 部署：WebVer 1.0.38，`C:\Backend`（备份 `C:\Backend_backup_20260913_141256`）；线上 `phone.core.js` / `phone.css` MD5 与仓库一致，CDN `?v=1.0.38` 已取到新内容。
 
+## 17. 2026-09-13 本轮增量（返回玩家列表时顺手收起抽屉菜单）
+
+- 需求：抽屉菜单展开状态下点进「我的代理 / 我的会员 / 充值管理」，点返回回到玩家列表页时，菜单要自动缩回去。
+- 现象与原因：`#sidebar` / `#sidebarOverlay` 的展开态就是 DOM 上的 `active` 类，返回导航多为 bfcache 恢复、DOM 原样保留，菜单会一直盖在列表上；遮罩的 `active` 还会吃掉列表区域的点击（点哪都没反应，得再点一次菜单按钮）。
+- 落地：`phone.core.js` 的 `pageshow` 处理里加 `M.closeDrawer()`（首次加载与 bfcache 恢复都走这里；首屏本来就收起着，等于 no-op）。抽屉 DOM 只在玩家列表页存在，其他页面是空集合，调用安全。
+- 验证：Release 构建通过；`ViewContractTest` 41/41；用无后端桩页 + headless Chromium 跑 11 项断言（展开抽屉 → 从抽屉点进「我的代理」→ 点返回：抽屉与遮罩都收起、在线数据恰好重拉一次、刷新标记无残留、可重复），并做了反向对照——把 `M.closeDrawer()` 那行去掉后抽屉断言立刻 FAIL（`sidebar active`），证明用例能真抓到这个问题。
+- WebVer：随当前工作区版本（`Web.config` 1.0.40）一起发布，未单独升版本。
+
 ## 10. 2026-09-02 本地验证记录
 
 - `Tools\dev\build.bat` Release 构建成功，产物为 `TTY.Web\bin\YYT.Web.dll`。

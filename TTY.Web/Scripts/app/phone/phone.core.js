@@ -845,7 +845,9 @@
         // 内核丢弃或连跳多条历史。正常导航会触发 pagehide，此时取消兜底定时器
         //（页面可能进 bfcache，定时器不能留着）；若 1.2s 后仍停留在本页
         //（history.length 误报、无可退记录），兜底跳玩家主页。
-        // pageshow：首次加载与 bfcache 恢复时解锁按钮。
+        // pageshow：首次加载与 bfcache 恢复时解锁按钮，并把抽屉收起来。
+        // 抽屉只有玩家列表页有，而 bfcache 恢复会原样保留打开时的 DOM 状态：
+        // 从抽屉点进"我的代理/我的会员/充值管理"再返回，菜单会一直盖在列表上。
         var navLocked = false;
         var backTimer = null;
         var $backBtn = $('#backBtn');
@@ -855,6 +857,7 @@
         $(window).on('pageshow', function () {
             navLocked = false;
             $backBtn.removeClass('navigating');
+            M.closeDrawer();
         });
         $backBtn.on('click', function () {
             if (navLocked) return;

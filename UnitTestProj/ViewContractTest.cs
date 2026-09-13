@@ -932,6 +932,9 @@ namespace UnitTestProj
             StringAssert.Contains(playersScript, "if (!M.consumePlayersStale()) return;");
             StringAssert.Contains(playersScript, "runRefresh(reloadOnline, true);");
             StringAssert.Contains(playersScript, "M.consumePlayersStale(); // 整页新加载");
+            // 抽屉只有列表页有，bfcache 恢复会原样保留展开状态：从抽屉点进子页面再返回时，
+            // 菜单会一直盖在列表上（遮罩还吃掉列表点击），所以 pageshow 里统一收起
+            StringAssert.Contains(phoneCore, "$backBtn.removeClass('navigating');\r\n            M.closeDrawer();");
             // 返回时只补在线数据：离线列表可能已翻到第 N 页，整体重拉会把列表打回第一页
             StringAssert.Contains(playersScript, "function reloadOnline() {");
             StringAssert.Contains(playersScript, "return $.when(loadTotalWinLoss(), loadOnline());");
