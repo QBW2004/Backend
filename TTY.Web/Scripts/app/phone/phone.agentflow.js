@@ -33,9 +33,12 @@
     function fetchAgentFlow(params) {
         // 日期参数必须是 "yyyy-MM-dd" 字符串（TIME=开始日, END=结束日），
         // 传 Date 对象会被 jQuery 序列化成无法解析的英文日期导致服务端日期过滤失效。
+        // MONEY_ONLY=1：本页是「流水」，登录/退出(2/3)与封禁审计(24-27)这类没有金额的记录整条不展示。
+        // 过滤放服务端才能让 total 与分页对得上（前端过滤会出现整页空行、页码虚高）。
         return M.post('/Game/AgencyRecord/GetAgencyRecords', $.extend({
             ID: agentId,
             OPT: -1,
+            MONEY_ONLY: 1,
             page: currentPage,
             rows: pageSize
         }, params || {}));

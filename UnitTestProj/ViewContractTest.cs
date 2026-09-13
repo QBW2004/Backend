@@ -768,6 +768,28 @@ namespace UnitTestProj
         }
 
         [TestMethod]
+        public void AgentFlowOnlyShowsRecordsWithMoneyMovement()
+        {
+            string flowScript = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.agentflow.js");
+            string controller = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\AgencyRecordController.cs");
+            string recordsBll = ReadRepoFile(@"YYT.BLL\EF\B_Records_MySQL.cs");
+            string recordEntity = ReadRepoFile(@"YYT.Entity\EF\M_Record.cs");
+
+            // 「代理流水」只要资金变动记录：请求带 MONEY_ONLY=1，过滤在服务端做（total/分页才对得上）
+            StringAssert.Contains(flowScript, "MONEY_ONLY: 1");
+            StringAssert.Contains(recordEntity, "public bool MONEY_ONLY { get; set; }");
+            StringAssert.Contains(controller, "form.Q<int>(\"MONEY_ONLY\")");
+            StringAssert.Contains(controller, "MONEY_ONLY = moneyOnly");
+            // 白名单：充值/兑换/赠送/扣币（0/1 为历史遗留数据），登录退出(2/3)与封禁审计(24-27)不在内
+            StringAssert.Contains(recordsBll, "if (queryPara.MONEY_ONLY)");
+            StringAssert.Contains(recordsBll, "int?[] moneyOpts = { 0, 1, 20, 21, 22, 23 };");
+            StringAssert.Contains(recordsBll, "rst = rst.Where(c => moneyOpts.Contains(c.OPT));");
+            // 桌面「代理记录」要展示登录/退出明细，不能跟着一起过滤
+            string desktopView = ReadRepoFile(@"TTY.Web\Areas\Game\Views\AgencyRecord\Index.cshtml");
+            Assert.IsFalse(desktopView.Contains("MONEY_ONLY"));
+        }
+
+        [TestMethod]
         public void MobileAgentListShowsDirectChildrenOnly()
         {
             string agentsScript = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.agents.js");
@@ -794,6 +816,15 @@ namespace UnitTestProj
             Assert.IsFalse(agentsScript.Contains("agent-tree-branch"));
             Assert.IsFalse(agentsScript.Contains("AgencyTreeDepth"));
             Assert.IsFalse(agentsView.Contains(".agent-tree-branch"));
+
+            // 页面按节点逐级浏览：根节点 = 登录账号自己，每个节点只列该节点的直属代理；
+            // 代理的**权限范围**仍是整条代理线（下钻到哪里才看哪一层），所以"下级代理 N 个"
+            // 仍是真实的下属数量、可以继续点进去，不会因为列表收窄而整列显示 0。
+            StringAssert.Contains(agentsScript, "var OWN_ACCOUNT = (MConfig.user && MConfig.user.accounts)");
+            StringAssert.Contains(agentsScript, "var crumbs = [{ id: OWN_ACCOUNT, name: '所有代理' }];");
+            StringAssert.Contains(agentsScript, "loadNode(OWN_ACCOUNT, '所有代理');");
+            // 权限范围不许在代理侧被收窄（ManageScope 语义保持：1 仅直属 / 2 全部下级）
+            StringAssert.Contains(adminBll, "AgencyRules.GetManagedAgencyIds(loginUser.Accounts, loginUser.ManageScope");
         }
 
         [TestMethod]

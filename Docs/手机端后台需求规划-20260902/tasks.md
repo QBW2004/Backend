@@ -175,6 +175,26 @@
 - 验证：`Tools\dev\build.bat` Release 构建通过；`ViewContractTest` + `AgencyRulesTest` 53/53 通过（全量 82 项中 58 通过、24 失败，失败仍为测试工程未注册 `MySql.Data.MySqlClient` 的既有环境问题）；另用真实 `phone.css` + `phone.core.js` 搭本地页在 Chromium 实测：滚动到页面底部打开确认框 → 锁定生效（文档滚动量 0、按钮在视口内命中测试正确）→ 点确定成功 → 嵌套结果框 → 关闭后滚动位置精确还原（1663 → 1663）；输入框弹窗自动聚焦与取消路径同样正常。
 - 部署：WebVer 1.0.38，`C:\Backend`（备份 `C:\Backend_backup_20260913_141256`）；线上 `phone.core.js` / `phone.css` MD5 与仓库一致，CDN `?v=1.0.38` 已取到新内容。
 
+## 15. 2026-09-13 本轮增量（「我的代理」按节点浏览；代理权限范围保持不变）
+
+- 需求：**权限范围不变**（每个代理的可见范围仍是自己整条代理线），但**页面**要按节点逐级浏览 —— 根节点只列自己的直属代理、行内显示该代理的下属数量，点进某个代理（如 1688）只看 1688 的直属代理，一层层下钻。这样每屏只出现少量代理，层级更明确。
+- 落地（`phone.agents.js`）：新增 `OWN_ACCOUNT`（取 `MConfig.user.accounts`），面包屑根节点与首屏加载都锚定登录账号自己 —— `loadNode(OWN_ACCOUNT, '所有代理')`。后端 `GetAgencies` 语义不变（不传 `Agency` = 权限范围全量、传了 = 该节点的直属代理）；"下级代理 N 个"本来就按权限范围内的全量代理统计，所以下钻后数量仍是真实值、可以继续点进去。
+- **权限范围未做任何收窄**：`B_Admin.GetManagedAgencyAccounts` 仍是 `ManageScope` 语义（1 仅直属 / 2 全部下级；线上所有代理都是 2 = 整条代理线），总台为全部。列表/详情/启用禁用/代理充值可选代理/代理流水/异常账号/代理权限设置的范围与改动前一致；账号与邀请码搜索仍在整个权限范围内查，桌面端代理管理仍是整条线的平铺列表。
+- 插曲（已回退）：本轮曾先做过一版"代理侧范围收紧为非特级仅直属下级"（`AgencyRules.IsWholeLineAgencyScope`），随 1.0.39 / 1.0.40 上线过；需求确认后已整体回退（`AgencyRules.cs` / `B_Admin.cs` / `B_Reports.cs` 回到收窄前），只在页面呈现上做节点化。
+- 测试：`ViewContractTest.MobileAgentListShowsDirectChildrenOnly` 补 `OWN_ACCOUNT` 锚点断言，并锁定 `GetManagedAgencyIds(loginUser.Accounts, loginUser.ManageScope`（防止代理侧范围再被收窄）；`RechargeAgencyOptionsFollowManageScope` 恢复原名与断言。
+- 验证：Release 构建通过；全量测试通过数回到既有基线（24 项走库失败仍是测试工程未注册 `MySql.Data.MySqlClient` 的既有环境问题）。
+
+## 16. 2026-09-13 本轮增量（手机端「代理流水」不再展示无金额记录）
+
+- 需求：手机端「代理流水」页里那些「币 / 剩余币」显示 `--` 的记录（登录、退出、封禁/解冻审计）整条不要展示，只留真正有资金变动的流水。
+- 线上实况核对（`mth.AgencyOptLog` 代理 1688 当天）：`--` 行确为 `OPT=2`（登录）、`OPT=3`（退出）、`OPT=25`（解冻审计，`COINS=0/BEF=0/AFT=1`）；全表 `OPT` 取值只有 2/3/20/21/24/25/26/27，与前端 OPT 表一致。
+- 口径：手机端流水页传 `MONEY_ONLY=1`，服务端按**白名单** `OPT IN (0,1,20,21,22,23)` 过滤（0/1 为历史遗留的充值/兑换）。过滤放服务端，`total` 与分页才对得上；前端过滤会出现"整页空行 + 页码虚高"。
+- 落地：`M_S_Record.MONEY_ONLY` → `AgencyRecordController.GetAgencyRecords` 读表单 `MONEY_ONLY` → `B_Records_MySQL.Get_AgencyRecords` 加 `int?[] moneyOpts`（实体里 `OPT` 是可空列，用 `int[]` 编译不过）。**桌面「代理记录」不传该参数**，登录/退出明细照旧展示，口径未变。
+- 测试：`ViewContractTest.AgentFlowOnlyShowsRecordsWithMoneyMovement` 新增（脚本传参、实体字段、控制器读参、BLL 白名单 + 桌面页不得带该参数）。
+- 验证：Release 构建通过；全量 84 项中 60 通过、24 失败（失败仍为测试工程未注册 `MySql.Data.MySqlClient` 的既有环境问题）。
+- 部署：WebVer 1.0.40，`C:\Backend`（备份 `C:\Backend_backup_20260913_165155`）。线上 11 个文件（6 个 `YYT.*.dll` + `Game.Utils.dll` + `phone.agentflow.js` + `phone.core.js` + `phone.css` + `Web.config`）的 MD5 与仓库构建产物/源码逐字节一致；80/8080/8081 与 `https://abc.12.sqrdwj.top`、`https://x.52.dyj.wang` 登录页均 200；CDN `?v=1.0.40` 取到的 `phone.agentflow.js` MD5 与仓库一致且含 `MONEY_ONLY`；改动接口未登录访问返回既有登录超时 JSON（无 500）。
+- 顺带发现（**与本次改动无关的既有问题**）：后台→中心服的命名管道自 **2026-08-27** 起就没有成功过（`gamecommandoutbox` 最后一条 Acked 是 08-26 11:26，之后 LK/UL/UC/KU 全部失败、重试耗尽）。证据与修法方向见 `AGENTS.md`「已知未闭合项」第 8 条与坑清单「后台与游戏服同机」条。
+
 ## 17. 2026-09-13 本轮增量（返回玩家列表时顺手收起抽屉菜单）
 
 - 需求：抽屉菜单展开状态下点进「我的代理 / 我的会员 / 充值管理」，点返回回到玩家列表页时，菜单要自动缩回去。

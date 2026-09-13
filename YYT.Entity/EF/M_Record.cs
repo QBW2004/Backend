@@ -57,6 +57,11 @@ namespace YYT.Entity
         public DateTime S_TIME { get; set; }
         public DateTime E_TIME { get; set; }
         public int WEEK { get; set; }
+        /// <summary>
+        /// 只查资金变动记录（手机端「代理流水」用）：过滤掉登录/退出(OPT 2/3)与封禁审计(OPT 24-27)等无金额记录。
+        /// 桌面「代理记录」需要展示这些记录，所以默认 false。
+        /// </summary>
+        public bool MONEY_ONLY { get; set; }
 
         public override string ToString()
         {

@@ -145,6 +145,14 @@ namespace YYT.BLL.EF
                 }
                 if (queryPara.OPT > -1)
                     rst = rst.Where(c => c.OPT == queryPara.OPT);
+                // 手机端「代理流水」只要资金变动：登录/退出(2/3) 与封禁审计(24-27) 这类无金额记录不展示。
+                // 用白名单而非排除法，后续再新增无金额的 OPT 也不会漏进来。
+                if (queryPara.MONEY_ONLY)
+                {
+                    // OPT 在实体里是可空列，数组也用 int? 才能被 EF 翻译成 IN（int[] 会编译不过）
+                    int?[] moneyOpts = { 0, 1, 20, 21, 22, 23 };
+                    rst = rst.Where(c => moneyOpts.Contains(c.OPT));
+                }
                 if (!string.IsNullOrWhiteSpace(queryPara.AGENCY))
                     rst = rst.Where(c => c.AGENCY.Equals(queryPara.AGENCY));
 

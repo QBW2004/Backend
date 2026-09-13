@@ -8,7 +8,10 @@
     'use strict';
 
     var FETCH_ROWS = 500;
-    var crumbs = [{ id: '', name: '所有代理' }];
+    // 根节点就是登录账号自己：页面按节点逐级浏览，每个节点只列**该节点的直属代理**，
+    // 代理的权限范围仍是整条代理线（下钻到哪里才看哪一层，避免一屏铺开整条线）。
+    var OWN_ACCOUNT = (MConfig.user && MConfig.user.accounts) ? MConfig.user.accounts : '';
+    var crumbs = [{ id: OWN_ACCOUNT, name: '所有代理' }];
     var allCache = null; // 权限范围内全量代理（邀请码搜索用）
 
     /* ---------------- 数据 ---------------- */
@@ -138,7 +141,7 @@
 
     function initPage() {
         renderBreadcrumb();
-        loadNode('', '所有代理');
+        loadNode(OWN_ACCOUNT, '所有代理');
 
         // 面包屑回退
         $('#breadcrumb').on('click', '.breadcrumb-item', function () {
