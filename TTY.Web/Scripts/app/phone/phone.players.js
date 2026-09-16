@@ -51,12 +51,14 @@
      * 吃分/放水为「目标 N 已吃分/已放分 N」，
      * 控牌为「大字版控制 同花顺(150倍)（1次/5把）」
      * （牌型表见 phone.core.js 的 M.cardControlText，与控制页共用）。
+     * 进度值原样展示（与电脑端在线用户/用户管理页一致）：ConsumedCoins 是净口径进度，
+     * 可能回退为负数，不能取反——取反会把"已吃分 2608"显示成"已吃分 -2608"。
      */
     function activeControlText(control) {
         var mode = Number(control.ControlMode);
         if (mode === 4) {
             return '吃分中... 目标 ' + M.gold(control.TargetCoins) +
-                ' 已吃分 ' + M.gold(-Number(control.ConsumedCoins || 0));
+                ' 已吃分 ' + M.gold(control.ConsumedCoins);
         }
         if (mode === 5) {
             return '放水中... 目标 ' + M.gold(control.TargetCoins) +
@@ -83,12 +85,16 @@
 
     function playerCardHTML(p, isOnline) {
         var gameText = isOnline ? (M.gameName(p.GameID) || '--') : '--';
-        var hallText = isOnline ? (p.RoomId != null ? p.RoomId + '场' : '--') : '--';
-        var machineText = isOnline ? (p.TableId != null ? p.TableId : '--') : '--';
-        var betText = isOnline ? (p.CurBet != null ? M.gold(p.CurBet) : '--') : '--';
+        // 场次/机台号与电脑端同一编号口径（服务端下发 0 基下标，端上统一 +1 显示，
+        // 例：电脑端在线用户"桌号"= TableId+1）；押注走 M.betGold（鱼机 ÷10 保留 1 位小数）
+        var hallText = isOnline ? (p.RoomId != null ? (Number(p.RoomId) + 1) + '场' : '--') : '--';
+        var machineText = isOnline ? (p.TableId != null ? (Number(p.TableId) + 1) : '--') : '--';
+        var betText = isOnline ? M.betGold(p.CurBet, p.GameID) : '--';
 
         var today = Number(p.TodayWinLoss || 0);
-        var total = Number(p.TotalWinLoss != null ? p.TotalWinLoss : (p.Profit || 0));
+        // 总输赢统一取后台口径（user_daily_winloss 累计，与电脑端"总盈亏"、手机端会员盈亏同口径）；
+        // 不再优先用游戏服 QA 的 TotalWinLoss——那是本局/本次在线口径，同一玩家在线与离线会显示两个数。
+        var total = Number(p.Profit != null ? p.Profit : (p.TotalWinLoss || 0));
         var twColor = today > 0 ? 'positive' : (today < 0 ? 'negative' : '');
         var ttColor = total > 0 ? 'positive' : (total < 0 ? 'negative' : '');
 

@@ -336,12 +336,10 @@ namespace YYT.Web.Areas.Game.Controllers
                     AGENCY = form.Q<string>("srch_Agency")
                 };
                 string sort = form.Q<string>("sort");
+                // 总盈亏(Profit) = 实际游戏输赢（user_daily_winloss 全量），由 B_Users.GetOfflineUsersList 直接给出，
+                // 与在线列表/会员盈亏详情/电脑端"总盈亏"同口径。这里不能再按充退差额（COINS_BUY-COINS_BACK）覆盖：
+                // 那是资金口径，会让同一个玩家的"总输赢"在线与离线显示成两个不同的数（离线也变成充值-退币）。
                 list = new B_Users().GetOfflineUsersList(mPage, mUsers, loginUser, sort);
-                if (list != null && list.rows != null)
-                {
-                    foreach (var item in list.rows)
-                        item.Profit = item.COINS_BUY - item.COINS_BACK;
-                }
             }
             catch (Exception ex)
             {

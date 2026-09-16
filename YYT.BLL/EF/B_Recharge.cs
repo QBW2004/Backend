@@ -59,6 +59,11 @@ namespace YYT.BLL.EF
         public bool IsRMB { get; set; }
         public int ExchangeRate { get; set; }
         protected IGameServerClient GameServerClient { get; set; }
+        /// <summary>
+        /// 是否来自手机端提交（前端仍带 MobileRequest=1）。
+        /// 仅用于排查日志：手机端与桌面端现在都走"直发 + 发件箱兜底"，
+        /// 不再因为手机端而把 LK/UL 只入发件箱等定时重试（那会让充退延迟最长 60s 才在游戏内生效）。
+        /// </summary>
         protected bool MobileRequest { get; private set; }
 
 
@@ -493,7 +498,7 @@ namespace YYT.BLL.EF
 
             // 发送锁定用户指令
             tmpMsg = LockUser();
-            AppendDebugLog($"\n Lock User >> SrvCode:[{tmpMsg?.datas}] ");
+            AppendDebugLog($"\n Lock User >> SrvCode:[{tmpMsg?.datas}] mobile:[{this.MobileRequest}] ");
             if (tmpMsg.code == 1 && chekRst == true)
             {
                 using (var ef = new GameDbContext())
@@ -700,10 +705,11 @@ namespace YYT.BLL.EF
         {
             try
             {
-                if (this.MobileRequest)
-                    return this.GameServerClient.QueueLockPlayer(this.DestUser.ID);
-
-                // 发送锁定用户指令  指令内容：LK + 玩家账号
+                // 直发（手机端同样直发）：管道健康时指令立即到达游戏服。
+                // 历史实现里手机端只把 LK/UL 写进发件箱等定时重试（间隔 60s），
+                // 导致手机端充值/退分"要等一会儿才生效"；现在统一走直发，
+                // 发送失败时 LockPlayer 已把指令记入发件箱失败记录，仍由重试服务补偿，本次充值继续。
+                // 指令内容：LK + 玩家账号
                 this.GameServerClient.LockPlayer(this.DestUser.ID);
                 // 无论服务器返回任何结果，均允许充值（用户在线中也可充值）
                 return new Msg(1, "OK");
@@ -738,15 +744,9 @@ namespace YYT.BLL.EF
             try
             {
                 // 发送解锁用户指令  指令内容：UL + 充值0/兑换1+操作结果失败0/成功1  +充值金币数+"/"+ 玩家账号
-                if (this.MobileRequest)
-                {
-                    Msg queued = this.GameServerClient.QueueUnlockPlayer(type, val, this.ReChargeDataEntity.Coin, this.DestUser.ID);
-                    srvCode = queued != null && queued.code == 1 ? "ULQUEUED" : string.Empty;
-                }
-                else
-                {
-                    srvCode = this.GameServerClient.UnlockPlayer(type, val, this.ReChargeDataEntity.Coin, this.DestUser.ID);
-                }
+                // 手机端同样直发：UL 带回本次充值结果，必须立即下发，不能等定时重试（最长 60s 才生效）。
+                // 失败时 UnlockPlayer 已记录发件箱失败记录，由重试服务补偿。
+                srvCode = this.GameServerClient.UnlockPlayer(type, val, this.ReChargeDataEntity.Coin, this.DestUser.ID);
                 AppendDebugLog($" UnLock User >> SrvCode:[{srvCode}] ");
             }
             catch (Exception ex)

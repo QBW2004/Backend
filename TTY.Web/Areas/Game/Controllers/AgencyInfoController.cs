@@ -71,7 +71,8 @@ namespace YYT.Web.Areas.Game.Controllers
                         item.Profit =  item.RECHARGE-item.EXCHANGE;
                         item.PlayerBalance = (tmp != null ? tmp.PlayerBalance : 0);
                         item.UserBalance = (tmp != null ? tmp.UserBalance : 0);
-                        item.PWD = null;
+                        // ⚠️ 这里曾经无条件把代理密码清空（PWD 置 null），等于密码对所有人（含总台）都看不见，
+                        // 下面那段按权限脱敏就成了摆设。密码的可见性只在下面统一判定，不要在这里提前清空。
                     }
                     List<string> agencyIds = list.rows.Select(a => a.ID).Where(a => !string.IsNullOrWhiteSpace(a)).ToList();
                     using (var ef = new GameDbContext())

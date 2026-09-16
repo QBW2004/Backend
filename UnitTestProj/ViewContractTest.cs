@@ -668,7 +668,9 @@ namespace UnitTestProj
             // 玩家详情页控制状态文案：吃分/放水必须闭合「（目标 N 已吃分/已放分 N）」
             StringAssert.Contains(detailScript, "分 ' + M.gold(progress) + '）'");
             StringAssert.Contains(controlScript, "MobileRequest: 1");
-            StringAssert.Contains(controlBll, "QueueTotalUcCommand");
+            // 手机端控制指令也改为直发：只入发件箱排队要等定时重试（间隔 60s）才生效
+            Assert.IsFalse(controlBll.Contains("QueueTotalUcCommand"));
+            StringAssert.Contains(controlBll, "SendTotalUcCommand(mode, strength, cardAction, cardValue, cardNumber, cardTotal, loginUser, target);");
             StringAssert.Contains(controlScript, "r.text || '操作成功'");
             Assert.IsFalse(controlScript.Contains("已受理"));
             Assert.IsFalse(controlBll.Contains("已受理"));
@@ -681,8 +683,11 @@ namespace UnitTestProj
             StringAssert.Contains(userController, "loginUser, false");
             StringAssert.Contains(indexSql, "idx_rechargerecords_processed_time_game");
             StringAssert.Contains(rechargeScript, "MobileRequest: 1");
-            StringAssert.Contains(rechargeBase, "QueueLockPlayer");
-            StringAssert.Contains(rechargeBase, "QueueUnlockPlayer");
+            // 手机端充退的 LK/UL 不再是"只入发件箱等定时重试"（会让充退延迟最长 60s 才在游戏内生效）
+            Assert.IsFalse(rechargeBase.Contains("QueueLockPlayer"));
+            Assert.IsFalse(rechargeBase.Contains("QueueUnlockPlayer"));
+            StringAssert.Contains(rechargeBase, "this.GameServerClient.LockPlayer(this.DestUser.ID);");
+            StringAssert.Contains(rechargeBase, "srvCode = this.GameServerClient.UnlockPlayer(type, val, this.ReChargeDataEntity.Coin, this.DestUser.ID);");
             StringAssert.Contains(rechargeController, "new B_ReChargeBase(rechargeUser, rechargeTarget, mobileRequest)");
         }
 
@@ -718,6 +723,92 @@ namespace UnitTestProj
             // 玩家详情页同样不再显示裸控牌值
             Assert.IsFalse(detailScript.Contains("'控牌（控牌值 '"));
             StringAssert.Contains(detailScript, "M.cardControlParams(r.GameId, r.LimitCoins)");
+        }
+
+        [TestMethod]
+        public void CardControlOptionsHideZeroPairAndJackpotsOverTwoThousand()
+        {
+            string phoneCore = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.core.js");
+            string indexView = ReadRepoFile(@"TTY.Web\Areas\Game\Views\UserInfo\Index.cshtml");
+            string onlineView = ReadRepoFile(@"TTY.Web\Areas\Game\Views\UserInfo\OnlineUsers.cshtml");
+
+            // 牌机（5-14）：所有游戏都不再提供 0 倍杂牌；五鬼(12)与电脑端一致一律隐藏；大四梅(8)仅火凤凰(14)保留
+            StringAssert.Contains(phoneCore, "if (t.ht == 0 || t.ht == 12) continue;");
+            StringAssert.Contains(phoneCore, "if (t.ht == 8 && action != 14) continue;");
+            foreach (string view in new[] { indexView, onlineView })
+            {
+                StringAssert.Contains(view, "if (t.ht == 0 || t.ht == 12) continue;");
+                StringAssert.Contains(view, "if (t.ht == 8 && cardAction != 14) continue;");
+            }
+            // 含"杂牌(0倍)/大四梅(65倍)"的旧牌型表（valSelDataPAIJI2/3 死代码）已删除，防止再被接回下拉
+            foreach (string file in new[] { phoneCore, indexView, onlineView })
+            {
+                Assert.IsFalse(file.Contains("杂牌(0倍)"));
+                Assert.IsFalse(file.Contains("valSelDataPAIJI2"));
+            }
+
+            // 拉霸牌型补全：水浒传按结果类 code（三连/四连/五连/纯万能线/全屏/混合），手机端与电脑端同列表
+            foreach (string code in new[] { "400", "407", "410", "417", "420", "427", "430", "431", "432",
+                                            "444", "445", "446", "447", "448", "450", "451" })
+            {
+                StringAssert.Contains(indexView, "id: " + code + ",");
+                StringAssert.Contains(onlineView, "id: " + code + ",");
+                StringAssert.Contains(phoneCore, "id: " + code + ",");
+            }
+            // 赔率超过 2000 倍的全屏水浒项（440 14000倍 / 441 11500倍 / 442 4600倍 / 443 2300倍）不下发
+            foreach (string code in new[] { "440", "441", "442", "443" })
+            {
+                Assert.IsFalse(indexView.Contains("id: " + code + ","), "水浒传控牌不应提供 " + code);
+                Assert.IsFalse(onlineView.Contains("id: " + code + ","), "水浒传控牌不应提供 " + code);
+                Assert.IsFalse(phoneCore.Contains("id: " + code + ","), "水浒传控牌不应提供 " + code);
+            }
+            // 明星97 结果类同手机端补齐（旧版只有 0-8 符号值）；旧值仅保留在回显回退表里
+            foreach (string code in new[] { "300", "308", "312", "329", "330", "340", "347", "350" })
+                StringAssert.Contains(phoneCore, "id: " + code + ",");
+            StringAssert.Contains(phoneCore, "var SHZ_LEGACY = [");
+            StringAssert.Contains(phoneCore, "var MX97_LEGACY = [");
+            StringAssert.Contains(phoneCore, "if (action == 15 && value >= 0 && value <= 7) return SHZ_LEGACY[value];");
+            StringAssert.Contains(phoneCore, "if (action == 16 && value >= 0 && value <= 8) return MX97_LEGACY[value];");
+
+            // 拉霸文案按「名称(倍数)」简化：不再出现"50+180倍"这类叠加写法和"按忠义堂"说明，水果拉霸不带"面板X"前缀
+            foreach (string file in new[] { phoneCore, indexView, onlineView })
+            {
+                Assert.IsFalse(file.Contains("+180倍"));
+                Assert.IsFalse(file.Contains("+360倍"));
+                Assert.IsFalse(file.Contains("按忠义堂"));
+                Assert.IsFalse(file.Contains("'面板' + i + ' · '"));
+                // 水果拉霸面板位 9/21 是两个不同的送灯位，描述要带免费局次数（与机台设定面板表同名），不能都写"送灯位(免费局)"
+                StringAssert.Contains(file, "送灯位·免费局 1~3 次");
+                StringAssert.Contains(file, "送灯位·免费局 3~6 次");
+                Assert.IsFalse(file.Contains("送灯位(免费局)"));
+            }
+        }
+
+        [TestMethod]
+        public void MobileCardTypeSelectOpensUpwardAboveTheField()
+        {
+            string phoneCore = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.core.js");
+            string controlScript = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.control.js");
+            string phoneCss = ReadRepoFile(@"TTY.Web\Content\css\phone.css");
+
+            // 控制页的「控制牌型」在页面底部：原生 select 的弹出列表只能向下，长列表会被屏幕裁掉，
+            // 后面的牌型点不到。改成按钮 + 页面内浮层，默认向上展开（上方不够才向下），原生 select 仅隐藏取值。
+            StringAssert.Contains(phoneCore, "M.upwardSelect = function ($sel)");
+            StringAssert.Contains(phoneCore, "M.upwardSelectRefresh = function ($sel)");
+            StringAssert.Contains(phoneCore, "var up = !(roomAbove < 160 && roomBelow > roomAbove);");
+            StringAssert.Contains(phoneCore, "Math.min(room, window.innerHeight * 0.6)");
+            StringAssert.Contains(phoneCore, "$sel.val(v).trigger('change');");
+
+            // 只用于「控制牌型」；选项重建（fillSelect）后要同步按钮文案
+            StringAssert.Contains(controlScript, "M.upwardSelect($('#ctrlCardValue'));");
+            StringAssert.Contains(controlScript, "if (M.upwardSelectRefresh) M.upwardSelectRefresh($sel);");
+
+            // 样式：向上定位、原生 select 隐藏、浮层独立合成层（老安卓命中测试）
+            StringAssert.Contains(ExtractCssBlock(phoneCss, ".upsel-panel.up"), "bottom: calc(100% + 6px);");
+            StringAssert.Contains(ExtractCssBlock(phoneCss, ".upsel-panel.down"), "top: calc(100% + 6px);");
+            StringAssert.Contains(ExtractCssBlock(phoneCss, ".upsel-native"), "display: none;");
+            StringAssert.Contains(ExtractCssBlock(phoneCss, ".upsel-panel"), "overflow-y: auto;");
+            StringAssert.Contains(ExtractCssBlock(phoneCss, ".upsel-panel"), "translateZ(0);");
         }
 
         [TestMethod]
@@ -1045,6 +1136,132 @@ namespace UnitTestProj
             StringAssert.Contains(overlayBlock, "translateZ(0);");
             // 超高时从头显示（align-items:center 会把顶部裁掉且滚不到）
             StringAssert.Contains(ExtractCssBlock(phoneCss, ".modal-content"), "margin: auto;");
+        }
+
+        [TestMethod]
+        public void PlayerLookupQueryNeverProjectsEntityTypes()
+        {
+            string usersBll = ReadRepoFile(@"YYT.BLL\EF\B_Users.cs");
+
+            // EF6 禁止在 LINQ to Entities 里 new 实体类型，写成 Select(c => new M_UserOptLog{...})
+            // 会抛 NotSupportedException：在线玩家一进列表，整块查询就失败 ——
+            // 手机端点玩家"未获取到玩家信息"、电脑端用户管理/在线玩家列表整页变空（且只在有玩家在线时复现）。
+            // 回表投影必须用匿名类型，实体对象留到内存里再组装。
+            Assert.IsFalse(usersBll.Contains(".Where(c => latestIds.Contains(c.LID))\r\n                .Select(c => new M_UserOptLog"),
+                "FillCurrentPlayInfo 的回表投影不能直接构造实体类型（EF6 不支持，会在有玩家在线时整页查询失败）");
+            StringAssert.Contains(usersBll, ".Select(c => new\r\n                {\r\n                    c.LID,\r\n                    c.UserID,");
+            StringAssert.Contains(usersBll, ".Select(c => new M_UserOptLog\r\n                {\r\n                    LID = c.LID,");
+        }
+
+        [TestMethod]
+        public void MobilePlayerCardShowsRealWinLossDecimalBetAndOneBasedPosition()
+        {
+            string players = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.players.js");
+            string phoneCore = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.core.js");
+            string onlineUsers = ReadRepoFile(@"TTY.Web\Areas\Game\Views\UserInfo\OnlineUsers.cshtml");
+
+            // 押注：0.1 分炮鱼机内部单位是 0.1 分，必须 ÷10 保留 1 位小数（否则 0.1 显示成 1）
+            StringAssert.Contains(players, "M.betGold(p.CurBet, p.GameID)");
+            StringAssert.Contains(phoneCore, "M.betGold = function (v, gameId) {");
+            StringAssert.Contains(phoneCore, "n = n / 10;");
+
+            // 鱼机列表必须与电脑端在线用户页同口径（改一处必须同步另一处）
+            const string fishIds = "3, 6, 13, 19, 21, 22, 32, 33, 42, 49, 51";
+            StringAssert.Contains(phoneCore, "M.DECIMAL_BET_FISH_IDS = [" + fishIds + "];");
+            StringAssert.Contains(onlineUsers, "var _decimalBetFishIds = [" + fishIds + "];");
+
+            // 场次/机台号：服务端下发 0 基下标，端上 +1 显示（电脑端桌号即 TableId+1）
+            StringAssert.Contains(players, "(Number(p.RoomId) + 1) + '场'");
+            StringAssert.Contains(players, "(Number(p.TableId) + 1)");
+
+            // 总输赢取后台口径（user_daily_winloss 累计），不能优先取游戏服 QA 的 TotalWinLoss：
+            // 后者是本局/本次在线口径，会让同一玩家在线与离线看到两个不同的数
+            StringAssert.Contains(players, "Number(p.Profit != null ? p.Profit : (p.TotalWinLoss || 0))");
+
+            // 控制状态进度原样展示：ConsumedCoins 是净口径、可能为负，取反会把"已吃分 2608"显示成 -2608
+            Assert.IsFalse(players.Contains("M.gold(-Number(control.ConsumedCoins"),
+                "在线卡片的已吃分不能取反（与电脑端在线用户/用户管理页不一致）");
+            StringAssert.Contains(players, "' 已吃分 ' + M.gold(control.ConsumedCoins)");
+        }
+
+        [TestMethod]
+        public void MobileControlProgressIsNotNegated()
+        {
+            string control = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.control.js");
+            string detail = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.playerdetail.js");
+
+            // 控制管理页 / 玩家详情页的"已吃分"同样不能取反（曾经三处一起取反，
+            // 有吃分进度时会显示负数，与电脑端显示相反）
+            Assert.IsFalse(control.Contains(": -r.ConsumedCoins"), "控制页已吃分进度不能取反");
+            Assert.IsFalse(detail.Contains(": -Number(r.ConsumedCoins || 0)"), "玩家详情页已吃分进度不能取反");
+            StringAssert.Contains(control, "M.gold(Number(r.ControlMode) == 5 ? r.GrantedCoins : r.ConsumedCoins)");
+            StringAssert.Contains(detail, "Number(r.ConsumedCoins || 0)");
+        }
+
+        [TestMethod]
+        public void MobileListsUseGameWinLossProfitAndExcludeAgentRecharges()
+        {
+            string usersBll = ReadRepoFile(@"YYT.BLL\EF\B_Users.cs");
+            string controller = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\UserInfoController.cs");
+
+            // 离线玩家列表的总盈亏也要走"实际游戏输赢"口径（与在线列表、会员盈亏、电脑端总盈亏一致），
+            // 不能再被控制器按充退差额覆盖
+            StringAssert.Contains(usersBll, "QueryUsersPaged(mPage, entity, loginUser, true, false, sort, false, false, true);");
+            StringAssert.Contains(controller, "list = new B_Users().GetOfflineUsersList(mPage, mUsers, loginUser, sort);");
+            StringAssert.Contains(controller, "总盈亏(Profit) = 实际游戏输赢");
+
+            // 会员盈亏（统计卡 + 列表充退列）只统计目标为玩家的流水：
+            // 总台给代理充值同样是 rechargerecords 记录（GameID=代理账号），必须排除
+            StringAssert.Contains(usersBll, "AND NOT EXISTS (SELECT 1 FROM admin ra WHERE ra.ID = x.GameID)");
+            StringAssert.Contains(usersBll, "AND NOT EXISTS (SELECT 1 FROM admin ra WHERE ra.ID = r.GameID)");
+            StringAssert.Contains(usersBll, "AND NOT EXISTS (SELECT 1 FROM admin ra WHERE ra.ID = rechargerecords.GameID)");
+
+            // 代理维度的盈亏聚合：user_daily_winloss.UserID 是玩家账号，必须直接连 users.ID。
+            // 连 userrelations（其 UserID 是数字平台 ID）与账号串恒不相等，聚合恒为 0（今日总输赢/会员盈亏统计卡曾全为 0）。
+            Assert.IsFalse(usersBll.Contains("r.UserID = w.UserID"), "盈亏聚合不能连 userrelations.UserID");
+            StringAssert.Contains(usersBll, "INNER JOIN Users u ON u.ID = w.UserID");
+        }
+
+        [TestMethod]
+        public void MobileRechargeSendsLockUnlockImmediately()
+        {
+            string rechargeBll = ReadRepoFile(@"YYT.BLL\EF\B_Recharge.cs");
+
+            // 手机端充退不能只把 LK/UL 记入发件箱等定时重试（间隔 60s），否则充退要等一会儿才在游戏内生效；
+            // 统一直发，失败由发件箱 + 重试服务兜底
+            Assert.IsFalse(rechargeBll.Contains("QueueLockPlayer"), "手机端充值不应只入发件箱排队");
+            Assert.IsFalse(rechargeBll.Contains("QueueUnlockPlayer"), "手机端充退解锁不应只入发件箱排队");
+            StringAssert.Contains(rechargeBll, "this.GameServerClient.LockPlayer(this.DestUser.ID);");
+            StringAssert.Contains(rechargeBll, "srvCode = this.GameServerClient.UnlockPlayer(type, val, this.ReChargeDataEntity.Coin, this.DestUser.ID);");
+        }
+
+        [TestMethod]
+        public void AgentPasswordVisibilityFollowsPermission()
+        {
+            string controller = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\AgencyInfoController.cs");
+
+            // 代理列表曾在权限判定前无条件清空密码，导致总台和持有 IsViewAgentPwd 的代理都看不到代理密码。
+            // GetAgencies 里第一处清空必须落在权限分支里（禁用代理列表里另有独立的一处，不在此列）。
+            int permIndex = controller.IndexOf("IsViewAgentPwd != 1", StringComparison.Ordinal);
+            int pwdIndex = controller.IndexOf("item.PWD = null;", StringComparison.Ordinal);
+            Assert.IsTrue(permIndex > 0 && pwdIndex > permIndex,
+                "代理密码必须在权限判定之后才清空（曾无条件清空，总台也看不到密码）");
+            Assert.IsTrue(controller.Substring(Math.Max(0, pwdIndex - 300), 300).Contains("IsViewAgentPwd != 1"),
+                "清空点必须是带权限判断的脱敏分支");
+            StringAssert.Contains(controller, "new B_Admin().IsTargetAgencyInManagedScope(ef, loginUser, item.ID)");
+        }
+
+        [TestMethod]
+        public void MobileMemberPageDefaultsToWholeLine()
+        {
+            string huiyuan = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.huiyuan.js");
+
+            // "我的代理-我的会员-查看"进来默认看该代理整条线的会员（代理权限范围本就是整线），
+            // 需要收窄时点"仅看直属"；不能默认只出直属会员，否则非直属会员看不到
+            StringAssert.Contains(huiyuan, "var includeDescendants = true;");
+            StringAssert.Contains(huiyuan, "includeDescendants = true;");
+            StringAssert.Contains(huiyuan, "includeDescendants ? '（全部会员）' : '（直属会员）'");
+            StringAssert.Contains(huiyuan, "includeDescendants ? '仅看直属' : '查看全部'");
         }
     }
 }

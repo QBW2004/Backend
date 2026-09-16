@@ -671,17 +671,9 @@ namespace YYT.BLL.EF
             }
 
             // 下发服务器指令（DB 已落库，玩家下次进游戏时服务端也会按 DB 应用总控）
-            // 手机端只需快速确认受理：先进入发件箱，由定时重试服务负责向中心服发送。
-            // 电脑端继续同步等待既有管道响应，保持原有接口语义。
-            Msg tmpMsg = mobileFixedCard
-                ? QueueTotalUcCommand(mode, strength, cardAction, cardValue, cardNumber, cardTotal, loginUser, target)
-                : SendTotalUcCommand(mode, strength, cardAction, cardValue, cardNumber, cardTotal, loginUser, target);
-            if (mobileFixedCard && (tmpMsg == null || tmpMsg.code != 1))
-            {
-                msg.code = 0;
-                msg.content = tmpMsg == null ? "指令排队失败！" : tmpMsg.content;
-                return msg;
-            }
+            // 手机端与电脑端统一走直发：只入发件箱等定时重试（间隔 60s）会让控制"点了半天不生效"，
+            // 发送结果不改变接口语义（DB 已落库即视为成功，与电脑端一致），失败由发件箱+重试服务兜底。
+            SendTotalUcCommand(mode, strength, cardAction, cardValue, cardNumber, cardTotal, loginUser, target);
             msg.code = 1;
             msg.content = "操作成功";
             return msg;
@@ -923,16 +915,9 @@ namespace YYT.BLL.EF
                     ef.SaveChanges();
                 }
 
-                // 强度/控牌类型 0 表示解除
-                Msg tmpMsg = mobileRequest
-                    ? QueueTotalUcCommand(mode, 0, 0, 0, 0, 0, loginUser, target)
-                    : SendTotalUcCommand(mode, 0, 0, 0, 0, 0, loginUser, target);
-                if (mobileRequest && (tmpMsg == null || tmpMsg.code != 1))
-                {
-                    msg.code = 0;
-                    msg.content = tmpMsg == null ? "指令排队失败！" : tmpMsg.content;
-                    return msg;
-                }
+                // 强度/控牌类型 0 表示解除。电脑端/手机端都直发：手机端只入发件箱排队的旧逻辑
+                // 要等定时重试（间隔 60s）才下发，控制会"点了半天不生效"；失败由发件箱+重试服务兜底。
+                SendTotalUcCommand(mode, 0, 0, 0, 0, 0, loginUser, target);
                 msg.code = 1;
                 msg.content = "移除成功";
             }
@@ -976,21 +961,6 @@ namespace YYT.BLL.EF
             {
                 object[] args = BuildTotalUcCommandArgs(mode, strength, cardAction, cardValue, cardNumber, cardTotal, loginUser, userId);
                 return args == null ? new Msg(0, "无效的总控模式！") : new GameCommandService().SetUserControl(args);
-            }
-            catch (Exception ex)
-            {
-                LogHelper.WriteLog(typeof(B_UserControl), ex);
-                return new Msg(0, "服务器指令发送异常：" + ex.Message);
-            }
-        }
-
-        private Msg QueueTotalUcCommand(int mode, int strength, int cardAction, int cardValue, int cardNumber, int cardTotal,
-            M_LoginUser loginUser, string userId)
-        {
-            try
-            {
-                object[] args = BuildTotalUcCommandArgs(mode, strength, cardAction, cardValue, cardNumber, cardTotal, loginUser, userId);
-                return args == null ? new Msg(0, "无效的总控模式！") : new GameCommandService().QueueUserControl(args);
             }
             catch (Exception ex)
             {

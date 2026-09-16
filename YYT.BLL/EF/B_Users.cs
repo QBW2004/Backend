@@ -698,7 +698,11 @@ namespace YYT.BLL.EF
                     " SUM(CASE WHEN CreateTime >= {" + todayArg + "} AND (RechargeType IN (21,23) OR (RechargeType = 31 AND Processed = 1)) THEN Coin ELSE 0 END) AS TodayBack," +
                     " SUM(CASE WHEN RechargeType IN (20,22,30) AND (RechargeType < 30 OR Processed = 1) THEN Coin ELSE 0 END) AS RollingBuy," +
                     " SUM(CASE WHEN RechargeType IN (21,23,31) AND (RechargeType < 30 OR Processed = 1) THEN Coin ELSE 0 END) AS RollingBack" +
-                    " FROM rechargerecords WHERE CreateTime >= {" + cutoffArg + "} AND CreateTime <= {" + nowArg + "} AND Processed = 1 GROUP BY GameID) d ON d.GameID = c.ID" +
+                    " FROM rechargerecords WHERE CreateTime >= {" + cutoffArg + "} AND CreateTime <= {" + nowArg + "} AND Processed = 1" +
+                    // 会员口径：流水目标必须是玩家。总台给代理充值同样写 rechargerecords（GameID=代理账号），
+                    // 只按 users.ID 关联时，若该账号名恰好也有玩家行（历史上出现过），代理充值会被算成会员的充退。
+                    " AND NOT EXISTS (SELECT 1 FROM admin ra WHERE ra.ID = rechargerecords.GameID)" +
+                    " GROUP BY GameID) d ON d.GameID = c.ID" +
                     " LEFT JOIN (SELECT UserID, MAX(REC_TIME) AS LastLoginTime FROM `UserOptLog` GROUP BY UserID) l ON l.UserID = c.ID" +
                     " WHERE 1=1" + whereSql + orderClause +
                     " LIMIT " + (pageSize * (pageIndex - 1)) + ", " + pageSize;
@@ -745,10 +749,14 @@ namespace YYT.BLL.EF
             }
         }
 
-        /// <summary>手机端：离线玩家分页（支持排序）</summary>
+        /// <summary>
+        /// 手机端：离线玩家分页（支持排序）。
+        /// 总盈亏(Profit)与 profit 排序统一取实际游戏输赢（user_daily_winloss 全量，赢正输负），
+        /// 与在线列表、会员盈亏详情、电脑端"总盈亏"同口径；不再按充值/退币差额（那是资金口径，不是输赢）。
+        /// </summary>
         public M_EasyuiGridData<M_Users_DTO> GetOfflineUsersList(M_Page mPage, M_Users_DTO entity, M_LoginUser loginUser, string sort)
         {
-            return QueryUsersPaged(mPage, entity, loginUser, true, false, sort);
+            return QueryUsersPaged(mPage, entity, loginUser, true, false, sort, false, false, true);
         }
 
         /// <summary>手机端：封禁中的玩家分页</summary>
@@ -788,9 +796,11 @@ namespace YYT.BLL.EF
                 {
                     List<string> chunk = agencies.Skip(i).Take(300).ToList();
                     string placeholders = string.Join(",", chunk.Select((c, j) => "{" + j + "}"));
+                    // ⚠️ user_daily_winloss.UserID 存的是玩家账号，直接连 users.ID 即可。
+                    // 不能连 userrelations（那张表的 UserID 是数字平台 ID，与账号串比较恒不相等，
+                    // 结果恒为 0：代理账号看到的"今日总输赢"一直是 0）。
                     string sql = "SELECT CAST(IFNULL(SUM(w.WINLOSS),0) AS SIGNED) FROM user_daily_winloss w " +
-                                 "INNER JOIN UserRelations r ON r.UserID = w.UserID " +
-                                 "INNER JOIN Users u ON u.ID = r.ID " +
+                                 "INNER JOIN Users u ON u.ID = w.UserID " +
                                  "WHERE w.DAY = CURDATE() AND u.AGENCY IN (" + placeholders + ")";
                     total += ef.Database.SqlQuery<long>(sql, chunk.Cast<object>().ToArray()).FirstOrDefault();
                 }
@@ -851,7 +861,10 @@ namespace YYT.BLL.EF
                     " FROM rechargerecords x INNER JOIN users c ON c.ID = x.GameID" +
                     " INNER JOIN userrelations r ON r.ID = c.ID" +
                     " WHERE x.CreateTime >= {" + cutoffIndex + "} AND x.CreateTime <= {" + nowIndex + "}" +
-                    " AND x.Processed = 1" + scope,
+                    " AND x.Processed = 1" +
+                    // 会员口径：只统计目标为玩家的流水。总台给代理充值写的是代理账号（admin 表 ID），
+                    // 不是会员数据，必须排除；否则该账号名下会员的"总充值/总退币"会被代理充值撑大。
+                    " AND NOT EXISTS (SELECT 1 FROM admin ra WHERE ra.ID = x.GameID)" + scope,
                     args.ToArray()).FirstOrDefault();
                 if (stats == null)
                     stats = new M_MemberWinLossStats();
@@ -862,7 +875,9 @@ namespace YYT.BLL.EF
                     " IFNULL(SUM(CASE WHEN r.RechargeType IN (21,23) OR (r.RechargeType = 31 AND r.Processed = 1) THEN r.Coin ELSE 0 END),0) AS TodayBack" +
                     " FROM rechargerecords r INNER JOIN users c ON c.ID = r.GameID" +
                     " INNER JOIN userrelations rr ON rr.ID = c.ID" +
-                    " WHERE r.CreateTime >= {" + (args.Count - 1) + "} AND r.CreateTime <= {" + nowIndex + "} AND r.Processed = 1" + scope,
+                    " WHERE r.CreateTime >= {" + (args.Count - 1) + "} AND r.CreateTime <= {" + nowIndex + "} AND r.Processed = 1" +
+                    // 同上：排除目标为代理（admin）的充值流水，今日口径也只算会员
+                    " AND NOT EXISTS (SELECT 1 FROM admin ra WHERE ra.ID = r.GameID)" + scope,
                     args.ToArray()).FirstOrDefault();
                 if (today != null)
                 {
@@ -889,9 +904,10 @@ namespace YYT.BLL.EF
                         List<string> chunk = agencies.Skip(i).Take(300).ToList();
                         string placeholders = string.Join(",", chunk.Select((c, j) => "{" + j + "}"));
                         object[] chunkArgs = chunk.Cast<object>().ToArray();
+                        // ⚠️ user_daily_winloss.UserID 是玩家账号，直接连 users.ID。
+                        // 连 userrelations（UserID 是数字平台 ID）会因列语义不同而恒不匹配，聚合恒为 0。
                         string joins = " FROM user_daily_winloss w" +
-                                       " INNER JOIN UserRelations r ON r.UserID = w.UserID" +
-                                       " INNER JOIN Users u ON u.ID = r.ID";
+                                       " INNER JOIN Users u ON u.ID = w.UserID";
                         totalWinLoss += ef.Database.SqlQuery<long>(
                             "SELECT CAST(IFNULL(SUM(w.WINLOSS),0) AS SIGNED)" + joins +
                             " WHERE u.AGENCY IN (" + placeholders + ")",
@@ -1066,8 +1082,24 @@ namespace YYT.BLL.EF
             if (latestIds.Count < 1)
                 return;
 
+            // ⚠️ 回表投影只能用匿名类型：EF6 禁止在 LINQ to Entities 里构造实体类型，
+            // 写成 Select(c => new M_UserOptLog{...}) 会抛 NotSupportedException
+            //（在线玩家一进列表整块查询就失败：手机端点玩家"获取不到玩家"、
+            // 电脑端用户管理/在线玩家列表变空），实体对象留到内存里再组装。
             Dictionary<string, M_UserOptLog> latestLogs = ef.UserOptLogs
                 .Where(c => latestIds.Contains(c.LID))
+                .Select(c => new
+                {
+                    c.LID,
+                    c.UserID,
+                    c.GAME_TYPE,
+                    c.ROOM,
+                    c.TABLE_ID,
+                    c.SEAT_ID,
+                    c.OPT_COINS,
+                    c.SCORE
+                })
+                .ToList()
                 .Select(c => new M_UserOptLog
                 {
                     LID = c.LID,
@@ -1079,7 +1111,6 @@ namespace YYT.BLL.EF
                     OPT_COINS = c.OPT_COINS,
                     SCORE = c.SCORE
                 })
-                .ToList()
                 .GroupBy(c => c.UserID)
                 .ToDictionary(g => g.Key, g => g.First());
 

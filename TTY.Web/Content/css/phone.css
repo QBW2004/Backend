@@ -459,6 +459,84 @@ button, a {
     box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.1);
 }
 
+/* ---------------- 默认向上展开的下拉（控制页「控制牌型」） ----------------
+   原生 select 的弹出列表只能向下，字段在页面底部时列表会被屏幕裁掉、后面的牌型点不到。
+   这里用按钮 + 页面内浮层代替，默认向上展开；原生 select 只是视觉隐藏，取值/change 仍走它。 */
+.upsel {
+    position: relative;
+}
+
+.upsel-native {
+    display: none;
+}
+
+.upsel-trigger {
+    position: relative;
+    padding-right: 34px;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 右侧箭头 */
+.upsel-trigger::after {
+    content: '';
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    width: 8px;
+    height: 8px;
+    margin-top: -6px;
+    border-right: 2px solid #999;
+    border-bottom: 2px solid #999;
+    transform: rotate(45deg);
+}
+
+.upsel-panel {
+    position: absolute;
+    left: 0;
+    right: 0;
+    z-index: 30;
+    background: #fff;
+    border: 1px solid #e1e1e1;
+    border-radius: 8px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.14);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    /* 独立合成层：部分老安卓内核对浮层做命中测试时按文档坐标算，与弹窗同一处理 */
+    transform: translateZ(0);
+}
+
+.upsel-panel.up {
+    bottom: calc(100% + 6px);
+}
+
+.upsel-panel.down {
+    top: calc(100% + 6px);
+}
+
+.upsel-item {
+    padding: 12px 14px;
+    font-size: 16px;
+    color: #333;
+    border-bottom: 1px solid #f2f2f2;
+}
+
+.upsel-item:last-child {
+    border-bottom: none;
+}
+
+.upsel-item.active {
+    color: #007aff;
+    font-weight: 600;
+    background: #f5f9ff;
+}
+
+.upsel-item:active {
+    background: #f0f0f0;
+}
+
 /* 主操作按钮（红） */
 .ban-btn {
     height: 44px;

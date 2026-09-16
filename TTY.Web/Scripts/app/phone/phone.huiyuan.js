@@ -6,7 +6,7 @@
    口径说明：总盈亏/今日盈亏 = 实际游戏输赢（user_daily_winloss 累计/当日，赢正输负）——
      只有真正玩过游戏产生结算的会员才有记录，没玩的会员盈亏为 0，不按充值/退币差额计算。
    支持手机端"我的代理-我的会员-查看"跳转：
-     ?agency=xxx  默认显示该代理直属会员，可切换查看其管理范围内的全部会员
+     ?agency=xxx  默认显示该代理整条线（含非直属会员，与其管理范围一致），可切换只看直属会员
    ============================================================ */
 (function (window, $, M) {
     'use strict';
@@ -16,7 +16,10 @@
     var totalCount = 0;
     var sort = 'profit-desc';
     var agencyFilter = '';
-    var includeDescendants = false;
+    // 从"我的代理-我的会员-查看"进来时默认看该代理整条线（含非直属会员）——
+    // 代理的权限范围本来就是整条代理线（admin.ManageScope=2），只看直属会漏掉下级代理的会员。
+    // 需要收窄时点"仅看直属"。
+    var includeDescendants = true;
 
     /* 统计卡单项：退币类(asNegative)以负数展示；盈亏类(colorBySign)按正负着色 */
     function setStat(sel, value, colorBySign, asNegative) {
@@ -89,21 +92,30 @@
     }
 
     function initPage() {
-        // 从"我的代理-我的会员-查看"跳转过来：按代理过滤直属会员
+        // 从"我的代理-我的会员-查看"跳转过来：按代理过滤其管理范围内的会员
         try {
             var q = new URLSearchParams(window.location.search);
             agencyFilter = $.trim(q.get('agency') || '');
         } catch (e) {
             agencyFilter = '';
         }
+        // 范围为整线还是直属，由按钮文案体现；默认整线（非直属会员可见）
+        function syncScopeUi() {
+            $('#agencyFilterScope').text(includeDescendants ? '（全部会员）' : '（直属会员）');
+            $('#agencyFilterClear').text(includeDescendants ? '仅看直属' : '查看全部');
+        }
+        // 没有代理过滤（从抽屉"会员盈亏"直接进入）时不显示范围切换条
+        includeDescendants = !agencyFilter ? false : includeDescendants;
         if (agencyFilter) {
             $('#agencyFilterName').text(agencyFilter);
             $('#agencyFilterBar').addClass('show');
+            // 默认整线：包含该代理下面所有层级代理的会员
+            includeDescendants = true;
         }
+        syncScopeUi();
         $('#agencyFilterClear').on('click', function () {
             includeDescendants = !includeDescendants;
-            $('#agencyFilterScope').text(includeDescendants ? '（全部会员）' : '（直属会员）');
-            $('#agencyFilterClear').text(includeDescendants ? '仅看直属' : '查看全部');
+            syncScopeUi();
             loadStats();
             load(1, false);
         });

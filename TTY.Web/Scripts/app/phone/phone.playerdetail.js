@@ -36,7 +36,8 @@
                 return '控牌（' + M.cardControlParams(r.GameId, r.LimitCoins) + '，1次/5把）';
             }
             var isRelease = (mode == 5);
-            var progress = isRelease ? Number(r.GrantedCoins || 0) : -Number(r.ConsumedCoins || 0);
+            // 进度原样展示（与电脑端一致）：ConsumedCoins 是净口径、可能回退为负，不能取反
+            var progress = isRelease ? Number(r.GrantedCoins || 0) : Number(r.ConsumedCoins || 0);
             var name = mode == 4 ? '吃分' : '放水';
             return name + '（目标 ' + M.esc(r.TargetCoins) +
                 ' 已' + (isRelease ? '放' : '吃') + '分 ' + M.gold(progress) + '）';

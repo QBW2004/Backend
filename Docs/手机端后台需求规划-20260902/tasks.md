@@ -203,6 +203,69 @@
 - 验证：Release 构建通过；`ViewContractTest` 41/41；用无后端桩页 + headless Chromium 跑 11 项断言（展开抽屉 → 从抽屉点进「我的代理」→ 点返回：抽屉与遮罩都收起、在线数据恰好重拉一次、刷新标记无残留、可重复），并做了反向对照——把 `M.closeDrawer()` 那行去掉后抽屉断言立刻 FAIL（`sidebar active`），证明用例能真抓到这个问题。
 - WebVer：随当前工作区版本（`Web.config` 1.0.40）一起发布，未单独升版本。
 
+## 18. 2026-09-13 本轮增量（控牌牌型口径：牌机去杂牌/大四梅，拉霸补全并按 2000 倍封顶）
+
+- 需求：①所有牌机去掉 0 倍杂牌选项；②大字、NBA、ATT、金皇冠去掉大四梅选项；③补全拉霸类型的控牌牌型（拉霸牌型=「名称(倍数)」的简化写法，不要复杂描述）；④赔率超过 2000 倍的选项一律去掉。
+- 现状核对：控牌下拉是**前后端各自硬编码**（数据库 `cardpayoutprofile` 只存每桌出现概率，不生成选项）。电脑端 `valSelDataPAIJI` 早已去掉杂牌(0)/五鬼(12)、大四梅(8) 只留火凤凰(14)，①②在电脑端已成立；手机端 `cardTypeDataForPaiji` 只过滤了"大字板+五鬼"，仍会出现「杂牌(0倍)」和所有游戏的「大四梅」。手机端拉霸三套列表还是 8 月底的旧口径：水浒传/明星97 只有 0-8 符号值（最高 30/80 倍），水果拉霸带"面板X ·"前缀且未按倍率排序。
+- 落地（`phone.core.js`）：牌机过滤与电脑端对齐（`t.ht == 0 || t.ht == 12` 跳过、大四梅仅 `action == 14`）；水浒传换结果类 code 400-407/410-417/420-427/430-432/44x/450/451（共 34 项）、明星97 换 300-350 全量（30 项）、水果拉霸补 24 面板位（去前缀、按倍率升序）。旧控牌值仍要能回显：新增 `SHZ_LEGACY`（0-7=中间行五连符号）/`MX97_LEGACY`（0-8=单线三连符号），`M.cardTypeName` 对隐藏牌型（杂牌0/大四梅8/五鬼12）按该游戏倍率表回退，与电脑端 `labaTypeName` 同口径。
+- 「超过 2000 倍去掉」的口径：拉霸全屏类倍率按**全屏奖+线奖叠加后的总赔率**显示（沿用 09-03 的 bd478e6 口径）。水浒传因此只到全屏·林冲 1840 倍，440(14000)/441(11500)/442(4600)/443(2300) 不下发；明星97 最高 660 倍、水果拉霸最高 120 倍，均未触顶。
+- 文案简化：`纯万能线·3连(按忠义堂50倍)` → `纯万能线·3连(50倍)`；电脑端「在线用户」页此前残留的 `全屏·斧(50+180倍)`/`全屏·枪(100+360倍)` 统一为叠加后的 `230倍`/`460倍`（与玩家管理页一致）；水果拉霸去掉"面板X ·"前缀。
+- 顺带清理：删除电脑端两个视图里的 `valSelDataPAIJI2/3` 死代码（含「杂牌(0倍)」「大四梅(65倍)」字面量，无调用点）。
+- 测试：新增 `ViewContractTest.CardControlOptionsHideZeroPairAndJackpotsOverTwoThousand`（三处牌机过滤、`id: 440..443` 不得出现、拉霸 code 齐备、旧文案不得回归）；反向对照——把手机端过滤行临时改回旧条件后该用例立刻 FAIL，证明能抓回退。
+- 验证：Release 构建通过；`ViewContractTest` 42/42；全量 84 项 60 通过、24 失败（失败仍为测试工程未注册 `MySql.Data.MySqlClient` 的既有环境问题）。
+- 部署：**WebVer 1.0.42 已上线**（2026-09-13，`C:\Backend`，备份 `C:\Backend_backup_20260913_223905`）。线上 `Web.config`/`phone.core.js`/`UserInfo/Index.cshtml`/`UserInfo/OnlineUsers.cshtml`/`bin/YYT.Web.dll`/`bin/YYT.BLL.dll` 六个文件的 MD5 与仓库源码/构建产物逐字节一致；CDN `?v=1.0.42` 取到的 `phone.core.js` MD5 一致且含 `SHZ_LEGACY` 与新列表，旧文案「水浒传龙标」「面板X ·」已无；服务器本机 80/8080/8081 与 `https://abc.12.sqrdwj.top`、`https://x.52.dyj.wang` 登录页均 200（公网直连 8080 仍按设计被防火墙丢弃）；未登录调用 `ApplyTotalControl` 返回既有登录超时 JSON（无 500）；**`aspnet_compiler` 在站点副本上全站预编译无错误**（两个改动的桌面视图因此确认 Razor 语法可用，仅既存 CS0162 警告）。
+- 追加修复（2026-09-14）：水果拉霸 24 面板位里 **9/21 是两个不同的送灯位**（9→免费局 1~3 次、21→免费局 3~6 次，见 `ConfigEditor` 的 `GC_LABA_WHEEL_META` 与机台设定面板表），控牌下拉里原来都写成「送灯位(免费局)」，运营分不出是哪一个。已按机台设定的同名口径改成 **「送灯位·免费局 1~3 次」/「送灯位·免费局 3~6 次」**（`phone.core.js` + 两个桌面视图三处同步，仍在排序末尾按面板位 9→21 排列）。契约测试补两条断言并禁止旧文案回归。**WebVer 1.0.43 已上线**（2026-09-14，备份 `C:\Backend_backup_20260914_025434`）：线上 5 个文件（`phone.core.js`/`Index.cshtml`/`OnlineUsers.cshtml`/`Web.config`/`YYT.Web.dll`）MD5 与仓库一致，CDN `?v=1.0.43` 一致且含两个新文案，80/8080/8081 与两个域名登录页 200，`aspnet_compiler` 副本预编译 `exit=0`。
+
+## 19. 2026-09-14 本轮增量（手机端「控制牌型」改成默认向上展开）
+
+- 需求：控制牌型的下拉要默认向上展开；目前牌机是向下展开，长列表有可能点不到后面的牌型。
+- 原因：手机端控制页的「控制牌型」是原生 `<select>`，它和「应用控制」按钮一起在页面最底部 —— 原生弹出列表只会向下展开，牌机 11 项 / 水浒传 35 项的列表会被屏幕底部裁掉，后面的牌型点不到（桌面浏览器模拟器里同样如此，Chrome 的 `<select>` 弹出框不参与页面渲染，无法靠页面滚动补救）。
+- 落地（`phone.core.js` + `phone.css` + `phone.control.js`）：新增 `M.upwardSelect($sel)` —— 把 select 换成「按钮 + 页面内浮层」：**默认向上展开**，上方空间不足（<160px）且下方更宽敞才向下；浮层高度取 min(可用空间, 60vh) 且不超过视口，长列表内部滚动；当前项高亮并自动滚到可见处；点外部/再点字段收起。**原生 select 保留为取值与 `change` 事件的唯一来源**（只是 `display:none`），`.val()` / `.trigger('change')` 语义不变，所以 `fillSelect` 重建选项后调 `M.upwardSelectRefresh` 同步按钮文案（已内联进 `fillSelect`）。`phone.css` 补 `.upsel*` 样式（浮层带 `overflow-y:auto` + `translateZ(0)` 独立合成层，沿用弹窗命中测试的老安卓处理）。目前只用在「控制牌型」，「游戏类型/控制类型」仍是原生 select。
+- 测试：`ViewContractTest.MobileCardTypeSelectOpensUpwardAboveTheField`（组件/调用点/样式契约）；另用**无后端桩页 + headless Chromium（360×640）跑 22 项断言**：原生 select 已隐藏、按钮文案=首项、面板默认在字段上方且整体不出屏、项数=牌型数、点「同花顺(150倍)」后 select 取值=9 且 change 恰好 1 次、选完自动收起、点外部收起、再点收起、上方空间不足时向下、长列表（水果拉霸 25 项）高度封顶+内部滚动+当前项自动滚到可见。反向对照：去掉 `M.upwardSelect($('#ctrlCardValue'))` 调用后该用例立刻 FAIL。
+- 验证：Release 构建通过；`ViewContractTest` 43/43；全量 85 项 61 通过、24 失败（失败仍为测试工程未注册 `MySql.Data.MySqlClient` 的既有环境问题）。
+- 部署：**WebVer 1.0.44 已上线**（2026-09-14，备份 `C:\Backend_backup_20260914_031033`）：线上 `phone.core.js`/`phone.control.js`/`phone.css`/`Web.config`/`bin/YYT.Web.dll` 五个文件 MD5 与仓库一致；CDN `?v=1.0.44` 取到的三份资源 MD5 一致且含 `M.upwardSelect`；服务器本机 80/8080/8081 与 `abc.12.sqrdwj.top`、`x.52.dyj.wang` 登录页均 200。本轮未改 `.cshtml`，无需视图预编译。
+
+## 20. 2026-09-16 本轮增量（运营反馈 9 项问题的排查与修复）
+
+运营在线上（8.218.67.82，测试数据）反馈 9 条问题。逐条定位后：**8 条是后台代码缺陷**（已修复并上线 1.0.45），**1 条（中奖历史）根因在中心服未写表**，另有 1 条口径缺陷是排查过程中额外发现的（代理维度盈亏聚合恒为 0）。
+
+### 20.1 定位方式（可复现）
+
+- 用 `atmadmin/123456` 直连线上后台接口做只读复现（`/zh-CN/Login/Mobile` 取防伪令牌 → POST 查询接口），把线上库全量 `mysqldump` 导入本地 MySQL 5.7 容器（`mth-mysql`）后，在本地用探针程序 + IIS Express 复现并验证，避免改动线上数据。
+- 探针：`Tools/one-off/_efprobe/Probe.cs`（引用 `TTY.Web/bin` 的 YYT.BLL/Entity/EF6/MySql.Data，直连库调 `B_Users` 方法，打印异常与内部异常），配置 `Probe.exe.config` 的连接串指向本地库；线上对比用 `Docs` 里的接口探测脚本思路（POST + 防伪令牌）。
+
+### 20.2 逐条结论
+
+1. **充值退分有延迟** —— 手机端充值把 `LK`/`UL` 只写进 `gamecommandoutbox` 等定时重试下发（定时器 60s），充值金额最长要等一分钟才在游戏内生效。修复：`B_Recharge.LockUser/UnLockUser` 去掉手机端排队分支，**电脑端/手机端统一直发**，失败仍由发件箱 + 重试服务兜底（`MobileRequest` 仅保留为排查日志字段）。同类问题一并修掉：`B_UserControl.ApplyTotalControl/CloseTotalControl` 的 UC 指令也不再只排队（否则手机端点"应用控制"最长 60s 才生效），发送结果不改变接口语义（DB 已落库即成功，与电脑端一致）。
+2. **在线玩家点玩家提示"获取不到玩家"** —— 复现：`/Game/UserInfo/GetVisibleUserRows` 对**在线玩家**恒返回 `{"code":0,"content":"刷新失败！"}`。根因：`B_Users.FillCurrentPlayInfo` 的回表投影写成了 `Select(c => new M_UserOptLog{...})`，**EF6 禁止在 LINQ to Entities 里构造实体类型**，抛 `NotSupportedException` 被 catch 吞掉、只留 code 0（该写法由性能优化提交 b027bd8 引入）。修复：投影改匿名类型，实体对象留到内存里组装。
+3. **在线卡片 场次/机台号/押注/控制状态显示异常** —— ①押注：0.1 分炮鱼机内部单位是 0.1 分，电脑端 `isDecimalBetFish` 会 ÷10 保留 1 位小数，手机端直接 `M.gold` 显示，0.1 分显示成 1；新增 `M.betGold(v, gameId)`（与电脑端同一份游戏 ID 列表，契约测试卡同步）。②场次/机台号：服务端下发 0 基下标，电脑端一律 +1（`N号桌`），手机端显示 0，改为 +1。③控制状态：手机端把 `ConsumedCoins` 取反显示，`已吃分 2608` 变成 `已吃分 -2608`（控制页/玩家详情页同样取反），改为与电脑端一致的原样展示。
+4. **中奖历史没有数据** —— `gameprizerecord` 线上 **0 行**，旧服 9/11 迁移导出里也没有任何该表 INSERT：**中心服从未写入过这张表**（接口/页面口径正确，`Docs/手机端中奖历史数据契约-20260901.md` 要求的写入方是游戏中心服）。属服务端待办，后台侧无改动。
+5. **玩家盈亏数据异常** —— ①在线卡片的总输赢优先取游戏服 QA 的 `TotalWinLoss`（本局/本次在线口径，线上实测同一时刻为 -136610），与离线卡片、电脑端、会员盈亏的"实际游戏输赢"（同时刻 -6638）对不上；改为统一取 `Profit`。②离线列表的总输赢被 `UserInfoController.GetOfflineUsers` 用"充值-退币差额"覆盖（aa1122 显示 +21474，实际游戏输赢是 -12085）；`GetOfflineUsersList` 改走 `gameWinLossProfit=true`（SUM `user_daily_winloss`）并删除控制器里的覆盖。
+6. **会员盈亏详情统计错乱** —— ①总充/总退把"总台给代理充值"也算成会员的：`rechargerecords` 里代理充值的 `GameID` 是代理账号（admin 表），若该账号名下恰好也有玩家行（线上 a1314 就是），按 `users.ID` 关联时会被计入；四段充退 SQL 全部加 `AND NOT EXISTS (SELECT 1 FROM admin ra WHERE ra.ID = <流水>.GameID)`。②排查中发现更严重的口径错误：代理维度盈亏聚合 `INNER JOIN UserRelations r ON r.UserID = w.UserID` —— `userrelations.UserID` 是数字平台 ID，与 `user_daily_winloss.UserID`（账号串）比较**恒不相等**，非超管看到的"今日总输赢/会员盈亏统计卡"永远是 0；改为直接 `INNER JOIN Users u ON u.ID = w.UserID`（`GetTodayTotalWinLoss`、`GetMemberWinLossStats` 两处）。
+7. **用户管理里用户一会在一会不在** —— 与第 2 条同根因：只要列表里有在线玩家，`FillCurrentPlayInfo` 就抛异常，桌面端"用户管理/在线玩家"整页变空；没人在线时又正常，表现为"一会有一会没有"。第 2 条修复后一并解决（线上实测：修复前 `/Game/UserInfo/GetUsers` 返回 `total:0`，修复后返回 3 行）。
+8. **代理看不到非直属会员** —— 手机端"我的代理 → 我的会员 → 查看"进来的会员页默认 `IncludeDescendants=0`（只出直属会员），与代理权限范围（`admin.ManageScope=2` 整条线）不一致；改为**默认整线**（范围为"全部会员"，按钮变成"仅看直属"可收窄），直接进会员盈亏页（无 `?agency=`）行为不变。
+9. **总台/代理看不到代理密码** —— `AgencyInfoController.GetAgencies` 在权限判定之前无条件 `item.PWD = null`，后面的按权限脱敏形同虚设，**任何人都看不到代理密码**（含总台）。删除该行，只保留"超管可见 / 非超管需要 `IsViewAgentPwd=1` 且目标在管理范围内"的判定。
+
+### 20.3 测试与验证
+
+- 新增 7 个契约用例：`PlayerLookupQueryNeverProjectsEntityTypes`、`MobilePlayerCardShowsRealWinLossDecimalBetAndOneBasedPosition`、`MobileControlProgressIsNotNegated`、`MobileListsUseGameWinLossProfitAndExcludeAgentRecharges`、`MobileRechargeSendsLockUnlockImmediately`、`AgentPasswordVisibilityFollowsPermission`、`MobileMemberPageDefaultsToWholeLine`；同时更新旧的 `MobileFastPathAndEffectiveRechargeContractsRemainWired`（原来断言手机端必须走队列，现改为断言直发）。
+- `Tools\dev\build.bat` Release 通过；`vstest` 全量 92 项 **68 通过 / 24 失败**（失败仍为测试工程未注册 `MySql.Data.MySqlClient` 的既有环境问题，与本次改动无关）。
+- 本地端到端（IIS Express + 本地库）：在线卡片渲染断言 —— `神龙宝藏 1场 机台号1 押注0.1 今日输赢+6268 总输赢+6268`、`火凤凰 2场 机台号4 押注30 控制状态 吃分中... 目标 5555 已吃分 2608`（截图存本轮会话）；`M.betGold` 在 node 上单独跑 10 组断言（鱼机 `1→0.1`、非鱼机不变、真金版两位小数）；会员页 `?agency=b1314` 默认"全部会员"且列表含二级下级会员 p_c1314；代理 b1314 视角"今日总输赢"由 0 变 333。
+- 线上（1.0.45）只读复验：`GetVisibleUserRows` 对在线玩家返回 code 1；`GetUsers` 由 0 行变 3 行；`GetAgencies` 总台可见 `PWD`；`GetMemberWinLossStats` 总充由 2,255,198 降到 245,197（排除 200 万代理充值）。
+
+### 20.4 部署
+
+- **WebVer 1.0.45 已上线**（2026-09-16 23:52，备份 `C:\Backend_backup_20260916_235236`，`deploy.ps1 -SourcePath TTY.Web_1.0.45.zip -Yes -Port 8080`）。
+- 8 个文件 MD5 与仓库/构建产物逐字节一致：`Web.config`、`bin/YYT.Web.dll`、`bin/YYT.BLL.dll`、`Scripts/app/phone/phone.core.js`、`phone.players.js`、`phone.control.js`、`phone.playerdetail.js`、`phone.huiyuan.js`。
+- CDN `abc.12.sqrdwj.top` 上 `?v=1.0.45` 的三份脚本（core/players/huiyuan）MD5 与本地一致且含 `M.betGold`/`全部会员`；80/8081/`abc.12.sqrdwj.top` 后台登录页 200，`x.52.dyj.wang/Login/Mobile` 302（既有行为），公网直连 8080 仍按设计被防火墙丢弃。
+- 本轮未改 `.cshtml`，无需视图预编译。
+- **已入库**：本轮（§20，1.0.45）连同 §18–§19 积压的 1.0.42–1.0.43–1.0.44 三轮改动，共四轮于 2026-09-17 一次性提交到 `Add-Phone-Support`；同日复核线上 `C:\Backend` 与仓库工作区 **1528 个文件 MD5 全一致**（线上仅多一个迁移留档 `Web.config.orig_before_migration`），CDN `?v=1.0.45` 取到的资源即这一份，故未重发部署。
+
+### 20.5 未闭合
+
+- **中奖历史仍会是空的**，直到中心服实现 `gameprizerecord` 写入（第 4 条，服务端仓库）。
+- 线上 `Web.config` 的 `UploadPath=D:\Uploads` 在新机（只有 C 盘）不存在，上传类功能会失败；仓库与线上一致，需确认改到 `C:\Backend\Upload` 后再改（本轮未动，避免与运营确认前改变现状）。
+
 ## 10. 2026-09-02 本地验证记录
 
 - `Tools\dev\build.bat` Release 构建成功，产物为 `TTY.Web\bin\YYT.Web.dll`。

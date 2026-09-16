@@ -29,6 +29,8 @@
         if (prev != null && $sel.find('option[value="' + $.escapeSelector(String(prev)) + '"]').length) {
             $sel.val(prev);
         }
+        // 换成向上展开浮层的字段（控制牌型）在选项重建后同步按钮文案
+        if (M.upwardSelectRefresh) M.upwardSelectRefresh($sel);
     }
 
     function modeName(mode) {
@@ -132,7 +134,7 @@
         }
         var items = rows.map(function (r) {
             return ctrlParamText(r.ControlMode, r.GameId, r.LimitCoins, r.TargetCoins, r.CardNumber, r.CardTotal) +
-                (Number(r.ControlMode) == 6 ? '' : ' 已' + (Number(r.ControlMode) == 5 ? '放' : '吃') + '分 ' + M.gold(Number(r.ControlMode) == 5 ? r.GrantedCoins : -r.ConsumedCoins));
+                (Number(r.ControlMode) == 6 ? '' : ' 已' + (Number(r.ControlMode) == 5 ? '放' : '吃') + '分 ' + M.gold(Number(r.ControlMode) == 5 ? r.GrantedCoins : r.ConsumedCoins));
         });
         $el.attr('class', 'info-value ctrl-status-list')
             .html(items.map(function (t) { return '<span class="ctrl-status-item">' + M.esc(t) + '</span>'; }).join(''));
@@ -292,6 +294,10 @@
         });
         $('#applyBtn').on('click', applyControl);
         $('#closeCtrlBtn').on('click', closeControl);
+
+        // 控制牌型在页面底部：原生 select 的列表只能向下弹、会被屏幕裁掉，换成默认向上展开的浮层
+        //（牌机 11 项、水浒传 35 项都要能点到；原生 select 仍作为取值来源）
+        M.upwardSelect($('#ctrlCardValue'));
 
         bindMode();
     }

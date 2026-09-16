@@ -82,6 +82,34 @@
         return M.num(n);
     };
 
+    /**
+     * 0.1 分炮鱼机（内部单位 = 0.1 分，需 ÷10 后显示 1 位小数）。
+     * 与电脑端 Areas/Game/Views/UserInfo/OnlineUsers.cshtml 的 isDecimalBetFish
+     * 与 GameConfigController.IsDecimalBetFish 同口径，改一处必须同步另一处。
+     */
+    M.DECIMAL_BET_FISH_IDS = [3, 6, 13, 19, 21, 22, 32, 33, 42, 49, 51];
+
+    M.isDecimalBetFish = function (gameId) {
+        return M.DECIMAL_BET_FISH_IDS.indexOf(Number(gameId)) >= 0;
+    };
+
+    /**
+     * 押注（当前压分）显示：0.1 分炮鱼机 ÷10 保留 1 位小数（0.1 分不能显示成 1），
+     * 其余游戏按 M.gold 口径（真金版折算两位小数）。
+     */
+    M.betGold = function (v, gameId) {
+        if (v === null || v === undefined) return '--';
+        var n = Number(v);
+        if (isNaN(n)) return '0';
+        if (!M.isDecimalBetFish(gameId)) return M.gold(n);
+        n = n / 10;
+        if (MConfig.isRMB && MConfig.exchangeRate > 0) {
+            var val = n / MConfig.exchangeRate;
+            return (val < 0 ? '-' : '') + Math.abs(val).toFixed(2);
+        }
+        return (n < 0 ? '-' : '') + Math.abs(n).toFixed(1);
+    };
+
     M.pad2 = function (n) {
         return (n < 10 ? '0' : '') + n;
     };
@@ -440,48 +468,91 @@
         return 'phenix';
     }
 
-    // 牌机型(5-14)牌型下拉：0-12 + 99 关闭控制（大字板五鬼已下线）
+    // 牌机型(5-14)牌型下拉：杂牌(0)/五鬼(12)不提供，大四梅(8)仅火凤凰(14)保留；99=关闭控制。
+    // 与电脑端 UserInfo/Index.cshtml 的 valSelDataPAIJI 同一口径（大字板五鬼已下线，与服务端 AlgProb 封死一致）
     function cardTypeDataForPaiji(action) {
         var mags = TC_MAG_TAB[tcMagKey(action)];
         var arr = [];
         for (var i = 0; i < TC_CARD_TYPES.length; i++) {
             var t = TC_CARD_TYPES[i];
-            if (action == 5 && t.ht == 12) continue;
+            if (t.ht == 0 || t.ht == 12) continue;
+            if (t.ht == 8 && action != 14) continue;
             arr.push({ id: t.ht, text: t.name + '(' + mags[t.ht] + '倍)' });
         }
         arr.push({ id: 99, text: '关闭控制' });
         return arr;
     }
 
+    // 水浒传控牌=按结果类 code 强制（与电脑端 valSelDataShz / 服务端 ShzRtp::ComboToClass 一致）：
+    // 400-407三连 410-417四连 420-427五连 430-432纯万能线 440-448全屏 450/451全屏混合；10=关闭。
+    // 全屏类倍率=全屏奖+线奖（9 线）叠加后的总赔率；超过 2000 倍的一律不下发（440 14000 / 441 11500 /
+    // 442 4600 / 443 2300），历史控牌值回退见 SHZ_LEGACY。
     function cardTypeDataForShz() {
         return [
-            { id: 0, text: '双斧(2倍)' }, { id: 1, text: '双枪(3倍)' }, { id: 2, text: '大刀(4倍)' },
-            { id: 3, text: '鲁智深(5倍)' }, { id: 4, text: '林冲(8倍)' }, { id: 5, text: '宋江(10倍)' },
-            { id: 6, text: '替天行道旗(15倍)' }, { id: 7, text: '忠义堂(20倍)' },
-            { id: 8, text: '水浒传龙标·散标(30倍/免费触发)' }, { id: 10, text: '关闭控制' }
-        ];
-    }
-
-    function cardTypeDataForMx97() {
-        return [
-            { id: 0, text: '樱桃(10倍)' }, { id: 1, text: '橘子(10倍)' }, { id: 2, text: '蓝莓(14倍)' },
-            { id: 3, text: '铃铛(18倍)' }, { id: 4, text: '西瓜(20倍)' }, { id: 5, text: '黄BAR(30倍)' },
-            { id: 6, text: '红BAR(50倍)' }, { id: 7, text: '蓝BAR(70倍)' }, { id: 8, text: '七(80倍+)' },
+            { id: 407, text: '三连·斧(2倍)' }, { id: 406, text: '三连·枪(3倍)' },
+            { id: 405, text: '三连·刀(5倍)' }, { id: 417, text: '四连·斧(5倍)' },
+            { id: 404, text: '三连·鲁智深(7倍)' }, { id: 403, text: '三连·林冲(10倍)' },
+            { id: 416, text: '四连·枪(10倍)' }, { id: 402, text: '三连·宋江(15倍)' },
+            { id: 415, text: '四连·刀(15倍)' }, { id: 451, text: '全屏·纯武器混合(15倍)' },
+            { id: 401, text: '三连·替天行道(20倍)' }, { id: 414, text: '四连·鲁智深(20倍)' },
+            { id: 427, text: '五连·斧(20倍)' }, { id: 413, text: '四连·林冲(30倍)' },
+            { id: 412, text: '四连·宋江(40倍)' }, { id: 426, text: '五连·枪(40倍)' },
+            { id: 400, text: '三连·忠义堂(50倍)' }, { id: 430, text: '纯万能线·3连(50倍)' },
+            { id: 450, text: '全屏·纯人物混合(50倍)' }, { id: 425, text: '五连·刀(60倍)' },
+            { id: 411, text: '四连·替天行道(80倍)' }, { id: 424, text: '五连·鲁智深(100倍)' },
+            { id: 423, text: '五连·林冲(160倍)' }, { id: 410, text: '四连·忠义堂(200倍)' },
+            { id: 422, text: '五连·宋江(200倍)' }, { id: 431, text: '纯万能线·4连(200倍)' },
+            { id: 448, text: '全屏·斧(230倍)' }, { id: 421, text: '五连·替天行道(400倍)' },
+            { id: 447, text: '全屏·枪(460倍)' }, { id: 446, text: '全屏·刀(690倍)' },
+            { id: 420, text: '五连·忠义堂(1000倍)' }, { id: 432, text: '纯万能线·5连(1000倍)' },
+            { id: 445, text: '全屏·鲁智深(1150倍)' }, { id: 444, text: '全屏·林冲(1840倍)' },
             { id: 10, text: '关闭控制' }
         ];
     }
 
-    // 水果拉霸控牌=强制大转盘指向面板位（与机台设定的 24 面板位一致）；id=30+面板位，10=关闭
+    // 明星97控牌=按结果类 code 强制（与电脑端 valSelDataMx97 / 服务端 Mx97Rtp::ComboToClass 一致）：
+    // 300-308纯色三连 310 ANY BAR 311/312樱桃2/1连 322-329 Scatter 330全水果 340-347全屏 350全屏BAR；10=关闭。
+    // 全屏类倍率同样是全屏奖+线奖（8 线）叠加后的总赔率，最高 660 倍，未触及 2000 倍上限。
+    function cardTypeDataForMx97() {
+        return [
+            { id: 300, text: '纯色三连·樱桃(10倍)' }, { id: 301, text: '纯色三连·橘子(10倍)' },
+            { id: 302, text: '纯色三连·蓝莓(14倍)' }, { id: 303, text: '纯色三连·铃铛(18倍)' },
+            { id: 304, text: '纯色三连·西瓜(20倍)' }, { id: 305, text: '纯色三连·黄BAR(30倍)' },
+            { id: 306, text: '纯色三连·红BAR(50倍)' }, { id: 307, text: '纯色三连·蓝BAR(70倍)' },
+            { id: 308, text: '纯色三连·七(80倍+)' }, { id: 310, text: 'ANY BAR(10倍)' },
+            { id: 311, text: '樱桃2连(5倍)' }, { id: 312, text: '樱桃1连(2倍)' },
+            { id: 322, text: 'Scatter 全盘2个七(2倍)' }, { id: 323, text: 'Scatter 全盘3个七(5倍)' },
+            { id: 324, text: 'Scatter 全盘4个七(20倍)' }, { id: 325, text: 'Scatter 全盘5个七(40倍)' },
+            { id: 326, text: 'Scatter 全盘6个七(60倍)' }, { id: 327, text: 'Scatter 全盘7个七(80倍)' },
+            { id: 328, text: 'Scatter 全盘8个七(100倍)' }, { id: 329, text: 'Scatter 全盘9个七(200倍)' },
+            { id: 330, text: '全水果(15倍)' }, { id: 340, text: '全屏·樱桃(160倍)' },
+            { id: 341, text: '全屏·橘子(120倍)' }, { id: 342, text: '全屏·蓝莓(152倍)' },
+            { id: 343, text: '全屏·铃铛(184倍)' }, { id: 344, text: '全屏·西瓜(220倍)' },
+            { id: 345, text: '全屏·黄BAR(300倍)' }, { id: 346, text: '全屏·红BAR(490倍)' },
+            { id: 347, text: '全屏·蓝BAR(660倍)' }, { id: 350, text: '全屏 ANY BAR(40倍)' },
+            { id: 10, text: '关闭控制' }
+        ];
+    }
+
+    // 水果拉霸控牌=强制大转盘指向面板位（与机台设定的 24 面板位一致）；id=30+面板位，10=关闭；
+    // 按倍率小到大排（送灯位无倍率=免费局排最后，同倍率按面板位），文本不带"面板X"前缀，与电脑端一致。
+    // 面板位 9/21 两个送灯位要分开写清免费局次数（9→1~3 次、21→3~6 次，与机台设定面板表同名）
     function cardTypeDataForFruit() {
         var panels = [
             '橘子·大(10倍)', '铃铛·大(20倍)', 'BAR·小(50倍)', 'BAR·大(120倍)', '苹果(5倍)', '苹果·小(3倍)',
-            '柠檬·大(15倍)', '西瓜·大(20倍)', '西瓜·小(3倍)', '送灯位(免费局)', '苹果(5倍)', '橘子·小(3倍)',
+            '柠檬·大(15倍)', '西瓜·大(20倍)', '西瓜·小(3倍)', '送灯位·免费局 1~3 次', '苹果(5倍)', '橘子·小(3倍)',
             '橘子·大(10倍)', '铃铛·大(20倍)', '双7·小(3倍)', '双7·大(40倍)', '苹果(5倍)', '柠檬·小(3倍)',
-            '柠檬·大(15倍)', '星星·小(3倍)', '星星·大(30倍)', '送灯位(免费局)', '苹果(5倍)', '铃铛·小(3倍)'
+            '柠檬·大(15倍)', '星星·小(3倍)', '星星·大(30倍)', '送灯位·免费局 3~6 次', '苹果(5倍)', '铃铛·小(3倍)'
         ];
         var arr = [];
-        for (var i = 0; i < panels.length; i++)
-            arr.push({ id: 30 + i, text: '面板' + i + ' · ' + panels[i] });
+        for (var i = 0; i < panels.length; i++) {
+            var m = /\((\d+)倍\)/.exec(panels[i]);
+            arr.push({ id: 30 + i, text: panels[i], mag: m ? parseInt(m[1], 10) : 9999 });
+        }
+        arr.sort(function (a, b) {
+            if (a.mag != b.mag) return a.mag - b.mag;
+            return (a.id - 30) - (b.id - 30);
+        });
         arr.push({ id: 10, text: '关闭控制' });
         return arr;
     }
@@ -508,11 +579,32 @@
         return cardTypeDataForPaiji(action);
     };
 
+    // 历史控牌值名称回退（下拉已不再提供，但已下发的旧控牌记录仍要能回显，与电脑端 labaTypeName 同口径）：
+    // 水浒传 0-7 = 中间行五连符号；明星97 0-8 = 单线三连符号
+    var SHZ_LEGACY = [
+        '五连·忠义堂(1000倍)', '五连·替天行道(400倍)', '五连·宋江(200倍)', '五连·林冲(160倍)',
+        '五连·鲁智深(100倍)', '五连·刀(60倍)', '五连·枪(40倍)', '五连·斧(20倍)'
+    ];
+    var MX97_LEGACY = [
+        '三连·樱桃(10倍)', '三连·橘子(10倍)', '三连·蓝莓(14倍)', '三连·铃铛(18倍)', '三连·西瓜(20倍)',
+        '三连·黄BAR(30倍)', '三连·红BAR(50倍)', '三连·蓝BAR(70倍)', '三连·七(80倍+)'
+    ];
+
     /** 牌型值 -> 名称，如 大字版控制(5) + 9 -> “同花顺(150倍)” */
     M.cardTypeName = function (action, value) {
+        action = parseInt(action, 10);
+        value = parseInt(value, 10);
         var rows = M.cardTypeData(action);
         for (var i = 0; i < rows.length; i++)
             if (rows[i].id == value) return rows[i].text;
+        // 牌机：已隐藏牌型（杂牌0 / 大四梅8 / 五鬼12）不在下拉里，但历史控牌值按该游戏倍率表回显
+        if (action >= 5 && action <= 14) {
+            var mags = TC_MAG_TAB[tcMagKey(action)];
+            for (var j = 0; j < TC_CARD_TYPES.length; j++)
+                if (TC_CARD_TYPES[j].ht == value) return TC_CARD_TYPES[j].name + '(' + mags[value] + '倍)';
+        }
+        if (action == 15 && value >= 0 && value <= 7) return SHZ_LEGACY[value];
+        if (action == 16 && value >= 0 && value <= 8) return MX97_LEGACY[value];
         return '牌型' + value;
     };
 
@@ -534,6 +626,105 @@
      */
     M.cardControlText = function (gameId, cardValue) {
         return M.cardControlParams(gameId, cardValue) + '（1次/5把）';
+    };
+
+    /* ---------------- 默认向上展开的下拉（控制页「控制牌型」等页面底部的字段） ---------------- */
+
+    var upselSeq = 0;
+
+    /** select 当前选中项的显示文本（没选中时取第一项） */
+    function upselText($sel) {
+        var v = $sel.val();
+        var text = '';
+        $sel.find('option').each(function () {
+            if (this.value == v) text = $.trim($(this).text());
+        });
+        if (!text) text = $.trim($sel.find('option').first().text() || '');
+        return text;
+    }
+
+    /**
+     * 把原生 select 换成“默认向上展开”的下拉：点字段时在它上方弹出列表，上方放不下才向下。
+     * 场景：控制页「控制牌型」在页面底部，原生 select 的弹出列表只能向下，列表会被屏幕底部裁掉，
+     * 后面的牌型点不到（老安卓内核/桌面模拟器都一样）。
+     * 原生 select 仍留在 DOM 里作为取值与 change 事件的唯一来源（.val() / .trigger('change') 照旧），
+     * 只是视觉上隐藏，由按钮 + 页面内浮层代替；选项重建后调 M.upwardSelectRefresh 同步文案。
+     */
+    M.upwardSelect = function ($sel) {
+        if (!$sel || !$sel.length || $sel.data('upselReady')) return;
+        $sel.data('upselReady', true);
+
+        var uid = 'upsel' + (++upselSeq);
+        var $wrap = $('<div class="upsel"></div>');
+        $sel.addClass('upsel-native').after($wrap);
+        $sel.appendTo($wrap);
+        var $btn = $('<button type="button" class="input-field upsel-trigger" aria-haspopup="listbox"></button>').appendTo($wrap);
+
+        function closePanel() {
+            $wrap.removeClass('open').children('.upsel-panel').remove();
+            $(document).off('click.' + uid);
+        }
+
+        function refresh() {
+            $btn.text(upselText($sel));
+        }
+
+        function openPanel() {
+            closePanel();
+            var html = '';
+            $sel.find('option').each(function () {
+                html += '<div class="upsel-item' + (this.value == $sel.val() ? ' active' : '') +
+                    '" data-v="' + M.esc(this.value) + '">' + M.esc($(this).text()) + '</div>';
+            });
+            var $panel = $('<div class="upsel-panel" role="listbox"></div>').html(html).appendTo($wrap);
+
+            // 默认向上；上方空间不足且下方更宽敞才向下。高度按可用空间收缩，超长列表（水果拉霸 24 项）内部滚动。
+            var rect = $btn[0].getBoundingClientRect();
+            var roomAbove = rect.top - 8;
+            var roomBelow = window.innerHeight - rect.bottom - 8;
+            var up = !(roomAbove < 160 && roomBelow > roomAbove);
+            var room = Math.min(up ? roomAbove : roomBelow, window.innerHeight - 16);
+            $panel.addClass(up ? 'up' : 'down')
+                .css('max-height', Math.max(132, Math.min(room, window.innerHeight * 0.6)) + 'px');
+
+            $wrap.addClass('open');
+            var $active = $panel.children('.upsel-item.active');
+            if ($active.length) $panel.scrollTop(Math.max(0, $active.position().top - $panel.height() / 2 + $active.outerHeight() / 2));
+
+            $(document).on('click.' + uid, function (e) {
+                if (!$(e.target).closest($wrap).length) closePanel();
+            });
+        }
+
+        $btn.on('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            if ($wrap.hasClass('open')) closePanel();
+            else openPanel();
+        });
+        $wrap.on('click', '.upsel-item', function (e) {
+            e.stopPropagation();
+            var v = $(this).attr('data-v');
+            closePanel();
+            if ($sel.val() != v) $sel.val(v).trigger('change');
+            refresh();
+        });
+        // 其他地方（脚本 setValue、表单重置）改了值也要跟上按钮文案
+        $sel.on('change', refresh);
+
+        $wrap.data('upselRefresh', refresh);
+        refresh();
+    };
+
+    /** 选项被重建（fillSelect）后同步按钮文案；浮层开着就直接收起 */
+    M.upwardSelectRefresh = function ($sel) {
+        var $wrap = $sel && $sel.closest ? $sel.closest('.upsel') : null;
+        if (!$wrap || !$wrap.length) return;
+        if ($wrap.hasClass('open')) {
+            $wrap.removeClass('open').children('.upsel-panel').remove();
+        }
+        var fn = $wrap.data('upselRefresh');
+        if (typeof fn === 'function') fn();
     };
 
     /* ---------------- 代理详细信息弹窗 ---------------- */
