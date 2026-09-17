@@ -660,7 +660,7 @@ namespace YYT.BLL.EF
                         break;
                     default:
                         // 默认按最后登录时间倒序（无记录的排最后）
-                        orderClause = " ORDER BY l.LastLoginTime DESC, r.UserID DESC";
+                        orderClause = " ORDER BY COALESCE(lr.LastLoginTime, l.LastLoginTime) DESC, r.UserID DESC";
                         break;
                 }
 
@@ -670,7 +670,9 @@ namespace YYT.BLL.EF
                 mPage.SetTotalCount(total);
 
                 // 今日输赢一并 LEFT JOIN 取出（user_daily_winloss 主键 (UserID, DAY)，一次命中）；
-                // 最后登录时间取 UserOptLog 最新操作时间（UserID 存玩家账号）。
+                // 最后登录时间优先取 userloginrecord（玩家上线瞬间由库内触发器写入的真实登录时间，
+                // 见 Docs/sql/玩家登录时间-20260918.sql），没有登录记录的账号回退 UserOptLog 最新操作时间
+                // （UserID 存玩家账号；那是"最后进桌台/充退"时间，不等于登录时间，只作兜底）。
                 // ⚠️ whereSql 必须以 WHERE 落地：直接拼在 LEFT JOIN ON 后会把过滤/权限条件
                 // 变成 ON 条件，LEFT JOIN 不命中也保留左表行，等于过滤与代理权限全部失效。
                 int todayArg = args.Count;
@@ -690,7 +692,7 @@ namespace YYT.BLL.EF
                 string pageSql = "SELECT c.ID, c.NAME, c.AGENCY, c.FROZEN, c.COINS, " + buyColumn + " AS COINS_BUY, " + backColumn + " AS COINS_BACK," +
                     " r.UserID, c.INHALL, c.GAME_SCORE, c.GRADE, c.SAFE_COINS" + profitColumn +
                     ", IFNULL(w.WINLOSS,0) AS TodayWinLoss, IFNULL(d.TodayBuy,0) AS TodayBuy," +
-                    " IFNULL(d.TodayBack,0) AS TodayBack, l.LastLoginTime" +
+                    " IFNULL(d.TodayBack,0) AS TodayBack, COALESCE(lr.LastLoginTime, l.LastLoginTime) AS LastLoginTime" +
                     " FROM users c INNER JOIN userrelations r ON r.ID = c.ID" +
                     " LEFT JOIN user_daily_winloss w ON w.UserID = c.ID AND w.DAY = {" + todayArg + "}" + profitJoin +
                     " LEFT JOIN (SELECT GameID," +
@@ -704,6 +706,7 @@ namespace YYT.BLL.EF
                     " AND NOT EXISTS (SELECT 1 FROM admin ra WHERE ra.ID = rechargerecords.GameID)" +
                     " GROUP BY GameID) d ON d.GameID = c.ID" +
                     " LEFT JOIN (SELECT UserID, MAX(REC_TIME) AS LastLoginTime FROM `UserOptLog` GROUP BY UserID) l ON l.UserID = c.ID" +
+                    " LEFT JOIN (SELECT UserID, MAX(LoginTime) AS LastLoginTime FROM userloginrecord GROUP BY UserID) lr ON lr.UserID = c.ID" +
                     " WHERE 1=1" + whereSql + orderClause +
                     " LIMIT " + (pageSize * (pageIndex - 1)) + ", " + pageSize;
                 List<M_Users_DTO> users = ef.Database.SqlQuery<M_Users_DTO>(pageSql, args.ToArray()).ToList();
@@ -927,7 +930,9 @@ namespace YYT.BLL.EF
         /// <summary>
         /// 手机端：玩家详情页数据（注册时间/最后登录/今日与累计充退/邀请码）。
         /// 今日充值=当日充值类流水（20/22/已处理30）合计，今日退分=当日退分类流水（21/23/已处理31）合计，
-        /// 与充退记录页 TypeFlag 口径一致。邀请码优先取注册时使用的邀请码（invite_codes.UsedBy），
+        /// 与充退记录页 TypeFlag 口径一致。今日盈亏/总盈亏=实际游戏输赢（user_daily_winloss 当日/全量合计，
+        /// 赢正输负，没玩过即为 0），与在线卡片、离线卡片、会员盈亏、电脑端"总盈亏"同口径。
+        /// 邀请码优先取注册时使用的邀请码（invite_codes.UsedBy），
         /// 无则回退所属代理的邀请码。密码按权限单独回填（与 GetUsersList 的 canPwd 口径一致）。
         /// </summary>
         public M_UserPhoneDetail GetUserPhoneDetail(string userId, M_LoginUser loginUser)
@@ -942,7 +947,10 @@ namespace YYT.BLL.EF
                     "SELECT c.ID, c.NAME, c.AGENCY, c.FROZEN, c.GAME_SCORE, c.COINS, c.COINS_BUY, c.COINS_BACK," +
                     " c.CreateTime," +
                     " IFNULL(w.WINLOSS,0) AS TodayWinLoss," +
-                    " l.LastLoginTime," +
+                    " (SELECT IFNULL(SUM(w2.WINLOSS),0) FROM user_daily_winloss w2 WHERE w2.UserID = c.ID) AS TotalWinLoss," +
+                    // 最后登入：优先 userloginrecord 的真实登录时间（玩家上线瞬间由库内触发器写入，
+                    // 见 Docs/sql/玩家登录时间-20260918.sql），无记录的账号回退 UserOptLog 最新操作时间。
+                    " COALESCE(lr.LastLoginTime, l.LastLoginTime) AS LastLoginTime," +
                     " (SELECT IFNULL(SUM(CASE WHEN r.RechargeType IN (20,22) OR (r.RechargeType = 30 AND r.Processed = 1) THEN r.Coin ELSE 0 END),0)" +
                     "   FROM rechargerecords r WHERE r.GameID = c.ID AND r.CreateTime >= CURDATE() AND r.Processed = 1) AS TodayBuy," +
                     " (SELECT IFNULL(SUM(CASE WHEN r.RechargeType IN (21,23) OR (r.RechargeType = 31 AND r.Processed = 1) THEN r.Coin ELSE 0 END),0)" +
@@ -951,6 +959,7 @@ namespace YYT.BLL.EF
                     " FROM users c" +
                     " LEFT JOIN user_daily_winloss w ON w.UserID = c.ID AND w.DAY = {0}" +
                     " LEFT JOIN (SELECT UserID, MAX(REC_TIME) AS LastLoginTime FROM `UserOptLog` GROUP BY UserID) l ON l.UserID = c.ID" +
+                    " LEFT JOIN (SELECT UserID, MAX(LoginTime) AS LastLoginTime FROM userloginrecord GROUP BY UserID) lr ON lr.UserID = c.ID" +
                     " WHERE c.ID = {1}";
                 M_UserPhoneDetail detail = ef.Database
                     .SqlQuery<M_UserPhoneDetail>(detailSql, DateTime.Today, target)

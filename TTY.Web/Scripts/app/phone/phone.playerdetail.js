@@ -73,8 +73,9 @@
         setSigned('#dTodayWinLoss', d.TodayWinLoss);
         setMoney('#dTotalBuy', d.COINS_BUY);
         setMoney('#dTotalBack', d.COINS_BACK);
-        // 总盈亏口径与列表页一致：总充值 - 总退分
-        setSigned('#dTotalWinLoss', Number(d.COINS_BUY || 0) - Number(d.COINS_BACK || 0));
+        // 总盈亏 = 实际游戏输赢（服务端 SUM user_daily_winloss），与在线/离线卡片、会员盈亏同口径；
+        // 不能用「总充值 - 总退分」代替：那是资金差额，没玩过游戏的玩家也会显示成盈亏
+        setSigned('#dTotalWinLoss', d.TotalWinLoss);
 
         renderCtrlStatus(d.Controls);
 

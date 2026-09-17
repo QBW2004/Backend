@@ -266,6 +266,180 @@
 - **中奖历史仍会是空的**，直到中心服实现 `gameprizerecord` 写入（第 4 条，服务端仓库）。
 - 线上 `Web.config` 的 `UploadPath=D:\Uploads` 在新机（只有 C 盘）不存在，上传类功能会失败；仓库与线上一致，需确认改到 `C:\Backend\Upload` 后再改（本轮未动，避免与运营确认前改变现状）。
 
+## 21. 2026-09-17 本轮增量（手机端充值页取不到代理账号的「剩余分数」）
+
+**现象**（运营截图，线上 1.0.45）：充值管理页「角色类型=下级代理」查询 a1314，**剩余币 1988699 正常、剩余分数恒为 `--`**；同一页面查玩家时两行都有值。
+
+**根因**：`phone.recharge.js` 的代理分支把分数硬编码成 `null`：
+
+```js
+return row ? { coins: Number(row.COINS || 0), score: null } : null;      // 代理：永远是 null
+$('#accountScore').text(info.score === null ? '--' : M.num(info.score));  // 于是永远显示 --
+```
+
+数据侧并不缺：`/Game/AgencyInfo/GetAgencies` 本来就在同一次查询里下发 `RemainingScore`（`AgencyInfoController` 用 `users.GAME_SCORE` 按 `AGENCY` 分组求和），前端没有取。
+
+**口径**（与既有页面一致，未新造概念）：代理的「剩余分数」= 该代理**直属玩家** `users.GAME_SCORE` 合计，即列表接口的 `RemainingScore`，与手机端「代理详细信息」弹窗的「剩余分」、`GetAgencyDetail` 同一口径（仅直属、不含更深层级的分）。玩家仍取 `users.GAME_SCORE`。
+
+**修复**：只改 `TTY.Web/Scripts/app/phone/phone.recharge.js`（2 行）——代理分支返回 `score: Number(row.RemainingScore || 0)`，渲染去掉只给代理走的 `--` 分支。**无服务端改动**（接口本来就返回该字段）。
+
+### 21.1 测试与验证
+
+- 新增契约用例 `MobileRechargeQueryFillsAgentScoreFromRemainingScore`：锁住「代理取 `RemainingScore`、玩家取 `GAME_SCORE`」，并断言不得再出现 `score: null` 与 `info.score === null`（否则代理又会退回 `--`）。
+- `Tools\dev\build.bat` Release 通过；全量 `vstest` **93 项 69 通过 / 24 失败**（失败仍是测试工程未注册 `MySql.Data.MySqlClient` 的既有环境问题，比 §20 多出的 1 项即本次新增用例）。
+- Node 桩件跑改动后的模块（`node --check` + 桩件捕获请求与渲染）：代理 a1314 → `剩余币 1988699 / 剩余分数 1`；代理名下无玩家 → `0`（不再 `--`）；玩家 a1401 → `1484 / 4`。
+
+### 21.2 部署与线上复验（WebVer 1.0.46）
+
+- 2026-09-17 19:11 部署（备份 `C:\Backend_backup_20260917_191101`，`deploy.ps1 -SourcePath TTY.Web_1.0.46.zip -Yes -Port 8080`），部署后 8080 探测 HTTP 200。
+- `C:\Backend\Scripts\app\phone\phone.recharge.js` 与仓库 **MD5 逐字节一致**（`1b88489fe318a12b23c17e9d5c9b9d0a`），`C:\Backend\Web.config` WebVer=1.0.46；CDN `abc.12.sqrdwj.top/Scripts/app/phone/phone.recharge.js?v=1.0.46` 取到的正是这一份（同 MD5，含 `RemainingScore` 赋值行）。
+- 线上页面 HTML 已引用 `phone.recharge.js?v=1.0.46`（`/Mobile/Home/Recharge?id=a1314&role=agent` → 200）。
+- 用总台只读会话复验接口（`atmadmin/123456`，`/zh-CN/Login/Mobile` 取防伪令牌后 POST）：`GetAgencies(ID=a1314)` → `COINS=1988699, RemainingScore=1`；`GetVisibleUserRows(["a1401"])` → `GAME_SCORE=4`。即运营再查 a1314，剩余分数会显示 **1**。
+- 本轮只改 1 个 JS + `Web.config`（版本号），未改 `.cshtml`，无需视图预编译；80/8081 探测 200。
+
+### 21.3 未闭合
+
+- **充退/查询期间游戏服栈被整体停止过一次（与本轮部署无关，备查）**：部署后 19:15–19:17 后台日志出现 `QA transport failure: 无法连接中心服管道（管道尚未连接）`（QA = 玩家列表的在线玩家查询）。查 daemon 日志 `C:\Server\ServerManager\x64\Release\MTH_Daemon.log`：**19:12:54 是「优雅停止」整个游戏服栈**（21 个子游戏 + CenterServer，`[INFO] 尝试优雅停止: …` → `[SUCC] CenterServer 已优雅退出。`），**19:19:29 才重新启动**（`启动成功: CenterServer [PID: 5928]`，随后 21 个子游戏），期间在线玩家会被踢下线、后台查在线玩家必然失败；19:27 复验 QA 指令已正常下发（日志 `指令内容：QA`），管道正常。`C:\Server\dumps` 无崩溃转储 → 是**主动停止**而非崩溃。本轮后台部署只回收了 IIS 应用池、未触碰 `C:\Server`。**看 19:15–19:19 的后台日志别误判成后台回归。**
+- **充值页代理分支取的是模糊匹配结果的 `rows[0]`**（`GetAgencies` 的 `ID` 是 `LIKE '%kw%'`，行序按代理树排列）：运营习惯输入完整账号，实测命中正确（本轮复验 `rows` 只有 a1314 一行），但输入片段时有显示到别的账号余额/分数的风险（玩家分支是精确匹配）。本轮未改，待运营确认是否要统一成精确匹配。
+- 本轮改动**已部署但未入库**（`Add-Phone-Support` 工作区：`phone.recharge.js`、`ViewContractTest.cs`、`Web.config`），需与后续轮次一起提交。
+
+## 22. 2026-09-17 本轮增量（手机端玩家详情页「总盈亏」口径错误）
+
+**现象**（运营截图，线上 1.0.46）：手机端「玩家详细信息」页（`/Mobile/Home/PlayerDetail?account=a1403`），账号 a1403 **今日充值 30000 / 今日退分 2000 / 今日盈亏 -4000**，但底部「总盈亏」显示 **+28000** —— 恰好等于「总充值 30000 - 总退分 2000」。运营口径：总盈亏只应统计玩家玩游戏产生的输赢，没玩过就是 0。
+
+**根因**：`phone.playerdetail.js` 前端自己拿充退累计现算盈亏：
+
+```js
+setSigned('#dTotalWinLoss', Number(d.COINS_BUY || 0) - Number(d.COINS_BACK || 0));   // 资金差额，不是游戏输赢
+```
+
+即 §20 第 5 条修「离线列表被控制器用充退差额覆盖」时漏掉的最后一处同类问题（在线卡片/离线卡片/会员盈亏/控制页统计卡当时都改成了 `Profit`，只有玩家详情页还是前端现算）。
+
+**修复口径**（与既有页面一致，未新造概念）：总盈亏 = 实际游戏输赢 = `SUM(user_daily_winloss.WINLOSS)`（赢正输负），即列表页的 `Profit`。改动四层，缺任一段前端都只会拿到 `undefined` 显示 0：
+
+| 层 | 文件 | 改动 |
+|---|---|---|
+| 实体 | `YYT.Entity/EF/M_Users.cs` | `M_UserPhoneDetail` 增加 `TotalWinLoss` |
+| 数据 | `YYT.BLL/EF/B_Users.cs` | `GetUserPhoneDetail` 的 SQL 增加 `(SELECT IFNULL(SUM(w2.WINLOSS),0) FROM user_daily_winloss w2 WHERE w2.UserID = c.ID) AS TotalWinLoss` |
+| 接口 | `TTY.Web/Areas/Game/Controllers/UserInfoController.cs` | `GetUserDetail` 下发 `detail.TotalWinLoss` |
+| 前端 | `TTY.Web/Scripts/app/phone/phone.playerdetail.js` | `setSigned('#dTotalWinLoss', d.TotalWinLoss)`，删掉充退差额算法 |
+
+「今日充值/今日退分/总充值/总退分」四行仍是资金口径（本就是这个含义），未动。
+
+### 22.1 测试与验证
+
+- 新增契约用例 `MobilePlayerDetailTotalWinLossIsGameWinLoss`：锁住「前端不得再出现 `Number(d.COINS_BUY || 0) - Number(d.COINS_BACK || 0)`」「必须 `setSigned('#dTotalWinLoss', d.TotalWinLoss)`」，并同时断言 SQL 子查询、`M_UserPhoneDetail.TotalWinLoss` 字段、控制器下发三段都在（防止只改一头）。
+- `Tools\dev\build.bat` Release 通过；`vstest` 过滤 `ViewContractTest` **52 项全通过**。全量失败项仍是测试工程未注册 `MySql.Data.MySqlClient` 的既有环境问题。
+- Node 桩件跑改动后的模块（假 `window.MApp` + jQuery 桩，捕获 `#dTotalWinLoss` 的写入）：充 30002/退 2000 + 游戏输赢 -4000 → `-4000`（红色，不再是 +28002）；游戏赢 63035 → `+63035`（绿色）；无 `user_daily_winloss` 记录 → `0`；字段缺失 → `0`。
+- **线上只读 SQL 验证**（`Tools/one-off/_prod_run_sql.ps1`，按 C# 实际拼接的整条详情 SQL 跑）：`a1403` → `BuyMinusBack=28002` vs `TotalWinLoss=63035`（带 `Days=1`，与今日一致）；`aa1122` → `64807` vs `-55698`。语法在 MySQL 5.7 上通过、值符合口径。
+- 部署后**线上接口实调复验**（总台只读会话，`Tools/one-off/_probe_online_detail.ps1`）：`GetUserDetail(a1403)` → `code=1, TotalWinLoss=71450`（同刻 `COINS_BUY-COINS_BACK`=28002）；`a1401` → `2813`；`aa1122` → `-55698`。即页面上的总盈亏从此与在线/离线卡片、会员盈亏、电脑端同一口径。
+
+### 22.2 部署与线上复验（WebVer 1.0.47）
+
+- 2026-09-17 22:04 部署（备份 `C:\Backend_backup_20260917_220422`，`deploy.ps1 -SourcePath TTY.Web_1.0.47.zip -Yes -Port 8080`），部署后 8080 探测 HTTP 200。
+- 5 个关键文件 MD5 与仓库/构建产物逐字节一致：`Scripts/app/phone/phone.playerdetail.js` = `52b26ecb738122958a088feea17c31b8`、`bin/YYT.BLL.dll` = `10a40ca690e96b8edf42ed2747b5a132`、`bin/YYT.Web.dll` = `53a3d730e0631b30df2c0482f8296797`、`bin/YYT.Entity.dll` = `b6674385e01e38da108b6242568931b2`、`Web.config`（WebVer=1.0.47） = `f83bdfe72acf90bf4b56db9c21a357be`。
+- CDN `abc.12.sqrdwj.top/Scripts/app/phone/phone.playerdetail.js?v=1.0.47` 取回内容 MD5 与本地一致（含 `setSigned('#dTotalWinLoss', d.TotalWinLoss);`）；线上页面 HTML 已引用 `phone.playerdetail.js?v=1.0.47`（`/Mobile/Home/PlayerDetail?account=a1403` → 200）。
+- 本轮未改 `.cshtml`，无需视图预编译；部署后 `C:\Backend\Logs\yyt_20260917.log` 为空（无异常）。
+
+### 22.3 未闭合
+
+- 本轮（1.0.47）与上一轮（1.0.46）**均已部署但未入库**，需一起提交（改动文件见 AGENTS.md「分支现状」）。
+- 运营截图里的「总盈亏」数值随测试玩家继续游戏已变化（a1403 今日由 -4000 变为赢），复验时请以同一时刻的接口返回为准，不要拿旧截图对数字。
+
+## 23. 2026-09-18 本轮增量（「最后登录」在玩家在线时不更新）
+
+**现象**（运营截图，线上 1.0.46/1.0.47）：玩家列表的在线卡片上，「最后登录」不是本次登录时间；运营原话「玩家在线的时候这里是没有登入时间的显示，只有在离线玩家的时候，才会显示出来登录时间」。
+
+**根因**（读游戏服源码 + 线上库实况确认）：后台的「最后登录」一直取 `useroptlog` 的 `MAX(REC_TIME)`，而这张表**根本没有登录事件**——游戏服 `SaveUserLog` 只在四处写它（`ServerCenterNew/ServerCenterRun.cpp`）：
+
+| OPT | 写入时机 | 调用点（游戏服源码） |
+|---|---|---|
+| 0-6 | 充值/兑换/赠送/扣币（type 即 OPT） | `ServerCenterRun.cpp:1449`、`:1574` |
+| 8 | 进入桌台（坐下） | `ServerCenterRun.cpp:7825` |
+| 7 | 离开桌台（带本局盈亏结算） | `ServerCenterRun.cpp:4784` |
+| 99 | 回退玩家临时分数 | `ServerCenterRun.cpp:10312`、`:10328` |
+
+线上 7 天窗口内 `useroptlog` 的 OPT 取值只有 0/1/3/7/8（`OPT=3` 是"减金币"的兑换类型，不是退出）。于是：
+
+- **在线玩家**显示的是「最后一次进桌台的时间」——人一直坐在桌上就不动（实测 a1403 09-17 19:48:36 进桌、20:51 换桌，卡片就一直显示上一次进桌的时刻），看着就是"登录时间不更新"；
+- 只在大厅挂机（没进桌台）的玩家显示上一局的旧时间，7 天内无记录的账号显示前端兜底 `2000-01-01`；
+- **离线玩家**的最后一条记录恰好是"离开桌台"，时间看着像"最近一次上线"，所以运营得出"只有离线玩家才显示登录时间"。
+
+**修法**（不改游戏服：不重启中心服/子游戏，不踢在线玩家）：玩家上线时游戏服一定会写 `users.INHALL`（HallLogin → `SetUserOnlineImmediate`，20s 脏检查兜底），因此在库内挂触发器把 0→1 的瞬间记进新表，后台优先读它：
+
+| 层 | 文件 | 改动 |
+|---|---|---|
+| SQL | `Docs/sql/玩家登录时间-20260918.sql`（副本 `docker/mysql/init/41_玩家登录时间.sql`） | 建 `userloginrecord(ID, LoginTime)` + `users` 表 `AFTER UPDATE` 触发器：`INHALL` 0→1 时插一条；体内带 `CONTINUE HANDLER FOR SQLEXCEPTION`，**触发器内任何异常都被吞掉，不可能影响游戏服对 users 的写入** |
+| 接口 | `TTY.Web/Areas/Game/Controllers/UserInfoController.cs` | `FillPlayerLastLogin`：先查 `userloginrecord`（在线卡片/在线列表），查不到的账号再查 `useroptlog` 兜底；登录记录查询单独 try/catch，补丁表缺失也只是回退旧口径 |
+| 数据 | `YYT.BLL/EF/B_Users.cs` | 离线列表 `QueryUsersPaged` 与玩家详情 `GetUserPhoneDetail`：`COALESCE(lr.LastLoginTime, l.LastLoginTime)`，排序也用同一表达式 |
+| 前端 | 无改动 | `phone.players.js` 仍只渲染服务端下发值（在线/离线同一条渲染路径） |
+
+SQL 补丁 2026-09-18 02:49 已在线上 mth 库执行（幂等）；WebVer 1.0.48 于 03:01 部署。
+
+### 23.1 测试与验证
+
+- 新增契约用例 `PlayerLastLoginComesFromLoginRecordWithUserOptLogFallback`：锁住「补丁表 + 触发器 0→1 条件 + CONTINUE HANDLER 兜底」「控制器两段查询」「离线列表 COALESCE 与排序同表达式」「详情页同口径」，防止以后有人只改一头。
+- `msbuild TTY.Web/YYT.Web.csproj` + `UnitTestProj` Release 构建通过；`vstest --TestCaseFilter:FullyQualifiedName~ViewContractTest` **54 项全通过**（含本轮新增 1 项）。
+- **触发器线上实弹验证**（`Tools/one-off/_probe_login_trigger.sql`，事务 + ROLLBACK，零残留）：对真实 `users.test02` 模拟游戏服语句 `UPDATE users SET INHALL=b'1'` →
+  - INHALL `0→1` 记 1 条登录（`2026-09-18 02:50:41`）；
+  - `1→1` 不重复（同一秒内重复上线被 `uk_userloginrecord_user_time` 去重，MAX 仍是同一时刻）；
+  - 期间 `ROLLBACK` 后 `userloginrecord` 0 行、`INHALL` 回到 0，确认不留痕。
+- **接口线上实弹验证**（`Tools/one-off/_probe_lastlogin_api.ps1`，只读会话 atmadmin）：
+  - 无登录记录时（现状）：`GetOfflineUsers`/`GetUserDetail` 回落 `useroptlog` 口径（a1403 = `09-17 16:44:28` UTC = 本地 00:44:28），列表顺序不变；
+  - 临时插入 `a1403 = 2026-09-18 03:05:00` 后：离线列表与 `GetUserDetail` 都变成 `09-17 19:05:00` UTC（= 本地 03:05），**且 a1403 被排到列表第一位**（排序也走同一表达式）；随后 DELETE 还原，接口回到 `16:44:28`，表 0 行。
+  - `GetOnlineUsers` 复验 `{"code":1,...,"datas":[]}`（此刻无人在线），未因本轮改动异常。
+- 部署核对：`Web.config`/`bin/YYT.Web.dll`/`bin/YYT.BLL.dll`/`bin/YYT.Remote.dll`/`Scripts/app/phone/phone.players.js` 五个文件线上与构建产物 MD5 逐字节一致（`d3dd2d21…`/`a8b34ebb…`/`77b71057…`/`7c5f6d8b…`/`0457aa02…`）。
+
+### 23.2 部署（WebVer 1.0.48）
+
+- 2026-09-18 03:01 部署（备份 `C:\Backend_backup_20260918_030146`，`deploy.ps1 -SourcePath TTY.Web_1.0.48.zip -Yes -Port 8080`），部署后 8080 探测 HTTP 200。
+- **1.0.48 同时包含本轮之前的未入库改动**（在线玩家接口快速失败/管道读超时/线程池兜底）——这批改动此前只差一次部署，本轮一并上线；完整根因、证据与验证见第 24 节。
+- 本轮未改 `.cshtml`，无需视图预编译。
+
+### 23.3 未闭合
+
+- **触发器的"真实登录"尚未观察到**：补丁 02:49 上线后到 03:09 线上无玩家登录（`userloginrecord` 0 行）。验证方法（下次有人登录后执行）：`SELECT * FROM userloginrecord ORDER BY LID DESC LIMIT 5;`，或直接看手机端玩家列表该玩家的「最后登录」= 本次登录时间。若长时间无记录：`SHOW TRIGGERS` 确认 `trg_users_login_record` 在，再看游戏服日志有无 `UpdateUserInHall !@@@@ ERR`。
+- **数据库迁移/导出必须带 `--triggers`**（线上 09-11 迁移用的 `mysqldump --routines --triggers` 已满足）。触发器丢失时后台只是回退 `useroptlog` 旧口径，不会报错；重新执行本补丁即可恢复。
+- 历史上传目录 `UploadPath=D:\Uploads`（新机无 D 盘）问题仍未动，见「已知未闭合项」10。
+- 本轮（1.0.46/1.0.47/1.0.48）**均已部署未入库**，需一起提交。
+
+## 24. 2026-09-18 本轮增量（玩家列表「刷新在线玩家」卡很久）
+
+**现象**（运营反馈）：手机端玩家列表点刷新（或每次进页面）「在线玩家」要转圈很久才出来，游戏服一停整个后台都跟着卡。
+
+**排查（全部是线上只读证据，未改任何线上的东西）**
+
+1. **IIS 访问日志按 `time-taken` 统计**（`C:\inetpub\logs\LogFiles\W3SVC1\u_ex260917.log`，09-17 全天，取 `GetOnlineUsers` 527 次）：中位数 9ms、**p90 516ms、最大 11053ms**，103 次 ≥480ms。正常时它就是毫秒级——所以"卡"是少数请求被整块拖住。
+2. **停顿是 ~500ms 的整数倍**（约 496/505/1013/2021/9986/11053ms），且**同一秒内完全无关的静态文件一起卡**：`19:15–19:17`（游戏服停机窗口）`GetOnlineUsers` 9986/9996/10011/11053ms，而 `/Scripts/jquery.min.map` 10086/10052/**10548**ms、`/Mobile/Home/Recharge` 9048ms 都在同一批秒里。不同 CDN 边缘节点、不同接口、连静态文件同时中招 → **不是某个接口慢，是整站请求被排住**（500ms 台阶正是 CLR 线程池每 ~500ms 补一个线程的爬坡节奏）。
+3. **反证**：在服务器本机 `localhost` 连打 550 次（静态 CSS + 视图页）**零停顿**（p50 = min = 23ms，max 44ms），而 CDN 链路 7.7% 的请求 ≥480ms → 与业务代码、数据库无关，就是"请求线程被占住"。
+4. **根因（真凶）**：`YYT.Remote.SConnect` 的**读操作根本没有超时**。`NamedPipeClientStream`（`PipeOptions.Asynchronous`）`CanTimeout` 返回 **false**，`ReadTimeout/WriteTimeout` 赋值会直接抛 `InvalidOperationException: 此流上不支持超时`——老代码把它包在 `if (PipeClient.CanTimeout)` 里，是**死代码**。于是游戏服不回话时 `sr.ReadLine()` 一直挂着，线上那 9–11 秒是中心服进程停机、管道断开才返回的；如果中心服是"活着但卡住"，请求会永久挂住。QA（查询在线玩家）又是玩家列表**首屏/刷新/bfcache 返回**三处都会调的接口，几个请求同时挂住就把线程池占满，连静态文件一起排队。
+5. **失败态丢失**：QA 失败时 `QueryAllOnlinePlayers` 返回空列表，控制器照常回 `code=1`，端上把"游戏服没响应"和"没人在线"显示成同一句「暂无在线玩家」。
+
+**修复（1.0.48）**
+
+- `YYT.Remote/SConnect.cs`：新增 `ReadLineWithTimeout`（异步读 + `Task.Wait(上限)`，超时即关管道并返回 null，调用方按"数据发送失败"处理）；`SendNotTranlation`/`SendReadString`/`SendTcCommand` 三处裸 `ReadLine()` 全部改走它；连接上限仍用真实生效的 `Connect(timeout)`。默认档 5000/10000（**以前读是无上限**），新增 `SConnect(connectTimeoutMs, readTimeoutMs)` 供短超时指令使用。
+- `YYT.BLL/Services/GameServer/PipeGameServerClient.cs`：QA 用 `SConnect(1000, 3000)`；`QueryAllOnlinePlayers` 失败返回 **null**。
+- `TTY.Web/Areas/Game/Controllers/UserInfoController.cs`：`GetOnlineUsers` 拿到 null 时回 `code=0 + "游戏服暂无响应，请稍后重试！"`（电脑端在线用户页 `code!=1` 会弹文案；手机端保留旧列表）。L/UC 等指令失败仍由 `gamecommandoutbox` + 重试服务兜底，语义不变。
+- `TTY.Web/Global.asax.cs`：`ThreadPool.SetMinThreads(200,200)` 兜底，单条慢指令不再连带整站。
+- `TTY.Web/Scripts/app/phone/phone.players.js`：请求超时 12s→**6s**；失败（网络失败或 `code!=1`）时**保留上一次的列表与人数**、提示"游戏服暂无响应，列表为上次结果"，只有从没加载成功过才显示提示占位，不再清空成「暂无在线玩家」。
+
+### 24.1 测试与验证
+
+- 契约用例 `OnlinePlayersQueryFailsFastWhenGameServerIsUnreachable`：锁住短超时常量、`ReadLineWithTimeout` 的存在（并断言不得再出现 `PipeClient.ReadTimeout =`）、控制器文案、前端 6s 超时与"失败不清空列表"。
+- 全量 `vstest`：**96 项 72 通过 / 24 失败**（失败仍是测试工程未注册 `MySql.Data.MySqlClient` 的既有环境问题，与 §21/§23 基线一致）。
+- **假管道服务器实测**（`Tools/one-off/_pipetimeout/`：`Program.cs` 起一个 `mynamedpipe`，接受连接后既不读也不回话，模拟"游戏服活着但卡住"）：
+  - `probe 1000 3000` → **3076ms** 返回 `数据发送失败！等待中心服回复超时（3000ms）。`；`probe 5000 10000` → 10075ms（默认档也封顶了；改前这两档都是**无限等待**）。
+  - `client` → `QueryAllOnlinePlayers` 第 1 次 **3100ms 返回 null**，第 2 次 **0ms**（走 30s 熔断冷却）。
+  - 顺带查明：假服务器若用 0 缓冲建管道，小写入也会阻塞——那是模拟不真实（真中心服是 `WEB_COMMU_SIZE`=4096 缓冲），已改成同样缓冲。
+- Node `--check` 通过；`.cshtml` 未改，无需视图预编译。
+- 线上 1.0.48 部署后复验：`GetOnlineUsers` 仍 `code=1`（管道正常时不受影响，14–35ms）、`GetOfflineUsers`/`GetUserDetail` 正常、页面已引用 `phone.players.js?v=1.0.48`、CDN `abc.12.sqrdwj.top` 取到的脚本含 `timeoutMs: 6000`；线上 6 个关键文件与构建产物 MD5 逐字节一致（`7c5f6d8b…` / `d3dd2d21…` / `a8b34ebb…` / `77b71057…` / `b6674385…` / `0457aa02…`）。
+
+### 24.2 未闭合
+
+- **CDN 链路上 ~500ms 的偶发停顿仍在**（占 CDN 请求约 7.7%，静态文件同样中招；`nginx` 链路 4750 次请求几乎为 0）——本次只掐断了"游戏服不可达 → 整站卡 10 秒"这条放大链路，CDN 回源连接/TCP 层面的抖动没动（与业务代码无关，需 CDN 侧或网络层排查）。
+- 管道**写**没有上限（`WriteTimeout` 同样不支持）：命令都很小（≤4KB，小于中心服 4096 入缓冲）所以未出问题；将来若有超大命令要自己包一层限时写。
+- 其它走管道的接口（踢人/充退/控制/TC 热更）现在读上限是默认 10 秒（改前**无上限**）；若运营觉得仍偏长，可再按指令分级调小。
+
 ## 10. 2026-09-02 本地验证记录
 
 - `Tools\dev\build.bat` Release 构建成功，产物为 `TTY.Web\bin\YYT.Web.dll`。

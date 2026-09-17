@@ -39,7 +39,8 @@ $patches = @(
     "Docs/sql/动态桌台字段扩展.sql",
     "Docs/sql/fix_scoreswitch_decimal.sql",
     "Docs/sql/房间桌台配置表坐席扩列.sql",
-    "Docs/sql/性能索引.sql"
+    "Docs/sql/性能索引.sql",
+    "Docs/sql/玩家登录时间-20260918.sql"
 )
 
 Write-Host "========================================" -ForegroundColor Cyan

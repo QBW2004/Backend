@@ -31,6 +31,17 @@ namespace YYT.Web
             //配置log4net
             log4net.Config.XmlConfigurator.Configure(new System.IO.FileInfo(Server.MapPath("~/Config/log4net.config")));
 
+            // 与游戏中心服的命名管道指令（SConnect）是同步阻塞调用：游戏服不可达时单条指令会把
+            // 请求线程占住数秒（默认连接 5s、读写 10s；在线玩家查询 QA 已单独收到 1s/3s）。
+            // CLR 线程池默认每 ~500ms 才补一个新线程，几条指令同时阻塞就会让整个站点——包括
+            // 静态文件——排成秒级台阶（2026-09-17 线上 IIS 日志：游戏服停机窗口内
+            // /Scripts/jquery.min.map 与 /Game/UserInfo/GetOnlineUsers 同时卡 10 秒）。
+            // 抬高最小线程数，让新请求立即拿到线程，单条慢指令不再连带整站。
+            int minWorker, minIo;
+            ThreadPool.GetMinThreads(out minWorker, out minIo);
+            if (minWorker < 200 || minIo < 200)
+                ThreadPool.SetMinThreads(Math.Max(minWorker, 200), Math.Max(minIo, 200));
+
             // 定时任务
             int interval = ConfigHelper.GetInt("Timer") * 1000;
             if (interval > 0)

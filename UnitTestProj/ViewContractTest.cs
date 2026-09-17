@@ -1263,5 +1263,144 @@ namespace UnitTestProj
             StringAssert.Contains(huiyuan, "includeDescendants ? '（全部会员）' : '（直属会员）'");
             StringAssert.Contains(huiyuan, "includeDescendants ? '仅看直属' : '查看全部'");
         }
+
+        [TestMethod]
+        public void MobileRechargeQueryFillsAgentScoreFromRemainingScore()
+        {
+            string rechargeScript = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.recharge.js");
+            string agencyController = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\AgencyInfoController.cs");
+
+            // 充值页查询代理时「剩余分数」曾是硬编码 null，页面上永远显示 "--"（运营反馈）。
+            // 口径：代理的剩余分 = 直属玩家 GAME_SCORE 合计（列表接口的 RemainingScore，
+            // 与代理详细信息弹窗一致）；玩家仍取 users.GAME_SCORE。
+            StringAssert.Contains(rechargeScript, "score: Number(row.RemainingScore || 0)");
+            StringAssert.Contains(rechargeScript, "score: Number(row.GAME_SCORE || 0)");
+            Assert.IsFalse(rechargeScript.Contains("score: null"),
+                "代理分支不得再返回 null，否则剩余分数又变回 '--'");
+            Assert.IsFalse(rechargeScript.Contains("info.score === null"),
+                "渲染不得再保留只给代理走的 '--' 分支");
+            StringAssert.Contains(agencyController, "item.RemainingScore = scoreMap.TryGetValue(item.ID, out score) ? score : 0;");
+        }
+
+        [TestMethod]
+        public void MobilePlayerDetailTotalWinLossIsGameWinLoss()
+        {
+            string detailScript = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.playerdetail.js");
+            string usersBll = ReadRepoFile(@"YYT.BLL\EF\B_Users.cs");
+            string controller = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\UserInfoController.cs");
+
+            // 玩家详情页的"总盈亏"曾在前端按「总充值 - 总退分」算，运营看到 a1403 充 30000 退 2000
+            // 就显示 +28000，而实际游戏输赢是 -4000。口径统一为 SUM(user_daily_winloss)：
+            // 只有玩过游戏才有盈亏，没玩过就是 0，与在线/离线卡片、会员盈亏、电脑端"总盈亏"一致。
+            Assert.IsFalse(detailScript.Contains("Number(d.COINS_BUY || 0) - Number(d.COINS_BACK || 0)"),
+                "总盈亏不得再用充退差额，必须取服务端下发的 TotalWinLoss");
+            StringAssert.Contains(detailScript, "setSigned('#dTotalWinLoss', d.TotalWinLoss);");
+
+            // 服务端要真的算出来：GetUserPhoneDetail 的 SQL 补 SUM(user_daily_winloss) 子查询，
+            // 实体带字段，控制器下发（缺任一段前端都只会拿到 undefined、显示 0）
+            StringAssert.Contains(usersBll, "SELECT IFNULL(SUM(w2.WINLOSS),0) FROM user_daily_winloss w2 WHERE w2.UserID = c.ID) AS TotalWinLoss");
+            string entityFile = ReadRepoFile(@"YYT.Entity\EF\M_Users.cs");
+            int detailClass = entityFile.IndexOf("class M_UserPhoneDetail", StringComparison.Ordinal);
+            Assert.IsTrue(detailClass > 0 && entityFile.Substring(detailClass).Contains("public long? TotalWinLoss { get; set; }"),
+                "M_UserPhoneDetail 需要 TotalWinLoss 字段，否则 SQL 列别名映射不上");
+            StringAssert.Contains(controller, "detail.TotalWinLoss,");
+        }
+
+        [TestMethod]
+        public void OnlinePlayersQueryFailsFastWhenGameServerIsUnreachable()
+        {
+            string client = ReadRepoFile(@"YYT.BLL\Services\GameServer\PipeGameServerClient.cs");
+            string pipe = ReadRepoFile(@"YYT.Remote\SConnect.cs");
+            string playersScript = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.players.js");
+            string global = ReadRepoFile(@"TTY.Web\Global.asax.cs");
+
+            // QA（查询在线玩家）是玩家列表页首屏/刷新按钮的关键路径：游戏服不可达时若沿用
+            // 默认的 5s 连接 + 10s 读超时，请求线程会被占 10 秒（线上 IIS 日志实测 GetOnlineUsers
+            // 卡 9-11 秒，同一秒内静态文件也卡 10 秒 = 线程池饥饿），必须快速失败。
+            StringAssert.Contains(client, "private const int OnlineQueryConnectTimeoutMs = 1000;");
+            StringAssert.Contains(client, "private const int OnlineQueryReadTimeoutMs = 3000;");
+            StringAssert.Contains(client, "SendRawWithTimeouts(EScMsgType.QA, OnlineQueryConnectTimeoutMs, OnlineQueryReadTimeoutMs)");
+
+            // 超时要真的生效：管道流不支持 ReadTimeout（CanTimeout=false，赋值直接抛异常，
+            // 老代码的 if(CanTimeout) 分支是死代码 → 读没有任何超时，游戏服卡住时线程永久挂住），
+            // 所以上限用"异步读 + 限时等待"实现。
+            StringAssert.Contains(pipe, "public SConnect(int connectTimeoutMs, int readTimeoutMs)");
+            StringAssert.Contains(pipe, "this.Connect(this.connectTimeoutMs);");
+            StringAssert.Contains(pipe, "private string ReadLineWithTimeout(StreamReader sr)");
+            StringAssert.Contains(pipe, "if (!readTask.Wait(this.readTimeoutMs))");
+            Assert.IsFalse(pipe.Contains("this.PipeClient.ReadTimeout = "),
+                "NamedPipeClientStream 不支持 ReadTimeout，赋值会抛异常；上限必须走 ReadLineWithTimeout");
+            // 其它指令保持历史默认值，避免扩大影响面
+            StringAssert.Contains(pipe, "public SConnect() : this(5000, 10000)");
+
+            // 失败态要能透到端上：管道失败返回 null（不是空列表），控制器回 code=0，
+            // 否则"游戏服没响应"和"确实没人在线"在前端长得一模一样（都显示"暂无在线玩家"）
+            StringAssert.Contains(client, "QA transport failure: \" + raw);\r\n                    return null;");
+            string controller = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\UserInfoController.cs");
+            StringAssert.Contains(controller, "msg.content = \"游戏服暂无响应，请稍后重试！\";");
+            Assert.IsFalse(controller.Contains("if (players == null)\r\n                    players = new List<OnlinePlayerInfo>();"),
+                "游戏服不可达不能再被吞成空列表");
+
+            // 前端：超时与后端同口径收短；请求失败（网络失败或 code!=1）时保留上次列表，
+            // 不能清空成"暂无在线玩家"
+            StringAssert.Contains(playersScript, "{ timeoutMs: 6000 }");
+            Assert.IsFalse(playersScript.Contains("{ timeoutMs: 12000 }"),
+                "在线玩家请求超时应与后端短超时对齐，不再等 12 秒");
+            StringAssert.Contains(playersScript, "if (res && Number(res.code) === 1 && res.datas) {");
+            StringAssert.Contains(playersScript, "游戏服暂无响应，请稍后重试");
+            StringAssert.Contains(playersScript, "M.toast('游戏服暂无响应，列表为上次结果', 'warning', 2000);");
+            int failBranch = playersScript.IndexOf("if (!ok) {", StringComparison.Ordinal);
+            Assert.IsTrue(failBranch > 0
+                && playersScript.Substring(failBranch, 900).Contains("return;")
+                && !playersScript.Substring(failBranch, 900).Contains("onlinePlayers = [];"),
+                "失败分支不得把 onlinePlayers 清空，否则列表会显示成没有在线玩家");
+
+            // 兜底：抬高线程池最小线程数，个别阻塞指令不再连带整个站点排队
+            StringAssert.Contains(global, "ThreadPool.SetMinThreads(Math.Max(minWorker, 200), Math.Max(minIo, 200));");
+        }
+
+        [TestMethod]
+        public void PlayerLastLoginComesFromLoginRecordWithUserOptLogFallback()
+        {
+            string sqlPatch = ReadRepoFile(@"Docs\sql\玩家登录时间-20260918.sql");
+            string controller = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\UserInfoController.cs");
+            string usersBll = ReadRepoFile(@"YYT.BLL\EF\B_Users.cs");
+            string playersScript = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.players.js");
+
+            // 运营反馈「玩家登录的时候后台登录时间不更新，只有离线玩家才显示登录时间」的根因：
+            // 「最后登录」一直取 useroptlog 的 MAX(REC_TIME)，而游戏服只往这张表写
+            // 进入/离开桌台(7/8)、充值兑换(0-6)、回退分数(99)，从来没有登录事件
+            // （ServerCenterRun.cpp 的 SaveUserLog 调用点可查）。于是在线玩家显示的是
+            // 「最后一次进桌台的时间」，大厅挂机/新号则显示上局旧时间或兜底 2000-01-01。
+            // 修法：玩家上线（users.INHALL 0→1）由库内触发器记进 userloginrecord，
+            // 后台优先读它，没有记录的账号回退 useroptlog 旧口径。
+            StringAssert.Contains(sqlPatch, "CREATE TABLE IF NOT EXISTS `userloginrecord`");
+            StringAssert.Contains(sqlPatch, "AFTER UPDATE ON `users`");
+            StringAssert.Contains(sqlPatch, "IF NEW.INHALL = b'1' AND (OLD.INHALL IS NULL OR OLD.INHALL = b'0') THEN");
+            // users 是游戏服热表（余额/分数都写它），触发器必须自带兜底：
+            // 内部任何异常都吞掉，绝不能让游戏服的写入失败。
+            StringAssert.Contains(sqlPatch, "DECLARE CONTINUE HANDLER FOR SQLEXCEPTION BEGIN END;");
+
+            // 控制器（在线卡片）：先读登录记录，缺失的账号再补 useroptlog 兜底——两段缺一不可，
+            // 少了下半段老数据玩家会变成没有登录时间，少了上半段本次修复就白做。
+            StringAssert.Contains(controller, "SELECT UserID, MAX(LoginTime) AS LastLoginTime FROM userloginrecord WHERE UserID IN (");
+            StringAssert.Contains(controller, "SELECT UserID, MAX(REC_TIME) AS LastLoginTime FROM UserOptLog WHERE UserID IN (");
+
+            // 离线列表：COALESCE(登录记录, useroptlog)，排序必须用同一个表达式，
+            // 否则"按最后登录时间"排出来的顺序和列上显示的时间对不上。
+            StringAssert.Contains(usersBll, "COALESCE(lr.LastLoginTime, l.LastLoginTime) AS LastLoginTime");
+            StringAssert.Contains(usersBll, "ORDER BY COALESCE(lr.LastLoginTime, l.LastLoginTime) DESC, r.UserID DESC");
+            StringAssert.Contains(usersBll, "LEFT JOIN (SELECT UserID, MAX(LoginTime) AS LastLoginTime FROM userloginrecord GROUP BY UserID) lr ON lr.UserID = c.ID");
+
+            // 玩家详情页（最后登入）与列表同口径
+            int detailSql = usersBll.IndexOf("const string detailSql", StringComparison.Ordinal);
+            Assert.IsTrue(detailSql > 0
+                && usersBll.Substring(detailSql, 2000).Contains("COALESCE(lr.LastLoginTime, l.LastLoginTime) AS LastLoginTime"),
+                "GetUserPhoneDetail 的「最后登入」也要优先取登录记录");
+
+            // 前端只渲染服务端下发的时间，不得自己算（在线/离线卡片同一条渲染路径）
+            StringAssert.Contains(playersScript, "var loginTimeText = p.LastLoginTime ? M.fmtTime(p.LastLoginTime) : '2000-01-01';");
+            StringAssert.Contains(playersScript, "'<span class=\"info-label\">最后登录</span><span class=\"info-value\">' + loginTimeText + '</span></div></div>'");
+        }
     }
 }

@@ -18,6 +18,7 @@
     var onlinePlayers = [];
     var onlineTotalWinLoss = 0;
     var offlineTotalWinLoss = 0;
+    var onlineLoaded = false; // 在线数据是否成功拿到过（区分"确实没人在线"与"游戏服无响应"）
     var current = null; // 当前操作的玩家（含详情）
 
     // 【性能优化】控制状态缓存，避免重复查询
@@ -233,21 +234,41 @@
     }
 
     function loadOnline() {
-        return M.post('/Game/UserInfo/GetOnlineUsers', {}, { timeoutMs: 12000 })
+        var ok = false;
+        // 【性能优化】超时 12s → 6s：服务端 QA（查询在线玩家）已加短超时（连接 1s + 读 3s），
+        // 游戏服不可达时最坏约 4s 就有确定答案，不必再让转圈空等 12 秒。
+        return M.post('/Game/UserInfo/GetOnlineUsers', {}, { timeoutMs: 6000 })
             .then(function (res) {
-                onlinePlayers = (res && res.datas) ? res.datas : [];
+                // code!=1 = 游戏服不可达（服务端 QA 失败/熔断），不能当成空列表
+                if (res && Number(res.code) === 1 && res.datas) {
+                    onlinePlayers = res.datas;
+                    ok = true;
+                } else {
+                    ok = false;
+                }
             }, function () {
-                // 游戏服不可达 / 超时：按空列表处理
-                onlinePlayers = [];
+                ok = false;
             })
             .then(function () {
+                var $sec = $('#onlinePlayersSection');
+                if (!ok) {
+                    // 游戏服不可达/超时：保留上一次的列表与人数（清空成"暂无在线玩家"会被误读成
+                    // "玩家都下线了"）；从没成功加载过才给提示文案。切换页签时总输赢也维持原值。
+                    if (!onlineLoaded) {
+                        $sec.html('<div class="no-more-data" style="display: block;">游戏服暂无响应，请稍后重试</div>');
+                        $('#onlinePlayerCount').text('--');
+                    } else {
+                        M.toast('游戏服暂无响应，列表为上次结果', 'warning', 2000);
+                    }
+                    return;
+                }
+                onlineLoaded = true;
                 onlineTotalWinLoss = onlinePlayers.reduce(function (sum, p) {
                     return sum + Number(p.TodayWinLoss || 0);
                 }, 0);
                 if ($('.tab[data-tab="online"]').hasClass('active')) renderTotalWinLoss(true);
                 // 角标先更新：空列表时原写法提前 return，会把上一次的人数留在页面上
                 $('#onlinePlayerCount').text(onlinePlayers.length);
-                var $sec = $('#onlinePlayersSection');
                 if (!onlinePlayers.length) {
                     $sec.html('<div class="no-more-data" style="display: block;">暂无在线玩家</div>');
                     return;

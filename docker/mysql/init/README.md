@@ -13,6 +13,9 @@
 #   40_性能索引.sql               <- Docs/sql/性能索引.sql
 #        (幂等性能索引补丁：users/userrelations/useroptlog/rechargerecords/
 #         agencyoptlog/loginmissrecord 二级索引 + user_daily_winloss 字符集对齐)
+#   41_玩家登录时间.sql            <- Docs/sql/玩家登录时间-20260918.sql
+#        (玩家上线时间记录：userloginrecord 表 + users 表 INHALL 0→1 触发器；
+#         后台「最后登录」优先读这张表，无记录回退 useroptlog 旧口径)
 #
 # 注: 补丁对应 Tools/db/reset-db.ps1 中的 patche 列表,
 #     保证 Docker 初始化与本机手工重置流程一致。
@@ -24,6 +27,7 @@
 #     copy Docs\sql\fix_scoreswitch_decimal.sql docker\mysql\init\20_fix_scoreswitch_decimal.sql
 #     copy Docs\sql\房间桌台配置表坐席扩列.sql  docker\mysql\init\30_房间桌台配置表坐席扩列.sql
 #     copy Docs\sql\性能索引.sql docker\mysql\init\40_性能索引.sql
+#     copy Docs\sql\玩家登录时间-20260918.sql docker\mysql\init\41_玩家登录时间.sql
 #
 # 注意: 初始化只会在数据卷首次创建时执行。
 #   要重新导入(清空数据)使用: Tools\db\docker-db.bat reinit

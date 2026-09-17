@@ -214,6 +214,8 @@ namespace YYT.Entity
         public DateTime? CreateTime { get; set; }
         /// <summary>今日盈亏（user_daily_winloss 当日）</summary>
         public long? TodayWinLoss { get; set; }
+        /// <summary>总盈亏（user_daily_winloss 全量合计：实际游戏输赢，没玩过即为 0）</summary>
+        public long? TotalWinLoss { get; set; }
         /// <summary>最后登录（UserOptLog 最新操作时间）</summary>
         public DateTime? LastLoginTime { get; set; }
         /// <summary>今日充值（当日充值类流水合计）</summary>

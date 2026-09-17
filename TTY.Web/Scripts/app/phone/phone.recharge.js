@@ -77,10 +77,12 @@
                     return row ? { coins: Number(row.COINS || 0), score: Number(row.GAME_SCORE || 0) } : null;
                 });
         } else {
+            // 代理账号的「剩余分数」= 直属玩家 GAME_SCORE 合计（列表接口的 RemainingScore，
+            // 与代理详细信息弹窗同口径）；此前这里固定给 null，页面上永远显示 "--"。
             dfd = M.post('/Game/AgencyInfo/GetAgencies', { ID: acc, Agency: '', page: 1, rows: 5 })
                 .then(function (list) {
                     var row = (list && list.rows && list.rows.length) ? list.rows[0] : null;
-                    return row ? { coins: Number(row.COINS || 0), score: null } : null;
+                    return row ? { coins: Number(row.COINS || 0), score: Number(row.RemainingScore || 0) } : null;
                 });
         }
 
@@ -93,7 +95,7 @@
             queriedAccount = acc;
             M.history.add(acc);
             $('#accountDiamond').text(M.gold(info.coins));
-            $('#accountScore').text(info.score === null ? '--' : M.num(info.score));
+            $('#accountScore').text(M.num(info.score));
             $('#accountInfo').addClass('show');
             $('#submitBtn').prop('disabled', false);
         });

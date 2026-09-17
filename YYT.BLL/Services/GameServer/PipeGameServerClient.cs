@@ -39,11 +39,30 @@ namespace YYT.BLL.Services.GameServer
             commandOutbox = new B_GameCommandOutbox();
         }
 
+        /// <summary>
+        /// 在线玩家查询(QA)的连接/读写超时（毫秒）。
+        /// QA 是玩家列表页首屏与刷新按钮的关键路径，正常时管道往返只有几毫秒；
+        /// 游戏服不可达时若沿用默认的 5s/10s 超时，请求线程会被占住十几秒，
+        /// ASP.NET 线程池补线程太慢，整个站点（含静态文件）一起卡住
+        /// （2026-09-17 线上 IIS 日志：游戏服停机窗口内 jquery.min.map 与接口同时卡 10 秒）。
+        /// 因此这类"查不到就算了"的轮询指令必须快速失败，由熔断器兜住后续请求。
+        /// </summary>
+        private const int OnlineQueryConnectTimeoutMs = 1000;
+        private const int OnlineQueryReadTimeoutMs = 3000;
+
         public string SendRaw(EScMsgType command, params object[] args)
+        {
+            return SendRawWithTimeouts(command, 0, 0, args);
+        }
+
+        /// <summary>指定管道超时的发送；connectTimeoutMs/readWriteTimeoutMs 传 0 表示用 SConnect 默认值。</summary>
+        private string SendRawWithTimeouts(EScMsgType command, int connectTimeoutMs, int readWriteTimeoutMs, params object[] args)
         {
             if (IsBreakerOpen())
                 return "数据发送失败！游戏服管道熔断冷却中";
-            var srv = new SConnect();
+            var srv = connectTimeoutMs > 0 || readWriteTimeoutMs > 0
+                ? new SConnect(connectTimeoutMs, readWriteTimeoutMs)
+                : new SConnect();
             string raw = srv.SendNotTranlation(command, args);
             RecordTransportResult(IsTransportFailure(raw));
             return raw;
@@ -119,27 +138,29 @@ namespace YYT.BLL.Services.GameServer
             return state;
         }
 
+        /// <summary>
+        /// 查询全部在线玩家。游戏服不可达/超时返回 <c>null</c>，与"查得到但一个人都不在线"（空列表）
+        /// 区分开——否则端上只能显示"暂无在线玩家"，运营会误以为玩家都下线了。
+        /// </summary>
         public List<OnlinePlayerInfo> QueryAllOnlinePlayers()
         {
-            List<OnlinePlayerInfo> result = new List<OnlinePlayerInfo>();
             try
             {
-                string raw = SendRaw(EScMsgType.QA);
+                string raw = SendRawWithTimeouts(EScMsgType.QA, OnlineQueryConnectTimeoutMs, OnlineQueryReadTimeoutMs);
                 if (IsTransportFailure(raw))
                 {
                     LogHelper.WriteLog(typeof(PipeGameServerClient), "QA transport failure: " + raw);
-                    return result;
+                    return null;
                 }
 
                 var list = JsonConvert.DeserializeObject<List<OnlinePlayerInfo>>(raw);
-                if (list != null)
-                    result = list;
+                return list ?? new List<OnlinePlayerInfo>();
             }
             catch (Exception ex)
             {
                 LogHelper.WriteLog(typeof(PipeGameServerClient), ex);
+                return null;
             }
-            return result;
         }
 
         public Msg SetUserControl(params object[] args)

@@ -24,8 +24,26 @@ namespace YYT.Remote
         public string ServerName { get; set; }
         public string PipeName { get; set; }
 
-        public SConnect()
+        /// <summary>
+        /// 连接/读回复超时（毫秒）。默认连接 5s、读 10s。
+        /// ⚠️ NamedPipeClientStream 在 PipeOptions.Asynchronous 下 <c>CanTimeout=false</c>，
+        /// ReadTimeout/WriteTimeout 赋值会直接抛 InvalidOperationException（老代码把它包在
+        /// if(CanTimeout) 里，实为死代码）——读操作因此没有任何超时，游戏服卡住时请求线程会
+        /// 永久挂在这一读上。真正的超时用异步读 + 限时等待实现，见 ReadLineWithTimeout。
+        /// 「能失败」的轮询指令（在线玩家查询 QA）用短超时构造：游戏服不可达时请求线程最多占几秒，
+        /// 而不是把 ASP.NET 线程池拖垮（线上 IIS 日志：游戏服停机时连静态文件一起卡 10 秒）。
+        /// </summary>
+        private readonly int connectTimeoutMs;
+        private readonly int readTimeoutMs;
+
+        public SConnect() : this(5000, 10000)
         {
+        }
+
+        public SConnect(int connectTimeoutMs, int readTimeoutMs)
+        {
+            this.connectTimeoutMs = connectTimeoutMs > 0 ? connectTimeoutMs : 5000;
+            this.readTimeoutMs = readTimeoutMs > 0 ? readTimeoutMs : 10000;
             this.Init();
         }
 
@@ -42,15 +60,35 @@ namespace YYT.Remote
             this.ServerName = ConfigHelper.Get("serverName");
             this.PipeName = ConfigHelper.Get("pipeName");
 
+            // 注意：这里不能设 ReadTimeout/WriteTimeout（该流不支持，见字段注释），
+            // 读取上限由 ReadLineWithTimeout 保证。
             this.PipeClient = new NamedPipeClientStream(this.ServerName, this.PipeName, PipeDirection.InOut, PipeOptions.Asynchronous, TokenImpersonationLevel.None);
 
-            if (this.PipeClient.CanTimeout)
+            // 初始化连接（Connect(timeout) 是真实生效的 API）
+            this.Connect(this.connectTimeoutMs);
+        }
+
+        /// <summary>
+        /// 带上限地读取中心服回复的一行。超时返回 null，由调用方按"数据发送失败"处理。
+        /// 用异步读 + Wait(上限)：挂起的读不占线程，超时后不再等它；同步 ReadLine 一旦卡住
+        /// 就只能等对端回话或断链（这正是玩家列表刷新卡 10 秒的原因）。
+        /// </summary>
+        private string ReadLineWithTimeout(StreamReader sr)
+        {
+            if (this.readTimeoutMs <= 0)
+                return sr.ReadLine();
+
+            System.Threading.Tasks.Task<string> readTask = sr.ReadLineAsync();
+            if (!readTask.Wait(this.readTimeoutMs))
             {
-                this.PipeClient.ReadTimeout = 10000;
-                this.PipeClient.WriteTimeout = 10000;
+                // 观察掉异常，避免挂起的读在管道关闭后变成未观测异常
+                readTask.ContinueWith(t => { Exception ignored = t.Exception; },
+                    System.Threading.Tasks.TaskContinuationOptions.OnlyOnFaulted);
+                LogHelper.WriteLog(typeof(SConnect), $"读取中心服回复超时（{this.readTimeoutMs}ms），放弃等待并关闭管道");
+                this.Close();
+                return null;
             }
-            // 初始化连接
-            this.Connect();
+            return readTask.Result;
         }
         private void InitXmlDoc()
         {
@@ -145,7 +183,9 @@ namespace YYT.Remote
                 LogHelper.WriteLog(typeof(YYT.Remote.SConnect), $"指令内容：\n{cmd}");
                 // 解锁用户不用读
                 sr = new StreamReader(this.PipeClient);
-                srv_code = sr.ReadLine();
+                srv_code = ReadLineWithTimeout(sr);
+                if (srv_code == null)
+                    srv_code = $"数据发送失败！等待中心服回复超时（{this.readTimeoutMs}ms）。";
             }
             catch (Exception ex)
             {
@@ -206,7 +246,12 @@ namespace YYT.Remote
                 if (eScMsgType != EScMsgType.UL)
                 {
                     sr = new StreamReader(this.PipeClient);
-                    srv_code = sr.ReadLine();
+                    srv_code = ReadLineWithTimeout(sr);
+                    if (srv_code == null)
+                    {
+                        msg.content = $"数据发送失败！等待中心服回复超时（{this.readTimeoutMs}ms）。";
+                        return msg;
+                    }
                 }
                 // 消息翻译
                 var tmpMsg = this.GetSrvMsg(srv_code);
@@ -541,7 +586,13 @@ namespace YYT.Remote
 
                 // 读取 center 文本回复(TCOK\n / TCER\n)，与 RP/PA 风格一致。
                 sr = new StreamReader(this.PipeClient);
-                string srv_code = sr.ReadLine();
+                string srv_code = ReadLineWithTimeout(sr);
+                if (srv_code == null)
+                {
+                    msg.content = $"TC数据发送失败！等待中心服回复超时（{this.readTimeoutMs}ms）。";
+                    LogHelper.WriteLog(typeof(SConnect), "TC指令读回复超时");
+                    return msg;
+                }
                 var tmpMsg = this.GetSrvMsg(srv_code);
                 // GetSrvMsg 对未知 key 返回 null，兜底为失败，避免下游 NPE。
                 if (tmpMsg == null)
