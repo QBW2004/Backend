@@ -1,234 +1,304 @@
 ﻿@{
     Layout = "~/Views/Shared/Layout/_ContentLayout.cshtml";
-    ViewBag.RouteMap = "公告列表";
+    ViewBag.RouteMap = "全屏公告";
     M_LoginUser loginUser = WebHelper.GetLoginInfo();
+
+    // ===== 客户端公告窗口基准（取自客户端大厅场景 DaTingG178.unity 的 Notice/Scroll View）=====
+    // 进游戏改这几个数之前先回场景核对：
+    //   Notice/Scroll View        UIPanel.mClipRange = {z:648, w:310} + mClipOffset {y:148} → 可视区 648×310
+    //   Notice/Scroll View/Label  UILabel.mWidth = 624（左右各约 12 留白）、mFontSize = 41、
+    //                             mAlignment = 2（Center 居中）、mColor = 0.86/0.95/1 = #DBF2FF、
+    //                             mSpacingX = 2、mEffectStyle = Outline(黑 1px)、mTrueTypeFont = NowarSans-CN-Bold
+    //   NGUI 行高 finalLineHeight = fontSize + spacingY，spacingY = 0 → 行高 = 字号
+    int clientViewWidth = 648;      // 可视区宽（客户端单位）
+    int clientViewHeight = 310;     // 可视区高
+    int clientTextWidth = 624;      // 正文列宽（水平居中于可视区）
+    int clientTextTop = 10;         // 正文距可视区顶部（Label topAnchor absolute -10）
+    int clientFontSize = NoticeFontSize.Default;   // 默认字号
+    string clientTextColor = "#DBF2FF";
 }
 
 @section include_res{
+    <style>
+        /* 客户端公告字体：与客户端 Assets/WGM/DaTingG178/font/NowarSans-CN-Bold.otf 同一份，
+           预览才能做到 1:1（下方 at 符号双写是 Razor 的转义写法） */
+        @@font-face {
+            font-family: 'NowarSansCN';
+            src: url('@Url.Content("~/Content/fonts/NowarSans-CN-Bold.otf")') format('opentype');
+            font-weight: bold;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        .nc-wrap { padding: 10px 12px 20px 12px; }
+        .nc-flex { display: flex; align-items: flex-start; flex-wrap: wrap; }
+        /* 左编辑区（560）+ 右预览区（648）：1440 以上内容宽度并排，窄屏自动换行到下方 */
+        .nc-form { width: 560px; margin-right: 24px; flex: 0 0 auto; }
+        .nc-panel {
+            background: #fff; border: 1px solid #e3e8ee; border-radius: 4px;
+            padding: 12px 14px 14px 14px;
+        }
+        .nc-title { font-size: 14px; font-weight: bold; color: #2f6fed; padding-bottom: 8px; }
+        .nc-tip { color: #8a94a6; font-size: 12px; line-height: 1.7; }
+        .nc-tip b { color: #e08c1f; }
+        .nc-row { margin-bottom: 10px; }
+        .nc-row > label {
+            display: inline-block; width: 74px; text-align: right; color: #555;
+            font-size: 13px; vertical-align: top; padding-top: 4px;
+        }
+        .nc-field { display: inline-block; width: 460px; vertical-align: top; }
+        .nc-meta { color: #97a1b3; font-size: 12px; padding-left: 78px; line-height: 1.6; margin-bottom: 10px; }
+        /* 普通 input/textarea（不用 easyui 控件，避免解析顺序影响取值） */
+        .nc-input {
+            border: 1px solid #c3d9e0; border-radius: 3px; padding: 3px 6px;
+            font-size: 13px; color: #333; box-sizing: border-box;
+        }
+        textarea.nc-input { line-height: 1.6; resize: vertical; font-family: inherit; }
+        .nc-input:focus { border-color: #2f6fed; outline: none; }
+
+        /* ===== 1:1 预览：外层尺寸、内层正文排版都对齐客户端 Notice/Scroll View ===== */
+        .nc-preview-bg {
+            /* 客户端公告底图是深色面板，这里用纯色近似：只做观感参考，不参与排版计算。
+               宽度写死 648（= 客户端可视区宽），并用 flex:0 0 auto 防止被 flex 布局压缩，
+               否则可视区就不等于客户端尺寸了。 */
+            background: linear-gradient(180deg, #1b2b3a 0%, #16232f 100%);
+            border-radius: 6px; padding: 0; overflow: hidden;
+            flex: 0 0 auto; width: 648px;
+        }
+        .nc-preview {
+            position: relative; overflow-y: auto; overflow-x: hidden; box-sizing: border-box;
+            /* 隐藏滚动条：客户端 UILabel 滚动区也没有滚动条，且滚动条会占掉 15px 使正文列
+               在可视区里的居中位置偏移（实测 648 会变成 633）。滚轮/触控板照常能滚，
+               超出高度时下方有文字提示。 */
+            scrollbar-width: none; -ms-overflow-style: none;
+        }
+        .nc-preview::-webkit-scrollbar { width: 0; height: 0; display: none; }
+        .nc-preview-text {
+            /* 字号 / 行高 / 字距 / 颜色 / 描边 全部对齐客户端 UILabel */
+            margin: 0 auto; box-sizing: border-box;
+            text-align: center;         /* UILabel.mAlignment = Center（水平居中） */
+            color: #DBF2FF;             /* UILabel.mColor（JS 里也会再设一次，这里兜底） */
+            font-family: 'NowarSansCN', 'Microsoft YaHei', 'SimSun', sans-serif;
+            font-weight: bold;
+            letter-spacing: 2px;        /* UILabel.mSpacingX = 2 */
+            white-space: pre-wrap;      /* 保留换行/空格，对应 NGUI 多行 Label */
+            word-wrap: break-word;
+            text-shadow: 1px 1px 0 #000, -1px 1px 0 #000, 1px -1px 0 #000, -1px -1px 0 #000;  /* Outline 四向 */
+        }
+        .nc-overflow-tip { color: #e08c1f; font-size: 12px; padding-top: 8px; display: none; }
+        .nc-empty-tip { color: #6c7a8c; font-size: 13px; text-align: center; padding-top: 140px; }
+        .nc-right { flex: 0 0 auto; width: 648px; position: sticky; top: 8px; }
+        .nc-ref { color: #97a1b3; font-size: 12px; line-height: 1.9; padding-top: 10px; }
+    </style>
+
     <script>
+        // 客户端 Notice 面板可视区基准（与上面 @{ } 块里的保持一致，改动要同步）
+        var NC_VIEW_W = @clientViewWidth, NC_VIEW_H = @clientViewHeight;
+        var NC_TEXT_W = @clientTextWidth, NC_TEXT_TOP = @clientTextTop;
+        var NC_DEFAULT_FONT = @clientFontSize;
+        var NC_FONT_MIN = @NoticeFontSize.Min, NC_FONT_MAX = @NoticeFontSize.Max;
+        var NC_NOTICE_ID = 0;      // 当前记录 ID（0 = 库里还没有公告）
+
         $(function () {
-            // 加载指定的模块
-            easyloader.load(['textbox', 'linkbutton', 'datagrid'], function () {
-                //适应窗口大小变化
-                $(window).resize(function () {
-                    if ($('body').data('grid-init')) {
-                        setGridSize();
-                    }
-                });
-                //初始化插件
+            // messager 是「确认框」依赖的模块（还要再拉 dialog/window/panel/draggable/resizable/progressbar
+            // 一整条链）。原来只在点保存那一刻才首次加载：线上经 CDN 时这条链要几秒，链没走完
+            // 点击就静默无效（window.confirm 内部的 easyloader 回调永远不触发），运营会以为"保存了但没生效"。
+            // 所以进页面就预加载好；真没就绪时下面 saveNotice/confirmNotice 还有可见提示兜底。
+            easyloader.load(['linkbutton', 'messager'], function () {
                 pluginInit();
-                //初始化查询
-                queryData();
+                layoutPreview();
+                bindLivePreview();
+                loadNotice();
             });
-        })
-        //重置表格大小
-        function setGridSize(param) {
-            var w = $(window).width() - 8;
-            var h = $(window).height() - 78;
-            resizeGrid('tb_Notice', 'auto', h);
-        }
-        //查询数据
-        function queryData() {
-            var para = $("#frm_srch").serializeObject();
-            bindGridData(para);
-        }
-        //绑定表格数据
-        function bindGridData(para) {
-            if (!$('body').data('grid-init')) {
-                $('#tb_Notice').datagrid({
-                    url: "/Game/Notice/GetNotices",
-                    queryParams: $.extend({}, para),
-                    pagination: true,
-                    fitColumns: true,
-                    singleSelect: true,
-                    striped: true,
-                    rownumbers: true,
-                    height: 768,
-                    pageSize: 20,
-                    pageList: [10, 20, 50],
-                    idField: 'ID',
-                    onBeforeLoad: setGridSize,
-                    onLoadSuccess: onLoaded
-                });
+        });
+
+        /// 确认框可用性兜底：模块没加载好时给出可见提示，不要让点击静默失效
+        function confirmReady() {
+            if (window.jQuery && jQuery.messager && jQuery.messager.confirm) return true;
+            if (typeof showToast === 'function') {
+                showToast('提示框组件还在加载，请 1-2 秒后再点一次', 'warning', 4000);
             } else {
-                $('#tb_Notice').datagrid('load', para);
+                $('#ncSaveTip').text('提示框组件还在加载，请 1-2 秒后再点一次');
             }
+            return false;
         }
 
-        function fmtOpt(value, rowData, rowIndex) {
-            var arr = [];
-            arr.push('<a href="javascript:void(0)" class="blue Lpd5" onclick="updateNotice(\'' + rowData.ID + '\')">修改</a>');
-            arr.push('<a href="javascript:void(0)" class="blue Lpd5" onclick="delNotic(\'' + rowData.ID + '\')">删除</a>');
-            return arr.join('  ');
+        // 可视区按客户端尺寸固定；正文列宽 624 居中、距顶 10px
+        function layoutPreview() {
+            $('#ncPreview').css({ width: NC_VIEW_W + 'px', height: NC_VIEW_H + 'px' });
+            $('#ncPreviewText').css({ width: NC_TEXT_W + 'px', marginTop: NC_TEXT_TOP + 'px' });
         }
 
-        function delNotic(id) {
-              @Html.Raw(@" confirm('确认删除公告？', function () {
-                request('/Game/Notice/delNotice', { ID: id }, function (data) {
-                    //提示消息
+        // 内容 / 字号 改动即时刷新预览
+        function bindLivePreview() {
+            $('#txtNotice, #txtFontSize').on('input keyup change', refreshPreview);
+        }
+
+        function currentFontSize() {
+            var v = parseInt($('#txtFontSize').val(), 10);
+            if (isNaN(v)) return NC_DEFAULT_FONT;
+            if (v < NC_FONT_MIN) v = NC_FONT_MIN;
+            if (v > NC_FONT_MAX) v = NC_FONT_MAX;
+            return v;
+        }
+
+        function refreshPreview() {
+            var size = currentFontSize();
+            var text = $('#txtNotice').val() || '';
+            // 客户端会做 content.Replace("\\n", "\n")，预览保持一致（库里历史上可能存的是字面 \n）
+            text = text.replace(/\\n/g, '\n');
+
+            $('#ncFontSizeTip').text(size + ' px');
+            $('#ncPreviewEmpty').toggle(text.length === 0);
+            $('#ncPreviewText').css({
+                fontSize: size + 'px',
+                lineHeight: size + 'px',   // NGUI finalLineHeight = fontSize + spacingY(0)
+                color: '@clientTextColor'
+            }).text(text);
+
+            var box = document.getElementById('ncPreview');
+            $('#ncOverflowTip').toggle(!!box && box.scrollHeight > box.clientHeight);
+        }
+
+        // 进入页面即加载唯一公告（读取接口也是 POST，与其它页面一致）
+        function loadNotice() {
+            request('/Game/Notice/GetNotice', {}, function (data) {
+                if (!data || data.code != 1 || !data.data) {
                     showMsg(data);
-                    if (data && data.code == 1) {
-                        queryData();//重新加载数据
-                    }
-                });
-            });");
-
-        }
-
-
-        function setNotic() {
-            @Html.Raw(@"var para = $('#form2').serializeObject();
-                request('/Game/Notice/updateNotic', para, function (data) {
-                    //提示消息
-                    showMsg(data);
-                    if (data && data.code == 1) {
-                        $('#updateNotice').dialog('close');
-                        $('#form2').form('reset');
-                        queryData();//重新绑定表格数据
-                    }
-             });");
-        }
-        function updateNotice(uid) {
-            var para = {
-                winId: '#updateNotice',
-                title: '【修改公告】',
-                height: 370,
-                iconCls: 'icon-user-edit',
-                callBack: function () {
-                  /*  $('#hfUID1').textbox('setValue', uid);*/
-                    $('#hfUID1').val(uid);
+                    return;
                 }
-            };
-            openWin(para);
+                NC_NOTICE_ID = data.data.ID || 0;
+                $('#txtTitle').val(data.data.TITLE || '');
+                $('#txtNotice').val(data.data.NOTICE || '');
+                $('#txtFontSize').val(data.data.FONTSIZE || NC_DEFAULT_FONT);
+                $('#ncSaveTip').text(NC_NOTICE_ID > 0
+                    ? '当前公告 ID：' + NC_NOTICE_ID + '（保存即覆盖这一条）'
+                    : '库中暂无公告，保存后立即生效');
+                refreshPreview();
+            });
         }
 
-        function showAddNotice() {
-            var para = {
-                winId: '#addNotice',
-                title: '【添加公告】',
-                iconCls: 'icon-user_add'
-            };
-            openWin(para);
-        }
-
-        function saveNotic() {
-            var para = $('#form1').serializeObject();
-            if (para.NOTICE.length < 1) {
-                alert('请填写内容！', 'warning');
+        // 保存唯一公告
+        function saveNotice() {
+            var notice = $.trim($('#txtNotice').val() || '');
+            if (notice.length < 1) {
+                if (confirmReady()) alert('请填写公告内容！', 'warning');
                 return;
             }
-            //console.log(para);
-            request('/Game/Notice/AddNotice', para, function (data) {
-                showMsg(data);
-                if (data && data.code == 1) {
-                    $('#addNotice').dialog('close');
-                    $('#form1').form('reset');
-                    queryData();//重新绑定表格数据
-                }
+            if (notice.length > 200) {
+                if (confirmReady()) alert('公告内容长度不能超过200个字符（当前 ' + notice.length + ' 个）！', 'warning');
+                return;
+            }
+            var size = currentFontSize();
+            var para = {
+                TITLE: $.trim($('#txtTitle').val() || ''),
+                NOTICE: $('#txtNotice').val(),
+                FONTSIZE: size
+            };
+            if (!confirmReady()) return;
+            confirm(size == NC_DEFAULT_FONT
+                ? '确认保存公告？'
+                : '字号 ' + size + ' 与客户端默认字号 ' + NC_DEFAULT_FONT + ' 不同：保存会随公告下发 [SIZE=' + size + '] 标记（客户端解析后套用；未更新客户端的版本会原样显示该标记）。确认保存？',
+                function () {
+                    request('/Game/Notice/SaveNotice', para, function (data) {
+                        showMsg(data);
+                        if (data && data.code == 1) {
+                            loadNotice();
+                        }
+                    });
+                });
+        }
+
+        // 放弃修改：重新拉一次库里的内容
+        function reloadNotice() {
+            if (!confirmReady()) return;
+            confirm('确认放弃当前修改，重新载入已保存的公告？', function () {
+                loadNotice();
             });
         }
     </script>
 }
 
-@*查询条件*@
-<form id="frm_srch">
-    <table width="100%" border="0" cellpadding="0" cellspacing="0" class="titleQueBg" style="height:40px;">
-        <tr>
-            <td>
+<div class="nc-wrap">
+    <div class="nc-flex">
+        @*==================== 左：唯一公告编辑区 ====================*@
+        <div class="nc-form">
+            <div class="nc-panel">
+                <div class="nc-title">公告内容（全服唯一）</div>
 
-                <div class="left Lpd5">
-                    标题
-                    <input type="text" class="easyui-textbox" name="TITLE" />
+                <div class="nc-row">
+                    <label>标题</label>
+                    <div class="nc-field">
+                        <input type="text" class="nc-input" id="txtTitle" style="width:460px" maxlength="255" />
+                    </div>
+                </div>
+                <div class="nc-meta">留空按「公告」保存（客户端旧版本作为公告按钮文案，不影响正文）</div>
+
+                <div class="nc-row">
+                    <label>公告内容</label>
+                    <div class="nc-field">
+                        <textarea class="nc-input" id="txtNotice" style="width:460px;height:260px"></textarea>
+                    </div>
+                </div>
+                <div class="nc-meta">
+                    最多 200 个字符（数据库列 varchar(255)，改字号时还会多一个 [SIZE=nn] 前缀）<br />
+                    换行直接回车即可；写成字面 \n 也会按换行渲染（与客户端一致）
                 </div>
 
-                <div class="left Lmg10">
-                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="queryData();" data-options="plain:true,iconCls:'icon-search'">查找</a>
-                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="showAddNotice();" data-options="plain:true,iconCls:'icon-add'">添加公告</a>
+                <div class="nc-row">
+                    <label>字号</label>
+                    <div class="nc-field">
+                        <input type="number" class="nc-input" id="txtFontSize" style="width:100px"
+                               min="@NoticeFontSize.Min" max="@NoticeFontSize.Max" step="1" value="@clientFontSize" />
+                        <span class="nc-tip" style="padding-left:8px">
+                            客户端默认 @clientFontSize px，范围 @NoticeFontSize.Min-@NoticeFontSize.Max px，当前 <span id="ncFontSizeTip">@(clientFontSize) px</span>
+                        </span>
+                    </div>
                 </div>
-            </td>
-        </tr>
-    </table>
-</form>
 
-@*查询的信息*@
-<table id="tb_Notice">
-    <thead>
-        <tr>
-            <th field="ID" width="110">ID</th>
-            <th field="TITLE" width="110">标题</th>
-            <th field="NOTICE" width="350">公告内容</th>
-            <th field="PWD" width="200" formatter="fmtOpt">操作</th>
-
-        </tr>
-    </thead>
-</table>
-
-
-@*添加窗口*@
-<div id="addNotice" class="hide">
-    <form id="form1">
-
-        <table cellpadding="0" cellspacing="0" border="0" width="100%" align="center">
-          
-            <tr>
-                <td align="right">标题</td>
-                <td align="left" class="pd5">
-                    <input class="easyui-textbox win-txt" id="txtTitle" name="TITLE" />
-                </td>
-            </tr>
-            <tr>
-                <td align="right">公告</td>
-                <td align="left" class="pd5">
-                    <textarea type="text" class="easyui-textbox" id="txtNotice" multiline="true" name="NOTICE" style="width:60%;height:120px"></textarea>
-                </td>
-            </tr>
-            <tr>
-                <td align="center" colspan="2" class="pd5">
-                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="saveNotic()" data-options="plain:true,iconCls:'icon-save'">保存</a>
-                </td>
-            </tr>
-        </table>
-        @*<div class="easyui-panel" title="" style="width:100%;padding:30px;text-align:center;">
-            <div class="Bmg5">
-                <label>公告内容</label>
-                <textarea type="text" class="easyui-textbox" id="txtNotice" multiline="true" name="NOTICE" style="width:60%;height:120px">@(Model?.NOTICE)</textarea>
+                <div class="nc-row" style="padding-top:6px">
+                    <label>&nbsp;</label>
+                    <div class="nc-field">
+                        <a href="javascript:void(0);" class="easyui-linkbutton" onclick="saveNotice()"
+                           data-options="plain:true,iconCls:'icon-save'">保存公告</a>
+                        <a href="javascript:void(0);" class="easyui-linkbutton" onclick="reloadNotice()"
+                           data-options="plain:true,iconCls:'icon-reload'">放弃修改</a>
+                        <span class="nc-tip" id="ncSaveTip" style="padding-left:10px"></span>
+                    </div>
+                </div>
             </div>
-            <div class="Bmg5">
-                <a href="javascript:void(0);" class="easyui-linkbutton" onclick="saveNotic()" data-options="plain:true,iconCls:'icon-save'">确认发布</a>
+
+            <div class="nc-panel" style="margin-top:12px">
+                <div class="nc-title">说明</div>
+                <div class="nc-tip">
+                    1. 客户端只展示一条公告，本页进入即编辑那唯一一条：保存时若库里还有多余的历史公告会一并清掉，避免客户端又收到多条。<br />
+                    2. 公告由中心服在客户端请求时按需读库下发，<b>没有实时推送</b>：保存后玩家下次进大厅（登录）才会看到新内容。<br />
+                    3. 字号不等于客户端默认 @clientFontSize px 时，后台会把 <b>[SIZE=nn]</b> 写进公告正文一起下发，客户端解析后套用到公告 Label 上；<b>未更新客户端的版本会原样显示这个标记</b>，改字号前先确认客户端版本。<br />
+                    4. 右侧预览与客户端大厅「Notice」面板的 Scroll View 按 1:1 排版：可视区 @(clientViewWidth)×@(clientViewHeight)，正文列宽 @clientTextWidth、水平居中、距顶 @clientTextTop px。
+                </div>
             </div>
-        </div>*@
-    </form>
+        </div>
+
+        @*==================== 右：客户端 1:1 预览 ====================*@
+        @* 并排时随页面滚动吸顶，便于一边改内容一边看排版（窄屏换行到下方时无副作用） *@
+        <div class="nc-right">
+            <div class="nc-preview-bg">
+                <div class="nc-preview" id="ncPreview">
+                    <div class="nc-preview-text" id="ncPreviewText"></div>
+                    <div class="nc-empty-tip" id="ncPreviewEmpty">（公告内容为空）</div>
+                </div>
+            </div>
+            <div class="nc-overflow-tip" id="ncOverflowTip">
+                内容已超出可视区高度，玩家需要上下滑动才能看全。
+            </div>
+            <div class="nc-ref">
+                客户端 Notice 预览（1:1）<br />
+                可视区：@(clientViewWidth) × @(clientViewHeight)<br />
+                正文列宽：@clientTextWidth（水平居中）<br />
+                默认字号：@clientFontSize px<br />
+                文字颜色：@clientTextColor + 黑色描边<br />
+                字体：Nowar Sans CN Bold
+            </div>
+        </div>
+    </div>
 </div>
-
-
-
-@*添加窗口*@
-<div id="updateNotice" class="hide">
-    <form id="form2">
-
-        <table cellpadding="0" cellspacing="0" border="0" width="100%" align="center">
-
-            <tr>
-                <td align="right">标题</td>
-                <td align="left" class="pd5">
-                    <input class="easyui-textbox win-txt" id="txtTitle" name="TITLE" />
-                </td>
-            </tr>
-            <tr>
-                <td align="right">公告</td>
-                <td align="left" class="pd5">
-                    <textarea type="text" class="easyui-textbox" id="txtNotice" multiline="true" name="NOTICE" style="width:60%;height:120px"></textarea>
-                </td>
-            </tr>
-            <tr>
-                <td align="center" colspan="2" class="pd5">
-                    <input type="hidden" id="hfUID1" name="ID" value="0" />
-                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="setNotic()" data-options="plain:true,iconCls:'icon-save'">修改</a>
-                </td>
-            </tr>
-        </table>
-      
-    </form>
-</div>
-
-

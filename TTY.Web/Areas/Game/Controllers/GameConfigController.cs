@@ -922,7 +922,8 @@ namespace YYT.Web.Areas.Game.Controllers
                     room.NUM = num;
                     room.BET_MIN = betMin;
                     room.BET_MAX = betMax;
-                    // 和门最小押分页面不提供输入，统一沿用 base 行旧值（幸运六狮用，彩金单挑不用）
+                    // 和门最小押分页面不提供输入：彩金单挑与其他押注玩法沿用 base 行旧值。
+                    // 幸运六狮在下方按本桌"最低压分"覆盖（庄闲/和不单独配最小值）。
                     room.BET_MIN_DRAW = oldRoom == null ? 10 : oldRoom.BET_MIN_DRAW;
                     // 庄闲/和(幸运六狮)、皇冠(彩金单挑)押分限红：按游戏决定哪些字段可从页面读取。
                     // 其他押注玩法无副玩法/和门，沿用 base 行旧值，避免被页面隐藏字段误提交覆盖。
@@ -935,8 +936,10 @@ namespace YYT.Web.Areas.Game.Controllers
                     }
                     else if (gameId == 10)
                     {
-                        // 幸运六狮：庄闲最大押分(vice) + 和最大押分(draw)；庄闲最小沿用库内旧值
-                        room.BET_MIN_VICE = oldRoom == null ? 10 : oldRoom.BET_MIN_VICE;
+                        // 幸运六狮：庄闲/和没有单独的最低押分字段，最小押分直接跟随本桌"最低压分"(BET_MIN)，
+                        // 与主门同一个值（页面只提供庄/闲单门最高押分(vice)与和单门最高押分(draw)）。
+                        room.BET_MIN_VICE = betMin;
+                        room.BET_MIN_DRAW = betMin;
                         room.BET_MAX_VICE = form.Q<int>("BET_MAX_VICE", oldRoom == null ? 1000 : oldRoom.BET_MAX_VICE);
                         room.BET_MAX_DRAW = form.Q<int>("BET_MAX_DRAW", oldRoom == null ? 1000 : oldRoom.BET_MAX_DRAW);
                     }
@@ -954,6 +957,18 @@ namespace YYT.Web.Areas.Game.Controllers
                     if (gameId == 2 && room.BET_MIN_VICE > room.BET_MAX_VICE)
                     {
                         msg.content = "皇冠最小押分不能大于最大押分！";
+                        return Json(msg);
+                    }
+                    // 幸运六狮的最小押分跟随本桌最低压分，最高押分是独立字段：
+                    // 必须挡住"最高 < 最低"的组合，否则该门任何押注都会被服务端判超限而全部驳回。
+                    if (gameId == 10 && room.BET_MIN_VICE > room.BET_MAX_VICE)
+                    {
+                        msg.content = "庄/闲单门最高押分不能小于最低压分（庄闲最小押分跟随最低压分）！";
+                        return Json(msg);
+                    }
+                    if (gameId == 10 && room.BET_MIN_DRAW > room.BET_MAX_DRAW)
+                    {
+                        msg.content = "和单门最高押分不能小于最低压分（和最小押分跟随最低压分）！";
                         return Json(msg);
                     }
                     room.EX_COIN = exCoin;

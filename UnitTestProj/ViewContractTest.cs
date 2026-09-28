@@ -1402,5 +1402,124 @@ namespace UnitTestProj
             StringAssert.Contains(playersScript, "var loginTimeText = p.LastLoginTime ? M.fmtTime(p.LastLoginTime) : '2000-01-01';");
             StringAssert.Contains(playersScript, "'<span class=\"info-label\">最后登录</span><span class=\"info-value\">' + loginTimeText + '</span></div></div>'");
         }
+
+        [TestMethod]
+        public void PlayerInviteCodeComesFromAgentWithRegistrationCodeFirst()
+        {
+            string api = ReadRepoFile(@"TTY.Web\Controllers\Api\AgencyInviteCodeController.cs");
+            string usersBll = ReadRepoFile(@"YYT.BLL\EF\B_Users.cs");
+            string csproj = ReadRepoFile(@"TTY.Web\YYT.Web.csproj");
+
+            // 客户端个人面板的「邀请码」曾经填的是玩家自己的 ID，那是错的：邀请码是代理的属性
+            // （admin.InviteCode），服务端注册时按它反查归属代理（游戏服 Database.cpp 的
+            // SELECT ID FROM Admin WHERE InviteCode=?），玩家 ID 填进注册页只会被判为邀请码错误。
+            // 现在改由后台接口下发，且必须与手机端玩家详情页同口径：先取注册时用过的码，
+            // 取不到再回退所属代理的邀请码（两步缺一不可，否则客户端与运营端会显示两个不同的码）。
+            StringAssert.Contains(usersBll, "public string GetPlayerInviteCode(string playerId)");
+            StringAssert.Contains(usersBll, "SELECT ic.InviteCode FROM invite_codes ic WHERE ic.UsedBy = {0} AND ic.IsUsed = 1 ORDER BY ic.ID DESC LIMIT 1");
+            StringAssert.Contains(usersBll, "ef.Admins.Where(a => a.ID == agency).Select(a => a.InviteCode).FirstOrDefault()");
+
+            // 接口只回邀请码，不回代理账号（代理账号属后台体系，客户端拿不到也没用）
+            StringAssert.Contains(api, "public string InviteCode { get; set; }");
+            StringAssert.Contains(api, "InviteCode = new B_Users().GetPlayerInviteCode(playerId)");
+
+            // 老式 csproj 不登记就会漏编译，接口在线上是不存在的
+            StringAssert.Contains(csproj, @"<Compile Include=""Controllers\Api\AgencyInviteCodeController.cs"" />");
+        }
+        [TestMethod]
+        public void NoticePageEditsSingleNoticeWithFontSizeAndClientPreview()
+        {
+            string view = ReadRepoFile(@"TTY.Web\Areas\Game\Views\Notice\Index.cshtml");
+            string controller = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\NoticeController.cs");
+            string bll = ReadRepoFile(@"YYT.BLL\EF\B_Notice.cs");
+            string entity = ReadRepoFile(@"YYT.Entity\EF\M_Notice.cs");
+            string sqlPatch = ReadRepoFile(@"Docs\sql\公告唯一化与字号-20260923.sql");
+            string csproj = ReadRepoFile(@"TTY.Web\YYT.Web.csproj");
+
+            // 客户端只展示一条公告，后台「全屏公告」页也就没有列表/新增/删除可做了：
+            // 进入即编辑唯一那一条，保存即全量覆盖（页面不得再出现这些入口）。
+            Assert.IsFalse(view.Contains("添加公告"), "公告页不应再有「添加公告」按钮");
+            Assert.IsFalse(view.Contains("showAddNotice"), "公告页不应再有新增公告弹窗");
+            Assert.IsFalse(view.Contains("/Game/Notice/AddNotice"), "公告页不应再调新增接口");
+            Assert.IsFalse(view.Contains("/Game/Notice/delNotice"), "公告页不应再有删除入口");
+            Assert.IsFalse(view.Contains("/Game/Notice/updateNotic"), "公告页不应再调旧的修改接口");
+            Assert.IsFalse(view.Contains("datagrid"), "公告页不再有列表表格，进入即编辑");
+            StringAssert.Contains(view, "/Game/Notice/GetNotice");
+            StringAssert.Contains(view, "/Game/Notice/SaveNotice");
+
+            // 唯一公告 + 字号：控制器只暴露“读一条/存一条”，新增与删除接口一并去掉
+            StringAssert.Contains(controller, "public ActionResult GetNotice(FormCollection form)");
+            StringAssert.Contains(controller, "public ActionResult SaveNotice(FormCollection form)");
+            Assert.IsFalse(controller.Contains("AddNotice"), "新增公告接口应删除");
+            Assert.IsFalse(controller.Contains("delNotice"), "删除公告接口应删除");
+            Assert.IsFalse(controller.Contains("updateNotic"), "旧的修改接口应删除");
+            StringAssert.Contains(controller, "form.Q<int>(\"FONTSIZE\")");
+            StringAssert.Contains(controller, "notice.Length > 200");
+
+            // BLL：单条读写（保存时清掉历史多出来的行）+ 字号标记组装/解析
+            StringAssert.Contains(bll, "public M_Notice GetSingleNotice()");
+            StringAssert.Contains(bll, "public Msg SaveSingleNotice(M_Notice entity)");
+            StringAssert.Contains(bll, "ef.Notices.Remove(rows[i])");
+            StringAssert.Contains(bll, "public static string ComposeSizeTag(string notice, int fontSize)");
+            StringAssert.Contains(bll, "public static string SplitSizeTag(string notice, out int size)");
+            // 默认字号不写标记：老客户端（不认标记）在运营没改字号时看不到任何变化
+            StringAssert.Contains(bll, "if (fontSize == NoticeFontSize.Default) return text;");
+            StringAssert.Contains(bll, "\"[SIZE=\" + NoticeFontSize.Normalize(fontSize) + \"]\" + text");
+
+            // 实体：字号列 + 与客户端 Label 设计值一致的三条边界（默认 41 / 12-120）
+            StringAssert.Contains(entity, "public int FONTSIZE { get; set; }");
+            StringAssert.Contains(entity, "public const int Default = 41;");
+            StringAssert.Contains(entity, "public const int Min = 12;");
+            StringAssert.Contains(entity, "public const int Max = 120;");
+
+            // 页面预览必须与客户端 Notice/Scroll View 1:1：
+            // 可视区 648×310、正文列宽 624、默认字号 41、居中、客户端字色/描边/字距/行高
+            StringAssert.Contains(view, "int clientViewWidth = 648;");
+            StringAssert.Contains(view, "int clientViewHeight = 310;");
+            StringAssert.Contains(view, "int clientTextWidth = 624;");
+            StringAssert.Contains(view, "int clientFontSize = NoticeFontSize.Default;");
+            StringAssert.Contains(view, "text-align: center;");
+            StringAssert.Contains(view, "letter-spacing: 2px;");
+            StringAssert.Contains(view, "lineHeight: size + 'px'");
+            StringAssert.Contains(view, "NC_VIEW_W + 'px', height: NC_VIEW_H + 'px'");
+            StringAssert.Contains(view, "NC_TEXT_W + 'px', marginTop: NC_TEXT_TOP + 'px'");
+            // 预览用客户端同一份字体（NowarSans-CN-Bold 随站点部署，且必须登记进 csproj）
+            StringAssert.Contains(view, "Content/fonts/NowarSans-CN-Bold.otf");
+            StringAssert.Contains(csproj, @"<Content Include=""Content\fonts\NowarSans-CN-Bold.otf"" />");
+            Assert.IsTrue(File.Exists(Path.Combine(FindRepoRoot().FullName, @"TTY.Web\Content\fonts\NowarSans-CN-Bold.otf")),
+                "公告预览用的客户端字体没有随站点一起提交");
+
+            // SQL 补丁：加字号列（列不存在时后台读取会报 Unknown column）+ 清掉历史多余公告行
+            StringAssert.Contains(sqlPatch, "ADD COLUMN `FONTSIZE` int(11) NOT NULL DEFAULT 41");
+            StringAssert.Contains(sqlPatch, "DELETE n1 FROM `notice` n1");
+            StringAssert.Contains(sqlPatch, "JOIN `notice` n2 ON n1.ID < n2.ID");
+        }
+
+        [TestMethod]
+        public void LuckyLionViceDrawMinBetFollowsTableMinBet()
+        {
+            string controller = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\GameConfigController.cs");
+
+            // 幸运六狮(GameId=10) 的庄闲/和不单独配最小值：最小押分取本桌"最低压分"，与主门同一个值；
+            // 最大押分仍用页面上的庄/闲单门最高押分与和单门最高押分。
+            int start = controller.IndexOf("else if (gameId == 10)");
+            Assert.IsTrue(start > 0, "未找到幸运六狮押注参数分支");
+            int end = controller.IndexOf("else", start + 10);
+            Assert.IsTrue(end > start, "幸运六狮押注参数分支未闭合");
+            string block = controller.Substring(start, end - start);
+
+            StringAssert.Contains(block, "room.BET_MIN_VICE = betMin;");
+            StringAssert.Contains(block, "room.BET_MIN_DRAW = betMin;");
+            StringAssert.Contains(block, "room.BET_MAX_VICE = form.Q<int>(\"BET_MAX_VICE\"");
+            StringAssert.Contains(block, "room.BET_MAX_DRAW = form.Q<int>(\"BET_MAX_DRAW\"");
+            // 不能再沿用 base 行旧值，否则运营改"最低压分"后庄闲/和的最小值不会跟着变
+            Assert.IsFalse(block.Contains("oldRoom.BET_MIN_VICE"), "庄闲最小押分不应再沿用 base 行旧值");
+            Assert.IsFalse(block.Contains("oldRoom.BET_MIN_DRAW"), "和最小押分不应再沿用 base 行旧值");
+
+            // 最小值跟随最低压分后必须挡住"最高 < 最低"的组合，否则该门任何押注都会被服务端判超限
+            StringAssert.Contains(controller, "庄/闲单门最高押分不能小于最低压分");
+            StringAssert.Contains(controller, "和单门最高押分不能小于最低压分");
+        }
+
     }
 }

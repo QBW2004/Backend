@@ -1138,6 +1138,10 @@
             $('#gcViceMaxLbl').text(crown ? '皇冠单次最高押分' : '庄/闲单门最高押分');
             $('#gcViceMinField').toggle(crown);
             $('#gcDrawMaxField').toggle(lion);
+            // 幸运六狮的庄/闲、和不单独配最小押分：跟随上面的「最低压分」，这里只配单门最高押分
+            $('#gcViceDrawHint').text(crown
+                ? '皇冠代表副玩法押分区域；限额按桌保存，仅对彩金单挑生效。'
+                : '庄/闲、和的最小押分跟随上面的「最低压分」（不单独配置），这里只配两者的单门最高押分；限额按桌保存，仅对幸运六狮生效。');
         }
         $('#gcViceDrawRow input').prop('disabled', !show);
     }

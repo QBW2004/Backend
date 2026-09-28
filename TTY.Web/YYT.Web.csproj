@@ -242,6 +242,7 @@
     <Compile Include="Areas\Mobile\Controllers\HomeController.cs" />
     <Compile Include="Areas\Mobile\MobileAreaRegistration.cs" />
     <Compile Include="Controllers\Api\CustomerServiceUrlController.cs" />
+    <Compile Include="Controllers\Api\AgencyInviteCodeController.cs" />
     <Compile Include="Controllers\Api\ExChangeCoinsController.cs" />
     <Compile Include="Controllers\Api\LoginController.cs" />
     <Compile Include="Controllers\Api\CryptocurrencyController.cs" />
@@ -1086,6 +1087,8 @@
     <Content Include="Content\fonts\glyphicons-halflings-regular.ttf" />
     <Content Include="Content\fonts\glyphicons-halflings-regular.woff" />
     <Content Include="Content\fonts\glyphicons-halflings-regular.woff2" />
+    <!-- 客户端公告字体（全屏公告页预览用，与客户端 Assets/WGM/DaTingG178/font/NowarSans-CN-Bold.otf 同一份） -->
+    <Content Include="Content\fonts\NowarSans-CN-Bold.otf" />
     <Content Include="Areas\Game\Views\web.config" />
     <Content Include="Areas\Game\Views\UserAccount\Index.cshtml" />
     <Content Include="Areas\Game\Views\Recharge\Index.cshtml" />

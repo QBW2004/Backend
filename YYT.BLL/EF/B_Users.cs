@@ -986,6 +986,37 @@ namespace YYT.BLL.EF
                 return detail;
             }
         }
+
+        /// <summary>
+        /// 玩家对外展示的邀请码（客户端个人面板用）：与手机端玩家详情页同口径 ——
+        /// 优先取注册时实际使用的邀请码（invite_codes.UsedBy），无记录则回退其所属代理的 admin.InviteCode。
+        /// 返回空串表示没有可展示的邀请码（例如玩家挂在总台 atmadmin 名下，总台本身没有邀请码）。
+        /// 注意这不是"玩家自己的 ID"：注册时服务端按 admin.InviteCode 反查归属代理，
+        /// 玩家 ID 填进注册页只会被判为邀请码错误。
+        /// </summary>
+        public string GetPlayerInviteCode(string playerId)
+        {
+            if (string.IsNullOrWhiteSpace(playerId))
+                return string.Empty;
+
+            using (var ef = new GameDbContext())
+            {
+                string target = playerId.Trim();
+
+                // 注册时用过的邀请码优先（invite_codes 目前线上为空表，取不到就回退代理的邀请码）
+                string usedCode = ef.Database
+                    .SqlQuery<string>("SELECT ic.InviteCode FROM invite_codes ic WHERE ic.UsedBy = {0} AND ic.IsUsed = 1 ORDER BY ic.ID DESC LIMIT 1", target)
+                    .FirstOrDefault();
+                if (!string.IsNullOrWhiteSpace(usedCode))
+                    return usedCode;
+
+                string agency = ef.Users.Where(u => u.ID == target).Select(u => u.AGENCY).FirstOrDefault();
+                if (string.IsNullOrWhiteSpace(agency))
+                    return string.Empty;
+
+                return ef.Admins.Where(a => a.ID == agency).Select(a => a.InviteCode).FirstOrDefault() ?? string.Empty;
+            }
+        }
         #endregion
 
         public List<M_Admin> GetTree(List<M_Admin> list1, List<M_Admin> list2, string id)
