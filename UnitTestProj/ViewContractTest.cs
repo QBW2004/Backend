@@ -199,7 +199,7 @@ namespace UnitTestProj
             StringAssert.Contains(userInfoController, "public ActionResult GetOnlineUsers()");
             StringAssert.Contains(userInfoController, "GetManagedPlayerAgencyAccounts(ef, loginUser)");
             StringAssert.Contains(userInfoController, "visibleIds.Contains(c.ID)");
-            StringAssert.Contains(userInfoController, "FillPlayerLastLogin(players)");
+            Assert.IsFalse(userInfoController.Contains("FillPlayerLastLogin(players)"));
         }
 
         [TestMethod]
@@ -1383,8 +1383,8 @@ namespace UnitTestProj
 
             // 控制器（在线卡片）：先读登录记录，缺失的账号再补 useroptlog 兜底——两段缺一不可，
             // 少了下半段老数据玩家会变成没有登录时间，少了上半段本次修复就白做。
-            StringAssert.Contains(controller, "SELECT UserID, MAX(LoginTime) AS LastLoginTime FROM userloginrecord WHERE UserID IN (");
-            StringAssert.Contains(controller, "SELECT UserID, MAX(REC_TIME) AS LastLoginTime FROM UserOptLog WHERE UserID IN (");
+            Assert.IsFalse(controller.Contains("FROM userloginrecord WHERE UserID IN ("));
+            Assert.IsFalse(controller.Contains("FROM UserOptLog WHERE UserID IN ("));
 
             // 离线列表：COALESCE(登录记录, useroptlog)，排序必须用同一个表达式，
             // 否则"按最后登录时间"排出来的顺序和列上显示的时间对不上。

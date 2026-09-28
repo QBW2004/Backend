@@ -99,10 +99,14 @@
         var twColor = today > 0 ? 'positive' : (today < 0 ? 'negative' : '');
         var ttColor = total > 0 ? 'positive' : (total < 0 ? 'negative' : '');
 
-        // 最后登录行常驻显示：无记录时兜底 2000-01-01（UserOptLog 仅保留7天，老玩家无数据）
-        var loginTimeText = p.LastLoginTime ? M.fmtTime(p.LastLoginTime) : '2000-01-01';
-        var loginRow = '<div class="info-row login-time-row"><div class="info-item">' + M.ICONS.clock +
-            '<span class="info-label">最后登录</span><span class="info-value">' + loginTimeText + '</span></div></div>';
+        // 「最后登录」行只给离线卡片：在线玩家看实时游戏状态，不看登录时间（2026-09-29 起在线列表也不再下发该字段）；
+        // 无记录时兜底 2000-01-01（UserOptLog 仅保留7天，老玩家无数据）。
+        var loginRow = '';
+        if (!isOnline) {
+            var loginTimeText = p.LastLoginTime ? M.fmtTime(p.LastLoginTime) : '2000-01-01';
+            loginRow = '<div class="info-row login-time-row"><div class="info-item">' + M.ICONS.clock +
+                '<span class="info-label">最后登录</span><span class="info-value">' + loginTimeText + '</span></div></div>';
+        }
         // 冻结状态不在玩家列表展示（冻结账号统一在"冻结明细/冻结账号"页查看）
         var controls = p.ActiveControls || [];
         var controlRow = controls.length

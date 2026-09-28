@@ -97,7 +97,6 @@ namespace YYT.Web.Areas.Game.Controllers
                     player.Profit = row.Profit ?? 0;
                     player.TodayWinLoss = row.TodayWinLoss ?? 0;
                 }
-                FillPlayerLastLogin(players);
                 msg.code = 1;
                 msg.content = "查询成功！";
                 msg.datas = players;
@@ -107,72 +106,6 @@ namespace YYT.Web.Areas.Game.Controllers
                 LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.UserInfoController), $"GetOnlineUsers Err >> {ex.Message} \r\n");
             }
             return Json(msg);
-        }
-        /// <summary>
-        /// 补充最近登录时间，避免在线/离线卡片字段不一致。
-        /// 数据源分两段（运营反馈"玩家登录时后台登录时间不更新"后的口径修正）：
-        ///   1) userloginrecord：玩家上线瞬间由库内触发器写入的真实登录时间
-        ///      （见 Docs/sql/玩家登录时间-20260918.sql，游戏服只写 users.INHALL，从不写登录日志）；
-        ///   2) 没有登录记录的账号（补丁上线前的老数据）回退 useroptlog 的最后操作时间——
-        ///      那是"最后进桌台/充退"的时间，不等于登录时间，只作兜底。
-        /// 在线卡片同样走这条链路，玩家一上线这里就会变成本次登录时间。
-        /// </summary>
-        private void FillPlayerLastLogin(List<OnlinePlayerInfo> players)
-        {
-            if (players == null || players.Count < 1)
-                return;
-            List<string> ids = players.Where(c => !string.IsNullOrWhiteSpace(c.ID)).Select(c => c.ID).Distinct().ToList();
-            if (ids.Count < 1)
-                return;
-            try
-            {
-                using (var ef = new GameDbContext())
-                {
-                    Dictionary<string, DateTime?> loginMap = new Dictionary<string, DateTime?>(StringComparer.OrdinalIgnoreCase);
-                    try
-                    {
-                        string placeholders = string.Join(",", ids.Select((c, i) => "{" + i + "}"));
-                        string sql = "SELECT UserID, MAX(LoginTime) AS LastLoginTime FROM userloginrecord WHERE UserID IN (" + placeholders + ") GROUP BY UserID";
-                        loginMap = ef.Database.SqlQuery<UserLastLoginRow>(sql, ids.Cast<object>().ToArray())
-                            .ToList()
-                            .ToDictionary(c => c.UserID, c => c.LastLoginTime, StringComparer.OrdinalIgnoreCase);
-                    }
-                    catch (Exception ex)
-                    {
-                        // 补丁表缺失/查询失败不影响卡片渲染：下面按 useroptlog 兜底。
-                        LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.UserInfoController), $"FillPlayerLastLogin(userloginrecord) Err >> {ex.Message}");
-                    }
-
-                    List<string> fallbackIds = ids.Where(c => !loginMap.ContainsKey(c)).ToList();
-                    if (fallbackIds.Count > 0)
-                    {
-                        string fallbackPlaceholders = string.Join(",", fallbackIds.Select((c, i) => "{" + i + "}"));
-                        string fallbackSql = "SELECT UserID, MAX(REC_TIME) AS LastLoginTime FROM UserOptLog WHERE UserID IN (" + fallbackPlaceholders + ") GROUP BY UserID";
-                        foreach (UserLastLoginRow row in ef.Database.SqlQuery<UserLastLoginRow>(fallbackSql, fallbackIds.Cast<object>().ToArray()).ToList())
-                        {
-                            if (!string.IsNullOrWhiteSpace(row.UserID))
-                                loginMap[row.UserID] = row.LastLoginTime;
-                        }
-                    }
-
-                    foreach (OnlinePlayerInfo player in players)
-                    {
-                        DateTime? last;
-                        if (player.ID != null && loginMap.TryGetValue(player.ID, out last))
-                            player.LastLoginTime = last;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.UserInfoController), $"FillPlayerLastLogin Err >> {ex.Message}");
-            }
-        }
-
-        private sealed class UserLastLoginRow
-        {
-            public string UserID { get; set; }
-            public DateTime? LastLoginTime { get; set; }
         }
         [MemberAuthorize]
         [AjaxOnly]

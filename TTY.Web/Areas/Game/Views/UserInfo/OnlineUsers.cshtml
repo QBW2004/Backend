@@ -72,7 +72,11 @@
 		        queryData();
 		    }
 
+    var _querying = false;
     function queryData() {
+        if (_querying) return;
+        _querying = true;
+        setTimeout(function () { _querying = false; }, 15000);
         var srch = $('#frm_srch').serializeObject();
         request('/Game/UserInfo/GetOnlineUsers', srch, function (data) {
             if (data && data.code == 1) {
@@ -87,9 +91,11 @@
                     $('#tb_OnlineUsers').datagrid('loadData', { total: rows.length, rows: rows });
                     $('#spCount').text('共 ' + rows.length + ' 人在线');
                     bindOnlineRowClick();
+                    _querying = false;
                 });
             } else {
                 showMsg(data);
+                _querying = false;
             }
         });
     }
@@ -169,7 +175,7 @@
     function toggleAutoRefresh() {
         if (_autoTimer) { clearInterval(_autoTimer); _autoTimer = null; }
         if ($('#chkAutoRefresh').is(':checked')) {
-            var sec = parseInt($('#selRefreshSec').val(), 10) || 10;
+            var sec = parseInt($('#selRefreshSec').val(), 10) || 2;
             _autoTimer = setInterval(queryData, sec * 1000);
         }
     }
@@ -1108,8 +1114,9 @@
                 <div class="left Lmg10" style="line-height:32px;">
                     <label><input type="checkbox" id="chkAutoRefresh" onclick="toggleAutoRefresh();" /> 自动刷新</label>
                     <select id="selRefreshSec" onchange="toggleAutoRefresh();">
+                        <option value="2" selected>2秒</option>
                         <option value="5">5秒</option>
-                        <option value="10" selected>10秒</option>
+                        <option value="10">10秒</option>
                         <option value="30">30秒</option>
                     </select>
                 </div>
