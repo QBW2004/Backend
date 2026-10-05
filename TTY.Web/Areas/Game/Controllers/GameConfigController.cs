@@ -14,6 +14,20 @@ namespace YYT.Web.Areas.Game.Controllers
     [MemberAuthorize]
     public class GameConfigController : BaseController
     {
+        private static void ReloadRobotSeatsBestEffort()
+        {
+            try
+            {
+                Msg reload = new SConnect().SendRobotReload();
+                if (reload == null || reload.code != 1)
+                    LogHelper.WriteLog(typeof(GameConfigController), "Robot seat reload failed: " + (reload == null ? "no response" : reload.content));
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(GameConfigController), ex);
+            }
+        }
+
         public ActionResult Index()
         {
             return View("ConfigEditor");
@@ -482,11 +496,13 @@ namespace YYT.Web.Areas.Game.Controllers
                     using (var efCard = new GameDbContext())
                     {
                         efCard.Database.ExecuteSqlCommand("DELETE FROM roomtableconfig WHERE GAME_ID=" + cardGid + " AND TableIndex=" + delIdx);
+                        efCard.Database.ExecuteSqlCommand("DELETE FROM robot_seat WHERE GAME_ID=" + cardGid + " AND TABLE_ID=" + delIdx);
                         efCard.Database.ExecuteSqlCommand("DELETE FROM roomtableconfig_card WHERE GAME_ID=" + cardGid + " AND TableIndex=" + delIdx);
                         efCard.Database.ExecuteSqlCommand("DELETE FROM paracard WHERE GAME_ID=" + cardGid + " AND ID=" + (cardGid * 1000 + delIdx));
                         efCard.Database.ExecuteSqlCommand("DELETE FROM cardpayoutprofile WHERE GAME_ID=" + cardGid + " AND TableId=" + delIdx);
                         // 压实 roomtableconfig.TableIndex 为 0..k-1
                         CompactFishTableIndexes(efCard, cardGid);
+                        efCard.Database.ExecuteSqlCommand("UPDATE robot_seat SET TABLE_ID=TABLE_ID-1 WHERE GAME_ID=" + cardGid + " AND TABLE_ID>" + delIdx);
                         // 压实 roomtableconfig_card.TableIndex 高位左移(与 cardpayoutprofile 同思路)
                         efCard.Database.ExecuteSqlCommand(
                             "UPDATE roomtableconfig_card SET TableIndex=TableIndex-1 WHERE GAME_ID=" + cardGid + " AND TableIndex>" + delIdx);
@@ -504,11 +520,13 @@ namespace YYT.Web.Areas.Game.Controllers
                     msg.content = (rpCard != null && rpCard.code == 1)
                         ? "删除成功，服务端已即时热更新！"
                         : "删除成功，但服务端热更新失败：" + (rpCard == null ? "服务端无响应" : rpCard.content);
+                    ReloadRobotSeatsBestEffort();
                     return Json(msg);
                 }
                 else if (gameType == 3)
                 {
                     msg = new B_LabaGamePara().DeleteTable(tableId, tableId / 1000);
+                    if (msg != null && msg.datas != null && (bool)msg.datas) ReloadRobotSeatsBestEffort();
                     return Json(msg);
                 }
 
@@ -524,10 +542,12 @@ namespace YYT.Web.Areas.Game.Controllers
 						{
 
 							ef2.Database.ExecuteSqlCommand("DELETE FROM roomtableconfig WHERE GAME_ID=" + fishGid + " AND TableIndex=" + delTableIdx);
+                            ef2.Database.ExecuteSqlCommand("DELETE FROM robot_seat WHERE GAME_ID=" + fishGid + " AND TABLE_ID=" + delTableIdx);
 							// 同步删除 parafish 对应行（按桌维度难度），避免留孤儿行。
 							ef2.Database.ExecuteSqlCommand("DELETE FROM parafish WHERE GAME_ID=" + fishGid + " AND TableIndex=" + delTableIdx);
 							// 删后把剩余 TableIndex 压实成 0..k-1，保持与游戏服桌号连续对齐
 							CompactFishTableIndexes(ef2, fishGid);
+                            ef2.Database.ExecuteSqlCommand("UPDATE robot_seat SET TABLE_ID=TABLE_ID-1 WHERE GAME_ID=" + fishGid + " AND TABLE_ID>" + delTableIdx);
 							// parafish 同步压实：把剩余行重排为连续 ID(gameId*1000+0..k-1) 与 TableIndex(0..k-1)，
 							// 与 roomtableconfig 保持同构，否则中心服 GetFishPara 按 ID=gameId*1000+i 读会错位。
 							CompactFishParaFishIds(ef2, fishGid);
@@ -541,6 +561,7 @@ namespace YYT.Web.Areas.Game.Controllers
 						msg.content = (rp != null && rp.code == 1)
 							? "删除成功，服务端已即时热更新！"
 							: "删除成功，但服务端热更新失败：" + (rp == null ? "服务端无响应" : rp.content);
+						ReloadRobotSeatsBestEffort();
 						return Json(msg);
 
 					}
@@ -556,12 +577,14 @@ namespace YYT.Web.Areas.Game.Controllers
 						using (var efBet = new GameDbContext())
 						{
 							efBet.Database.ExecuteSqlCommand("DELETE FROM roomtableconfig WHERE GAME_ID=" + betGid + " AND TableIndex=" + delIdx);
+                            efBet.Database.ExecuteSqlCommand("DELETE FROM robot_seat WHERE GAME_ID=" + betGid + " AND TABLE_ID=" + delIdx);
 							efBet.Database.ExecuteSqlCommand("DELETE FROM parabet WHERE GAME_ID=" + betGid + " AND ID=" + (betGid * 1000 + delIdx));
 							efBet.Database.ExecuteSqlCommand("DELETE FROM cardpayoutprofile WHERE GAME_ID=" + betGid + " AND TableId=" + delIdx);
 							efBet.Database.ExecuteSqlCommand("DELETE FROM roomtableconfig_bet WHERE GAME_ID=" + betGid + " AND TableIndex=" + delIdx);
 							efBet.Database.ExecuteSqlCommand("DELETE FROM betgamecfg WHERE GAME_ID=" + betGid + " AND TableIndex=" + delIdx);
 							// 压实 roomtableconfig.TableIndex 为 0..k-1
 							CompactFishTableIndexes(efBet, betGid);
+                            efBet.Database.ExecuteSqlCommand("UPDATE robot_seat SET TABLE_ID=TABLE_ID-1 WHERE GAME_ID=" + betGid + " AND TABLE_ID>" + delIdx);
 							// 压实 parabet ID 为 gameId*1000+0..k-1，与 roomtableconfig 保持同构
 							CompactBetParaIds(efBet, betGid);
 							// 压实 cardpayoutprofile.TableId 高位左移
@@ -582,6 +605,7 @@ namespace YYT.Web.Areas.Game.Controllers
 						msg.content = (rpBet != null && rpBet.code == 1)
 							? "删除成功，服务端已即时热更新！"
 							: "删除成功，但服务端热更新失败：" + (rpBet == null ? "服务端无响应" : rpBet.content);
+						ReloadRobotSeatsBestEffort();
 						return Json(msg);
 					}
 
@@ -822,6 +846,7 @@ namespace YYT.Web.Areas.Game.Controllers
 
                     msg = new B_LabaGamePara().SaveTableFull(tableId, gameId, labaList, labaPara, labaTableName, labaEnabled,
                         labaBetScores, labaDefaultBetIdx >= 0 ? labaDefaultBetIdx : 0);
+                    if (msg != null && msg.code == 1) ReloadRobotSeatsBestEffort();
 
                     // ── 保存成功后补发 PC 热更：center UpdateGameConfig → SendExtendedPara，
                     // 游戏服 ResetConfig + ApplyProfile，下一局立即生效（无需重启）。
@@ -1017,6 +1042,7 @@ namespace YYT.Web.Areas.Game.Controllers
                     }
 
                     msg = new B_BetGamePara().SaveTableFull(room, machine, betGameCfg);
+                    if (msg != null && msg.code == 1) ReloadRobotSeatsBestEffort();
                 }
                 else if (gameType == 1)
                 {
@@ -1201,6 +1227,7 @@ namespace YYT.Web.Areas.Game.Controllers
                     // 写库成功即标记已落库：即使 RP/TC/PA 热更管道失败也刷新前端列表，
                     // 避免"DB 已写、Web 列表不刷新"（对齐 B_SuperPara.PushHotUpdate 的 datas=true 约定）。
                     msg.datas = true;
+                    ReloadRobotSeatsBestEffort();
                     // 回显本次落库的按桌关键值，便于核对表单提交与库中数据是否一致
                     msg.content = (msg.content ?? "") + " [桌" + tIdx + " 已写入: BetMin=" + betMin + ", BetMax=" + betMax + ", CoinSc=" + coinSc + ", CoinNeed=" + coinNeed + ", CardDif=" + cardDif + ", HypeType=" + hypeType + "]";
                 }
@@ -1316,6 +1343,7 @@ namespace YYT.Web.Areas.Game.Controllers
                     // 写库成功即标记已落库：即使 RP/TC/PA 热更管道失败也刷新前端列表，
                     // 避免"DB 已写、Web 列表不刷新"（对齐 B_SuperPara.PushHotUpdate 的 datas=true 约定）。
                     msg.datas = true;
+                    ReloadRobotSeatsBestEffort();
                     // 回显本次落库的按桌关键值，便于核对表单提交与库中数据是否一致
                     msg.content = (msg.content ?? "") + " [桌" + tIdx + " 已写入: CoinsNeed=" + coinNeed + ", BetMin=" + betMin + ", BetMax=" + betMax + ", CoinSc=" + coinSc + ", FishDif=" + fishDif + ", FishSite=" + fishSiteType + ", GunStep=" + rtGunStep + "]";
                 }

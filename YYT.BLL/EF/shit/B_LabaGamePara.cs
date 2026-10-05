@@ -402,6 +402,7 @@ namespace YYT.BLL.EF
                         ef.Database.ExecuteSqlCommand(
                             "DELETE FROM roomtableconfig WHERE GAME_ID={0} AND RoomIndex=0 AND TableIndex={1}",
                             gameId, tableIndex);
+                        ef.Database.ExecuteSqlCommand("DELETE FROM robot_seat WHERE GAME_ID={0} AND TABLE_ID={1}", gameId, tableIndex);
 
                         // 删 roomtableconfig_bet（按桌筹码档位）
                         ef.Database.ExecuteSqlCommand(
@@ -422,6 +423,7 @@ namespace YYT.BLL.EF
                             ef.Database.ExecuteSqlCommand(
                                 "UPDATE roomtableconfig SET TableIndex={0} WHERE ID={1} AND TableIndex<>{0}", i, remainIds[i]);
                         }
+                        ef.Database.ExecuteSqlCommand("UPDATE robot_seat SET TABLE_ID=TABLE_ID-1 WHERE GAME_ID={0} AND TABLE_ID>{1}", gameId, tableIndex);
                         // paralaba 同步压实 ID/TableIndex
                         var labaRows = ef.Database.SqlQuery<int>(
                             "SELECT ID FROM paralaba WHERE GAME_ID=" + gameId + " ORDER BY TableIndex, ID").ToList();
@@ -496,6 +498,7 @@ namespace YYT.BLL.EF
                 }
             }
 
+            msg.datas = true;
             var srv = new SConnect();
             var tmpMsg = srv.SendReadString(EScMsgType.RP, gameId);
             msg.code = tmpMsg.code;
