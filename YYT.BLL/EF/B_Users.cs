@@ -18,6 +18,15 @@ namespace YYT.BLL.EF
     {
         public const int PlayerFreezeAuditOpt = 26;
         public const int PlayerUnfreezeAuditOpt = 27;
+
+        /// <summary>
+        /// userrelations 去重派生表：该表 ID 列无唯一约束，中心服 Register 无条件 INSERT
+        /// （重试/并发/删号重注册都可能留下同一账号多条映射行）。按账号取最小 UserID ——
+        /// 与中心服 GetUserInfo 按索引序读到第一行的口径一致。所有 userrelations join
+        /// 都必须走这个去重子查询，否则列表行数与充退/输赢合计都会被重复行放大。
+        /// </summary>
+        internal const string RelationsDedupSql =
+            "(SELECT ID, MIN(UserID) AS UserID FROM userrelations GROUP BY ID)";
         protected IGameServerClient GameServerClient { get; set; }
 
         public B_Users()
@@ -414,8 +423,13 @@ namespace YYT.BLL.EF
                 bool canPwd = loginUser.UserPriv == 0 || loginUser.IsViewPwd == 1;
                 bool canSafePwd = loginUser.UserPriv == 0 || loginUser.IsViewSafePwd == 1;
 
+                // userrelations.ID 无唯一约束、可能残留重复映射行（中心服 Register 无条件 INSERT），
+                // 按账号取最小 UserID 去重后再 join，否则同一账号在列表里出多行、合计也被放大。
+                var relations = ef.UserRelations
+                    .GroupBy(x => x.ID)
+                    .Select(g => new { ID = g.Key, UserID = g.Min(x => x.UserID) });
                 var rst = from c in ef.Users
-                          join r in ef.UserRelations on c.ID equals r.ID
+                          join r in relations on c.ID equals r.ID
                           select new M_Users_DTO
                           {
                               ID = c.ID,
@@ -492,8 +506,12 @@ namespace YYT.BLL.EF
                 bool canPwd = loginUser.UserPriv == 0 || loginUser.IsViewPwd == 1;
                 bool canSafePwd = loginUser.UserPriv == 0 || loginUser.IsViewSafePwd == 1;
 
+                // userrelations 去重（同 GetUsersList）：重复映射行会让同一账号出多行
+                var relations = ef.UserRelations
+                    .GroupBy(x => x.ID)
+                    .Select(g => new { ID = g.Key, UserID = g.Min(x => x.UserID) });
                 var rst = from c in ef.Users
-                          join r in ef.UserRelations on c.ID equals r.ID
+                          join r in relations on c.ID equals r.ID
                           where userIds.Contains(c.ID)
                           select new M_Users_DTO
                           {
@@ -665,7 +683,7 @@ namespace YYT.BLL.EF
                 }
 
                 int total = ef.Database.SqlQuery<int>(
-                    "SELECT COUNT(1) FROM users c INNER JOIN userrelations r ON r.ID = c.ID" + whereSql,
+                    "SELECT COUNT(1) FROM users c INNER JOIN " + RelationsDedupSql + " r ON r.ID = c.ID" + whereSql,
                     baseArgs).FirstOrDefault();
                 mPage.SetTotalCount(total);
 
@@ -693,7 +711,7 @@ namespace YYT.BLL.EF
                     " r.UserID, c.INHALL, c.GAME_SCORE, c.GRADE, c.SAFE_COINS" + profitColumn +
                     ", IFNULL(w.WINLOSS,0) AS TodayWinLoss, IFNULL(d.TodayBuy,0) AS TodayBuy," +
                     " IFNULL(d.TodayBack,0) AS TodayBack, COALESCE(lr.LastLoginTime, l.LastLoginTime) AS LastLoginTime" +
-                    " FROM users c INNER JOIN userrelations r ON r.ID = c.ID" +
+                    " FROM users c INNER JOIN " + RelationsDedupSql + " r ON r.ID = c.ID" +
                     " LEFT JOIN user_daily_winloss w ON w.UserID = c.ID AND w.DAY = {" + todayArg + "}" + profitJoin +
                     " LEFT JOIN (SELECT GameID," +
                     " SUM(CASE WHEN CreateTime >= {" + todayArg + "} AND (RechargeType IN (20,22) OR (RechargeType = 30 AND Processed = 1)) THEN Coin ELSE 0 END) AS TodayBuy," +
@@ -862,7 +880,7 @@ namespace YYT.BLL.EF
                     "SELECT IFNULL(SUM(CASE WHEN x.RechargeType IN (20,22,30) THEN x.Coin ELSE 0 END),0) AS TotalBuy," +
                     " IFNULL(SUM(CASE WHEN x.RechargeType IN (21,23,31) THEN x.Coin ELSE 0 END),0) AS TotalBack" +
                     " FROM rechargerecords x INNER JOIN users c ON c.ID = x.GameID" +
-                    " INNER JOIN userrelations r ON r.ID = c.ID" +
+                    " INNER JOIN " + RelationsDedupSql + " r ON r.ID = c.ID" +
                     " WHERE x.CreateTime >= {" + cutoffIndex + "} AND x.CreateTime <= {" + nowIndex + "}" +
                     " AND x.Processed = 1" +
                     // 会员口径：只统计目标为玩家的流水。总台给代理充值写的是代理账号（admin 表 ID），
@@ -877,7 +895,7 @@ namespace YYT.BLL.EF
                     "SELECT IFNULL(SUM(CASE WHEN r.RechargeType IN (20,22) OR (r.RechargeType = 30 AND r.Processed = 1) THEN r.Coin ELSE 0 END),0) AS TodayBuy," +
                     " IFNULL(SUM(CASE WHEN r.RechargeType IN (21,23) OR (r.RechargeType = 31 AND r.Processed = 1) THEN r.Coin ELSE 0 END),0) AS TodayBack" +
                     " FROM rechargerecords r INNER JOIN users c ON c.ID = r.GameID" +
-                    " INNER JOIN userrelations rr ON rr.ID = c.ID" +
+                    " INNER JOIN " + RelationsDedupSql + " rr ON rr.ID = c.ID" +
                     " WHERE r.CreateTime >= {" + (args.Count - 1) + "} AND r.CreateTime <= {" + nowIndex + "} AND r.Processed = 1" +
                     // 同上：排除目标为代理（admin）的充值流水，今日口径也只算会员
                     " AND NOT EXISTS (SELECT 1 FROM admin ra WHERE ra.ID = r.GameID)" + scope,
@@ -1047,8 +1065,12 @@ namespace YYT.BLL.EF
             M_EasyuiGridData<M_Users_DTO> list = new M_EasyuiGridData<M_Users_DTO>();
             using (var ef = new GameDbContext())
             {
+                // userrelations 去重（同 GetUsersList）：重复映射行会让同一账号出多行
+                var relations = ef.UserRelations
+                    .GroupBy(x => x.ID)
+                    .Select(g => new { ID = g.Key, UserID = g.Min(x => x.UserID) });
                 var rst = from c in ef.Users
-                          join r in ef.UserRelations on c.ID equals r.ID
+                          join r in relations on c.ID equals r.ID
                           select new M_Users_DTO
                           {
                               ID = c.ID,
@@ -1323,8 +1345,18 @@ namespace YYT.BLL.EF
             return val;
 
         }
+        /// <summary>
+        /// 删除玩家：连同该账号在全部账号串口径表中的数据一并清除。
+        /// 旧实现只删 users + userrelations 一行，重注册同名账号会继承旧账号的盈亏/流水/登录记录；
+        /// userrelations 的 ID 列无唯一约束（中心服 Register 是无条件 INSERT，重试/并发会留重复行），
+        /// 必须删除该账号的全部映射行，不能用 SingleOrDefault（两行即抛异常回滚，整单删不掉）。
+        /// </summary>
         public int DelUser(M_Users entity)
         {
+            if (entity == null || string.IsNullOrWhiteSpace(entity.ID))
+                return 0;
+
+            string account = entity.ID.Trim();
             int val = 0;
             using (var ef = new GameDbContext())
             {
@@ -1332,20 +1364,51 @@ namespace YYT.BLL.EF
                 {
                     try
                     {
-                        ef.Users.Attach(entity);
-                        ef.Users.Remove(entity);
-
-                        var rst = ef.UserRelations.Where(c => c.ID.Equals(entity.ID)).SingleOrDefault();
-                        if (rst != null)
-                            ef.UserRelations.Remove(rst);
-
-                        val = ef.SaveChanges();
+                        // 账号串口径的关联表全量清除（重注册同名账号后不得继承旧数据）。
+                        // rechargerecords 只删 AccountType=0 的玩家流水：同名代理账号的代理流水不碰。
+                        // 各表按「表名 -> 删除条件」登记；补丁表（如 userloginrecord）在老库可能不存在，
+                        // 先查 information_schema 再删，缺表不拖垮整个删除事务。
+                        var deletes = new Dictionary<string, string>
+                        {
+                            ["userrelations"] = "ID = {0}",
+                            ["user_daily_winloss"] = "UserID = {0}",
+                            ["useroptlog"] = "UserID = {0}",
+                            ["userloginrecord"] = "UserID = {0}",
+                            ["rechargerecords"] = "GameID = {0} AND AccountType = 0",
+                            ["agencyoptlog"] = "ID = {0}",
+                            ["gameprizerecord"] = "UserID = {0}",
+                            ["usercontrolstatus"] = "UserID = {0}",
+                            ["usercontrolvalue"] = "USERID = {0}",
+                            ["userscoresnapshotledger"] = "UserID = {0}",
+                            ["clientexchangerecord"] = "ID = {0}",
+                            ["ex_change"] = "PLAYER_ID = {0}",
+                            ["safe_coins_log"] = "USER_ID = {0}",
+                            ["loginmissrecord"] = "ID = {0}",
+                            ["userlockrecord"] = "ID = {0}",
+                            ["videogamecoinrecord"] = "ID = {0}",
+                            ["accountlog"] = "UserName = {0}",
+                            ["transferlog"] = "UserName = {0}",
+                            ["games_money_spent"] = "USERID = {0}",
+                            ["sharebonus"] = "UserId = {0} OR DestUserId = {0}",
+                            ["users"] = "ID = {0}"
+                        };
+                        HashSet<string> existingTables = new HashSet<string>(
+                            ef.Database.SqlQuery<string>(
+                                "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE()"),
+                            StringComparer.OrdinalIgnoreCase);
+                        foreach (var kv in deletes)
+                        {
+                            if (!existingTables.Contains(kv.Key))
+                                continue;
+                            val += ef.Database.ExecuteSqlCommand("DELETE FROM `" + kv.Key + "` WHERE " + kv.Value, account);
+                        }
 
                         trans.Commit();
                     }
                     catch (Exception ex)
                     {
                         trans.Rollback();
+                        val = 0;
                         LogHelper.WriteLog(typeof(YYT.BLL.EF.B_Users), ex);
                     }
                 }
@@ -1593,8 +1656,10 @@ namespace YYT.BLL.EF
                         entity.GRADE = 1;
                         ef.Users.Add(entity);
 
-                        var identityRst = ef.UserRelations.Where(c => c.ID.Equals(entity.ID)).SingleOrDefault();
-                        if (identityRst == null)
+                        // userrelations.ID 无唯一约束且中心服 Register 无条件 INSERT，可能已存在重复映射行；
+                        // 用 Any 判存在（SingleOrDefault 遇重复行会抛异常，把注册整个回滚掉）。
+                        bool identityExists = ef.UserRelations.Any(c => c.ID.Equals(entity.ID));
+                        if (!identityExists)
                         {
                             ef.UserRelations.Add(new M_UserRelations { ID = entity.ID });
                         }
@@ -1670,8 +1735,9 @@ namespace YYT.BLL.EF
                         if (ef.SaveChanges() > 0)
                         {
 
-                            var identityRst = ef.UserRelations.Where(c => c.ID.Equals(entity.ID)).SingleOrDefault();
-                            if (identityRst == null)
+                            // 同 Regist：userrelations 可能有重复映射行，用 Any 判存在，避免 SingleOrDefault 抛异常
+                            bool identityExists = ef.UserRelations.Any(c => c.ID.Equals(entity.ID));
+                            if (!identityExists)
                             {
                                 ef.UserRelations.Add(new M_UserRelations { ID = entity.ID });
                                 if (ef.SaveChanges() > 0)
@@ -1679,6 +1745,11 @@ namespace YYT.BLL.EF
                                     msg.code = 1;
                                     msg.content = "注册成功！";
                                 }
+                            }
+                            else
+                            {
+                                msg.code = 1;
+                                msg.content = "注册成功！";
                             }
                         }
 

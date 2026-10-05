@@ -13,7 +13,12 @@ namespace YYT.BLL.EF
         {
             using (var ef = new GameDbContext())
             {
-                return ef.UserRelations.Where(c => c.ID.Equals(account)).Select(c => c.UserID).SingleOrDefault();
+                // userrelations.ID 无唯一约束（中心服 Register 无条件 INSERT，重试/并发会留重复行）；
+                // 重复时取最小 UserID —— 与中心服 GetUserInfo 按索引序读到的第一行一致。
+                return ef.UserRelations.Where(c => c.ID.Equals(account))
+                    .OrderBy(c => c.UserID)
+                    .Select(c => (int?)c.UserID)
+                    .FirstOrDefault();
             }
         }
 
