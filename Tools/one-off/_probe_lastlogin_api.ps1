@@ -22,7 +22,7 @@ $dx = Invoke-WebRequest -Uri "$base/Game/UserInfo/GetUserDetail" -Method POST -B
 $dj = $dx.Content | ConvertFrom-Json
 Write-Output ("DETAIL code=" + $dj.code + " LastLoginTime=" + $dj.datas.LastLoginTime + " TotalWinLoss=" + $dj.datas.TotalWinLoss)
 
-# 在线卡片：LastLoginTime 走 FillPlayerLastLogin（userloginrecord 优先，useroptlog 兜底）
+# 在线卡片：2026-09-29（c7cd4cf）起不再下发/展示 LastLoginTime（应恒为空），口径只留离线列表与玩家详情
 $ox = Invoke-WebRequest -Uri "$base/Game/UserInfo/GetOnlineUsers" -Method POST -Body @{} -WebSession $sess -Headers $h -UseBasicParsing -TimeoutSec 120
 $oj = $ox.Content | ConvertFrom-Json
 Write-Output ("ONLINE code=" + $oj.code + " count=" + @($oj.datas).Count)

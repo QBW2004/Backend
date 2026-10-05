@@ -608,6 +608,31 @@ namespace UnitTestProj
         }
 
         [TestMethod]
+        public void PrizeHistoryShowsMachineNumberAndHeaderTotal()
+        {
+            string userRecordController = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\UserRecordController.cs");
+            string mobileHomeController = ReadRepoFile(@"TTY.Web\Areas\Mobile\Controllers\HomeController.cs");
+            string prizeScript = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.prizehistory.js");
+
+            // 「机台号」列显示哪台机子出的奖：roomtableconfig.TableName 优先（运营在桌台
+            // 配置里给机台起的名字），无配置回退 "N号机"。TableId 口径按 GameType 换算
+            // TableIndex：牌机/鱼机是房间内 1 基桌台号（-1），拉霸等其它类是 0 基机台下标（原值）。
+            StringAssert.Contains(userRecordController, "FROM roomtableconfig");
+            StringAssert.Contains(userRecordController, "item.GameType == 3 ? (int)item.TableId : (int)item.TableId - 1");
+            StringAssert.Contains(userRecordController, "item.TableLabel = tname;");
+            StringAssert.Contains(userRecordController, "(configIndex + 1) + \"号机\"");
+            StringAssert.Contains(prizeScript, "<th>机台号</th>");
+            StringAssert.Contains(prizeScript, "esc(r.TableLabel || '--')");
+            // 不能再回退成直接显示 RoomId（服务端下发 0 基房间号，真人恒为 0，全部显示 --）
+            Assert.IsFalse(prizeScript.Contains("esc(r.RoomId"));
+
+            // 头部副标题统计当前查询的中奖总数量（运营要求顶栏直接可见）
+            StringAssert.Contains(mobileHomeController, "ViewBag.MSubtitleHtml = \"中奖总数 <span id=");
+            StringAssert.Contains(mobileHomeController, "prizeTotalCount");
+            StringAssert.Contains(prizeScript, "$('#prizeTotalCount').text(totalCount)");
+        }
+
+        [TestMethod]
         public void CoinOperationsRejectNonPositiveAmountsAndQueryRequiresUpDownPermission()
         {
             string userInfoController = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\UserInfoController.cs");
@@ -1381,8 +1406,8 @@ namespace UnitTestProj
             // 内部任何异常都吞掉，绝不能让游戏服的写入失败。
             StringAssert.Contains(sqlPatch, "DECLARE CONTINUE HANDLER FOR SQLEXCEPTION BEGIN END;");
 
-            // 控制器（在线卡片）：先读登录记录，缺失的账号再补 useroptlog 兜底——两段缺一不可，
-            // 少了下半段老数据玩家会变成没有登录时间，少了上半段本次修复就白做。
+            // 在线卡片已撤下「最后登录」列（2026-09-29，运营口径：在线玩家看实时游戏状态，不看登录时间），
+            // GetOnlineUsers 的两轮 userloginrecord/UserOptLog 补查随之删除——桌面在线页与手机端都没有消费方，留着只是每次刷新白跑。
             Assert.IsFalse(controller.Contains("FROM userloginrecord WHERE UserID IN ("));
             Assert.IsFalse(controller.Contains("FROM UserOptLog WHERE UserID IN ("));
 
@@ -1398,7 +1423,15 @@ namespace UnitTestProj
                 && usersBll.Substring(detailSql, 2000).Contains("COALESCE(lr.LastLoginTime, l.LastLoginTime) AS LastLoginTime"),
                 "GetUserPhoneDetail 的「最后登入」也要优先取登录记录");
 
-            // 前端只渲染服务端下发的时间，不得自己算（在线/离线卡片同一条渲染路径）
+            // 「最后登录」行只在离线卡片输出：loginRow 先置空，再在 if (!isOnline) 内赋值（2026-09-29 起在线卡片不再展示该列）。
+            // 在线卡片没有 .login-time-row 锚点，控制状态行须兜底 append 到 .player-info（applyActiveControls 的 else 分支），不得删除。
+            int loginInit = playersScript.IndexOf("var loginRow = '';", StringComparison.Ordinal);
+            int loginGuard = playersScript.IndexOf("if (!isOnline) {", StringComparison.Ordinal);
+            int loginAssign = playersScript.IndexOf("loginRow = '<div class=\"info-row login-time-row\">", StringComparison.Ordinal);
+            Assert.IsTrue(loginInit > 0 && loginGuard > loginInit
+                && loginAssign > loginGuard && loginAssign - loginGuard < 400,
+                "「最后登录」行必须只在离线卡片输出：loginRow 先置空，再在 if (!isOnline) 内赋值");
+            StringAssert.Contains(playersScript, "$card.find('.player-info').append(controlHTML);");
             StringAssert.Contains(playersScript, "var loginTimeText = p.LastLoginTime ? M.fmtTime(p.LastLoginTime) : '2000-01-01';");
             StringAssert.Contains(playersScript, "'<span class=\"info-label\">最后登录</span><span class=\"info-value\">' + loginTimeText + '</span></div></div>'");
         }
@@ -1519,6 +1552,104 @@ namespace UnitTestProj
             // 最小值跟随最低压分后必须挡住"最高 < 最低"的组合，否则该门任何押注都会被服务端判超限
             StringAssert.Contains(controller, "庄/闲单门最高押分不能小于最低压分");
             StringAssert.Contains(controller, "和单门最高押分不能小于最低压分");
+        }
+
+        [TestMethod]
+        public void TotalControlDisplayPicksCardFirstAndKillReleaseAreExclusive()
+        {
+            string controlBll = ReadRepoFile(@"YYT.BLL\EF\B_UserControl.cs");
+
+            // 互斥口径收敛到 TotalControlRules.ModesReplacedBy：吃分/放水互斥，控牌只替换旧控牌
+            StringAssert.Contains(controlBll, "TotalControlRules.ModesReplacedBy(mode)");
+            // 展示口径"每人一条、控牌优先"在两个接口都收口到 PickDisplayControls
+            // （GetTotalControlStatus + GetActiveTotalControls）
+            Assert.IsTrue(controlBll.Split(new[] { "TotalControlRules.PickDisplayControls(" }, StringSplitOptions.None).Length - 1 >= 2,
+                "GetTotalControlStatus 与 GetActiveTotalControls 都应调用 TotalControlRules.PickDisplayControls");
+            // 旧口径"同一玩家同时只允许一个总控"已废弃，不允许回退
+            Assert.IsFalse(controlBll.Contains("同一玩家同时只允许一个总控"));
+        }
+
+        [TestMethod]
+        public void DelUserPurgesAllAccountKeyedDataAndListJoinsDedupeRelations()
+        {
+            string usersBll = ReadRepoFile(@"YYT.BLL\EF\B_Users.cs");
+            string controller = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\UserInfoController.cs");
+            string relBll = ReadRepoFile(@"YYT.BLL\EF\B_UserRelations.cs");
+
+            // 删除玩家必须清掉全部账号串口径的关联表：这些表不随 users 行删除，
+            // 不清的话重注册同名账号会继承旧账号的盈亏/流水/登录/控制记录。
+            // （2026-10-02 运营实测：删号重注册后总盈亏仍显示旧值、列表出现两行。）
+            StringAssert.Contains(usersBll, "\"user_daily_winloss\"] = \"UserID = {0}\"");
+            StringAssert.Contains(usersBll, "\"useroptlog\"] = \"UserID = {0}\"");
+            StringAssert.Contains(usersBll, "\"userloginrecord\"] = \"UserID = {0}\"");
+            StringAssert.Contains(usersBll, "\"usercontrolstatus\"] = \"UserID = {0}\"");
+            // 充退流水只删玩家行：GameID 同名命中代理账号(admin)的流水不能动
+            StringAssert.Contains(usersBll, "GameID = {0} AND AccountType = 0");
+            // 不能再回到"只删 users+userrelations 一行"的旧实现
+            Assert.IsFalse(usersBll.Contains("ef.UserRelations.Remove(rst)"),
+                "DelUser 不能只删一行 userrelations（重复映射行会残留，列表仍出多行）");
+
+            // 删除前必须先踢在线玩家（DelUser 只清库，中心服不感知删号，
+            // 不踢的话在线幽灵会话会继续往已清空的账号写记录）
+            StringAssert.Contains(controller, "Msg kickMsg = KickPlayer(id);");
+
+            // userrelations 的 ID 列无唯一约束（中心服 Register 无条件 INSERT），
+            // 所有按账号 join 都必须先去重，否则列表行数/合计被重复行放大
+            StringAssert.Contains(usersBll, "RelationsDedupSql");
+            Assert.IsFalse(usersBll.Contains("INNER JOIN userrelations r ON r.ID = c.ID"),
+                "users join userrelations 必须走 RelationsDedupSql 去重子查询");
+            Assert.IsFalse(usersBll.Contains("join r in ef.UserRelations on c.ID equals r.ID"),
+                "LINQ join userrelations 必须先去重（GroupBy ID 取 MIN(UserID)）");
+
+            // 账号→UserID 反查遇重复行不能抛异常：取最小 UserID，与中心服读到的第一行一致
+            Assert.IsFalse(relBll.Contains("c.ID.Equals(account)).Select(c => c.UserID).SingleOrDefault()"),
+                "GetSingle(account) 不能用 SingleOrDefault（重复映射行会直接抛异常）");
+
+            // 中心服 Register 已改 INSERT IGNORE（配合 userrelations.ID 唯一索引真正去重）。
+            // 服务端仓库与后台同级（MTH/MTH-Server）时钉住防回退；不在此布局则跳过。
+            string serverDb = Path.Combine(FindRepoRoot().Parent.FullName,
+                @"MTH-Server\ServerCenterNew\Database.cpp");
+            if (File.Exists(serverDb))
+            {
+                StringAssert.Contains(File.ReadAllText(serverDb),
+                    "\"INSERT IGNORE INTO userrelations VALUES(?,?)\"");
+            }
+        }
+
+        [TestMethod]
+        public void PlayerControlStatusVisibleOnlyToOwnerAgentTopAgentAndSuperAdmin()
+        {
+            string rules = ReadRepoFile(@"YYT.BLL\EF\AgencyRules.cs");
+            string adminBll = ReadRepoFile(@"YYT.BLL\EF\B_Admin.cs");
+            string controlBll = ReadRepoFile(@"YYT.BLL\EF\B_UserControl.cs");
+            string managerOptBll = ReadRepoFile(@"YYT.BLL\EF\B_ManagerOpt.cs");
+            string controller = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\UserInfoController.cs");
+
+            // 玩家控制状态可见口径收敛到 AgencyRules.CanViewPlayerControl：
+            // 所属代理本人、特级代理(限本线)、总台；其余代理即便玩家在管理范围内也看不到
+            StringAssert.Contains(rules,
+                "CanViewPlayerControl(int? viewerPriv, string viewerAccount, string playerAgency, bool targetInViewerLine)");
+            StringAssert.Contains(adminBll,
+                "CanViewPlayerControl(GameDbContext ef, M_LoginUser loginUser, string playerAgency)");
+
+            // 列表类出口统一走 GetControlVisibleAgencies（总台返回 null 不过滤）：
+            // GetControls(鱼机记录) / GetTotalControlRecords(总控记录) / GetActiveTotalControls(在线列表批量)
+            Assert.IsTrue(controlBll.Split(new[] { "GetControlVisibleAgencies(ef, loginUser)" }, StringSplitOptions.None).Length - 1 >= 3,
+                "GetControls/GetTotalControlRecords/GetActiveTotalControls 都应按 GetControlVisibleAgencies 过滤");
+            // 单人状态 GetTotalControlStatus 走 CanViewPlayerControl，无权按"无执行中控制"回包
+            StringAssert.Contains(controlBll, "CanViewPlayerControl(ef, loginUser, user.AGENCY)");
+            // 不能再回退成管理范围口径（整线代理可见会变成泄露）
+            Assert.IsFalse(controlBll.Contains("GetManagedPlayerAgencyAccounts(ef, loginUser)"),
+                "控制状态读取不得再用管理范围过滤，应交回所属代理口径");
+
+            // 点杀/控制操作记录页同口径：非特权仅直属玩家、特级限本线
+            StringAssert.Contains(managerOptBll, "AgencyRules.TopAgentPriv");
+            Assert.IsFalse(managerOptBll.Contains("GetManagedPlayerAgencyAccounts(ef, loginUser)"),
+                "控制操作记录不得再用管理范围过滤");
+
+            // 控牌配置回显(GetUserCtrlConfigs)与金币上限回显(GetUserGoldLimit)也不能绕过口径
+            Assert.IsTrue(controller.Split(new[] { "CanViewPlayerControl(ef, loginUser, user.AGENCY)" }, StringSplitOptions.None).Length - 1 >= 2,
+                "GetUserCtrlConfigs 与 GetUserGoldLimit 都应校验 CanViewPlayerControl");
         }
 
     }
