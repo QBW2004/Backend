@@ -106,6 +106,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AgencyRulesTest.cs" />
+    <Compile Include="TotalControlRulesTest.cs" />
     <Compile Include="AgencyQueryTest.cs" />
     <Compile Include="GameParaTest.cs" />
     <Compile Include="GameRecord\TableCoinRecordModelTest.cs" />

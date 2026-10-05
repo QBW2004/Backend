@@ -198,6 +198,35 @@ namespace UnitTestProj
             Assert.IsFalse(AgencyRules.CanAccessBanRecord(1, "1688", "", false));
         }
 
+        [TestMethod]
+        public void PlayerControlVisibleOnlyToOwnerAgentTopAgentInLineAndSuperAdmin()
+        {
+            // 总台：全部可见
+            Assert.IsTrue(AgencyRules.CanViewPlayerControl(0, "atmadmin", "a1231", false));
+
+            // 所属代理本人（users.AGENCY 等于查看者账号）：可见，不看层级、大小写不敏感
+            Assert.IsTrue(AgencyRules.CanViewPlayerControl(2, "a1231", "a1231", false));
+            Assert.IsTrue(AgencyRules.CanViewPlayerControl(3, "a1231", "A1231", false));
+
+            // 特级代理（PRIV=1）：只看得见本线内玩家的控制状态
+            Assert.IsTrue(AgencyRules.CanViewPlayerControl(1, "1688", "a147852", true));
+            Assert.IsFalse(AgencyRules.CanViewPlayerControl(1, "1688", "a147852", false));
+            // 特级代理同时也是所属代理时不依赖线内判定
+            Assert.IsTrue(AgencyRules.CanViewPlayerControl(1, "a147852", "a147852", false));
+
+            // 普通代理：非所属一律看不见——含所属代理的直接上级、下级、兄弟代理、副管理/运营
+            Assert.IsFalse(AgencyRules.CanViewPlayerControl(2, "a147852", "a1231", true));
+            Assert.IsFalse(AgencyRules.CanViewPlayerControl(3, "a9999", "a1231", true));
+            Assert.IsFalse(AgencyRules.CanViewPlayerControl(9, "fuguan", "a1231", true));
+            Assert.IsFalse(AgencyRules.CanViewPlayerControl(10, "yunying", "a1231", true));
+
+            // 玩家无所属代理（AGENCY 空）：只有总台可见
+            Assert.IsFalse(AgencyRules.CanViewPlayerControl(2, "a147852", null, true));
+            Assert.IsFalse(AgencyRules.CanViewPlayerControl(2, "a147852", "", true));
+            Assert.IsFalse(AgencyRules.CanViewPlayerControl(1, "1688", "", true));
+            Assert.IsTrue(AgencyRules.CanViewPlayerControl(0, "atmadmin", null, false));
+        }
+
         private sealed class FixedRandom : System.Random
         {
             private readonly Queue<int> offsets;

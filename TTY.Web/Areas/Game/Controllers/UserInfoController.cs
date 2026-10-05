@@ -693,12 +693,17 @@ namespace YYT.Web.Areas.Game.Controllers
                         msg.content = "只能删除自己管理范围内的用户！";
                         return Json(msg);
                     }
+                    // 删除前先把在线玩家踢下线：DelUser 只清库，中心服不感知删号，
+                    // 不踢的话在线会话会继续玩、继续往已清空的账号写输赢/操作记录。
+                    Msg kickMsg = KickPlayer(id);
                     M_Users mUsers = new M_Users { ID = id };
                     int val = new B_Users().DelUser(mUsers);
                     if (val > 0)
                     {
                         msg.code = 1;
                         msg.content = "删除成功！";
+                        if (kickMsg.code != 1)
+                            msg.content += "（踢出在线会话指令未确认：" + kickMsg.content + "）";
                     }
                 }
             }
@@ -1187,8 +1192,14 @@ namespace YYT.Web.Areas.Game.Controllers
                 string id = form.Q<string>("ID");
                 if (string.IsNullOrWhiteSpace(id))
                     return Json(msg);
+                M_LoginUser loginUser = WebHelper.GetLoginInfo();
                 using (var ef = new GameDbContext())
                 {
+                    // 控牌配置属控制状态：仅所属代理本人/特级代理(本线)/总台可见，无权按空配置回包
+                    var user = ef.Users.FirstOrDefault(u => u.ID == id);
+                    if (user == null || !new B_Admin().CanViewPlayerControl(ef, loginUser, user.AGENCY))
+                        return Json(msg);
+
                     var rows = ef.Database.SqlQuery<UserCtrlRow>(
                         "SELECT CONTROL_TYPE AS CtrlType, CONTROL_VALUE AS CtrlValue, NUMBER AS Number, TOTAL_NUMBER AS TotalNumber FROM usercontrolvalue WHERE USERID={0}", id)
                         .ToList();
@@ -1213,8 +1224,14 @@ namespace YYT.Web.Areas.Game.Controllers
                 string id = form.Q<string>("ID");
                 if (string.IsNullOrWhiteSpace(id))
                     return Json(msg);
+                M_LoginUser loginUser = WebHelper.GetLoginInfo();
                 using (var ef = new GameDbContext())
                 {
+                    // 金币上限属控制状态：仅所属代理本人/特级代理(本线)/总台可见，无权按空回包
+                    var user = ef.Users.FirstOrDefault(u => u.ID == id);
+                    if (user == null || !new B_Admin().CanViewPlayerControl(ef, loginUser, user.AGENCY))
+                        return Json(msg);
+
                     var row = ef.UserControlStatuses
                         .Where(c => c.UserID == id && c.ControlMode == (int)EControlMode.Limit && c.Status == (int)EControlStatus.Active)
                         .OrderByDescending(c => c.ID)

@@ -65,10 +65,13 @@ namespace YYT.BLL.EF
                 }
                 else
                 {
-                    List<string> managedAgencies = new B_Admin().GetManagedPlayerAgencyAccounts(ef, loginUser);
-                    // 查询权限内的所有用户，直属/整线由 ManageScope 决定。
+                    // 控制类操作记录与「控制状态」同口径：特级代理限本线，其余代理仅能看到直属玩家的记录
+                    int priv = loginUser.UserPriv ?? -1;
+                    List<string> visibleAgencies = priv == AgencyRules.TopAgentPriv
+                        ? new B_Admin().GetAgencyLineAccounts(ef, loginUser.Accounts)
+                        : new List<string> { loginUser.Accounts };
                     rst = from a in ef.View_ManagerOpts
-                          where managedAgencies.Contains(a.AGENCY)
+                          where visibleAgencies.Contains(a.AGENCY)
                           select new View_ManagerOpt_DTO
                           {
                               AGENCY = a.AGENCY,

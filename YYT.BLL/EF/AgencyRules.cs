@@ -128,6 +128,32 @@ namespace YYT.BLL.EF
             return priv == TopAgentPriv && targetInViewerLine;
         }
 
+        /// <summary>
+        /// 玩家控制状态（总控/鱼机控制/控牌配置/控制操作记录）的查看口径：
+        /// 玩家的所属代理本人、特级代理（限自己整条线内）、总台。
+        /// 其余层级一律不可见——含所属代理的上级、下级与兄弟代理；
+        /// 即便目标玩家在查看者管理范围内（可充值/可控制），控制状态也不展示。
+        /// </summary>
+        /// <param name="viewerPriv">查看者层级（0 总台 / 1 特级代理 / 其余为普通代理等）</param>
+        /// <param name="viewerAccount">查看者账号</param>
+        /// <param name="playerAgency">玩家的所属代理账号（users.AGENCY）</param>
+        /// <param name="targetInViewerLine">玩家所属代理是否在查看者整条线内（仅特级代理需要）</param>
+        public static bool CanViewPlayerControl(int? viewerPriv, string viewerAccount, string playerAgency, bool targetInViewerLine)
+        {
+            int priv = viewerPriv ?? -1;
+            if (priv == SuperAdminPriv)
+                return true;
+
+            if (string.IsNullOrWhiteSpace(playerAgency))
+                return false;
+
+            if (!string.IsNullOrWhiteSpace(viewerAccount)
+                && string.Equals(viewerAccount, playerAgency.Trim(), StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            return priv == TopAgentPriv && targetInViewerLine;
+        }
+
         public static bool TryValidateInviteCode(
             string inviteCode,
             string currentAgencyId,

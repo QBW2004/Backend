@@ -106,6 +106,7 @@
     <Compile Include="EF\B_GameMo.cs" />
     <Compile Include="EF\B_SafeCoinsLog.cs" />
     <Compile Include="EF\AgencyRules.cs" />
+    <Compile Include="EF\TotalControlRules.cs" />
     <Compile Include="EF\B_Admin.cs" />
     <Compile Include="B_SystemInfo.cs" />
     <Compile Include="B_UserLogin.cs" />

@@ -269,7 +269,22 @@ namespace YYT.BLL.EF
         }
 
         /// <summary>
-        /// 分页查询控制记录（代理只能看到机台范围记录与自己管理范围内玩家的记录）
+        /// 玩家控制状态的可见代理集合（与 users.AGENCY 对比）：
+        /// 总台返回 null 表示不过滤；特级代理返回自己整条线；其余代理只返回自己（仅所属代理可见）。
+        /// 设置入口不受此限制——任何管理范围内代理的设置都是直接覆盖。
+        /// </summary>
+        private static List<string> GetControlVisibleAgencies(GameDbContext ef, M_LoginUser loginUser)
+        {
+            int priv = loginUser.UserPriv ?? -1;
+            if (priv == AgencyRules.SuperAdminPriv)
+                return null;
+            if (priv == AgencyRules.TopAgentPriv)
+                return new B_Admin().GetAgencyLineAccounts(ef, loginUser.Accounts);
+            return new List<string> { loginUser.Accounts };
+        }
+
+        /// <summary>
+        /// 分页查询控制记录（玩家记录仅所属代理/特级代理(本线)/总台可见；机台范围记录对所有代理可见）
         /// </summary>
         public M_EasyuiGridData<M_UserControlStatus_DTO> GetControls(M_Page mPage, string userId, int status, M_LoginUser loginUser)
         {
@@ -304,11 +319,9 @@ namespace YYT.BLL.EF
                                   AGENCY = u == null ? null : u.AGENCY
                               };
 
-                    if (loginUser.UserPriv > 0)
-                    {
-                        var agencies = new B_Admin().GetManagedPlayerAgencyAccounts(ef, loginUser);
-                        rst = rst.Where(c => c.UserID == MACHINE_TARGET || agencies.Contains(c.AGENCY));
-                    }
+                    var visibleAgencies = GetControlVisibleAgencies(ef, loginUser);
+                    if (visibleAgencies != null)
+                        rst = rst.Where(c => c.UserID == MACHINE_TARGET || visibleAgencies.Contains(c.AGENCY));
                     if (!string.IsNullOrWhiteSpace(userId))
                         rst = rst.Where(c => c.UserID == userId);
                     if (status >= 0)
@@ -383,11 +396,9 @@ namespace YYT.BLL.EF
                                   AGENCY = u == null ? null : u.AGENCY
                               };
 
-                    if (loginUser.UserPriv > 0)
-                    {
-                        var agencies = new B_Admin().GetManagedPlayerAgencyAccounts(ef, loginUser);
-                        rst = rst.Where(c => agencies.Contains(c.AGENCY));
-                    }
+                    var visibleAgencies = GetControlVisibleAgencies(ef, loginUser);
+                    if (visibleAgencies != null)
+                        rst = rst.Where(c => visibleAgencies.Contains(c.AGENCY));
                     if (startTime != null)
                         rst = rst.Where(c => c.CreatedTime >= startTime.Value);
                     if (endTime != null)
@@ -510,6 +521,8 @@ namespace YYT.BLL.EF
         /// 设置总控：总点杀(4)=鱼机+押注+牌机+拉霸；总放水(5)=鱼机+押注；总控牌(6)=牌机+拉霸。
         /// 累计吃分/放分达到金币阈值(goldThreshold)后自动失效，恢复桌台参数难度。
         /// 总控牌时 cardAction/cardValue/cardNumber/cardTotal 为精确控牌参数（与牌机控牌一致）。
+        /// 互斥口径（TotalControlRules.ModesReplacedBy）：吃分/放水互斥，后下的覆盖先下的，
+        /// 覆盖时先给旧模式补发解除指令；控牌与吃分/放水共存，新控牌仅替换旧控牌。
         /// </summary>
         public Msg ApplyTotalControl(M_LoginUser loginUser, string userId, int mode, int strength, long goldThreshold,
             int cardAction, int cardValue, int cardNumber, int cardTotal, bool mobileFixedCard = false)
@@ -599,6 +612,8 @@ namespace YYT.BLL.EF
             }
 
             string target = userId.Trim();
+            // 本次设置覆盖掉的旧总控模式（吃分/放水互斥时记录旧模式），DB 落库后先补发解除指令
+            List<int> overriddenModes = new List<int>();
             try
             {
                 using (var ef = new GameDbContext())
@@ -615,10 +630,14 @@ namespace YYT.BLL.EF
                         return msg;
                     }
 
-                    // 总控互斥：同一玩家同时只允许一个总控，旧执行中总控记录（任意模式）全部置为过期
+                    // 总控互斥新口径：吃分(4)/放水(5)互斥，后下的覆盖先下的；控牌(6)只替换旧控牌，与吃分/放水共存
+                    var replaced = TotalControlRules.ModesReplacedBy(mode);
                     var olds = ef.UserControlStatuses
-                        .Where(c => c.UserID == target && c.GameType == GAMETYPE_TOTAL && c.Status == (int)EControlStatus.Active)
+                        .Where(c => c.UserID == target && c.GameType == GAMETYPE_TOTAL && c.Status == (int)EControlStatus.Active
+                            && replaced.Contains(c.ControlMode))
                         .ToList();
+                    // 记下被覆盖、且与新控不同的旧模式：DB 落库后需先补发该模式的解除指令
+                    overriddenModes = olds.Select(o => o.ControlMode).Where(m => m != mode).Distinct().ToList();
                     foreach (var old in olds)
                     {
                         old.Status = (int)EControlStatus.Expired;
@@ -670,6 +689,11 @@ namespace YYT.BLL.EF
                 return msg;
             }
 
+            // 吃分/放水互斥覆盖：先给被覆盖的旧模式发解除指令，游戏服收到解除才会恢复桌台参数并清掉牌机吃分标志
+            foreach (var m in overriddenModes)
+            {
+                SendTotalUcCommand(m, 0, 0, 0, 0, 0, loginUser, target);
+            }
             // 下发服务器指令（DB 已落库，玩家下次进游戏时服务端也会按 DB 应用总控）
             // 手机端与电脑端统一走直发：只入发件箱等定时重试（间隔 60s）会让控制"点了半天不生效"，
             // 发送结果不改变接口语义（DB 已落库即视为成功，与电脑端一致），失败由发件箱+重试服务兜底。
@@ -703,9 +727,13 @@ namespace YYT.BLL.EF
                     if (loginUser.UserPriv > 0)
                     {
                         var user = ef.Users.FirstOrDefault(u => u.ID == target);
-                        if (user == null || !new B_Admin().CanManagePlayer(ef, loginUser, user.AGENCY))
+                        // 控制状态仅所属代理本人/特级代理(本线)/总台可见；无权时按
+                        // "无执行中控制"回包，不用报错泄露该玩家是否存在控制
+                        if (user == null || !new B_Admin().CanViewPlayerControl(ef, loginUser, user.AGENCY))
                         {
-                            msg.content = "只能查询自己管理范围内的玩家！";
+                            msg.code = 1;
+                            msg.content = "";
+                            msg.datas = new List<M_UserControlStatus_DTO>();
                             return msg;
                         }
                     }
@@ -749,6 +777,8 @@ namespace YYT.BLL.EF
                     }
                     // 过滤掉控牌次数已消耗完的记录
                     rows = rows.Where(r => !(r.ControlMode == (int)EControlMode.TotalCard && r.CardNumber == 0)).ToList();
+                    // 展示口径：每个玩家只留一条——控牌没完成只显示控牌；控牌结束后才显示未完成的吃分/放水
+                    rows = TotalControlRules.PickDisplayControls(rows);
 
                     msg.code = 1;
                     msg.content = "";
@@ -792,13 +822,15 @@ namespace YYT.BLL.EF
                 {
                     var activeQuery = ef.UserControlStatuses
                         .Where(c => c.GameType == GAMETYPE_TOTAL && c.Status == (int)EControlStatus.Active && ids.Contains(c.UserID));
-                    if (loginUser.UserPriv > 0)
+                    // 读取接口也必须做可见性过滤，避免通过伪造 UserIDs 查看无权查看玩家的控制状态。
+                    // 口径与单人状态一致：所属代理本人/特级代理(本线)/总台；
+                    // 其余代理即便玩家在管理范围内也看不到控制状态
+                    var visibleAgencies = GetControlVisibleAgencies(ef, loginUser);
+                    if (visibleAgencies != null)
                     {
-                        // 读取接口也必须校验代理线，避免通过伪造 UserIDs 查看线外玩家的控制状态。
-                        List<string> managed = new B_Admin().GetManagedPlayerAgencyAccounts(ef, loginUser);
                         activeQuery = from c in activeQuery
                                       join u in ef.Users on c.UserID equals u.ID
-                                      where managed.Contains(u.AGENCY)
+                                      where visibleAgencies.Contains(u.AGENCY)
                                       select c;
                     }
                     var rows = activeQuery
@@ -847,6 +879,9 @@ namespace YYT.BLL.EF
                         // 过滤掉控牌次数已消耗完的记录（服务器已回写 NUMBER=0，Status 尚未更新为 Completed）
                         result = result.Where(r => !(r.ControlMode == (int)EControlMode.TotalCard && r.CardNumber == 0)).ToList();
                     }
+                    // 展示口径：每个玩家只留一条——控牌没完成只显示控牌；控牌结束后才显示未完成的吃分/放水
+                    // （必须放在 if 块外，没有控牌记录的玩家也要收敛吃分/放水两条为一条）
+                    result = TotalControlRules.PickDisplayControls(result);
                 }
                 msg.code = 1;
                 msg.content = "";
