@@ -579,12 +579,23 @@
                 $('#selE_Mode_Total').combobox('loadData', totalModeData());
                 bindTotalMode($('#selE_Mode_Total').combobox('getValue'));
                 loadTotalCtrlStatus(uid);
+                // 状态区轮询：窗口打开期间每 5s 重拉一次进度（已吃分/剩余次数靠游戏服回写库表，
+                // 不轮询就一直停在下发时的快照）。easyui 关窗不销毁 DOM，定时器自检 closed 退出。
+                if (window._totalStatusTimer) { clearInterval(window._totalStatusTimer); window._totalStatusTimer = null; }
+                window._totalStatusTimer = setInterval(function () {
+                    var opts = $('#chgTotalCtrlWin').dialog('options');
+                    if (!opts || opts.closed) {
+                        clearInterval(window._totalStatusTimer); window._totalStatusTimer = null;
+                        return;
+                    }
+                    loadTotalCtrlStatus($('#hfID_Total').val(), true);
+                }, 5000);
             }
         };
         openWin(para);
     }
-    function loadTotalCtrlStatus(uid) {
-        $('#divTotalStatus').html('加载中...');
+    function loadTotalCtrlStatus(uid, quiet) {
+        if (!quiet) $('#divTotalStatus').html('加载中...');
         request('/Game/UserInfo/GetTotalControlStatus', { ID: uid }, function (data) {
             if (!data || data.code != 1 || !data.datas || data.datas.length == 0) {
                 $('#divTotalStatus').html('<span style="color:#999;">当前无执行中的总控</span>');

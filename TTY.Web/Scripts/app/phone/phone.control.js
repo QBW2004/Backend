@@ -150,9 +150,9 @@
         return '目标 ' + M.gold(targetCoins);
     }
 
-    function refreshCtrlStatus() {
+    function refreshCtrlStatus(quiet) {
         if (!current) return;
-        renderCtrlStatus(null);
+        if (!quiet) renderCtrlStatus(null);
         M.post('/Game/UserInfo/GetTotalControlStatus', { ID: current.ID })
             .then(function (res) {
                 var r = M.result(res);
@@ -298,6 +298,10 @@
         // 控制牌型在页面底部：原生 select 的列表只能向下弹、会被屏幕裁掉，换成默认向上展开的浮层
         //（牌机 11 项、水浒传 35 项都要能点到；原生 select 仍作为取值来源）
         M.upwardSelect($('#ctrlCardValue'));
+
+        // 控制状态轮询：查询到玩家后每 5s 重拉一次进度（已吃分/剩余次数靠游戏服回写库表，
+        // 不轮询就停在下发时的快照）。独立页面离开即销毁，无需手动清定时器。
+        setInterval(function () { refreshCtrlStatus(true); }, 5000);
 
         bindMode();
     }

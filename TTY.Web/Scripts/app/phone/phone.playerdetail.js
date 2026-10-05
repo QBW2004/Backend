@@ -182,6 +182,17 @@
             M.runRefresh(function () { return load(); });
         });
 
+        // 控制状态轮询：详情页长看时每 5s 重拉一次（已吃分/剩余次数靠游戏服回写库表，
+        // 不轮询就停在打开时的快照）。独立页面离开即销毁，无需手动清定时器。
+        setInterval(function () {
+            if (!account) return;
+            M.post('/Game/UserInfo/GetTotalControlStatus', { ID: account })
+                .then(function (res) {
+                    var r = M.result(res);
+                    if (r.ok) renderCtrlStatus(r.datas);
+                }, function () { });
+        }, 5000);
+
         load();
     }
 
