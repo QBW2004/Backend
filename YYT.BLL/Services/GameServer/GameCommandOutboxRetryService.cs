@@ -85,7 +85,27 @@ namespace YYT.BLL.Services.GameServer
         {
             string userAccount = ReadString(command.Payload, "UserAccount") ?? command.TargetUserId;
             string raw = gameServerClient.SendRaw(EScMsgType.KU, userAccount);
-            return MarkRawResult(command.CommandId, raw);
+            return MarkKickResult(command.CommandId, raw);
+        }
+
+        private bool MarkKickResult(string commandId, string raw)
+        {
+            if (IsTransportFailure(raw))
+            {
+                commandOutbox.MarkFailed(commandId, raw, raw);
+                return false;
+            }
+
+            string t = (raw ?? "").Trim();
+            if (t.StartsWith("KUOK", StringComparison.Ordinal) || t.StartsWith("KUOFFLINE", StringComparison.Ordinal))
+            {
+                commandOutbox.MarkAcked(commandId, t);
+                return true;
+            }
+
+            string error = "游戏服务未确认踢人：" + t;
+            commandOutbox.MarkFailed(commandId, t, error);
+            return false;
         }
 
         private bool RetryUserControl(M_GameCommandOutbox command)

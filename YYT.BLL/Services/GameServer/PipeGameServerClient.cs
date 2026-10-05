@@ -92,10 +92,27 @@ namespace YYT.BLL.Services.GameServer
                     return fail;
                 }
 
-                commandOutbox.MarkAcked(command?.CommandId, raw);
-                GameCommandResult success = GameCommandResult.Success("KU", userAccount, "踢人指令已由游戏服务响应。", raw);
-                success.CommandId = command?.CommandId;
-                return success;
+                string t = (raw ?? "").Trim();
+                if (t.StartsWith("KUOK", StringComparison.Ordinal))
+                {
+                    commandOutbox.MarkAcked(command?.CommandId, t);
+                    GameCommandResult success = GameCommandResult.Success("KU", userAccount, "踢人指令已执行，玩家已被踢出。", t);
+                    success.CommandId = command?.CommandId;
+                    return success;
+                }
+                if (t.StartsWith("KUOFFLINE", StringComparison.Ordinal))
+                {
+                    commandOutbox.MarkAcked(command?.CommandId, t);
+                    GameCommandResult success = GameCommandResult.Success("KU", userAccount, "玩家当前不在线，无需踢出。", t);
+                    success.CommandId = command?.CommandId;
+                    return success;
+                }
+
+                string error = "游戏服务未确认踢人：" + t;
+                commandOutbox.MarkFailed(command?.CommandId, t, error);
+                GameCommandResult fail = GameCommandResult.Fail("KU", userAccount, error, t);
+                fail.CommandId = command?.CommandId;
+                return fail;
             }
             catch (Exception ex)
             {
