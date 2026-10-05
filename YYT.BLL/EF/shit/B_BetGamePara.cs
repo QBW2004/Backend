@@ -70,6 +70,8 @@ namespace YYT.BLL.EF
                             // 已有 base 行：更新房级共享默认参数。
                             // 注意：筹码档位(BetScores/DefaultBetIndex)按桌唯一权威在 roomtableconfig_bet，
                             // 不允许用任意单桌保存的值覆盖 base 行，否则改一张桌会污染全游戏默认档位。
+                            // 抢庄门槛(BANKER_SC_NEED)同理已改为按桌独立（roomtableconfig_bet 为唯一权威，
+                            // 0=该桌关闭抢庄），单桌保存不再覆盖 base 行该字段。
                             rst.GAME_ID = room.GAME_ID;
                             rst.BET_TIME = room.BET_TIME;
                             rst.BET_MIN = room.BET_MIN;
@@ -81,7 +83,6 @@ namespace YYT.BLL.EF
                             rst.EX_COIN = room.EX_COIN;
                             rst.COIN_SC = room.COIN_SC;
                             rst.COIN_NEED = room.COIN_NEED;
-                            rst.BANKER_SC_NEED = room.BANKER_SC_NEED;
                             rst.SC_LIMIT_SING = room.SC_LIMIT_SING;
                             rst.SC_LIMIT_ALL = room.SC_LIMIT_ALL;
                             rst.Game_Mo = room.Game_Mo;
@@ -135,7 +136,7 @@ namespace YYT.BLL.EF
                         // 客户端 AA01 只能收到 parabetroom base 行兜底的合成值。改为后台直接写，字段与
                         // center UpsertBetRoomTableConfig(Database.cpp:3977) 完全一致。
                         // 桌级参数(BetMin/BetMax/CoinsNeed/OneCoinScore)取本次提交值；房级共享参数
-                        // (BetTime/BankerScoreNeed/限红/BetScores/庄闲和)也取本次提交值(前端每桌都提交完整参数)。
+                        // (BetTime/限红/BetScores/庄闲和)也取本次提交值(前端每桌都提交完整参数)。
                         ef.Database.ExecuteSqlCommand(
                             "DELETE FROM roomtableconfig_bet WHERE GAME_ID={0} AND TableIndex={1}", room.GAME_ID, tIdx);
                         ef.Database.ExecuteSqlCommand(
