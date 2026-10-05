@@ -87,9 +87,9 @@ namespace YYT.BLL.Services.GameServer
                 if (IsTransportFailure(raw))
                 {
                     commandOutbox.MarkFailed(command?.CommandId, raw, raw);
-                    GameCommandResult fail = GameCommandResult.Fail("KU", userAccount, raw, raw);
-                    fail.CommandId = command?.CommandId;
-                    return fail;
+                    GameCommandResult transportFail = GameCommandResult.Fail("KU", userAccount, raw, raw);
+                    transportFail.CommandId = command?.CommandId;
+                    return transportFail;
                 }
 
                 string t = (raw ?? "").Trim();
