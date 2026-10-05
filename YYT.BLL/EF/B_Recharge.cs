@@ -271,8 +271,8 @@ namespace YYT.BLL.EF
                     return false;
                 }
 
-                this.AfterCoins = this.DestUser.COINS;// 充值前币数
-                this.BeforCoins = this.DestUser.COINS;// 充值后币数
+                this.AfterCoins = this.DestUser.COINS;// 操作后币数
+                this.BeforCoins = this.DestUser.COINS;// 操作前币数
 
                 _msg.code = 1;
                 _msg.content = "OK";
@@ -403,15 +403,15 @@ namespace YYT.BLL.EF
                 sb.Append(this.ReChargeDataEntity.Title);
                 sb.Append(this.DestUser.ID);
                 sb.Append(this.OptStr);
-                sb.AppendFormat("{0:F}", ResolverCoin(this.ReChargeDataEntity.Coin));
+                sb.AppendFormat("{0:0.##}", ResolverCoin(this.ReChargeDataEntity.Coin));
                 sb.Append(" 。");
                 sb.Append(this.OptStr);
                 sb.Append("前：");
-                sb.AppendFormat("{0:F}", ResolverCoin(this.BeforCoins));
+                sb.AppendFormat("{0:0.##}", ResolverCoin(this.BeforCoins));
                 sb.Append("，");
                 sb.Append(this.OptStr);
                 sb.Append("后：");
-                sb.AppendFormat("{0:F}", ResolverCoin(this.AfterCoins));
+                sb.AppendFormat("{0:0.##}", ResolverCoin(this.AfterCoins));
                 sb.Append("。");
 
                 _msg.content = sb.ToString();

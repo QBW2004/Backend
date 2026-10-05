@@ -57,8 +57,17 @@
                 $('#tb_AgencyRecords').datagrid('load', para);
             }
         }
-        function fmtOptType(value, rowData, rowIndex) {
-            switch (value) {
+        function escapeAuditHtml(value) {
+            return String(value == null ? '' : value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+        function fmtOptType(value) {
+            var opt = parseInt(value, 10);
+            switch (opt) {
                 case 0:
                     return '充值';
                 case 1:
@@ -67,20 +76,46 @@
                     return '登录';
                 case 3:
                     return '退出';
+                case 20:
+                    return '充值';
+                case 21:
+                    return '兑换';
+                case 22:
+                    return '赠送';
+                case 23:
+                    return '扣币';
+                case 24:
+                    return '代理禁用/封禁';
+                case 25:
+                    return '代理启用';
+                case 26:
+                    return '玩家冻结';
+                case 27:
+                    return '玩家解冻';
                 default:
-                    return '--';
+                    return 'OPT ' + escapeAuditHtml(value);
             }
         }
         function fmtContents(value, rowData, rowIndex) {
-            switch (rowData.OPT) {
+            if (!rowData) return '--';
+            var opt = parseInt(rowData.OPT, 10);
+            switch (opt) {
                 case 0:
                 case 1:
+                case 20:
+                case 21:
+                case 22:
+                case 23:
                     return getRechargeExchangeMsg(rowData);
                 case 2:
                 case 3:
                     return getAngencyMsg(rowData);
+                case 24:
+                case 25:
+                case 26:
+                case 27:
                 default:
-                    return "--";
+                    return escapeAuditHtml(rowData.DestUserTitle) || '--';
             }
         }
         function getRechargeExchangeMsg(rowData) {
