@@ -216,5 +216,12 @@ namespace YYT.Entity
 
         [NotMapped]
         public string GameName { get; set; }
+
+        /// <summary>
+        /// 机台显示名（手机端中奖历史「机台号」列）：优先 roomtableconfig.TableName
+        ///（运营在桌台配置里给机台起的名字，与拉霸客户端选桌大厅一致），无配置回退 "N号机"。
+        /// </summary>
+        [NotMapped]
+        public string TableLabel { get; set; }
     }
 }

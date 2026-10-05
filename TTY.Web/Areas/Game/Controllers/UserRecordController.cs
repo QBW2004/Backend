@@ -137,8 +137,33 @@ namespace YYT.Web.Areas.Game.Controllers
                         .ThenByDescending(r => r.ID)
                         .Skip((page - 1) * rows).Take(rows).ToList();
                     Dictionary<int, string> names = games.ToDictionary(g => g.GameId, g => g.Name);
+                    // 机台号：roomtableconfig.TableName 优先（运营在桌台配置里给机台起的名字，
+                    // 拉霸客户端选桌大厅显示的也是它）；无配置回退 "N号机"（按 1 基机台号）。
+                    // TableId 写库口径随游戏类型不同：牌机(1)/鱼机(2) 是房间内 1 基桌台号
+                    //（roomTableID，对应 TableIndex=TableId-1）；拉霸等其它类(3) 是客户端
+                    // 0 基机台下标（TableIndex=TableId）。RoomIndex 取记录里的 RoomId
+                    //（0 基房间号，真人锁定第一房间故恒为 0）。
+                    List<int> recordGameIds = result.Select(r => r.GameId).Distinct().ToList();
+                    Dictionary<string, string> tableNames = new Dictionary<string, string>();
+                    if (recordGameIds.Count > 0)
+                    {
+                        List<M_TableNameRow> cfgRows = ef.Database.SqlQuery<M_TableNameRow>(
+                            "SELECT GAME_ID AS GameId, RoomIndex, TableIndex, TableName FROM roomtableconfig WHERE GAME_ID IN (" +
+                            string.Join(",", recordGameIds) + ")").ToList();
+                        foreach (M_TableNameRow c in cfgRows)
+                            tableNames[c.GameId + "|" + c.RoomIndex + "|" + c.TableIndex] = c.TableName;
+                    }
                     foreach (M_GamePrizeRecord item in result)
+                    {
                         item.GameName = names.ContainsKey(item.GameId) ? names[item.GameId] : ("游戏" + item.GameId);
+                        int configIndex = item.GameType == 3 ? (int)item.TableId : (int)item.TableId - 1;
+                        string tname;
+                        if (configIndex >= 0 && tableNames.TryGetValue(item.GameId + "|" + item.RoomId + "|" + configIndex, out tname)
+                            && !string.IsNullOrWhiteSpace(tname))
+                            item.TableLabel = tname;
+                        else
+                            item.TableLabel = configIndex >= 0 ? ((configIndex + 1) + "号机") : "--";
+                    }
                     list.total = total;
                     list.rows = result;
                 }
@@ -151,6 +176,14 @@ namespace YYT.Web.Areas.Game.Controllers
                 notice = retentionAdjusted ? "只能查询最近7天" : "" });
         }
 
+        // roomtableconfig 桌台名称行映射（中奖历史机台号列用）
+        public class M_TableNameRow
+        {
+            public int GameId { get; set; }
+            public int RoomIndex { get; set; }
+            public int TableIndex { get; set; }
+            public string TableName { get; set; }
+        }
 
     }
 }

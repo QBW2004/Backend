@@ -15,6 +15,7 @@
     var offlineTotal = 0;
     var offlineSort = 'last-time';
     var offlineLoaded = false;
+    var offlineRows = []; // 已加载的离线行（翻页累积），也是本地缓存的内容
     var onlinePlayers = [];
     var onlineTotalWinLoss = 0;
     var offlineTotalWinLoss = 0;
@@ -295,6 +296,73 @@
 
     /* ---------------- 离线玩家 ---------------- */
 
+    // 离线列表不自动刷新（口径与参考站一致：localStorage 缓存 + 10 分钟 TTL）：
+    // 进页/切页签只还原上次手动刷新留下的缓存，不发请求；
+    // 手动刷新、换排序、加载更多才真正回源——成功后连控制状态一起回写缓存。
+    // 缓存按登录账号分键，同设备换账号登录不会看到上一个账号的列表。
+    var OFFLINE_CACHE_TTL = 10 * 60 * 1000;
+
+    function offlineCacheKey() {
+        var acct = (window.MConfig && MConfig.user && MConfig.user.accounts) ? String(MConfig.user.accounts) : '';
+        return 'm_offline_players_' + acct;
+    }
+
+    function saveOfflineCache() {
+        try {
+            localStorage.setItem(offlineCacheKey(), JSON.stringify({
+                ts: Date.now(),
+                sort: offlineSort,
+                total: offlineTotal,
+                rows: offlineRows
+            }));
+        } catch (e) { }
+    }
+
+    function updateOfflinePager() {
+        var noMore = offlineRows.length >= offlineTotal;
+        $('#loadMoreBtn').toggleClass('disabled', noMore).prop('disabled', noMore);
+        $('#noMoreData').toggle(noMore && offlineTotal > 0);
+    }
+
+    function renderOfflineList() {
+        var $sec = $('#offlinePlayersSection');
+        if (!offlineRows.length) {
+            $sec.html('<div class="no-more-data" style="display: block;">暂无离线玩家</div>');
+        } else {
+            $sec.html(offlineRows.map(function (p) { return playerCardHTML(p, false); }).join(''));
+        }
+        $('#offlinePlayerCount').text(offlineTotal);
+        updateOfflinePager();
+    }
+
+    /**
+     * 进页/切页签时还原缓存：命中且未过期返回 true（不发请求）；
+     * 未缓存/过期/解析失败返回 false，由调用方决定是否回源。
+     * 空结果（上次刷新时确实没有离线玩家）按未缓存处理，下次进页重试。
+     */
+    function restoreOfflineFromCache() {
+        var cached = null;
+        try {
+            var raw = localStorage.getItem(offlineCacheKey());
+            cached = raw ? JSON.parse(raw) : null;
+        } catch (e) { cached = null; }
+        if (!cached || !cached.rows || !cached.rows.length) return false;
+        if (!cached.ts || Date.now() - Number(cached.ts) > OFFLINE_CACHE_TTL) {
+            try { localStorage.removeItem(offlineCacheKey()); } catch (e) { }
+            return false;
+        }
+
+        offlineSort = cached.sort || offlineSort;
+        $('.sort-option').removeClass('active');
+        $('.sort-option[data-sort="' + offlineSort + '"]').addClass('active');
+        offlineRows = cached.rows;
+        offlineTotal = Number(cached.total || 0) || offlineRows.length;
+        offlinePage = Math.ceil(offlineRows.length / PAGE_SIZE) || 1;
+        offlineLoaded = true;
+        renderOfflineList();
+        return true;
+    }
+
     function loadOffline(page, append) {
         return M.post('/Game/UserInfo/GetOfflineUsers', {
             srch_ID: '', srch_NAME: '', srch_Agency: '',
@@ -305,10 +373,12 @@
             offlineTotal = list ? Number(list.total || 0) : 0;
             offlinePage = page;
             offlineLoaded = true;
+            offlineRows = append ? offlineRows.concat(rows) : rows;
+            saveOfflineCache();
 
             var $sec = $('#offlinePlayersSection');
-            if (!rows.length && page === 1) {
-                $sec.html('<div class="no-more-data" style="display: block;">暂无离线玩家</div>');
+            if (!offlineRows.length) {
+                renderOfflineList();
                 return;
             }
 
@@ -320,11 +390,7 @@
                 $sec.append(html);
             }
             $('#offlinePlayerCount').text(offlineTotal);
-
-            var loaded = (page - 1) * PAGE_SIZE + rows.length;
-            var noMore = loaded >= offlineTotal;
-            $('#loadMoreBtn').toggleClass('disabled', noMore).prop('disabled', noMore);
-            $('#noMoreData').toggle(noMore && offlineTotal > 0);
+            updateOfflinePager();
 
             // 【性能优化】先渲染基础卡片，控制状态随后异步补齐——
             // 总控（吃分/放水/控牌）记录存在 usercontrolstatus，与玩家是否在线无关，
@@ -334,6 +400,7 @@
                 setTimeout(function () {
                     attachActiveControls(rows).then(function () {
                         applyActiveControls($sec, rows);
+                        saveOfflineCache(); // 控制状态补齐后再回写一次，缓存与页面显示一致
                     });
                 }, 50);
             }
@@ -368,12 +435,14 @@
 
     function showPrizeHistory() {
         if (!current) return;
+        closePlayerModal();
         window.location.href = '/Mobile/Home/PrizeHistory?id=' + encodeURIComponent(current.ID);
     }
 
     /** 游戏记录：独立页面展示（原弹窗浮层已下线） */
     function showGameRecord() {
         if (!current) return;
+        closePlayerModal();
         window.location.href = '/Mobile/Home/GameRecord?id=' + encodeURIComponent(current.ID);
     }
 
@@ -439,6 +508,9 @@
             return;
         }
         refreshing = true;
+        // 手动刷新/从控制页返回触发的刷新必须绕过控制状态 30s 缓存，
+        // 否则刚下的控制或刚跑完的进度要等缓存过期才看得见
+        controlStatusCache = {};
         M.runRefresh(loader, true).always(function () { refreshing = false; });
     }
 
@@ -456,7 +528,7 @@
             $('#' + tab + 'Tab').addClass('active');
             renderTotalWinLoss(tab === 'online');
             if (tab === 'offline' && !offlineLoaded) {
-                loadOffline(1, false);
+                if (!restoreOfflineFromCache()) loadOffline(1, false);
             }
         });
 
@@ -493,16 +565,19 @@
         });
         $('#modalRechargeBtn').on('click', function () {
             if (!current) return;
+            closePlayerModal();
             window.location.href = '/Mobile/Home/Recharge?id=' + encodeURIComponent(current.ID) + '&pay=0&role=player';
         });
         // 控制：跳转控制管理页（吃分/放水/控牌），预填玩家账号
         $('#modalControlBtn').on('click', function () {
             if (!current) return;
+            closePlayerModal();
             window.location.href = '/Mobile/Home/Control?id=' + encodeURIComponent(current.ID);
         });
         // 玩家详细：独立页面展示
         $('#modalDetailsBtn').on('click', function () {
             if (!current) return;
+            closePlayerModal();
             window.location.href = '/Mobile/Home/PlayerDetail?id=' + encodeURIComponent(current.ID);
         });
         $('#modalPrizeHistoryBtn').on('click', showPrizeHistory);
@@ -538,15 +613,20 @@
         // 需主动重拉。标记由 phone.core.js 在离开那几个页面时写入；若返回是整页重新
         // 加载，数据本来就是新的，只清标记不重复请求（见下方初始加载）。
         // 只补在线数据：离线列表可能已翻到第 N 页，重拉会把列表打回第一页。
+        // bfcache 恢复会原样还原离开时的 DOM：若弹窗还开着会一直盖在列表上，
+        // 这里兜底关掉（操作按钮跳转前也会先关，双保险）。
         $(window).on('pageshow', function () {
+            closePlayerModal();
+            $('#searchModal').removeClass('show');
             if (!M.consumePlayersStale()) return;
             runRefresh(reloadOnline, true);
         });
 
-        // 初始加载(离线列表一并拉取:徽标进页即显示离线总数,切到离线页签无需再等待)
+        // 初始加载：在线数据实时拉取；离线列表不自动刷新——还原上次手动刷新留下的
+        // 本地缓存（徽标即缓存里的总数），没有可用缓存才拉一次保证首访有数据。
         loadTotalWinLoss();
         loadOnline();
-        loadOffline(1, false);
+        if (!restoreOfflineFromCache()) loadOffline(1, false);
         M.consumePlayersStale(); // 整页新加载：数据已是新的，丢弃上一页留下的标记
     }
 

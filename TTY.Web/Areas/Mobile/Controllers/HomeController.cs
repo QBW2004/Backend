@@ -273,12 +273,13 @@ namespace YYT.Web.Areas.Mobile.Controllers
             return View();
         }
 
-        /// <summary>高倍率中奖播报历史（独立手机页面）。</summary>
+        /// <summary>高倍率中奖播报历史（独立手机页面）。头部副标题统计当前查询的中奖总数量。</summary>
         public ActionResult PrizeHistory()
         {
             ViewBag.MPage = "prizehistory";
             ViewBag.MTitle = "中奖历史";
             ViewBag.MShowRefresh = true;
+            ViewBag.MSubtitleHtml = "中奖总数 <span id=\"prizeTotalCount\">--</span>";
             ViewBag.PlayerAccount = Request.QueryString["id"] ?? string.Empty;
             ViewBag.Today = DateTime.Now.ToString("yyyy-MM-dd");
             return View();

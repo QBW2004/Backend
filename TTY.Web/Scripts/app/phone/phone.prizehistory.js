@@ -15,6 +15,7 @@
             byGame[key].push(r);
         });
         var totalCount = Number(data && data.total || 0);
+        $('#prizeTotalCount').text(totalCount);
         $('#historySummary').text('共 ' + totalCount + ' 条中奖记录（鱼机/拉霸高倍率以触发中奖播报为准）');
         if (!games.length) {
             $('#prizeHistoryList').html('<div class="history-empty">暂无已启用的非押注游戏</div>');
@@ -27,13 +28,13 @@
                 return '<tr>' +
                     '<td>' + esc(r.CardType || '--') + '</td>' +
                     '<td class="' + (score >= 0 ? 'positive' : 'negative') + '">' + (score > 0 ? '+' : '') + M.gold(score) + '</td>' +
-                    '<td>' + esc(r.RoomId || '--') + '</td>' +
+                    '<td>' + esc(r.TableLabel || '--') + '</td>' +
                     '<td>' + (Number(r.IsManualControl) === 1 ? '是' : '否') + '</td>' +
                     '<td>' + esc(M.fmtTime(r.RecTime, true)) + '</td>' +
                     '</tr>';
             }).join('') : '<tr><td colspan="5" class="history-empty">暂无记录</td></tr>';
             return '<div class="game-card"><div class="game-card-header"><span>' + esc(g.Name || ('游戏' + g.GameId)) + '</span><span class="game-count">' + rs.length + '</span></div>' +
-                '<div class="history-table-scroll"><table class="history-table"><thead><tr><th>牌型</th><th>得分</th><th>场次</th><th>是否送奖</th><th>开奖时间</th></tr></thead><tbody>' + body + '</tbody></table></div></div>';
+                '<div class="history-table-scroll"><table class="history-table"><thead><tr><th>牌型</th><th>得分</th><th>机台号</th><th>是否送奖</th><th>开奖时间</th></tr></thead><tbody>' + body + '</tbody></table></div></div>';
         }).join(''));
     }
 
