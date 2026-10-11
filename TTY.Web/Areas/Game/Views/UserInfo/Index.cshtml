@@ -587,7 +587,7 @@
                     loadUserCtrlConfigs(uid, function(data) {
                         if (data && data.length > 0) {
                             var row = data[0];
-                            if (row.CtrlType == 5 || row.CtrlType == 7 || row.CtrlType == 12 || row.CtrlType == 13 || row.CtrlType == 14) {
+                            if (row.CtrlType == 5 || row.CtrlType == 7 || row.CtrlType == 8 || row.CtrlType == 12 || row.CtrlType == 13 || row.CtrlType == 14) {
                                 $('#selE_Action').combobox('setValue', row.CtrlType);
                                 $('#selE_Type').combobox('setValue', row.CtrlValue);
                                 $('#selE_Number').combobox('setValue', row.Number);
@@ -698,6 +698,7 @@
             return [
                 { id: 5, text: '大字版控制', selected: true },
                 { id: 7, text: 'ATT3控制' },
+                { id: 8, text: 'ATT满花版控制' },
                 { id: 12, text: '金皇冠' },
                 { id: 13, text: 'NBA' },
                 { id: 14, text: '火凤凰' },
@@ -729,7 +730,7 @@
         }
         function bindTotalCardAction(newValue, oldValue) {
             var n = parseInt(newValue);
-            if (n == 5 || n == 7 || n == 12 || n == 13 || n == 14) {
+            if (n == 5 || n == 7 || n == 8 || n == 12 || n == 13 || n == 14) {
                 // 牌机型：按所选游戏动态生成0-12牌型+关闭(99)，倍率与台机设定一致
                 $('#selE_Type_Total').combobox('loadData', valSelDataPAIJI(n));
             } else if (n == 15) $('#selE_Type_Total').combobox('loadData', valSelDataShz());
@@ -1011,6 +1012,7 @@
             return [
                 { id: 5, text: '大字版控制', selected: true  },
                 { id: 7, text: 'ATT3控制' },
+                { id: 8, text: 'ATT满花版控制' },
                 { id: 12, text: '金皇冠' },
                 { id: 13, text: 'NBA' },
                 { id: 14, text: '火凤凰' }
@@ -1048,10 +1050,10 @@
             nba:    [0, 1, 2, 3, 5, 7, 10, 50, 50, 100, 400, 200, 1000],
             att3:   [0, 1, 2, 3, 5, 7, 10, 50, 50, 120, 400, 200, 1000]
         };
-        // cardAction -> 倍率key：5大字版/7ATT3/12金皇冠/13NBA/14火凤凰
+        // cardAction -> 倍率key：5大字版/7ATT3/8ATT满花版(与ATT3同倍率表)/12金皇冠/13NBA/14火凤凰
         function tcMagKey(action) {
             if (action == 5) return 'dazhi';
-            if (action == 7) return 'att3';
+            if (action == 7 || action == 8) return 'att3';
             if (action == 12) return 'king3';
             if (action == 13) return 'nba';
             return 'phenix';
@@ -1079,7 +1081,7 @@
             console.log("oldValue:" + oldValue);
           
             if (oldValue && newValue > -1 && newValue != oldValue) {
-                if (newValue == 5 || newValue == 7 || newValue == 12 || newValue == 13 || newValue == 14) {
+                if (newValue == 5 || newValue == 7 || newValue == 8 || newValue == 12 || newValue == 13 || newValue == 14) {
                     // 牌机型：按所选游戏动态生成0-12牌型+关闭(99)，倍率与台机设定一致
                     $('#selE_Type').combobox('loadData', valSelDataPAIJI(newValue));
                 }

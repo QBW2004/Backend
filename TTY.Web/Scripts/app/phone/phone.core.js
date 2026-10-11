@@ -462,7 +462,7 @@
 
     function tcMagKey(action) {
         if (action == 5) return 'dazhi';
-        if (action == 7) return 'att3';
+        if (action == 7 || action == 8) return 'att3';
         if (action == 12) return 'king3';
         if (action == 13) return 'nba';
         return 'phenix';
@@ -558,7 +558,7 @@
     }
 
     M.CARD_ACTIONS = [
-        { id: 5, text: '大字版控制' }, { id: 7, text: 'ATT3控制' }, { id: 12, text: '金皇冠' },
+        { id: 5, text: '大字版控制' }, { id: 7, text: 'ATT3控制' }, { id: 8, text: 'ATT满花版控制' }, { id: 12, text: '金皇冠' },
         { id: 13, text: 'NBA' }, { id: 14, text: '火凤凰' }, { id: 15, text: '水浒传' },
         { id: 16, text: '明星97' }, { id: 17, text: '水果拉霸' }
     ];

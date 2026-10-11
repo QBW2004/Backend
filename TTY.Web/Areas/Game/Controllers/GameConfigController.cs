@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text;
 using System.Web.Mvc;
 using YYT.BLL.EF;
 using YYT.Common;
@@ -175,6 +177,21 @@ namespace YYT.Web.Areas.Game.Controllers
                             "SELECT TableIndex, TableName, Enabled, BetMin, BetMax, CoinsNeed, OneCoinScore, MaxSeats, IdleFireTimeoutSec, IdleFireKickEnabled, MinBetUnits FROM roomtableconfig WHERE GAME_ID={0} ORDER BY TableIndex", gameId).ToList();
                         List<CardTableCfgCardRow> cardCfgRows = ef.Database.SqlQuery<CardTableCfgCardRow>(
                             "SELECT TableIndex, ExCoin, ScoreSwitch, GameMo, MaxBetUnits FROM roomtableconfig_card WHERE GAME_ID={0} ORDER BY TableIndex", gameId).ToList();
+                        // 彩金奖池(仅ATT3/NBA)：游戏服周期导出的当前奖池(JackpotState.txt)
+                        // 与后台已下发待重启生效的覆盖值(JackpotSet.txt)，均按桌号索引
+                        Dictionary<int, int[]> jpCur = null, jpSet = null;
+                        DateTime? jpStateTime = null;
+                        if (IsJackpotCardGame(gameId))
+                        {
+                            string jpDir = GetJackpotDir(gameId);
+                            if (jpDir != null)
+                            {
+                                string statePath = Path.Combine(jpDir, "JackpotState.txt");
+                                jpCur = ReadJackpotFile(statePath);
+                                jpSet = ReadJackpotFile(Path.Combine(jpDir, "JackpotSet.txt"));
+                                try { if (System.IO.File.Exists(statePath)) jpStateTime = System.IO.File.GetLastWriteTime(statePath); } catch { }
+                            }
+                        }
                         int idx = 0;
                         foreach (CardTableCfgRow cfg in cfgRows)
                         {
@@ -187,6 +204,8 @@ namespace YYT.Web.Areas.Game.Controllers
                             Dictionary<string, int> payout = new Dictionary<string, int>();
                             // 鬼牌三段概率哨兵行：HandType 201/202/203 = 1/2/3 王万分比(ProbabilityBasis)
                             int jokerOn = 0, jk1 = 0, jk2 = 0, jk3 = 0;
+                            // 金拇指哨兵行(仅 ATT满花版)：HandType 204 = 杂牌局触发金拇指万分比(ProbabilityBasis)
+                            int goldFingerOn = 0, goldFinger = 0;
                             foreach (CardPayoutRowDto p in pr)
                             {
                                 if (p.HandType >= 201 && p.HandType <= 203)
@@ -195,6 +214,12 @@ namespace YYT.Web.Areas.Game.Controllers
                                     else if (p.HandType == 202) jk2 = p.ProbabilityBasis;
                                     else jk3 = p.ProbabilityBasis;
                                     if (p.Enabled == 1) jokerOn = 1;
+                                    continue;
+                                }
+                                if (p.HandType == GoldFingerHandType)
+                                {
+                                    goldFinger = p.ProbabilityBasis;
+                                    if (p.Enabled == 1) goldFingerOn = 1;
                                     continue;
                                 }
                                 payout["p" + p.HandType] = p.ProbabilityBasis;
@@ -224,7 +249,20 @@ namespace YYT.Web.Areas.Game.Controllers
                                 jokerOn = jokerOn,
                                 jk1 = jk1,
                                 jk2 = jk2,
-                                jk3 = jk3
+                                jk3 = jk3,
+                                goldFingerGame = IsGoldFingerCardGame(gameId),
+                                goldFingerOn = goldFingerOn,
+                                goldFinger = goldFinger,
+                                jpGame = IsJackpotCardGame(gameId),
+                                jp5K = jpCur != null && jpCur.ContainsKey(tIdx) ? (int?)jpCur[tIdx][0] : null,
+                                jpRS = jpCur != null && jpCur.ContainsKey(tIdx) ? (int?)jpCur[tIdx][1] : null,
+                                jpSF = jpCur != null && jpCur.ContainsKey(tIdx) ? (int?)jpCur[tIdx][2] : null,
+                                jp4K = jpCur != null && jpCur.ContainsKey(tIdx) ? (int?)jpCur[tIdx][3] : null,
+                                jpSet5K = jpSet != null && jpSet.ContainsKey(tIdx) ? (int?)jpSet[tIdx][0] : null,
+                                jpSetRS = jpSet != null && jpSet.ContainsKey(tIdx) ? (int?)jpSet[tIdx][1] : null,
+                                jpSetSF = jpSet != null && jpSet.ContainsKey(tIdx) ? (int?)jpSet[tIdx][2] : null,
+                                jpSet4K = jpSet != null && jpSet.ContainsKey(tIdx) ? (int?)jpSet[tIdx][3] : null,
+                                jpStateTime = jpStateTime.HasValue ? jpStateTime.Value.ToString("yyyy-MM-dd HH:mm") : null
                             });
                         }
                     }
@@ -513,6 +551,11 @@ namespace YYT.Web.Areas.Game.Controllers
                             "UPDATE cardpayoutprofile SET TableId=TableId-1 WHERE GAME_ID=" + cardGid + " AND TableId>" + delIdx);
                         // 同步 base 行 NUM = 剩余桌台数 + ROOM_MAX=1
                         SyncCardTableNum(efCard, cardGid);
+                    }
+                    // 奖池待生效文件同步压实：删除该桌行、高位桌号-1，避免错位下发到别的机台
+                    if (IsJackpotCardGame(cardGid))
+                    {
+                        CompactJackpotSetFile(cardGid, delIdx);
                     }
                     var srvCard = new SConnect();
                     Msg rpCard = srvCard.SendReadString(EScMsgType.RP, cardGid);
@@ -1058,6 +1101,24 @@ namespace YYT.Web.Areas.Game.Controllers
                     int idleSec = form.Q<int>("IdleFireTimeoutSec", 0) * 60; // 分钟 → 秒
                     int tblIdleKick = form.Q<int>("IdleFireKickEnabled", 1);
                     int tblMaxSeats = form.Q<int>("MaxSeats", 6);
+                    // 彩金奖池(仅ATT3/NBA)：页面提交 JP_5K/JP_RS/JP_SF/JP_4K 时校验并登记到 JackpotSet.txt，
+                    // 游戏服启动时一次性应用（无热更管道，重启生效）。未提交(非奖池游戏或旧页面)不处理。
+                    int[] jpVals = null;
+                    if (IsJackpotCardGame(gameId) && form["JP_5K"] != null)
+                    {
+                        jpVals = new int[4];
+                        string[] jpNames = { "JP_5K", "JP_RS", "JP_SF", "JP_4K" };
+                        for (int jpI = 0; jpI < 4; jpI++)
+                        {
+                            int jv = form.Q<int>(jpNames[jpI], -1);
+                            if (jv < 0 || jv > 2000000000)
+                            {
+                                msg.content = "奖池分数必须为 0~2000000000 的整数！";
+                                return Json(msg);
+                            }
+                            jpVals[jpI] = jv;
+                        }
+                    }
                     // 牌机难度(按桌)：16 位 DIF 串 + 炒场类型，与服务端 GetCardPara 的 id=gameId*1000+i 对齐。
                     string cardDif = (form.Q<string>("CardDIF", string.Empty) ?? string.Empty).Trim();
                     cardDif = cardDif.Length == 16 ? cardDif : "0000000000000000";
@@ -1131,6 +1192,16 @@ namespace YYT.Web.Areas.Game.Controllers
                         return Json(msg);
                     }
 
+                    // 金拇指(仅 ATT满花版)：哨兵行 HandType 204 = 杂牌局触发概率（万分比），服务端 GetGoldFingerProbSnapshot 消费
+                    bool goldFingerGame = IsGoldFingerCardGame(gameId);
+                    int goldFingerOn = form.Q<int>("GoldFingerOn", 0) == 1 ? 1 : 0;
+                    int goldFingerProb = (int)Math.Round(form.Q<decimal>("gf", 0m), MidpointRounding.AwayFromZero);
+                    if (goldFingerGame && (goldFingerProb < 0 || goldFingerProb > 10000))
+                    {
+                        msg.content = "金拇指触发概率须在 0-10000（万分比）之间！";
+                        return Json(msg);
+                    }
+
                     using (var ef = new GameDbContext())
                     {
                         // 牌型概率/启用(按桌)：cardpayoutprofile；PayoutMultiplier 使用数据库默认值 0，后台不写倍率。
@@ -1152,6 +1223,11 @@ namespace YYT.Web.Areas.Game.Controllers
                                     ef.Database.ExecuteSqlCommand(
                                         "INSERT INTO cardpayoutprofile (GAME_ID, TableId, HandType, ProbabilityBasis, StockLimit, StockRemain, Enabled) VALUES ({0},{1},{2},{3},0,0,{4})",
                                         gameId, tIdx, 201 + j, jokerProbs[j], jokerOn);
+                                // 金拇指哨兵行 204：GetCardPayoutSnapshot 按 HandType>=CARDS_TYPE_MAX 跳过，只由金拇指读取
+                                if (goldFingerGame)
+                                    ef.Database.ExecuteSqlCommand(
+                                        "INSERT INTO cardpayoutprofile (GAME_ID, TableId, HandType, ProbabilityBasis, StockLimit, StockRemain, Enabled) VALUES ({0},{1},{2},{3},0,0,{4})",
+                                        gameId, tIdx, GoldFingerHandType, goldFingerProb, goldFingerOn);
                                 txP.Commit();
                             }
                             catch
@@ -1227,6 +1303,12 @@ namespace YYT.Web.Areas.Game.Controllers
                     // 写库成功即标记已落库：即使 RP/TC/PA 热更管道失败也刷新前端列表，
                     // 避免"DB 已写、Web 列表不刷新"（对齐 B_SuperPara.PushHotUpdate 的 datas=true 约定）。
                     msg.datas = true;
+                    if (jpVals != null)
+                    {
+                        // 彩金奖池覆盖值落 JackpotSet.txt（合并保留其它桌的待生效行），游戏服重启时应用
+                        msg.content = (msg.content ?? "") + UpsertJackpotSetLine(gameId, tIdx, jpVals,
+                            loginUser == null ? "" : loginUser.Accounts);
+                    }
                     ReloadRobotSeatsBestEffort();
                     // 回显本次落库的按桌关键值，便于核对表单提交与库中数据是否一致
                     msg.content = (msg.content ?? "") + " [桌" + tIdx + " 已写入: BetMin=" + betMin + ", BetMax=" + betMax + ", CoinSc=" + coinSc + ", CoinNeed=" + coinNeed + ", CardDif=" + cardDif + ", HypeType=" + hypeType + "]";
@@ -1366,6 +1448,147 @@ namespace YYT.Web.Areas.Game.Controllers
         private static bool IsDecimalBetFish(int gameId)
         {
             return System.Array.IndexOf(DecimalBetFishGameIds, gameId) >= 0;
+        }
+
+        // 彩金奖池：仅 ATT3(37)/NBA(44)/ATT满花版(25) 牌机有每台机独立的四档奖池(五梅5K/同花大顺RS/同花顺SF/四梅4K)。
+        // ATT满花版另有方块彩金/满花彩金两池，只读展示规则，不经 JackpotSet.txt 下发。
+        // 游戏服周期导出当前值到 <Release目录>\JackpotState.txt；后台把待生效值写 JackpotSet.txt，
+        // 游戏服启动时应用一次后改名 .applied（无热更管道，重启生效，与服务端 ApplyJackpotOverride 对齐）。
+        private static readonly int[] JackpotCardGameIds = { 37, 44, 25 };
+        private static bool IsJackpotCardGame(int gameId)
+        {
+            return Array.IndexOf(JackpotCardGameIds, gameId) >= 0;
+        }
+        // 金拇指：仅 ATT满花版(25)，cardpayoutprofile 哨兵行 HandType 204 存杂牌局触发概率（万分比）
+        private const int GoldFingerHandType = 204;
+        private static bool IsGoldFingerCardGame(int gameId)
+        {
+            return gameId == 25;
+        }
+        private static string GetJackpotDirKey(int gameId)
+        {
+            return gameId == 37 ? "JackpotDir_Att3" : gameId == 44 ? "JackpotDir_NBA" : gameId == 25 ? "JackpotDir_AttMhb" : null;
+        }
+        private static string GetJackpotDir(int gameId)
+        {
+            string key = GetJackpotDirKey(gameId);
+            if (key == null) return null;
+            string dir = ConfigHelper.Get(key);
+            return string.IsNullOrWhiteSpace(dir) ? null : dir;
+        }
+        // 解析 JackpotState.txt / JackpotSet.txt（纯文本 桌号,5K,RS,SF,4K，# 开头为注释行）；
+        // 返回 桌号→[5K,RS,SF,4K]，文件不存在或读失败返回 null
+        private static Dictionary<int, int[]> ReadJackpotFile(string path)
+        {
+            try
+            {
+                if (!System.IO.File.Exists(path)) return null;
+                var map = new Dictionary<int, int[]>();
+                foreach (string raw in System.IO.File.ReadAllLines(path))
+                {
+                    string s = (raw ?? string.Empty).Trim();
+                    if (s.Length == 0 || s[0] == '#') continue;
+                    string[] parts = s.Split(',');
+                    if (parts.Length < 5) continue;
+                    int t; int[] v = new int[4]; bool ok = true;
+                    ok &= int.TryParse(parts[0].Trim(), out t);
+                    for (int i = 0; i < 4; i++) ok &= int.TryParse(parts[i + 1].Trim(), out v[i]);
+                    if (ok) map[t] = v;
+                }
+                return map;
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(GameConfigController), ex);
+                return null;
+            }
+        }
+        // 合并写入某桌的奖池覆盖值到 JackpotSet.txt（保留其它桌已有待生效行），tmp+Replace/Move 防半写；
+        // 返回拼接到保存结果后的提示语
+        private static string UpsertJackpotSetLine(int gameId, int tIdx, int[] vals, string opAccount)
+        {
+            try
+            {
+                string dir = GetJackpotDir(gameId);
+                if (dir == null)
+                    return "；奖池目录未配置(" + GetJackpotDirKey(gameId) + ")，本次未下发";
+                string setPath = Path.Combine(dir, "JackpotSet.txt");
+                var map = ReadJackpotFile(setPath) ?? new Dictionary<int, int[]>();
+                map[tIdx] = vals;
+                var sb = new StringBuilder();
+                sb.Append("#v1 TableIndex,Amass5K,AmassRS,AmassSF,Amass4K\n");
+                sb.Append("#setby=").Append(opAccount).Append(" time=").Append(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")).Append('\n');
+                foreach (var kv in map.OrderBy(c => c.Key))
+                {
+                    sb.Append(kv.Key).Append(',')
+                      .Append(kv.Value[0]).Append(',')
+                      .Append(kv.Value[1]).Append(',')
+                      .Append(kv.Value[2]).Append(',')
+                      .Append(kv.Value[3]).Append('\n');
+                }
+                string tmp = setPath + ".tmp";
+                System.IO.File.WriteAllText(tmp, sb.ToString());
+                if (System.IO.File.Exists(setPath))
+                {
+                    try { System.IO.File.Replace(tmp, setPath, null); }
+                    catch { System.IO.File.Delete(setPath); System.IO.File.Move(tmp, setPath); }
+                }
+                else
+                {
+                    System.IO.File.Move(tmp, setPath);
+                }
+                return "；奖池已登记，游戏服重启后生效";
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(GameConfigController), ex);
+                return "；奖池下发文件写入失败：" + ex.Message;
+            }
+        }
+        // 牌机删桌压实索引时同步压实 JackpotSet.txt：删掉被删桌的行、比 delIdx 大的桌号-1；
+        // 全部删空时只留表头（游戏服读 0 行直接应用为空集）
+        private static void CompactJackpotSetFile(int gameId, int delIdx)
+        {
+            try
+            {
+                string dir = GetJackpotDir(gameId);
+                if (dir == null) return;
+                string setPath = Path.Combine(dir, "JackpotSet.txt");
+                var map = ReadJackpotFile(setPath);
+                if (map == null) return;
+                var next = new Dictionary<int, int[]>();
+                foreach (var kv in map)
+                {
+                    if (kv.Key == delIdx) continue;
+                    next[kv.Key > delIdx ? kv.Key - 1 : kv.Key] = kv.Value;
+                }
+                var sb = new StringBuilder();
+                sb.Append("#v1 TableIndex,Amass5K,AmassRS,AmassSF,Amass4K\n");
+                sb.Append("#setby=del-compact time=").Append(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")).Append('\n');
+                foreach (var kv in next.OrderBy(c => c.Key))
+                {
+                    sb.Append(kv.Key).Append(',')
+                      .Append(kv.Value[0]).Append(',')
+                      .Append(kv.Value[1]).Append(',')
+                      .Append(kv.Value[2]).Append(',')
+                      .Append(kv.Value[3]).Append('\n');
+                }
+                string tmp = setPath + ".tmp";
+                System.IO.File.WriteAllText(tmp, sb.ToString());
+                if (System.IO.File.Exists(setPath))
+                {
+                    try { System.IO.File.Replace(tmp, setPath, null); }
+                    catch { System.IO.File.Delete(setPath); System.IO.File.Move(tmp, setPath); }
+                }
+                else
+                {
+                    System.IO.File.Move(tmp, setPath);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(GameConfigController), ex);
+            }
         }
 
         // 无发炮踢出时间：库/协议/服务端均按秒存储与判定；后台 UI 以分钟编辑。

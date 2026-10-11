@@ -190,6 +190,7 @@ Windows Server 2012 R2，IIS `Default Web Site` → `C:\Backend` 绑 `*:80` + `*
 - **上传目录**：新机 `UploadPath=C:\Backend\Upload`（旧机写的 `D:\Uploads` 在新机不存在，迁移时已改）。改主机时别忘这条。
 - **站点有三个入口端口，别搞混**（2026-09-12 排 522 时踩过）：**8080** 只给 nginx 链路（防火墙精确白名单只放行 `94.103.6.39`）；**80** 给 CDN 回源与直访（对所有来源开放）；**8081** 是 App 的 HTTP 接口。给 CDN 配 8080 回源会被防火墙丢包直接 522。部署时传 `-Port 8080` 是安全的（2026-09-13 实测：`Add-FirewallPort` 只要发现该端口已有规则就直接返回，不会把白名单放宽，部署后从公网测 8080 仍是超时丢弃）。
 - **CDN 回源协议必须选 HTTP**：源站 IIS 只监听 80/8080/8081，**没有 443**。"跟随客户端协议"会让 CDN 用 443 回源而失败。
+- **ATT满花版（gameID 25，2026-10-11 接入）**：控牌下拉 cardAction=8「ATT满花版控制」(Index/OnlineUsers/phone.core.js 三处同步，倍率表复用 ATT3)；台机设定多一块「金拇指」= `cardpayoutprofile` 哨兵行 HandType 204(万分比，`SaveTableConfig` 与 201-203 鬼牌行在同一事务重写，GetTableConfig 回 `goldFingerOn/goldFinger`)；四档彩金奖池与 ATT3 同口径，读写目录为 Web.config 键 `JackpotDir_AttMhb`(线上 `C:\Server\ServerCardAttMhb\x64\Release`)，方块彩金/满花彩金两池只展示规则不下发。建库补丁 `Docs/sql/新增ATT满花版-gameid25-20261011.sql`。
 
 ## 调查方式（可复现）
 

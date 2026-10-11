@@ -301,7 +301,7 @@
                                 <tr style="background:#f5f8ff;color:#5a6573;font-size:13px;">
                                     <th style="padding:8px;border:1px solid #e5e9f0;text-align:left;">牌型</th>
                                     <th style="padding:8px;border:1px solid #e5e9f0;">出现机会（每 10000 次的相对单位）</th>
-                                    <th style="padding:8px;border:1px solid #e5e9f0;">倍数（客户端写死 · 不可调；ATT3 为小 / 中 / 大）</th>
+                                    <th style="padding:8px;border:1px solid #e5e9f0;">倍数（客户端写死 · 不可调；ATT3/ATT满花版 为小 / 中 / 大）</th>
                                     <th style="padding:8px;border:1px solid #e5e9f0;width:64px;">启用</th>
                                 </tr>
                             </thead>
@@ -332,6 +332,23 @@
                         </div>
                         <div class="gc-hint" id="gcJokerSum">说明：作用于可变分支的全局出鬼权重；各牌型硬约束不变（两对永远无鬼、五鬼固定 5 鬼、正宗大四梅无鬼、各牌型鬼数上下限自动限幅）。</div>
 
+                        <div id="gcGfBox" style="display:none;">
+                            <div class="gc-section-title" style="margin-top:16px;">机台设定（金拇指 · 仅 ATT满花版）</div>
+                            <input type="hidden" id="gcGfOnVal" name="GoldFingerOn" value="0" />
+                            <div class="gc-form-row">
+                                <div class="gc-field">
+                                    <label><input type="checkbox" id="gcGfOn" /> 启用金拇指（杂牌局按机会触发，玩家五选一翻牌领奖）</label>
+                                </div>
+                            </div>
+                            <div class="gc-form-row">
+                                <div class="gc-field">
+                                    <label>金拇指触发机会（杂牌局每 10000 次）</label>
+                                    <input type="number" id="gcGf" name="gf" class="gc-input" min="0" max="10000" step="1" value="0" />
+                                </div>
+                            </div>
+                            <div class="gc-hint" id="gcGfSum"></div>
+                        </div>
+
                         <div id="gcJpBox" style="display:none;">
                             <div class="gc-section-title" style="margin-top:16px;">彩金奖池（程序固定规则，仅供查看）</div>
                             <div class="gc-hint" id="gcJpRule" style="margin-bottom:8px;"></div>
@@ -346,6 +363,28 @@
                                 </thead>
                                 <tbody></tbody>
                             </table>
+                            <div class="gc-section-title" style="margin-top:6px;">本机台奖池分数（可设置，游戏服重启后生效）</div>
+                            <div class="gc-form-row">
+                                <div class="gc-field">
+                                    <label>五梅 5.K. 奖池分</label>
+                                    <input type="number" id="gcJp5K" name="JP_5K" class="gc-input gc-jp-v" min="0" max="2000000000" step="1" />
+                                </div>
+                                <div class="gc-field">
+                                    <label>同花大顺 R.S. 奖池分</label>
+                                    <input type="number" id="gcJpRS" name="JP_RS" class="gc-input gc-jp-v" min="0" max="2000000000" step="1" />
+                                </div>
+                            </div>
+                            <div class="gc-form-row">
+                                <div class="gc-field">
+                                    <label>同花顺 S.F. 奖池分</label>
+                                    <input type="number" id="gcJpSF" name="JP_SF" class="gc-input gc-jp-v" min="0" max="2000000000" step="1" />
+                                </div>
+                                <div class="gc-field">
+                                    <label>四梅 4.K. 奖池分</label>
+                                    <input type="number" id="gcJp4K" name="JP_4K" class="gc-input gc-jp-v" min="0" max="2000000000" step="1" />
+                                </div>
+                            </div>
+                            <div class="gc-hint" id="gcJpInfo"></div>
                         </div>
                         <div class="gc-section-title" style="margin-top:16px;display:none;">高级（旧版兼容）</div>
                         <div class="gc-form-row" style="display:none;">
@@ -1167,6 +1206,7 @@
             $('#gcScoreSwitch').val(gcNormSs($('#gcScoreSwitch').val(), type));
             if (type === 1 && $('#gcPayoutTable tbody tr').length === 0) gcBuildPayoutTable();
             if (type === 1) gcUpdateJpBox(); else $('#gcJpBox').hide();
+            gcSyncGoldFinger();
             if (type === 0) gcBuildBetSpec();
         }
         // 明星97/水浒传 RTP 控制区：共用同一闭环参数面板（结果类表按游戏切换），
@@ -1351,6 +1391,7 @@
         $('#gcBetGameCfg').val('');
         $('#gcPayoutOn').prop('checked', false);
         $('#gcJokerOn').prop('checked', false);
+        $('#gcGfOn').prop('checked', false);
         $('#gcBetTime').val(10);
         $('#gcScLimitSing').val(3000);
         $('#gcScLimitAll').val(10000);
@@ -1469,6 +1510,10 @@
         $('#gcGameMo').val(1);
         $('#gcCoinNeed').val(1);
         $('#gcScoreSwitch').val(1);
+        if (gcGetType() === 1 && gcIsAttMhb()) {
+            $('#gcGfOn').prop('checked', true);
+            $('#gcGf').val(1);
+        }
     }
 
     function gcSyncSwitch() {
@@ -1915,6 +1960,7 @@
 
     function gcGetMagRtpNote() {
         var key = gcGetMagKey();
+        if (key === 'att3' && gcIsAttMhb()) return 'ATT满花版 倍数同 ATT3，按服务端 60% / 25% / 15% 抽档加权（满花 ×2/×3 与彩金未计入）';
         if (key === 'att3') return 'ATT3 倍数按服务端 60% / 25% / 15% 抽档加权';
         if (key === 'phenix') return '火凤凰小四梅按 40 档估算，实际结算由机台 40 / 50 档位决定';
         return '倍数取客户端固定值';
@@ -1966,12 +2012,21 @@
             rtp += p / 10000 * m;
             rtpReal += p / 10000 * m * (effTab[r.ht] !== undefined ? effTab[r.ht] : 1);
         });
+        // ATT满花版金拇指：杂牌局(余量)按万分比触发，五档倍数等概率，期望 GC_GOLD_FINGER_AVG_MAG 倍
+        var gfRtp = 0;
+        if (gcIsAttMhb() && $('#gcGfOn').is(':checked')) {
+            var gfP = parseFloat($('#gcGf').val()) || 0;
+            gfRtp = Math.max(0, 10000 - winSum) / 10000 * gfP / 10000 * GC_GOLD_FINGER_AVG_MAG;
+            rtp += gfRtp;
+            rtpReal += gfRtp;
+        }
+        var gfTag = gfRtp > 0 ? '；以上含金拇指 ≈ ' + (gfRtp * 100).toFixed(2) + '%' : '';
         var $el = $('#gcPayoutSum');
         var estTag = (key === 'att3') ? '（att3 按 phenix 近似，待实测校准）' : '';
         var color = rtpReal >= 100 ? '#d33b3b' : (rtpReal > 98 ? '#c98f2b' : '#9aa4b1');
         $el.text('中奖牌型出现率合计（仅启用行）：' + winSum + ' / 10000（余量自动落入杂牌）；' +
             gcGetMagRtpNote() + '，理论返奖率 RTP ≈ ' + (rtp * 100).toFixed(2) + '%' +
-            '，机台实际预计 RTP ≈ ' + (rtpReal * 100).toFixed(2) + '%' + estTag);
+            '，机台实际预计 RTP ≈ ' + (rtpReal * 100).toFixed(2) + '%' + estTag + gfTag);
         $el.css('color', winSum > 10000 ? '#d33b3b' : color);
         if (winSum > 10000) {
             $el.css('color', '#d33b3b');
@@ -1999,8 +2054,12 @@
         $('#gcJk2').val(t.jk2 || 0);
         $('#gcJk3').val(t.jk3 || 0);
         gcSyncJoker();
+        // 金拇指回显(仅 ATT满花版)
+        $('#gcGfOn').prop('checked', t.goldFingerOn == 1);
+        $('#gcGf').val(t.goldFinger || 0);
+        gcSyncGoldFinger();
         gcUpdatePayoutSum();
-        gcUpdateJpBox();
+        gcUpdateJpBox(t);
     }
 
     function gcSyncJoker() {
@@ -2012,11 +2071,31 @@
         $el.css('color', s > 10000 ? '#d33b3b' : '#9aa4b1');
     }
 
-    // 彩金奖池只读展示：仅 ATT3/NBA（按游戏名匹配），两套规则分开展示；其余牌机隐藏
-    function gcUpdateJpBox() {
+    // ATT满花版(gameId=25)：金拇指与方块彩金/满花彩金为该游戏独有；金拇指五档 ×20/×50/×100/×200/×400 平均 154 倍
+    var GC_GOLD_FINGER_AVG_MAG = 154;
+    function gcIsAttMhb() {
+        return parseInt($('#gcGameSel').val(), 10) === 25;
+    }
+
+    // 金拇指区：仅 ATT满花版牌机显示；不显示时禁用输入，避免 serializeObject 带出无关字段
+    function gcSyncGoldFinger() {
+        var show = gcGetType() === 1 && gcIsAttMhb();
+        $('#gcGfBox').toggle(show);
+        $('#gcGfBox input').prop('disabled', !show);
+        $('#gcGfOnVal').val($('#gcGfOn').is(':checked') ? 1 : 0);
+        var p = parseFloat($('#gcGf').val()) || 0;
+        var $el = $('#gcGfSum');
+        $el.text('杂牌局触发金拇指机会：' + p + ' / 10000（停用或填 0 = 不触发；控牌/点杀/吃分局不触发）；玩家五选一翻牌，五个位置随机分配 ×20/×50/×100/×200/×400，奖励 = 押分 × 所翻倍数（平均 ×' + GC_GOLD_FINGER_AVG_MAG + '）。');
+        $el.css('color', p > 10000 ? '#d33b3b' : '#9aa4b1');
+    }
+
+    // 彩金奖池：仅 ATT3/NBA（按游戏名匹配），上半段为程序固定规则只读展示，下半段为本机台四池分数（可设置）。
+    // t 为当前选中桌台行数据（gcFillPayout 传入）；gcApplyType 无参调用时仅刷新规则并清空数值输入。
+    function gcUpdateJpBox(t) {
         var name = ($('#gcGameSel').find('option:selected').text() || '');
         var isNba = /nba/i.test(name);
         var isAtt = /att|连环炮/i.test(name);
+        var isMhb = gcIsAttMhb();
         if (gcGetType() !== 1 || (!isNba && !isAtt)) {
             $('#gcJpBox').hide();
             return;
@@ -2031,6 +2110,11 @@
                 ['同花顺 S.F.', 500, 20000, null],
                 ['四梅 4.K.', 200, 5000, null]
             ];
+            if (isMhb) {
+                $('#gcJpRule').html('ATT满花版 规则（服务端常量）：本机台累计押分每满 <b>3000</b> 分，6 个独立池各 +1 分；领取额 = 奖池 ×（本局押分 ÷ 1000），押分 ≥1000 领取 100%；领奖后奖池降至保底。方块彩金：五张全方块且无鬼的同花 / 同花顺 / 同花大顺；满花彩金：正宗满花（五张全 J/Q/K、无鬼）。满花另把牌型赔付 ×2（含鬼）/ ×3（正宗）。');
+                rows.push(['方块彩金（无鬼全方块同花 / 同花顺 / 同花大顺）', 300, 10000, null]);
+                rows.push(['满花彩金（正宗满花）', 2000, 100000, null]);
+            }
         } else {
             $('#gcJpRule').html('NBA 规则（服务端常量，与 ATT3 不同）：每局按轮次轮流累计 4K→SF→RS→5K 各 +1 分（非押分节奏）；领取额 = 奖池 ×（本局押分 ÷ 80），押分 ≥80 领取 100%；中奖局含 3 张鬼牌时另按固定倍数加奖；领奖后奖池降至保底。');
             $('.gc-jp-nba').show();
@@ -2052,6 +2136,25 @@
             html += '</tr>';
             $tb.append(html);
         });
+        // 本机台奖池分回填：优先显示已下发待生效值(jpSet*)，其次游戏服导出的当前值(jp*)；
+        // 原值记入 jpOrig，保存时未改动则不带 JP_* 字段（避免无关保存把运行中的奖池钉死在重启后）。
+        var jpCur = t ? [t.jp5K, t.jpRS, t.jpSF, t.jp4K] : [null, null, null, null];
+        var jpSet = t ? [t.jpSet5K, t.jpSetRS, t.jpSetSF, t.jpSet4K] : [null, null, null, null];
+        var jpUse = (jpSet[0] != null) ? jpSet : jpCur;
+        var jpIds = ['#gcJp5K', '#gcJpRS', '#gcJpSF', '#gcJp4K'];
+        var jpOrig = [];
+        for (var ji = 0; ji < 4; ji++) {
+            $(jpIds[ji]).val(jpUse[ji] != null ? jpUse[ji] : '');
+            jpOrig.push(jpUse[ji] != null ? jpUse[ji] : '');
+        }
+        $('#gcJpBox').data('jpOrig', jpOrig.join(','));
+        var jpInfo = [];
+        jpInfo.push(jpCur[0] != null ? '当前 ' + jpCur.join(' / ') : '当前值暂无（待游戏服导出快照）');
+        if (t && t.jpStateTime) jpInfo[0] += '（快照 ' + t.jpStateTime + '）';
+        if (jpSet[0] != null) jpInfo.push('待生效 ' + jpSet.join(' / '));
+        jpInfo.push('四个独立奖池：五梅/同花大顺/同花顺/四梅；改后保存，游戏服重启时一次性应用');
+        if (isMhb) jpInfo.push('方块彩金 / 满花彩金两池只读，不经后台设置');
+        $('#gcJpInfo').text(jpInfo.join('；'));
         $('#gcJpBox').show();
     }
 
@@ -2117,6 +2220,12 @@
         // 水果拉霸：保存前把每类合计均分到隐藏的 24 面板位输入（后端按 WheelProb0~23 契约落库）
         gcSyncWheelPanels();
         var para = $('#gcForm').serializeObject();
+        // 彩金奖池：区块不可见、四个值与回填一致(未改动)、或全部留空时不带 JP_* 字段，
+        // 后端跳过奖池登记；部分留空保留字段交后端校验报错。
+        var jpNow = [$('#gcJp5K').val(), $('#gcJpRS').val(), $('#gcJpSF').val(), $('#gcJp4K').val()].join(',');
+        if (!$('#gcJpBox').is(':visible') || jpNow === ',,,' || jpNow === $('#gcJpBox').data('jpOrig')) {
+            delete para.JP_5K; delete para.JP_RS; delete para.JP_SF; delete para.JP_4K;
+        }
         para.__RequestVerificationToken = $('#gcForm [name="__RequestVerificationToken"]').val();
         request(GC_URL.save, para, function (data) {
             gcMsg(data);
@@ -2177,6 +2286,8 @@
         $('#gcPayoutOn').on('change', gcSyncSwitch);
         $('#gcJokerOn').on('change', gcSyncJoker);
         $('.gc-joker-p').on('input', gcSyncJoker);
+        $('#gcGfOn').on('change', function () { gcSyncGoldFinger(); gcUpdatePayoutSum(); });
+        $('#gcGf').on('input', function () { gcSyncGoldFinger(); gcUpdatePayoutSum(); });
         $('#gcTableList').on('click', 'li', function () {
             $('#gcTableList li').removeClass('active');
             $(this).addClass('active');
