@@ -1611,11 +1611,13 @@
             ]
         },
         2: {
-            title: '彩金单挑 · 彩金奖池（派送出现机会填 0=关闭）',
-            desc: '规则：每局全局押注按设置比例抽水存入彩金池；派送权重设置 0 永久关闭彩金发放，抽水仍正常累计。',
+            title: '彩金单挑 · 彩金奖池与坐庄收益（派送出现机会填 0=关闭）',
+            desc: '规则：每局全局押注按设置比例抽水存入彩金池；派送权重设置 0 永久关闭彩金发放。玩家坐庄收益闭环：期望收益率/波动均以庄家本金为基数，净收益为扣除庄家抽水后的到手口径；桌内机器人按该区间构造押注分布并分批押出。两个收益字段都留默认 0 时本功能不启用。',
             fields: [
                 { id: 'poolRate', lbl: '每局押注抽水存入彩金池比例(%)', def: 2, hint: '默认 2%（服务端未配置时为 0.2%）' },
-                { id: 'jpW', lbl: '彩金随机派送出现机会（每 10000 次）', def: 100, hint: '默认 100 = 现有 1%' }
+                { id: 'jpW', lbl: '彩金随机派送出现机会（每 10000 次）', def: 100, hint: '默认 100 = 现有 1%' },
+                { id: 'bankerYieldW', lbl: '庄家期望净收益率（%/局·按本金，可负）', def: 0, min: -100, max: 100, step: '0.1', x100: true, hint: '玩家坐庄时每局目标净收益 = 该比例 × 庄家当前本金（扣庄家抽水后口径）；0=保本' },
+                { id: 'bankerVolW', lbl: '庄家收益波动幅度（%/局·按本金）', def: 0, min: 0, max: 200, step: '0.1', x100: true, hint: '单局实际目标率在「期望±波动」区间内随机采样；0=恒定期望。配合门限红决定可达范围' }
             ]
         }
     };
@@ -1649,7 +1651,7 @@
         $.each(sm.fields, function (i, f) {
             html += '<div class="gc-field" style="flex:0 0 210px;margin-bottom:8px;">' +
                 '<label>' + f.lbl + (f.hint ? ' <span style="color:#c2c9d4;font-weight:400;cursor:help;" title="' + f.hint + '">ⓘ</span>' : '') + '</label>' +
-                '<input type="number" class="gc-input gc-betspec" data-id="' + f.id + '" min="0" step="1" value="' + f.def + '" />' +
+                '<input type="number" class="gc-input gc-betspec" data-id="' + f.id + '" min="' + (f.min !== undefined ? f.min : 0) + '"' + (f.max !== undefined ? ' max="' + f.max + '"' : '') + ' step="' + (f.step || 1) + '" value="' + f.def + '" />' +
                 '</div>';
         });
         html += '</div>';
@@ -1813,7 +1815,8 @@
         }
         var cfg = { ver: 1, spec: {}, doors: [] };
         $.each(sm.fields, function (i, f) {
-            cfg.spec[f.id] = parseFloat($('.gc-betspec[data-id="' + f.id + '"]').val()) || 0;
+            var v = parseFloat($('.gc-betspec[data-id="' + f.id + '"]').val()) || 0;
+            cfg.spec[f.id] = f.x100 ? Math.round(v * 100) : v;
         });
         if (sm.doorsLabel) {
             var arr = [];
@@ -1854,7 +1857,7 @@
         var spec = cfg.spec || {};
         $.each(sm.fields, function (i, f) {
             var v = spec[f.id];
-            if (v !== undefined && v !== null) $('.gc-betspec[data-id="' + f.id + '"]').val(v);
+            if (v !== undefined && v !== null) $('.gc-betspec[data-id="' + f.id + '"]').val(f.x100 ? v / 100 : v);
         });
         if (sm.doorsLabel && spec.goldDoors) {
             $.each(spec.goldDoors, function (i, v) {

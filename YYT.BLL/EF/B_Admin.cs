@@ -381,24 +381,14 @@ namespace YYT.BLL.EF
         }
 
         /// <summary>
-        /// 玩家控制状态（总控/鱼机控制/控牌配置/控制操作记录）的查看口径。
-        /// playerAgency 传玩家的 users.AGENCY（所属代理账号）。
+        /// 玩家控制状态（总控/鱼机控制/控牌配置/控制操作记录）的查看口径：
+        /// 总台/特级看全部；其余代理仅能看到自己设置的（controlCreatedBy == 自己）。
         /// </summary>
-        public bool CanViewPlayerControl(GameDbContext ef, M_LoginUser loginUser, string playerAgency)
+        public bool CanViewPlayerControl(M_LoginUser loginUser, string controlCreatedBy)
         {
-            if (ef == null || loginUser == null)
+            if (loginUser == null)
                 return false;
-
-            int priv = loginUser.UserPriv ?? -1;
-            if (priv == AgencyRules.SuperAdminPriv)
-                return true;
-            if (string.IsNullOrWhiteSpace(playerAgency))
-                return false;
-
-            string agency = playerAgency.Trim();
-            bool targetInLine = priv == AgencyRules.TopAgentPriv
-                && IsInAgencyLine(ef, loginUser.Accounts, agency);
-            return AgencyRules.CanViewPlayerControl(loginUser.UserPriv, loginUser.Accounts, agency, targetInLine);
+            return AgencyRules.CanViewPlayerControl(loginUser.UserPriv, loginUser.Accounts, controlCreatedBy);
         }
 
         /// <summary>目标账号最近一次封禁类操作（opt）的操作人账号；查不到（含日志已过期）返回空串。</summary>

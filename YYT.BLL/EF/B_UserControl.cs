@@ -269,22 +269,21 @@ namespace YYT.BLL.EF
         }
 
         /// <summary>
-        /// 玩家控制状态的可见代理集合（与 users.AGENCY 对比）：
-        /// 总台返回 null 表示不过滤；特级代理返回自己整条线；其余代理只返回自己（仅所属代理可见）。
-        /// 设置入口不受此限制——任何管理范围内代理的设置都是直接覆盖。
+        /// 控制状态读取的过滤口径：总台/特级代理返回 null（不过滤看全部）；
+        /// 其余代理返回自己的账号——只能看到 CreatedBy=自己 的控制状态，
+        /// admin/特级/上级/平级代理设置的一律不可见。
+        /// 设置入口不受此限制：看不到旧状态也能设置，且直接覆盖。
         /// </summary>
-        private static List<string> GetControlVisibleAgencies(GameDbContext ef, M_LoginUser loginUser)
+        private static string GetVisibleControlCreator(M_LoginUser loginUser)
         {
             int priv = loginUser.UserPriv ?? -1;
-            if (priv == AgencyRules.SuperAdminPriv)
+            if (priv == AgencyRules.SuperAdminPriv || priv == AgencyRules.TopAgentPriv)
                 return null;
-            if (priv == AgencyRules.TopAgentPriv)
-                return new B_Admin().GetAgencyLineAccounts(ef, loginUser.Accounts);
-            return new List<string> { loginUser.Accounts };
+            return loginUser.Accounts;
         }
 
         /// <summary>
-        /// 分页查询控制记录（玩家记录仅所属代理/特级代理(本线)/总台可见；机台范围记录对所有代理可见）
+        /// 分页查询控制记录（普通代理仅能看到自己设置的记录；机台范围行由总台创建，对普通代理同样不可见；总台/特级看全部）
         /// </summary>
         public M_EasyuiGridData<M_UserControlStatus_DTO> GetControls(M_Page mPage, string userId, int status, M_LoginUser loginUser)
         {
@@ -319,9 +318,9 @@ namespace YYT.BLL.EF
                                   AGENCY = u == null ? null : u.AGENCY
                               };
 
-                    var visibleAgencies = GetControlVisibleAgencies(ef, loginUser);
-                    if (visibleAgencies != null)
-                        rst = rst.Where(c => c.UserID == MACHINE_TARGET || visibleAgencies.Contains(c.AGENCY));
+                    string creator = GetVisibleControlCreator(loginUser);
+                    if (creator != null)
+                        rst = rst.Where(c => c.CreatedBy == creator);
                     if (!string.IsNullOrWhiteSpace(userId))
                         rst = rst.Where(c => c.UserID == userId);
                     if (status >= 0)
@@ -396,9 +395,9 @@ namespace YYT.BLL.EF
                                   AGENCY = u == null ? null : u.AGENCY
                               };
 
-                    var visibleAgencies = GetControlVisibleAgencies(ef, loginUser);
-                    if (visibleAgencies != null)
-                        rst = rst.Where(c => visibleAgencies.Contains(c.AGENCY));
+                    string creator = GetVisibleControlCreator(loginUser);
+                    if (creator != null)
+                        rst = rst.Where(c => c.CreatedBy == creator);
                     if (startTime != null)
                         rst = rst.Where(c => c.CreatedTime >= startTime.Value);
                     if (endTime != null)
@@ -724,21 +723,14 @@ namespace YYT.BLL.EF
             {
                 using (var ef = new GameDbContext())
                 {
-                    if (loginUser.UserPriv > 0)
-                    {
-                        var user = ef.Users.FirstOrDefault(u => u.ID == target);
-                        // 控制状态仅所属代理本人/特级代理(本线)/总台可见；无权时按
-                        // "无执行中控制"回包，不用报错泄露该玩家是否存在控制
-                        if (user == null || !new B_Admin().CanViewPlayerControl(ef, loginUser, user.AGENCY))
-                        {
-                            msg.code = 1;
-                            msg.content = "";
-                            msg.datas = new List<M_UserControlStatus_DTO>();
-                            return msg;
-                        }
-                    }
-                    var rows = ef.UserControlStatuses
-                        .Where(c => c.UserID == target && c.GameType == GAMETYPE_TOTAL && c.Status == (int)EControlStatus.Active)
+                    // 控制状态按设置人过滤：总台/特级看全部，其余代理只看自己设置的
+                    // （admin/上级设置的状态对所属代理也不可见；看不到仍可设置并直接覆盖）
+                    string creator = GetVisibleControlCreator(loginUser);
+                    var statusQuery = ef.UserControlStatuses
+                        .Where(c => c.UserID == target && c.GameType == GAMETYPE_TOTAL && c.Status == (int)EControlStatus.Active);
+                    if (creator != null)
+                        statusQuery = statusQuery.Where(c => c.CreatedBy == creator);
+                    var rows = statusQuery
                         .OrderByDescending(c => c.ID)
                         .ToList()
                         .GroupBy(c => c.ControlMode)
@@ -822,17 +814,11 @@ namespace YYT.BLL.EF
                 {
                     var activeQuery = ef.UserControlStatuses
                         .Where(c => c.GameType == GAMETYPE_TOTAL && c.Status == (int)EControlStatus.Active && ids.Contains(c.UserID));
-                    // 读取接口也必须做可见性过滤，避免通过伪造 UserIDs 查看无权查看玩家的控制状态。
-                    // 口径与单人状态一致：所属代理本人/特级代理(本线)/总台；
-                    // 其余代理即便玩家在管理范围内也看不到控制状态
-                    var visibleAgencies = GetControlVisibleAgencies(ef, loginUser);
-                    if (visibleAgencies != null)
-                    {
-                        activeQuery = from c in activeQuery
-                                      join u in ef.Users on c.UserID equals u.ID
-                                      where visibleAgencies.Contains(u.AGENCY)
-                                      select c;
-                    }
+                    // 读取接口也必须过滤，避免伪造 UserIDs 查看；口径与单人状态一致：
+                    // 总台/特级看全部，其余代理只看 CreatedBy=自己 的记录
+                    string creator = GetVisibleControlCreator(loginUser);
+                    if (creator != null)
+                        activeQuery = activeQuery.Where(c => c.CreatedBy == creator);
                     var rows = activeQuery
                         .OrderByDescending(c => c.ID)
                         .ToList()

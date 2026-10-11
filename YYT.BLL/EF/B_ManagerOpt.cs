@@ -45,8 +45,9 @@ namespace YYT.BLL.EF
                 // 点杀记录
                 IEnumerable<View_ManagerOpt_DTO> rst = null;
 
-                // 针对非超级管理员，加权限查询
-                if (loginUser.UserPriv == 0)
+                // 总台/特级代理看全部；普通代理只能看到自己操作的记录（与控制状态同口径）
+                int priv = loginUser.UserPriv ?? -1;
+                if (priv == AgencyRules.SuperAdminPriv || priv == AgencyRules.TopAgentPriv)
                 {
                     rst = from a in ef.View_ManagerOpts
                           select new View_ManagerOpt_DTO
@@ -65,13 +66,9 @@ namespace YYT.BLL.EF
                 }
                 else
                 {
-                    // 控制类操作记录与「控制状态」同口径：特级代理限本线，其余代理仅能看到直属玩家的记录
-                    int priv = loginUser.UserPriv ?? -1;
-                    List<string> visibleAgencies = priv == AgencyRules.TopAgentPriv
-                        ? new B_Admin().GetAgencyLineAccounts(ef, loginUser.Accounts)
-                        : new List<string> { loginUser.Accounts };
+                    // 普通代理：只能看到自己设置/操作的控制记录
                     rst = from a in ef.View_ManagerOpts
-                          where visibleAgencies.Contains(a.AGENCY)
+                          where a.OPERATOR == loginUser.Accounts
                           select new View_ManagerOpt_DTO
                           {
                               AGENCY = a.AGENCY,

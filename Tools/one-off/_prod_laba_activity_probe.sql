@@ -1,0 +1,5 @@
+SELECT 'optlog_7d', GAME_TYPE, COUNT(*), MAX(REC_TIME) FROM useroptlog WHERE GAME_TYPE IN (16,40,53) GROUP BY GAME_TYPE;
+SELECT 'roomtableconfig', GAME_ID, COUNT(*) FROM roomtableconfig WHERE GAME_ID IN (16,40,53) GROUP BY GAME_ID;
+SELECT 'cardpayoutprofile', GAME_ID, COUNT(*) FROM cardpayoutprofile WHERE GAME_ID IN (16,40,53) GROUP BY GAME_ID;
+SELECT 'paralaba', GAME_ID, COUNT(*) FROM paralaba WHERE GAME_ID IN (16,40,53) GROUP BY GAME_ID;
+SELECT 'inhall_now', COUNT(*) FROM users u JOIN useroptlog o ON o.UserID=u.ID AND o.GAME_TYPE IN (16,40,53) WHERE u.INHALL=1;

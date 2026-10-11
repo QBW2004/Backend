@@ -496,17 +496,14 @@
         return $.when(loadTotalWinLoss(), loadOnline());
     }
 
-    /** 本页全部数据（头部刷新按钮用：离线列表一并回到第一页） */
-    function reloadAll() {
-        return $.when(loadTotalWinLoss(), loadOnline(), loadOffline(1, false));
+    /** 离线玩家数据（头部总输赢 + 离线列表回到第一页） */
+    function reloadOffline() {
+        return $.when(loadTotalWinLoss(), loadOffline(1, false));
     }
 
-    /** 带转圈与防并发的一次刷新；quiet=true 时不弹"正在刷新中"提示 */
-    function runRefresh(loader, quiet) {
-        if (refreshing) {
-            if (!quiet) M.toast('正在刷新中，请稍候...', 'warning', 1500);
-            return;
-        }
+    /** 带转圈与防并发的一次刷新；刷新未完成时再点直接忽略（不弹提示） */
+    function runRefresh(loader) {
+        if (refreshing) return;
         refreshing = true;
         // 手动刷新/从控制页返回触发的刷新必须绕过控制状态 30s 缓存，
         // 否则刚下的控制或刚跑完的进度要等缓存过期才看得见
@@ -598,9 +595,10 @@
             openPlayerModal(acc);
         });
 
-        // 头部刷新 / 搜索
-        // 【性能优化】添加防抖，避免快速点击导致多次并发请求
-        M.onRefresh(function () { runRefresh(reloadAll, false); });
+        // 头部刷新 / 搜索：只刷当前页签的数据（在线页签只刷在线，离线页签只刷离线）
+        M.onRefresh(function () {
+            runRefresh($('.tab[data-tab="offline"]').hasClass('active') ? reloadOffline : reloadOnline);
+        });
         M.onSearch(function () {
             $('#searchInput').val('');
             $('#searchResults').empty();
@@ -619,7 +617,7 @@
             closePlayerModal();
             $('#searchModal').removeClass('show');
             if (!M.consumePlayersStale()) return;
-            runRefresh(reloadOnline, true);
+            runRefresh(reloadOnline);
         });
 
         // 初始加载：在线数据实时拉取；离线列表不自动刷新——还原上次手动刷新留下的

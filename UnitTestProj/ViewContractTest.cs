@@ -1077,7 +1077,7 @@ namespace UnitTestProj
             // 玩家列表页消费标记：缓存恢复时重拉在线数据；整页新加载时数据本来就是新的，只清标记
             StringAssert.Contains(playersScript, "$(window).on('pageshow', function () {");
             StringAssert.Contains(playersScript, "if (!M.consumePlayersStale()) return;");
-            StringAssert.Contains(playersScript, "runRefresh(reloadOnline, true);");
+            StringAssert.Contains(playersScript, "runRefresh(reloadOnline);");
             StringAssert.Contains(playersScript, "M.consumePlayersStale(); // 整页新加载");
             // 抽屉只有列表页有，bfcache 恢复会原样保留展开状态：从抽屉点进子页面再返回时，
             // 菜单会一直盖在列表上（遮罩还吃掉列表点击），所以 pageshow 里统一收起
@@ -1617,7 +1617,7 @@ namespace UnitTestProj
         }
 
         [TestMethod]
-        public void PlayerControlStatusVisibleOnlyToOwnerAgentTopAgentAndSuperAdmin()
+        public void PlayerControlStatusVisibleToSetterTopAgentAndSuperAdmin()
         {
             string rules = ReadRepoFile(@"YYT.BLL\EF\AgencyRules.cs");
             string adminBll = ReadRepoFile(@"YYT.BLL\EF\B_Admin.cs");
@@ -1626,29 +1626,28 @@ namespace UnitTestProj
             string controller = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\UserInfoController.cs");
 
             // 玩家控制状态可见口径收敛到 AgencyRules.CanViewPlayerControl：
-            // 所属代理本人、特级代理(限本线)、总台；其余代理即便玩家在管理范围内也看不到
+            // 总台/特级看全部；其余代理只能看到 CreatedBy==自己 的控制
             StringAssert.Contains(rules,
-                "CanViewPlayerControl(int? viewerPriv, string viewerAccount, string playerAgency, bool targetInViewerLine)");
+                "CanViewPlayerControl(int? viewerPriv, string viewerAccount, string controlCreatedBy)");
             StringAssert.Contains(adminBll,
-                "CanViewPlayerControl(GameDbContext ef, M_LoginUser loginUser, string playerAgency)");
+                "CanViewPlayerControl(M_LoginUser loginUser, string controlCreatedBy)");
 
-            // 列表类出口统一走 GetControlVisibleAgencies（总台返回 null 不过滤）：
-            // GetControls(鱼机记录) / GetTotalControlRecords(总控记录) / GetActiveTotalControls(在线列表批量)
-            Assert.IsTrue(controlBll.Split(new[] { "GetControlVisibleAgencies(ef, loginUser)" }, StringSplitOptions.None).Length - 1 >= 3,
-                "GetControls/GetTotalControlRecords/GetActiveTotalControls 都应按 GetControlVisibleAgencies 过滤");
-            // 单人状态 GetTotalControlStatus 走 CanViewPlayerControl，无权按"无执行中控制"回包
-            StringAssert.Contains(controlBll, "CanViewPlayerControl(ef, loginUser, user.AGENCY)");
-            // 不能再回退成管理范围口径（整线代理可见会变成泄露）
+            // 列表类出口统一走 GetVisibleControlCreator（总台/特级返回 null 不过滤，其余按 CreatedBy 过滤）：
+            // GetControls(鱼机记录) / GetTotalControlRecords(总控记录) / GetTotalControlStatus / GetActiveTotalControls(在线列表批量)
+            Assert.IsTrue(controlBll.Split(new[] { "GetVisibleControlCreator(loginUser)" }, StringSplitOptions.None).Length - 1 >= 4,
+                "GetControls/GetTotalControlRecords/GetTotalControlStatus/GetActiveTotalControls 都应按 GetVisibleControlCreator 过滤");
+            StringAssert.Contains(controlBll, "c.CreatedBy == creator");
+            // 不能再回退成管理范围/所属代理口径（按线或归属可见都是泄露）
             Assert.IsFalse(controlBll.Contains("GetManagedPlayerAgencyAccounts(ef, loginUser)"),
-                "控制状态读取不得再用管理范围过滤，应交回所属代理口径");
+                "控制状态读取不得再用管理范围过滤");
 
-            // 点杀/控制操作记录页同口径：非特权仅直属玩家、特级限本线
-            StringAssert.Contains(managerOptBll, "AgencyRules.TopAgentPriv");
+            // 点杀/控制操作记录页同口径：普通代理仅能看到自己操作的记录（OPERATOR==自己）
+            StringAssert.Contains(managerOptBll, "a.OPERATOR == loginUser.Accounts");
             Assert.IsFalse(managerOptBll.Contains("GetManagedPlayerAgencyAccounts(ef, loginUser)"),
                 "控制操作记录不得再用管理范围过滤");
 
-            // 控牌配置回显(GetUserCtrlConfigs)与金币上限回显(GetUserGoldLimit)也不能绕过口径
-            Assert.IsTrue(controller.Split(new[] { "CanViewPlayerControl(ef, loginUser, user.AGENCY)" }, StringSplitOptions.None).Length - 1 >= 2,
+            // 控牌配置回显(GetUserCtrlConfigs)与金币上限回显(GetUserGoldLimit)也按设置人过滤
+            Assert.IsTrue(controller.Split(new[] { "CanViewPlayerControl(loginUser," }, StringSplitOptions.None).Length - 1 >= 2,
                 "GetUserCtrlConfigs 与 GetUserGoldLimit 都应校验 CanViewPlayerControl");
         }
 

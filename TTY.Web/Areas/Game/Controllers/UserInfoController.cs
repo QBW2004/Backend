@@ -1195,9 +1195,14 @@ namespace YYT.Web.Areas.Game.Controllers
                 M_LoginUser loginUser = WebHelper.GetLoginInfo();
                 using (var ef = new GameDbContext())
                 {
-                    // 控牌配置属控制状态：仅所属代理本人/特级代理(本线)/总台可见，无权按空配置回包
-                    var user = ef.Users.FirstOrDefault(u => u.ID == id);
-                    if (user == null || !new B_Admin().CanViewPlayerControl(ef, loginUser, user.AGENCY))
+                    // 控牌配置属控制状态：普通代理仅能看到自己设置的；usercontrolvalue 无操作人列，
+                    // 以该玩家最近一条控牌(6)状态行的 CreatedBy 作设置人判定（配置只由控牌设置写入）
+                    string setter = ef.UserControlStatuses
+                        .Where(c => c.UserID == id && c.ControlMode == (int)EControlMode.TotalCard)
+                        .OrderByDescending(c => c.ID)
+                        .Select(c => c.CreatedBy)
+                        .FirstOrDefault();
+                    if (!new B_Admin().CanViewPlayerControl(loginUser, setter))
                         return Json(msg);
 
                     var rows = ef.Database.SqlQuery<UserCtrlRow>(
@@ -1227,16 +1232,12 @@ namespace YYT.Web.Areas.Game.Controllers
                 M_LoginUser loginUser = WebHelper.GetLoginInfo();
                 using (var ef = new GameDbContext())
                 {
-                    // 金币上限属控制状态：仅所属代理本人/特级代理(本线)/总台可见，无权按空回包
-                    var user = ef.Users.FirstOrDefault(u => u.ID == id);
-                    if (user == null || !new B_Admin().CanViewPlayerControl(ef, loginUser, user.AGENCY))
-                        return Json(msg);
-
+                    // 金币上限属控制状态：普通代理仅能看到自己设置的（按状态行 CreatedBy 判定）
                     var row = ef.UserControlStatuses
                         .Where(c => c.UserID == id && c.ControlMode == (int)EControlMode.Limit && c.Status == (int)EControlStatus.Active)
                         .OrderByDescending(c => c.ID)
                         .FirstOrDefault();
-                    if (row != null)
+                    if (row != null && new B_Admin().CanViewPlayerControl(loginUser, row.CreatedBy))
                     {
                         msg.code = 1;
                         msg.content = row.LimitCoins.ToString();
