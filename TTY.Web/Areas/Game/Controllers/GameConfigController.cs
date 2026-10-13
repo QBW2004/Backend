@@ -206,6 +206,8 @@ namespace YYT.Web.Areas.Game.Controllers
                             int jokerOn = 0, jk1 = 0, jk2 = 0, jk3 = 0;
                             // 金拇指哨兵行(仅 ATT满花版)：HandType 204 = 杂牌局触发金拇指万分比(ProbabilityBasis)
                             int goldFingerOn = 0, goldFinger = 0;
+                            // 彩金出货权重哨兵行(仅 ATT满花版)：205=方块彩金、206=满花彩金(万分比)
+                            int diamondFlushOn = 0, diamondFlush = 0, allRoyalOn = 0, allRoyal = 0;
                             foreach (CardPayoutRowDto p in pr)
                             {
                                 if (p.HandType >= 201 && p.HandType <= 203)
@@ -220,6 +222,18 @@ namespace YYT.Web.Areas.Game.Controllers
                                 {
                                     goldFinger = p.ProbabilityBasis;
                                     if (p.Enabled == 1) goldFingerOn = 1;
+                                    continue;
+                                }
+                                if (p.HandType == DiamondFlushHandType)
+                                {
+                                    diamondFlush = p.ProbabilityBasis;
+                                    if (p.Enabled == 1) diamondFlushOn = 1;
+                                    continue;
+                                }
+                                if (p.HandType == AllRoyalHandType)
+                                {
+                                    allRoyal = p.ProbabilityBasis;
+                                    if (p.Enabled == 1) allRoyalOn = 1;
                                     continue;
                                 }
                                 payout["p" + p.HandType] = p.ProbabilityBasis;
@@ -253,6 +267,10 @@ namespace YYT.Web.Areas.Game.Controllers
                                 goldFingerGame = IsGoldFingerCardGame(gameId),
                                 goldFingerOn = goldFingerOn,
                                 goldFinger = goldFinger,
+                                diamondFlushOn = diamondFlushOn,
+                                diamondFlush = diamondFlush,
+                                allRoyalOn = allRoyalOn,
+                                allRoyal = allRoyal,
                                 jpGame = IsJackpotCardGame(gameId),
                                 jp5K = jpCur != null && jpCur.ContainsKey(tIdx) ? (int?)jpCur[tIdx][0] : null,
                                 jpRS = jpCur != null && jpCur.ContainsKey(tIdx) ? (int?)jpCur[tIdx][1] : null,
@@ -1202,6 +1220,17 @@ namespace YYT.Web.Areas.Game.Controllers
                         return Json(msg);
                     }
 
+                    // 彩金出货权重(仅 ATT满花版)：哨兵行 205=方块彩金/206=满花彩金（万分比），服务端 GetSentinelProbSnapshot 消费
+                    int diamondFlushOn = form.Q<int>("DiamondFlushOn", 0) == 1 ? 1 : 0;
+                    int diamondFlushProb = (int)Math.Round(form.Q<decimal>("dp", 0m), MidpointRounding.AwayFromZero);
+                    int allRoyalOn = form.Q<int>("AllRoyalOn", 0) == 1 ? 1 : 0;
+                    int allRoyalProb = (int)Math.Round(form.Q<decimal>("ar", 0m), MidpointRounding.AwayFromZero);
+                    if (goldFingerGame && (diamondFlushProb < 0 || diamondFlushProb > 10000 || allRoyalProb < 0 || allRoyalProb > 10000))
+                    {
+                        msg.content = "彩金出货权重须在 0-10000（万分比）之间！";
+                        return Json(msg);
+                    }
+
                     using (var ef = new GameDbContext())
                     {
                         // 牌型概率/启用(按桌)：cardpayoutprofile；PayoutMultiplier 使用数据库默认值 0，后台不写倍率。
@@ -1225,9 +1254,18 @@ namespace YYT.Web.Areas.Game.Controllers
                                         gameId, tIdx, 201 + j, jokerProbs[j], jokerOn);
                                 // 金拇指哨兵行 204：GetCardPayoutSnapshot 按 HandType>=CARDS_TYPE_MAX 跳过，只由金拇指读取
                                 if (goldFingerGame)
+                                {
                                     ef.Database.ExecuteSqlCommand(
                                         "INSERT INTO cardpayoutprofile (GAME_ID, TableId, HandType, ProbabilityBasis, StockLimit, StockRemain, Enabled) VALUES ({0},{1},{2},{3},0,0,{4})",
                                         gameId, tIdx, GoldFingerHandType, goldFingerProb, goldFingerOn);
+                                    // 彩金出货权重哨兵行 205/206：服务端 GetSentinelProbSnapshot 消费，同花系染方块/可全高脸牌型改写满花
+                                    ef.Database.ExecuteSqlCommand(
+                                        "INSERT INTO cardpayoutprofile (GAME_ID, TableId, HandType, ProbabilityBasis, StockLimit, StockRemain, Enabled) VALUES ({0},{1},{2},{3},0,0,{4})",
+                                        gameId, tIdx, DiamondFlushHandType, diamondFlushProb, diamondFlushOn);
+                                    ef.Database.ExecuteSqlCommand(
+                                        "INSERT INTO cardpayoutprofile (GAME_ID, TableId, HandType, ProbabilityBasis, StockLimit, StockRemain, Enabled) VALUES ({0},{1},{2},{3},0,0,{4})",
+                                        gameId, tIdx, AllRoyalHandType, allRoyalProb, allRoyalOn);
+                                }
                                 txP.Commit();
                             }
                             catch
@@ -1461,6 +1499,9 @@ namespace YYT.Web.Areas.Game.Controllers
         }
         // 金拇指：仅 ATT满花版(25)，cardpayoutprofile 哨兵行 HandType 204 存杂牌局触发概率（万分比）
         private const int GoldFingerHandType = 204;
+        // 彩金出货权重：仅 ATT满花版(25)，cardpayoutprofile 哨兵行 HandType 205=方块彩金、206=满花彩金（万分比，条件局内升级命中）
+        private const int DiamondFlushHandType = 205;
+        private const int AllRoyalHandType = 206;
         private static bool IsGoldFingerCardGame(int gameId)
         {
             return gameId == 25;
