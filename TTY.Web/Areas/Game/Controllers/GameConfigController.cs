@@ -280,6 +280,10 @@ namespace YYT.Web.Areas.Game.Controllers
                                 jpSetRS = jpSet != null && jpSet.ContainsKey(tIdx) ? (int?)jpSet[tIdx][1] : null,
                                 jpSetSF = jpSet != null && jpSet.ContainsKey(tIdx) ? (int?)jpSet[tIdx][2] : null,
                                 jpSet4K = jpSet != null && jpSet.ContainsKey(tIdx) ? (int?)jpSet[tIdx][3] : null,
+                                jpDia = jpCur != null && jpCur.ContainsKey(tIdx) && jpCur[tIdx][4] >= 0 ? (int?)jpCur[tIdx][4] : null,
+                                jpAR = jpCur != null && jpCur.ContainsKey(tIdx) && jpCur[tIdx][5] >= 0 ? (int?)jpCur[tIdx][5] : null,
+                                jpSetDia = jpSet != null && jpSet.ContainsKey(tIdx) && jpSet[tIdx][4] >= 0 ? (int?)jpSet[tIdx][4] : null,
+                                jpSetAR = jpSet != null && jpSet.ContainsKey(tIdx) && jpSet[tIdx][5] >= 0 ? (int?)jpSet[tIdx][5] : null,
                                 jpStateTime = jpStateTime.HasValue ? jpStateTime.Value.ToString("yyyy-MM-dd HH:mm") : null
                             });
                         }
@@ -1119,12 +1123,14 @@ namespace YYT.Web.Areas.Game.Controllers
                     int idleSec = form.Q<int>("IdleFireTimeoutSec", 0) * 60; // 分钟 → 秒
                     int tblIdleKick = form.Q<int>("IdleFireKickEnabled", 1);
                     int tblMaxSeats = form.Q<int>("MaxSeats", 6);
-                    // 彩金奖池(仅ATT3/NBA)：页面提交 JP_5K/JP_RS/JP_SF/JP_4K 时校验并登记到 JackpotSet.txt，
+                    // 彩金奖池(仅ATT3/NBA/ATT满花版)：页面提交 JP_5K/JP_RS/JP_SF/JP_4K 时校验并登记到 JackpotSet.txt，
                     // 游戏服启动时一次性应用（无热更管道，重启生效）。未提交(非奖池游戏或旧页面)不处理。
+                    // ATT满花版(25)附加 JP_DIA/JP_AR 两列可选(方块/满花彩金池)，未提交记 -1、服务端不覆盖该池。
                     int[] jpVals = null;
                     if (IsJackpotCardGame(gameId) && form["JP_5K"] != null)
                     {
-                        jpVals = new int[4];
+                        jpVals = new int[6];
+                        jpVals[4] = -1; jpVals[5] = -1;
                         string[] jpNames = { "JP_5K", "JP_RS", "JP_SF", "JP_4K" };
                         for (int jpI = 0; jpI < 4; jpI++)
                         {
@@ -1135,6 +1141,21 @@ namespace YYT.Web.Areas.Game.Controllers
                                 return Json(msg);
                             }
                             jpVals[jpI] = jv;
+                        }
+                        if (IsGoldFingerCardGame(gameId))
+                        {
+                            if (form["JP_DIA"] != null || form["JP_AR"] != null)
+                            {
+                                int jvDia = form.Q<int>("JP_DIA", -1);
+                                int jvAR = form.Q<int>("JP_AR", -1);
+                                if (jvDia < 0 || jvAR < 0 || jvDia > 2000000000 || jvAR > 2000000000)
+                                {
+                                    msg.content = "方块/满花彩金池分数必须为 0~2000000000 的整数！";
+                                    return Json(msg);
+                                }
+                                jpVals[4] = jvDia;
+                                jpVals[5] = jvAR;
+                            }
                         }
                     }
                     // 牌机难度(按桌)：16 位 DIF 串 + 炒场类型，与服务端 GetCardPara 的 id=gameId*1000+i 对齐。
@@ -1489,7 +1510,8 @@ namespace YYT.Web.Areas.Game.Controllers
         }
 
         // 彩金奖池：仅 ATT3(37)/NBA(44)/ATT满花版(25) 牌机有每台机独立的四档奖池(五梅5K/同花大顺RS/同花顺SF/四梅4K)。
-        // ATT满花版另有方块彩金/满花彩金两池，只读展示规则，不经 JackpotSet.txt 下发。
+        // ATT满花版另有方块彩金/满花彩金两池：JackpotSet.txt 行可附加第 6/7 列覆盖（缺省或 -1 不动该池），
+        // JackpotState.txt 导出 7 列含两池当前值（ATT3/NBA 仍 5 列）。
         // 游戏服周期导出当前值到 <Release目录>\JackpotState.txt；后台把待生效值写 JackpotSet.txt，
         // 游戏服启动时应用一次后改名 .applied（无热更管道，重启生效，与服务端 ApplyJackpotOverride 对齐）。
         private static readonly int[] JackpotCardGameIds = { 37, 44, 25 };
@@ -1517,8 +1539,8 @@ namespace YYT.Web.Areas.Game.Controllers
             string dir = ConfigHelper.Get(key);
             return string.IsNullOrWhiteSpace(dir) ? null : dir;
         }
-        // 解析 JackpotState.txt / JackpotSet.txt（纯文本 桌号,5K,RS,SF,4K，# 开头为注释行）；
-        // 返回 桌号→[5K,RS,SF,4K]，文件不存在或读失败返回 null
+        // 解析 JackpotState.txt / JackpotSet.txt（纯文本 桌号,5K,RS,SF,4K[,方块,满花]，# 开头为注释行）；
+        // 返回 桌号→[5K,RS,SF,4K,Diamond,AllRoyal]，后两位缺省(5列旧行)为 -1；文件不存在或读失败返回 null
         private static Dictionary<int, int[]> ReadJackpotFile(string path)
         {
             try
@@ -1531,9 +1553,15 @@ namespace YYT.Web.Areas.Game.Controllers
                     if (s.Length == 0 || s[0] == '#') continue;
                     string[] parts = s.Split(',');
                     if (parts.Length < 5) continue;
-                    int t; int[] v = new int[4]; bool ok = true;
+                    int t; int[] v = new int[6]; bool ok = true;
+                    v[4] = -1; v[5] = -1;
                     ok &= int.TryParse(parts[0].Trim(), out t);
                     for (int i = 0; i < 4; i++) ok &= int.TryParse(parts[i + 1].Trim(), out v[i]);
+                    for (int i = 4; i < 6; i++)
+                    {
+                        int pv;
+                        if (parts.Length > i + 1 && int.TryParse(parts[i + 1].Trim(), out pv)) v[i] = pv;
+                    }
                     if (ok) map[t] = v;
                 }
                 return map;
@@ -1557,7 +1585,7 @@ namespace YYT.Web.Areas.Game.Controllers
                 var map = ReadJackpotFile(setPath) ?? new Dictionary<int, int[]>();
                 map[tIdx] = vals;
                 var sb = new StringBuilder();
-                sb.Append("#v1 TableIndex,Amass5K,AmassRS,AmassSF,Amass4K\n");
+                sb.Append("#v1 TableIndex,Amass5K,AmassRS,AmassSF,Amass4K[,AmassDiamond,AmassAllRoyal]\n");
                 sb.Append("#setby=").Append(opAccount).Append(" time=").Append(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")).Append('\n');
                 foreach (var kv in map.OrderBy(c => c.Key))
                 {
@@ -1565,7 +1593,12 @@ namespace YYT.Web.Areas.Game.Controllers
                       .Append(kv.Value[0]).Append(',')
                       .Append(kv.Value[1]).Append(',')
                       .Append(kv.Value[2]).Append(',')
-                      .Append(kv.Value[3]).Append('\n');
+                      .Append(kv.Value[3]);
+                    if (kv.Value.Length > 5 && (kv.Value[4] >= 0 || kv.Value[5] >= 0))
+                    {
+                        sb.Append(',').Append(kv.Value[4]).Append(',').Append(kv.Value[5]);
+                    }
+                    sb.Append('\n');
                 }
                 string tmp = setPath + ".tmp";
                 System.IO.File.WriteAllText(tmp, sb.ToString());
@@ -1604,7 +1637,7 @@ namespace YYT.Web.Areas.Game.Controllers
                     next[kv.Key > delIdx ? kv.Key - 1 : kv.Key] = kv.Value;
                 }
                 var sb = new StringBuilder();
-                sb.Append("#v1 TableIndex,Amass5K,AmassRS,AmassSF,Amass4K\n");
+                sb.Append("#v1 TableIndex,Amass5K,AmassRS,AmassSF,Amass4K[,AmassDiamond,AmassAllRoyal]\n");
                 sb.Append("#setby=del-compact time=").Append(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")).Append('\n');
                 foreach (var kv in next.OrderBy(c => c.Key))
                 {
@@ -1612,7 +1645,12 @@ namespace YYT.Web.Areas.Game.Controllers
                       .Append(kv.Value[0]).Append(',')
                       .Append(kv.Value[1]).Append(',')
                       .Append(kv.Value[2]).Append(',')
-                      .Append(kv.Value[3]).Append('\n');
+                      .Append(kv.Value[3]);
+                    if (kv.Value.Length > 5 && (kv.Value[4] >= 0 || kv.Value[5] >= 0))
+                    {
+                        sb.Append(',').Append(kv.Value[4]).Append(',').Append(kv.Value[5]);
+                    }
+                    sb.Append('\n');
                 }
                 string tmp = setPath + ".tmp";
                 System.IO.File.WriteAllText(tmp, sb.ToString());

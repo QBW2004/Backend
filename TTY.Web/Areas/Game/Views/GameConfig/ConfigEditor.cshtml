@@ -409,6 +409,16 @@
                                     <input type="number" id="gcJp4K" name="JP_4K" class="gc-input gc-jp-v" min="0" max="2000000000" step="1" />
                                 </div>
                             </div>
+                            <div class="gc-form-row" id="gcJpMhbRow" style="display:none;">
+                                <div class="gc-field">
+                                    <label>方块彩金 F.L. 奖池分</label>
+                                    <input type="number" id="gcJpDIA" name="JP_DIA" class="gc-input gc-jp-v" min="0" max="2000000000" step="1" />
+                                </div>
+                                <div class="gc-field">
+                                    <label>满花彩金 BONI 奖池分</label>
+                                    <input type="number" id="gcJpAR" name="JP_AR" class="gc-input gc-jp-v" min="0" max="2000000000" step="1" />
+                                </div>
+                            </div>
                             <div class="gc-hint" id="gcJpInfo"></div>
                         </div>
                         <div class="gc-section-title" style="margin-top:16px;display:none;">高级（旧版兼容）</div>
@@ -2178,22 +2188,27 @@
         });
         // 本机台奖池分回填：优先显示已下发待生效值(jpSet*)，其次游戏服导出的当前值(jp*)；
         // 原值记入 jpOrig，保存时未改动则不带 JP_* 字段（避免无关保存把运行中的奖池钉死在重启后）。
-        var jpCur = t ? [t.jp5K, t.jpRS, t.jpSF, t.jp4K] : [null, null, null, null];
-        var jpSet = t ? [t.jpSet5K, t.jpSetRS, t.jpSetSF, t.jpSet4K] : [null, null, null, null];
+        // ATT满花版多两池(方块/满花)：JP_DIA/JP_AR 仅该游戏显示，未提交时服务端不覆盖该池。
+        var jpCur = t ? [t.jp5K, t.jpRS, t.jpSF, t.jp4K, t.jpDia, t.jpAR] : [null, null, null, null, null, null];
+        var jpSet = t ? [t.jpSet5K, t.jpSetRS, t.jpSetSF, t.jpSet4K, t.jpSetDia, t.jpSetAR] : [null, null, null, null, null, null];
         var jpUse = (jpSet[0] != null) ? jpSet : jpCur;
-        var jpIds = ['#gcJp5K', '#gcJpRS', '#gcJpSF', '#gcJp4K'];
+        var jpIds = ['#gcJp5K', '#gcJpRS', '#gcJpSF', '#gcJp4K', '#gcJpDIA', '#gcJpAR'];
         var jpOrig = [];
-        for (var ji = 0; ji < 4; ji++) {
-            $(jpIds[ji]).val(jpUse[ji] != null ? jpUse[ji] : '');
-            jpOrig.push(jpUse[ji] != null ? jpUse[ji] : '');
+        for (var ji = 0; ji < 6; ji++) {
+            var jv = (ji >= 4 && !isMhb) ? '' : (jpUse[ji] != null ? jpUse[ji] : '');
+            $(jpIds[ji]).val(jv);
+            jpOrig.push(jv);
         }
         $('#gcJpBox').data('jpOrig', jpOrig.join(','));
+        $('#gcJpMhbRow').toggle(isMhb);
         var jpInfo = [];
-        jpInfo.push(jpCur[0] != null ? '当前 ' + jpCur.join(' / ') : '当前值暂无（待游戏服导出快照）');
+        var jpShow = function (arr) { return (isMhb ? arr : arr.slice(0, 4)).map(function (v) { return v == null ? '-' : v; }).join(' / '); };
+        jpInfo.push(jpCur[0] != null ? '当前 ' + jpShow(jpCur) : '当前值暂无（待游戏服导出快照）');
         if (t && t.jpStateTime) jpInfo[0] += '（快照 ' + t.jpStateTime + '）';
-        if (jpSet[0] != null) jpInfo.push('待生效 ' + jpSet.join(' / '));
-        jpInfo.push('四个独立奖池：五梅/同花大顺/同花顺/四梅；改后保存，游戏服重启时一次性应用');
-        if (isMhb) jpInfo.push('方块彩金 / 满花彩金两池分数只读不经后台设置（出货权重在上方机台设定区配置）');
+        if (jpSet[0] != null) jpInfo.push('待生效 ' + jpShow(jpSet));
+        jpInfo.push(isMhb
+            ? '六个独立奖池：五梅/同花大顺/同花顺/四梅/方块彩金/满花彩金；改后保存，游戏服重启时一次性应用'
+            : '四个独立奖池：五梅/同花大顺/同花顺/四梅；改后保存，游戏服重启时一次性应用');
         $('#gcJpInfo').text(jpInfo.join('；'));
         $('#gcJpBox').show();
     }
@@ -2262,9 +2277,11 @@
         var para = $('#gcForm').serializeObject();
         // 彩金奖池：区块不可见、四个值与回填一致(未改动)、或全部留空时不带 JP_* 字段，
         // 后端跳过奖池登记；部分留空保留字段交后端校验报错。
-        var jpNow = [$('#gcJp5K').val(), $('#gcJpRS').val(), $('#gcJpSF').val(), $('#gcJp4K').val()].join(',');
-        if (!$('#gcJpBox').is(':visible') || jpNow === ',,,' || jpNow === $('#gcJpBox').data('jpOrig')) {
-            delete para.JP_5K; delete para.JP_RS; delete para.JP_SF; delete para.JP_4K;
+        var jpNow = [$('#gcJp5K').val(), $('#gcJpRS').val(), $('#gcJpSF').val(), $('#gcJp4K').val(), $('#gcJpDIA').val(), $('#gcJpAR').val()].join(',');
+        if (!$('#gcJpBox').is(':visible') || jpNow === ',,,,,' || jpNow === $('#gcJpBox').data('jpOrig')) {
+            delete para.JP_5K; delete para.JP_RS; delete para.JP_SF; delete para.JP_4K; delete para.JP_DIA; delete para.JP_AR;
+        } else if (!gcIsAttMhb()) {
+            delete para.JP_DIA; delete para.JP_AR;
         }
         para.__RequestVerificationToken = $('#gcForm [name="__RequestVerificationToken"]').val();
         request(GC_URL.save, para, function (data) {
