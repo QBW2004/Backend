@@ -677,7 +677,10 @@
         }
         $sel.append('<option value="-1">请选择游戏</option>');
         $.each(games, function (i, g) {
-            $sel.append('<option value="' + g.id + '" data-type="' + g.gameType + '">' + g.text + '</option>');
+            // 下拉按 gameType（展示口径）归类；data-type 取 paraType（参数配置口径，
+            // 麻将胡了分类为牌机但参数走拉霸路径，后续 GetTableConfig/保存须下发 3）。
+            var pt = (typeof g.paraType != 'undefined' && g.paraType !== null) ? g.paraType : g.gameType;
+            $sel.append('<option value="' + g.id + '" data-type="' + pt + '">' + g.text + '</option>');
         });
     }
 

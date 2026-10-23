@@ -19,6 +19,8 @@
 });
 
 // 将 GetGameList 的平铺数据转换为 easyui-tree 所需的树形结构
+// 分组按 gameType（展示口径）；节点 GameType 用 paraType（参数配置口径，
+// 麻将胡了分类是牌机但参数走拉霸路径，GAME_TYPE 须下发 3）。
 function treeLoadFilter(data) {
     if (!data || data.length === 0) return [];
     var typeNames = { 0: '押注类', 1: '牌机类', 2: '鱼机类', 3: '拉霸类' };
@@ -29,7 +31,8 @@ function treeLoadFilter(data) {
         if (!typeMap[gt]) {
             typeMap[gt] = { id: 'type_' + gt, text: typeNames[gt] || ('类型' + gt), state: 'open', children: [] };
         }
-        typeMap[gt].children.push({ id: g.id, text: g.text, attributes: { GameType: gt } });
+        var pt = (typeof g.paraType != 'undefined' && g.paraType !== null) ? g.paraType : gt;
+        typeMap[gt].children.push({ id: g.id, text: g.text, attributes: { GameType: pt } });
     }
     var result = [];
     for (var k in typeMap) { result.push(typeMap[k]); }
