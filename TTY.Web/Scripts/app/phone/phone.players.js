@@ -116,6 +116,19 @@
             }).join('') + '</div>'
             : '';
 
+        // 余额：新版中心服下发 GameScore/GameCoins = 机台内原始分/币（与游戏客户端同口径）；
+        // 旧版缺字段回退 Score/Coins。GameScore 是原始内部单位，0.1 分炮鱼机需 ÷10；
+        // 回退路径的 Score/GAME_SCORE 已是折后"分"单位，不再除。
+        var scoreText;
+        var coinVal;
+        if (p.GameScore != null && p.GameCoins != null) {
+            scoreText = M.isDecimalBetFish(p.GameID) ? (Number(p.GameScore) / 10).toFixed(1) : M.num(p.GameScore);
+            coinVal = p.GameCoins;
+        } else {
+            scoreText = M.num(p.Score != null ? p.Score : (p.GAME_SCORE || 0));
+            coinVal = p.Coins != null ? p.Coins : p.COINS;
+        }
+
         return '' +
             '<div class="player-card' + (isOnline ? '' : ' offline') + '" data-account="' + M.esc(p.ID) + '">' +
                 '<div class="player-header">' +
@@ -125,8 +138,8 @@
                         '<span class="agent-line">' + M.esc(p.AGENCY || '--') + '</span>' +
                     '</div>' +
                     '<div class="player-balances">' +
-                        '<span class="remaining-score">' + M.num(p.Score != null ? p.Score : (p.GAME_SCORE || 0)) + '分</span>' +
-                        '<span class="remaining-diamond">' + M.gold(p.Coins != null ? p.Coins : p.COINS) + '币</span>' +
+                        '<span class="remaining-score">' + scoreText + '分</span>' +
+                        '<span class="remaining-diamond">' + M.gold(coinVal) + '币</span>' +
                     '</div>' +
                 '</div>' +
                 '<div class="player-info">' +
@@ -240,6 +253,7 @@
 
     function loadOnline() {
         var ok = false;
+        var aborted = false; // 请求被页面离开中断（M.post 在 pagehide 统一 abort）
         // 【性能优化】超时 12s → 6s：服务端 QA（查询在线玩家）已加短超时（连接 1s + 读 3s），
         // 游戏服不可达时最坏约 4s 就有确定答案，不必再让转圈空等 12 秒。
         return M.post('/Game/UserInfo/GetOnlineUsers', {}, { timeoutMs: 6000 })
@@ -251,12 +265,16 @@
                 } else {
                     ok = false;
                 }
-            }, function () {
+            }, function (status) {
                 ok = false;
+                aborted = (status === 'abort');
             })
             .then(function () {
                 var $sec = $('#onlinePlayersSection');
                 if (!ok) {
+                    // 离开被中断/页面已隐藏：维持现状不提示，提示会错位弹到下一个页面
+                    // 或冻结进 bfcache 恢复时冒出来；恢复后由轮询/pageshow 刷新补齐
+                    if (aborted || document.hidden) return;
                     // 游戏服不可达/超时：保留上一次的列表与人数（清空成"暂无在线玩家"会被误读成
                     // "玩家都下线了"）；从没成功加载过才给提示文案。切换页签时总输赢也维持原值。
                     if (!onlineLoaded) {
@@ -511,6 +529,21 @@
         M.runRefresh(loader, true).always(function () { refreshing = false; });
     }
 
+    /* 机台分/余额由游戏服实时上报中心服，在线页签激活且页面可见时每 5s 重拉一次；
+       离开页面（pagehide）停轮询，bfcache 恢复（pageshow）再启动 */
+    var autoTimer = null;
+    function startAutoRefresh() {
+        if (autoTimer) return;
+        autoTimer = setInterval(function () {
+            if (document.hidden) return;
+            if (!$('.tab[data-tab="online"]').hasClass('active')) return;
+            runRefresh(reloadOnline);
+        }, 5000);
+    }
+    function stopAutoRefresh() {
+        if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
+    }
+
     /* ---------------- 初始化 ---------------- */
 
     function initPage() {
@@ -616,14 +649,17 @@
         $(window).on('pageshow', function () {
             closePlayerModal();
             $('#searchModal').removeClass('show');
+            startAutoRefresh();
             if (!M.consumePlayersStale()) return;
             runRefresh(reloadOnline);
         });
+        $(window).on('pagehide', stopAutoRefresh);
 
         // 初始加载：在线数据实时拉取；离线列表不自动刷新——还原上次手动刷新留下的
         // 本地缓存（徽标即缓存里的总数），没有可用缓存才拉一次保证首访有数据。
         loadTotalWinLoss();
         loadOnline();
+        startAutoRefresh();
         if (!restoreOfflineFromCache()) loadOffline(1, false);
         M.consumePlayersStale(); // 整页新加载：数据已是新的，丢弃上一页留下的标记
     }

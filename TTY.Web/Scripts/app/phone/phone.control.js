@@ -300,8 +300,9 @@
         M.upwardSelect($('#ctrlCardValue'));
 
         // 控制状态轮询：查询到玩家后每 5s 重拉一次进度（已吃分/剩余次数靠游戏服回写库表，
-        // 不轮询就停在下发时的快照）。独立页面离开即销毁，无需手动清定时器。
-        setInterval(function () { refreshCtrlStatus(true); }, 5000);
+        // 不轮询就停在下发时的快照）。页面隐藏时暂停（与在线页同一口径）；
+        // 独立页面离开即销毁，在途请求由 M.post 在 pagehide 统一中断，无需手动清定时器。
+        setInterval(function () { if (!document.hidden) refreshCtrlStatus(true); }, 5000);
 
         bindMode();
     }

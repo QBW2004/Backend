@@ -9,6 +9,23 @@ namespace UnitTestProj
     [TestClass]
     public class TotalControlRulesTest
     {
+        [TestMethod]
+        public void MahjongControlRejectsUnknownAwardBeforeDatabaseWrite()
+        {
+            var loginUser = new M_LoginUser { UserPriv = 0, Accounts = "contract-test" };
+            var control = new B_UserControl();
+            foreach (int value in new[] { -1, 0, 7, 10, 99 })
+            {
+                var result = control.ApplyTotalControl(loginUser, "test-player", 6, 0, 0, 19, value, 1, 5, true);
+                Assert.AreEqual(0, result.code);
+                Assert.AreEqual("无效的麻将胡了送奖牌型！", result.content);
+            }
+            var platformGameId = control.ApplyTotalControl(loginUser, "test-player", 6, 0, 0, 54, 1, 1, 5, true);
+            Assert.AreEqual("无效的控牌类型！", platformGameId.content);
+            var reservedAction = control.ApplyTotalControl(loginUser, "test-player", 6, 0, 0, 18, 1, 1, 5, true);
+            Assert.AreEqual("无效的控牌类型！", reservedAction.content);
+        }
+
         private static M_UserControlStatus_DTO Row(string userId, int id, int mode)
         {
             return new M_UserControlStatus_DTO { UserID = userId, ID = id, ControlMode = mode };

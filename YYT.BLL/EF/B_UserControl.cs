@@ -557,16 +557,23 @@ namespace YYT.BLL.EF
                     msg.content = "控牌规则固定为 1 次、5 把之内！";
                     return msg;
                 }
-                if (cardAction < 5 || cardAction > 17)
+                if ((cardAction < 5 || cardAction > 17) && cardAction != 19)
                 {
                     msg.content = "无效的控牌类型！";
                     return msg;
                 }
-                // 牌机型(5-14)牌型值 0-12（与服务端 te_CardsType 枚举一致），99=关闭控制；
-                // 拉霸型(15-17)为符号/面板位体系，值范围不同，保持宽松校验
-                if (cardAction >= 5 && cardAction <= 14 && cardValue != 99 && (cardValue < 0 || cardValue > 12))
+                if (cardAction == 19 && (cardValue < 1 || cardValue > 6))
                 {
-                    msg.content = "无效的控牌牌型（0-12 或 99 关闭）！";
+                    msg.content = "无效的麻将胡了送奖牌型！";
+                    return msg;
+                }
+                // 牌机型(5-14)牌型值 0-12（与服务端 te_CardsType 枚举一致），99=关闭控制；
+                // 火凤凰(14)扩展 13-18=正宗大四梅x1~x6（服务端 AlgProb 按 ctrl_value-12 取倍数）；
+                // 拉霸型(15-17)为符号/面板位体系，值范围不同，保持宽松校验
+                if (cardAction >= 5 && cardAction <= 14 && cardValue != 99 &&
+                    (cardValue < 0 || cardValue > 12) && !(cardAction == 14 && cardValue >= 13 && cardValue <= 18))
+                {
+                    msg.content = "无效的控牌牌型（0-12，火凤凰正宗大四梅 13-18，或 99 关闭）！";
                     return msg;
                 }
                 // 大字板(5)五鬼已下线：控牌牌型 12(五鬼) 与服务端 AlgProb 控制通道封死保持一致

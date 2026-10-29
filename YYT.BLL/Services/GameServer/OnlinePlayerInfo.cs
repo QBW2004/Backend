@@ -41,6 +41,20 @@ namespace YYT.BLL.Services.GameServer
         [JsonProperty("Score")]
         public long Score { get; set; }
 
+        /// <summary>
+        /// 机台内金币（子游戏上报的原始 mCoins，未做币分折算；玩家坐下兑分后通常为 0）。
+        /// 旧版中心服不下发时为 null，展示侧回退 Coins 口径。
+        /// </summary>
+        [JsonProperty("GameCoins")]
+        public long? GameCoins { get; set; }
+
+        /// <summary>
+        /// 机台内分数（子游戏上报的原始 mGameScore，与游戏客户端显示的"分"同口径；
+        /// 0.1 分炮鱼机为 0.1 分内部单位，展示需 ÷10）。旧版中心服不下发时为 null。
+        /// </summary>
+        [JsonProperty("GameScore")]
+        public long? GameScore { get; set; }
+
         [JsonProperty("CurGameScore")]
         public long CurGameScore { get; set; }
 

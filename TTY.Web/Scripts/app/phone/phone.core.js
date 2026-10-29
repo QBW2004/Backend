@@ -180,6 +180,21 @@
      * @param {Object} [opts] 可选项：{ timeoutMs: 12000 } 请求超时
      * @returns jQuery Promise，resolve 的是后端原始 JSON
      */
+    // 在途 POST 登记表：页面离开（前进导航/bfcache 冻结）时统一 abort。
+    // 不中断的话浏览器会在卸载/冻结过程中掐断请求，回调按 error/timeout 上报
+    // （不是 abort）——「网络异常」提示会画在旧页面残留上、或延迟到 bfcache
+    // 恢复才执行，表现为"离开页面后在别的页面/返回时弹出网络连接失败"。
+    var postReqSeq = 0;
+    var postInFlight = {};
+
+    /** 中断全部在途 POST；显式 abort 报 status='abort'，错误提示按约定不弹 */
+    function abortInFlightPosts() {
+        for (var id in postInFlight) {
+            try { postInFlight[id].abort(); } catch (e) { }
+        }
+        postInFlight = {};
+    }
+
     M.post = function (url, data, opts) {
         var payload = $.extend({}, data || {});
         var token = M.token();
@@ -196,15 +211,21 @@
         if (opts && opts.timeoutMs) {
             ajaxOptions.timeout = opts.timeoutMs;
         }
-        return $.ajax(ajaxOptions).then(function (res) {
+        var xhr = $.ajax(ajaxOptions);
+        var reqId = ++postReqSeq;
+        postInFlight[reqId] = xhr;
+        return xhr.then(function (res) {
+            delete postInFlight[reqId];
             if (res && Number(res.code) === -1) {
                 M.toast('登录超时，请重新登录', 'error');
                 setTimeout(M.toLogin, 1200);
                 return $.Deferred().reject('login-timeout').promise();
             }
             return res;
-        }, function (xhr, status) {
-            if (status !== 'abort') {
+        }, function (xhr2, status) {
+            delete postInFlight[reqId];
+            // abort = 页面离开时被主动中断；document.hidden = 后台/隐藏页的失败弹了也没人看见
+            if (status !== 'abort' && !document.hidden) {
                 M.toast('网络异常，请稍后重试', 'error');
             }
             return $.Deferred().reject(status).promise();
@@ -451,7 +472,7 @@
         { ht: 9, name: '同花顺' }, { ht: 10, name: '五梅' }, { ht: 11, name: '同花大顺' },
         { ht: 12, name: '五鬼' }
     ];
-    // 各牌机游戏倍率（与台机设定 GC_MAG_TAB 一致；ATT3 取 middle 档）
+    // 各牌机游戏倍率（与台机设定 GC_MAG_TAB 一致；点石成金 取 middle 档）
     var TC_MAG_TAB = {
         phenix: [0, 1, 2, 3, 5, 7, 10, 40, 80, 120, 250, 500, 1000],
         king3:  [0, 1, 2, 3, 5, 7, 10, 60, 60, 120, 250, 500, 1000],
@@ -478,6 +499,11 @@
             if (t.ht == 0 || t.ht == 12) continue;
             if (t.ht == 8 && action != 14) continue;
             arr.push({ id: t.ht, text: t.name + '(' + mags[t.ht] + '倍)' });
+        }
+        // 火凤凰(14)扩展控牌：正宗大四梅 x1~x6，控牌值 13-18（服务端 AlgProb 按 ctrl_value-12 取倍数）
+        if (action == 14) {
+            for (var k = 1; k <= 6; k++)
+                arr.push({ id: 12 + k, text: '正宗大四梅X' + k + '(' + (80 * k) + '倍)' });
         }
         arr.push({ id: 99, text: '关闭控制' });
         return arr;
@@ -557,16 +583,31 @@
         return arr;
     }
 
+    function cardTypeDataForMjhl() {
+        return [
+            { id: 1, text: '大奖（20~34倍）' },
+            { id: 2, text: '巨奖（35~49倍）' },
+            { id: 3, text: '超级巨奖（50~70倍）' },
+            { id: 4, text: '三个胡·10次免费（预估70）' },
+            { id: 5, text: '四个胡·12次免费（预估90）' },
+            { id: 6, text: '五个胡·14次免费（预估120）' }
+        ];
+    }
+
+    // 控牌指令类型与平台 gameID 不同：19=麻将胡了(gameID 54)，18 保留旧水果牌机。
     M.CARD_ACTIONS = [
-        { id: 5, text: '大字版控制' }, { id: 7, text: 'ATT3控制' }, { id: 8, text: 'ATT满花版控制' }, { id: 12, text: '金皇冠' },
-        { id: 13, text: 'NBA' }, { id: 14, text: '火凤凰' }, { id: 15, text: '水浒传' },
-        { id: 16, text: '明星97' }, { id: 17, text: '水果拉霸' }
+        { id: 5, text: '大字版控制' }, { id: 7, text: '点石成金控制' }, { id: 8, text: 'ATT满花版控制' }, { id: 12, text: '金皇冠' },
+        { id: 13, text: 'NBA' }, { id: 14, text: '火凤凰' }, { id: 19, text: '麻将胡了' }
     ];
+
+    // 已下线游戏的名称回退：历史控牌记录仍能回显游戏名（与电脑端 labaTypeName 同口径）
+    var CARD_ACTION_NAMES_OFFLINE = { 15: '水浒传', 16: '明星97', 17: '水果拉霸' };
 
     /** 控牌游戏(GameId/cardAction) -> 名称，如 5 -> “大字版控制” */
     M.cardActionName = function (action) {
         for (var i = 0; i < M.CARD_ACTIONS.length; i++)
             if (M.CARD_ACTIONS[i].id == action) return M.CARD_ACTIONS[i].text;
+        if (CARD_ACTION_NAMES_OFFLINE[action]) return CARD_ACTION_NAMES_OFFLINE[action];
         return '游戏' + action;
     };
 
@@ -576,6 +617,7 @@
         if (action == 15) return cardTypeDataForShz();
         if (action == 16) return cardTypeDataForMx97();
         if (action == 17) return cardTypeDataForFruit();
+        if (action == 19) return cardTypeDataForMjhl();
         return cardTypeDataForPaiji(action);
     };
 
@@ -1044,6 +1086,9 @@
         var $backBtn = $('#backBtn');
         $(window).on('pagehide', function () {
             if (backTimer) { clearTimeout(backTimer); backTimer = null; }
+            // 离开/冻结前中断在途请求：浏览器自行掐断会按 error/timeout 上报，
+            // 回调画在旧页面残留或延迟到恢复才跑，别的页面上冒出"网络异常"提示
+            abortInFlightPosts();
         });
         $(window).on('pageshow', function () {
             navLocked = false;

@@ -694,17 +694,17 @@
             if (items.length > 0) items[0].selected = true;
             return items;
         }
+        @*仅含线上开放游戏的控牌项（2026-10-16 起拉霸三款 15/16/17 下线不再提供选择；
+           历史控牌值回显仍由 labaTypeName/valSelDataShz 等保留，勿删）*@
         function totalCardActionData() {
             return [
                 { id: 5, text: '大字版控制', selected: true },
-                { id: 7, text: 'ATT3控制' },
+                { id: 7, text: '点石成金控制' },
                 { id: 8, text: 'ATT满花版控制' },
                 { id: 12, text: '金皇冠' },
                 { id: 13, text: 'NBA' },
                 { id: 14, text: '火凤凰' },
-                { id: 15, text: '水浒传' },
-                { id: 16, text: '明星97' },
-                { id: 17, text: '水果拉霸' }
+                { id: 19, text: '麻将胡了' }
             ];
         }
         function totalModeName(m) {
@@ -736,6 +736,7 @@
             } else if (n == 15) $('#selE_Type_Total').combobox('loadData', valSelDataShz());
             else if (n == 16) $('#selE_Type_Total').combobox('loadData', valSelDataMx97());
             else if (n == 17) $('#selE_Type_Total').combobox('loadData', valSelDataFruit());
+            else if (n == 19) $('#selE_Type_Total').combobox('loadData', valSelDataMjhl());
         }
         function showTotalCtrlWin(uid) {
             var para = {
@@ -988,14 +989,28 @@
             return arr;
         }
 
-        @*拉霸控牌值回显图标名（与控牌下拉/服务端映射一致；cardAction 15=水浒传 16=明星97 17=水果拉霸）*@
+        function valSelDataMjhl() {
+            return [
+                { id: 1, text: '大奖（20~34倍）' },
+                { id: 2, text: '巨奖（35~49倍）' },
+                { id: 3, text: '超级巨奖（50~70倍）' },
+                { id: 4, text: '三个胡·10次免费（预估70）' },
+                { id: 5, text: '四个胡·12次免费（预估90）' },
+                { id: 6, text: '五个胡·14次免费（预估120）' }
+            ];
+        }
+
+        @*控牌值回显名（cardAction 19=麻将胡了，与平台 gameID 54 不同）*@
         function labaTypeName(action, value) {
             action = parseInt(action); value = parseInt(value);
-            if (value == 10) return '关闭';
             var list = null;
             if (action == 15) list = valSelDataShz();
             else if (action == 16) list = valSelDataMx97();
             else if (action == 17) list = valSelDataFruit();
+            else if (action == 19) list = valSelDataMjhl();
+            else if (action >= 5 && action <= 14) list = valSelDataPAIJI(action);
+            // 10=关闭 仅拉霸体系；牌机 10=五梅、关闭为 99，均走下方列表解析
+            if (value == 10 && list && action >= 15) return '关闭';
             if (list) {
                 for (var i = 0; i < list.length; i++)
                     if (list[i].id == value) return list[i].text;
@@ -1011,7 +1026,7 @@
         function actionSelDataPAIJI() {
             return [
                 { id: 5, text: '大字版控制', selected: true  },
-                { id: 7, text: 'ATT3控制' },
+                { id: 7, text: '点石成金控制' },
                 { id: 8, text: 'ATT满花版控制' },
                 { id: 12, text: '金皇冠' },
                 { id: 13, text: 'NBA' },
@@ -1042,7 +1057,7 @@
             { ht: 9, name: '同花顺' }, { ht: 10, name: '五梅' }, { ht: 11, name: '同花大顺' },
             { ht: 12, name: '五鬼' }
         ];
-        // 各牌机游戏倍率（与台机设定 GC_MAG_TAB 一致，客户端固定值只读；ATT3 取 middle 档）
+        // 各牌机游戏倍率（与台机设定 GC_MAG_TAB 一致，客户端固定值只读；点石成金 取 middle 档）
         var TC_MAG_TAB = {
             phenix: [0, 1, 2, 3, 5, 7, 10, 40, 80, 120, 250, 500, 1000],
             king3:  [0, 1, 2, 3, 5, 7, 10, 60, 60, 120, 250, 500, 1000],
@@ -1050,7 +1065,7 @@
             nba:    [0, 1, 2, 3, 5, 7, 10, 50, 50, 100, 400, 200, 1000],
             att3:   [0, 1, 2, 3, 5, 7, 10, 50, 50, 120, 400, 200, 1000]
         };
-        // cardAction -> 倍率key：5大字版/7ATT3/8ATT满花版(与ATT3同倍率表)/12金皇冠/13NBA/14火凤凰
+        // cardAction -> 倍率key：5大字版/7点石成金/8ATT满花版(与点石成金同倍率表)/12金皇冠/13NBA/14火凤凰
         function tcMagKey(action) {
             if (action == 5) return 'dazhi';
             if (action == 7 || action == 8) return 'att3';
@@ -1071,6 +1086,11 @@
                 var item = { id: t.ht, text: t.name + '(' + mags[t.ht] + '倍)' };
                 if (t.ht == 4) item.selected = true; // 默认选中杂顺
                 arr.push(item);
+            }
+            // 火凤凰(14)扩展控牌：正宗大四梅 x1~x6，控牌值 13-18（服务端 AlgProb 按 ctrl_value-12 取倍数）
+            if (cardAction == 14) {
+                for (var k = 1; k <= 6; k++)
+                    arr.push({ id: 12 + k, text: '正宗大四梅X' + k + '(' + (80 * k) + '倍)' });
             }
             arr.push({ id: 99, text: '关闭控制' });
             return arr;
