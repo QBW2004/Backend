@@ -265,6 +265,7 @@
     <Compile Include="Controllers\Api\RankingListController.cs" />
     <Compile Include="Controllers\Api\ReChargeNotifyController.cs" />
     <Compile Include="Controllers\Api\ReportsController.cs" />
+    <Compile Include="Filters\JsonAntiForgeryAttribute.cs" />
     <Compile Include="Filters\LocalizationAttribute.cs" />
     <Compile Include="Filters\MobileOnlyAttribute.cs" />
     <Compile Include="Models\Acc\BetAcc.cs" />

@@ -100,10 +100,13 @@ namespace YYT.Web.Controllers
         }
 
         /// <summary>
-        /// 手机端登录（ajax），成功后由前端跳转 /Mobile/Home/Index
+        /// 手机端登录（ajax），成功后由前端跳转 /Mobile/Home/Index。
+        /// 防伪校验用 JsonAntiForgery：令牌过期返回 JSON（refresh=true），
+        /// 前端换新令牌重试一次；不能用 ValidateAntiForgeryToken——它失败时
+        /// 返回 HTML 错误页，前端 res.json() 解析失败会把令牌问题误报成服务器错误。
         /// </summary>
         [HttpPost]
-        [ValidateAntiForgeryToken]
+        [JsonAntiForgery]
         [WithoutLocalization]
         public ActionResult Mobile(FormCollection form)
         {

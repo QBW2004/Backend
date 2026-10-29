@@ -380,6 +380,58 @@
                 loginBtn.textContent = '登录';
             }
 
+            // 防伪令牌过期/Cookie 被清理时服务端返回 refresh=true（或旧版本返回 HTML
+            // 错误页导致 res.json() 失败）：重新拉取登录页换一对新令牌，再原样重试一次。
+            // 只重试一次——重试仍失败就显示真实原因，避免无限循环。
+            function refreshTokenAndRetry() {
+                fetch(location.pathname + '?_t=' + Date.now(), { method: 'GET', credentials: 'same-origin' })
+                    .then(function (res) { return res.text(); })
+                    .then(function (html) {
+                        var m = html.match(/name="__RequestVerificationToken"[^>]*value="([^"]+)"/);
+                        var inp = document.querySelector('#tokenForm input[name="__RequestVerificationToken"]');
+                        if (m && inp) inp.value = m[1];
+                        submitLogin(true);
+                    })
+                    .catch(function () {
+                        resetBtn();
+                        showError('loginError', '服务器响应错误，请稍后重试');
+                    });
+            }
+
+            function submitLogin(retried) {
+                var payload = new URLSearchParams();
+                payload.append('uname', usernameInput.value.trim());
+                payload.append('upwd', passwordInput.value);
+                payload.append('__RequestVerificationToken', getToken());
+
+                fetch('/Login/Mobile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                    body: payload.toString()
+                }).then(function (res) { return res.json(); }).then(function (data) {
+                    if (data && data.refresh && !retried) {
+                        refreshTokenAndRetry();
+                        return;
+                    }
+                    resetBtn();
+                    if (Number(data.code) === 1) {
+                        window.location.href = '/Mobile/Home/Index';
+                    } else if (data.banned) {
+                        // 账号被禁用：弹窗展示禁用时的封号提示
+                        showBanModal(data.msg || '该账号已被禁用，请联系上级代理！');
+                    } else {
+                        showError('loginError', (data && data.msg) || '登录失败，请检查用户名和密码');
+                    }
+                }).catch(function (err) {
+                    if (!retried) {
+                        refreshTokenAndRetry();
+                        return;
+                    }
+                    resetBtn();
+                    showError('loginError', '服务器响应错误，请稍后重试');
+                });
+            }
+
             loginForm.addEventListener('submit', function (e) {
                 e.preventDefault();
                 loginError.style.display = 'none';
@@ -398,29 +450,7 @@
                 loginBtn.textContent = ' 登录中...';
                 loginBtn.appendChild(loadingSpinner);
 
-                var payload = new URLSearchParams();
-                payload.append('uname', usernameInput.value.trim());
-                payload.append('upwd', passwordInput.value);
-                payload.append('__RequestVerificationToken', getToken());
-
-                fetch('/Login/Mobile', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
-                    body: payload.toString()
-                }).then(function (res) { return res.json(); }).then(function (data) {
-                    resetBtn();
-                    if (Number(data.code) === 1) {
-                        window.location.href = '/Mobile/Home/Index';
-                    } else if (data.banned) {
-                        // 账号被禁用：弹窗展示禁用时的封号提示
-                        showBanModal(data.msg || '该账号已被禁用，请联系上级代理！');
-                    } else {
-                        showError('loginError', data.msg || '登录失败，请检查用户名和密码');
-                    }
-                }).catch(function (err) {
-                    resetBtn();
-                    showError('loginError', '服务器响应错误，请稍后重试');
-                });
+                submitLogin(false);
             });
 
             function showBanModal(msg) {
