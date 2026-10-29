@@ -1,0 +1,27 @@
+﻿<section id="labaWeights" style="display:none;margin:20px 0;padding:18px;border:1px solid #cbd7e8;border-radius:8px;background:#f7faff;">
+    <div class="gc-section-title">拉霸出货权重与理论 RTP</div>
+    <p class="gc-hint">各奖型共用一组相对权重：概率＝该项权重÷总权重。0 表示不抽取，可设置未中奖；叠加线奖按实际盘面结算。此处独立保存，按当前机台生效。</p>
+    <label><input type="checkbox" id="lwEnabled" /> 启用相对权重开奖（关闭时继续使用旧配置）</label>
+    <div id="lwStatus" role="status" style="margin:10px 0;"></div>
+    <div id="lwEditor" style="display:none;">
+        <div style="padding:14px;background:white;border-radius:6px;margin:12px 0;" aria-live="polite">
+            <strong id="lwRtp" style="font-size:22px;">计算中</strong>
+            <div id="lwParts" style="margin-top:6px;"></div>
+            <div id="lwAreas" style="margin-top:6px;"></div>
+            <p id="lwBasis" class="gc-hint"></p>
+            <label>试算单局下注 <input id="lwBet" type="number" min="1" max="1000000" step="1" value="1" style="width:100px;" /></label>
+            <div class="gc-hint">理论值是自然局长期期望，实际短期结果会波动；不含人为控牌、比倍、余额容量拒绝。明星倍按持续游玩的稳态计算，整数半奖随下注额变化。</div>
+        </div>
+        <div id="lwMain" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px;"></div>
+        <details style="margin:16px 0;"><summary>额外玩法权重与触发设置</summary>
+            <label style="display:block;margin:12px 0;"><input id="lwBonus" type="checkbox" /> 启用原包额外玩法</label>
+            <div id="lwExtra" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:8px;"></div>
+        </details>
+        <button type="button" id="lwSave" class="gc-btn gc-btn-primary">保存本机台权重</button>
+        <span class="gc-hint">只保存本区；修改基础桌台参数仍使用页面原保存按钮。</span>
+    </div>
+</section>
+<script>
+window.LABA_WEIGHTS_URLS={get:'@Url.Action("GetLabaWeights", "GameConfig", new { area="Game" })',preview:'@Url.Action("PreviewLabaWeights", "GameConfig", new { area="Game" })',save:'@Url.Action("SaveLabaWeights", "GameConfig", new { area="Game" })'};
+</script>
+<script src="@Url.Content("~/Scripts/app/game.labaweights.js?v=1.0.66")"></script>

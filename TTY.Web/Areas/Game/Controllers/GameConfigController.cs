@@ -181,7 +181,7 @@ namespace YYT.Web.Areas.Game.Controllers
                             "SELECT TableIndex, TableName, Enabled, BetMin, BetMax, CoinsNeed, OneCoinScore, MaxSeats, IdleFireTimeoutSec, IdleFireKickEnabled, MinBetUnits FROM roomtableconfig WHERE GAME_ID={0} ORDER BY TableIndex", gameId).ToList();
                         List<CardTableCfgCardRow> cardCfgRows = ef.Database.SqlQuery<CardTableCfgCardRow>(
                             "SELECT TableIndex, ExCoin, ScoreSwitch, GameMo, MaxBetUnits FROM roomtableconfig_card WHERE GAME_ID={0} ORDER BY TableIndex", gameId).ToList();
-                        // 彩金奖池(仅点石成金/NBA)：游戏服周期导出的当前奖池(JackpotState.txt)
+                        // 彩金奖池(仅ATT3/NBA)：游戏服周期导出的当前奖池(JackpotState.txt)
                         // 与后台已下发待重启生效的覆盖值(JackpotSet.txt)，均按桌号索引
                         Dictionary<int, int[]> jpCur = null, jpSet = null;
                         DateTime? jpStateTime = null;
@@ -1073,7 +1073,7 @@ namespace YYT.Web.Areas.Game.Controllers
                     int idleSec = form.Q<int>("IdleFireTimeoutSec", 0) * 60; // 分钟 → 秒
                     int tblIdleKick = form.Q<int>("IdleFireKickEnabled", 1);
                     int tblMaxSeats = form.Q<int>("MaxSeats", 6);
-                    // 彩金奖池(仅点石成金/NBA/ATT满花版)：页面提交 JP_5K/JP_RS/JP_SF/JP_4K 时校验并登记到 JackpotSet.txt，
+                    // 彩金奖池(仅ATT3/NBA/ATT满花版)：页面提交 JP_5K/JP_RS/JP_SF/JP_4K 时校验并登记到 JackpotSet.txt，
                     // 游戏服启动时一次性应用（无热更管道，重启生效）。未提交(非奖池游戏或旧页面)不处理。
                     // ATT满花版(25)附加 JP_DIA/JP_AR 两列可选(方块/满花彩金池)，未提交记 -1、服务端不覆盖该池。
                     int[] jpVals = null;
@@ -1459,9 +1459,9 @@ namespace YYT.Web.Areas.Game.Controllers
             return System.Array.IndexOf(DecimalBetFishGameIds, gameId) >= 0;
         }
 
-        // 彩金奖池：仅 点石成金(37)/NBA(44)/ATT满花版(25) 牌机有每台机独立的四档奖池(五梅5K/同花大顺RS/同花顺SF/四梅4K)。
+        // 彩金奖池：仅 ATT3(37)/NBA(44)/ATT满花版(25) 牌机有每台机独立的四档奖池(五梅5K/同花大顺RS/同花顺SF/四梅4K)。
         // ATT满花版另有方块彩金/满花彩金两池：JackpotSet.txt 行可附加第 6/7 列覆盖（缺省或 -1 不动该池），
-        // JackpotState.txt 导出 7 列含两池当前值（点石成金/NBA 仍 5 列）。
+        // JackpotState.txt 导出 7 列含两池当前值（ATT3/NBA 仍 5 列）。
         // 游戏服周期导出当前值到 <Release目录>\JackpotState.txt；后台把待生效值写 JackpotSet.txt，
         // 游戏服启动时应用一次后改名 .applied（无热更管道，重启生效，与服务端 ApplyJackpotOverride 对齐）。
         private static readonly int[] JackpotCardGameIds = { 37, 44, 25 };
@@ -1480,7 +1480,7 @@ namespace YYT.Web.Areas.Game.Controllers
         }
         private static string GetJackpotDirKey(int gameId)
         {
-            return gameId == 37 ? "JackpotDir_Dscj" : gameId == 44 ? "JackpotDir_NBA" : gameId == 25 ? "JackpotDir_AttMhb" : null;
+            return gameId == 37 ? "JackpotDir_Att3" : gameId == 44 ? "JackpotDir_NBA" : gameId == 25 ? "JackpotDir_AttMhb" : null;
         }
         private static string GetJackpotDir(int gameId)
         {
@@ -2389,11 +2389,8 @@ namespace YYT.Web.Areas.Game.Controllers
                 }
                 double mean = c.Average();
                 // ④ 理论 RTP 与目标偏差 >3% → 黄色警告（不拦截，闭环会持续纠偏）
-                //    幸运灯(9/21)按帮助“送1-5个灯或者吃灯”各半：送灯期望 3 灯，均摊到 22 个非幸运灯位
-                double lucky = (wheelProbs[9] + wheelProbs[21]) * norm / 10000.0;
-                double ratSum = 0;
-                for (int i = 0; i < 24; i++) if (FruitPanelArea[i] >= 0) ratSum += FruitPanelRat[i];
-                double rtp = mean + lucky * 0.5 * 3.0 / 22.0 * ratSum / 8.0;
+                double g = wheelProbs[9] / 10000.0 * 2.0 + wheelProbs[21] / 10000.0 * 4.5;
+                double rtp = g < 1 ? mean / (1 - g) : 0;
                 int target = form.Q<int>("RtpTargetX100", -1);
                 if (target > 0 && rtp > 0 && Math.Abs(rtp * 10000 - target) / target > 0.03)
                     msg.content += "（提示：面板表理论RTP=" + (rtp * 100).ToString("F2") + "% 与目标偏差超过3%，闭环将持续纠偏）";
