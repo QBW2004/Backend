@@ -511,51 +511,52 @@
 
     // 水浒传控牌=按结果类 code 强制（与电脑端 valSelDataShz / 服务端 ShzRtp::ComboToClass 一致）：
     // 400-407三连 410-417四连 420-427五连 430-432纯万能线 440-448全屏 450/451全屏混合；10=关闭。
-    // 全屏类倍率=全屏奖+线奖（9 线）叠加后的总赔率；超过 2000 倍的一律不下发（440 14000 / 441 11500 /
-    // 442 4600 / 443 2300），历史控牌值回退见 SHZ_LEGACY。
+    // 2026-10 起全屏奖只赔全屏倍数×总押注（不叠加线奖）；超过 2000 倍总押注的不下发（440/441）；
+    // 送牌下拉只给全盘奖，线奖项仅供历史控牌值回显，历史旧值回退见 SHZ_LEGACY。
     function cardTypeDataForShz() {
         return [
             { id: 407, text: '三连·斧(2倍)' }, { id: 406, text: '三连·枪(3倍)' },
             { id: 405, text: '三连·刀(5倍)' }, { id: 417, text: '四连·斧(5倍)' },
             { id: 404, text: '三连·鲁智深(7倍)' }, { id: 403, text: '三连·林冲(10倍)' },
             { id: 416, text: '四连·枪(10倍)' }, { id: 402, text: '三连·宋江(15倍)' },
-            { id: 415, text: '四连·刀(15倍)' }, { id: 451, text: '全屏·纯武器混合(15倍)' },
+            { id: 415, text: '四连·刀(15倍)' }, { id: 451, text: '全屏·纯武器混合(15倍总押注)' },
             { id: 401, text: '三连·替天行道(20倍)' }, { id: 414, text: '四连·鲁智深(20倍)' },
             { id: 427, text: '五连·斧(20倍)' }, { id: 413, text: '四连·林冲(30倍)' },
             { id: 412, text: '四连·宋江(40倍)' }, { id: 426, text: '五连·枪(40倍)' },
-            { id: 400, text: '三连·忠义堂(50倍)' }, { id: 430, text: '纯万能线·3连(50倍)' },
-            { id: 450, text: '全屏·纯人物混合(50倍)' }, { id: 425, text: '五连·刀(60倍)' },
+            { id: 400, text: '三连·忠义堂(50倍)' }, { id: 430, text: '纯万能线·3连(已取消)' },
+            { id: 450, text: '全屏·纯人物混合(50倍总押注)' }, { id: 425, text: '五连·刀(60倍)' },
             { id: 411, text: '四连·替天行道(80倍)' }, { id: 424, text: '五连·鲁智深(100倍)' },
             { id: 423, text: '五连·林冲(160倍)' }, { id: 410, text: '四连·忠义堂(200倍)' },
-            { id: 422, text: '五连·宋江(200倍)' }, { id: 431, text: '纯万能线·4连(200倍)' },
-            { id: 448, text: '全屏·斧(230倍)' }, { id: 421, text: '五连·替天行道(400倍)' },
-            { id: 447, text: '全屏·枪(460倍)' }, { id: 446, text: '全屏·刀(690倍)' },
-            { id: 420, text: '五连·忠义堂(1000倍)' }, { id: 432, text: '纯万能线·5连(1000倍)' },
-            { id: 445, text: '全屏·鲁智深(1150倍)' }, { id: 444, text: '全屏·林冲(1840倍)' },
+            { id: 422, text: '五连·宋江(200倍)' }, { id: 431, text: '纯万能线·4连(已取消)' },
+            { id: 448, text: '全屏·斧(50倍总押注)' }, { id: 421, text: '五连·替天行道(400倍)' },
+            { id: 447, text: '全屏·枪(100倍总押注)' }, { id: 446, text: '全屏·刀(150倍总押注)' },
+            { id: 420, text: '五连·忠义堂(1000倍)' }, { id: 432, text: '纯万能线·5连(2000倍)' },
+            { id: 445, text: '全屏·鲁智深(250倍总押注)' }, { id: 444, text: '全屏·林冲(400倍总押注)' },
+            { id: 443, text: '全屏·宋江(500倍总押注)' }, { id: 442, text: '全屏·替天行道(1000倍总押注)' },
             { id: 10, text: '关闭控制' }
         ];
     }
 
     // 明星97控牌=按结果类 code 强制（与电脑端 valSelDataMx97 / 服务端 Mx97Rtp::ComboToClass 一致）：
     // 300-308纯色三连 310 ANY BAR 311/312樱桃2/1连 322-329 Scatter 330全水果 340-347全屏 350全屏BAR；10=关闭。
-    // 全屏类倍率同样是全屏奖+线奖（8 线）叠加后的总赔率，最高 660 倍，未触及 2000 倍上限。
+    // 2026-10 起全盘奖只赔全盘倍数（不叠加线奖）；送牌下拉只给全盘奖，线奖项仅供历史控牌值回显。
     function cardTypeDataForMx97() {
         return [
             { id: 300, text: '纯色三连·樱桃(10倍)' }, { id: 301, text: '纯色三连·橘子(10倍)' },
             { id: 302, text: '纯色三连·蓝莓(14倍)' }, { id: 303, text: '纯色三连·铃铛(18倍)' },
             { id: 304, text: '纯色三连·西瓜(20倍)' }, { id: 305, text: '纯色三连·黄BAR(30倍)' },
             { id: 306, text: '纯色三连·红BAR(50倍)' }, { id: 307, text: '纯色三连·蓝BAR(70倍)' },
-            { id: 308, text: '纯色三连·七(80倍+)' }, { id: 310, text: 'ANY BAR(10倍)' },
+            { id: 308, text: '纯色三连·七(按全盘3个七5倍)' }, { id: 310, text: 'ANY BAR(10倍)' },
             { id: 311, text: '樱桃2连(5倍)' }, { id: 312, text: '樱桃1连(2倍)' },
             { id: 322, text: 'Scatter 全盘2个七(2倍)' }, { id: 323, text: 'Scatter 全盘3个七(5倍)' },
             { id: 324, text: 'Scatter 全盘4个七(20倍)' }, { id: 325, text: 'Scatter 全盘5个七(40倍)' },
             { id: 326, text: 'Scatter 全盘6个七(60倍)' }, { id: 327, text: 'Scatter 全盘7个七(80倍)' },
             { id: 328, text: 'Scatter 全盘8个七(100倍)' }, { id: 329, text: 'Scatter 全盘9个七(200倍)' },
-            { id: 330, text: '全水果(15倍)' }, { id: 340, text: '全屏·樱桃(160倍)' },
-            { id: 341, text: '全屏·橘子(120倍)' }, { id: 342, text: '全屏·蓝莓(152倍)' },
-            { id: 343, text: '全屏·铃铛(184倍)' }, { id: 344, text: '全屏·西瓜(220倍)' },
-            { id: 345, text: '全屏·黄BAR(300倍)' }, { id: 346, text: '全屏·红BAR(490倍)' },
-            { id: 347, text: '全屏·蓝BAR(660倍)' }, { id: 350, text: '全屏 ANY BAR(40倍)' },
+            { id: 330, text: '全水果(15倍)' }, { id: 340, text: '全屏·樱桃(80倍)' },
+            { id: 341, text: '全屏·橘子(40倍)' }, { id: 342, text: '全屏·蓝莓(40倍)' },
+            { id: 343, text: '全屏·铃铛(40倍)' }, { id: 344, text: '全屏·西瓜(60倍)' },
+            { id: 345, text: '全屏·黄BAR(60倍)' }, { id: 346, text: '全屏·红BAR(90倍)' },
+            { id: 347, text: '全屏·蓝BAR(100倍)' }, { id: 350, text: '全屏 ANY BAR(40倍)' },
             { id: 10, text: '关闭控制' }
         ];
     }
@@ -566,9 +567,9 @@
     function cardTypeDataForFruit() {
         var panels = [
             '橘子·大(10倍)', '铃铛·大(20倍)', 'BAR·小(50倍)', 'BAR·大(120倍)', '苹果(5倍)', '苹果·小(3倍)',
-            '柠檬·大(15倍)', '西瓜·大(20倍)', '西瓜·小(3倍)', '送灯位·免费局 1~3 次', '苹果(5倍)', '橘子·小(3倍)',
+            '柠檬·大(15倍)', '西瓜·大(20倍)', '西瓜·小(3倍)', '幸运灯(灯10)·送1~5灯或吃灯', '苹果(5倍)', '橘子·小(3倍)',
             '橘子·大(10倍)', '铃铛·大(20倍)', '双7·小(3倍)', '双7·大(40倍)', '苹果(5倍)', '柠檬·小(3倍)',
-            '柠檬·大(15倍)', '星星·小(3倍)', '星星·大(30倍)', '送灯位·免费局 3~6 次', '苹果(5倍)', '铃铛·小(3倍)'
+            '柠檬·大(15倍)', '星星·小(3倍)', '星星·大(30倍)', '幸运灯(灯22)·送1~5灯或吃灯', '苹果(5倍)', '铃铛·小(3倍)'
         ];
         var arr = [];
         for (var i = 0; i < panels.length; i++) {
@@ -612,10 +613,11 @@
     };
 
     /** 指定游戏的牌型下拉数据（含倍率文案） */
-    M.cardTypeData = function (action) {
+    // full=true 返回含线奖的完整表（仅供历史控牌值回显）；下拉送牌只提供全盘奖（2026-10 规则对齐帮助）
+    M.cardTypeData = function (action, full) {
         action = parseInt(action, 10);
-        if (action == 15) return cardTypeDataForShz();
-        if (action == 16) return cardTypeDataForMx97();
+        if (action == 15) return full ? cardTypeDataForShz() : cardTypeDataForShz().filter(function (x) { return x.id == 10 || x.id >= 440; });
+        if (action == 16) return full ? cardTypeDataForMx97() : cardTypeDataForMx97().filter(function (x) { return x.id == 10 || x.id >= 322; });
         if (action == 17) return cardTypeDataForFruit();
         if (action == 19) return cardTypeDataForMjhl();
         return cardTypeDataForPaiji(action);
@@ -636,7 +638,7 @@
     M.cardTypeName = function (action, value) {
         action = parseInt(action, 10);
         value = parseInt(value, 10);
-        var rows = M.cardTypeData(action);
+        var rows = M.cardTypeData(action, true);
         for (var i = 0; i < rows.length; i++)
             if (rows[i].id == value) return rows[i].text;
         // 牌机：已隐藏牌型（杂牌0 / 大四梅8 / 五鬼12）不在下拉里，但历史控牌值按该游戏倍率表回显

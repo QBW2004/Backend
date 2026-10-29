@@ -138,6 +138,65 @@ namespace UnitTestProj
         }
 
         [TestMethod]
+        public void PermissionGrantsCannotExceedCallerHeldPermissionsAndAreAudited()
+        {
+            string controller = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\AdminController.cs");
+
+            // 授权必须校验"调用者自身持有该权限"：授权值不得超过自身值（收权/降权永远放行），
+            // 自身权限位以数据库当前值为准，不用会话快照；超管视为持有全部权限。
+            StringAssert.Contains(controller, "private bool CallerHoldsPermission");
+            StringAssert.Contains(controller, "IsSuperAdmin(loginUser)");
+            StringAssert.Contains(controller, "if (newValue <= heldValue)");
+            StringAssert.Contains(controller, "你自身没有该权限，无法授予！");
+
+            // 全部 19 个权限设置接口都必须接入持有校验与审计日志
+            int grantChecks = controller.Split(new[] { "CallerHoldsPermission(m_LoginUser, id," }, StringSplitOptions.None).Length - 1;
+            Assert.AreEqual(19, grantChecks, "每个 SetIs*/SetManageScope/SetKickScope/SetFrozen 都必须先过 CallerHoldsPermission");
+            int auditCalls = controller.Split(new[] { "AuditPermissionChange(m_LoginUser, id," }, StringSplitOptions.None).Length - 1;
+            Assert.AreEqual(19, auditCalls, "每个权限设置成功路径都必须写审计日志");
+
+            // ManageScope/KickScope 与权限位同口径：子代范围不得超过父代
+            StringAssert.Contains(controller, "a => a.ManageScope");
+            StringAssert.Contains(controller, "a => a.IsRelease");
+            StringAssert.Contains(controller, "a => a.IsModifyAgentPwd");
+
+            // 审计走 log4net 文件日志（AgencyOptLog 7 天物理清除，不能当授权审计库）
+            StringAssert.Contains(controller, "private void AuditPermissionChange");
+            StringAssert.Contains(controller, "WebHelper.GetClientIP()");
+        }
+
+        [TestMethod]
+        public void AddAgencyInfoBindsOnlyWhitelistedFieldsAndServerOwnsMoneyColumns()
+        {
+            string controller = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\AgencyInfoController.cs");
+            string adminBll = ReadRepoFile(@"YYT.BLL\EF\B_Admin.cs");
+
+            // 建号表单只白名单绑定 ID/PWD/FLAG/RE_ENABLE/InviteCode：
+            // COINS/RECHARGE/EXCHANGE/COINS_BUY/COINS_BACK/CommissionRate/AGENCY_LIMIT/PRIV/Is* 一律服务端写死
+            StringAssert.Contains(controller, "TryUpdateModel<M_Admin>(entity, AddAgencyBindableFields)");
+            StringAssert.Contains(controller, "\"ID\", \"PWD\", \"FLAG\", \"RE_ENABLE\", \"InviteCode\"");
+            Assert.IsFalse(controller.Contains("TryUpdateModel<M_Admin>(entity)"));
+
+            // BLL 兜底：即使上层白名单被绕过，新建代理的资金字段也必须为服务端默认值
+            StringAssert.Contains(adminBll, "entity.COINS = 0;");
+            StringAssert.Contains(adminBll, "entity.RECHARGE = 0;");
+            StringAssert.Contains(adminBll, "entity.CommissionRate = 0.00m;");
+            Assert.IsFalse(adminBll.Contains("entity.COINS = entity.COINS ?? 0;"));
+            Assert.IsFalse(adminBll.Contains("entity.CommissionRate = entity.CommissionRate ??"));
+        }
+
+        [TestMethod]
+        public void AgencyAttributeSettersRequireManagedScope()
+        {
+            string controller = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\AgencyInfoController.cs");
+
+            // 邀请码的设置与清除、客服链接的修改都要求目标在调用者管理范围内
+            //（否则任意代理能清他人邀请码 / 篡改他人玩家端展示的客服链接）
+            int scopeChecks = controller.Split(new[] { "只能设置自己管理范围内的下级代理！" }, StringSplitOptions.None).Length - 1;
+            Assert.IsTrue(scopeChecks >= 3, "SetInviteCode 与 ChgCustomerServiceUrl 也必须做管理范围校验");
+        }
+
+        [TestMethod]
         public void AgencyCreationDefaultsEnableRequestedOperationalPermissionsOnly()
         {
             string controller = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\AgencyInfoController.cs");
@@ -633,6 +692,35 @@ namespace UnitTestProj
         }
 
         [TestMethod]
+        public void GameRecordBetScalesDecimalFishByTenth()
+        {
+            string recordView = ReadRepoFile(@"TTY.Web\Areas\Game\Views\UserRecord\Index.cshtml");
+            string gameRecordScript = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.gamerecord.js");
+
+            // 下注列（OPT_COINS = mCurBet）是游戏内部单位：0.1 分炮鱼机必须 ÷10 显示。
+            // 进入/离开余额（COINS = mCoins 钱包金币）与「得分」(离开-进入) 是真实币量，不能 ÷10。
+            StringAssert.Contains(recordView, "isDecimalBetFish(rowData && rowData.GAME_TYPE)");
+            StringAssert.Contains(recordView, "return top.goldFormat((v / 10).toFixed(1));");
+            StringAssert.Contains(gameRecordScript, "M.betGold(Number(rowData.OPT_COINS || 0), rowData.GAME_TYPE)");
+
+            // 鱼机列表四处同口径（OnlineUsers/UserRecord/GameConfigController/phone.core.js）
+            const string fishIds = "3, 6, 13, 19, 21, 22, 32, 33, 42, 49, 51";
+            StringAssert.Contains(recordView, "var _decimalBetFishIds = [" + fishIds + "];");
+        }
+
+        [TestMethod]
+        public void PrizeHistoryScalesDecimalFishScoreByTenth()
+        {
+            string prizeScript = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.prizehistory.js");
+            string phoneCore = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.core.js");
+
+            // 得分列：gameprizerecord.Score 是游戏内部单位，0.1 分炮鱼机（金蟾捕鱼/牛魔王/李逵劈鱼等）
+            // 库存值是真实得分的 10 倍（中 100 金币显示成 1000），必须 ÷10 保留 1 位小数。
+            StringAssert.Contains(prizeScript, "M.isDecimalBetFish(r.GameId) ? (score / 10).toFixed(1) : M.gold(score)");
+            StringAssert.Contains(phoneCore, "M.isDecimalBetFish = function (gameId) {");
+        }
+
+        [TestMethod]
         public void CoinOperationsRejectNonPositiveAmountsAndQueryRequiresUpDownPermission()
         {
             string userInfoController = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\UserInfoController.cs");
@@ -802,11 +890,40 @@ namespace UnitTestProj
                 Assert.IsFalse(file.Contains("+360倍"));
                 Assert.IsFalse(file.Contains("按忠义堂"));
                 Assert.IsFalse(file.Contains("'面板' + i + ' · '"));
-                // 水果拉霸面板位 9/21 是两个不同的送灯位，描述要带免费局次数（与机台设定面板表同名），不能都写"送灯位(免费局)"
-                StringAssert.Contains(file, "送灯位·免费局 1~3 次");
-                StringAssert.Contains(file, "送灯位·免费局 3~6 次");
+                // 水果拉霸面板位 9/21 是两个幸运灯（狮子头），按帮助“送1-5个灯或者吃灯”，描述要区分灯位
+                StringAssert.Contains(file, "幸运灯(灯10)·送1~5灯或吃灯");
+                StringAssert.Contains(file, "幸运灯(灯22)·送1~5灯或吃灯");
                 Assert.IsFalse(file.Contains("送灯位(免费局)"));
             }
+        }
+
+        [TestMethod]
+        public void OfflineLabaGamesRemovedFromCardControlSelectors()
+        {
+            string phoneCore = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.core.js");
+            string indexView = ReadRepoFile(@"TTY.Web\Areas\Game\Views\UserInfo\Index.cshtml");
+            string onlineView = ReadRepoFile(@"TTY.Web\Areas\Game\Views\UserInfo\OnlineUsers.cshtml");
+
+            // 拉霸三款（水浒传15/明星97 16/水果拉霸17）已下线，控牌游戏下拉不再提供选择；
+            // 可选列表只剩开放中的六款牌机 5/7/8/12/13/14
+            foreach (string removed in new[] { "id: 15, text: '水浒传'", "id: 16, text: '明星97'", "id: 17, text: '水果拉霸'" })
+            {
+                Assert.IsFalse(phoneCore.Contains(removed), "M.CARD_ACTIONS 不应再提供 " + removed);
+                Assert.IsFalse(indexView.Contains(removed), "totalCardActionData 不应再提供 " + removed);
+                Assert.IsFalse(onlineView.Contains(removed), "totalCardActionData 不应再提供 " + removed);
+            }
+            foreach (string kept in new[] { "id: 5,", "id: 7,", "id: 8,", "id: 12,", "id: 13,", "id: 14," })
+            {
+                StringAssert.Contains(phoneCore, kept);
+                StringAssert.Contains(indexView, kept);
+                StringAssert.Contains(onlineView, kept);
+            }
+
+            // 但已下发的历史拉霸控牌记录仍要能回显：手机端靠名称回退表，电脑端靠 labaTypeName 的 15/16/17 分支
+            StringAssert.Contains(phoneCore, "CARD_ACTION_NAMES_OFFLINE");
+            StringAssert.Contains(phoneCore, "15: '水浒传'");
+            StringAssert.Contains(indexView, "if (action == 15) list = valSelDataShz();");
+            StringAssert.Contains(onlineView, "if (action == 15) list = valSelDataShz();");
         }
 
         [TestMethod]
@@ -1087,6 +1204,32 @@ namespace UnitTestProj
             StringAssert.Contains(playersScript, "return $.when(loadTotalWinLoss(), loadOnline());");
             // 在线人数角标在空列表时也要归零（原写法在 return 之后，人数会停在上一次的值）
             StringAssert.Contains(playersScript, "$('#onlinePlayerCount').text(onlinePlayers.length);");
+        }
+
+        [TestMethod]
+        public void MobilePostsAreAbortedOnPageHideSoNoGhostNetworkToast()
+        {
+            string phoneCore = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.core.js");
+            string playersScript = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.players.js");
+            string controlScript = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.control.js");
+            string detailScript = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.playerdetail.js");
+
+            // 离开页面（前进导航/bfcache 冻结）时在途请求若由浏览器掐断，回调按 error/timeout
+            // 上报而非 abort——「网络异常」提示会画在旧页面残留上、或延迟到恢复才弹，
+            // 表现为"离开在线玩家页后在别的页面/返回时弹出网络连接失败"。
+            // 修复 = M.post 登记全部在途 jqXHR，pagehide 统一 abort（显式 abort 报 status='abort'）
+            StringAssert.Contains(phoneCore, "var postInFlight = {};");
+            StringAssert.Contains(phoneCore, "function abortInFlightPosts()");
+            StringAssert.Contains(phoneCore, "postInFlight[reqId] = xhr;");
+            StringAssert.Contains(phoneCore, "abortInFlightPosts();");
+            // 错误 toast 只豁免 abort 不够：页面隐藏时的失败弹了也没人看见
+            StringAssert.Contains(phoneCore, "status !== 'abort' && !document.hidden");
+            // 在线页失败分支对 abort/隐藏直接返回，不然同一个幽灵提示换"游戏服暂无响应"还会冒出来
+            StringAssert.Contains(playersScript, "aborted = (status === 'abort');");
+            StringAssert.Contains(playersScript, "if (aborted || document.hidden) return;");
+            // 各页裸轮询与在线页同一口径：页面隐藏时暂停，在途请求交给 M.post 的中断
+            StringAssert.Contains(controlScript, "if (!document.hidden) refreshCtrlStatus(true);");
+            StringAssert.Contains(detailScript, "if (!account || document.hidden) return;");
         }
 
         [TestMethod]
@@ -1649,6 +1792,130 @@ namespace UnitTestProj
             // 控牌配置回显(GetUserCtrlConfigs)与金币上限回显(GetUserGoldLimit)也按设置人过滤
             Assert.IsTrue(controller.Split(new[] { "CanViewPlayerControl(loginUser," }, StringSplitOptions.None).Length - 1 >= 2,
                 "GetUserCtrlConfigs 与 GetUserGoldLimit 都应校验 CanViewPlayerControl");
+        }
+
+        [TestMethod]
+        public void GlobalWriteEndpointsRequireSuperAdmin()
+        {
+            string authorize = ReadRepoFile(@"TTY.Web\Models\AuthorizeAttribute.cs");
+            StringAssert.Contains(authorize, "class SuperAdminAuthorizeAttribute");
+            StringAssert.Contains(authorize, "loginUser.UserPriv != 0");
+            StringAssert.Contains(authorize, "TipMsg.MSG_INVALID_AUTHORIZE");
+
+            // 全局写接口统一挂超管门槛：桌台/RTP 配置、客户端升级地址、公告/活动、游戏启停、模式切换、机器人
+            string[] files = {
+                @"TTY.Web\Areas\Game\Controllers\GameConfigController.cs",
+                @"TTY.Web\Areas\Game\Controllers\AppUpdateController.cs",
+                @"TTY.Web\Areas\Game\Controllers\ActivityController.cs",
+                @"TTY.Web\Areas\Game\Controllers\NoticeController.cs",
+                @"TTY.Web\Areas\Game\Controllers\GameSettingController.cs",
+                @"TTY.Web\Areas\Game\Controllers\GameMoController.cs",
+                @"TTY.Web\Areas\Game\Controllers\RobotController.cs",
+                @"TTY.Web\Areas\Game\Controllers\UserRobotController.cs",
+            };
+            foreach (string f in files)
+                StringAssert.Contains(ReadRepoFile(f), "SuperAdminAuthorize");
+
+            // 匿名可写的上传口收口到登录态
+            StringAssert.Contains(ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\UploadsImageController.cs"), "[MemberAuthorize]");
+        }
+
+        [TestMethod]
+        public void RechargeOrderMutationsAreScopedAndIdempotent()
+        {
+            string bll = ReadRepoFile(@"YYT.BLL\EF\B_ReChargeRecords.cs");
+            string controller = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\RechargeController.cs");
+
+            // 订单归属校验：非总台只能处理自己会员管理范围内的订单
+            StringAssert.Contains(bll, "private bool CanOperateOrder(");
+            StringAssert.Contains(bll, "CanManagePlayer(ef, loginUser, order.Agency)");
+            StringAssert.Contains(bll, "只能处理自己管理范围内的订单！");
+
+            // 处理/拒绝/退回类接口都必须带 loginUser 走归属校验
+            StringAssert.Contains(bll, "OrderProcessOrder(M_LoginUser loginUser,");
+            StringAssert.Contains(bll, "OrderOrderRefuse(M_LoginUser loginUser,");
+            StringAssert.Contains(bll, "OrderOrderRefuseEx(M_LoginUser loginUser,");
+            StringAssert.Contains(controller, "OrderProcessOrder(loginUser, orderNo)");
+            StringAssert.Contains(controller, "OrderOrderRefuse(loginUser, orderNo)");
+            StringAssert.Contains(controller, "OrderOrderRefuseEx(loginUser, orderNo)");
+
+            // RefuseEx（动账回滚）必须有 Processed 幂等守卫：
+            // 同一订单禁止重复触发用户加币/代理扣币（重放造账）
+            int exIdx = bll.IndexOf("public Msg OrderOrderRefuseEx");
+            Assert.IsTrue(exIdx > 0);
+            StringAssert.Contains(bll.Substring(exIdx), "if (rst.Processed > 0)");
+        }
+
+        [TestMethod]
+        public void LegacyPlayerControlEndpointsEnforceScopeAndFreshPermissionBits()
+        {
+            string controller = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\UserInfoController.cs");
+
+            // 旧鱼机/牌机控制通道：目标范围校验 + 权限位查库（收权即时生效，不读会话快照）
+            StringAssert.Contains(controller, "只能操作自己管理范围内的玩家！");
+            StringAssert.Contains(controller, "caller?.IsKill");
+            StringAssert.Contains(controller, "caller?.IsProbability");
+            StringAssert.Contains(controller, "caller?.IsRelease");
+
+            // ChgUserRate 控制码白名单：只放行鱼机点杀(1)/放水(2)，
+            // 防止借任意 UC 控制码（如牌机 25）绕过对应权限校验
+            StringAssert.Contains(controller, "不支持的控制类型！");
+
+            // 上下分/在线分入口控制器侧补范围校验（BLL 已有兜底，双层一致）
+            int scopeDenials = controller.Split(new[] { "只能对自己管理范围内的用户操作！" }, StringSplitOptions.None).Length - 1;
+            Assert.IsTrue(scopeDenials >= 2, "SaveReChange 与 SaveDeduct 都必须做目标范围校验");
+            StringAssert.Contains(controller, "只能查询自己管理范围内的玩家！");
+        }
+
+        [TestMethod]
+        public void UnauthenticatedGameClientApisRequirePlayerPassword()
+        {
+            string transAll = ReadRepoFile(@"TTY.Web\Controllers\Api\UserTransAllController.cs");
+            string updateUsers = ReadRepoFile(@"TTY.Web\Controllers\Api\UpdateUsersController.cs");
+
+            // 玩家侧动账/改资料接口必须校验登录密码（此前完全无鉴权）
+            StringAssert.Contains(transAll, "authUser.PWD != model.pwd.Trim()");
+            StringAssert.Contains(updateUsers, "authUser.PWD != model.pwd.Trim()");
+        }
+
+        [TestMethod]
+        public void AgencyLimitCannotExceedCallerLimitAndRegisterBindsWhitelist()
+        {
+            string controller = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\AgencyInfoController.cs");
+            string userInfo = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\UserInfoController.cs");
+
+            // 分代上限：子代不得超过父代自身上限（0=不限，仅自身不限的父代才可下放）
+            StringAssert.Contains(controller, "分代上限不能超过你自己的上限！");
+
+            // 玩家注册白名单绑定：除 ID/NAME/PWD 外的实体字段一律不绑
+            StringAssert.Contains(userInfo, "TryUpdateModel<M_Users>(entity, new[] { \"ID\", \"NAME\", \"PWD\" })");
+            Assert.IsFalse(userInfo.Contains("TryUpdateModel<M_Users>(entity)"));
+        }
+
+        [TestMethod]
+        public void MobileLoginReportsTrueFailureAndRefreshesExpiredToken()
+        {
+            string loginView = ReadRepoFile(@"TTY.Web\Views\Login\Mobile.cshtml");
+            string loginController = ReadRepoFile(@"TTY.Web\Controllers\LoginController.cs");
+            string jsonAntiForgery = ReadRepoFile(@"TTY.Web\Filters\JsonAntiForgeryAttribute.cs");
+            string csproj = ReadRepoFile(@"TTY.Web\YYT.Web.csproj");
+
+            // 防伪校验失败必须回 JSON（refresh=true），不能回 HTML 错误页——
+            // 前端 res.json() 解析失败会统一报"服务器响应错误"，
+            // 把令牌过期/Cookie 被清误报成服务器故障，真实失败原因（如密码错误）反而看不到
+            StringAssert.Contains(loginController, "[JsonAntiForgery]");
+            StringAssert.Contains(jsonAntiForgery, "AntiForgery.Validate()");
+            StringAssert.Contains(jsonAntiForgery, "HttpAntiForgeryException");
+            StringAssert.Contains(jsonAntiForgery, "refresh = true");
+
+            // 前端拿到 refresh 或非 JSON 响应时换新令牌重试一次；重试仍失败才提示
+            StringAssert.Contains(loginView, "refreshTokenAndRetry");
+            StringAssert.Contains(loginView, "data && data.refresh && !retried");
+            StringAssert.Contains(loginView, "submitLogin(true)");
+            StringAssert.Contains(loginView, "if (!retried)");
+
+            // 新过滤器必须登记进老式 csproj，否则部署产物缺文件
+            StringAssert.Contains(csproj, @"Filters\JsonAntiForgeryAttribute.cs");
         }
 
     }

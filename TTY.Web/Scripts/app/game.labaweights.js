@@ -22,7 +22,7 @@
     }
     function result(r) {
         $('#lwRtp').text('理论 RTP ' + r.totalRtp.toFixed(4) + '%');
-        $('#lwParts').text('基础奖 ' + r.baseRtp.toFixed(4) + '% ＋ 免费局/额外玩法 ' + r.extraRtp.toFixed(4) + '%');
+        $('#lwParts').text('基础奖 ' + r.baseRtp.toFixed(4) + '% ＋ 额外玩法 ' + r.extraRtp.toFixed(4) + '%');
         $('#lwBasis').text(r.basis);
         $('#lwAreas').text(r.areaRtp ? r.areaRtp.map(function (p, i) { return fruitNames[i] + '：' + p.toFixed(3) + '%'; }).join('　') : '基础盘面中奖率 ' + r.hitRate.toFixed(4) + '%');
     }
@@ -55,9 +55,9 @@
         if (game === 40) {
             var names = ['小三元', '大三元', '大四喜', '小满贯', '大满贯', '纵横四海', '随机1至5灯', '开火车', '天女散花7灯', '天龙八部8灯', '九莲宝灯9灯'];
             names.forEach(function (name, i) { defs.push([i + 1, name + '权重']); });
-            defs.push([12, '原免费局权重', '与11种特殊奖共同抽取；免费局可继续派生。']);
+            defs.push([12, '吃灯权重', '与11种特殊奖共同抽取；未开启额外玩法时幸运灯按“送1-5个灯或者吃灯”各半。']);
         } else if (game === 16) {
-            defs = [[20, '明星倍触发（万分比）'], [21, '2倍明星权重'], [22, '3倍明星权重'], [23, '4倍明星权重'], [24, 'BONUS半额概率（万分比）'], [25, 'BONUS全额概率（万分比）'], [26, '系统奖概率（万分比）'], [27, '系统奖倍数']];
+            defs = [];
         } else {
             var outer = ['退出', '鲁智深', '枪', '忠义堂', '斧', '刀', '退出', '宋江', '鲁智深', '枪', '斧', '替天行道', '退出', '林冲', '刀', '斧', '鲁智深', '忠义堂', '退出', '枪', '宋江', '斧', '刀', '替天行道'];
             outer.forEach(function (name, i) { defs.push([40 + i, '外圈' + (i + 1) + '·' + name + '权重']); });
@@ -77,7 +77,7 @@
             state = { config: data.config, gameId: game, tableIndex: id % 1000 };
             $('#lwEnabled').prop('checked', data.config.enabled); $('#lwBonus').prop('checked', data.config.extra[0] === 1); $('#lwBet').val(1);
             var main = $('#lwMain').empty();
-            data.items.forEach(function (item, i) { main.append(input(item.name, i, data.config.main[i], 'main', game === 40 ? '' : '含叠加奖平均 ' + item.mean.toFixed(4) + ' 倍')); });
+            data.items.forEach(function (item, i) { main.append(input(item.name, i, data.config.main[i], 'main', game === 40 ? '' : '平均 ' + item.mean.toFixed(4) + ' 倍（按单线注）')); });
             extras(game, data.config); result(data.result); $('#lwEditor').show(); $('#lwSave').prop('disabled', false);
             status(data.config.enabled ? '已启用相对权重；下方为已保存配置。' : '当前使用旧配置；下方是新模式默认试算，勾选启用后保存。', false);
         });

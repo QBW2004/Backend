@@ -100,10 +100,8 @@ namespace YYT.Web.Models
             if (c.extra[0] == 1 && game==53 && c.extra.Skip(40).Take(24).Sum()==0) throw new ArgumentException("小玛丽外圈至少设置一个权重。");
             if (game==40)
             {
-                double sum=c.main.Sum(v=>(double)v), award=c.extra.Skip(1).Take(12).Sum(v=>(double)v);
-                if (c.extra[0]==1 && award==0) throw new ArgumentException("幸运灯至少配置一种特殊奖或免费局权重。");
-                double free=c.extra[0]==1 ? c.extra[12]/award : 1;
-                if ((2*c.main[9]+4.5*c.main[21])*free>=sum) throw new ArgumentException("免费局期望派生次数必须小于1，否则无法结束且RTP无穷大。");
+                double award=c.extra.Skip(1).Take(12).Sum(v=>(double)v);
+                if (c.extra[0]==1 && award==0) throw new ArgumentException("幸运灯至少配置一种特殊奖或吃灯权重。");
             }
         }
         public Result Calculate(int game, Config c, int bet)
@@ -111,30 +109,23 @@ namespace YYT.Web.Models
             Validate(game,c);
             if (bet<1 || bet>1000000) throw new ArgumentException("试算单局下注范围为1至1000000。");
             if (game==40) return Fruit(c);
+            Game g=Find(game); double sum=c.main.Sum(v=>(double)v), mean=0, hit=0, mary=0;
             double cost=game==16 ? 8 : 9;
-            Game g=Find(game); double sum=c.main.Sum(v=>(double)v), mean=0, half=0, hit=0, mary=0;
             double[] maryValues=new double[28];
-            if (game==53 && c.extra[0]==1) maryValues=Mary(c);
+            if (game==53) maryValues=Mary(c);
             for (int i=0;i<g.items.Length;i++)
             {
                 Board[] boards=g.items[i].boards; double p=c.main[i]/sum/boards.Length;
                 foreach (Board b in boards)
                 {
-                    mean+=p*b.pay; half+=p*Math.Floor((double)b.pay*bet/2)/bet;
+                    mean+=p*b.pay/cost;
                     if (b.pay>0) hit+=p;
-                    mary+=p*maryValues[b.entries];
+                    mary+=p*maryValues[b.entries]/cost;
                 }
             }
-            double extra=0;
-            if (c.extra[0]==1 && game==16)
-            {
-                double trigger=hit*c.extra[20]/10000.0, sw=c.extra.Skip(21).Take(3).Sum();
-                double multiplier=sw>0 ? (2.0*c.extra[21]+3.0*c.extra[22]+4.0*c.extra[23])/sw : 1;
-                extra=mean*(5*trigger/(1+5*trigger))*(multiplier-1)+half*c.extra[24]/10000.0+mean*c.extra[25]/10000.0+c.extra[26]/10000.0*c.extra[27];
-            }
-            else if (game==53) extra=mary;
-            return new Result { baseRtp=mean*100/cost, extraRtp=extra*100/cost, totalRtp=(mean+extra)*100/cost, hitRate=hit*100,
-                basis=game==16 ? "八线齐押，单局扣注=单线注×8；计入叠加线奖、明星倍五个后续付费局的稳态期望、BONUS整数取半和系统奖。" : "九线齐押，单局扣注=单线注×9；全屏奖与线奖叠加，小玛丽含内圈三同/四同及回合上限强制退出。" };
+            double extra=game==53 ? mary : 0;
+            return new Result { baseRtp=mean*100, extraRtp=extra*100, totalRtp=(mean+extra)*100, hitRate=hit*100,
+                basis=game==16 ? "八线齐押，单局消耗=单线注×8；全盘奖只赔全盘倍数不叠加线奖；无明星倍/BONUS/系统奖。" : "九线齐押，单局消耗=单线注×9；双边对奖，全盘奖按总押注且不叠加线奖；小玛丽恒开启，含内圈三同/四同及回合上限强制退出。" };
         }
         private static double[] Mary(Config c)
         {
@@ -153,24 +144,24 @@ namespace YYT.Web.Models
         private Result Fruit(Config c)
         {
             Game g=Find(40); double sum=c.main.Sum(v=>(double)v), lucky=(c.main[9]+c.main[21])/sum;
-            double award=c.extra.Skip(1).Take(12).Sum(v=>(double)v), free=c.extra[0]==1 ? c.extra[12]/award : 1;
-            double growth=(2*c.main[9]+4.5*c.main[21])/sum*free;
+            double award=c.extra.Skip(1).Take(12).Sum(v=>(double)v);
             var main=new double[8]; var extra=new double[8]; var areas=new double[8];
             for (int i=0;i<24;i++) if (g.area[i]>=0) main[g.area[i]]+=c.main[i]/sum*g.rat[i];
-            if (c.extra[0]==1)
-                for (int type=0;type<11;type++)
-                {
-                    double[] value=FruitAward(g,type);
-                    for (int a=0;a<8;a++) extra[a]+=lucky*c.extra[1+type]/award*value[a];
-                }
-            for (int a=0;a<8;a++) areas[a]=(main[a]+extra[a])/(1-growth)*100;
+            for (int type=0;type<11;type++)
+            {
+                double chance=c.extra[0]==1 ? c.extra[1+type]/award : (type==6 ? 0.5 : 0);
+                if (chance<=0) continue;
+                double[] value=FruitAward(g,type);
+                for (int a=0;a<8;a++) extra[a]+=lucky*chance*value[a];
+            }
+            for (int a=0;a<8;a++) areas[a]=(main[a]+extra[a])*100;
             double baseMean=main.Average()*100, total=areas.Average();
             return new Result { baseRtp=baseMean, extraRtp=total-baseMean,totalRtp=total,areaRtp=areas,
-                basis="八区等额下注为总RTP；单押或不等额下注按各区RTP加权。免费局递归派生、幸运灯特殊奖均计入；不包括人为控牌、比倍和余额容量拒绝。" };
+                basis="八区等额下注为总RTP；单押或不等额下注按各区RTP加权。幸运灯按“送1-5个灯或者吃灯”（额外玩法开启时按特殊奖/吃灯权重）计入，无免费局；不包括人为控牌、比倍和余额容量拒绝。" };
         }
         private static double[] FruitAward(Game g, int type)
         {
-            int[][] fixedSets={new[]{1,2,7},new[]{8,16,21},new[]{5,11,17,23},new[]{3,6,9,12,15,18,20,24},Enumerable.Range(1,24).Where(v=>v!=10 && v!=22).ToArray()};
+            int[][] fixedSets={new[]{1,2,7},new[]{8,16,21},new[]{5,11,17,23},new[]{3,6,9,12,15,18,20,24},new[]{1,2,4,5,7,8,11,13,14,16,17,19,21,23},Enumerable.Range(1,24).Where(v=>v!=10 && v!=22).ToArray()};
             var result=new double[8]; Action<IEnumerable<int>,double> add=(targets,p)=> { foreach (int lamp in targets) if (g.area[lamp-1]>=0) result[g.area[lamp-1]]+=p*g.rat[lamp-1]; };
             if (type<=4) add(fixedSets[type],1);
             else if (type==5)
@@ -178,7 +169,7 @@ namespace YYT.Web.Models
             else if (type==7)
                 for (int count=3;count<=8;count++) for (int start=1;start<=24;start++)
                     add(Enumerable.Range(0,24).Select(i=>(start-1+i)%24+1).Where(v=>v!=10 && v!=22).Take(count),1.0/144);
-            else add(fixedSets[4],(type==6 ? 3.0 : type-1)/22.0);
+            else add(fixedSets[5],(type==6 ? 3.0 : type-1)/22.0);
             return result;
         }
     }

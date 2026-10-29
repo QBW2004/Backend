@@ -2389,8 +2389,11 @@ namespace YYT.Web.Areas.Game.Controllers
                 }
                 double mean = c.Average();
                 // ④ 理论 RTP 与目标偏差 >3% → 黄色警告（不拦截，闭环会持续纠偏）
-                double g = wheelProbs[9] / 10000.0 * 2.0 + wheelProbs[21] / 10000.0 * 4.5;
-                double rtp = g < 1 ? mean / (1 - g) : 0;
+                //    幸运灯(9/21)按帮助“送1-5个灯或者吃灯”各半：送灯期望 3 灯，均摊到 22 个非幸运灯位
+                double lucky = (wheelProbs[9] + wheelProbs[21]) * norm / 10000.0;
+                double ratSum = 0;
+                for (int i = 0; i < 24; i++) if (FruitPanelArea[i] >= 0) ratSum += FruitPanelRat[i];
+                double rtp = mean + lucky * 0.5 * 3.0 / 22.0 * ratSum / 8.0;
                 int target = form.Q<int>("RtpTargetX100", -1);
                 if (target > 0 && rtp > 0 && Math.Abs(rtp * 10000 - target) / target > 0.03)
                     msg.content += "（提示：面板表理论RTP=" + (rtp * 100).ToString("F2") + "% 与目标偏差超过3%，闭环将持续纠偏）";
