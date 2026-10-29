@@ -1262,7 +1262,7 @@
         king3:  [0, 1, 2, 3, 5, 7, 10, 60, 60, 120, 250, 500, 1000],
         dazhi:  [0, 1, 2, 3, 5, 7, 15, 65, 65, 150, 350, 250, 350],
         nba:    [0, 1, 2, 3, 5, 7, 10, 50, 50, 100, 400, 200, 1000],
-        att3: {
+        dscj: {
             small:  [0, 1, 2, 3, 4, 6, 8, 40, 40, 100, 300, 150, 1000],
             middle: [0, 1, 2, 3, 5, 7, 10, 50, 50, 120, 400, 200, 1000],
             big:    [0, 1, 2, 3, 6, 8, 12, 60, 60, 140, 500, 250, 1000]
@@ -1273,7 +1273,7 @@
     // 扑克保留换牌机制下，客户端自动保留 × 服务端二手生成存在结构性交付损耗：
     // 抽中的牌型不一定能真正开出（全保留按一手结算 / 鬼牌数不符 / dis_flag 随机补牌）。
     // 系数 = 实测开出率 / 配置出现率，由服务端真实算法 + 客户端自动保留策略模拟 200 万局得出：
-    //   phenix/king3/dazhi/nba = 实测；att3 = 按 phenix 近似（点石成金 客户端保留策略未在本仓库）。
+    //   phenix/king3/dazhi/nba = 实测；dscj = 按 phenix 近似（点石成金 客户端保留策略未在本仓库）。
     //   nba 已于 2026-08 修复三条换牌死循环 bug + srand(1) 后重新实测校准。
     // 后台“实际预计RTP” = Σ(出现率/10000 × 倍数 × 交付系数)；理论RTP = Σ(出现率/10000 × 倍数)。
     var GC_DELIVERY_FACTOR = {
@@ -1281,13 +1281,13 @@
         king3:  [0, 1.31, 0.82, 0.84, 0.75, 0.62, 0.51, 0.64, 0.66, 0.57, 0.93, 0.48, 0.00],
         dazhi:  [0, 1.28, 0.84, 0.83, 0.74, 0.54, 0.53, 0.63, 0.55, 0.17, 1.15, 0.19, 0.00],
         nba:    [0, 1.259, 1.156, 0.857, 0.742, 0.607, 0.573, 0.643, 0.708, 0.330, 0.805, 0.185, 0.000],
-        att3:   [0, 1.30, 0.84, 0.83, 0.73, 0.65, 0.57, 0.64, 0.58, 0.55, 0.38, 0.43, 0.00]
+        dscj:   [0, 1.30, 0.84, 0.83, 0.73, 0.65, 0.57, 0.64, 0.58, 0.55, 0.38, 0.43, 0.00]
     };
 
     function gcGetMagKey() {
         var name = ($('#gcGameSel').find('option:selected').text() || '');
         if (/nba/i.test(name)) return 'nba';
-        if (/dianshichengjin|dscj|点石成金|att|连环炮/i.test(name)) return 'att3';
+        if (/dianshichengjin|dscj|点石成金|att|连环炮/i.test(name)) return 'dscj';
         if (/皇冠|king/i.test(name)) return 'king3';
         if (/大字|dazhi/i.test(name)) return 'dazhi';
         return 'phenix';
@@ -1295,10 +1295,10 @@
 
     function gcGetMagSpec(ht) {
         var key = gcGetMagKey();
-        if (key === 'att3') {
-            var small = GC_MAG_TAB.att3.small[ht] || 0;
-            var middle = GC_MAG_TAB.att3.middle[ht] || 0;
-            var big = GC_MAG_TAB.att3.big[ht] || 0;
+        if (key === 'dscj') {
+            var small = GC_MAG_TAB.dscj.small[ht] || 0;
+            var middle = GC_MAG_TAB.dscj.middle[ht] || 0;
+            var big = GC_MAG_TAB.dscj.big[ht] || 0;
             var attText = small + ' / ' + middle + ' / ' + big;
             if (ht === 12) attText += '（客户端未展示）';
             return { text: attText, rtp: small * 0.60 + middle * 0.25 + big * 0.15 };
@@ -1316,8 +1316,8 @@
 
     function gcGetMagRtpNote() {
         var key = gcGetMagKey();
-        if (key === 'att3' && gcIsAttMhb()) return 'ATT满花版 倍数同 点石成金，按服务端 60% / 25% / 15% 抽档加权（满花 ×2/×3 与彩金未计入）';
-        if (key === 'att3') return '点石成金 倍数按服务端 60% / 25% / 15% 抽档加权';
+        if (key === 'dscj' && gcIsAttMhb()) return 'ATT满花版 倍数同 点石成金，按服务端 60% / 25% / 15% 抽档加权（满花 ×2/×3 与彩金未计入）';
+        if (key === 'dscj') return '点石成金 倍数按服务端 60% / 25% / 15% 抽档加权';
         if (key === 'phenix') return '火凤凰小四梅按 40 档估算，实际结算由机台 40 / 50 档位决定';
         return '倍数取客户端固定值';
     }
@@ -1378,7 +1378,7 @@
         }
         var gfTag = gfRtp > 0 ? '；以上含金拇指 ≈ ' + (gfRtp * 100).toFixed(2) + '%' : '';
         var $el = $('#gcPayoutSum');
-        var estTag = (key === 'att3') ? '（att3 按 phenix 近似，待实测校准）' : '';
+        var estTag = (key === 'dscj') ? '（dscj 按 phenix 近似，待实测校准）' : '';
         var color = rtpReal >= 100 ? '#d33b3b' : (rtpReal > 98 ? '#c98f2b' : '#9aa4b1');
         $el.text('中奖牌型出现率合计（仅启用行）：' + winSum + ' / 10000（余量自动落入杂牌）；' +
             gcGetMagRtpNote() + '，理论返奖率 RTP ≈ ' + (rtp * 100).toFixed(2) + '%' +

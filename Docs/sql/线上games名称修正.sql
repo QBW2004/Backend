@@ -15,7 +15,7 @@ UPDATE games SET Name='双响金龙鱼' WHERE GameId=21;
 UPDATE games SET Name='金鲨银鲨' WHERE GameId=29;
 UPDATE games SET Name='神龙宝藏' WHERE GameId=32;
 UPDATE games SET Name='史前巨鳄' WHERE GameId=33;
-UPDATE games SET Name='ATT3'    WHERE GameId=37;
+UPDATE games SET Name='DianShiChengJin'    WHERE GameId=37;
 UPDATE games SET Name='水果拉霸' WHERE GameId=40;
 UPDATE games SET Name='NBA'     WHERE GameId=44;
 UPDATE games SET Name='奔驰宝马' WHERE GameId=47;

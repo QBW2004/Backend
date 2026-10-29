@@ -478,12 +478,12 @@
         king3:  [0, 1, 2, 3, 5, 7, 10, 60, 60, 120, 250, 500, 1000],
         dazhi:  [0, 1, 2, 3, 5, 7, 15, 65, 65, 150, 350, 250, 350],
         nba:    [0, 1, 2, 3, 5, 7, 10, 50, 50, 100, 400, 200, 1000],
-        att3:   [0, 1, 2, 3, 5, 7, 10, 50, 50, 120, 400, 200, 1000]
+        dscj:   [0, 1, 2, 3, 5, 7, 10, 50, 50, 120, 400, 200, 1000]
     };
 
     function tcMagKey(action) {
         if (action == 5) return 'dazhi';
-        if (action == 7 || action == 8) return 'att3';
+        if (action == 7 || action == 8) return 'dscj';
         if (action == 12) return 'king3';
         if (action == 13) return 'nba';
         return 'phenix';
