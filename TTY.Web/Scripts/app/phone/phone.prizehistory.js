@@ -25,9 +25,12 @@
             var rs = byGame[String(g.GameId)] || [];
             var body = rs.length ? rs.map(function (r) {
                 var score = Number(r.Score || 0);
+                // gameprizerecord.Score 是游戏内部单位：0.1 分炮鱼机 ÷10 显示 1 位小数
+                //（与 phone.players.js GameScore、电脑端 fmtGameScore 同口径）
+                var scoreText = M.isDecimalBetFish(r.GameId) ? (score / 10).toFixed(1) : M.gold(score);
                 return '<tr>' +
                     '<td>' + esc(r.CardType || '--') + '</td>' +
-                    '<td class="' + (score >= 0 ? 'positive' : 'negative') + '">' + (score > 0 ? '+' : '') + M.gold(score) + '</td>' +
+                    '<td class="' + (score >= 0 ? 'positive' : 'negative') + '">' + (score > 0 ? '+' : '') + scoreText + '</td>' +
                     '<td>' + esc(r.TableLabel || '--') + '</td>' +
                     '<td>' + (Number(r.IsManualControl) === 1 ? '是' : '否') + '</td>' +
                     '<td>' + esc(M.fmtTime(r.RecTime, true)) + '</td>' +

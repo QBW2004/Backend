@@ -57,6 +57,16 @@
         function isGameRec(opt) {
             return opt == 2 || opt == 3 || opt == 7 || opt == 8;
         }
+        @*0.1 分炮鱼机（内部单位 = 0.1 分）：与 GameConfigController.IsDecimalBetFish
+           / OnlineUsers.cshtml / phone.core.js M.DECIMAL_BET_FISH_IDS 同口径，改一处必须同步*@
+        var _decimalBetFishIds = [3, 6, 13, 19, 21, 22, 32, 33, 42, 49, 51];
+        function isDecimalBetFish(gameId) {
+            if (!gameId || gameId <= 0) return false;
+            for (var i = 0; i < _decimalBetFishIds.length; i++) {
+                if (_decimalBetFishIds[i] == gameId) return true;
+            }
+            return false;
+        }
         function fmtContents(value, rowData, rowIndex) {
             if (rowData.OPT == 0 || rowData.OPT == 1)
                 return getRechargeExchageMsg(rowData);
@@ -90,9 +100,13 @@
             if (!isGameRec(rowData.OPT)) return '--';
             return (value + 1) + '号位置';
         }
+        @*下注列：离开记录的 OPT_COINS = mCurBet，鱼机类内部单位为 0.1 分，需 ÷10 后显示小数*@
         function fmtBet(value, rowData, rowIndex) {
             if (!isGameRec(rowData.OPT)) return '--';
-            return top.goldFormat(value || 0);
+            var v = Number(value || 0);
+            if (isDecimalBetFish(rowData && rowData.GAME_TYPE))
+                return top.goldFormat((v / 10).toFixed(1));
+            return top.goldFormat(v);
         }
         function fmtWinLoss(value, rowData, rowIndex) {
             if (!isGameRec(rowData.OPT)) return '--';

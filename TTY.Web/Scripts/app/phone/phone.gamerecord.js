@@ -58,9 +58,10 @@
         return (Number(rowData.SEAT_ID) + 1) + '号位置';
     }
 
+    // 下注：OPT_COINS = mCurBet，0.1 分炮鱼机内部单位 ÷10 显示（与电脑端 fmtBet 同口径）
     function renderBet(rowData) {
         if (!isGameRecord(rowData)) return '--';
-        return M.gold(Number(rowData.OPT_COINS || 0));
+        return M.betGold(Number(rowData.OPT_COINS || 0), rowData.GAME_TYPE);
     }
 
     /* 得分 = 离开余额 - 进入余额（玩家赢为正）：仅离开记录有进入/离开余额 */
