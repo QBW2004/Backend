@@ -45,6 +45,11 @@ Tools/*.sql
 # 根目录带数据的 DB 快照(本地导出, 体积大且含种子数据, 不入库)
 /mth_havedata.sql
 
+# 部署模板产物(zip 已由 *.zip 覆盖; 这里挡全量 dump 与临时文件)
+# 分发给外部的部署包说明见 deploy-template/README.md 与 .devin/skills/mth-server-deploy/
+deploy-template/_raw*.sql
+deploy-template/*.tmp
+
 # 环境检测报告(Tools/env-check.ps1 产物, 每台服务器结果不同)
 Tools/env-check-report.txt
 
@@ -54,3 +59,11 @@ Tools/env-check-report.txt
 # Local tooling / stray dumps
 .zcode/
 dump_err.txt
+
+# Local production baseline and deployment verification artifacts
+/TestResults/laba-config-20261028/
+/TestResults/
+
+# Local credential probes are retained on disk only
+/Tools/one-off/_probe_dbpwd*.ps1
+/Tools/one-off/_probe_pwdcheck.ps1

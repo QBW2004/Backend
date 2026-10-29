@@ -20,6 +20,7 @@ Tools/
 | `env-check.ps1` / `env-check.bat` | **部署环境检测 + 一键补装**。检测并自动安装缺失必需项（无任何交互确认，直接下载静默安装）：.NET Framework 4.8、VC++ Redist 2015-2022 x64（含 UCRT 检测）、IIS + ASP.NET 4.5、MySQL 5.7（全新装到 `C:\mysql` 并注册 MySQL57 服务、建 mth 库）、防火墙 Web 端口。可安全反复重跑。 |
 | `fix-legacy-ucrt.ps1` / `fix-legacy-ucrt.bat` | **Server 2012 R2 专用** UCRT 补丁链修复（KB2919442 → clearcompressionflag → KB2919355 → … → KB2999226）。一次性系统级变更、装完必重启；KB2919355 有少量存储控制器重启循环的已知问题，故需手动输入 `CONTINUE` 确认。KB2999226 无稳定直链，需手动下载放到本目录 `ucrt-patches\` 下。 |
 | `server_deploy_check.ps1` | 只读采集服务器现状（IIS 站点/应用池、进程、Web 目录 bin 时间戳与 Web.config 关键项、中心服、命名管道、监听端口、日志），结果存桌面 `server_info.txt`。远程排查先跑这个。 |
+| `Start-MTH-Backend.bat` | **服务器重启后桌面双击一键拉起全部服务**（2026-10-21 已放服务器 `C:\Users\Administrator\Desktop\`）。顺序：MySQL57 → W3SVC → Daemon 计划任务 → 等 `MTH_ServerPipe` → 管道 Start-All → Start-Robot → 等 75s 打印 Status + 登录页探测。检测到 `ServerCenterNew.exe` 已在跑会跳过 Start-All 防双开（Daemon 无托管状态时重发会双开）。纯 ASCII，不要改回中文提示。 |
 
 `env-check.ps1` 参数：
 - 默认行为：管理员权限下检测到缺失必需项直接下载安装，全程无需确认
@@ -42,7 +43,7 @@ Tools/
 | 脚本 | 用途 |
 |---|---|
 | `deploy.ps1` / `deploy.bat` | 把 TTY.Web zip 或解压目录部署为 IIS 站点：备份旧版到 `C:\Backend_backup_<时间戳>` → robocopy /MIR 到 `C:\Backend`（保留 `App_Data`/`Logs`/`Upload`）→ 校验应用池 v4.0/64 位 → 绑定 8081 → 放行防火墙 → 回收应用池 → HTTP 探测。`-CheckOnly` 只看状态；`-Yes` 免确认；`-NoBackup` 跳过备份；`-Port` 默认 8081。旧备份不会自动清理，需手动删。 |
-| `pack.ps1` | 本地把 `TTY.Web` 打成部署 zip（排除 Logs/obj/.vs 并校验关键文件齐全）。用法：`powershell -File Tools\deploy\pack.ps1 -Version 1.0.16`。（原名 `_pack.ps1`，归入长期脚本后去掉下划线前缀。） |
+| `pack.ps1` | 本地把 `TTY.Web` 打成部署 zip（排除 Logs/obj/.vs 并校验关键文件齐全）。用法：`powershell -File Tools\deploy\pack.ps1 -Version 1.0.16`。可选 `-SourcePath <完整站点目录>` 支持按线上基线隔离打包，避免夹带其它待上线改动；不传时仍使用本仓库 `TTY.Web`。（原名 `_pack.ps1`，归入长期脚本后去掉下划线前缀。） |
 
 典型发布链路：`Tools\dev\build.bat` → `Tools\deploy\pack.ps1 -Version x.x.x` → 上传 zip → 服务器管理员运行 `deploy.bat "C:\...\TTY.Web_x.x.x.zip" [-y]`。
 部署前记得先在 MySQL57 的 mth 库执行 `Docs/sql/性能索引.sql`（幂等）。

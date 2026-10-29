@@ -6,15 +6,20 @@
 #>
 param(
     [Parameter(Mandatory = $true)]
-    [string]$Version
+    [string]$Version,
+    [string]$SourcePath = 'E:\MTH\MHT-Backend\TTY.Web'
 )
 
 $ErrorActionPreference = 'Stop'
+$SourcePath = (Resolve-Path -LiteralPath $SourcePath).Path
+if (-not (Test-Path -LiteralPath (Join-Path $SourcePath 'Web.config'))) { throw 'SourcePath must be a complete TTY.Web site.' }
 $stage = Join-Path $env:TEMP 'mth_pack_stage'
-if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
+$stage = [IO.Path]::GetFullPath($stage)
+if ((Split-Path -Parent $stage) -ne [IO.Path]::GetFullPath($env:TEMP).TrimEnd('\')) { throw 'Unexpected staging path.' }
+if (Test-Path -LiteralPath $stage) { Remove-Item -LiteralPath $stage -Recurse -Force }
 New-Item -ItemType Directory -Path $stage | Out-Null
 
-robocopy 'E:\MTH\MHT-Backend\TTY.Web' (Join-Path $stage 'TTY.Web') /E /NFL /NDL /NP /NJH /XD Logs obj .vs | Out-Null
+robocopy $SourcePath (Join-Path $stage 'TTY.Web') /E /NFL /NDL /NP /NJH /XD Logs obj .vs | Out-Null
 if ($LASTEXITCODE -ge 8) { throw "robocopy failed: $LASTEXITCODE" }
 
 $zip = Join-Path $stage "TTY.Web_$Version.zip"

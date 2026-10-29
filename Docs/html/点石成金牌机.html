@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>游戏配置-ATT3连环炮</title>
+<title>游戏配置-点石成金连环炮</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:Microsoft Yahei;font-size:14px}
 body{background:#f5f7fa;padding:10px}
@@ -40,7 +40,7 @@ td input{width:100%;height:28px;border:1px solid #ddd;padding:0 4px}
     <label>游戏类型:</label>
     <select><option>牌机类型</option></select>
     <label>选择游戏:</label>
-    <select><option selected>ATT3连环炮</option></select>
+    <select><option selected>点石成金连环炮</option></select>
 </div>
 <div class="wrap">
     <div class="left">
@@ -86,7 +86,7 @@ td input{width:100%;height:28px;border:1px solid #ddd;padding:0 4px}
         <!-- 彩金统一配置 -->
         <div class="title">彩金统一配置</div>
         <p class="tip">
-ATT3奖池完整规则：
+点石成金奖池完整规则：
 1、鬼牌机制：1/2/3鬼牌仅作为手牌百搭凑牌型，无奖池加分、无领奖门槛限制，任意鬼牌数量开出大牌均可领取彩池；1/2/3鬼牌概率可独立自定义。
 2、奖池加分机制：两项参数全部自定义，不写死；①奖池加分最低押分门槛：本局押分≥该分值才会加分；②达标后每局统一加分值：满足门槛时4个独立大奖池同步增加该分数；押分不足门槛无任何加分。
 3、大牌领奖分层规则（比例/定额全部后台可自定义调整）：
@@ -187,7 +187,7 @@ ATT3奖池完整规则：
         1、本表单位：万分比，杂牌出现率支持自定义手动输入，不自动覆盖；所有中奖牌型（一对～五条）数值自动求和；
         2、实时动态计算：修改任意一行「出现率」或「普通档位倍数」，失去输入框焦点后，下方文字立刻重新计算并刷新RTP数值，非静态固定文字；
         3、计算公式：RTP = Σ(该行出现率 ÷ 10000 × 普通档位基础倍数) × 100%；
-        4、数据边界：杂牌倍数固定0，不参与RTP计算；ATT3奖池额外浮动彩金/四条定额彩金不计入本表基础RTP；
+        4、数据边界：杂牌倍数固定0，不参与RTP计算；点石成金奖池额外浮动彩金/四条定额彩金不计入本表基础RTP；
         动态展示：中奖牌型出现率合计：{sumRate} / 10000，实时理论返奖率 RTP = {rtpPercent}%
         </p>
 
@@ -235,7 +235,7 @@ function calcRTP(){
         1、本表单位：万分比，杂牌出现率支持自定义手动输入，不自动覆盖；所有中奖牌型（一对～五条）数值自动求和；
         2、实时动态计算：修改任意一行「出现率」或「普通档位倍数」，失去输入框焦点后，下方文字立刻重新计算并刷新RTP数值，非静态固定文字；
         3、计算公式：RTP = Σ(该行出现率 ÷ 10000 × 普通档位基础倍数) × 100%；
-        4、数据边界：杂牌倍数固定0，不参与RTP计算；ATT3奖池额外浮动彩金/四条定额彩金不计入本表基础RTP；
+        4、数据边界：杂牌倍数固定0，不参与RTP计算；点石成金奖池额外浮动彩金/四条定额彩金不计入本表基础RTP；
         动态展示：中奖牌型出现率合计：${sumRate} / 10000，实时理论返奖率 RTP = ${rtpPercent}%
     `;
 }
