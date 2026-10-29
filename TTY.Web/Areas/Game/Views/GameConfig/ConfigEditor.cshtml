@@ -163,6 +163,7 @@
                             <input type="number" id="gcScoreSwitch" name="scoreSwitch" class="gc-input" step="0.1" min="0" value="0" />
                         </div>
                     </div>
+                    <div class="gc-hint" id="gcMjhlBetHint" style="display:none;">麻将胡了按 20 注结算：最小押注、最大押注、每次增加的分值都必须是 20 的整数倍，档位（最小到最大、按每次增加的分值递增）不超过 200 个。玩家按这里生成的档位加减押注，重新进桌后生效；旧版客户端只能用原 13 档中落在最小到最大之间的押注。</div>
                     </div>
 
                     <div class="gc-only-0">
@@ -223,9 +224,10 @@
 
                     </div>
 
-                    @*快捷下注金额（1~5 级筹码）：押注类与拉霸类共用同一套输入与保存字段(隐藏域 BetScores)。
-                      押注类按桌落 roomtableconfig_bet（彩金单挑等）；拉霸类同样按桌落 roomtableconfig_bet（复用同一管道）。*@
-                    <div class="gc-only-0 gc-only-3">
+                    @*快捷下注金额（1~5 级筹码）：仅押注类按桌落 roomtableconfig_bet（彩金单挑等）。
+                      2026-10-29 起拉霸类（明星97/水果拉霸/水浒传/麻将胡了）不再提供一到五级筹码：保存时 BetScores 提交空串，
+                      清除按桌筹码、客户端回退房间级默认筹码；押注加减只用「每次增加的分值」。*@
+                    <div class="gc-only-0">
                         <div class="gc-section-title">快捷下注金额（一到五级筹码）</div>
                         <div class="gc-hint">五档筹码为整数倍率/金额，按桌独立保存并随桌台参数下发客户端；留空或不填视为未配置（客户端回退房间级默认筹码）。</div>
                         <div class="gc-form-row">
@@ -458,6 +460,7 @@
                     </div>
 
                     @Html.Partial("_LabaWeights")
+                    @Html.Partial("_MjhlWeights")
                     <div class="gc-common">
                     <div class="gc-section-title">玩法与闲置处理</div>
                     <div class="gc-form-row">
@@ -644,8 +647,11 @@
         $('#gcViceDrawRow input').prop('disabled', !show);
     }
 
+    function gcIsMjhl() { return parseInt($('#gcGameSel').val(), 10) === 54; }
+
     function gcApplyType() {
         if (window.labaWeightsClear) window.labaWeightsClear();
+        if (window.mjhlWeightsClear) window.mjhlWeightsClear();
         var type = gcGetType();
         $('.gc-only-0,.gc-only-1,.gc-only-2,.gc-only-3').hide();
         $('.gc-common').show();
@@ -672,6 +678,17 @@
         // 三个拉霸（明星97/水果机/水浒传）最小/最大押分只能为整数（步进 1；保存时另有整数校验）
         $('#gcMinBet').attr('step', gcLabaSubType() > 0 ? '1' : '0.1');
         $('#gcMaxBet').attr('step', gcLabaSubType() > 0 ? '1' : '0.1');
+        // 麻将胡了(54)：押注档位 = 最小押注起按「每次增加的分值」递增到最大押注，均为 20 的整数倍（服务端 MjhlWeight::BuildBetLadder 同口径）
+        var mjhl = gcIsMjhl();
+        $('#gcMjhlBetHint').toggle(mjhl);
+        if (mjhl) {
+            $('#gcMinBetLbl').text('最小押注（分）');
+            $('#gcMaxBetLbl').text('最大押注（分）');
+            $('#gcScoreSwitchLbl').text('点击加减幅度（每次增加的分值）');
+            $('#gcMinBet,#gcMaxBet,#gcScoreSwitch').attr('step', '20').attr('min', '20');
+        } else {
+            $('#gcMinBet,#gcMaxBet').attr('min', '0');
+        }
         gcApplyViceDraw();
         $('#gcNewTable').toggle(true);
     }
@@ -768,6 +785,7 @@
             gcFillChips(t.betScores);
         }
         if (window.labaWeightsLoad) window.labaWeightsLoad();
+        if (window.mjhlWeightsLoad) window.mjhlWeightsLoad();
         $('#gcCurTableName').text('当前编辑：' + t.tableName);
         gcSyncSwitch();
         gcUpdateSaveBtn();
@@ -782,6 +800,8 @@
     }
 
     function gcCollectChips() {
+        // 拉霸类不再提供一到五级筹码：提交空串，后端清除按桌筹码（客户端回退房间级默认）
+        if (gcGetType() === 3) { $('#gcBetScores').val(''); return; }
         var arr = [];
         for (var i = 0; i < 5; i++) {
             var v = parseInt($('#gcChip' + i).val(), 10);
@@ -858,6 +878,17 @@
     function gcApplyCardDefaults() {
         $('#gcMinBet').val(gcLabaSubType() > 0 ? 1 : 0.1);
         $('#gcMaxBet').val(1);
+        if (gcIsMjhl()) {
+            // 原版 13 档押注范围，加减幅度 20 分
+            $('#gcMinBet').val(40);
+            $('#gcMaxBet').val(6000);
+            $('#gcCoinSc').val(100);
+            $('#gcCoinNeed').val(0);
+            $('#gcScoreSwitch').val(20);
+            $('#gcExCoin').val(1);
+            $('#gcGameMo').val(1);
+            return;
+        }
         $('#gcExCoin').val(1);
         $('#gcCoinSc').val(1);
         $('#gcGameMo').val(1);
@@ -1531,6 +1562,19 @@
         $('#gcJpBox').show();
     }
 
+    // 与后端 MjhlWeightProfile.CheckBetLadder、服务端 MjhlWeight::BuildBetLadder 同口径；合法返回空串
+    function gcMjhlLadderError(minBet, maxBet, step) {
+        if ([minBet, maxBet, step].some(function (v) { return isNaN(v) || Math.floor(v) !== v; }))
+            return '麻将胡了的最小/最大押注和每次增加的分值必须为整数！';
+        if (minBet < 20 || maxBet < minBet || step < 20)
+            return '麻将胡了的最小押注至少 20 分、每次增加的分值至少 20 分，且最大押注不能小于最小押注！';
+        if (minBet % 20 || maxBet % 20 || step % 20)
+            return '麻将胡了按 20 注结算，最小/最大押注和每次增加的分值都必须是 20 的整数倍！';
+        if (Math.floor((maxBet - minBet) / step) + 1 + ((maxBet - minBet) % step ? 1 : 0) > 200)
+            return '麻将胡了押注档位不能超过 200 个，请加大每次增加的分值或缩小押注范围！';
+        return '';
+    }
+
     function gcSave() {
         var type = gcGetType();
         if (type != 0 && type != 1 && type != 2 && type != 3) {
@@ -1555,6 +1599,14 @@
         if (gcLabaSubType() > 0 && (Math.floor(minBet) !== minBet || Math.floor(maxBet) !== maxBet)) {
             showToast('拉霸最小/最大押分只能设置整数！', 'warning');
             return;
+        }
+        if (gcIsMjhl()) {
+            var mjStep = parseFloat($('#gcScoreSwitch').val());
+            var mjMsg = gcMjhlLadderError(minBet, maxBet, mjStep);
+            if (mjMsg) {
+                showToast(mjMsg, 'warning');
+                return;
+            }
         }
         if (type === 1 || type === 2 || type === 3) { // gcCardStepInvalid
             var gcSs = parseFloat($('#gcScoreSwitch').val());

@@ -1729,6 +1729,11 @@
     <Compile Include="Areas\Game\Controllers\GameConfigWeightsController.cs" />
     <Content Include="Areas\Game\Views\GameConfig\_LabaWeights.cshtml" />
     <Content Include="Scripts\app\game.labaweights.js" />
+    <Compile Include="Models\MjhlWeightProfile.cs" />
+    <Compile Include="Areas\Game\Controllers\GameConfigMjhlController.cs" />
+    <Content Include="Areas\Game\Views\GameConfig\_MjhlWeights.cshtml" />
+    <Content Include="Scripts\app\mjhl.engine.js" />
+    <Content Include="Scripts\app\game.mjhlweights.js" />
     <Content Include="Config\laba-weight-catalog.json" />
   </ItemGroup>
 </Project>

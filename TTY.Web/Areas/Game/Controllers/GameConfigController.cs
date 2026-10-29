@@ -752,33 +752,24 @@ namespace YYT.Web.Areas.Game.Controllers
                         msg.content = "拉霸最小/最大押分只能设置整数！";
                         return Json(msg);
                     }
+                    // 麻将胡了(54)：押注档位 = 最小押注起按「每次增加的分值」递增到最大押注，均为 20 的整数倍、不超过 200 档
+                    // （游戏服 MjhlWeight::BuildBetLadder 同口径，不合法时游戏服回退原 13 档，故在此权威拦截）
+                    if (gameId == global::YYT.Web.Models.MjhlWeightProfile.GameId)
+                    {
+                        string ladderError = global::YYT.Web.Models.MjhlWeightProfile.CheckBetLadder(labaBetMinD, labaBetMaxD, form.Q<decimal>("scoreSwitch", -1m));
+                        if (ladderError != null)
+                        {
+                            msg.content = ladderError;
+                            return Json(msg);
+                        }
+                    }
                     int labaCoinsNeed = form.Q<int>("COIN_NEED", -1);
                     int labaDefaultBetIdx = form.Q<int>("defaultBetIndex", -1);
                     int labaExCoin = form.Q<int>("EX_COIN", -1);
-                    // 按桌筹码档位(1~5级)：与押注类同字段 BetScores（逗号串）。null=页面未提交(保留现值)；
-                    // ""或全 0=清除(回退房间级)；1~5 个非负整数，非法值中断保存。
-                    string labaBetScores = form.Q<string>("BetScores", null);
-                    if (labaBetScores != null)
-                    {
-                        string[] tokens = labaBetScores.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-                        List<long> chipVals = new List<long>();
-                        foreach (string tk in tokens)
-                        {
-                            long v;
-                            if (!long.TryParse(tk.Trim(), out v) || v < 0)
-                            {
-                                msg.content = "筹码档位必须为不小于 0 的整数，多个筹码用英文逗号分隔！";
-                                return Json(msg);
-                            }
-                            chipVals.Add(v);
-                        }
-                        if (chipVals.Count > 5)
-                        {
-                            msg.content = "筹码档位最多 5 级！";
-                            return Json(msg);
-                        }
-                        labaBetScores = chipVals.Count == 0 || chipVals.All(v => v == 0) ? "" : string.Join(",", chipVals);
-                    }
+                    // 2026-10-29 起拉霸类（明星97/水果拉霸/水浒传/麻将胡了）不再提供一到五级筹码：每次保存都提交空串，
+                    // 由 SaveTableFull 删除 roomtableconfig_bet 本桌行并随 TC 热更清空，客户端回退房间级默认筹码。
+                    // 押注加减只用「每次增加的分值」(scoreSwitch → roomtableconfig.GunPowerStep)。
+                    string labaBetScores = "";
                     int labaCoinSc = form.Q<int>("COIN_SC", -1);
                     int labaGameMo = form.Q<int>("Game_Mo", -1);
                     decimal labaScoreSw = form.Q<decimal>("scoreSwitch", -1m);
@@ -865,7 +856,7 @@ namespace YYT.Web.Areas.Game.Controllers
 
                     // ── 保存成功后补发 PC 热更：center UpdateGameConfig → SendExtendedPara，
                     // 游戏服 ResetConfig + ApplyProfile，下一局立即生效（无需重启）。
-                    if ((subType == 1 || subType == 2 || subType == 3) && msg.code == 1)
+                    if ((subType == 1 || subType == 2 || subType == 3 || gameId == global::YYT.Web.Models.MjhlWeightProfile.GameId) && msg.code == 1)
                     {
                         try
                         {

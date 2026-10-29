@@ -1,0 +1,132 @@
+﻿<section id="mjhlWeights" style="display:none;">
+    <style>
+        #mjhlWeights{--mw-blue:#2165d6;--mw-dark:#174d8e;--mw-ink:#243449;--mw-muted:#718096;--mw-line:#d7e1ed;--mw-good:#168052;--mw-warn:#80551a;--mw-bad:#a33d3d;margin:20px 0;padding:14px;border:1px solid #cbd7e8;border-radius:8px;background:#f3f6fa;color:var(--mw-ink);font-size:12px;line-height:1.45}
+        #mjhlWeights h3{font-size:15px;margin:0 0 4px;color:var(--mw-dark)}
+        #mjhlWeights h4{font-size:13px;color:var(--mw-dark);padding:8px 11px;margin:0;background:#f8faff;border-bottom:1px solid var(--mw-line)}
+        #mjhlWeights .mw-sub{font-size:11px;color:var(--mw-muted)}
+        #mjhlWeights .mw-badge{display:inline-block;padding:3px 8px;border-radius:14px;font-size:11px;margin-left:6px}
+        #mjhlWeights .mw-on{background:#e9f7ef;color:var(--mw-good)}
+        #mjhlWeights .mw-off{background:#fff3e0;color:var(--mw-warn)}
+        #mjhlWeights .mw-notice{padding:7px 10px;background:#fff8e8;border:1px solid #efd39c;border-radius:5px;color:var(--mw-warn);font-size:11px;margin:8px 0}
+        #mjhlWeights .mw-card{background:#fff;border:1px solid var(--mw-line);border-radius:6px;overflow:hidden;margin-bottom:9px}
+        #mjhlWeights .mw-body{padding:9px}
+        #mjhlWeights .mw-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+        #mjhlWeights .mw-field label{display:block;font-size:11px;color:var(--mw-muted);margin-bottom:2px}
+        #mjhlWeights input[type=number],#mjhlWeights select{width:100%;height:27px;border:1px solid #c8d4e2;border-radius:4px;padding:3px 6px;background:#fff;color:var(--mw-ink);font:inherit;box-sizing:border-box}
+        #mjhlWeights input[readonly]{background:#f2f4f7;color:#8a96a8}
+        #mjhlWeights .mw-scroll{overflow:auto}
+        #mjhlWeights table{width:100%;border-collapse:collapse;min-width:860px}
+        #mjhlWeights th,#mjhlWeights td{border:1px solid var(--mw-line);padding:4px 5px;text-align:center;vertical-align:middle}
+        #mjhlWeights th{background:#f1f5fb;color:#506780;font-size:10px;white-space:nowrap}
+        #mjhlWeights .mw-symbol{font-weight:600;white-space:nowrap}
+        #mjhlWeights .mw-subpay{display:block;color:#68788d;font-size:10px;font-weight:400}
+        #mjhlWeights .mw-pair{display:grid;grid-template-columns:26px 60px 1fr;align-items:center;gap:2px;margin:2px 0}
+        #mjhlWeights .mw-pair label{font-size:10px;color:#596b80}
+        #mjhlWeights .mw-pair input{height:23px;padding:2px;text-align:center;font-size:11px}
+        #mjhlWeights .mw-prob{font-size:10px;color:#2164b6;white-space:nowrap}
+        #mjhlWeights .mw-info{padding:7px 9px;background:#f4f8fd;border-left:3px solid #7aa6df;font-size:11px;color:#48617d;margin-top:7px}
+        #mjhlWeights .mw-error{display:none;background:#fff0f0;color:var(--mw-bad);white-space:pre-line;padding:8px;border-radius:4px;margin:7px 0}
+        #mjhlWeights .mw-metrics{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin-top:7px}
+        #mjhlWeights .mw-metric{border:1px solid var(--mw-line);border-radius:4px;padding:6px;background:#fbfdff;text-align:center}
+        #mjhlWeights .mw-metric span{display:block;color:var(--mw-muted);font-size:10px}
+        #mjhlWeights .mw-metric strong{display:block;margin-top:2px;color:var(--mw-blue);font-size:15px}
+        #mjhlWeights .mw-metric.mw-total{background:#edf5ff;border-color:#aac9f0}
+        #mjhlWeights .mw-actions{display:flex;justify-content:flex-end;gap:6px;margin-top:8px;flex-wrap:wrap}
+        #mjhlWeights .mw-actions button{font:inherit;font-size:11px;padding:6px 10px;background:#fff;color:#385776;border:1px solid #bdccde;border-radius:4px;cursor:pointer}
+        #mjhlWeights .mw-actions button.mw-primary{background:var(--mw-blue);border-color:var(--mw-blue);color:#fff}
+        #mjhlWeights .mw-actions button.mw-danger{color:var(--mw-bad);border-color:#e5b4b4}
+        #mjhlWeights .mw-actions button:disabled{opacity:.55;cursor:wait}
+        #mjhlWeights .mw-status{white-space:pre-line}
+        #mjhlWeights .mw-rules{font-size:11px;line-height:1.6;color:#435a74;white-space:pre-line}
+        @@media(max-width:900px){#mjhlWeights .mw-grid{grid-template-columns:repeat(3,minmax(0,1fr))}#mjhlWeights .mw-metrics{grid-template-columns:repeat(4,minmax(0,1fr))}}
+    </style>
+    <h3>麻将胡了出货率（权重）设置 <span id="mwBadge" class="mw-badge mw-off">读取中</span></h3>
+    <div class="mw-sub">一张牌型表 · 普通/免费同格分行 · 杂牌自动补足 · RTP 为实际模拟值 · 按当前桌台独立保存</div>
+    <div class="mw-notice">权重影响牌面出现机会，不改固定赔率（每 way 押注＝总押注÷20）。目标 RTP 仅用于寻找候选权重，结果显示实际模拟值；不能保证单个玩家或某批局数达到目标。本桌未保存出货率时，游戏继续使用原分档算法（约 96%）。</div>
+    <div id="mwStatusTop" class="mw-sub" role="status"></div>
+
+    <div class="mw-card"><h4>基础信息（投注与兑换）</h4><div class="mw-body">
+        <div class="mw-info" style="margin-top:0">最小押注、最大押注、点击加减幅度（每次增加的分值）和金币兑换分值，在本页上方「下注金额与兑换规则」里填写并用页面原保存按钮保存，三项押注都必须是 20 的整数倍，档位不超过 200 个。玩家重新进桌后按新档位下注；模拟按总押注 1 单位归一化，与押注大小无关。</div>
+    </div></div>
+
+    <div class="mw-card"><h4>牌型 / 固定赔率 / 普通和免费权重 / 启用</h4><div class="mw-body">
+        <div class="mw-scroll"><table>
+            <thead><tr><th rowspan="2">牌型</th><th rowspan="2">固定赔率<br />3/4/5连</th><th>轴1</th><th>轴2</th><th>轴3</th><th>轴4</th><th>轴5</th><th rowspan="2">启用</th></tr>
+                <tr><th colspan="5">每轴格内：普通权重/概率、免费权重/概率</th></tr></thead>
+            <tbody id="mwTable"></tbody>
+            <tfoot>
+                <tr style="background:#f1f7ff"><th colspan="2">普通模式权重统计</th><td id="mwSum-n-0">—</td><td id="mwSum-n-1">—</td><td id="mwSum-n-2">—</td><td id="mwSum-n-3">—</td><td id="mwSum-n-4">—</td><td>自动统计</td></tr>
+                <tr style="background:#f1f7ff"><th colspan="2">免费模式权重统计</th><td id="mwSum-f-0">—</td><td id="mwSum-f-1">—</td><td id="mwSum-f-2">—</td><td id="mwSum-f-3">—</td><td id="mwSum-f-4">—</td><td>自动统计</td></tr>
+            </tfoot>
+        </table></div>
+        <div class="mw-info">每个模式、每个轴分别按总量计算。增加其它牌权重，会从本轴杂牌余额扣除；减少或关闭其它牌，余额自动回到杂牌。底部统计实时显示其它牌＋杂牌＝总量。超限时显示红色提示并阻止计算和保存，不会生成负权重。百搭、至尊只出现在第2–4轴。</div>
+    </div></div>
+
+    <div class="mw-card"><h4>免费模式重触发</h4><div class="mw-body">
+        <div class="mw-grid">
+            <div class="mw-field"><label for="mwRetrigger">免费期间允许重触发</label><select id="mwRetrigger"><option value="1">允许</option><option value="0">关闭</option></select></div>
+            <div class="mw-field"><label for="mwRetriggerAward">每次重触发增加免费次数</label><input id="mwRetriggerAward" type="number" min="0" max="1000" step="1" /></div>
+            <div class="mw-field"><label for="mwRetriggerLimit">单个付费回合最多重触发次数</label><input id="mwRetriggerLimit" type="number" min="0" max="100" step="1" /></div>
+            <div class="mw-field"><label for="mwFreeLimit">单个付费回合免费次数上限</label><input id="mwFreeLimit" type="number" min="14" max="1000" step="1" /></div>
+        </div>
+        <div class="mw-info">固定至尊规则：3个至尊送10次免费，每多1个至尊加2次（5个送14次，所以上限至少14）。这里只配置免费期间的重触发开关、每次追加次数和上限。</div>
+    </div></div>
+
+    <div class="mw-card"><h4>RTP 目标与模拟</h4><div class="mw-body">
+        <div class="mw-grid">
+            <div class="mw-field"><label for="mwTargetRtp">目标总RTP（%）</label><input id="mwTargetRtp" type="number" min="1" max="150" step="0.1" /></div>
+            <div class="mw-field"><label for="mwTargetScatter">目标至尊触发率（%）</label><input id="mwTargetScatter" type="number" min="0" max="100" step="0.1" /></div>
+            <div class="mw-field"><label for="mwGoldChance">普通模式金色牌出现概率（%）</label><input id="mwGoldChance" type="number" min="0" max="100" step="0.01" /></div>
+            <div class="mw-field"><label for="mwSpinCount">模拟完整付费回合数</label><input id="mwSpinCount" type="number" min="100" max="1000000" step="100" /></div>
+            <div class="mw-field"><label for="mwCalibration">自动分配试算精度</label><select id="mwCalibration"><option value="2000">2,000（快速）</option><option value="5000">5,000</option><option value="10000">10,000</option></select></div>
+        </div>
+        <div class="mw-field" style="margin-top:8px;max-width:220px"><label for="mwWeightTotal">每轴总权重（杂牌补余量）</label><input id="mwWeightTotal" type="number" min="100" max="1000000" step="1" /></div>
+        <div class="mw-actions">
+            <button type="button" id="mwAuto" class="mw-primary">自动分配权重</button>
+            <button type="button" id="mwSimulate">当前模拟（按手动权重）</button>
+            <button type="button" id="mwSave" class="mw-primary">按当前权重保存</button>
+            <button type="button" id="mwLoad">载入已保存权重</button>
+            <button type="button" id="mwReset">恢复示例权重</button>
+            <button type="button" id="mwDelete" class="mw-danger">删除本桌出货率（恢复原算法）</button>
+            <button type="button" id="mwCancel" disabled>停止计算</button>
+        </div>
+        <div id="mwError" role="alert" class="mw-error"></div>
+        <div class="mw-metrics">
+            <div class="mw-metric"><span>普通模式赔付贡献</span><strong id="mwNormal">—</strong></div>
+            <div class="mw-metric"><span>免费旋转赔付贡献</span><strong id="mwFree">—</strong></div>
+            <div class="mw-metric mw-total"><span>总模拟RTP</span><strong id="mwTotal">—</strong></div>
+            <div class="mw-metric"><span>得分率</span><strong id="mwHit">—</strong></div>
+            <div class="mw-metric"><span>不得分率</span><strong id="mwMiss">—</strong></div>
+            <div class="mw-metric"><span>至尊触发率</span><strong id="mwScatter">—</strong></div>
+            <div class="mw-metric"><span>赔付封顶率</span><strong id="mwCap">—</strong></div>
+        </div>
+        <div class="mw-info">自动分配：使用目标总RTP、目标至尊触发率和普通金色概率搜索权重。当前模拟：保留其它手动权重，将目标至尊率换算为至尊权重并从杂牌扣除或补回，再按当前金色概率计算。杂牌余额不足时提示，不自动缩小其它牌权重。RTP目标不是强制派奖值。</div>
+        <div id="mwStatus" role="status" aria-live="polite" class="mw-info mw-status">填好目标总RTP、至尊触发率、普通金色概率后点击自动分配；也可手动改牌权重后点击当前模拟。保存后才会在游戏里生效。</div>
+    </div></div>
+
+    <div class="mw-card"><h4>玩法白话说明</h4><div class="mw-body"><div class="mw-rules"><b>一、权重、概率与杂牌</b>
+普通和免费是两套权重。同一轴每张牌的概率＝该牌有效权重÷本轴总权重。修改普通权重不会直接修改免费权重。关闭牌型后，两种模式都不再从权重池抽到该牌；百搭关闭时金色牌中奖后直接消除，不再变百搭。
+杂牌权重由系统自动补足：总权重减去本轴其它启用牌的权重。杂牌只用来降低中奖机会，玩家看不到“杂牌”：服务端抽到杂牌位置时，从已启用的普通牌里挑一张当下连不上的真实麻将牌放进去再下发。极少数盘面找不到连不上的牌（例如第2、3轴同时有百搭），以及连消后左边掉下新牌时，这张牌仍可能被连上，一律按画面实际连线赔付；下面的模拟用的就是游戏服同一套算法，已包含这些情况。杂牌占比不是整盘不得分率。
+
+<b>二、固定赔率和中奖路数</b>
+赔率列依次是3连、4连、5连，例如八万分别为5、10、15。先按权重抽出完整盘面，再从第1轴开始检查连续覆盖的轴数，用该牌型最长有效连数的赔率，不把3/4/5档重复相加。
+每轴有多个匹配符号时，数量相乘就是中奖 ways。例如前3轴有1、3、2个八万，组合数是6。百搭可补普通符号，不替代至尊，也没有独立普通赔付；全部由百搭组成的组合不计。
+每 way 押注＝总投注÷20（原版口径）。每段奖金＝固定赔率×ways×每way押注×该段倍率。假设总投注 20 分、八万3连有6 ways、倍率1，则得 5×6×1＝30 分。
+
+<b>三、至尊与免费重触发</b>
+至尊只在第2–4轴出现，不会被消除。付费旋转的所有连消轮里，画面上同时出现的至尊数最多达到3个就送10次免费，每多1个再加2次（与原版一致：连消补出来的至尊也算）。“目标至尊触发率”按初盘15格独立抽样换算至尊权重，连消补出的至尊会让实际触发率略高，以模拟值为准。
+重触发关闭：已有免费次数照常用完，但免费中不追加。重触发开启：每局免费只要出现3个以上至尊，就按“每次增加次数”追加，直到达到“最多重触发次数”或“免费总次数上限”。
+
+<b>四、自动分配、RTP与模拟局数</b>
+普通第2–4轴抽到普通牌时按金色概率标金；免费第3轴普通牌全部标金。金色普通牌参与中奖后，下一段前转百搭。普通连锁倍率为1/2/3/5，免费为2/4/6/10。
+自动分配保持赔率和触发奖励不变，在启用的牌型里搜索低价牌偏多、高价牌权重较小的候选方案，同时调整普通和免费分布，杂牌自动补余量。候选用相同随机起点比较，最终另换随机序列复测；只保留最接近的合法权重，目标未达到时显示偏差，不会把金额乘系数凑成目标。
+输入1000局表示1000次付费开始的完整回合，附带的免费和连锁都算在所属回合里。普通贡献＋免费贡献＝总模拟RTP。得分率指普通初盘有至少一种中奖。一个付费回合（含其免费局）封顶5000倍投注。模拟是样本估计，局数少时可能明显偏离；大批量复测才有较强参考意义。
+
+<b>五、保存与生效</b>
+“按当前权重保存”把本桌配置写入数据库并通知游戏服热更，下一局生效，已在免费游戏中的玩家先打完原来算好的免费局。“删除本桌出货率”后本桌恢复原分档算法。送奖控牌（大奖/巨奖/超级巨奖、三/四/五个胡）在本桌按同一套权重与规则生成真实盘面。</div></div></div>
+</section>
+<script>
+window.MJHL_WEIGHTS_URLS = { get: '@Url.Action("GetMjhlWeights", "GameConfig", new { area = "Game" })', save: '@Url.Action("SaveMjhlWeights", "GameConfig", new { area = "Game" })', del: '@Url.Action("DeleteMjhlWeights", "GameConfig", new { area = "Game" })' };
+</script>
+<script src="@Url.Content("~/Scripts/app/mjhl.engine.js?v=1.0.71")"></script>
+<script src="@Url.Content("~/Scripts/app/game.mjhlweights.js?v=1.0.71")"></script>
