@@ -53,6 +53,11 @@ namespace YYT.Web.Controllers.Api
         public class TransModel
         {
             /// <summary>
+            /// 登录密码（必填，校验 users.PWD；该接口此前无任何鉴权，匿名即可对任意玩家动账）
+            /// </summary>
+            public string pwd { get; set; }
+
+            /// <summary>
             /// 玩家账号
             /// </summary>
             public string playerId { get; set; }
@@ -68,7 +73,14 @@ namespace YYT.Web.Controllers.Api
                 string strJSON = "";
                 Msg msg1 = new Msg(10001, "错误！");
                 try
-                { 
+                {
+                    // 鉴权：必须带玩家登录密码，否则匿名可对任意玩家触发一键回收并改动本地余额
+                    M_Users authUser = new B_Users().GetSingle(new M_Users { ID = model.playerId });
+                    if (authUser == null || string.IsNullOrWhiteSpace(model.pwd) || authUser.PWD != model.pwd.Trim())
+                    {
+                        msg1.content = "账号或密码错误！";
+                        return msg1;
+                    }
                     string currency = "CNY";
                     string data = "{ \"playerId\": \"" + model.playerId + "\",\"currency\": \"" + currency + "\"}";
                     JavaScriptSerializer jss = new JavaScriptSerializer();

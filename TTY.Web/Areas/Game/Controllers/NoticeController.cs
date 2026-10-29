@@ -75,6 +75,7 @@ namespace YYT.Web.Areas.Game.Controllers
         /// </summary>
         [AjaxOnly]
         [HttpPost]
+        [SuperAdminAuthorize]
         public ActionResult SaveNotice(FormCollection form)
         {
             Msg msg = new Msg(0, "公告保存失败！");

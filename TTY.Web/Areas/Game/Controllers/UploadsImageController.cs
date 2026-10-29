@@ -49,6 +49,7 @@ namespace YYT.Web.Areas.Game.Controllers
 
         #region 上传附件
 
+        [MemberAuthorize]
         [HttpPost]
         public ActionResult SavePicture(string uploaderName, string fileTypeId)
         {

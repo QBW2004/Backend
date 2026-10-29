@@ -49,7 +49,7 @@ namespace YYT.Web.Areas.Game.Controllers
             return Json(list);
         }
 
-        [MemberAuthorize]
+        [SuperAdminAuthorize]
         [AjaxOnly]
         [HttpPost]
         public ActionResult EnableGameMoType(FormCollection form)

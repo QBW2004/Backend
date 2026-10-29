@@ -150,6 +150,7 @@ namespace YYT.Web.Areas.Game.Controllers
         [MemberAuthorize]
         [AjaxOnly]
         [HttpPost]
+        [SuperAdminAuthorize]
         public ActionResult SaveRobot(FormCollection form)
         {
             Msg msg = new Msg(0, "机器人添加失败！");
@@ -206,6 +207,7 @@ namespace YYT.Web.Areas.Game.Controllers
         [MemberAuthorize]
         [AjaxOnly]
         [HttpPost]
+        [SuperAdminAuthorize]
         public ActionResult DelRobot(FormCollection form)
         {
             Msg msg = new Msg(0, "删除失败！");
@@ -234,6 +236,7 @@ namespace YYT.Web.Areas.Game.Controllers
         [MemberAuthorize]
         [AjaxOnly]
         [HttpPost]
+        [SuperAdminAuthorize]
         public ActionResult DelAllRobot(FormCollection form)
         {
             Msg msg = new Msg(0, "删除失败！");

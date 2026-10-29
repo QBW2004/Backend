@@ -27,6 +27,7 @@ namespace YYT.Web.Areas.Game.Controllers
             return View(list);
         }
 
+        [SuperAdminAuthorize]
         [AjaxOnly]
         [HttpPost]
         public ActionResult SaveConfig(FormCollection form)

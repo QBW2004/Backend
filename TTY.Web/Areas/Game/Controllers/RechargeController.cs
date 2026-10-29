@@ -441,7 +441,7 @@ namespace YYT.Web.Areas.Game.Controllers
                 M_LoginUser loginUser = WebHelper.GetLoginInfo();
                 if (loginUser != null)
                 {
-                    msg = new B_ReChargeRecords().OrderProcessOrder(orderNo);
+                    msg = new B_ReChargeRecords().OrderProcessOrder(loginUser, orderNo);
                 }
             }
             catch (Exception ex)
@@ -468,7 +468,7 @@ namespace YYT.Web.Areas.Game.Controllers
                 M_LoginUser loginUser = WebHelper.GetLoginInfo();
                 if (loginUser != null)
                 {
-                    msg = new B_ReChargeRecords().OrderOrderRefuse(orderNo);
+                    msg = new B_ReChargeRecords().OrderOrderRefuse(loginUser, orderNo);
                 }
             }
             catch (Exception ex)
@@ -495,7 +495,7 @@ namespace YYT.Web.Areas.Game.Controllers
                 M_LoginUser loginUser = WebHelper.GetLoginInfo();
                 if (loginUser != null)
                 {
-                    msg = new B_ReChargeRecords().OrderOrderRefuseEx(orderNo);
+                    msg = new B_ReChargeRecords().OrderOrderRefuseEx(loginUser, orderNo);
                 }
             }
             catch (Exception ex)

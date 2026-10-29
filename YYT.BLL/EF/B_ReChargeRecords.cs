@@ -358,6 +358,18 @@ namespace YYT.BLL.EF
         }
 
 
+        /// <summary>
+        /// 订单归属校验：非总台只能处理自己会员管理范围内的订单（按订单上的代理账号判定）。
+        /// </summary>
+        private bool CanOperateOrder(GameDbContext ef, M_LoginUser loginUser, M_ReChargeRecords order)
+        {
+            if (loginUser == null)
+                return false;
+            if (loginUser.UserPriv == 0)
+                return true;
+            return new B_Admin().CanManagePlayer(ef, loginUser, order.Agency);
+        }
+
         public Msg ConfirmReChargeOrder(M_LoginUser loginUser, string orderNo)
         {
             Msg msg = new Msg(0, "订单处理失败！");
@@ -373,6 +385,11 @@ namespace YYT.BLL.EF
                 if (rst.Processed > 0)
                 {
                     msg.content = "订单已处理过，请不要重复确认！";
+                    return msg;
+                }
+                if (!CanOperateOrder(ef, loginUser, rst))
+                {
+                    msg.content = "只能处理自己管理范围内的订单！";
                     return msg;
                 }
 
@@ -444,6 +461,11 @@ namespace YYT.BLL.EF
                     msg.content = "订单已处理过，请不要重复确认！";
                     return msg;
                 }
+                if (!CanOperateOrder(ef, loginUser, rst))
+                {
+                    msg.content = "只能处理自己管理范围内的订单！";
+                    return msg;
+                }
                 var usr = ef.Users.Where(c => c.ID.Equals(rst.GameID)).SingleOrDefault();
                 if (usr == null)
                 {
@@ -475,7 +497,7 @@ namespace YYT.BLL.EF
             return msg;
         }
 
-        public Msg OrderProcessOrder(string orderNo)
+        public Msg OrderProcessOrder(M_LoginUser loginUser, string orderNo)
         {
             Msg msg = new Msg(0, "设置失败！");
             using (var ef = new GameDbContext())
@@ -489,6 +511,11 @@ namespace YYT.BLL.EF
                 if (rst.Processed > 0)
                 {
                     msg.content = "订单已处理过，请不要重复确认！";
+                    return msg;
+                }
+                if (!CanOperateOrder(ef, loginUser, rst))
+                {
+                    msg.content = "只能处理自己管理范围内的订单！";
                     return msg;
                 }
 
@@ -523,7 +550,7 @@ namespace YYT.BLL.EF
             return msg;
         }
 
-        public Msg OrderOrderRefuse(string orderNo)
+        public Msg OrderOrderRefuse(M_LoginUser loginUser, string orderNo)
         {
             Msg msg = new Msg(0, "设置失败！");
             using (var ef = new GameDbContext())
@@ -537,6 +564,11 @@ namespace YYT.BLL.EF
                 if (rst.Processed > 0)
                 {
                     msg.content = "订单已处理过，请不要重复确认！";
+                    return msg;
+                }
+                if (!CanOperateOrder(ef, loginUser, rst))
+                {
+                    msg.content = "只能处理自己管理范围内的订单！";
                     return msg;
                 }
 
@@ -571,7 +603,7 @@ namespace YYT.BLL.EF
             return msg;
         }
 
-        public Msg OrderOrderRefuseEx(string orderNo)
+        public Msg OrderOrderRefuseEx(M_LoginUser loginUser, string orderNo)
         {
             Msg msg = new Msg(0, "设置失败！");
             using (var ef = new GameDbContext())
@@ -580,6 +612,18 @@ namespace YYT.BLL.EF
                 if (rst == null)
                 {
                     msg.content = "获取订单信息失败！";
+                    return msg;
+                }
+                // 幂等守卫：已处理的订单禁止再次"拒绝回滚"，
+                // 否则可对同一订单重复触发用户加币/代理扣币（重放造账）。
+                if (rst.Processed > 0)
+                {
+                    msg.content = "订单已处理过，请不要重复确认！";
+                    return msg;
+                }
+                if (!CanOperateOrder(ef, loginUser, rst))
+                {
+                    msg.content = "只能处理自己管理范围内的订单！";
                     return msg;
                 }
 

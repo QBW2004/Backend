@@ -58,6 +58,50 @@ namespace YYT.Web.Areas.Game.Controllers
             return true;
         }
 
+        /// <summary>
+        /// 授权持有校验：授权值不得超过调用者自身持有的权限值，否则拒绝（防"子代权限超父代"）。
+        /// 收权/降权永远放行——父代必须能随时收回子代权限（newValue 不大于自身值即可）。
+        /// 调用者权限位以数据库当前值为准，不用会话快照（上级收权后旧会话不能继续授权）。
+        /// 超管视为持有全部权限。oldValue 输出目标修改前的权限值，供审计记录。
+        /// </summary>
+        private bool CallerHoldsPermission(M_LoginUser loginUser, string targetId, long newValue,
+            Func<M_Admin, long?> permissionSelector, string flagName, Msg msg, out long oldValue)
+        {
+            oldValue = 0;
+            using (var ef = new GameDbContext())
+            {
+                M_Admin target = ef.Admins.FirstOrDefault(a => a.ID == targetId);
+                if (target != null)
+                    oldValue = permissionSelector(target) ?? 0;
+
+                if (IsSuperAdmin(loginUser))
+                    return true;
+
+                M_Admin caller = ef.Admins.FirstOrDefault(a => a.ID == loginUser.Accounts);
+                long heldValue = caller == null ? 0 : permissionSelector(caller) ?? 0;
+                if (newValue <= heldValue)
+                    return true;
+
+                msg.content = "你自身没有该权限，无法授予！";
+                AuditPermissionChange(loginUser, targetId, flagName, oldValue, newValue, false);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 授权操作审计：授权与越权尝试一律落 log4net 文件日志（代理无法触及或删除）。
+        /// 记录 操作人/目标/权限位/旧值/新值/来源IP。
+        /// </summary>
+        private void AuditPermissionChange(M_LoginUser loginUser, string targetId, string flagName,
+            long oldValue, long newValue, bool granted)
+        {
+            LogHelper.WriteLog(typeof(AdminController),
+                string.Format("[PERM-{0}] operator={1} target={2} flag={3} old={4} new={5} ip={6}",
+                    granted ? "GRANT" : "DENY",
+                    loginUser == null ? string.Empty : loginUser.Accounts,
+                    targetId, flagName, oldValue, newValue, WebHelper.GetClientIP()));
+        }
+
         protected override void OnActionExecuting(ActionExecutingContext filterContext)
         {
             string actionName = filterContext.ActionDescriptor.ActionName;
@@ -90,12 +134,17 @@ namespace YYT.Web.Areas.Game.Controllers
                     if (!CanManagePermissionTarget(m_LoginUser, id, msg))
                         return Json(msg);
 
+                    long oldValue;
+                    if (!CallerHoldsPermission(m_LoginUser, id, re_enable, a => a.IsFrozen, "IsFrozen", msg, out oldValue))
+                        return Json(msg);
+
                     M_Admin mUsers = new M_Admin { ID = id, IsFrozen = re_enable };
                     int val = new B_Admin().SetFrozen(mUsers);
                     if (val > 0)
                     {
                         msg.code = 1;
                         msg.content = "设置成功！";
+                        AuditPermissionChange(m_LoginUser, id, "IsFrozen", oldValue, re_enable, true);
                     }
                 }
             }
@@ -121,12 +170,17 @@ namespace YYT.Web.Areas.Game.Controllers
                     if (!CanManagePermissionTarget(m_LoginUser, id, msg))
                         return Json(msg);
 
+                    long oldValue;
+                    if (!CallerHoldsPermission(m_LoginUser, id, re_enable, a => a.IsProbability, "IsProbability", msg, out oldValue))
+                        return Json(msg);
+
                     M_Admin mUsers = new M_Admin { ID = id, IsProbability = re_enable };
                     int val = new B_Admin().SetProbability(mUsers);
                     if (val > 0)
                     {
                         msg.code = 1;
                         msg.content = "放水权限设置成功！";
+                        AuditPermissionChange(m_LoginUser, id, "IsProbability", oldValue, re_enable, true);
                     }
                 }
             }
@@ -153,12 +207,17 @@ namespace YYT.Web.Areas.Game.Controllers
                     if (!CanManagePermissionTarget(m_LoginUser, id, msg))
                         return Json(msg);
 
+                    long oldValue;
+                    if (!CallerHoldsPermission(m_LoginUser, id, re_enable, a => a.IsKicking, "IsKicking", msg, out oldValue))
+                        return Json(msg);
+
                     M_Admin mUsers = new M_Admin { ID = id, IsKicking = re_enable };
                     int val = new B_Admin().SetKicking(mUsers);
                     if (val > 0)
                     {
                         msg.code = 1;
                         msg.content = "设置成功！";
+                        AuditPermissionChange(m_LoginUser, id, "IsKicking", oldValue, re_enable, true);
                     }
                 }
             }
@@ -185,12 +244,17 @@ namespace YYT.Web.Areas.Game.Controllers
                     if (!CanManagePermissionTarget(m_LoginUser, id, msg))
                         return Json(msg);
 
+                    long oldValue;
+                    if (!CallerHoldsPermission(m_LoginUser, id, re_enable, a => a.IsDelete, "IsDelete", msg, out oldValue))
+                        return Json(msg);
+
                     M_Admin mUsers = new M_Admin { ID = id, IsDelete = re_enable };
                     int val = new B_Admin().SetDelete(mUsers);
                     if (val > 0)
                     {
                         msg.code = 1;
                         msg.content = "设置成功！";
+                        AuditPermissionChange(m_LoginUser, id, "IsDelete", oldValue, re_enable, true);
                     }
                 }
             }
@@ -220,12 +284,17 @@ namespace YYT.Web.Areas.Game.Controllers
                     if (!CanManagePermissionTarget(m_LoginUser, id, msg))
                         return Json(msg);
 
+                    long oldValue;
+                    if (!CallerHoldsPermission(m_LoginUser, id, isUpDown, a => a.IsUpDown, "IsUpDown", msg, out oldValue))
+                        return Json(msg);
+
                     M_Admin mUsers = new M_Admin { ID = id, IsUpDown = isUpDown };
                     int val = new B_Admin().SetUpDown(mUsers);
                     if (val > 0)
                     {
                         msg.code = 1;
                         msg.content = "上下分权限设置成功！";
+                        AuditPermissionChange(m_LoginUser, id, "IsUpDown", oldValue, isUpDown, true);
                     }
                 }
             }
@@ -255,6 +324,10 @@ namespace YYT.Web.Areas.Game.Controllers
                     if (!CanManagePermissionTarget(m_LoginUser, id, msg))
                         return Json(msg);
 
+                    long oldValue;
+                    if (!CallerHoldsPermission(m_LoginUser, id, kickScope, a => a.ManageScope ?? 1, "KickScope", msg, out oldValue))
+                        return Json(msg);
+
                     // 兼容旧客户端：踢人范围不再独立保存，统一写入管理范围。
                     M_Admin mUsers = new M_Admin { ID = id, ManageScope = kickScope };
                     int val = new B_Admin().SetKickScope(mUsers);
@@ -262,6 +335,7 @@ namespace YYT.Web.Areas.Game.Controllers
                     {
                         msg.code = 1;
                         msg.content = "管理范围设置成功，踢人范围已同步！";
+                        AuditPermissionChange(m_LoginUser, id, "KickScope", oldValue, kickScope, true);
                     }
                 }
             }
@@ -291,12 +365,17 @@ namespace YYT.Web.Areas.Game.Controllers
                     if (!CanManagePermissionTarget(m_LoginUser, id, msg))
                         return Json(msg);
 
+                    long oldValue;
+                    if (!CallerHoldsPermission(m_LoginUser, id, isGift, a => a.IsGift, "IsGift", msg, out oldValue))
+                        return Json(msg);
+
                     M_Admin mUsers = new M_Admin { ID = id, IsGift = isGift };
                     int val = new B_Admin().SetGiftPermission(mUsers);
                     if (val > 0)
                     {
                         msg.code = 1;
                         msg.content = "赠送权限设置成功！";
+                        AuditPermissionChange(m_LoginUser, id, "IsGift", oldValue, isGift, true);
                     }
                 }
             }
@@ -326,12 +405,17 @@ namespace YYT.Web.Areas.Game.Controllers
                     if (!CanManagePermissionTarget(m_LoginUser, id, msg))
                         return Json(msg);
 
+                    long oldValue;
+                    if (!CallerHoldsPermission(m_LoginUser, id, isCreateAgent, a => a.IsCreateAgent, "IsCreateAgent", msg, out oldValue))
+                        return Json(msg);
+
                     M_Admin mUsers = new M_Admin { ID = id, IsCreateAgent = isCreateAgent };
                     int val = new B_Admin().SetCreateAgentPermission(mUsers);
                     if (val > 0)
                     {
                         msg.code = 1;
                         msg.content = "保存成功";
+                        AuditPermissionChange(m_LoginUser, id, "IsCreateAgent", oldValue, isCreateAgent, true);
                     }
                 }
             }
@@ -361,12 +445,17 @@ namespace YYT.Web.Areas.Game.Controllers
                     if (!CanManagePermissionTarget(m_LoginUser, id, msg))
                         return Json(msg);
 
+                    long oldValue;
+                    if (!CallerHoldsPermission(m_LoginUser, id, isViewPwd, a => a.IsViewPwd, "IsViewPwd", msg, out oldValue))
+                        return Json(msg);
+
                     M_Admin mUsers = new M_Admin { ID = id, IsViewPwd = isViewPwd };
                     int val = new B_Admin().SetViewPwdPermission(mUsers);
                     if (val > 0)
                     {
                         msg.code = 1;
                         msg.content = "查看密码权限设置成功！";
+                        AuditPermissionChange(m_LoginUser, id, "IsViewPwd", oldValue, isViewPwd, true);
                     }
                 }
             }
@@ -396,12 +485,17 @@ namespace YYT.Web.Areas.Game.Controllers
                     if (!CanManagePermissionTarget(m_LoginUser, id, msg))
                         return Json(msg);
 
+                    long oldValue;
+                    if (!CallerHoldsPermission(m_LoginUser, id, isModifyPwd, a => a.IsModifyPwd, "IsModifyPwd", msg, out oldValue))
+                        return Json(msg);
+
                     M_Admin mUsers = new M_Admin { ID = id, IsModifyPwd = isModifyPwd };
                     int val = new B_Admin().SetModifyPwdPermission(mUsers);
                     if (val > 0)
                     {
                         msg.code = 1;
                         msg.content = "修改密码权限设置成功！";
+                        AuditPermissionChange(m_LoginUser, id, "IsModifyPwd", oldValue, isModifyPwd, true);
                     }
                 }
             }
@@ -431,12 +525,17 @@ namespace YYT.Web.Areas.Game.Controllers
                     if (!CanManagePermissionTarget(m_LoginUser, id, msg))
                         return Json(msg);
 
+                    long oldValue;
+                    if (!CallerHoldsPermission(m_LoginUser, id, isResetSafePwd, a => a.IsResetSafePwd, "IsResetSafePwd", msg, out oldValue))
+                        return Json(msg);
+
                     M_Admin mUsers = new M_Admin { ID = id, IsResetSafePwd = isResetSafePwd };
                     int val = new B_Admin().SetResetSafePwdPermission(mUsers);
                     if (val > 0)
                     {
                         msg.code = 1;
                         msg.content = "重置保险密码权限设置成功！";
+                        AuditPermissionChange(m_LoginUser, id, "IsResetSafePwd", oldValue, isResetSafePwd, true);
                     }
                 }
             }
@@ -466,12 +565,17 @@ namespace YYT.Web.Areas.Game.Controllers
                     if (!CanManagePermissionTarget(m_LoginUser, id, msg))
                         return Json(msg);
 
+                    long oldValue;
+                    if (!CallerHoldsPermission(m_LoginUser, id, manageScope, a => a.ManageScope ?? 1, "ManageScope", msg, out oldValue))
+                        return Json(msg);
+
                     M_Admin mUsers = new M_Admin { ID = id, ManageScope = manageScope };
                     int val = new B_Admin().SetManageScope(mUsers);
                     if (val > 0)
                     {
                         msg.code = 1;
                         msg.content = "管理范围设置成功！";
+                        AuditPermissionChange(m_LoginUser, id, "ManageScope", oldValue, manageScope, true);
                     }
                 }
             }
@@ -501,12 +605,17 @@ namespace YYT.Web.Areas.Game.Controllers
                     if (!CanManagePermissionTarget(m_LoginUser, id, msg))
                         return Json(msg);
 
+                    long oldValue;
+                    if (!CallerHoldsPermission(m_LoginUser, id, isKill, a => a.IsKill, "IsKill", msg, out oldValue))
+                        return Json(msg);
+
                     M_Admin mUsers = new M_Admin { ID = id, IsKill = isKill };
                     int val = new B_Admin().SetKillPermission(mUsers);
                     if (val > 0)
                     {
                         msg.code = 1;
                         msg.content = "点杀权限设置成功！";
+                        AuditPermissionChange(m_LoginUser, id, "IsKill", oldValue, isKill, true);
                     }
                 }
             }
@@ -536,12 +645,17 @@ namespace YYT.Web.Areas.Game.Controllers
                     if (!CanManagePermissionTarget(m_LoginUser, id, msg))
                         return Json(msg);
 
+                    long oldValue;
+                    if (!CallerHoldsPermission(m_LoginUser, id, isRelease, a => a.IsRelease, "IsRelease", msg, out oldValue))
+                        return Json(msg);
+
                     M_Admin mUsers = new M_Admin { ID = id, IsRelease = isRelease };
                     int val = new B_Admin().SetReleasePermission(mUsers);
                     if (val > 0)
                     {
                         msg.code = 1;
                         msg.content = "牌机权限设置成功！";
+                        AuditPermissionChange(m_LoginUser, id, "IsRelease", oldValue, isRelease, true);
                     }
                 }
             }
@@ -571,12 +685,17 @@ namespace YYT.Web.Areas.Game.Controllers
                     if (!CanManagePermissionTarget(m_LoginUser, id, msg))
                         return Json(msg);
 
+                    long oldValue;
+                    if (!CallerHoldsPermission(m_LoginUser, id, isViewSafePwd, a => a.IsViewSafePwd, "IsViewSafePwd", msg, out oldValue))
+                        return Json(msg);
+
                     M_Admin mUsers = new M_Admin { ID = id, IsViewSafePwd = isViewSafePwd };
                     int val = new B_Admin().SetViewSafePwdPermission(mUsers);
                     if (val > 0)
                     {
                         msg.code = 1;
                         msg.content = "查看保险柜密码权限设置成功！";
+                        AuditPermissionChange(m_LoginUser, id, "IsViewSafePwd", oldValue, isViewSafePwd, true);
                     }
                 }
             }
@@ -606,12 +725,17 @@ namespace YYT.Web.Areas.Game.Controllers
                     if (!CanManagePermissionTarget(m_LoginUser, id, msg))
                         return Json(msg);
 
+                    long oldValue;
+                    if (!CallerHoldsPermission(m_LoginUser, id, isModifySafePwd, a => a.IsModifySafePwd, "IsModifySafePwd", msg, out oldValue))
+                        return Json(msg);
+
                     M_Admin mUsers = new M_Admin { ID = id, IsModifySafePwd = isModifySafePwd };
                     int val = new B_Admin().SetModifySafePwdPermission(mUsers);
                     if (val > 0)
                     {
                         msg.code = 1;
                         msg.content = "修改保险柜密码权限设置成功！";
+                        AuditPermissionChange(m_LoginUser, id, "IsModifySafePwd", oldValue, isModifySafePwd, true);
                     }
                 }
             }
@@ -641,12 +765,17 @@ namespace YYT.Web.Areas.Game.Controllers
                     if (!CanManagePermissionTarget(m_LoginUser, id, msg))
                         return Json(msg);
 
+                    long oldValue;
+                    if (!CallerHoldsPermission(m_LoginUser, id, isDeleteAgent, a => a.IsDeleteAgent, "IsDeleteAgent", msg, out oldValue))
+                        return Json(msg);
+
                     M_Admin mUsers = new M_Admin { ID = id, IsDeleteAgent = isDeleteAgent };
                     int val = new B_Admin().SetDeleteAgentPermission(mUsers);
                     if (val > 0)
                     {
                         msg.code = 1;
                         msg.content = "删除代理权限设置成功！";
+                        AuditPermissionChange(m_LoginUser, id, "IsDeleteAgent", oldValue, isDeleteAgent, true);
                     }
                 }
             }
@@ -676,12 +805,17 @@ namespace YYT.Web.Areas.Game.Controllers
                     if (!CanManagePermissionTarget(m_LoginUser, id, msg))
                         return Json(msg);
 
+                    long oldValue;
+                    if (!CallerHoldsPermission(m_LoginUser, id, isViewAgentPwd, a => a.IsViewAgentPwd, "IsViewAgentPwd", msg, out oldValue))
+                        return Json(msg);
+
                     M_Admin mUsers = new M_Admin { ID = id, IsViewAgentPwd = isViewAgentPwd };
                     int val = new B_Admin().SetViewAgentPwdPermission(mUsers);
                     if (val > 0)
                     {
                         msg.code = 1;
                         msg.content = "查看代理密码权限设置成功！";
+                        AuditPermissionChange(m_LoginUser, id, "IsViewAgentPwd", oldValue, isViewAgentPwd, true);
                     }
                 }
             }
@@ -711,12 +845,17 @@ namespace YYT.Web.Areas.Game.Controllers
                     if (!CanManagePermissionTarget(m_LoginUser, id, msg))
                         return Json(msg);
 
+                    long oldValue;
+                    if (!CallerHoldsPermission(m_LoginUser, id, isModifyAgentPwd, a => a.IsModifyAgentPwd, "IsModifyAgentPwd", msg, out oldValue))
+                        return Json(msg);
+
                     M_Admin mUsers = new M_Admin { ID = id, IsModifyAgentPwd = isModifyAgentPwd };
                     int val = new B_Admin().SetModifyAgentPwdPermission(mUsers);
                     if (val > 0)
                     {
                         msg.code = 1;
                         msg.content = "修改代理密码权限设置成功！";
+                        AuditPermissionChange(m_LoginUser, id, "IsModifyAgentPwd", oldValue, isModifyAgentPwd, true);
                     }
                 }
             }

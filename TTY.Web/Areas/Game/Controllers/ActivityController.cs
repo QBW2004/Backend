@@ -46,6 +46,7 @@ namespace YYT.Web.Areas.Game.Controllers
         /// <returns></returns>
         [AjaxOnly]
         [HttpPost]
+        [SuperAdminAuthorize]
         public ActionResult AddActivity(FormCollection form)
         {
             Msg msg = new Msg(0, "活动发布失败！");
@@ -89,6 +90,7 @@ namespace YYT.Web.Areas.Game.Controllers
         /// <returns></returns>
         [AjaxOnly]
         [HttpPost]
+        [SuperAdminAuthorize]
         public ActionResult delActivity(FormCollection form)
         {
 
@@ -119,6 +121,7 @@ namespace YYT.Web.Areas.Game.Controllers
         /// <returns></returns>
         [AjaxOnly]
         [HttpPost]
+        [SuperAdminAuthorize]
         public ActionResult updateActivity(FormCollection form)
         {
             Msg msg = new Msg(0, "活动修改失败！");

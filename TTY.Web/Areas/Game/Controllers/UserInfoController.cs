@@ -640,7 +640,9 @@ namespace YYT.Web.Areas.Game.Controllers
                 }
 
                 M_Users entity = new M_Users();
-                if (TryUpdateModel<M_Users>(entity) && ModelState.IsValid)
+                // 白名单绑定：注册页只提交 ID/NAME/PWD/REPWD/AGENCY，AGENCY 由上方单独校验读取，
+                // 其余字段（含所有资金/分数字段）一律不绑；资金字段另有 B_Users.Regist 清零兜底。
+                if (TryUpdateModel<M_Users>(entity, new[] { "ID", "NAME", "PWD" }) && ModelState.IsValid)
                 {
                     entity.AGENCY = agency;
 
@@ -995,6 +997,11 @@ namespace YYT.Web.Areas.Game.Controllers
                         msg.content = "没有上下分权限！";
                         return Json(msg);
                     }
+                    if (loginUser.UserPriv > 0 && !CanManagePlayer(loginUser, id))
+                    {
+                        msg.content = "只能对自己管理范围内的用户操作！";
+                        return Json(msg);
+                    }
                     //if (loginUser.UserPriv != 0)
                     //{
                     //    int val = new B_Users().SelectUserINHALL(id,"1");
@@ -1144,6 +1151,11 @@ namespace YYT.Web.Areas.Game.Controllers
                 if (loginUser.UserPriv > 0 && loginUser.IsUpDown != 1)
                 {
                     msg.content = "没有上下分权限！";
+                    return Json(msg);
+                }
+                if (loginUser.UserPriv > 0 && !CanManagePlayer(loginUser, id))
+                {
+                    msg.content = "只能对自己管理范围内的用户操作！";
                     return Json(msg);
                 }
                 bool isRMB = ConfigHelper.Get("IsRMB").Equals("1");
@@ -1422,6 +1434,14 @@ namespace YYT.Web.Areas.Game.Controllers
                     return Json(msg);
                 }
 
+                // 控制码白名单：本通道只接受鱼机点杀(1)/放水(2)。
+                // 其它 UC 控制码（如牌机 25、拉霸控牌）走专用接口，禁止借本接口绕过对应权限校验。
+                if (action != 1 && action != 2)
+                {
+                    msg.content = "不支持的控制类型！";
+                    return Json(msg);
+                }
+
                 bool rst = new B_Users().Exists(new M_Users { ID = id });
                 if (!rst)
                 {
@@ -1430,17 +1450,29 @@ namespace YYT.Web.Areas.Game.Controllers
                 }
 
                 M_LoginUser loginUser = WebHelper.GetLoginInfo();
-                if (loginUser == null || loginUser.UserPriv > 0)
+                if (loginUser == null)
                 {
-                    if (action == 1 && (loginUser?.IsKill ?? 0) != 1)
+                    msg.content = "无权限操作！";
+                    return Json(msg);
+                }
+                if (loginUser.UserPriv > 0)
+                {
+                    using (var ef = new GameDbContext())
                     {
-                        msg.content = "没有点杀权限！";
-                        return Json(msg);
-                    }
-                    if (action == 2 && (loginUser?.IsProbability ?? 0) != 1)
-                    {
-                        msg.content = "没有放水权限！";
-                        return Json(msg);
+                        // 权限位查库不查会话：上级收权后旧会话不能继续使用
+                        var caller = ef.Admins.FirstOrDefault(a => a.ID == loginUser.Accounts);
+                        long held = action == 1 ? (caller?.IsKill ?? 0) : (caller?.IsProbability ?? 0);
+                        if (held != 1)
+                        {
+                            msg.content = action == 1 ? "没有点杀权限！" : "没有放水权限！";
+                            return Json(msg);
+                        }
+                        var target = ef.Users.FirstOrDefault(u => u.ID == id);
+                        if (target == null || !new B_Admin().CanManagePlayer(ef, loginUser, target.AGENCY))
+                        {
+                            msg.content = "只能操作自己管理范围内的玩家！";
+                            return Json(msg);
+                        }
                     }
                 }
                 int set = 0;
@@ -1509,10 +1541,29 @@ namespace YYT.Web.Areas.Game.Controllers
                 }
 
                 M_LoginUser loginUser = WebHelper.GetLoginInfo();
-                if (loginUser == null || (loginUser.UserPriv > 0 && loginUser.IsRelease != 1))
+                if (loginUser == null)
                 {
                     msg.content = "没有牌机控制权限！";
                     return Json(msg);
+                }
+                if (loginUser.UserPriv > 0)
+                {
+                    using (var ef = new GameDbContext())
+                    {
+                        // 权限位查库不查会话：上级收权后旧会话不能继续使用
+                        var caller = ef.Admins.FirstOrDefault(a => a.ID == loginUser.Accounts);
+                        if ((caller?.IsRelease ?? 0) != 1)
+                        {
+                            msg.content = "没有牌机控制权限！";
+                            return Json(msg);
+                        }
+                        var target = ef.Users.FirstOrDefault(u => u.ID == id);
+                        if (target == null || !new B_Admin().CanManagePlayer(ef, loginUser, target.AGENCY))
+                        {
+                            msg.content = "只能操作自己管理范围内的玩家！";
+                            return Json(msg);
+                        }
+                    }
                 }
                 int set = 0;
                 if (loginUser.UserName == ConfigHelper.Get("admin"))
@@ -1637,6 +1688,12 @@ namespace YYT.Web.Areas.Game.Controllers
 
                 if (!string.IsNullOrWhiteSpace(userAccount))
                 {
+                    M_LoginUser loginUser = WebHelper.GetLoginInfo();
+                    if (loginUser != null && loginUser.UserPriv > 0 && !CanManagePlayer(loginUser, userAccount))
+                    {
+                        msg.content = "只能查询自己管理范围内的玩家！";
+                        return Json(msg);
+                    }
                     msg = new PlayerStateService().QueryRuntimeState(userAccount);
                 }
                 else

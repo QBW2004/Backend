@@ -895,12 +895,15 @@ namespace YYT.BLL.EF
 
                 ApplyNewAgencyDefaultPermissions(entity);
 
-                entity.COINS = entity.COINS ?? 0;
-                entity.COINS_BACK = entity.COINS_BACK ?? 0;
-                entity.COINS_BUY = entity.COINS_BUY ?? 0;
-                entity.EXCHANGE = entity.EXCHANGE ?? 0;
+                // 建号资金字段一律服务端写死：余额只能来自后续的充值/兑换流水，
+                // 不能由建号请求带入（即使控制器白名单漏了，这里也是最后防线）。
+                entity.COINS = 0;
+                entity.COINS_BACK = 0;
+                entity.COINS_BUY = 0;
+                entity.EXCHANGE = 0;
+                entity.RECHARGE = 0;
+                entity.CommissionRate = 0.00m;
                 entity.PRIV = entity.PRIV ?? -1;
-                entity.RECHARGE = entity.RECHARGE ?? 0;
                 entity.RE_ENABLE = entity.RE_ENABLE ?? 1;
                 entity.AGENCY_LIMIT = entity.AGENCY_LIMIT ?? 0;
                 entity.IsFrozen = entity.IsFrozen ?? 1;
@@ -919,7 +922,6 @@ namespace YYT.BLL.EF
                 entity.IsViewSafePwd = entity.IsViewSafePwd ?? 0;
                 entity.IsModifySafePwd = entity.IsModifySafePwd ?? 0;
                 entity.ManageScope = entity.ManageScope ?? 2;
-                entity.CommissionRate = entity.CommissionRate ?? 0.00m;
                 entity.CreateTime = DateTime.Now;
                 entity.UpdateTime = DateTime.Now;
 

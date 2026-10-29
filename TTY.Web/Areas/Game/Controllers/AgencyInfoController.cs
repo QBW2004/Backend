@@ -470,11 +470,29 @@ namespace YYT.Web.Areas.Game.Controllers
             {
                 string id = form.Q<string>("ID");
                 string CustomerServiceUrl = form.Q<string>("CustomerServiceUrl");
+                M_LoginUser loginUser = WebHelper.GetLoginInfo();
 
+                if (loginUser == null)
+                {
+                    msg.content = "登录已失效！";
+                    return Json(msg);
+                }
                 if (string.IsNullOrWhiteSpace(id))
                 {
                     msg.content = "代理ID不能为空！";
                     return Json(msg);
+                }
+                // 客服链接会下发给该代理的玩家端，必须校验管理范围，否则任意代理能改他人（含总台）的客服链接
+                if (loginUser.UserPriv != 0)
+                {
+                    using (var ef = new GameDbContext())
+                    {
+                        if (!new B_Admin().CanManageAgent(ef, loginUser, id))
+                        {
+                            msg.content = "只能设置自己管理范围内的下级代理！";
+                            return Json(msg);
+                        }
+                    }
                 }
                 // 留空表示清除客服链接
                 if (string.IsNullOrWhiteSpace(CustomerServiceUrl))
@@ -549,7 +567,9 @@ namespace YYT.Web.Areas.Game.Controllers
             {
                 // 添加代理只要求输入一次密码(手机端与桌面弹窗均不提交 RE_PWD)。
                 M_Admin entity = new M_Admin();
-                if (TryUpdateModel<M_Admin>(entity) && ModelState.IsValid)
+                // 只白名单绑定建号表单字段：COINS/RECHARGE/EXCHANGE/COINS_BUY/COINS_BACK/
+                // CommissionRate/AGENCY_LIMIT/PRIV/Is* 等一律由服务端写值，否则表单多塞字段会原样入库（批量赋值造币）。
+                if (TryUpdateModel<M_Admin>(entity, AddAgencyBindableFields) && ModelState.IsValid)
                 {
                     M_LoginUser loginUser = WebHelper.GetLoginInfo();
                     if (loginUser == null)
@@ -648,6 +668,12 @@ namespace YYT.Web.Areas.Game.Controllers
             return Json(msg);
         }
 
+        /// <summary>
+        /// AddAgencyInfo 允许客户端提交的字段白名单。FLAG/RE_PWD 不映射入库（NotMapped），
+        /// InviteCode 供总台自定义邀请码；其余字段（余额/提成/权限位/层级）客户端传了一律忽略。
+        /// </summary>
+        private static readonly string[] AddAgencyBindableFields = { "ID", "PWD", "FLAG", "RE_ENABLE", "InviteCode" };
+
         private static void ApplyDefaultAgencyPermissions(M_Admin entity)
         {
             entity.IsFrozen = 1;
@@ -689,6 +715,14 @@ namespace YYT.Web.Areas.Game.Controllers
                         if (target == null || target.ID == loginUser.Accounts || !managedAgencies.Contains(id))
                         {
                             msg.content = "只能设置自己管理范围内的下级代理！";
+                            return Json(msg);
+                        }
+                        // 子代分代上限不得超过调用者自身上限（0=不限；仅自身不限的父代才可给子代设0或任意值）
+                        long callerLimit = ef.Admins.Where(a => a.ID == loginUser.Accounts)
+                            .Select(a => a.AGENCY_LIMIT).FirstOrDefault() ?? 0;
+                        if (callerLimit != 0 && (agency_limit <= 0 || agency_limit > callerLimit))
+                        {
+                            msg.content = "分代上限不能超过你自己的上限！";
                             return Json(msg);
                         }
                     }
@@ -743,10 +777,28 @@ namespace YYT.Web.Areas.Game.Controllers
                 string inviteCode = form.Q<string>("InviteCode");
                 M_LoginUser loginUser = WebHelper.GetLoginInfo();
 
+                if (loginUser == null)
+                {
+                    msg.content = "登录已失效！";
+                    return Json(msg);
+                }
                 if (string.IsNullOrWhiteSpace(id))
                 {
                     msg.content = "代理ID不能为空！";
                     return Json(msg);
+                }
+
+                // 设置与清除邀请码都要求目标在管理范围内；否则任意代理能改/清他人（含总台）的邀请码
+                if (loginUser.UserPriv != 0)
+                {
+                    using (var ef = new GameDbContext())
+                    {
+                        if (!new B_Admin().CanManageAgent(ef, loginUser, id))
+                        {
+                            msg.content = "只能设置自己管理范围内的下级代理！";
+                            return Json(msg);
+                        }
+                    }
                 }
 
                 // 留空表示清除邀请码，跳过格式与去重校验

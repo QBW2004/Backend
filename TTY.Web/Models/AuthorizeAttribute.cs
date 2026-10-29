@@ -59,6 +59,62 @@ namespace YYT.Web
 
 
     /// <summary>
+    /// 超级管理员（总台 UserPriv==0）专用授权。
+    /// 未登录按 MemberAuthorize 同口径处理；已登录但非总台按无权拒绝。
+    /// 用于全局性写接口（游戏配置、公告、机器人、升级地址等），防止普通代理越权改全局状态。
+    /// </summary>
+    public class SuperAdminAuthorizeAttribute : AuthorizeAttribute
+    {
+        public override void OnAuthorization(AuthorizationContext filterContext)
+        {
+            HttpContextBase context = filterContext.HttpContext;
+            M_LoginUser loginUser = WebHelper.GetLoginInfo();
+            bool isPost = context.Request.HttpMethod.Equals("POST", StringComparison.CurrentCultureIgnoreCase);
+            if (loginUser == null || !(loginUser.UserID > 0))
+            {
+                if (isPost)
+                {
+                    CustomResponse(context, TipMsg.MSG_LOGIN_TIMEOUT);
+                    filterContext.Result = new JsonResult();
+                }
+                else
+                {
+                    context.Response.Redirect("~/Login/Index");
+                    filterContext.Result = new EmptyResult();
+                }
+                return;
+            }
+            if (loginUser.UserPriv != 0)
+            {
+                if (isPost)
+                {
+                    CustomResponse(context, TipMsg.MSG_INVALID_AUTHORIZE);
+                    filterContext.Result = new JsonResult();
+                }
+                else
+                {
+                    context.Response.Redirect("~/Common/NoAuthorize");
+                    filterContext.Result = new EmptyResult();
+                }
+                return;
+            }
+        }
+
+        private void CustomResponse(HttpContextBase context, string msg)
+        {
+            context.Response.Clear();
+            context.Response.StatusCode = 200;
+            context.Response.StatusDescription = "无权限";
+            context.Response.ContentType = "application/json";
+            context.Response.Headers.Add("Access-Control-Allow-Origin", "*");
+            context.Response.Headers.Add("Pragma.", "no-cache");
+            context.Response.Write(msg);
+            context.Response.End();
+        }
+    }
+
+
+    /// <summary>
     /// 管理员授权属性  
     /// </summary>
     public class MgrAuthorizeAttribute : AuthorizeAttribute
