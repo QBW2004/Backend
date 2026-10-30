@@ -25,13 +25,16 @@ namespace YYT.Web.Areas.Game.Controllers
             try
             {
                 CheckWeightScope(gameId,tableIndex); var math=WeightMath(); var config=math.Defaults(gameId);
+                bool stale=false;
                 using (var ef=new GameDbContext())
                 {
                     var rows=ef.Database.SqlQuery<LabaWeightMath.Profile>("SELECT HandType,ProbabilityBasis,PayoutMultiplier FROM cardpayoutprofile WHERE GAME_ID={0} AND TableId={1} AND HandType BETWEEN 1000 AND 1279 AND Enabled=1",gameId,tableIndex).ToList();
-                    config=math.ReadProfiles(gameId,rows);
+                    // 规则/目录更新后旧权重的指纹或奖型数量不再匹配，游戏服也不会应用；回退默认值供重新设置保存
+                    try { config=math.ReadProfiles(gameId,rows); }
+                    catch (ArgumentException) { config=math.Defaults(gameId); stale=true; }
                 }
                 var game=math.Find(gameId);
-                return Json(new { code=1, config, hash=math.Data.hash, game=game.name,
+                return Json(new { code=1, config, stale, hash=math.Data.hash, game=game.name,
                     items=game.items.Select(i=>new { i.code,i.name, mean=i.boards.Length>0 ? i.boards.Average(b=>b.pay) : 0 }),
                     result=math.Calculate(gameId,config,1) });
             }

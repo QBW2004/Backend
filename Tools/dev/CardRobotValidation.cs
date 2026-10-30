@@ -1,0 +1,87 @@
+// 独立本地数据库验收；连接串必须指向 mth_card_robot_validation_*，不允许使用线上库。
+using System;
+using System.Configuration;
+using System.Data.Entity;
+using System.Linq;
+using System.Threading.Tasks;
+using MySql.Data.MySqlClient;
+using YYT.BLL.EF;
+using YYT.Entity;
+
+class CardRobotValidation
+{
+    static int checks;
+    static void Check(bool value, string name)
+    {
+        if (!value) throw new Exception(name);
+        checks++;
+    }
+    static void Main()
+    {
+        var timer = System.Diagnostics.Stopwatch.StartNew();
+        try
+        {
+            var cs = new MySqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["DbConnString"].ConnectionString);
+            if ((cs.Server != "localhost" && cs.Server != "127.0.0.1") || !cs.Database.StartsWith("mth_card_robot_validation_"))
+                throw new Exception("Requires an isolated local validation database");
+            string schema = cs.Database;
+            if (!System.Text.RegularExpressions.Regex.IsMatch(schema, "^[a-z0-9_]+$")) throw new Exception("Invalid schema");
+            cs.Database = "";
+            using (var db = new MySqlConnection(cs.ConnectionString))
+            {
+                db.Open();
+                Action<string> sql = q => { using (var cmd = new MySqlCommand(q, db)) cmd.ExecuteNonQuery(); };
+                sql("CREATE DATABASE `" + schema + "` CHARACTER SET utf8mb4");
+                try
+                {
+                    sql("USE `" + schema + "`");
+                    foreach (var t in new[] { "games", "robot_seat", "roomtableconfig" })
+                        sql("CREATE TABLE `" + t + "` LIKE mth.`" + t + "`");
+                    sql("CREATE TABLE roomtableowner(GAME_ID INT,RoomIndex INT,TableIndex INT,LineAgent VARCHAR(50),PRIMARY KEY(GAME_ID,RoomIndex,TableIndex)) ENGINE=InnoDB");
+                    sql("INSERT INTO games(GameId,Name,Enable,GameType) VALUES(5,'card',1,1),(3,'fish',1,2),(15,'closed',0,1),(54,'mjhl',1,1)");
+                    foreach (int n in new[] { 0, 1, 2, 10, 11, 20, 30 })
+                        sql("INSERT INTO roomtableconfig(GAME_ID,RoomIndex,TableIndex,TableName,Enabled) VALUES(5,0," + n + ",'table'," + (n == 1 ? 0 : 1) + ")");
+                    sql("INSERT INTO roomtableowner(GAME_ID,RoomIndex,TableIndex,LineAgent) VALUES(5,0,10,'lineA'),(5,0,11,'lineA'),(5,0,20,'lineB'),(5,0,30,'#')");
+                    Database.SetInitializer<GameDbContext>(null);
+                    var bll = new B_Robot();
+                    using (var ef = new GameDbContext())
+                    {
+                        Check(B_Robot.GetCardRobotTables(ef, 5, "").SequenceEqual(new[] { 0, 2 }), "public enabled tables");
+                        Check(B_Robot.GetCardRobotTables(ef, 5, "LINEA").SequenceEqual(new[] { 10, 11 }), "line matching");
+                        Check(B_Robot.GetCardRobotTables(ef, 5, "#").Count == 0, "recycled tables excluded");
+                    }
+                    foreach (int count in new[] { 0, -1, int.MaxValue }) Check(bll.AddCardRobots(5, count, "").code == 0, "invalid count");
+                    Check(bll.AddCardRobots(5, 2, "").code == 1, "exact capacity accepted");
+                    Check(bll.AddCardRobots(5, 1, "").code == 0, "cumulative limit enforced");
+                    Check(bll.AddCardRobots(5, 1, "lineA").code == 1, "agent addition");
+                    Check(bll.AddCardRobots(5, 2, "lineA").code == 0, "over limit atomic rejection");
+                    Check(bll.AddCardRobots(5, 1, "lineA").code == 1, "incremental addition");
+                    Check(bll.AddCardRobots(5, 1, "lineB").code == 1, "separate line capacity");
+                    Check(bll.AddCardRobots(5, 1, "#").code == 0, "recycled line rejected");
+                    Check(bll.AddCardRobots(5, 1, "missing").code == 0, "unknown line rejected");
+                    Check(bll.AddCardRobots(3, 1, "").code == 0, "non-card rejected");
+                    Check(bll.AddCardRobots(15, 1, "").code == 0, "closed game rejected");
+                    Check(bll.AddCardRobots(54, 1, "").code == 0, "mjhl rejected");
+                    using (var ef = new GameDbContext())
+                    {
+                        Check(ef.Robots.Count() == 5 && ef.Robots.All(r => r.ROBOT_NO == 1 && r.ROOM_ID == 0), "one row per new quota");
+                        Check(B_Robot.GetCardRobots(ef, 5, "lineA").Count == 2, "line counts isolated");
+                        var row = B_Robot.GetCardRobots(ef, 5, "lineB").Single();
+                        Check(bll.DelRobot(new M_Robot { ID = row.ID }) == 1, "delete quota");
+                    }
+                    Check(bll.AddCardRobots(5, 1, "lineB").code == 1, "delete frees capacity");
+                    sql("DELETE FROM robot_seat WHERE TABLE_ID IN(0,2)");
+                    var races = Enumerable.Range(0, 2).Select(i => Task.Run(() => new B_Robot().AddCardRobots(5, 2, "").code)).ToArray();
+                    Task.WaitAll(races);
+                    Check(races.Count(t => t.Result == 1) == 1, "concurrent additions serialized");
+                    using (var ef = new GameDbContext()) Check(B_Robot.GetCardRobots(ef, 5, "").Sum(r => r.ROBOT_NO) == 2, "no concurrent overflow");
+                    sql("UPDATE roomtableconfig SET Enabled=0 WHERE TableIndex=2");
+                    Check(bll.AddCardRobots(5, 1, "").code == 0, "current reduced capacity used");
+                }
+                finally { sql("DROP DATABASE `" + schema + "`"); }
+            }
+            Console.WriteLine("PASS " + checks + " database checks in " + timer.Elapsed.TotalSeconds.ToString("F2") + "s");
+        }
+        catch (Exception ex) { Console.WriteLine(ex); Environment.ExitCode = 1; }
+    }
+}

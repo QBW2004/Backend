@@ -10,7 +10,7 @@
     <script>
         $(function () {
             // 加载指定的模块
-            easyloader.load(['textbox', 'linkbutton', 'datagrid'], function () {
+            easyloader.load(['textbox', 'numberbox', 'combobox', 'linkbutton', 'datagrid'], function () {
                 //适应窗口大小变化
                 $(window).resize(function () {
                     if ($('body').data('grid-init')) {
@@ -22,7 +22,12 @@
                 //初始化查询
                 queryData();
                 //根据游戏类型查询所有游戏
-                bindGameTypeTree(0,1);
+                robotInputsReady = true;
+                configureRobotInputs();
+                //列表“代理线”筛选
+                request('/Game/Robot/GetRobotLineFilter', {}, function (data) {
+                    $('#srchLine').combobox('loadData', data || []);
+                });
             });
         })
         //重置表格大小
@@ -62,6 +67,15 @@
 
         function SaveRobot() {
             @Html.Raw(@"var para = $('#form3').serializeObject();
+                if (para.GameType == 1) {
+                    var count = $('#addCardRobotNo').numberbox('getValue');
+                    if (!cardCapacityReady || !/^[1-9][0-9]*$/.test(count) || Number(count) > cardRemaining) {
+                        showMsg({ code: 0, content: '请输入有效的机器人数量，最多还可添加' + cardRemaining + '个！' });
+                        return;
+                    }
+                    para.RobotNo = count;
+                    delete para.TABLE_ID;
+                }
                 request('/Game/Robot/SaveRobot', para, function (data) {
                     //提示消息
                     showMsg(data);
@@ -101,17 +115,24 @@
             var para = {
                 winId: '#addWin',
                 title: '【添加机器人】',
-                height: 345,
+                height: 400,
                 iconCls: 'icon-user_add',
                 callBack: function () {
                     $('#addGameType').combobox('loadData', actionSelData1());
+                    $('#addLine').combobox('loadData', publicLineData());
+                    $('#addTABLE_ID').combobox('clear').combobox('loadData', []);
+                    configureRobotInputs();
                 }
             };
             openWin(para);
         }
         function bindGameTypeTree(newValue, oldValue) {
-            if (oldValue && newValue > -1 && newValue != oldValue) {
+            if (!robotInputsReady) return;
+            configureRobotInputs();
+            $('#addGameId').combobox('clear').combobox('loadData', []);
+            if (newValue > -1) {
                 request('/Game/Robot/GetGamesTreeData', { GameType: newValue }, function (datas) {
+                    if ($('#addGameType').combobox('getValue') != newValue) return;
                     var arr = [];
                     arr.push({ id: -1, text: '请选择游戏', selected: true });
                     $('#addGameId').combobox('clear');
@@ -121,6 +142,8 @@
                         }
                     }
                     $('#addGameId').combobox('loadData', arr);
+                    $('#addLine').combobox('loadData', publicLineData());
+                    $('#addTABLE_ID').combobox('clear').combobox('loadData', []);
                     if (newValue == 0) {
                         $('#addRobotNo').combobox('loadData', getComboSelData(9,1))
                     } else if (newValue == 1) {
@@ -133,10 +156,36 @@
             }
         }
         function bindGamesTree(newValue, oldValue) {
-            if (oldValue && newValue > -1 && newValue != oldValue) {
-                // 玩家/机器人已锁定第一房间，桌台下拉直接取 roomtableconfig 桌名列表
+            if (!robotInputsReady) return;
+            resetCardCapacity();
+            if (newValue > -1 && newValue !== '') {
+                // 换游戏后先刷新代理线（公共桌台 + 在该游戏有专属桌台的直属代理），再按代理线取桌台
+                loadLines(newValue);
+            }
+        }
+        // 代理线下拉的初始数据：只有“公共桌台”（值 _public，与服务端 PublicLineKey 一致）
+        function publicLineData() {
+            return [{ id: '_public', text: '公共桌台', selected: true }];
+        }
+        function loadLines(gameId) {
+            request('/Game/Robot/GetRobotLineOptions', { GameId: gameId }, function (data) {
+                if ($('#addGameId').combobox('getValue') != gameId) return;
+                $('#addLine').combobox('loadData', (data && data.length) ? data : publicLineData());
+                getRoom();
+            });
+        }
+        function bindLineTables(newValue, oldValue) {
+            if (!robotInputsReady) return;
+            resetCardCapacity();
+            if (newValue && newValue != oldValue) {
                 getRoom();
             }
+        }
+        function fmtLine(value, rowData, rowIndex) {
+            if (rowData.GAME_TYPE == 5) return '';
+            if (!value) return '<span>公共桌台</span>';
+            if (value == '#') return '<span style="color:#c00;">已收回</span>';
+            return $('<span/>').text(value).prop('outerHTML');
         }
         function actionSelData1() {
             return [
@@ -165,15 +214,52 @@
                 return '机器人总数量:' +value;
         }
         // 获取桌台列表(所有游戏类型统一从 roomtableconfig 读取，空名保底"桌台n")
+        var cardRemaining = 0;
+        var robotInputsReady = false;
+        var cardCapacityReady = false;
+        var roomRequestVersion = 0;
+        function resetCardCapacity() {
+            roomRequestVersion++;
+            cardRemaining = 0;
+            cardCapacityReady = false;
+            $('#addCardRobotNo').numberbox('clear').numberbox('disable');
+            $('#cardRobotHint').text('请选择游戏和代理线');
+        }
+        function configureRobotInputs() {
+            var card = $('#addGameType').combobox('getValue') == 1;
+            $('#tableRobotRow,#tableRobotCountRow').toggle(!card);
+            $('#cardRobotCountRow,#cardRobotHintRow').toggle(card);
+            $('#addTABLE_ID').combobox(card ? 'disable' : 'enable');
+            $('#addRobotNo').combobox(card ? 'disable' : 'enable');
+            resetCardCapacity();
+        }
         function getRoom() {
+            resetCardCapacity();
+            var version = roomRequestVersion;
             var GameId = $("input[name='GameId']").val();
+            var Line = $("#form3 input[name='Line']").val() || '_public';
             //console.log("游戏名称：" + GameId);
             if (GameId == -1 || GameId=='') {
               //alert("请选择游戏");
                 return;
             }
-            request('/Game/Robot/GetRobotTableList', { GameId: GameId }, function (data) {
-                $('#addTABLE_ID').combobox('loadData', data)
+            if ($('#addGameType').combobox('getValue') == 1) {
+                request('/Game/Robot/GetCardRobotCapacity', { GameId: GameId, Line: Line }, function (data) {
+                    if (version != roomRequestVersion) return;
+                    if (!data || data.code != 1) {
+                        $('#cardRobotHint').text('机台数量读取失败，请重新选择');
+                        return;
+                    }
+                    cardRemaining = data.remaining;
+                    cardCapacityReady = true;
+                    $('#cardRobotHint').text('启用机台' + data.total + '台，已设置' + data.current + '个，可再添加' + data.remaining + '个。随机寻找本线空机台入座，满台时等待。');
+                    if (cardRemaining > 0) $('#addCardRobotNo').numberbox('enable').numberbox({ min: 1, max: cardRemaining }).numberbox('setValue', 1);
+                });
+                return;
+            }
+            request('/Game/Robot/GetRobotTableList', { GameId: GameId, Line: Line }, function (data) {
+                if (version != roomRequestVersion) return;
+                $('#addTABLE_ID').combobox('clear').combobox('loadData', data || [])
             })
         }
         //获取下拉数字序列数据(机器人数)数据
@@ -212,6 +298,10 @@
                     桌子名称
                     <input type="text" class="easyui-textbox" name="TABLE_NAME" id="txtS_TABLE_NAME" />
                 </div>
+                <div class="left Lpd5">
+                    代理线
+                    <select class="easyui-combobox" name="LINE" id="srchLine" style="width:140px;" data-options="valueField:'id',textField:'text',panelHeight:200,editable:false,data:[{id:'*',text:'全部',selected:true}]"></select>
+                </div>
                 <div class="left Lmg10">
                     <a href="javascript:void(0);" class="easyui-linkbutton" onclick="queryData();" data-options="plain:true,iconCls:'icon-search'">查找</a>
                     <a href="javascript:void(0);" class="easyui-linkbutton" onclick="showAddWin();" data-options="plain:true,iconCls:'icon-add'">添加机器人</a>
@@ -226,6 +316,7 @@
         <tr>
             <th field="GAME_TYPE" width="110" formatter="fmtGameType">游戏类型</th>
             <th field="GAME_NAME" width="110">游戏名称</th>
+            <th field="LINE_AGENT" width="110" formatter="fmtLine">代理线</th>
             <th field="TABLE_NAME" width="150">桌子名称</th>
             <th field="ROBOT_NO" width="110"  formatter="fmtRobotNo">机器人数</th>
             <th field="ID" width="110" align="center" formatter="fmtOpt">操作</th>
@@ -257,13 +348,24 @@
                 </td>
             </tr>
             <tr>
+                <td align="right">代理线</td>
+                <td align="left" class="pd5">
+                    <select class="easyui-combobox" id="addLine" name="Line" data-options="valueField:'id',textField:'text',panelHeight:150,editable:false,data:publicLineData(),onChange:bindLineTables"></select>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2" align="left" style="padding-left: 50px;color:#999;font-size:12px;">
+                    只列出在该游戏有专属桌台的直属代理（专属桌台在「游戏配置」里分配）
+                </td>
+            </tr>
+            <tr id="tableRobotRow">
                 <td align="right">选择桌子</td>
                 <td align="left" class="pd5">
                     <select class="easyui-combobox" id="addTABLE_ID" data-options="valueField:'id',textField:'text',panelHeight:150" name="TABLE_ID">
                     </select>
                 </td>
             </tr>
-            <tr>
+            <tr id="tableRobotCountRow">
                 <td align="right">机器人数</td>
                 <td align="left" class="pd5">
                     @*<input class="easyui-textbox win-txt" id="txtRobotNo" name="RobotNo" />*@
@@ -272,7 +374,13 @@
                     </select>
                 </td>
             </tr>
-            
+            <tr id="cardRobotCountRow" style="display:none;">
+                <td align="right">增加机器人数</td>
+                <td class="pd5"><input class="easyui-numberbox" id="addCardRobotNo" data-options="min:1,precision:0" /></td>
+            </tr>
+            <tr id="cardRobotHintRow" style="display:none;">
+                <td colspan="2" class="pd5" style="color:#999;"><span id="cardRobotHint"></span></td>
+            </tr>
             <tr>
                 <td align="center" colspan="2" class="pd5">
                     <a href="javascript:void(0);" class="easyui-linkbutton" onclick="SaveRobot()" data-options="plain:true,iconCls:'icon-save'">保存</a>

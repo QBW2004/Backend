@@ -33,6 +33,9 @@ namespace YYT.Web.Areas.Game.Controllers
                     entity.GameType = GameType;
 
                 list = new B_Games().GetGamesTreeData(entity);
+                // 麻将胡了没有选桌，也未接入机器人。
+                foreach (var node in list)
+                    if (node.children != null) node.children = node.children.Where(g => g.id != 54).ToList();
             }
             catch (Exception ex)
             {
@@ -41,9 +44,79 @@ namespace YYT.Web.Areas.Game.Controllers
             return Json(list);
         }
 
+        /// <summary>添加机器人“代理线”下拉里表示“公共桌台”的值（空串在 easyui combobox 里会被当成未选）。</summary>
+        private const string PublicLineKey = B_Robot.PublicLineKey;
+
+        /// <summary>前端提交的代理线 → 归属口径：公共桌台为空串，其余为直属代理账号。</summary>
+        private static string NormalizeLine(string raw)
+        {
+            string line = (raw ?? string.Empty).Trim();
+            return line == PublicLineKey ? string.Empty : line;
+        }
+
+        /// <summary>
+        /// 添加机器人的“代理线”下拉：公共桌台 + 在该游戏有专属桌台的直属代理（专属桌台在「游戏配置」里分配）。
+        /// </summary>
+        [AjaxOnly]
+        [HttpPost]
+        public ActionResult GetRobotLineOptions(FormCollection form)
+        {
+            List<object> lines = new List<object>();
+            lines.Add(new { id = PublicLineKey, text = "公共桌台", selected = true });
+            try
+            {
+                int GameId = form.Q<int>("GameId");
+                if (GameId > 0)
+                {
+                    using (var ef = new GameDbContext())
+                    {
+                        Dictionary<int, string> owners = LineTables.GetOwners(ef, GameId);
+                        foreach (string agent in LineScopeRules.GetLineAgents(ef))
+                        {
+                            int count = owners.Values.Count(v => string.Equals(v, agent, StringComparison.OrdinalIgnoreCase));
+                            if (count > 0)
+                                lines.Add(new { id = agent, text = agent + "（" + count + "张专属桌台）" });
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.RobotController), ex);
+            }
+            return Json(lines);
+        }
+
+        /// <summary>
+        /// 机器人列表“代理线”筛选：全部 + 公共桌台 + 超管全部直属代理 + 已收回。
+        /// </summary>
+        [AjaxOnly]
+        [HttpPost]
+        public ActionResult GetRobotLineFilter(FormCollection form)
+        {
+            List<object> lines = new List<object>();
+            lines.Add(new { id = "*", text = "全部", selected = true });
+            lines.Add(new { id = PublicLineKey, text = "公共桌台" });
+            try
+            {
+                using (var ef = new GameDbContext())
+                {
+                    foreach (string agent in LineScopeRules.GetLineAgents(ef))
+                        lines.Add(new { id = agent, text = agent });
+                }
+                lines.Add(new { id = LineScopeRules.RecycledLine, text = "已收回" });
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.RobotController), ex);
+            }
+            return Json(lines);
+        }
+
         /// <summary>
         /// 桌台名称列表：全游戏类型统一从 roomtableconfig 读取(玩家/机器人已锁定第一房间)，
-        /// TableName 为空时保底"桌台"+TableIndex。
+        /// TableName 为空时保底"桌台"+TableIndex。按代理线过滤：Line 为公共桌台(或不传)只列公共桌台，
+        /// 否则只列该直属代理的专属桌台；已收回的桌两边都不列。
         /// </summary>
         /// <param name="form"></param>
         /// <returns></returns>
@@ -55,15 +128,19 @@ namespace YYT.Web.Areas.Game.Controllers
             try
             {
                 int GameId = form.Q<int>("GameId");
+                string line = NormalizeLine(form.Q<string>("Line"));
                 if (GameId > 0)
                 {
                     using (var ef = new GameDbContext())
                     {
                         var rows = ef.Database.SqlQuery<BetTableSelRow>(
                             "SELECT TableIndex, TableName FROM roomtableconfig WHERE GAME_ID={0} AND RoomIndex=0 ORDER BY TableIndex", GameId).ToList();
+                        Dictionary<int, string> owners = LineTables.GetOwners(ef, GameId);
                         int idx = 0;
                         foreach (BetTableSelRow r in rows)
                         {
+                            if (!LineScopeRules.TableBelongsTo(owners, r.TableIndex, line))
+                                continue;
                             tableList.Add(new
                             {
                                 id = r.TableIndex,
@@ -80,6 +157,29 @@ namespace YYT.Web.Areas.Game.Controllers
                 LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.RobotController), ex);
             }
             return Json(tableList);
+        }
+
+        [MemberAuthorize]
+        [AjaxOnly]
+        [HttpPost]
+        public ActionResult GetCardRobotCapacity(FormCollection form)
+        {
+            try
+            {
+                using (var ef = new GameDbContext())
+                {
+                    int gameId = form.Q<int>("GameId");
+                    string line = NormalizeLine(form.Q<string>("Line"));
+                    int total = B_Robot.GetCardRobotTables(ef, gameId, line).Count;
+                    int current = B_Robot.GetCardRobots(ef, gameId, line).Sum(r => Math.Max(0, r.ROBOT_NO));
+                    return Json(new { code = 1, total, current, remaining = Math.Max(0, total - current) });
+                }
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(RobotController), ex);
+                return Json(new { code = 0, content = "机台数量读取失败，请重新选择游戏和代理线！" });
+            }
         }
 
         // roomtableconfig 桌台选择行映射（机器人页桌台下拉用）
@@ -130,6 +230,7 @@ namespace YYT.Web.Areas.Game.Controllers
                 int pageIndex = form.Q<int>("page", 1);
                 int pageSize = form.Q<int>("rows", 10);
                 M_Page mPage = new M_Page(pageIndex, pageSize);
+                string lineFilter = form.Q<string>("LINE");
                 M_Robot entity = new M_Robot
                 {
                     GAME_NAME = GameName,
@@ -138,7 +239,7 @@ namespace YYT.Web.Areas.Game.Controllers
                     ROOM_ID = -1,
                     TABLE_ID = -1
                 };
-                list = new B_Robot().getRobots(mPage, entity);
+                list = new B_Robot().getRobots(mPage, entity, lineFilter);
             }
             catch (Exception ex)
             {
@@ -172,10 +273,31 @@ namespace YYT.Web.Areas.Game.Controllers
                     msg.content = "请选择游戏！";
                     return Json(msg);
                 }
+                // 代理线：桌子必须属于所选代理线（公共桌台 = 没有归属记录的桌；已收回的桌不能加机器人）
+                string line = NormalizeLine(form.Q<string>("Line"));
+                M_Games game = new B_Games().GetSingle(new M_Games { GameId = GameId });
+                if (game == null || game.Enable != 1 || game.GameType != GameType)
+                    return Json(new Msg(0, "游戏或游戏类型无效，请重新选择！"));
+                if (game.GameType == 1)
+                {
+                    msg = new B_Robot().AddCardRobots(GameId, RobotNo, line);
+                    if (msg.code == 1) RobotReloadAfterChange(ref msg, "机器人已保存");
+                    return Json(msg);
+                }
+                using (var ef = new GameDbContext())
+                {
+                    Dictionary<int, string> owners = LineTables.GetOwners(ef, GameId);
+                    if (!LineScopeRules.TableBelongsTo(owners, TABLE_ID, line))
+                    {
+                        msg.content = string.IsNullOrEmpty(line)
+                            ? "所选桌子不是公共桌台，请重新选择代理线和桌子！"
+                            : "所选桌子不属于代理线 " + line + "，请重新选择！";
+                        return Json(msg);
+                    }
+                }
                 string GameName = "";
                 // 押注类单房间固定"默认场"；鱼机/牌机锁定第一房间"初级场"。
                 string RoomName = GameType == 0 ? "默认场" : "初级场";
-                M_Games game = new B_Games().GetSingle(new M_Games { GameId = GameId });
                 if (game != null)
                 {
                     GameName = game.Name;

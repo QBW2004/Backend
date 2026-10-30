@@ -631,7 +631,10 @@ namespace YYT.Web.Areas.Game.Controllers
                 }
                 msg = LineTables.RecallLine(gameId, line);
                 if (msg.code == 1)
+                {
                     msg.content += HotUpdateSuffix(gameId);
+                    ReloadRobotSeatsBestEffort();
+                }
             }
             catch (Exception ex)
             {

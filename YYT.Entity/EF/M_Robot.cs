@@ -43,6 +43,11 @@ namespace YYT.Entity
         [NotMapped]
         public string TABLE_NAME { get; set; }
         /// <summary>
+        /// 桌台所属代理线(联 roomtableowner 显示用，不落库)：空串=公共桌台，#=已收回，其余为直属代理账号
+        /// </summary>
+        [NotMapped]
+        public string LINE_AGENT { get; set; }
+        /// <summary>
         /// 机器人 人数
         /// </summary>
         public int ROBOT_NO { get; set; }

@@ -241,6 +241,10 @@ namespace YYT.BLL.EF
                     msg.content = "数据库缺少 roomtableowner 表，请先执行 SQL 补丁！";
                     return msg;
                 }
+                // 收回的桌谁都看不到，机器人不应再占用：先删掉这些桌上的机器人设置（调用方随后发机器人热更）
+                int robots = ef.Database.ExecuteSqlCommand(
+                    "DELETE rs FROM robot_seat rs INNER JOIN roomtableowner o ON o.GAME_ID=rs.GAME_ID AND o.TableIndex=rs.TABLE_ID WHERE o.GAME_ID={0} AND o.LineAgent={1}",
+                    gameId, line);
                 int n = ef.Database.ExecuteSqlCommand(
                     "UPDATE roomtableowner SET LineAgent={0} WHERE GAME_ID={1} AND LineAgent={2}",
                     LineScopeRules.RecycledLine, gameId, line);
@@ -250,7 +254,8 @@ namespace YYT.BLL.EF
                     return msg;
                 }
                 msg.code = 1;
-                msg.content = "已收回 " + n + " 张专属桌台，该线玩家重新进入游戏后改用公共桌台";
+                msg.content = "已收回 " + n + " 张专属桌台，该线玩家重新进入游戏后改用公共桌台"
+                    + (robots > 0 ? "；这些桌上的机器人设置已一并删除（" + robots + " 条）" : "");
                 msg.datas = n;
             }
             return msg;
