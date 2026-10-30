@@ -18,14 +18,21 @@ function element(selector) {
         val: () => selector.includes("name='GameId'") ? element('#addGameId').combobox('getValue') : element('#addLine').combobox('getValue'),
         serializeObject: () => ({ GameType: element('#addGameType').combobox('getValue'), GameId: element('#addGameId').combobox('getValue'), TABLE_ID: 77, RobotNo: 1 }),
         combobox: operation,
-        numberbox: operation
+        numberbox: (command, value) => operation(command, value, true)
     };
-    function operation(command, value) {
-        if (typeof command === 'object') Object.assign(state.options, command);
+    function operation(command, value, numberbox) {
+        if (typeof command === 'object') {
+            Object.assign(state.options, command);
+            // EasyUI numberbox reapplies its own cached disabled option to the underlying textbox.
+            if (numberbox) state.disabled = !!state.options.disabled;
+        }
         else if (command === 'getValue') return state.value;
         else if (command === 'getData') return state.data;
         else if (command === 'setValue') state.value = String(value);
-        else if (command === 'clear') state.value = '';
+        else if (command === 'clear') {
+            state.value = '';
+            if (numberbox) state.options.disabled = state.disabled;
+        }
         else if (command === 'disable') state.disabled = true;
         else if (command === 'enable') state.disabled = false;
         else if (command === 'loadData') state.data = value;
@@ -56,6 +63,7 @@ assert.strictEqual(context.cardTotal, 10);
 assert.strictEqual(elements.get('#addCardRobotNo').options.max, 10);
 assert.strictEqual(elements.get('#addCardRobotNo').options.min, 0);
 assert.strictEqual(element('#addCardRobotNo').numberbox('getValue'), '4');
+assert(!elements.get('#addCardRobotNo').disabled);
 for (const value of ['-1', '1.5', 'abc', '11']) {
     element('#addCardRobotNo').numberbox('setValue', value);
     context.SaveRobot();

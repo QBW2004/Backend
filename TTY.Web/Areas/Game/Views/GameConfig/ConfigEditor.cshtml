@@ -171,7 +171,7 @@
                             <input type="number" id="gcScoreSwitch" name="scoreSwitch" class="gc-input" step="0.1" min="0" value="0" />
                         </div>
                     </div>
-                    <div class="gc-hint" id="gcMjhlBetHint" style="display:none;">麻将胡了按 20 注结算：最小押注、最大押注、每次增加的分值都必须是 20 的整数倍，档位（最小到最大、按每次增加的分值递增）不超过 200 个。玩家按这里生成的档位加减押注，重新进桌后生效；旧版客户端只能用原 13 档中落在最小到最大之间的押注。</div>
+                    <div class="gc-hint" id="gcMjhlBetHint" style="display:none;">麻将胡了的押注和加减幅度最多保留一位小数，可设置0.4分等小额押注，档位不超过200个。游戏内保留小数分，离开时不足1分直接舍弃。玩家重新进桌后使用新档位，小额押注需配套新版麻将客户端。</div>
                     </div>
 
                     <div class="gc-only-0">
@@ -762,14 +762,14 @@
         // 三个拉霸（明星97/水果机/水浒传）最小/最大押分只能为整数（步进 1；保存时另有整数校验）
         $('#gcMinBet').attr('step', gcLabaSubType() > 0 ? '1' : '0.1');
         $('#gcMaxBet').attr('step', gcLabaSubType() > 0 ? '1' : '0.1');
-        // 麻将胡了(54)：押注档位 = 最小押注起按「每次增加的分值」递增到最大押注，均为 20 的整数倍（服务端 MjhlWeight::BuildBetLadder 同口径）
+        // 麻将胡了(54)：0.1分精度押注，游戏内精确结算小数分
         var mjhl = gcIsMjhl();
         $('#gcMjhlBetHint').toggle(mjhl);
         if (mjhl) {
             $('#gcMinBetLbl').text('最小押注（分）');
             $('#gcMaxBetLbl').text('最大押注（分）');
             $('#gcScoreSwitchLbl').text('点击加减幅度（每次增加的分值）');
-            $('#gcMinBet,#gcMaxBet,#gcScoreSwitch').attr('step', '20').attr('min', '20');
+            $('#gcMinBet,#gcMaxBet,#gcScoreSwitch').attr('step', '0.1').attr('min', '0.1');
         } else {
             $('#gcMinBet,#gcMaxBet').attr('min', '0');
         }
@@ -972,12 +972,12 @@
         $('#gcMinBet').val(gcLabaSubType() > 0 ? 1 : 0.1);
         $('#gcMaxBet').val(1);
         if (gcIsMjhl()) {
-            // 原版 13 档押注范围，加减幅度 20 分
-            $('#gcMinBet').val(40);
-            $('#gcMaxBet').val(6000);
+            // 新桌台默认0.4～20分、每次0.1分，共197档；不改已有桌台
+            $('#gcMinBet').val(0.4);
+            $('#gcMaxBet').val(20);
             $('#gcCoinSc').val(100);
             $('#gcCoinNeed').val(0);
-            $('#gcScoreSwitch').val(20);
+            $('#gcScoreSwitch').val(0.1);
             $('#gcExCoin').val(1);
             $('#gcGameMo').val(1);
             return;
@@ -1657,13 +1657,16 @@
 
     // 与后端 MjhlWeightProfile.CheckBetLadder、服务端 MjhlWeight::BuildBetLadder 同口径；合法返回空串
     function gcMjhlLadderError(minBet, maxBet, step) {
-        if ([minBet, maxBet, step].some(function (v) { return isNaN(v) || Math.floor(v) !== v; }))
-            return '麻将胡了的最小/最大押注和每次增加的分值必须为整数！';
-        if (minBet < 20 || maxBet < minBet || step < 20)
-            return '麻将胡了的最小押注至少 20 分、每次增加的分值至少 20 分，且最大押注不能小于最小押注！';
-        if (minBet % 20 || maxBet % 20 || step % 20)
-            return '麻将胡了按 20 注结算，最小/最大押注和每次增加的分值都必须是 20 的整数倍！';
-        if (Math.floor((maxBet - minBet) / step) + 1 + ((maxBet - minBet) % step ? 1 : 0) > 200)
+        if ([minBet, maxBet, step].some(function (v) { return !isFinite(v); }))
+            return '麻将胡了的押注参数必须为有效数值！';
+        if (minBet < 0.1 || maxBet < minBet || step < 0.1)
+            return '麻将胡了的最小押注和每次增加的分值至少 0.1 分，且最大押注不能小于最小押注！';
+        if (maxBet > 214748364.7 || step > 6553.5)
+            return '麻将胡了的押注参数超出可保存范围！';
+        if ([minBet, maxBet, step].some(function (v) { return Math.abs(v * 10 - Math.round(v * 10)) > 0.000001; }))
+            return '麻将胡了的最小/最大押注和每次增加的分值最多保留一位小数！';
+        var minUnits = Math.round(minBet * 10), maxUnits = Math.round(maxBet * 10), stepUnits = Math.round(step * 10);
+        if (Math.floor((maxUnits - minUnits) / stepUnits) + 1 + ((maxUnits - minUnits) % stepUnits ? 1 : 0) > 200)
             return '麻将胡了押注档位不能超过 200 个，请加大每次增加的分值或缩小押注范围！';
         return '';
     }

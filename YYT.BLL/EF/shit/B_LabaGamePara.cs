@@ -12,6 +12,7 @@ namespace YYT.BLL.EF
 {
     public class B_LabaGamePara : IGamePara
     {
+        public const int MjhlBetLadderHandType = 2200;
         public Dictionary<string, dynamic> GetGameParams(int gameId)
         {
             Dictionary<string, dynamic> kv = new Dictionary<string, dynamic>();
@@ -240,6 +241,22 @@ namespace YYT.BLL.EF
                                 laba.BetMin + "," + laba.BetMax + "," + laba.CoinsNeed + "," +
                                 laba.ExCoin + "," + laba.CoinSc + "," + laba.GameMo + "," +
                                 laba.ScoreSwitchX10 + "," + laba.DefaultBetIndex + ")");
+
+                            // 麻将按桌精确押注通过既有profile通道转发，避免90字节通用配置将0.4四舍五入为0。
+                            if (gameId == 54)
+                            {
+                                if (laba.BetMin < 1 || laba.BetMax < laba.BetMin || laba.ScoreSwitchX10 < 1 || laba.ScoreSwitchX10 > 65535)
+                                    throw new ArgumentException("麻将胡了的押注档位配置不合法。");
+                                long span = (long)laba.BetMax - laba.BetMin;
+                                long count = span / laba.ScoreSwitchX10 + 1 + (span % laba.ScoreSwitchX10 != 0 ? 1 : 0);
+                                if (count > 200) throw new ArgumentException("麻将胡了押注档位不能超过200个。");
+                                ef.Database.ExecuteSqlCommand(
+                                    "DELETE FROM cardpayoutprofile WHERE GAME_ID={0} AND TableId={1} AND HandType={2}",
+                                    gameId, tableIndex, MjhlBetLadderHandType);
+                                ef.Database.ExecuteSqlCommand(
+                                    "INSERT INTO cardpayoutprofile (GAME_ID,TableId,HandType,PayoutMultiplier,ProbabilityBasis,StockLimit,StockRemain,Enabled) VALUES ({0},{1},{2},{3},{4},{5},1,1)",
+                                    gameId, tableIndex, MjhlBetLadderHandType, laba.BetMin, laba.BetMax, laba.ScoreSwitchX10);
+                            }
                         }
 
                         // ── 2.5 按桌筹码档位(1~5级)落库 roomtableconfig_bet（与彩金单挑同表同管道）──

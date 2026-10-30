@@ -4,7 +4,6 @@
     'use strict';
     var E = window.MjhlEngine, MODES = ['n', 'f'], ROWS = E.DISPLAY_ORDER.concat([11]);
     var FIELDS = {
-        mwRetrigger: 'retrigger', mwRetriggerAward: 'retriggerAward', mwRetriggerLimit: 'retriggerLimit', mwFreeLimit: 'freeLimit',
         mwTargetRtp: 'targetRtp', mwTargetScatter: 'targetScatter', mwGoldChance: 'goldChance', mwSpinCount: 'spinCount',
         mwCalibration: 'calibrationSamples', mwWeightTotal: 'weightTotal'
     };
@@ -24,8 +23,8 @@
         $('#mwBadge').text(configured ? '本桌已启用出货率' : '本桌未配置（原分档算法）').toggleClass('mw-on', !!configured).toggleClass('mw-off', !configured);
     }
     function stale() { RESULTS.forEach(function (id) { $('#' + id).text('待重算'); }); lastSim = ''; status('参数已修改，请重新模拟；之前的统计不再对应当前权重。修改尚未保存。'); }
-    function isLocked(idx, col) { return (idx === E.IDX_SCATTER || idx === E.IDX_WILD) && (col === 0 || col === 4); }
-    function name(idx) { return idx === 11 ? '杂牌（不中奖）' : E.NAMES[idx]; }
+    function isLocked(idx, col) { return idx === E.IDX_WILD && (col === 0 || col === 4); }
+    function name(idx) { return idx === 11 ? '杂牌（降低连线）' : E.NAMES[idx]; }
 
     function paintTable() {
         var html = ROWS.map(function (idx) {
@@ -55,9 +54,8 @@
         });
         Object.keys(FIELDS).forEach(function (id) {
             var v = state[FIELDS[id]];
-            $('#' + id).val(id === 'mwRetrigger' ? (v ? '1' : '0') : v);
+            $('#' + id).val(v);
         });
-        $('#mwRetriggerAward,#mwRetriggerLimit').prop('disabled', !state.retrigger);
         syncDisplay();
     }
     function syncDisplay() {
@@ -89,7 +87,6 @@
             if (!locked) $(this).prop('disabled', on);
         });
         $('#mwCancel').prop('disabled', !on);
-        if (!on && state) $('#mwRetriggerAward,#mwRetriggerLimit').prop('disabled', !state.retrigger);
     }
     function display(s, label) {
         var map = { mwNormal: s.normal, mwFree: s.free, mwTotal: s.total, mwHit: s.hit, mwMiss: s.miss, mwScatter: s.scatter, mwCap: s.cap };
@@ -97,7 +94,8 @@
         lastSim = 'RTP ' + pct(s.total) + ' / ' + s.count + '局 / 至尊 ' + pct(s.scatter);
         status(label + '\n完成' + s.count.toLocaleString() + '个完整付费回合；普通贡献' + pct(s.normal) + '＋免费贡献' + pct(s.free) + '＝总RTP ' + pct(s.total) + '。' +
             '\nRTP粗略95%正态近似范围 ' + pct(Math.max(0, s.total - s.half95)) + '～' + pct(s.total + s.half95) + '；稀有大奖可能使区间不可靠。' +
-            '\n触及连消安全上限' + s.trunc + '次，触及免费次数上限' + s.freeLimited + '次。' + (s.trunc ? '含被安全上限截断的回合，不宜视为完整长期期望。' : '') +
+            '\n每次旋转独立按5000倍封顶，已获得的免费次数照常完成。' +
+            '\n此为局内完整回合RTP，包含小数分奖金；不包含玩家离开游戏时不足1分余额的舍弃。' +
             '\n修改尚未保存时，游戏里仍是已保存的配置。');
     }
     function sampleP(profile, count, seed, prefix) {
@@ -132,7 +130,7 @@
     function auto() {
         if (busy || !check()) return;
         var base = E.copy(state), target = Number(base.targetRtp) / 100, trialCount = Number(base.calibrationSamples);
-        var gen = generation, seed = 0x3891b24d, best = null, maxMeasured = 0, attempts = 0, seen = {};
+        var gen = generation, seed = 0x3891b24d, best = null, maxMeasured = 0, attempts = 0, rejected = 0, seen = {};
         setBusy(true); report([]);
         function evaluate(occupancy, power, freeFactor) {
             var k = [occupancy.toFixed(6), power, freeFactor].join('/');
@@ -145,15 +143,23 @@
                 if (!best || x.error < best.error) best = x;
                 status('正在分配：已试算' + attempts + '组合法权重；本组RTP ' + pct(result.total) + '；最佳目标差' + pp(best.error) + '。');
                 return x;
+            }, function (err) {
+                if (!err || err.code !== 'MJHL_GENERATION_LIMIT') throw err;
+                rejected++;
+                var invalid = { proposed: proposed, result: null, occupancy: occupancy };
+                seen[k] = invalid;
+                status('已跳过' + rejected + '组无法完整结束的权重；继续搜索可完成的配置。');
+                return invalid;
             });
         }
         function bisect(a, b, power, freeFactor) {
+            if (!a.result || !b.result) return Promise.resolve();
             if ((a.result.total - target) * (b.result.total - target) > 0) return Promise.resolve();
             var lo = a.occupancy, hi = b.occupancy, j = 0;
             function step() {
                 if (j++ >= 6) return Promise.resolve();
                 var mid = (lo + hi) / 2;
-                return evaluate(mid, power, freeFactor).then(function (x) { if (x.result.total > target) hi = mid; else lo = mid; return step(); });
+                return evaluate(mid, power, freeFactor).then(function (x) { if (!x.result) return; if (x.result.total > target) hi = mid; else lo = mid; return step(); });
             }
             return step();
         }
@@ -170,7 +176,7 @@
             });
         });
         chain.then(function () {
-            if (!best) throw new Error('没有可用候选权重。');
+            if (!best) throw new Error('没有可完整结束的候选权重，请降低至尊触发率或调整权重后重试。');
             if (gen !== generation) return null;
             state = best.proposed; paintValues(); stale(); status('校准结束，使用独立随机序列复测…');
             return sampleP(E.copy(state), Number(state.spinCount), E.freshSeed(), '校准结束，使用独立随机序列复测');
@@ -181,6 +187,7 @@
                 '\n校准样本' + trialCount.toLocaleString() + '局，RTP ' + pct(best.result.total) + '；至尊目标' + Number(base.targetScatter).toFixed(2) + '%；初盘解析触发概率' + pct(E.binomialTail(state)) + '。' +
                 '\n独立复测距目标' + pp(differs) + '。' + (differs > 0.03 ? '未达到目标容差，请查看样本波动或增加校准/复测局数。' : '本次复测接近目标，非每批局数保证。') +
                 (maxMeasured < target ? '\n搜索范围内最高试算RTP低于目标，当前搜索未找到达标方案；这不证明所有可能权重都不可达。' : '') +
+                (rejected ? '\n已跳过' + rejected + '组无法完整结束的候选，未把部分回合计入RTP。' : '') +
                 (!state.enabled[E.IDX_SCATTER] ? '\n至尊已关闭，所填触发目标不生效。' : ''));
         }).catch(function (e) { if (gen === generation) report([e.message]); })
             .then(function () { if (gen === generation) setBusy(false); });
@@ -193,11 +200,11 @@
         send(MJHL_WEIGHTS_URLS.get, { gameId: my.gameId, tableIndex: my.tableIndex }, function (data) {
             if (gen !== generation || scope !== my) return;
             if (!data || data.code !== 1) { report([(data && data.content) || '读取失败。']); state = E.defaults(); paintValues(); badge(false); return; }
-            state = data.configured ? data.config : E.defaults();
+            state = E.normalize(data.configured ? data.config : E.defaults());
             state.version = 1;
             paintValues(); badge(data.configured);
             RESULTS.forEach(function (id) { $('#' + id).text('—'); });
-            $('#mwStatusTop').text(data.configured ? '下方是本桌已保存的配置。修改后需点“按当前权重保存”才会生效。' : '本桌还没有出货率配置，下方是示例权重（未保存）；保存后本桌改用出货率开奖。');
+            $('#mwStatusTop').text(data.configured ? '下方是本桌已保存的权重。规则修正后请重新模拟，旧RTP统计不再适用；修改后需保存才会生效。' : '本桌还没有出货率配置，下方是旧示例权重（未保存）；请先重新模拟或自动分配，再保存启用。');
             status(showStatus || '已载入。可直接点“当前模拟”查看这组权重的实际RTP。');
         });
     }
@@ -248,11 +255,10 @@
             if (busy || !state) return;
             state.enabled[Number($(this).data('i'))] = this.checked;
             syncDisplay(); stale(); check();
-        }).on('input change', '#mwRetrigger,#mwRetriggerAward,#mwRetriggerLimit,#mwFreeLimit,#mwTargetRtp,#mwTargetScatter,#mwGoldChance,#mwSpinCount,#mwCalibration,#mwWeightTotal', function () {
+        }).on('input change', '#mwTargetRtp,#mwTargetScatter,#mwGoldChance,#mwSpinCount,#mwCalibration,#mwWeightTotal', function () {
             if (busy || !state) return;
             var key = FIELDS[this.id];
-            state[key] = this.id === 'mwRetrigger' ? this.value === '1' : (this.value === '' ? NaN : Number(this.value));
-            if (this.id === 'mwRetrigger') $('#mwRetriggerAward,#mwRetriggerLimit').prop('disabled', !state.retrigger);
+            state[key] = this.value === '' ? NaN : Number(this.value);
             if (this.id === 'mwWeightTotal') syncDisplay();
             stale();
         });
@@ -260,7 +266,7 @@
         $('#mwAuto').on('click', auto);
         $('#mwSave').on('click', save);
         $('#mwLoad').on('click', function () { if (!busy) load('已重新载入本桌已保存的配置（未保存的修改已丢弃）。'); });
-        $('#mwReset').on('click', function () { if (busy || !state) return; state = E.defaults(); paintValues(); report([]); stale(); status('已恢复示例配置（未保存）。'); });
+        $('#mwReset').on('click', function () { if (busy || !state) return; state = E.defaults(); paintValues(); report([]); stale(); status('已恢复旧示例权重（未保存）；规则修正后请重新模拟或自动分配，旧RTP统计不再适用。'); });
         $('#mwDelete').on('click', del);
         $('#mwCancel').on('click', function () { cancelled = true; status('正在停止计算…'); });
     });

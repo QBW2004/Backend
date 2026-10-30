@@ -32,8 +32,8 @@ namespace UnitTestProj
             return new MjhlWeightProfile.Config
             {
                 version = 1, weightTotal = 10000, enabled = Enumerable.Repeat(true, 11).ToArray(),
-                weights = new MjhlWeightProfile.Weights { n = n, f = f }, goldChance = 8m, retrigger = true, retriggerAward = 2, retriggerLimit = 5,
-                freeLimit = 100, targetRtp = 90m, targetScatter = 5m, spinCount = 10000, calibrationSamples = 5000
+                weights = new MjhlWeightProfile.Weights { n = n, f = f }, goldChance = 8m, retrigger = true, retriggerAward = 0, retriggerLimit = 0,
+                freeLimit = 0, targetRtp = 90m, targetScatter = 5m, spinCount = 10000, calibrationSamples = 5000
             };
         }
         private static MjhlWeightProfile.Config Clone(MjhlWeightProfile.Config c)
@@ -51,7 +51,7 @@ namespace UnitTestProj
             Assert.AreEqual(617L * 10000000L + 617L, fiveTong.StockLimit); Assert.AreEqual(656L, fiveTong.StockRemain);
             Assert.AreEqual(0, rows.Single(r => r.HandType == 2007).Enabled); Assert.AreEqual(0, rows.Single(r => r.HandType == 2027).Enabled);
             var set = rows.Single(r => r.HandType == 2100);
-            Assert.AreEqual(1234, set.PayoutMultiplier); Assert.AreEqual(100, set.ProbabilityBasis); Assert.AreEqual(2L, set.StockLimit); Assert.AreEqual(5L, set.StockRemain); Assert.AreEqual(0, set.Enabled);
+            Assert.AreEqual(1234, set.PayoutMultiplier); Assert.AreEqual(0, set.ProbabilityBasis); Assert.AreEqual(0L, set.StockLimit); Assert.AreEqual(0L, set.StockRemain); Assert.AreEqual(1, set.Enabled);
             var meta = rows.Single(r => r.HandType == 2101);
             Assert.AreEqual(1, meta.PayoutMultiplier); Assert.AreEqual(10000, meta.ProbabilityBasis);
 
@@ -65,12 +65,11 @@ namespace UnitTestProj
         public void InvalidConfigurationsAreRejectedLikeTheGameServer()
         {
             MjhlWeightProfile.Validate(Sample());
-            var c = Sample(); c.weights.n[10][0] = 5; Reject(() => MjhlWeightProfile.Validate(c));          // 至尊在第1轴
+            var c = Sample(); c.weights.n[10][0] = 5; MjhlWeightProfile.Validate(c);                       // 至尊可出现在全部5轴
             c = Sample(); c.weights.f[9][4] = 5; Reject(() => MjhlWeightProfile.Validate(c));               // 百搭在第5轴
             c = Sample(); c.weights.n[0][2] = 9000; Reject(() => MjhlWeightProfile.Validate(c));            // 超过总量
             c = Sample(); c.weights.n[0][2] = -1; Reject(() => MjhlWeightProfile.Validate(c));
             c = Sample(); c.weights.n[0][2] = 1000001; Reject(() => MjhlWeightProfile.Validate(c));
-            c = Sample(); c.freeLimit = 13; Reject(() => MjhlWeightProfile.Validate(c));                    // 五个胡要送 14 次
             c = Sample(); c.goldChance = 8.125m; Reject(() => MjhlWeightProfile.Validate(c));
             c = Sample(); c.weightTotal = 99; Reject(() => MjhlWeightProfile.Validate(c));
             c = Sample(); for (int i = 0; i < 9; i++) c.enabled[i] = false; Reject(() => MjhlWeightProfile.Validate(c));
@@ -80,6 +79,30 @@ namespace UnitTestProj
             Reject(() => MjhlWeightProfile.Parse("{\"version\":1,\"weightTotal\":10000,\"weights\":{\"n\":[[1.5]]}}"));
             // 关闭的牌不计入总量
             c = Sample(); c.weights.n[0][1] = 9000; c.enabled[0] = false; MjhlWeightProfile.Validate(c);
+        }
+
+        [TestMethod]
+        public void LegacyFreeSettingsCannotOverrideTheOriginalRules()
+        {
+            var original = Sample();
+            original.retrigger = false; original.retriggerAward = 2;
+            original.retriggerLimit = 5; original.freeLimit = 14;
+            var parsed = MjhlWeightProfile.Parse(JsonConvert.SerializeObject(original));
+            Assert.IsTrue(parsed.retrigger);
+            Assert.AreEqual(0, parsed.retriggerAward);
+            Assert.AreEqual(0, parsed.retriggerLimit);
+            Assert.AreEqual(0, parsed.freeLimit);
+
+            var rows = MjhlWeightProfile.WriteRows(parsed);
+            var settings = rows.Single(r => r.HandType == 2100);
+            settings.Enabled = 0; settings.StockLimit = 2; settings.StockRemain = 5; settings.ProbabilityBasis = 14;
+            var loaded = MjhlWeightProfile.ReadRows(rows);
+            Assert.IsTrue(loaded.retrigger, "旧存量开关不能关闭免费再次触发");
+            Assert.AreEqual(0, loaded.retriggerAward);
+            Assert.AreEqual(0, loaded.retriggerLimit);
+            Assert.AreEqual(0, loaded.freeLimit);
+            CollectionAssert.AreEqual(original.weights.f[10], loaded.weights.f[10], "兼容读取不能改旧至尊权重");
+            Assert.AreEqual(original.goldChance, loaded.goldChance);
         }
 
         [TestMethod]
@@ -103,12 +126,23 @@ namespace UnitTestProj
             Assert.IsNull(MjhlWeightProfile.CheckBetLadder(100, 5000, 100));
             Assert.IsNull(MjhlWeightProfile.CheckBetLadder(40, 6000, 40));
             Assert.IsNull(MjhlWeightProfile.CheckBetLadder(40, 6000, 400));     // 最大值不在步长上时仍作为最后一档
-            Assert.IsNotNull(MjhlWeightProfile.CheckBetLadder(40, 6000, 1));    // 线上原数据（步长 1）不合法，需运营改成 20 的倍数
-            Assert.IsNotNull(MjhlWeightProfile.CheckBetLadder(50, 5000, 100));
-            Assert.IsNotNull(MjhlWeightProfile.CheckBetLadder(100, 5010, 100));
+            Assert.IsNull(MjhlWeightProfile.CheckBetLadder(1, 200, 1));
+            Assert.IsNull(MjhlWeightProfile.CheckBetLadder(0.4m, 20m, 0.1m));
+            Assert.IsNull(MjhlWeightProfile.CheckBetLadder(0.1m, 20m, 0.1m));
+            Assert.IsNull(MjhlWeightProfile.CheckBetLadder(5, 20, 5));
+            Assert.IsNull(MjhlWeightProfile.CheckBetLadder(50, 5000, 100));
+            Assert.IsNull(MjhlWeightProfile.CheckBetLadder(100, 5010, 100));
+            Assert.IsNotNull(MjhlWeightProfile.CheckBetLadder(0, 100, 1));
+            Assert.IsNotNull(MjhlWeightProfile.CheckBetLadder(1, 100, 0));
+            Assert.IsNull(MjhlWeightProfile.CheckBetLadder(1, 100, 0.5m));
+            Assert.IsNotNull(MjhlWeightProfile.CheckBetLadder(0.45m, 20, 0.1m));
+            Assert.IsNotNull(MjhlWeightProfile.CheckBetLadder(0.4m, 20, 0.05m));
+            Assert.IsNotNull(MjhlWeightProfile.CheckBetLadder(0.1m, 20.1m, 0.1m));
+            Assert.IsNotNull(MjhlWeightProfile.CheckBetLadder(1, 201, 1));
+            Assert.IsNotNull(MjhlWeightProfile.CheckBetLadder(40, 6000, 1));    // 超过200档，而非步长必须为20倍数
             Assert.IsNotNull(MjhlWeightProfile.CheckBetLadder(200, 100, 20));
             Assert.IsNotNull(MjhlWeightProfile.CheckBetLadder(20, 100000, 20)); // 超过 200 档
-            Assert.IsNotNull(MjhlWeightProfile.CheckBetLadder(100.5m, 5000, 100));
+            Assert.IsNull(MjhlWeightProfile.CheckBetLadder(100.5m, 5000, 100));
         }
 
         [TestMethod]

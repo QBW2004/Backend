@@ -913,7 +913,7 @@ namespace YYT.Web.Areas.Game.Controllers
                         msg.content = "拉霸最小/最大押分只能设置整数！";
                         return Json(msg);
                     }
-                    // 麻将胡了(54)：押注档位 = 最小押注起按「每次增加的分值」递增到最大押注，均为 20 的整数倍、不超过 200 档
+                    // 麻将胡了(54)：按0.1分精度从最小押注递增到最大押注，不超过200档
                     // （游戏服 MjhlWeight::BuildBetLadder 同口径，不合法时游戏服回退原 13 档，故在此权威拦截）
                     if (gameId == global::YYT.Web.Models.MjhlWeightProfile.GameId)
                     {

@@ -258,7 +258,8 @@
                     cardTotal = data.total;
                     cardCapacityReady = true;
                     $('#cardRobotHint').text('本线启用机台' + data.total + '台，当前已设置' + data.current + '个机器人。填写要设置的总数（0~' + data.total + '），保存后按此数量增减；机器人随机寻找本线空机台入座，满台时等待。');
-                    if (cardTotal > 0 || data.current > 0) $('#addCardRobotNo').numberbox('enable').numberbox({ min: 0, max: cardTotal }).numberbox('resize', 150).numberbox('setValue', Math.min(data.current, cardTotal));
+                    // numberbox 与 textbox 分别缓存 disabled；重新配置范围时必须一起清除旧的禁用状态。
+                    if (cardTotal > 0 || data.current > 0) $('#addCardRobotNo').numberbox({ min: 0, max: cardTotal, disabled: false }).numberbox('resize', 150).numberbox('setValue', Math.min(data.current, cardTotal));
                 });
                 return;
             }

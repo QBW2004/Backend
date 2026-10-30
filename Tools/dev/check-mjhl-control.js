@@ -9,6 +9,13 @@ vm.runInNewContext(fs.readFileSync('TTY.Web/Scripts/app/phone/phone.core.js', 'u
     window, jQuery: {}, document: {}, console
 });
 const mobile = window.MApp;
+// 桌面控牌下拉复用布局中的真实代理线过滤器，测试也加载同一依赖。
+const layout = fs.readFileSync('TTY.Web/Views/Shared/Layout/_ContentLayout.cshtml', 'utf8');
+const filterStart = layout.indexOf('window.MTH_CARD_ACTION_GAME =');
+const filterEnd = layout.indexOf('</script>', filterStart);
+assert(filterStart >= 0 && filterEnd > filterStart, 'desktop line filter missing');
+window.MTH_PLAYABLE_GAMES = null;
+vm.runInNewContext(layout.slice(filterStart, filterEnd), { window });
 const expected = [
     '大奖（20~34倍）', '巨奖（35~49倍）', '超级巨奖（50~70倍）',
     '三个胡·10次免费（预估70）', '四个胡·12次免费（预估90）', '五个胡·14次免费（预估120）'
@@ -45,7 +52,7 @@ for (const path of [
     'TTY.Web/Areas/Game/Views/UserInfo/OnlineUsers.cshtml'
 ]) {
     const source = fs.readFileSync(path, 'utf8');
-    const context = {};
+    const context = { window };
     for (const name of ['valSelDataMjhl', 'totalCardActionData', 'labaTypeName', 'bindTotalCardAction']) {
         loadViewFunction(source, name, context);
     }

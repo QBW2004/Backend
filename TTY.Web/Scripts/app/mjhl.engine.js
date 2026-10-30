@@ -11,27 +11,37 @@
     var COLS = 5, COL_LEN = [9, 12, 12, 12, 9], BUF_TOP = [4, 6, 6, 6, 4], LOGICAL = [4, 5, 5, 5, 4];
     var WILD = 20, SCATTER = 30, GOLD = 100, EMPTY = -1, BLANK = -2;
     var IDX_WILD = 9, IDX_SCATTER = 10, IDX_BLANK = 11, SYM_IDX = 11;
-    var CAP_TIMES = 5000, MAX_ROUNDS = 200;
+    var BET_SCALE = 10, SCORE_SCALE = 200, CAP_TIMES = 5000, MAX_ROUNDS = 10000, MAX_FREE_SPINS = 10000, MAX_TOTAL_ROUNDS = 100000;
     var BASE_MULT = [1, 2, 3, 5], FREE_MULT = [2, 4, 6, 10];
-    // 赔率按服务端符号编号 1..9（×押注/20，3/4/5 连）
+    // 押注入口是十分之一原分（4=0.4分）；赢分用 ticks（200 ticks=1原分），精确保留押注/20的奖金。
     var PAY = [null, [1, 3, 6], [1, 3, 6], [3, 5, 12], [3, 5, 12], [5, 10, 15], [6, 15, 30], [8, 20, 40], [10, 25, 50], [2, 4, 10]];
     var NAMES = ['二条', '二筒', '五条', '五筒', '八万', '白板', '红中', '发财', '三筒', '百搭牌', '至尊牌'];
     // 页面展示顺序（与 HTML 控制台一致）：红中、白板、发财、八万、五筒、五条、三筒、二筒、二条、百搭、至尊
     var DISPLAY_ORDER = [6, 5, 7, 4, 3, 2, 8, 1, 0, 9, 10];
     var LIMITS = {
-        weightTotal: [100, 1000000, true], retriggerAward: [0, 1000, true], retriggerLimit: [0, 100, true],
-        freeLimit: [14, 1000, true], targetRtp: [1, 150, false], spinCount: [100, 1000000, true],
+        weightTotal: [100, 1000000, true], targetRtp: [1, 150, false], spinCount: [100, 1000000, true],
         calibrationSamples: [1000, 20000, true], goldChance: [0, 100, false], targetScatter: [0, 100, false]
     };
     var LABELS = {
-        weightTotal: '每轴总权重', retriggerAward: '每次重触发增加免费次数', retriggerLimit: '单个付费回合最多重触发次数',
-        freeLimit: '单个付费回合免费次数上限', targetRtp: '目标总RTP（%）', spinCount: '模拟完整付费回合数',
+        weightTotal: '每轴总权重', targetRtp: '目标总RTP（%）', spinCount: '模拟完整付费回合数',
         calibrationSamples: '自动分配试算精度', goldChance: '普通模式金色牌出现概率（%）', targetScatter: '目标至尊触发率（%）'
     };
 
     function multiplier(k, free) { var i = k < 3 ? k : 3; return free ? FREE_MULT[i] : BASE_MULT[i]; }
+    function betTicks(bet) { return bet * (SCORE_SCALE / BET_SCALE); }
     function copy(x) { return JSON.parse(JSON.stringify(x)); }
     function isInt(n) { return typeof n === 'number' && isFinite(n) && Math.floor(n) === n; }
+    function normalize(p) {
+        // 旧字段保留以兼容存量配置和协议，免费玩法固定遵循客户端规则。
+        p.retrigger = true; p.retriggerAward = 0; p.retriggerLimit = 0; p.freeLimit = 0;
+        return p;
+    }
+    function GenerationLimitError() {
+        this.name = 'GenerationLimitError'; this.code = 'MJHL_GENERATION_LIMIT';
+        this.message = '当前权重产生的连消或免费链无法在计算预算内完整结束，请调整权重后重试；本次未输出部分结果。';
+    }
+    GenerationLimitError.prototype = Object.create(Error.prototype);
+    GenerationLimitError.prototype.constructor = GenerationLimitError;
 
     function mulberry32(seed) {
         var x = seed >>> 0;
@@ -55,12 +65,12 @@
         var lo = 0, hi = 1;
         for (var i = 0; i < 60; i++) {
             var m = (lo + hi) / 2;
-            var p3 = 1 - Math.pow(1 - m, 15) - 15 * m * Math.pow(1 - m, 14) - 105 * m * m * Math.pow(1 - m, 13);
+            var p3 = 1 - Math.pow(1 - m, 23) - 23 * m * Math.pow(1 - m, 22) - 253 * m * m * Math.pow(1 - m, 21);
             if (p3 < target) lo = m; else hi = m;
         }
         return (lo + hi) / 2;
     }
-    // 示例配置：÷20 口径下用本页「自动分配」（目标 RTP 90%、至尊 5%、金色 8%）生成，6 万局复测约 92%，可再手动调整
+    // 保留旧示例权重便于迁移；规则修正后必须重新模拟或自动分配，旧 RTP 统计不再适用。
     function defaults() {
         var n = [[1561, 1469, 1469, 1469, 1561], [1560, 1469, 1469, 1469, 1560], [656, 618, 618, 618, 656], [656, 617, 617, 617, 656], [496, 467, 467, 467, 496],
             [209, 196, 196, 196, 209], [146, 137, 137, 137, 146], [110, 104, 104, 104, 110], [824, 776, 776, 776, 824], [0, 20, 20, 20, 0], [0, 568, 568, 568, 0]];
@@ -68,7 +78,7 @@
             [73, 69, 69, 69, 73], [51, 48, 48, 48, 51], [38, 36, 36, 36, 38], [288, 271, 271, 271, 288], [0, 20, 20, 20, 0], [0, 568, 568, 568, 0]];
         return {
             version: 1, weightTotal: 10000, enabled: [true, true, true, true, true, true, true, true, true, true, true],
-            weights: { n: n, f: f }, goldChance: 8, retrigger: true, retriggerAward: 2, retriggerLimit: 5, freeLimit: 100,
+            weights: { n: n, f: f }, goldChance: 8, retrigger: true, retriggerAward: 0, retriggerLimit: 0, freeLimit: 0,
             targetRtp: 90, targetScatter: 5, spinCount: 10000, calibrationSamples: 5000
         };
     }
@@ -94,7 +104,7 @@
                 for (var s = 0; s < SYM_IDX; s++) {
                     var w = rows[s] && rows[s][c];
                     if (!isInt(w) || w < 0 || w > 1000000) { errors.push(NAMES[s] + '权重必须为0至1000000的整数。'); continue; }
-                    if ((c === 0 || c === 4) && w !== 0 && (s === IDX_SCATTER || s === IDX_WILD)) errors.push(NAMES[s] + '只能出现在第2–4轴。');
+                    if ((c === 0 || c === 4) && w !== 0 && s === IDX_WILD) errors.push(NAMES[s] + '只能出现在第2–4轴。');
                     if (p.enabled && p.enabled[s]) used += w;
                 }
                 if (used > Number(p.weightTotal)) errors.push((m === 'n' ? '普通' : '免费') + '轴' + (c + 1) + '：其它牌权重' + used + '超过总量' + p.weightTotal + '，请降低其它权重。');
@@ -131,7 +141,7 @@
         return {
             eff: eff, total: total, enabled: p.enabled.slice(0),
             gold: Math.round(Number(p.goldChance) * 100) / 10000,
-            retrigger: !!p.retrigger, award: Number(p.retriggerAward), limit: Number(p.retriggerLimit), freeLimit: Number(p.freeLimit)
+            retrigger: true, award: 0, limit: 0, freeLimit: 0
         };
     }
 
@@ -147,7 +157,7 @@
         if (idx < 0) idx = last;
         if (idx >= 0 && idx < 9) {
             var s = idx + 1;
-            if (free) return col === 2 ? GOLD + s : s;
+            if (free && col === 2) return GOLD + s;
             if (col >= 1 && col <= 3 && r() < c.gold) return GOLD + s;
             return s;
         }
@@ -212,7 +222,7 @@
             if (run < 3) continue;
             var eff = ways - allWild;
             if (eff <= 0) continue;
-            var win = Math.floor(PAY[s][run - 3] * eff * mult * bet / 20);
+            var win = PAY[s][run - 3] * eff * mult * bet;
             var pos = [];
             for (var col2 = 0; col2 < run; col2++)
                 for (var r2 = 0; r2 < LOGICAL[col2]; r2++) {
@@ -242,7 +252,7 @@
             for (i = 0; i < COL_LEN[col]; i++) {
                 if (!mark[col][i]) continue;
                 var v = g[col][i];
-                if (v >= GOLD && c.enabled[IDX_WILD]) g[col][i] = WILD;
+                if (v >= GOLD) g[col][i] = WILD;
                 else if (v !== SCATTER) g[col][i] = EMPTY;
             }
         for (col = 0; col < COLS; col++) {
@@ -269,37 +279,36 @@
             res.totalWin += score;
             if (!ev.lines.length) break;
             eliminateAndDrop(c, r, free, ev.lines, g);
-            if (res.totalWin >= budget || k + 1 >= MAX_ROUNDS) {
-                res.capped = res.totalWin >= budget;
+            if (res.totalWin >= budget) {
+                res.capped = true;
                 if (record) res.rounds.push({ grid: copy(g), multiplier: multiplier(k + 1, free), winScore: 0, lines: [] });
                 res.roundCount++;
                 sc = countScatter(g);
                 if (sc > res.scatterMax) res.scatterMax = sc;
                 break;
             }
+            if (k + 1 >= MAX_ROUNDS) throw new GenerationLimitError();
         }
+        res.freeWon = initialFree(c, res.scatterMax);
         return res;
     }
     function spin(c, r, bet, free, budget, record) { return spinGrid(c, r, bet, free, budget, generateGrid(c, r, free), record); }
-    function initialFree(c, n) { if (n < 3) return 0; var f = 10 + 2 * (n - 3); return f > c.freeLimit ? c.freeLimit : f; }
+    function initialFree(c, n) { return n < 3 ? 0 : 10 + 2 * (n - 3); }
     // 一个付费回合：付费旋转 + 整条免费链（与服务端 GenerateRound 一致）
     function generateRound(c, r, bet, record) {
-        var cap = CAP_TIMES * bet, trig = spin(c, r, bet, false, cap, record), initial = initialFree(c, trig.scatterMax);
-        var total = trig.totalWin, granted = initial, used = 0, retr = 0, chain = [], limited = 0;
-        while (granted > 0 && used < granted && total < cap) {
+        var cap = CAP_TIMES * betTicks(bet), trig = spin(c, r, bet, false, cap, record), initial = initialFree(c, trig.scatterMax);
+        var total = trig.totalWin, granted = initial, used = 0, chain = [], capped = trig.capped, totalRounds = trig.roundCount;
+        while (used < granted) {
+            if (used >= MAX_FREE_SPINS) throw new GenerationLimitError();
             used++;
-            var fr = spin(c, r, bet, true, cap - total, record);
-            total += fr.totalWin; fr.freeWon = 0;
-            if (c.retrigger && retr < c.limit && fr.scatterMax >= 3) {
-                retr++;
-                var next = granted + c.award;
-                if (next > c.freeLimit) { next = c.freeLimit; limited++; }
-                fr.freeWon = next - granted; granted = next;
-            }
+            var fr = spin(c, r, bet, true, cap, record);
+            totalRounds += fr.roundCount;
+            if (totalRounds > MAX_TOTAL_ROUNDS) throw new GenerationLimitError();
+            total += fr.totalWin; granted += fr.freeWon;
+            capped = capped || fr.capped;
             chain.push(fr);
         }
-        trig.freeWon = chain.length ? initial : 0;
-        return { trig: trig, chain: chain, total: total, capped: total >= cap, limited: limited + (trig.scatterMax >= 3 && 10 + 2 * (trig.scatterMax - 3) > c.freeLimit ? 1 : 0) };
+        return { trig: trig, chain: chain, total: total, capped: capped, limited: 0 };
     }
 
     // ---------------- 统计 ----------------
@@ -308,18 +317,18 @@
         var c;
         try { c = compile(profile); } catch (e) { onDone(e); return; }
         opts = opts || {};
-        var r = mulberry32(seed), bet = 20, i = 0, n = 0, f = 0, h = 0, t = 0, caps = 0, mean = 0, m2 = 0, trunc = 0, limited = 0;
+        var r = mulberry32(seed), bet = 20 * BET_SCALE, i = 0, n = 0, f = 0, h = 0, t = 0, caps = 0, mean = 0, m2 = 0;
         function step() {
             if (opts.cancelled && opts.cancelled()) { onDone(new Error('已停止计算，未输出未完成样本。')); return; }
             var end = Math.min(count, i + 500);
             for (; i < end; i++) {
-                var x = generateRound(c, r, bet, false), tot = x.total / bet;
-                n += x.trig.totalWin / bet; f += (x.total - x.trig.totalWin) / bet;
+                var x;
+                try { x = generateRound(c, r, bet, false); } catch (err) { onDone(err); return; }
+                var tot = x.total / betTicks(bet);
+                n += x.trig.totalWin / betTicks(bet); f += (x.total - x.trig.totalWin) / betTicks(bet);
                 if (x.trig.hit) h++;
                 if (x.trig.scatterMax >= 3) t++;
                 if (x.capped) caps++;
-                if (x.trig.roundCount >= MAX_ROUNDS) trunc++;
-                limited += x.limited;
                 var d = tot - mean; mean += d / (i + 1); m2 += d * (tot - mean);
             }
             if (opts.onProgress) opts.onProgress(i, count);
@@ -327,15 +336,15 @@
             onDone(null, {
                 normal: n / count, free: f / count, total: (n + f) / count, hit: h / count, miss: 1 - h / count,
                 scatter: t / count, cap: caps / count, half95: count > 1 ? 1.96 * Math.sqrt(m2 / (count - 1) / count) : 0,
-                trunc: trunc, freeLimited: limited, count: count
+                trunc: 0, freeLimited: 0, count: count
             });
         }
         step();
     }
-    // 初盘至尊触发率解析值（第2–4轴可见15格独立抽样）；连消补出的至尊另计，实际以模拟为准
+    // 初盘至尊触发率解析值（全部5轴可见23格独立抽样）；连消补出的至尊另计，实际以模拟为准
     function binomialTail(p) {
         var dist = [1], total = Number(p.weightTotal);
-        for (var col = 1; col <= 3; col++) {
+        for (var col = 0; col < COLS; col++) {
             var q = p.enabled[IDX_SCATTER] ? p.weights.n[IDX_SCATTER][col] / total : 0;
             for (var pos = 0; pos < LOGICAL[col]; pos++) {
                 var next = [];
@@ -355,8 +364,8 @@
         var w = next.enabled[IDX_SCATTER] ? Math.round(scatterProbability(target) * total) : 0, modes = ['n', 'f'];
         for (var mi = 0; mi < 2; mi++) {
             var m = modes[mi];
-            next.weights[m][IDX_SCATTER] = [0, w, w, w, 0];
-            for (var col = 1; col <= 3; col++) {
+            next.weights[m][IDX_SCATTER] = [w, w, w, w, w];
+            for (var col = 0; col < COLS; col++) {
                 var used = 0;
                 for (var s = 0; s < SYM_IDX; s++) if (next.enabled[s]) used += next.weights[m][s][col];
                 if (used > total) throw new Error((m === 'n' ? '普通' : '免费') + '轴' + (col + 1) + '杂牌余额不足以同步至尊目标：需减少其它权重' + (used - total) + '。当前权重未修改。');
@@ -387,7 +396,7 @@
                 var m = modes[mi];
                 for (var k = 0; k < SYM_IDX; k++) s.weights[m][k][col] = 0;
                 var inner = col >= 1 && col <= 3;
-                var sw = inner ? scatterW : 0;
+                var sw = scatterW;
                 s.weights[m][IDX_SCATTER][col] = sw;
                 var ww = s.enabled[IDX_WILD] && inner ? Math.min(total - sw, Math.round(total * 0.002)) : 0;
                 s.weights[m][IDX_WILD][col] = ww;
@@ -401,10 +410,10 @@
 
     return {
         COLS: COLS, COL_LEN: COL_LEN, BUF_TOP: BUF_TOP, LOGICAL: LOGICAL, PAY: PAY, NAMES: NAMES, DISPLAY_ORDER: DISPLAY_ORDER,
-        IDX_WILD: IDX_WILD, IDX_SCATTER: IDX_SCATTER, SYM_IDX: SYM_IDX, CAP_TIMES: CAP_TIMES, MAX_ROUNDS: MAX_ROUNDS,
-        mulberry32: mulberry32, freshSeed: freshSeed, defaults: defaults, validate: validate, compile: compile,
-        blankWeights: blankWeights, generateGrid: generateGrid, evaluate: evaluate, spin: spin, generateRound: generateRound,
+        IDX_WILD: IDX_WILD, IDX_SCATTER: IDX_SCATTER, SYM_IDX: SYM_IDX, BET_SCALE: BET_SCALE, SCORE_SCALE: SCORE_SCALE, betTicks: betTicks, CAP_TIMES: CAP_TIMES, MAX_ROUNDS: MAX_ROUNDS, MAX_FREE_SPINS: MAX_FREE_SPINS, MAX_TOTAL_ROUNDS: MAX_TOTAL_ROUNDS,
+        mulberry32: mulberry32, freshSeed: freshSeed, defaults: defaults, validate: validate, compile: compile, normalize: normalize,
+        blankWeights: blankWeights, generateGrid: generateGrid, evaluate: evaluate, spin: spin, spinGrid: spinGrid, eliminateAndDrop: eliminateAndDrop, initialFree: initialFree, generateRound: generateRound,
         sample: sample, scatterProbability: scatterProbability, binomialTail: binomialTail, syncScatter: syncScatter,
-        candidate: candidate, copy: copy
+        candidate: candidate, copy: copy, GenerationLimitError: GenerationLimitError
     };
 });

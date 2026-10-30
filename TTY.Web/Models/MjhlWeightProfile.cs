@@ -10,7 +10,7 @@ namespace YYT.Web.Models
     /// 存储口径与游戏服 MTH-Server/ServerCardMjhl/MjhlWeight.h 的 ProfileBuilder 一致，改一处必须同步另一处：
     ///   HandType 2000+mode*20+idx（mode 0 普通/1 免费；idx 0..8=符号1..9，9 百搭，10 至尊）：
     ///     PayoutMultiplier=轴1，ProbabilityBasis=轴2，StockLimit=轴3×10^7+轴4，StockRemain=轴5，Enabled=该牌启用；
-    ///   HandType 2100：PayoutMultiplier=普通金色概率(%×100)，ProbabilityBasis=免费上限，StockLimit=重触发追加次数，StockRemain=最多重触发次数，Enabled=允许重触发；
+    ///   HandType 2100：PayoutMultiplier=第2/4轴及普通第3轴金色概率(%×100)；其余列为旧版免费参数兼容位，现固定写 0/0/0/1，不再改变免费规则；
     ///   HandType 2101：PayoutMultiplier=版本 1，ProbabilityBasis=每轴总权重，StockLimit=目标RTP×10×10^5+目标至尊率×100，StockRemain=模拟局数×10^5+试算精度（仅页面用）。
     /// 杂牌权重不存：= 总权重 − 其它启用牌权重。
     /// </summary>
@@ -33,6 +33,7 @@ namespace YYT.Web.Models
             public bool[] enabled;
             public Weights weights;
             public decimal goldChance;
+            // 保留旧 JSON/数据库格式；免费奖励固定按至尊数量计算，不能通过这些字段覆盖。
             public bool retrigger;
             public int retriggerAward;
             public int retriggerLimit;
@@ -57,6 +58,7 @@ namespace YYT.Web.Models
             Config c;
             try { c = JsonConvert.DeserializeObject<Config>(json ?? ""); }
             catch (JsonException) { throw new ArgumentException("出货率配置格式不正确，请刷新页面后重试。"); }
+            NormalizeRules(c);
             Validate(c);
             return c;
         }
@@ -67,21 +69,27 @@ namespace YYT.Web.Models
                 errors.Add(label + "：请填写" + min + "至" + max + "之间的" + (integer ? "整数" : "数值") + "。");
         }
 
+        private static void NormalizeRules(Config c)
+        {
+            if (c == null) return;
+            c.retrigger = true;
+            c.retriggerAward = 0;
+            c.retriggerLimit = 0;
+            c.freeLimit = 0;
+        }
+
         /// <summary>与 mjhl.engine.js validate、MjhlWeight::Finalize 同口径；不合法抛 ArgumentException（多条原因换行拼接）。</summary>
         public static void Validate(Config c)
         {
             var errors = new List<string>();
             if (c == null || c.version != 1) throw new ArgumentException("出货率配置版本不正确，请刷新页面后重试。");
             Range(errors, "每轴总权重", c.weightTotal, 100, WeightMax, true);
-            Range(errors, "每次重触发增加免费次数", c.retriggerAward, 0, 1000, true);
-            Range(errors, "单个付费回合最多重触发次数", c.retriggerLimit, 0, 100, true);
-            Range(errors, "单个付费回合免费次数上限", c.freeLimit, 14, 1000, true);
             Range(errors, "目标总RTP（%）", c.targetRtp, 1, 150, false);
             Range(errors, "模拟完整付费回合数", c.spinCount, 100, 1000000, true);
             Range(errors, "自动分配试算精度", c.calibrationSamples, 1000, 20000, true);
-            Range(errors, "普通模式金色牌出现概率（%）", c.goldChance, 0, 100, false);
+            Range(errors, "金色牌出现概率（%）", c.goldChance, 0, 100, false);
             Range(errors, "目标至尊触发率（%）", c.targetScatter, 0, 100, false);
-            if (c.goldChance * 100 != decimal.Truncate(c.goldChance * 100)) errors.Add("普通模式金色牌出现概率最多保留两位小数。");
+            if (c.goldChance * 100 != decimal.Truncate(c.goldChance * 100)) errors.Add("金色牌出现概率最多保留两位小数。");
             if (c.enabled == null || c.enabled.Length != SymbolCount) errors.Add("启用标志不完整。");
             else if (!c.enabled.Take(9).Any(x => x)) errors.Add("请至少启用一种普通赔付牌。");
             if (c.weights == null) errors.Add("权重表不完整。");
@@ -97,7 +105,7 @@ namespace YYT.Web.Models
                         {
                             int w = mode.rows[s][col];
                             if (w < 0 || w > WeightMax) { errors.Add(Names[s] + "权重必须为0至1000000的整数。"); continue; }
-                            if ((col == 0 || col == 4) && w != 0 && (s == ScatterIndex || s == WildIndex)) errors.Add(Names[s] + "只能出现在第2–4轴。");
+                            if ((col == 0 || col == 4) && w != 0 && s == WildIndex) errors.Add(Names[s] + "只能出现在第2–4轴。");
                             if (c.enabled != null && c.enabled.Length == SymbolCount && c.enabled[s]) used += w;
                         }
                         if (used > c.weightTotal) errors.Add(mode.name + "轴" + (col + 1) + "：其它牌权重" + used + "超过总量" + c.weightTotal + "，请降低其它权重。");
@@ -109,6 +117,7 @@ namespace YYT.Web.Models
 
         public static List<Row> WriteRows(Config c)
         {
+            NormalizeRules(c);
             Validate(c);
             var rows = new List<Row>();
             for (int m = 0; m < 2; m++)
@@ -171,10 +180,11 @@ namespace YYT.Web.Models
                 enabled = new bool[SymbolCount],
                 weights = new Weights { n = new int[SymbolCount][], f = new int[SymbolCount][] },
                 goldChance = settings.PayoutMultiplier / 100m,
-                freeLimit = settings.ProbabilityBasis,
-                retriggerAward = (int)settings.StockLimit,
-                retriggerLimit = (int)settings.StockRemain,
-                retrigger = settings.Enabled != 0,
+                // 旧行只保留金色概率；旧重触发开关和次数上限不再影响玩法。
+                freeLimit = 0,
+                retriggerAward = 0,
+                retriggerLimit = 0,
+                retrigger = true,
                 targetRtp = (meta.StockLimit / 100000L) / 10m,
                 targetScatter = (meta.StockLimit % 100000L) / 100m,
                 spinCount = (int)(meta.StockRemain / 100000L),
@@ -203,18 +213,19 @@ namespace YYT.Web.Models
         }
 
         /// <summary>
-        /// 押注档位规则（与 MjhlWeight::BuildBetLadder 一致）：最小/最大押注与每次加减分值均为 20 的整数倍、最大≥最小、档位不超过 200 个。
+        /// 押注档位规则（与 MjhlWeight::BuildBetLadder 一致）：最小/最大押注与每次加减分值至少0.1分、最多一位小数，最大≥最小、档位不超过200个。
         /// 合法返回 null，否则返回提示文字。
         /// </summary>
         public static string CheckBetLadder(decimal betMin, decimal betMax, decimal step)
         {
-            if (betMin != decimal.Truncate(betMin) || betMax != decimal.Truncate(betMax) || step != decimal.Truncate(step))
-                return "麻将胡了的最小/最大押注和每次增加的分值必须为整数！";
-            if (betMin < 20 || betMax < betMin || step < 20)
-                return "麻将胡了的最小押注至少 20 分、每次增加的分值至少 20 分，且最大押注不能小于最小押注！";
-            if (betMin % 20 != 0 || betMax % 20 != 0 || step % 20 != 0)
-                return "麻将胡了按 20 注结算，最小/最大押注和每次增加的分值都必须是 20 的整数倍！";
-            decimal count = decimal.Floor((betMax - betMin) / step) + 1 + ((betMax - betMin) % step != 0 ? 1 : 0);
+            if (betMin < 0.1m || betMax < betMin || step < 0.1m)
+                return "麻将胡了的最小押注和每次增加的分值至少 0.1 分，且最大押注不能小于最小押注！";
+            if (betMax > int.MaxValue / 10m || step > 6553.5m)
+                return "麻将胡了的押注参数超出可保存范围！";
+            if (betMin * 10 != decimal.Truncate(betMin * 10) || betMax * 10 != decimal.Truncate(betMax * 10) || step * 10 != decimal.Truncate(step * 10))
+                return "麻将胡了的最小/最大押注和每次增加的分值最多保留一位小数！";
+            decimal minUnits = betMin * 10, maxUnits = betMax * 10, stepUnits = step * 10;
+            decimal count = decimal.Floor((maxUnits - minUnits) / stepUnits) + 1 + ((maxUnits - minUnits) % stepUnits != 0 ? 1 : 0);
             if (count > 200) return "麻将胡了押注档位不能超过 200 个，请加大每次增加的分值或缩小押注范围！";
             return null;
         }
