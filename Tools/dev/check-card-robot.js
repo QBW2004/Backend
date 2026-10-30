@@ -52,21 +52,29 @@ const current = requests.pop();
 stale.callback({ code: 1, total: 99, current: 0, remaining: 99 });
 assert.strictEqual(context.cardCapacityReady, false);
 current.callback({ code: 1, total: 10, current: 4, remaining: 6 });
-assert.strictEqual(context.cardRemaining, 6);
-assert.strictEqual(elements.get('#addCardRobotNo').options.max, 6);
-for (const value of ['0', '-1', '1.5', 'abc', '7']) {
+assert.strictEqual(context.cardTotal, 10);
+assert.strictEqual(elements.get('#addCardRobotNo').options.max, 10);
+assert.strictEqual(elements.get('#addCardRobotNo').options.min, 0);
+assert.strictEqual(element('#addCardRobotNo').numberbox('getValue'), '4');
+for (const value of ['-1', '1.5', 'abc', '11']) {
     element('#addCardRobotNo').numberbox('setValue', value);
     context.SaveRobot();
     assert.strictEqual(message.code, 0);
     assert.strictEqual(requests.length, 0);
 }
-element('#addCardRobotNo').numberbox('setValue', 6);
-context.SaveRobot();
-const save = requests.pop();
-assert.strictEqual(save.data.RobotNo, '6');
-assert(!('TABLE_ID' in save.data));
+for (const value of ['0', '2', '10']) {
+    element('#addCardRobotNo').numberbox('setValue', value);
+    context.SaveRobot();
+    const save = requests.pop();
+    assert.strictEqual(save.data.RobotNo, value);
+    assert(!('TABLE_ID' in save.data));
+}
 context.getRoom();
 requests.pop().callback({ code: 1, total: 10, current: 10, remaining: 0 });
+assert(!elements.get('#addCardRobotNo').disabled);
+assert.strictEqual(element('#addCardRobotNo').numberbox('getValue'), '10');
+context.getRoom();
+requests.pop().callback({ code: 1, total: 0, current: 0, remaining: 0 });
 assert(elements.get('#addCardRobotNo').disabled);
 context.SaveRobot();
 assert.strictEqual(requests.length, 0);
@@ -75,4 +83,4 @@ context.configureRobotInputs();
 assert(elements.get('#tableRobotRow,#tableRobotCountRow').visible);
 assert(!elements.get('#addTABLE_ID').disabled);
 assert(!elements.get('#addRobotNo').disabled);
-console.log('PASS card robot page: count entry, remaining limit, stale response, full capacity, request payload and type switch');
+console.log('PASS card robot page: total entry 0~capacity, prefilled current count, stale response, no-table line, request payload and type switch');

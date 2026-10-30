@@ -41,6 +41,68 @@ namespace YYT.BLL.EF
                 .Where(r => LineScopeRules.TableBelongsTo(owners, r.TABLE_ID, line)).ToList();
         }
 
+        /// <summary>
+        /// 把某线牌机机器人总数直接设置为 target（0~本线启用机台数）：多了按差额增加名额，少了从高桌号起删减名额。
+        /// 每个名额仍是一行 ROBOT_NO=1 的 robot_seat，TABLE_ID 只用于定位所属代理线，实际入座由 ServerRobot 随机寻找空机台。
+        /// </summary>
+        public Msg SetCardRobots(int gameId, int target, string line)
+        {
+            using (var ef = new GameDbContext())
+            using (var tx = ef.Database.BeginTransaction())
+            {
+                // 同一游戏串行校验和调整，防止同时保存突破机台数量上限。
+                ef.Database.SqlQuery<int>("SELECT GameId FROM games WHERE GameId={0} FOR UPDATE", gameId).ToList();
+                var game = ef.Games.SingleOrDefault(g => g.GameId == gameId && g.Enable == 1 && g.GameType == 1);
+                if (game == null || gameId == 54) return new Msg(0, "该游戏不支持设置牌机机器人！");
+                var tables = GetCardRobotTables(ef, gameId, line);
+                var existing = GetCardRobots(ef, gameId, line);
+                int current = existing.Sum(r => Math.Max(0, r.ROBOT_NO));
+                if (tables.Count == 0 && current == 0)
+                    return new Msg(0, "该代理线在此游戏没有启用的机台！");
+                if (target < 0 || target > tables.Count)
+                    return new Msg(0, "机器人数量须在 0~" + tables.Count + " 之间（当前代理线启用机台" + tables.Count + "台）！");
+                if (target == current)
+                    return new Msg(1, "机器人数量未变化，仍为" + current + "个");
+                if (target > current)
+                {
+                    var plan = PlanCardRobotAddition(tables, existing, target - current);
+                    if (plan == null)
+                        return new Msg(0, "机台数量不足，无法设置为" + target + "个！");
+                    foreach (int index in plan)
+                    {
+                        var row = existing.FirstOrDefault(r => r.TABLE_ID == index);
+                        if (row == null)
+                        {
+                            row = new M_Robot { GAME_ID = gameId, ROOM_ID = 0, TABLE_ID = index };
+                            ef.Robots.Add(row);
+                        }
+                        row.GAME_TYPE = 1;
+                        row.GAME_NAME = game.Name;
+                        row.ROOM_NAME = "初级场";
+                        row.ROBOT_NO = 1;
+                    }
+                }
+                else
+                {
+                    // 先删已停用机台上的名额，再从高桌号往低删
+                    int remove = current - target;
+                    var tableSet = new HashSet<int>(tables);
+                    foreach (var row in existing.Where(r => r.ROBOT_NO > 0)
+                        .OrderBy(r => tableSet.Contains(r.TABLE_ID) ? 1 : 0).ThenByDescending(r => r.TABLE_ID).ToList())
+                    {
+                        if (remove <= 0) break;
+                        int take = Math.Min(row.ROBOT_NO, remove);
+                        row.ROBOT_NO -= take;
+                        remove -= take;
+                        if (row.ROBOT_NO <= 0) ef.Robots.Remove(row);
+                    }
+                }
+                ef.SaveChanges();
+                tx.Commit();
+                return new Msg(1, "机器人数量已从" + current + "个设置为" + target + "个，将随机寻找本线空机台入座！");
+            }
+        }
+
         public Msg AddCardRobots(int gameId, int count, string line)
         {
             using (var ef = new GameDbContext())

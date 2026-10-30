@@ -33,8 +33,11 @@ namespace YYT.Web.Areas.Game.Controllers
                     try { config=math.ReadProfiles(gameId,rows); }
                     catch (ArgumentException) { config=math.Defaults(gameId); stale=true; }
                 }
+                // 后台按“每 10000 次”（水浒传每 100000 次）编辑：旧配置/默认值先按比例换算显示，保存后才生效
+                bool converted;
+                config=math.ToEditorScale(gameId,config,out converted);
                 var game=math.Find(gameId);
-                return Json(new { code=1, config, stale, hash=math.Data.hash, game=game.name,
+                return Json(new { code=1, config, stale, converted, scale=LabaWeightMath.ScaleOf(gameId), hash=math.Data.hash, game=game.name,
                     items=game.items.Select(i=>new { i.code,i.name, mean=i.boards.Length>0 ? i.boards.Average(b=>b.pay) : 0 }),
                     result=math.Calculate(gameId,config,1) });
             }

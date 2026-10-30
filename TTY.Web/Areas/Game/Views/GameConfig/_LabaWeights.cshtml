@@ -1,6 +1,6 @@
-﻿<section id="labaWeights" style="display:none;margin:20px 0;padding:18px;border:1px solid #cbd7e8;border-radius:8px;background:#f7faff;">
+<section id="labaWeights" style="display:none;margin:20px 0;padding:18px;border:1px solid #cbd7e8;border-radius:8px;background:#f7faff;">
     <div class="gc-section-title">拉霸出货权重与理论 RTP</div>
-    <p class="gc-hint">各奖型共用一组相对权重：概率＝该项权重÷总权重。0 表示不抽取，可设置未中奖；叠加线奖按实际盘面结算。此处独立保存，按当前机台生效。</p>
+    <p class="gc-hint">0 表示不抽取。明星97按“每 10000 次出现几次”、水浒传按“每 100000 次出现几次”填写，未中奖＝口径减中奖奖型合计，自动计算；水果机24灯为相对权重，每项最高10000；额外玩法权重最高10000。叠加线奖及额外玩法仍按当前线上规则结算。此处独立保存，按当前机台生效。</p>
     <label><input type="checkbox" id="lwEnabled" /> 启用相对权重开奖（关闭时继续使用旧配置）</label>
     <div id="lwStatus" role="status" style="margin:10px 0;"></div>
     <div id="lwEditor" style="display:none;">
@@ -24,4 +24,4 @@
 <script>
 window.LABA_WEIGHTS_URLS={get:'@Url.Action("GetLabaWeights", "GameConfig", new { area="Game" })',preview:'@Url.Action("PreviewLabaWeights", "GameConfig", new { area="Game" })',save:'@Url.Action("SaveLabaWeights", "GameConfig", new { area="Game" })'};
 </script>
-<script src="@Url.Content("~/Scripts/app/game.labaweights.js?v=1.0.72")"></script>
+<script src="@Url.Content("~/Scripts/app/game.labaweights.js?v=1.0.73")"></script>

@@ -280,7 +280,8 @@ namespace YYT.Web.Areas.Game.Controllers
                     return Json(new Msg(0, "游戏或游戏类型无效，请重新选择！"));
                 if (game.GameType == 1)
                 {
-                    msg = new B_Robot().AddCardRobots(GameId, RobotNo, line);
+                    // 牌机：RobotNo 是本线要设置的机器人总数（0~启用机台数），不是增量
+                    msg = new B_Robot().SetCardRobots(GameId, RobotNo, line);
                     if (msg.code == 1) RobotReloadAfterChange(ref msg, "机器人已保存");
                     return Json(msg);
                 }

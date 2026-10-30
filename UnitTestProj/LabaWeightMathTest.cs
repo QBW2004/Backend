@@ -143,6 +143,40 @@ namespace UnitTestProj
         }
 
         [TestMethod]
+        public void EditorUsesPer10000WithDerivedNoWin()
+        {
+            var math=MathModel();
+            foreach (int game in new[]{16,53})
+            {
+                Assert.IsTrue(math.HasNoWin(game));
+                int scale=LabaWeightMath.ScaleOf(game);
+                Assert.AreEqual(game==53 ? 100000 : 10000,scale);
+                bool converted; var c=math.ToEditorScale(game,math.Defaults(game),out converted);
+                Assert.IsTrue(converted);
+                Assert.AreEqual(scale,c.main.Sum());
+                Assert.IsTrue(c.main.All(v=>v>=0 && v<=scale));
+                math.ValidateEditor(game,c);
+                var again=math.ToEditorScale(game,c,out converted);
+                Assert.IsFalse(converted);
+                CollectionAssert.AreEqual(c.main,again.main);
+                var bad=math.ToEditorScale(game,math.Defaults(game),out converted); bad.main[0]+=1;
+                Reject(()=>math.ValidateEditor(game,bad));
+                bad=math.ToEditorScale(game,math.Defaults(game),out converted); Array.Clear(bad.main,0,bad.main.Length); bad.main[1]=scale+1;
+                Reject(()=>math.ValidateEditor(game,bad));
+            }
+            // 水浒传按 100000：默认值换算后全屏大奖都不为 0
+            bool shzConverted; var shz=math.ToEditorScale(53,math.Defaults(53),out shzConverted);
+            var shzItems=math.Find(53).items;
+            Assert.IsTrue(Enumerable.Range(0,shz.main.Length).Where(i=>shzItems[i].code>=440).All(i=>shz.main[i]>0));
+            Assert.IsFalse(math.HasNoWin(40));
+            bool fruitConverted; var fruit=math.ToEditorScale(40,math.Defaults(40),out fruitConverted);
+            Assert.IsFalse(fruitConverted);
+            math.ValidateEditor(40,fruit);
+            fruit.main[0]=10001; Reject(()=>math.ValidateEditor(40,fruit));
+            fruit=math.Defaults(40); fruit.extra[1]=10001; Reject(()=>math.ValidateEditor(40,fruit));
+        }
+
+        [TestMethod]
         public void NewConfigurationWriteHasAuthorizationTransactionAndScopeGuards()
         {
             string source=File.ReadAllText(Path.Combine(Root(),"TTY.Web/Areas/Game/Controllers/GameConfigWeightsController.cs"));

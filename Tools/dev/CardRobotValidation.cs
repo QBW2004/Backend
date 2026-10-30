@@ -77,6 +77,23 @@ class CardRobotValidation
                     using (var ef = new GameDbContext()) Check(B_Robot.GetCardRobots(ef, 5, "").Sum(r => r.ROBOT_NO) == 2, "no concurrent overflow");
                     sql("UPDATE roomtableconfig SET Enabled=0 WHERE TableIndex=2");
                     Check(bll.AddCardRobots(5, 1, "").code == 0, "current reduced capacity used");
+                    // 设置总数（后台“机器人数”实际调用）：可增可减，范围 0~启用机台数
+                    sql("UPDATE roomtableconfig SET Enabled=1 WHERE TableIndex=2");
+                    sql("DELETE FROM robot_seat");
+                    foreach (int count in new[] { -1, 3 }) Check(bll.SetCardRobots(5, count, "").code == 0, "set out of range");
+                    Check(bll.SetCardRobots(5, 2, "").code == 1, "set up to capacity");
+                    using (var ef = new GameDbContext()) Check(B_Robot.GetCardRobots(ef, 5, "").Sum(r => r.ROBOT_NO) == 2, "set increases");
+                    Check(bll.SetCardRobots(5, 1, "").code == 1, "set decreases");
+                    using (var ef = new GameDbContext()) Check(B_Robot.GetCardRobots(ef, 5, "").Sum(r => r.ROBOT_NO) == 1, "set decreased to target");
+                    Check(bll.SetCardRobots(5, 1, "lineA").code == 1, "set other line");
+                    Check(bll.SetCardRobots(5, 0, "").code == 1, "set to zero");
+                    using (var ef = new GameDbContext())
+                    {
+                        Check(B_Robot.GetCardRobots(ef, 5, "").Count == 0, "zero removes rows");
+                        Check(B_Robot.GetCardRobots(ef, 5, "lineA").Sum(r => r.ROBOT_NO) == 1, "other line untouched");
+                    }
+                    Check(bll.SetCardRobots(5, 1, "missing").code == 0, "set unknown line rejected");
+                    Check(bll.SetCardRobots(54, 1, "").code == 0, "set mjhl rejected");
                 }
                 finally { sql("DROP DATABASE `" + schema + "`"); }
             }

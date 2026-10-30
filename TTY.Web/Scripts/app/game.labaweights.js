@@ -13,12 +13,36 @@
         generation++; previewNumber++; clearTimeout(timer); state = null;
         $('#labaWeights').hide(); $('#lwEditor').hide(); $('#lwSave').prop('disabled', true);
     };
-    function input(label, index, value, kind, hint) {
+    var SCALE = 10000; // 当前游戏的主权重口径：明星97/水果机 10000，水浒传 100000（由服务端 scale 下发）
+    // 明星97/水浒传第 0 项是“未中奖”：只读，＝10000－中奖奖型合计；水果机没有未中奖项
+    function noWinIndex(game, items) { return game !== 40 && items.length && items[0].code === 0 ? 0 : -1; }
+    function input(label, index, value, kind, hint, readOnly) {
         var box = $('<label>').css({ display: 'flex', flexDirection: 'column', gap: '3px', padding: '6px' });
         $('<span>').text(label).appendTo(box);
-        $('<input type="number" min="0" max="1000000" step="1">').val(value).attr('data-' + kind, index).css('width', '130px').appendTo(box);
+        var max = kind === 'extra' ? (index === 64 ? 512 : 10000) : SCALE;
+        var el = $('<input type="number" min="0" step="1">').attr('max', max).val(value).attr('data-' + kind, index).css('width', '130px').appendTo(box);
+        if (readOnly) el.prop('readonly', true).attr('data-nowin', '1').css({ background: '#eef2f7', color: '#48566d' });
         if (hint) $('<small>').text(hint).css('color', '#637087').appendTo(box);
         return box;
+    }
+    // 倍数一律取整显示（按单线注=1 计）；水浒传全盘奖另标总押注倍数（单线注×9），明星97七三连按全盘3个七结算
+    function meanHint(game, item) {
+        if (item.code === 0) return '＝' + SCALE + ' － 中奖奖型合计（自动计算）';
+        var text = Math.round(item.mean) + ' 倍单线注';
+        return text;
+    }
+    // 中奖奖型合计与未中奖自动值；返回中奖合计（输入不合法时按 0 计，read() 会再报错）
+    function syncNoWin() {
+        if (!state || state.noWin < 0) return 0;
+        var wins = 0;
+        $('#lwMain input[data-main]').each(function () {
+            if (Number($(this).attr('data-main')) === state.noWin) return;
+            var v = $(this).val(); if (/^\d+$/.test(v)) wins += Number(v);
+        });
+        $('#lwMain input[data-nowin]').val(wins <= SCALE ? SCALE - wins : '');
+        $('#lwWinSum').text('中奖奖型合计 ' + wins + ' / ' + SCALE + '，未中奖 ' + (wins <= SCALE ? SCALE - wins : '—'))
+            .css('color', wins > SCALE ? '#b42318' : '#48566d');
+        return wins;
     }
     function result(r) {
         $('#lwRtp').text('理论 RTP ' + r.totalRtp.toFixed(4) + '%');
@@ -29,10 +53,11 @@
     function read() {
         var c = JSON.parse(JSON.stringify(state.config));
         c.enabled = $('#lwEnabled').prop('checked'); c.extra[0] = $('#lwBonus').prop('checked') ? 1 : 0;
+        if (state.noWin >= 0 && syncNoWin() > SCALE) throw new Error('中奖奖型权重合计不能超过' + SCALE + '。');
         $('#lwMain input,#lwExtra input').each(function () {
-            var value = $(this).val();
-            if (!/^\d+$/.test(value) || Number(value) > 1000000) throw new Error('权重必须为0至1000000的整数。');
-            var main = $(this).attr('data-main'), extra = $(this).attr('data-extra');
+            var value = $(this).val(), main = $(this).attr('data-main'), extra = $(this).attr('data-extra');
+            var max = extra === '64' ? 512 : (extra !== undefined ? 10000 : SCALE);
+            if (!/^\d+$/.test(value) || Number(value) > max) throw new Error(extra === '64' ? '小玛丽最大回合范围为27至512。' : '权重必须为0至' + max + '的整数。');
             if (main !== undefined) c.main[Number(main)] = Number(value);
             if (extra !== undefined) c.extra[Number(extra)] = Number(value);
         });
@@ -74,17 +99,22 @@
         send(LABA_WEIGHTS_URLS.get, { gameId: game, tableIndex: id % 1000 }, function (data) {
             if (gen !== generation || id !== scope()) return;
             if (!data || data.code !== 1) { status(data && data.content || '加载失败。', true); return; }
-            state = { config: data.config, gameId: game, tableIndex: id % 1000 };
+            SCALE = data.scale || (game === 53 ? 100000 : 10000);
+            state = { config: data.config, gameId: game, tableIndex: id % 1000, noWin: noWinIndex(game, data.items) };
             $('#lwEnabled').prop('checked', data.config.enabled); $('#lwBonus').prop('checked', data.config.extra[0] === 1); $('#lwBet').val(1);
             var main = $('#lwMain').empty();
-            data.items.forEach(function (item, i) { main.append(input(item.name, i, data.config.main[i], 'main', game === 40 ? '' : '含叠加奖平均 ' + item.mean.toFixed(4) + ' 倍')); });
+            if (state.noWin >= 0) main.append($('<div id="lwWinSum">').css({ gridColumn: '1 / -1', padding: '0 6px' }));
+            data.items.forEach(function (item, i) { main.append(input(item.name, i, data.config.main[i], 'main', game === 40 ? '' : meanHint(game, item), i === state.noWin)); });
+            syncNoWin();
             extras(game, data.config); result(data.result); $('#lwEditor').show(); $('#lwSave').prop('disabled', false);
             if (data.stale) status('本机台原先保存的权重与当前目录不匹配；下方为默认值，请确认后勾选启用并保存。', true);
+            else if (data.converted) status('原权重已按比例换算为每 ' + SCALE + ' 次（不足 1 次的奖型变为 0，请核对理论 RTP）；保存后才生效。', true);
             else status(data.config.enabled ? '已启用相对权重；下方为已保存配置。' : '当前使用旧配置；下方是新模式默认试算，勾选启用后保存。', false);
         });
     };
     $(function () {
         $('#labaWeights').on('input change', 'input', function () {
+            syncNoWin();
             clearTimeout(timer); previewNumber++; $('#lwRtp').text('计算中…');
             status('配置已修改，正在试算；尚未保存。', false); timer = setTimeout(preview, 300);
         });
@@ -96,7 +126,7 @@
             send(LABA_WEIGHTS_URLS.save, payload(c), function (data) {
                 saving = false;
                 if (gen !== generation) return;
-                $('#labaWeights input,#lwSave').prop('disabled', false); status(data && data.content || '保存失败。', !data || data.code !== 1 || !data.hotReload);
+                $('#labaWeights input,#lwSave').prop('disabled', false); syncNoWin(); status(data && data.content || '保存失败。', !data || data.code !== 1 || !data.hotReload);
                 if (data && data.code === 1) { state.config = c; result(data.result); }
             });
         });
