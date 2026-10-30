@@ -20,8 +20,72 @@
                 pluginInit();
                 //初始化查询
                 queryData();
+                // 超管：预取可玩游戏名称，供列表「可玩游戏」列与勾选框使用
+                if (IS_SUPER_ADMIN) loadPlayableGames('', function () { });
             });
         })
+        var IS_SUPER_ADMIN = @((loginUser?.UserPriv == 0).ToString().ToLower());
+        // 玩家可玩游戏（2026-10-30）：超管创建/修改直属代理时勾选，整条线（该代理及其下级代理、玩家）只能玩、只能看到这些游戏
+        var PLAYABLE_GAMES = null;
+        function loadPlayableGames(id, callback) {
+            request('/Game/AgencyInfo/GetPlayableGames', { ID: id || '' }, function (data) {
+                if (!data || data.code != 1 || !data.datas) {
+                    showAgencyResult(data);
+                    return;
+                }
+                PLAYABLE_GAMES = data.datas.Games || [];
+                callback(data.datas.Selected);
+            });
+        }
+        function renderPlayableBox($box, selected) {
+            $box.empty();
+            $.each(PLAYABLE_GAMES || [], function (i, g) {
+                var checked = (!selected || selected.indexOf(g.GameId) >= 0) ? ' checked' : '';
+                $box.append('<label class="playable-item"><input type="checkbox" value="' + g.GameId + '"' + checked + ' />' + $('<span></span>').text(g.Name).html() + '</label>');
+            });
+        }
+        function collectPlayable($box) {
+            return $box.find('input:checked').map(function () { return this.value; }).get().join(',');
+        }
+        function fmtPlayable(value, rowData, rowIndex) {
+            if (!rowData || rowData.PRIV != 1) return '';
+            if (!value) return '不限';
+            var names = [];
+            $.each(String(value).split(','), function (i, id) {
+                var name = id;
+                $.each(PLAYABLE_GAMES || [], function (j, g) { if (String(g.GameId) === $.trim(id)) name = g.Name; });
+                names.push(name);
+            });
+            return $('<span></span>').text(names.join('、')).html();
+        }
+        function showPlayableWin(uid) {
+            loadPlayableGames(uid, function (selected) {
+                openWin({
+                    winId: '#playableWin',
+                    title: '【玩家可玩游戏】',
+                    iconCls: 'icon-user_red',
+                    callBack: function () {
+                        $('#hfPlayableID').val(uid);
+                        $('#txtE_PlayableID').textbox('setValue', uid);
+                        renderPlayableBox($('#editPlayableBox'), selected);
+                    }
+                });
+            });
+        }
+        function SavePlayableGames() {
+            var games = collectPlayable($('#editPlayableBox'));
+            if (!games) {
+                showAgencyToast('请至少勾选一款玩家可玩游戏！', 'warning');
+                return;
+            }
+            request('/Game/AgencyInfo/SavePlayableGames', { ID: $('#hfPlayableID').val(), PlayableGames: games }, function (data) {
+                showAgencyResult(data);
+                if (data && data.code == 1) {
+                    $('#playableWin').dialog('close');
+                    $('#tb_AgencyInfo').datagrid('reload');
+                }
+            });
+        }
         //重置表格大小
         function setGridSize(param) {
             var w = $(window).width() - 8;
@@ -100,6 +164,8 @@
             if (canShowAgencyLimit(rowData)) {
                 features.push('<a href="javascript:void(0)" class="agency-action-link agency-action-feature" onclick="showLimitWin(\'' + rowData.ID + '\')">分代上限</a>');
             }
+            if (IS_SUPER_ADMIN && rowData.PRIV == 1)
+                features.push('<a href="javascript:void(0)" class="agency-action-link agency-action-feature" onclick="showPlayableWin(\'' + rowData.ID + '\')">可玩游戏</a>');
             @if (loginUser?.UserPriv == 0)
             {
                 @Html.Raw("features.push('<a href=\"javascript:void(0)\" class=\"agency-action-link agency-action-feature\" onclick=\"showInviteWin(\\\'' + rowData.ID + '\\\',\\\'' + (rowData.InviteCode || '') + '\\\')\">邀请码</a>');");
@@ -423,6 +489,7 @@
                         title: '【添加代理】',
                         iconCls: 'icon-user_add',
                         callBack: function () {
+                            if (IS_SUPER_ADMIN) loadPlayableGames('', function () { renderPlayableBox($('#addPlayableBox'), null); });
                             $('#addWin').dialog({
                                 onClose: function () {
                                     $('#form3').form('reset');
@@ -447,6 +514,13 @@
             if (para.PWD.length < 6) {
                 showAgencyToast('密码不能少于6个字符！', 'warning');
                 return;
+            }
+            if (IS_SUPER_ADMIN) {
+                para.PlayableGames = collectPlayable($('#addPlayableBox'));
+                if (!para.PlayableGames) {
+                    showAgencyToast('请至少勾选一款玩家可玩游戏！', 'warning');
+                    return;
+                }
             }
             request('/Game/AgencyInfo/AddAgencyInfo', para, function (data) {
                 //提示消息
@@ -559,6 +633,10 @@
             color: red;
         }
 
+        .playable-box { max-width: 360px; max-height: 220px; overflow-y: auto; }
+        .playable-item { display: inline-block; min-width: 110px; margin: 2px 8px 2px 0; white-space: nowrap; cursor: pointer; }
+        .playable-item input { vertical-align: middle; margin-right: 4px; }
+        .playable-tip { color: #999; margin: 4px 0 0; }
         .agency-info-grid .agency-action-enabled,
         .agency-info-grid .agency-state-on {
             color: #22b14c;
@@ -616,6 +694,10 @@
 
             <th field="Profit" width="85" formatter="fmtCoins">盈利</th>
             <th field="RE_ENABLE" width="85" formatter="fmtRechargeSwitch">账号状态</th>
+            @if (loginUser?.UserPriv == 0)
+            {
+                <th field="PlayableGames" width="160" formatter="fmtPlayable">可玩游戏</th>
+            }
             <th field="AGENCY_LIMIT" width="80" formatter="fmtAgencyLimit">分代上限</th>
 @if (loginUser?.UserPriv == 0 || loginUser?.IsViewAgentPwd == 1)
 {
@@ -699,6 +781,16 @@
                     <input class="easyui-passwordbox win-txt" name="PWD" />
                 </td>
             </tr>
+            @if (loginUser?.UserPriv == 0)
+            {
+                <tr>
+                    <td align="right" valign="top" style="padding-top:8px;">可玩游戏：</td>
+                    <td align="left" class="pd5">
+                        <div id="addPlayableBox" class="playable-box"></div>
+                        <p class="playable-tip">整条线只能玩、只能看到勾选的游戏（排行榜、中奖播报、控制同样只显示这些）。</p>
+                    </td>
+                </tr>
+            }
             <tr>
                 <td align="center" colspan="2" class="pd5">
                     <a href="javascript:void(0);" class="easyui-linkbutton" onclick="SaveAgencyInfo()" data-options="plain:true,iconCls:'icon-save'">保存</a>
@@ -739,6 +831,36 @@
     </form>
 </div>
 
+@*玩家可玩游戏（仅超管，直属代理）*@
+<div id="playableWin" class="hide">
+    <form id="form7">
+        <table cellpadding="0" cellspacing="0" border="0" width="100%" align="center">
+            <tr>
+                <td colspan="2" align="left" style="padding-left: 50px;color:#999;">
+                    <p style="margin-left:-35px;">温馨提示：整条线（该代理及其下级代理、玩家）只能玩、只能看到勾选的游戏；玩家下次进入游戏时生效，正在游戏中的不踢。</p>
+                </td>
+            </tr>
+            <tr>
+                <td align="right">代理ID：</td>
+                <td align="left" class="pd5">
+                    <input class="easyui-textbox win-txt" id="txtE_PlayableID" disabled />
+                </td>
+            </tr>
+            <tr>
+                <td align="right" valign="top" style="padding-top:8px;">可玩游戏：</td>
+                <td align="left" class="pd5">
+                    <div id="editPlayableBox" class="playable-box"></div>
+                </td>
+            </tr>
+            <tr>
+                <td align="center" colspan="2" class="pd5">
+                    <input type="hidden" id="hfPlayableID" />
+                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="SavePlayableGames()" data-options="plain:true,iconCls:'icon-save'">保存</a>
+                </td>
+            </tr>
+        </table>
+    </form>
+</div>
 @*设置邀请码*@
 <div id="inviteWin" class="hide">
     <form id="form6">

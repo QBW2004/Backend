@@ -41,10 +41,12 @@
         .gc-btn-default { background: #fff; color: #5a6573; border-color: #d4dae3; margin-right: 10px; }
         .gc-btn-default:hover { border-color: #2f6fed; color: #2f6fed; }
         .gc-empty { padding: 40px 16px; text-align: center; color: #9aa4b1; font-size: 13px; }
-        .gc-toolbar { display: flex; gap: 10px; margin-bottom: 12px; align-items: center; }
+        .gc-toolbar { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; align-items: center; }
         .gc-toolbar .gc-lbl { font-size: 13px; color: #5a6573; }
         .gc-toolbar #gcTypeSel { width: 160px; }
         .gc-toolbar #gcGameSel { width: 220px; }
+        .gc-toolbar #gcLineSel { width: 200px; }
+        .gc-line-tip { font-size: 12px; color: #d97a00; }
         .gc-hint { font-size: 12px; color: #9aa4b1; margin-top: 4px; line-height: 1.6; }
         .gc-guide { margin: 0 0 14px; padding: 10px 12px; border: 1px solid #dce8ff; border-radius: 6px; background: #f7faff; color: #526173; font-size: 12px; line-height: 1.7; }
         .gc-refresh { width: 30px; height: 30px; line-height: 30px; text-align: center; border-radius: 6px; color: #5a6573; cursor: pointer; transition: background .15s, color .15s; }
@@ -71,6 +73,11 @@
         </select>
         <span class="gc-lbl">选择游戏：</span>
         <select id="gcGameSel" class="gc-select"></select>
+        <span class="gc-lbl" title="不同直属代理的整条线可以用各自的一套桌台参数；整条线的玩家按所属直属代理取桌台">代理：</span>
+        <select id="gcLineSel" class="gc-select"><option value="">公共桌台</option></select>
+        <a href="javascript:;" id="gcLineCopy" class="gc-newbtn" style="display:none;" title="把本游戏全部公共桌台的参数复制一套，作为该线的专属桌台">从公共桌台复制一套</a>
+        <a href="javascript:;" id="gcLineRecall" class="gc-newbtn" style="display:none;" title="收回该线的专属桌台，该线玩家回到公共桌台">收回专属桌台</a>
+        <span id="gcLineTip" class="gc-line-tip"></span>
     </div>
 
     <div class="gc-grid">
@@ -106,6 +113,7 @@
                     <input type="hidden" id="gcId" name="ID" value="-1" />
                     <input type="hidden" id="gcGameId" name="GAME_ID" value="-1" />
                     <input type="hidden" id="gcGameType" name="GAME_TYPE" value="-1" />
+                    <input type="hidden" id="gcLine" name="LINE" value="" />
 
                     <div class="gc-common gc-base-info">
                     <div class="gc-section-title">基础信息</div>
@@ -487,7 +495,10 @@
         gameList: '@Url.Action("GetGameList", "GameConfig", new { area = "Game" })',
         tableConfig: '@Url.Action("GetTableConfig", "GameConfig", new { area = "Game" })',
         save: '@Url.Action("SaveTableConfig", "GameConfig", new { area = "Game" })',
-        delete: '@Url.Action("DeleteTableConfig", "GameConfig", new { area = "Game" })'
+        delete: '@Url.Action("DeleteTableConfig", "GameConfig", new { area = "Game" })',
+        lineOptions: '@Url.Action("GetLineOptions", "GameConfig", new { area = "Game" })',
+        lineCopy: '@Url.Action("CopyPublicTablesToLine", "GameConfig", new { area = "Game" })',
+        lineRecall: '@Url.Action("RecallLineTables", "GameConfig", new { area = "Game" })'
     };
     var GC_GAMES = [];
     var GC_TABLES = [];
@@ -499,6 +510,75 @@
     ];
 
     function gcGetType() { return parseInt($('#gcGameType').val(), 10); }
+
+    // 代理线隔离（2026-10-30）：“代理”下拉选公共桌台或超管的某个直属代理。选中某线时左侧只列该线的专属桌台，
+    // 保存/删除仍走原接口和热更；该线还没有专属桌台时用「从公共桌台复制一套」生成，「收回专属桌台」让该线回到公共桌台。
+    var GC_LINE_INFO = null;
+    function gcCurLine() { return $('#gcLineSel').val() || ''; }
+    function gcLineCount(line) {
+        var n = 0;
+        $.each((GC_LINE_INFO && GC_LINE_INFO.Lines) || [], function (i, l) { if (l.id === line) n = l.count; });
+        return n;
+    }
+    function gcLoadLines(afterLoad) {
+        var gameId = parseInt($('#gcGameSel').val(), 10);
+        request(GC_URL.lineOptions, { GAME_ID: isNaN(gameId) ? -1 : gameId }, function (data) {
+            if (data && data.code == 1 && data.datas) {
+                GC_LINE_INFO = data.datas;
+                var cur = gcCurLine();
+                var $sel = $('#gcLineSel').empty();
+                $.each(GC_LINE_INFO.Lines || [], function (i, l) {
+                    var label = l.id === '' ? ('公共桌台（' + l.count + ' 桌）')
+                        : (l.text + (l.count > 0 ? '（专属 ' + l.count + ' 桌）' : '（用公共桌台）'));
+                    $sel.append($('<option></option>').attr('value', l.id).text(label));
+                });
+                var keep = $sel.find('option').filter(function () { return $(this).val() === cur; }).length > 0;
+                $sel.val(keep ? cur : '');
+            }
+            gcApplyLineUi();
+            if (typeof afterLoad === 'function') afterLoad();
+        });
+    }
+    function gcApplyLineUi() {
+        var line = gcCurLine();
+        var gameId = parseInt($('#gcGameSel').val(), 10);
+        var hasGame = !isNaN(gameId) && gameId >= 0;
+        var owned = line ? gcLineCount(line) : 0;
+        var ready = !GC_LINE_INFO || GC_LINE_INFO.Ready !== false;
+        $('#gcLine').val(line);
+        $('#gcLineCopy').toggle(ready && hasGame && !!line && owned === 0);
+        $('#gcLineRecall').toggle(ready && hasGame && !!line && owned > 0);
+        $('#gcNewTable').toggle(!line);
+        var tip = '';
+        if (!ready) tip = '数据库还没有执行代理线补丁，暂不能分配专属桌台';
+        else if (hasGame && line && owned === 0) tip = '该线目前使用公共桌台';
+        else if (hasGame && line) tip = '以下为该线专属桌台，参数只对该线玩家生效（需新版客户端）';
+        $('#gcLineTip').text(tip);
+    }
+    function gcLineToken() { return $('#gcForm [name="__RequestVerificationToken"]').val(); }
+    function gcReloadLinesAndTables() { gcLoadLines(function () { gcLoadTables(); }); }
+    function gcLineCopy() {
+        var line = gcCurLine();
+        var gameId = parseInt($('#gcGameSel').val(), 10);
+        if (!line || isNaN(gameId) || gameId < 0) return;
+        confirm('确定把本游戏全部公共桌台的参数复制一套给【' + line + '】吗？\n复制后该线玩家进入本游戏只看到这些专属桌台（需新版客户端），桌台参数可在左侧逐桌修改。', function () {
+            request(GC_URL.lineCopy, { GAME_ID: gameId, GAME_TYPE: gcGetType(), LINE: line, __RequestVerificationToken: gcLineToken() }, function (data) {
+                gcMsg(data);
+                if (data && data.code == 1) gcReloadLinesAndTables();
+            });
+        });
+    }
+    function gcLineRecall() {
+        var line = gcCurLine();
+        var gameId = parseInt($('#gcGameSel').val(), 10);
+        if (!line || isNaN(gameId) || gameId < 0) return;
+        confirm('确定收回【' + line + '】在本游戏的专属桌台吗？\n收回后该线玩家重新进入游戏会回到公共桌台；专属桌号保留但谁都看不到，下次分配时优先复用。', function () {
+            request(GC_URL.lineRecall, { GAME_ID: gameId, LINE: line, __RequestVerificationToken: gcLineToken() }, function (data) {
+                gcMsg(data);
+                if (data && data.code == 1) gcReloadLinesAndTables();
+            });
+        });
+    }
 
     // 加芬幅度归一化: 鱼机(2) 最小 0.1, 其它类型最小 1 且必须整数
     function gcNormSs(val, type) {
@@ -597,6 +677,10 @@
         var $list = $('#gcTableList');
         $list.empty();
         if (GC_TABLES.length < 1) {
+            if (gcCurLine()) {
+                $('#gcTableEmpty').show().text('该线目前使用公共桌台，点上方「从公共桌台复制一套」生成专属桌台。');
+                return;
+            }
             $('#gcTableEmpty').show().text('该游戏暂无桌台，填写参数后点击右上角“新建桌台”。');
             return;
         }
@@ -690,7 +774,7 @@
             $('#gcMinBet,#gcMaxBet').attr('min', '0');
         }
         gcApplyViceDraw();
-        $('#gcNewTable').toggle(true);
+        $('#gcNewTable').toggle(!gcCurLine());
     }
 
     function gcUpdateSaveBtn() {
@@ -716,10 +800,11 @@
             gcUpdateSaveBtn();
             return;
         }
-        request(GC_URL.tableConfig, { GAME_ID: gameId, GAME_TYPE: gameType }, function (data) {
+        var requestLine = gcCurLine();
+        request(GC_URL.tableConfig, { GAME_ID: gameId, GAME_TYPE: gameType, LINE: requestLine }, function (data) {
             var currentGameId = parseInt($('#gcGameSel').val(), 10);
             var currentGameType = parseInt($('#gcGameSel').find('option:selected').attr('data-type'), 10);
-            if (requestSeq !== gcLoadTables.requestSeq || currentGameId !== gameId || currentGameType !== gameType) {
+            if (requestSeq !== gcLoadTables.requestSeq || currentGameId !== gameId || currentGameType !== gameType || gcCurLine() !== requestLine) {
                 return;
             }
             if (!data || data.code != 1) {
@@ -730,6 +815,10 @@
             gcRenderTableList();
             gcSetParaVisible(true);
             if (typeof afterLoad === 'function') afterLoad();
+            else if (gcCurLine()) {
+                if (GC_TABLES.length > 0) gcSelectTableById(GC_TABLES[0].id);
+                else gcSetParaVisible(false);
+            }
             else if (gameType === 3) {
                 if (GC_TABLES.length > 0) gcSelectTableById(GC_TABLES[0].id);
             }
@@ -850,6 +939,10 @@
 
     function gcNewTable() {
         var type = gcGetType();
+        if (gcCurLine()) {
+            showToast('专属桌台请用「从公共桌台复制一套」生成，不能直接新建！', 'warning');
+            return;
+        }
         if (type != 0 && type != 1 && type != 2 && type != 3) {
             showToast('请先选择游戏类型与游戏！', 'warning');
             return;
@@ -1634,6 +1727,14 @@
         }
         var savedId = parseInt($('#gcId').val(), 10);
         var wasNew = isNaN(savedId) || savedId < 0;
+        // 已分配专属桌台后再新建公共桌台：新桌号排在专属桌台之后，旧版客户端按连续位置取配置，进不了这张桌，先确认
+        if (wasNew && !gcCurLine() && GC_LINE_INFO && (GC_LINE_INFO.Owned > 0 || GC_LINE_INFO.Recycled > 0) && !gcSave.confirmedAppend) {
+            confirm('本游戏已经分配过专属桌台，新建的公共桌台会排在专属桌台之后，旧版客户端进不了这张桌。\n确定继续新建吗？', function () {
+                gcSave.confirmedAppend = true;
+                try { gcSave(); } finally { gcSave.confirmedAppend = false; }
+            });
+            return;
+        }
         var para = $('#gcForm').serializeObject();
         // 彩金奖池：区块不可见、四个值与回填一致(未改动)、或全部留空时不带 JP_* 字段，
         // 后端跳过奖池登记；部分留空保留字段交后端校验报错。
@@ -1685,9 +1786,13 @@
         pluginInit();
         gcLoadGames();
         gcSetParaVisible(false);
+        gcLoadLines();
         $('#gcTypeSel').on('change', gcFillGameSel);
-        $('#gcGameSel').on('change', function () { gcLoadTables(); });
-        $('#gcRefresh').on('click', function () { gcLoadTables(); });
+        $('#gcGameSel').on('change', function () { gcReloadLinesAndTables(); });
+        $('#gcLineSel').on('change', function () { gcApplyLineUi(); gcLoadTables(); });
+        $('#gcLineCopy').on('click', gcLineCopy);
+        $('#gcLineRecall').on('click', gcLineRecall);
+        $('#gcRefresh').on('click', function () { gcReloadLinesAndTables(); });
         $('#gcDelete').on('click', gcDelete);
         $('#gcReset').on('click', function () {
             // 恢复默认会把当前表单所有参数改为出厂默认（保存后即覆盖当前桌台配置），二次确认防止误触

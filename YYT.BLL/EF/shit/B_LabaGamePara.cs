@@ -468,6 +468,9 @@ namespace YYT.BLL.EF
                             "UPDATE cardpayoutprofile SET TableId=TableId-100001 WHERE GAME_ID={0} AND TableId>{1}",
                             gameId, tableIndex + 100000);
 
+                        // 代理线隔离：桌台归属跟着高位桌号左移（无 roomtableowner 表时跳过）
+                        LineTables.OnTableDeleted(ef, gameId, tableIndex);
+
                         // 同步 pararoom base 行 NUM 与 ROOM_MAX=1
                         int cfgCnt = ef.Database.SqlQuery<int>(
                             "SELECT COUNT(*) FROM roomtableconfig WHERE GAME_ID=" + gameId).FirstOrDefault();

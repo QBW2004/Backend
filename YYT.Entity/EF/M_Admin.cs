@@ -240,6 +240,13 @@ namespace YYT.Entity
         public int AgencyGroupIndex { get; set; }
 
         /// <summary>
+        /// 玩家可玩游戏（2026-10-30）：仅直属代理（PRIV=1）有效，逗号分隔 GameId，空 = 不限；下级代理与玩家继承。
+        /// 不映射 EF（SQL 补丁执行前也能正常加载代理），由 LineScopeRules 走原生 SQL 读写。
+        /// </summary>
+        [NotMapped]
+        public string PlayableGames { get; set; }
+
+        /// <summary>
         /// 前端代理树深度，用于序号列折叠子级。
         /// </summary>
         [NotMapped]

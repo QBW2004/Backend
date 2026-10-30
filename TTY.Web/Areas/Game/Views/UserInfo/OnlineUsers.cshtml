@@ -524,7 +524,7 @@
     @*仅含线上开放游戏的控牌项（2026-10-16 起拉霸三款 15/16/17 下线不再提供选择；
        历史控牌值回显仍由 labaTypeName/valSelDataShz 等保留，勿删）*@
     function totalCardActionData() {
-        return [
+        return window.mthFilterCardActions([
             { id: 5, text: '大字版控制', selected: true },
             { id: 7, text: '点石成金控制' },
             { id: 8, text: 'ATT满花版控制' },
@@ -532,7 +532,7 @@
             { id: 13, text: 'NBA' },
             { id: 14, text: '火凤凰' },
             { id: 19, text: '麻将胡了' }
-        ];
+        ]);
     }
     function totalModeName(m) {
         m = parseInt(m);

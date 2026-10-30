@@ -1323,6 +1323,16 @@ namespace YYT.Web.Areas.Game.Controllers
                 bool mobileFixedCard = form.Q<int>("MobileRequest", 0) == 1;
 
                 M_LoginUser loginUser = WebHelper.GetLoginInfo();
+                // 控牌只能下给玩家所在代理线可玩的游戏（2026-10-30 代理线隔离）
+                if (mode == (int)EControlMode.TotalCard)
+                {
+                    int cardGameId = LineScopeRules.CardActionToGameId(cardAction);
+                    using (var ef = new GameDbContext())
+                    {
+                        if (cardGameId > 0 && !LineScopeRules.IsGameAllowed(LineScopeRules.GetPlayableGamesOfPlayer(ef, id), cardGameId))
+                            return Json(new Msg(0, "该玩家所在代理线不能玩此游戏，无法控牌！"));
+                    }
+                }
                 msg = new B_UserControl().ApplyTotalControl(loginUser, id, mode, strength, goldThreshold,
                     cardAction, cardValue, cardNumber, cardTotal, mobileFixedCard);
             }

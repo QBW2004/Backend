@@ -216,6 +216,7 @@
     <Compile Include="Areas\Game\Controllers\AccountLogController.cs" />
     <Compile Include="Areas\Game\Controllers\AdminController.cs" />
     <Compile Include="Areas\Game\Controllers\AgencyInfoController.cs" />
+    <Compile Include="Areas\Game\Controllers\ClientPackageController.cs" />
 
     <Compile Include="Areas\Game\Controllers\AbnormalController.cs" />
     <Compile Include="Areas\Game\Controllers\AgencyRecordController.cs" />
@@ -1102,6 +1103,7 @@
     <Content Include="Areas\Game\Views\UserInfo\Index.cshtml" />
     <Content Include="Config\log4net.config" />
     <Content Include="Areas\Game\Views\AgencyInfo\Index.cshtml" />
+    <Content Include="Areas\Game\Views\ClientPackage\Index.cshtml" />
     <Content Include="Areas\Game\Views\UserRecord\Index.cshtml" />
     <Content Include="Areas\Game\Views\GameConfig\ConfigEditor.cshtml" />
     <Content Include="Areas\Game\Views\UserInfo\Register.cshtml" />

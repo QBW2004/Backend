@@ -172,7 +172,7 @@
         $('#rowGold').toggle(!isCard);
         $('#rowCardAction, #rowCardValue').toggle(isCard);
         if (isCard) {
-            fillSelect($('#ctrlCardAction'), M.CARD_ACTIONS, true);
+            fillSelect($('#ctrlCardAction'), M.playableCardActions(M.CARD_ACTIONS), true);
             fillSelect($('#ctrlCardValue'), M.cardTypeData(parseInt($('#ctrlCardAction').val(), 10)), false);
         }
     }

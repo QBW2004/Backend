@@ -92,6 +92,7 @@ namespace YYT.Web.Areas.Game.Controllers
                             item.RemainingScore = scoreMap.TryGetValue(item.ID, out score) ? score : 0;
                             item.LastLoginTime = loginMap.TryGetValue(item.ID, out login) ? (DateTime?)login : null;
                         }
+                        LineScopeRules.FillPlayableGames(ef, list.rows);
                     }
 
                     // 代理密码脱敏：非超级管理只有拥有查看代理密码权限时可见，且目标必须在管理范围内
@@ -219,7 +220,10 @@ namespace YYT.Web.Areas.Game.Controllers
                         UpdateTime = agent.UpdateTime,
                         LastLoginTime = lastLogin,
                         IsCreateAgent = agent.IsCreateAgent == 1 ? 1 : 0,
-                        CanCreateChildAgent = AgencyRules.CanCreateChild(agent.PRIV ?? -1, agent.AGENCY_LIMIT, agent.IsCreateAgent)
+                        CanCreateChildAgent = AgencyRules.CanCreateChild(agent.PRIV ?? -1, agent.AGENCY_LIMIT, agent.IsCreateAgent),
+                        LineAgent = LineScopeRules.ResolveLineOfAgency(ef, agent.ID),
+                        PlayableGames = agent.PRIV == 1 ? LineScopeRules.ReadPlayableCsv(ef, agent.ID) : null,
+                        PlayableGameNames = PlayableGameNames(ef, LineScopeRules.GetLinePlayableGames(ef, LineScopeRules.ResolveLineOfAgency(ef, agent.ID)))
                     };
                 }
             }
@@ -654,7 +658,40 @@ namespace YYT.Web.Areas.Game.Controllers
                     }
 
 
+                    // 超管创建直属代理（PRIV=1）必须勾选玩家可玩游戏：整条线只能玩、只能看到这些游戏（排行榜/播报/控制同口径）
+                    string playableCsv = null;
+                    bool needPlayable = loginUser.UserPriv == 0 && entity.PRIV == 1;
+                    if (needPlayable)
+                    {
+                        using (var ef = new GameDbContext())
+                        {
+                            string playableError = LineScopeRules.ValidatePlayableSelection(form.Q<string>("PlayableGames"),
+                                LineScopeRules.GetEnabledGames(ef).Select(g => g.GameId), out playableCsv);
+                            if (playableError != null)
+                            {
+                                msg.content = playableError;
+                                return Json(msg);
+                            }
+                        }
+                    }
+
                     msg = bll.AddAgencyInfo(entity);
+                    if (needPlayable && msg != null && msg.code == 1)
+                    {
+                        try
+                        {
+                            using (var ef = new GameDbContext())
+                            {
+                                if (LineScopeRules.SavePlayableGames(ef, entity.ID, playableCsv) <= 0)
+                                    msg.content += "（玩家可玩游戏未保存，请在代理列表点「可玩游戏」补设）";
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.AgencyInfoController), ex);
+                            msg.content += "（玩家可玩游戏保存失败，请确认已执行数据库补丁后在代理列表补设）";
+                        }
+                    }
                 }
                 else
                 {
@@ -693,6 +730,104 @@ namespace YYT.Web.Areas.Game.Controllers
             entity.KickScope = 2;
             entity.ManageScope = 2;
         }
+        /// <summary>
+        /// 玩家可玩游戏：返回全部已开放游戏，以及 ID 所在线当前的可玩游戏（Selected 为 null 表示不限）。
+        /// 超管可查任意代理；其他代理只能查自己管理范围内的代理。
+        /// </summary>
+        [AjaxOnly]
+        [HttpPost]
+        public ActionResult GetPlayableGames(FormCollection form)
+        {
+            Msg msg = new Msg(0, "查询失败！");
+            try
+            {
+                M_LoginUser loginUser = WebHelper.GetLoginInfo();
+                if (loginUser == null)
+                    return Json(msg);
+                string id = (form.Q<string>("ID") ?? string.Empty).Trim();
+                using (var ef = new GameDbContext())
+                {
+                    if (!string.IsNullOrEmpty(id) && loginUser.UserPriv != 0 && id != loginUser.Accounts
+                        && !new B_Admin().CanManageAgent(ef, loginUser, id, true))
+                    {
+                        msg.content = "无权查看该代理！";
+                        return Json(msg);
+                    }
+                    var games = LineScopeRules.GetEnabledGames(ef).Select(g => new { g.GameId, g.Name, g.GameType }).ToList();
+                    List<int> selected = string.IsNullOrEmpty(id) ? null
+                        : LineScopeRules.GetLinePlayableGames(ef, LineScopeRules.ResolveLineOfAgency(ef, id));
+                    msg.code = 1;
+                    msg.content = "查询成功！";
+                    msg.datas = new { Games = games, Selected = selected };
+                }
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.AgencyInfoController), ex);
+            }
+            return Json(msg);
+        }
+
+        /// <summary>
+        /// 超管修改直属代理的玩家可玩游戏：至少一款、只能选已开放游戏；整条线的玩家下次进入子游戏时生效，在玩的不踢。
+        /// </summary>
+        [AjaxOnly]
+        [HttpPost]
+        public ActionResult SavePlayableGames(FormCollection form)
+        {
+            Msg msg = new Msg(0, "保存失败！");
+            try
+            {
+                M_LoginUser loginUser = WebHelper.GetLoginInfo();
+                if (loginUser == null)
+                    return Json(msg);
+                if (loginUser.UserPriv != 0)
+                {
+                    msg.content = "只有超级管理员可以设置玩家可玩游戏！";
+                    return Json(msg);
+                }
+                string id = (form.Q<string>("ID") ?? string.Empty).Trim();
+                using (var ef = new GameDbContext())
+                {
+                    M_Admin target = ef.Admins.AsNoTracking().FirstOrDefault(a => a.ID == id);
+                    if (target == null || target.PRIV != 1)
+                    {
+                        msg.content = "只能给超管的直属代理设置玩家可玩游戏！";
+                        return Json(msg);
+                    }
+                    string csv;
+                    string error = LineScopeRules.ValidatePlayableSelection(form.Q<string>("PlayableGames"),
+                        LineScopeRules.GetEnabledGames(ef).Select(g => g.GameId), out csv);
+                    if (error != null)
+                    {
+                        msg.content = error;
+                        return Json(msg);
+                    }
+                    if (LineScopeRules.SavePlayableGames(ef, target.ID, csv) > 0)
+                    {
+                        msg.code = 1;
+                        msg.content = "保存成功！该线玩家下次进入游戏时生效";
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.AgencyInfoController), ex);
+                msg.content = "保存失败：请确认已执行数据库补丁「多客户端包与代理线-20261030.sql」";
+            }
+            return Json(msg);
+        }
+
+        /// <summary>可玩游戏编号 → 展示文案（null = 不限）。</summary>
+        private static string PlayableGameNames(GameDbContext ef, List<int> playable)
+        {
+            if (playable == null)
+                return "不限";
+            Dictionary<int, string> names = ef.Games.AsNoTracking().Where(g => playable.Contains(g.GameId))
+                .Select(g => new { g.GameId, g.Name }).ToList().ToDictionary(g => g.GameId, g => g.Name);
+            return string.Join("、", playable.Select(id => names.ContainsKey(id) ? names[id] : ("游戏" + id)));
+        }
+
         [AjaxOnly]
         [HttpPost]
         public ActionResult SaveAgencyLimit(FormCollection form)

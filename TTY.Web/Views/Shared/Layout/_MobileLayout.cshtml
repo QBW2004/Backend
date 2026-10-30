@@ -38,6 +38,8 @@
         window.MConfig = {
             isRMB: @Html.Raw(isRMB ? "true" : "false"),
             exchangeRate: @exchangeRate,
+            // 代理线隔离：登录账号所在线的可玩游戏（null = 不限），控制页游戏下拉按它过滤
+            playableGames: @Html.Raw(YYT.BLL.EF.LineScopeRules.PlayableGamesJson(mUser)),
             page: '@Html.Raw(mPage)',
             token: '',
             user: {

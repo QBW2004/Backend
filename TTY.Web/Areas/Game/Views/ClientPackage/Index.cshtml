@@ -1,0 +1,207 @@
+﻿@{
+    Layout = "~/Views/Shared/Layout/_ContentLayout.cshtml";
+    ViewBag.RouteMap = "客户端包管理";
+}
+@section include_res{
+    <style>
+        .cp-wrap { padding: 16px; box-sizing: border-box; }
+        .cp-card { background: #fff; border: 1px solid #e5e9f0; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.04); }
+        .cp-hd { padding: 12px 16px; border-bottom: 1px solid #eef1f6; font-size: 14px; font-weight: 600; color: #1f2d3d; display: flex; align-items: center; justify-content: space-between; }
+        .cp-guide { margin: 12px 16px 0; padding: 10px 12px; border: 1px solid #dce8ff; border-radius: 6px; background: #f7faff; color: #526173; font-size: 12px; line-height: 1.8; }
+        .cp-table { width: 100%; border-collapse: collapse; font-size: 13px; color: #36404a; }
+        .cp-table th, .cp-table td { padding: 9px 10px; border-bottom: 1px solid #f0f2f6; text-align: left; white-space: nowrap; }
+        .cp-table th { background: #f7f9fc; color: #5a6573; font-weight: 600; }
+        .cp-table code { font-family: Consolas, monospace; background: #f5f6f8; padding: 1px 6px; border-radius: 4px; }
+        .cp-pill { font-size: 11px; padding: 1px 8px; border-radius: 10px; }
+        .cp-on { background: #e6f7ed; color: #1a9d57; }
+        .cp-off { background: #fbe9e9; color: #d33b3b; }
+        .cp-real { background: #ecf2ff; color: #2f6fed; }
+        .cp-link { color: #2f6fed; cursor: pointer; margin-right: 10px; }
+        .cp-link.danger { color: #d33b3b; }
+        .cp-btn { height: 32px; padding: 0 16px; border-radius: 6px; border: 1px solid #2f6fed; background: #2f6fed; color: #fff; font-size: 13px; cursor: pointer; }
+        .cp-btn.default { background: #fff; color: #5a6573; border-color: #d4dae3; }
+        .cp-empty { padding: 36px 16px; text-align: center; color: #9aa4b1; font-size: 13px; }
+        .cp-mask { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 9000; }
+        .cp-dialog { position: absolute; left: 50%; top: 80px; transform: translateX(-50%); width: 440px; max-width: calc(100% - 32px); background: #fff; border-radius: 8px; box-shadow: 0 8px 30px rgba(0,0,0,.18); }
+        .cp-dialog .cp-hd { border-radius: 8px 8px 0 0; }
+        .cp-form { padding: 14px 16px; }
+        .cp-field { margin-bottom: 12px; }
+        .cp-field > label { display: block; font-size: 13px; color: #5a6573; margin-bottom: 6px; }
+        .cp-input { width: 100%; height: 34px; padding: 0 10px; box-sizing: border-box; border: 1px solid #d4dae3; border-radius: 6px; font-size: 13px; }
+        .cp-hint { font-size: 12px; color: #9aa4b1; margin-top: 4px; line-height: 1.6; }
+        .cp-foot { padding: 12px 16px; border-top: 1px solid #eef1f6; text-align: right; }
+    </style>
+}
+<div class="cp-wrap">
+    <div class="cp-card">
+        <div class="cp-hd">
+            <span>客户端包（换皮包）</span>
+            <button type="button" class="cp-btn" id="cpAdd">新增客户端包</button>
+        </div>
+        <div class="cp-guide">
+            每套不同界面的 APK/IPA 在包内写一串自己的<strong>包口令</strong>，玩家登录大厅时服务端按口令识别是哪个包；口令没登记或包已停用，玩家会被提示升级游戏版本。
+            启用、停用对之后的新登录立即生效，正在游戏的玩家不受影响。<br />
+            包只决定界面，<strong>能玩哪些游戏、用哪套桌台看的是玩家所属的直属代理</strong>，与用哪个包无关。
+            “按真实桌号显示”的包才能进入有专属桌台的游戏；2026-10-30 之前发布的线上包都是 1 号默认包，它的口令不能改。
+        </div>
+        <div style="padding:12px 16px 16px;overflow-x:auto;">
+            <table class="cp-table">
+                <thead>
+                    <tr><th>编号</th><th>名称</th><th>包口令</th><th>状态</th><th>选桌方式</th><th>备注</th><th>更新时间</th><th>操作</th></tr>
+                </thead>
+                <tbody id="cpBody"></tbody>
+            </table>
+            <div class="cp-empty" id="cpEmpty" style="display:none;"></div>
+        </div>
+    </div>
+</div>
+
+<div class="cp-mask" id="cpMask">
+    <div class="cp-dialog">
+        <div class="cp-hd"><span id="cpTitle">新增客户端包</span><a href="javascript:;" class="cp-link" id="cpClose">关闭</a></div>
+        <form id="cpForm" class="cp-form" autocomplete="off">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="ID" id="cpId" value="0" />
+            <div class="cp-field">
+                <label>名称</label>
+                <input type="text" class="cp-input" name="Name" id="cpName" maxlength="50" placeholder="如：蓝色皮肤安卓包" />
+            </div>
+            <div class="cp-field">
+                <label>包口令</label>
+                <input type="text" class="cp-input" name="AppKey" id="cpAppKey" maxlength="32" placeholder="6~32 位字母或数字，与客户端包内一致" />
+                <div class="cp-hint">区分大小写。出包前把这串口令写进客户端（Network.cs 的 ClientAppKey），两边必须完全一致。</div>
+            </div>
+            <div class="cp-field">
+                <label>状态</label>
+                <select class="cp-input" name="Enabled" id="cpEnabled">
+                    <option value="1">启用</option>
+                    <option value="0">停用（该包无法登录）</option>
+                </select>
+            </div>
+            <div class="cp-field">
+                <label>选桌方式</label>
+                <select class="cp-input" name="RealTableIndex" id="cpReal">
+                    <option value="1">按真实桌号显示（新版客户端，可进入专属桌台）</option>
+                    <option value="0">按连续位置显示（旧版客户端，不能进入有专属桌台的游戏）</option>
+                </select>
+            </div>
+            <div class="cp-field">
+                <label>备注</label>
+                <input type="text" class="cp-input" name="Remark" id="cpRemark" maxlength="200" />
+            </div>
+        </form>
+        <div class="cp-foot">
+            <button type="button" class="cp-btn default" id="cpCancel">取消</button>
+            <button type="button" class="cp-btn" id="cpSave">保存</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    var CP_URL = {
+        list: '@Url.Action("GetPackages", "ClientPackage", new { area = "Game" })',
+        save: '@Url.Action("SavePackage", "ClientPackage", new { area = "Game" })',
+        enable: '@Url.Action("SetEnabled", "ClientPackage", new { area = "Game" })'
+    };
+    var CP_ROWS = [];
+
+    function cpEsc(s) { return $('<span></span>').text(s == null ? '' : String(s)).html(); }
+    function cpToken() { return $('#cpForm [name="__RequestVerificationToken"]').val(); }
+    function cpMsg(data) {
+        var text = data ? (data.msg ? data.msg : data.content) : '操作失败！';
+        showToast(text, (data && data.code == 1) ? 'success' : 'error');
+    }
+
+    function cpLoad() {
+        request(CP_URL.list, {}, function (data) {
+            CP_ROWS = (data && data.rows) || [];
+            var $body = $('#cpBody').empty();
+            if (!data || !data.ready) {
+                $('#cpEmpty').show().text((data && data.error) || '数据库还没有执行补丁「多客户端包与代理线-20261030.sql」，暂不能管理客户端包。');
+                return;
+            }
+            if (CP_ROWS.length < 1) {
+                $('#cpEmpty').show().text('暂无客户端包。');
+                return;
+            }
+            $('#cpEmpty').hide();
+            $.each(CP_ROWS, function (i, r) {
+                var state = r.Enabled == 1 ? '<span class="cp-pill cp-on">启用</span>' : '<span class="cp-pill cp-off">停用</span>';
+                var real = r.RealTableIndex == 1 ? '<span class="cp-pill cp-real">真实桌号</span>' : '连续位置';
+                var ops = '<a class="cp-link" data-act="edit" data-id="' + r.ID + '">编辑</a>' +
+                    (r.Enabled == 1
+                        ? '<a class="cp-link danger" data-act="off" data-id="' + r.ID + '">停用</a>'
+                        : '<a class="cp-link" data-act="on" data-id="' + r.ID + '">启用</a>');
+                $body.append('<tr><td>' + r.ID + '</td><td>' + cpEsc(r.Name) + '</td><td><code>' + cpEsc(r.AppKey) + '</code></td><td>' + state +
+                    '</td><td>' + real + '</td><td>' + cpEsc(r.Remark) + '</td><td>' + cpEsc(r.UpdateTime) + '</td><td>' + ops + '</td></tr>');
+            });
+        });
+    }
+
+    function cpFind(id) {
+        var found = null;
+        $.each(CP_ROWS, function (i, r) { if (r.ID == id) found = r; });
+        return found;
+    }
+
+    function cpOpen(row) {
+        $('#cpTitle').text(row ? '编辑客户端包' : '新增客户端包');
+        $('#cpId').val(row ? row.ID : 0);
+        $('#cpName').val(row ? row.Name : '');
+        $('#cpAppKey').val(row ? row.AppKey : '').prop('readonly', !!row && row.ID == 1);
+        $('#cpEnabled').val(row ? String(row.Enabled) : '1');
+        $('#cpReal').val(row ? String(row.RealTableIndex) : '1');
+        $('#cpRemark').val(row ? row.Remark : '');
+        $('#cpMask').show();
+    }
+
+    function cpClose() { $('#cpMask').hide(); }
+
+    function cpSave() {
+        var para = {
+            ID: $('#cpId').val(),
+            Name: $.trim($('#cpName').val()),
+            AppKey: $.trim($('#cpAppKey').val()),
+            Enabled: $('#cpEnabled').val(),
+            RealTableIndex: $('#cpReal').val(),
+            Remark: $.trim($('#cpRemark').val()),
+            __RequestVerificationToken: cpToken()
+        };
+        if (!para.Name) { showToast('请填写名称！', 'warning'); return; }
+        if (!/^[A-Za-z0-9]{6,32}$/.test(para.AppKey)) { showToast('包口令必须是 6~32 位字母或数字！', 'warning'); return; }
+        request(CP_URL.save, para, function (data) {
+            cpMsg(data);
+            if (data && data.code == 1) { cpClose(); cpLoad(); }
+        });
+    }
+
+    function cpSetEnabled(id, enabled) {
+        var row = cpFind(id);
+        var text = enabled
+            ? '确定启用【' + (row ? row.Name : id) + '】吗？'
+            : (id == 1
+                ? '1 号默认包是 2026-10-30 之前发布的全部线上包，停用后这些老包的玩家都无法登录！\n确定停用吗？'
+                : '确定停用【' + (row ? row.Name : id) + '】吗？停用后该包的玩家无法登录（在线的不踢）。');
+        confirm(text, function () {
+            request(CP_URL.enable, { ID: id, Enabled: enabled ? 1 : 0, __RequestVerificationToken: cpToken() }, function (data) {
+                cpMsg(data);
+                if (data && data.code == 1) cpLoad();
+            });
+        });
+    }
+
+    $(function () {
+        pluginInit();
+        cpLoad();
+        $('#cpAdd').on('click', function () { cpOpen(null); });
+        $('#cpClose,#cpCancel').on('click', cpClose);
+        $('#cpSave').on('click', cpSave);
+        $('#cpBody').on('click', '.cp-link', function () {
+            var id = parseInt($(this).attr('data-id'), 10);
+            var act = $(this).attr('data-act');
+            if (act === 'edit') cpOpen(cpFind(id));
+            else if (act === 'off') cpSetEnabled(id, false);
+            else if (act === 'on') cpSetEnabled(id, true);
+        });
+    });
+</script>

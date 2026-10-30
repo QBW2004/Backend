@@ -2,7 +2,7 @@
 -- 范围：明星97(16) / 水果拉霸(40) / 水浒传(53) / 麻将胡了(54) 的 roomtableconfig_bet 按桌行。
 -- 拉霸类在该表只存 BetScores/DefaultBetIndex（其余列恒 0），删除后游戏服下发空串，客户端回退房间级默认筹码
 -- （parabetroom base 行 BetScores）。押注加减改由「每次增加的分值」(roomtableconfig.GunPowerStep) 决定。
--- 后台 1.0.70 起拉霸桌台保存时也会逐桌清空，本脚本一次性清掉存量。
+-- 后台 1.0.71 起拉霸桌台保存时也会逐桌清空，本脚本一次性清掉存量。
 --
 -- 执行步骤（线上写操作，先经运营确认）：
 --   1) 备份：mysqldump --single-transaction --hex-blob mth roomtableconfig_bet > roomtableconfig_bet_before_20261029.sql

@@ -39,7 +39,7 @@ class BackendValidation
             sql("INSERT INTO users(ID,NAME,PWD,AGENCY) VALUES('rankplayer','真人昵称','x','test')");
             sql("INSERT INTO userrobot(UserName,UserNick,PassW,Ico,Lev,Sex,Gold,IsRobot) VALUES('rankbot','机器人昵称','x',1,1,0,0,2)");
             for (int i = 1; i <= 35; i++)
-                sql("INSERT INTO gameprizerecord(EventId,UserID,GameId,GameType,CardType,Score,RecTime) VALUES('event" + i + "','" + (i % 2 == 0 ? "rankbot" : "rankplayer") + "',3,2,'普通中奖'," + i + ",'2026-10-27 12:00:00')");
+                sql("INSERT INTO gameprizerecord(EventId,UserID,GameId,GameType,RoomId,TableId,CardType,Score,RecTime) VALUES('event" + i + "','" + (i % 2 == 0 ? "rankbot" : "rankplayer") + "',3,2,0,25,'普通中奖'," + i + ",'2026-10-27 12:00:00')");
             sql("INSERT INTO gameprizerecord(EventId,UserID,GameId,GameType,CardType,Score,RecTime) VALUES('closed','rankbot',99,0,'关闭游戏中奖',999999,'2026-10-27 13:00:00')");
             string migration = File.ReadAllText(Path.Combine(backendRoot, "Docs/sql/大厅排行榜最新30条-20261027.sql"));
             Action migrate = () => {
@@ -70,6 +70,9 @@ class BackendValidation
                     Check(rows.Count == 30, "latest 30");
                     Check((string)rows[0]["Score"] == "3.5" && (string)rows[29]["Score"] == "0.6", "same-second ID order, oldest evicted, decimal score");
                     Check(rows.Any(r => (string)r["Nickname"] == "机器人昵称") && rows.Any(r => (string)r["Nickname"] == "真人昵称"), "all players and robots");
+                    Check(rows.Any(r => (string)r["PlayerAccount"] == "ra..ot") && rows.Any(r => (string)r["PlayerAccount"] == "ra..er"), "accounts use fish anonymization instead of nicknames");
+                    Check(rows.All(r => (string)r["Machine"] == "25号机"), "recorded one-based fish machine");
+                    Check((int)snapshot["Games"][0]["GameType"] == 2, "game category supplied for card-slot-fish ordering");
                     Check(!snapshot.ToString().Contains("关闭游戏") && !snapshot.ToString().Contains("UserID") && !snapshot.ToString().Contains("ManualControl"), "closed-game filter and display-only fields");
                     sql("INSERT INTO gameprizerecord(EventId,UserID,GameId,GameType,Score,RecTime) VALUES('newwin','rankbot',3,2,400,'2026-10-27 12:00:01')");
                     // 与中心服同一环形写入 SQL，自动编号更新后同秒仍能区分新旧。
@@ -85,10 +88,22 @@ class BackendValidation
                     sql("UPDATE games SET Enable=1 WHERE GameId=3");
                     Check(((JArray)read(3)["Rows"]).Count == 30, "reopen restores retained history");
                     sql("DELETE FROM gameprizerecord");
-                    Check(((JArray)read(3)["Rows"]).Count == 30, "backend detail cleanup preserves latest 30");
+                    rows = (JArray)read(3)["Rows"];
+                    Check(rows.Count == 30 && rows.All(r => (string)r["Machine"] == "--"), "detail cleanup preserves history and marks unavailable machine");
                     Check(http.GetAsync("api/RankingList/History?gameId=-1").Result.StatusCode == HttpStatusCode.BadRequest, "invalid game rejected");
                     Check(RankingListController.DisplayScore(40, long.MaxValue) == "9223372036854775807", "Int64 precision");
                     Check(RankingListController.DisplayNickname(null) == "匿名玩家", "missing nickname fallback");
+                    Check(RankingListController.DisplayAccount("77123418") == "77..18"
+                        && RankingListController.DisplayAccount(null) == ".."
+                        && RankingListController.DisplayAccount("") == ".."
+                        && RankingListController.DisplayAccount("7") == "7..7"
+                        && RankingListController.DisplayAccount("77") == "77..77"
+                        && RankingListController.DisplayAccount("a\u0301bcde\u0301") == "a\u0301b..de\u0301", "fish anonymity covers short empty and combining text");
+                    Check(RankingListController.DisplayMachine(1, 0, 25) == "25号机"
+                        && RankingListController.DisplayMachine(3, 0, 24) == "25号机"
+                        && RankingListController.DisplayMachine(2, 2, 25) == "3场·25号机"
+                        && RankingListController.DisplayMachine(1, 0, 0) == "--"
+                        && RankingListController.DisplayMachine(3, null, null) == "--", "machine bases rooms and unavailable metadata");
                 }
             }
             string storeTest = Path.Combine(serverRoot, "tests/_out/rank_history_store_test.exe");

@@ -20,6 +20,25 @@
 
 
     @Scripts.Render("~/res/jquery-js")
+    <script>
+        // 代理线隔离（2026-10-30）：登录账号所在线的可玩游戏（null = 不限，总台恒为 null）。控制页的游戏下拉按它过滤，
+        // 保存控制时服务端还会按玩家所在线再校验。控牌指令号 → GameId 与中心服 cardActionToGameId 同口径。
+        window.MTH_PLAYABLE_GAMES = @Html.Raw(YYT.BLL.EF.LineScopeRules.PlayableGamesJson(WebHelper.GetLoginInfo()));
+        window.MTH_CARD_ACTION_GAME = { 5: 15, 7: 37, 8: 25, 12: 14, 13: 44, 14: 5, 15: 53, 16: 16, 17: 40, 19: 54 };
+        window.mthFilterCardActions = function (list) {
+            var pg = window.MTH_PLAYABLE_GAMES;
+            if (!pg || !list) return list;
+            var out = [], hasSelected = false;
+            for (var i = 0; i < list.length; i++) {
+                var gid = window.MTH_CARD_ACTION_GAME[list[i].id];
+                if (gid && pg.indexOf(gid) < 0) continue;
+                out.push(list[i]);
+                if (list[i].selected) hasSelected = true;
+            }
+            if (out.length > 0 && !hasSelected) out[0].selected = true;
+            return out;
+        };
+    </script>
         @RenderSection("include_res", required: false)
 </head>
 <body>

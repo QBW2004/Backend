@@ -1234,3 +1234,9 @@ button, a {
         flex: 1 1 100%;
     }
 }
+
+/* 玩家可玩游戏勾选（2026-10-30 代理线隔离：添加代理、代理详情「可玩游戏」弹窗共用） */
+.playable-grid { display: flex; flex-wrap: wrap; gap: 8px; text-align: left; }
+.playable-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid #e1e1e1; border-radius: 16px; font-size: 14px; color: #333; background: #fff; }
+.playable-chip input { margin: 0; }
+.playable-hint { margin-top: 6px; font-size: 12px; color: #999; text-align: left; }

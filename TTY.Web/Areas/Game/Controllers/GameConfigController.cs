@@ -512,6 +512,11 @@ namespace YYT.Web.Areas.Game.Controllers
                             rows.Add(row);
                         }
                     }
+                    // 代理线隔离：LINE 为空列公共桌台（没有归属记录的桌），否则只列归属该直属代理的专属桌台；已收回(#)的两边都不列
+                    string line = (form.Q<string>("LINE") ?? string.Empty).Trim();
+                    Dictionary<int, string> owners = LineTables.GetOwners(ef, gameId);
+                    if (owners.Count > 0 || !string.IsNullOrEmpty(line))
+                        rows = rows.Where(r => LineScopeRules.TableBelongsTo(owners, RowTableId(r) % 1000, line)).ToList();
                     msg.code = 1;
                     msg.content = "获取成功！";
                     msg.datas = rows;
@@ -523,6 +528,151 @@ namespace YYT.Web.Areas.Game.Controllers
                 msg.content = "获取失败：" + ex.Message;
             }
             return Json(msg);
+        }
+
+        /// <summary>
+        /// 桌台设置“代理”下拉：公共桌台 + 超管的全部直属代理，并给出本游戏每条线已有的专属桌数与已收回桌数。
+        /// </summary>
+        [AjaxOnly]
+        [HttpPost]
+        [SuperAdminAuthorize]
+        public ActionResult GetLineOptions(FormCollection form)
+        {
+            Msg msg = new Msg(0, "获取失败！");
+            try
+            {
+                int gameId = form.Q<int>("GAME_ID", -1);
+                using (var ef = new GameDbContext())
+                {
+                    bool ready = LineTables.OwnerTableExists(ef);
+                    Dictionary<int, string> owners = ready && gameId >= 0 ? LineTables.GetOwners(ef, gameId) : new Dictionary<int, string>();
+                    int total = gameId < 0 ? 0 : ef.Database.SqlQuery<int>(
+                        "SELECT COUNT(DISTINCT TableIndex) FROM roomtableconfig WHERE GAME_ID={0}", gameId).FirstOrDefault();
+                    List<object> lines = new List<object>();
+                    lines.Add(new { id = "", text = "公共桌台", count = Math.Max(0, total - owners.Count) });
+                    foreach (string agent in LineScopeRules.GetLineAgents(ef))
+                    {
+                        int count = owners.Values.Count(v => string.Equals(v, agent, StringComparison.OrdinalIgnoreCase));
+                        lines.Add(new { id = agent, text = agent, count = count });
+                    }
+                    msg.code = 1;
+                    msg.content = "获取成功！";
+                    msg.datas = new
+                    {
+                        Ready = ready,
+                        Lines = lines,
+                        Owned = owners.Values.Count(v => !string.IsNullOrEmpty(v) && v != LineScopeRules.RecycledLine),
+                        Recycled = owners.Values.Count(v => v == LineScopeRules.RecycledLine)
+                    };
+                }
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(GameConfigController), ex);
+            }
+            return Json(msg);
+        }
+
+        /// <summary>
+        /// 给某直属代理从公共桌台复制一套专属桌台：各按桌表原样复制到新桌号（优先复用已收回的桌号），桌名“1号机……N号机”，
+        /// 同步房间桌数后 RP 热更（子游戏按 RP 扩容）；中心服随参数一起下发桌台归属，该线玩家下次进游戏只看到这些桌。
+        /// </summary>
+        [AjaxOnly]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [SuperAdminAuthorize]
+        public ActionResult CopyPublicTablesToLine(FormCollection form)
+        {
+            Msg msg = new Msg(0, "复制失败！");
+            try
+            {
+                int gameId = form.Q<int>("GAME_ID", -1);
+                int gameType = form.Q<int>("GAME_TYPE", -1);
+                string line = (form.Q<string>("LINE") ?? string.Empty).Trim();
+                if (gameId < 0 || gameType < 0 || gameType > 3)
+                {
+                    msg.content = "请选择游戏！";
+                    return Json(msg);
+                }
+                msg = LineTables.CopyPublicToLine(gameId, gameType, line);
+                if (msg.code == 1)
+                {
+                    SyncTableNumAfterLineChange(gameType, gameId);
+                    msg.content += HotUpdateSuffix(gameId);
+                    ReloadRobotSeatsBestEffort();
+                }
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(GameConfigController), ex);
+                msg.content = "复制失败：" + ex.Message;
+            }
+            return Json(msg);
+        }
+
+        /// <summary>
+        /// 收回某直属代理在本游戏的专属桌台：桌号保留、归属改为“已收回”，谁都看不到；该线玩家重新进游戏后回到公共桌台。
+        /// </summary>
+        [AjaxOnly]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [SuperAdminAuthorize]
+        public ActionResult RecallLineTables(FormCollection form)
+        {
+            Msg msg = new Msg(0, "收回失败！");
+            try
+            {
+                int gameId = form.Q<int>("GAME_ID", -1);
+                string line = (form.Q<string>("LINE") ?? string.Empty).Trim();
+                if (gameId < 0)
+                {
+                    msg.content = "请选择游戏！";
+                    return Json(msg);
+                }
+                msg = LineTables.RecallLine(gameId, line);
+                if (msg.code == 1)
+                    msg.content += HotUpdateSuffix(gameId);
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(GameConfigController), ex);
+                msg.content = "收回失败：" + ex.Message;
+            }
+            return Json(msg);
+        }
+
+        /// <summary>GetTableConfig 各分支的行有匿名对象与字典两种形态，统一取出 id（gameId*1000+桌号）。</summary>
+        private static int RowTableId(object row)
+        {
+            IDictionary<string, object> dict = row as IDictionary<string, object>;
+            if (dict != null)
+                return dict.ContainsKey("id") ? Convert.ToInt32(dict["id"]) : -1;
+            var prop = row == null ? null : row.GetType().GetProperty("id");
+            return prop == null ? -1 : Convert.ToInt32(prop.GetValue(row, null));
+        }
+
+        /// <summary>复制专属桌台后同步房间桌数 NUM = roomtableconfig 条数（各类型与删除桌台同一口径）。</summary>
+        private static void SyncTableNumAfterLineChange(int gameType, int gameId)
+        {
+            using (var ef = new GameDbContext())
+            {
+                if (gameType == 0) SyncBetTableNum(ef, gameId);
+                else if (gameType == 1) SyncCardTableNum(ef, gameId);
+                else if (gameType == 2) SyncFishTableNum(ef, gameId);
+                else if (gameType == 3)
+                {
+                    int cfgCnt = ef.Database.SqlQuery<int>("SELECT COUNT(*) FROM roomtableconfig WHERE GAME_ID={0}", gameId).FirstOrDefault();
+                    if (cfgCnt > 0)
+                        ef.Database.ExecuteSqlCommand("UPDATE ParaRoom SET NUM={0} WHERE GAME_ID={1} AND ID={2}", cfgCnt, gameId, gameId * 1000);
+                }
+            }
+        }
+
+        /// <summary>发 RP 让中心服重载并下发桌台参数与归属，返回附加在提示后的热更结果。</summary>
+        private static string HotUpdateSuffix(int gameId)
+        {
+            Msg rp = new SConnect().SendReadString(EScMsgType.RP, gameId);
+            return (rp != null && rp.code == 1) ? "，服务端已即时热更新！" : "，但服务端热更新失败：" + (rp == null ? "服务端无响应" : rp.content);
         }
 
         [AjaxOnly]
@@ -577,6 +727,7 @@ namespace YYT.Web.Areas.Game.Controllers
                         efCard.Database.ExecuteSqlCommand(
                             "UPDATE cardpayoutprofile SET TableId=TableId-1 WHERE GAME_ID=" + cardGid + " AND TableId>" + delIdx);
                         // 同步 base 行 NUM = 剩余桌台数 + ROOM_MAX=1
+                        LineTables.OnTableDeleted(efCard, cardGid, delIdx);
                         SyncCardTableNum(efCard, cardGid);
                     }
                     // 奖池待生效文件同步压实：删除该桌行、高位桌号-1，避免错位下发到别的机台
@@ -621,6 +772,7 @@ namespace YYT.Web.Areas.Game.Controllers
 							// parafish 同步压实：把剩余行重排为连续 ID(gameId*1000+0..k-1) 与 TableIndex(0..k-1)，
 							// 与 roomtableconfig 保持同构，否则中心服 GetFishPara 按 ID=gameId*1000+i 读会错位。
 							CompactFishParaFishIds(ef2, fishGid);
+							LineTables.OnTableDeleted(ef2, fishGid, delTableIdx);
 							SyncFishTableNum(ef2, fishGid);
 
 						}
@@ -667,6 +819,7 @@ namespace YYT.Web.Areas.Game.Controllers
 							efBet.Database.ExecuteSqlCommand(
 								"UPDATE betgamecfg SET TableIndex=TableIndex-1 WHERE GAME_ID=" + betGid + " AND TableIndex>" + delIdx);
 							// 同步 base 行 NUM = 剩余桌台数
+							LineTables.OnTableDeleted(efBet, betGid, delIdx);
 							SyncBetTableNum(efBet, betGid);
 						}
 						var srvBet = new SConnect();
@@ -726,6 +879,11 @@ namespace YYT.Web.Areas.Game.Controllers
                 if (tableId >= 0 && tableId / 1000 != gameId)
                 {
                     msg.content = "桌台不属于当前游戏，请刷新页面后重试！";
+                    return Json(msg);
+                }
+                if (tableId < 0 && !string.IsNullOrEmpty((form.Q<string>("LINE") ?? string.Empty).Trim()))
+                {
+                    msg.content = "专属桌台请在“代理”下拉选中该线后点「从公共桌台复制一套」生成，不能直接新建！";
                     return Json(msg);
                 }
 

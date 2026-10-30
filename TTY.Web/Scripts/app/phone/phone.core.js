@@ -601,6 +601,18 @@
         { id: 13, text: 'NBA' }, { id: 14, text: '火凤凰' }, { id: 19, text: '麻将胡了' }
     ];
 
+    // 代理线隔离（2026-10-30）：控牌游戏下拉只列登录账号所在线可玩的游戏（MConfig.playableGames 为 null 表示不限）；
+    // M.CARD_ACTIONS 本身保持完整，历史控牌记录的游戏名回显不受影响。控牌指令号 → GameId 与中心服 cardActionToGameId 同口径。
+    var CARD_ACTION_GAME = { 5: 15, 7: 37, 8: 25, 12: 14, 13: 44, 14: 5, 15: 53, 16: 16, 17: 40, 19: 54 };
+    M.playableCardActions = function (list) {
+        var pg = window.MConfig && window.MConfig.playableGames;
+        if (!pg) return list;
+        return $.grep(list, function (a) {
+            var gid = CARD_ACTION_GAME[a.id];
+            return !gid || pg.indexOf(gid) >= 0;
+        });
+    };
+
     // 已下线游戏的名称回退：历史控牌记录仍能回显游戏名（与电脑端 labaTypeName 同口径）
     var CARD_ACTION_NAMES_OFFLINE = { 15: '水浒传', 16: '明星97', 17: '水果拉霸' };
 
@@ -796,6 +808,7 @@
                 '<div><span>最后登录</span><b>' + M.esc(M.fmtTime(a.LastLoginTime, true)) + '</b></div>' +
                 '<div><span>邀请码</span><b>' + M.esc(a.InviteCode || '--') + '</b></div>' +
                 '<div><span>上级代理</span><b>' + M.esc(a.AGENCY || '--') + '</b></div>' +
+                '<div><span>可玩游戏</span><b>' + M.esc(a.PlayableGameNames || '不限') + '</b></div>' +
                 '<div><span>剩余币</span><b class="blue-text">' + M.gold(a.COINS) + '</b></div>' +
                 '<div><span>剩余分</span><b>' + M.num(a.RemainingScore || 0) + '</b></div>' +
                 '<div class="agent-create-child-row"><span>创建下级</span><label class="m-switch"><input type="checkbox" id="agentCreateChild" ' + (Number(a.IsCreateAgent) === 1 ? 'checked' : '') + '><span></span></label><span class="agent-save-state" id="agentSaveState"></span></div>' +
@@ -804,10 +817,11 @@
                 title: '代理详细信息',
                 bodyHTML: body,
                 actionsInline: true,
-                actions: [
+                actions: (window.MConfig && window.MConfig.perms && window.MConfig.perms.isSuper && Number(a.PRIV) === 1
+                    ? [{ label: '可玩游戏', value: 'playable', type: 'secondary' }] : []).concat([
                     { label: '流水', value: 'flow', type: 'secondary' },
                     { label: '充值', value: 'recharge', type: 'primary' }
-                ],
+                ]),
                 buttons: [{ label: '关闭', value: null, type: 'confirm' }],
                 onRender: function ($modal) {
                     var $toggle = $modal.find('#agentCreateChild');
@@ -837,6 +851,9 @@
                 }
             });
             dlg.then(function (value) {
+                if (value === 'playable')
+                    M.editPlayableGames(a.ID);
+                else
                 if (value === 'flow')
                     window.location.href = '/Mobile/Home/AgentFlow?id=' + encodeURIComponent(a.ID);
                 else if (value === 'recharge')
@@ -845,6 +862,46 @@
         });
     };
 
+    /**
+     * 超管修改直属代理的玩家可玩游戏（2026-10-30）：整条线只能玩、只能看到勾选的游戏，至少勾选一款。
+     */
+    M.editPlayableGames = function (id) {
+        M.loading('查询可玩游戏...');
+        return M.post('/Game/AgencyInfo/GetPlayableGames', { ID: id }).always(M.hideLoading).then(function (res) {
+            var r = M.result(res);
+            if (!r.ok || !r.datas) {
+                M.alert(r.text, false, '查询失败');
+                return;
+            }
+            var selected = r.datas.Selected;
+            var body = '<div class="playable-grid">' + $.map(r.datas.Games || [], function (g) {
+                var on = !selected || selected.indexOf(g.GameId) >= 0;
+                return '<label class="playable-chip"><input type="checkbox" value="' + g.GameId + '"' + (on ? ' checked' : '') + '><span>' + M.esc(g.Name) + '</span></label>';
+            }).join('') + '</div><div class="playable-hint">整条线（该代理及其下级代理、玩家）只能玩、只能看到勾选的游戏，玩家下次进入游戏时生效。</div>';
+            var picked = '';
+            M.modal({
+                title: '玩家可玩游戏',
+                subtitle: id,
+                bodyHTML: body,
+                buttons: [{ label: '取消', value: null }, { label: '保存', value: 'save', type: 'confirm' }],
+                beforeClose: function (value, $modal) {
+                    if (value !== 'save') return true;
+                    picked = $modal.find('.playable-grid input:checked').map(function () { return this.value; }).get().join(',');
+                    if (!picked) {
+                        M.toast('请至少勾选一款玩家可玩游戏', 'error');
+                        return false;
+                    }
+                    return true;
+                }
+            }).then(function (value) {
+                if (value !== 'save') return;
+                M.post('/Game/AgencyInfo/SavePlayableGames', { ID: id, PlayableGames: picked }).then(function (saveRes) {
+                    var s = M.result(saveRes);
+                    M.toast(s.ok ? '保存成功' : s.text, s.ok ? 'success' : 'error');
+                });
+            });
+        });
+    };
     /* ---------------- 抽屉 ---------------- */
 
     M.openDrawer = function () {

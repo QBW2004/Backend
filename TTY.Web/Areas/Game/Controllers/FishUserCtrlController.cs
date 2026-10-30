@@ -37,6 +37,11 @@ namespace YYT.Web.Areas.Game.Controllers
                         .Where(g => g.GameType == 2 && g.Enable == 1)
                         .OrderBy(g => g.GameId)
                         .ToList();
+                    // 代理线隔离：非超管只列所在线可玩的鱼机
+                    M_LoginUser loginUser = WebHelper.GetLoginInfo();
+                    List<int> playable = loginUser == null || loginUser.UserPriv == 0 ? null
+                        : LineScopeRules.GetPlayableGamesOfAgency(ef, loginUser.Accounts);
+                    games = games.Where(g => LineScopeRules.IsGameAllowed(playable, g.GameId)).ToList();
                     foreach (var g in games)
                         rows.Add(new { g.GameId, g.Name });
                 }
@@ -71,6 +76,16 @@ namespace YYT.Web.Areas.Game.Controllers
                 if (form.Q<int>("EnableKill", 0) == 1)
                     rules.Add(new KeyValuePair<int, long>((int)EControlMode.Kill, form.Q<long>("KillVal", 0)));
 
+                if (gameId > 0 && loginUser != null)
+                {
+                    using (var ef = new GameDbContext())
+                    {
+                        List<int> playable = scope == 2 ? LineScopeRules.GetPlayableGamesOfPlayer(ef, userId)
+                            : (loginUser.UserPriv == 0 ? null : LineScopeRules.GetPlayableGamesOfAgency(ef, loginUser.Accounts));
+                        if (!LineScopeRules.IsGameAllowed(playable, gameId))
+                            return Json(new Msg(0, "所在代理线不能玩此游戏，无法设置控制！"));
+                    }
+                }
                 msg = new B_UserControl().ApplyControls(loginUser, scope, gameId, userId, rules);
             }
             catch (Exception ex)

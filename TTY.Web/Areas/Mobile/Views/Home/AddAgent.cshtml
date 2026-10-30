@@ -161,6 +161,12 @@
         transform: translateX(22px);
     }
 
+    /* 玩家可玩游戏（超管创建直属代理时必选） */
+    .playable-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+    .playable-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid #e1e1e1; border-radius: 16px; font-size: 14px; color: #333; }
+    .playable-chip input { margin: 0; }
+    .playable-hint { margin-top: 6px; font-size: 12px; color: #999; }
+
     @@media (max-width: 768px) {
         .container {
             padding: 10px;
@@ -197,6 +203,14 @@
                     <label for="agentPassword" class="form-label">密码</label>
                     <input type="password" id="agentPassword" class="form-input" placeholder="密码必须是数字+大小写字母" required>
                 </div>
+                @if (isSuper)
+                {
+                    <div class="form-group">
+                        <label class="form-label">玩家可玩游戏</label>
+                        <div id="agentPlayableGames" class="playable-grid"><span class="playable-hint">加载中...</span></div>
+                        <div class="playable-hint">整条线（该代理及其下级代理、玩家）只能玩、只能看到勾选的游戏</div>
+                    </div>
+                }
                 <div class="switch-wrapper">
                     <span class="switch-label">创建下级</span>
                     <label class="switch">
