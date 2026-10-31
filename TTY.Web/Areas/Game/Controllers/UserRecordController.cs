@@ -77,7 +77,7 @@ namespace YYT.Web.Areas.Game.Controllers
         }
 
         /// <summary>
-        /// 手机端独立中奖历史：牌机展示开奖记录；鱼机/拉霸仅展示触发中奖播报的高倍率记录。
+        /// 玩家中奖历史：统一展示服务端按大奖规则确认的播报记录，不再为牌机放行普通小奖。
         /// IsManualControl=1 表示该奖项由手动控牌牌型送出。
         /// </summary>
         [AjaxOnly]
@@ -127,10 +127,10 @@ namespace YYT.Web.Areas.Game.Controllers
                         .OrderBy(g => g.GameType).ThenBy(g => g.GameId).ToList();
                     gameMeta = games.Select(g => (object)new { GameId = g.GameId, Name = GameDisplayNames.GetName(g.GameId, g.Name), GameType = g.GameType }).ToList();
                     List<int> gameIds = games.Select(g => g.GameId).ToList();
-                    List<int> cardGameIds = games.Where(g => g.GameType == 1).Select(g => g.GameId).ToList();
+                    // 复用结算时的大奖判定，不在后台另算倍率；水果额外玩法的零分大奖也须保留。
                     IQueryable<M_GamePrizeRecord> query = ef.GamePrizeRecords
                         .Where(r => r.UserID == user.ID && gameIds.Contains(r.GameId)
-                            && (cardGameIds.Contains(r.GameId) || r.IsBroadcast == 1)
+                            && r.IsBroadcast == 1 && r.Score >= 0
                             && r.RecTime >= start && r.RecTime < end);
                     int total = query.Count();
                     List<M_GamePrizeRecord> result = query.OrderByDescending(r => r.RecTime)

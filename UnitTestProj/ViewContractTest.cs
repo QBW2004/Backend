@@ -664,6 +664,14 @@ namespace UnitTestProj
             //（该字段同时控制游戏配置、游戏记录、鱼机控制等页面）。
             StringAssert.Contains(userRecordController, "PrizeHistoryExcludedGameIds = { 42 }");
             StringAssert.Contains(userRecordController, "!PrizeHistoryExcludedGameIds.Contains(g.GameId)");
+            // 牌机也使用服务端的大奖标记；过滤先于计数、分页，零分额外玩法不被误删。
+            string prizeFilter = "&& r.IsBroadcast == 1 && r.Score >= 0";
+            StringAssert.Contains(userRecordController, prizeFilter);
+            Assert.IsFalse(userRecordController.Contains("cardGameIds"));
+            Assert.IsTrue(userRecordController.IndexOf(prizeFilter, StringComparison.Ordinal)
+                < userRecordController.IndexOf("int total = query.Count()", StringComparison.Ordinal));
+            StringAssert.Contains(ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.prizehistory.js"),
+                "条大奖记录（与中奖播报使用同一规则）");
         }
 
         [TestMethod]

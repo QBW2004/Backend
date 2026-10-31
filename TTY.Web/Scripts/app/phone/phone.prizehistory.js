@@ -16,7 +16,7 @@
         });
         var totalCount = Number(data && data.total || 0);
         $('#prizeTotalCount').text(totalCount);
-        $('#historySummary').text('共 ' + totalCount + ' 条中奖记录（鱼机/拉霸高倍率以触发中奖播报为准）');
+        $('#historySummary').text('共 ' + totalCount + ' 条大奖记录（与中奖播报使用同一规则）');
         if (!games.length) {
             $('#prizeHistoryList').html('<div class="history-empty">暂无已启用的非押注游戏</div>');
             return;
