@@ -44,7 +44,8 @@ namespace YYT.BLL.EF
             {
                 IEnumerable<M_Games> rst = ef.Games;
                 if (!string.IsNullOrWhiteSpace(entity.Name))
-                    rst = rst.Where(c => c.Name.Contains(entity.Name));
+                    rst = rst.Where(c => c.Name.Contains(entity.Name)
+                        || GameDisplayNames.GetName(c.GameId, c.Name).Contains(entity.Name));
                 if (entity.GameType >= 0)
                     rst = rst.Where(c => c.GameType.Equals(entity.GameType));
                 // 分页
@@ -55,7 +56,7 @@ namespace YYT.BLL.EF
                         .OrderByDescending(c => c.GameType)
                         .Skip(mPage.PageSize * (mPage.PageIndex - 1)).Take(mPage.PageSize)
                         .ToList();
-                    list.rows = users;
+                    list.rows = users.Select(GameDisplayNames.ToDisplayGame).ToList();
                     list.total = mPage.TotalCount;
                 }
             }
@@ -113,7 +114,7 @@ namespace YYT.BLL.EF
         {
             return list.AsEnumerable()
                 .Where(c => c.GameType == gameType)
-                .Select(c => new M_TreeModel { id = c.GameId, text = c.Name, attributes = new { GameType = gameType } })
+                .Select(c => new M_TreeModel { id = c.GameId, text = GameDisplayNames.GetName(c.GameId, c.Name), attributes = new { GameType = gameType } })
                 .ToList();
         }
     }

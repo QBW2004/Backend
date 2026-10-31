@@ -57,7 +57,7 @@ namespace YYT.Web.Areas.Game.Controllers
                                 children.Add(new
                                 {
                                     id = g.GameId,
-                                    text = g.Name,
+                                    text = GameDisplayNames.GetName(g.GameId, g.Name),
                                     attributes = new { GameType = g.GameType }
                                 });
                             }

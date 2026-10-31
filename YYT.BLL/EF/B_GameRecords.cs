@@ -53,6 +53,8 @@ namespace YYT.BLL.EF
                     .Skip(mPage.PageSize * (mPage.PageIndex - 1))
                     .Take(mPage.PageSize)
                     .ToList();
+                foreach (var row in list.rows)
+                    row.GameName = GameDisplayNames.GetName(row.GameID, row.GameName);
                 list.total = mPage.TotalCount;
             }
             return list;

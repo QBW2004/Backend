@@ -55,7 +55,7 @@ namespace YYT.Web.Areas.Game.Controllers
                         // 麻将胡了(54) 平台分类为牌机(1)，但参数/存盘走拉霸族表
                         //（ServerCardMjhl 读 parabetroom/roomtableconfig/gameconfiglaba），
                         // 配置页须以 paraType=3 下发 GAME_TYPE，前端勿用 gameType 代替。
-                        list.Add(new { id = g.GameId, text = g.Name, gameType = g.GameType, paraType = GetParaGameType(g.GameId, g.GameType) });
+                        list.Add(new { id = g.GameId, text = GameDisplayNames.GetName(g.GameId, g.Name), gameType = g.GameType, paraType = GetParaGameType(g.GameId, g.GameType) });
                     }
                 }
             }

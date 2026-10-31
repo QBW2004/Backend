@@ -27,7 +27,7 @@
 
     var _gamesCache = [];
     function loadGames() {
-        request('/api/Games', {}, function (data) {
+        request('/Game/GameSetting/GetDisplayGames', {}, function (data) {
             if (data && data.length) _gamesCache = data;
         }, 'GET');
     }

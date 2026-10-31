@@ -125,7 +125,7 @@ namespace YYT.Web.Areas.Game.Controllers
                     List<M_Games> games = ef.Games.Where(g => g.Enable == 1 && g.GameType != 0
                             && !PrizeHistoryExcludedGameIds.Contains(g.GameId))
                         .OrderBy(g => g.GameType).ThenBy(g => g.GameId).ToList();
-                    gameMeta = games.Select(g => (object)new { GameId = g.GameId, Name = g.Name, GameType = g.GameType }).ToList();
+                    gameMeta = games.Select(g => (object)new { GameId = g.GameId, Name = GameDisplayNames.GetName(g.GameId, g.Name), GameType = g.GameType }).ToList();
                     List<int> gameIds = games.Select(g => g.GameId).ToList();
                     List<int> cardGameIds = games.Where(g => g.GameType == 1).Select(g => g.GameId).ToList();
                     IQueryable<M_GamePrizeRecord> query = ef.GamePrizeRecords
@@ -136,7 +136,7 @@ namespace YYT.Web.Areas.Game.Controllers
                     List<M_GamePrizeRecord> result = query.OrderByDescending(r => r.RecTime)
                         .ThenByDescending(r => r.ID)
                         .Skip((page - 1) * rows).Take(rows).ToList();
-                    Dictionary<int, string> names = games.ToDictionary(g => g.GameId, g => g.Name);
+                    Dictionary<int, string> names = games.ToDictionary(g => g.GameId, g => GameDisplayNames.GetName(g.GameId, g.Name));
                     // 机台号：roomtableconfig.TableName 优先（运营在桌台配置里给机台起的名字，
                     // 拉霸客户端选桌大厅显示的也是它）；无配置回退 "N号机"（按 1 基机台号）。
                     // TableId 写库口径随游戏类型不同：牌机(1)/鱼机(2) 是房间内 1 基桌台号

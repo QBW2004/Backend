@@ -16,7 +16,7 @@ namespace YYT.Web.Controllers.Api
     public class RankingListController : ApiController
     {
         /// <summary>
-        /// 大厅中奖历史：所有真人和机器人共用时间序列，游戏关闭后连同历史一起隐藏。
+        /// 大厅中奖历史：仅展示已开放的牌机和拉霸，麻将胡了单独排除；真人和机器人共用时间序列。
         /// 玩家账号在服务端按鱼机规则匿名，只返回展示字段，不下发完整账号或控牌信息。
         /// </summary>
         [HttpGet, Route("History")]
@@ -31,21 +31,23 @@ namespace YYT.Web.Controllers.Api
                     bool scoped = !string.IsNullOrWhiteSpace(account);
                     string line = scoped ? LineScopeRules.ResolveLineOfPlayer(ef, account.Trim()) : string.Empty;
                     List<int> playable = scoped ? LineScopeRules.GetLinePlayableGames(ef, line) : null;
-                    var games = ef.Games.AsNoTracking().Where(g => g.Enable == 1)
+                    var games = ef.Games.AsNoTracking().Where(g => g.Enable == 1
+                        && (g.GameType == 1 || g.GameType == 3) && g.GameId != 54)
                         .OrderBy(g => g.GameId).Select(g => new { g.GameId, g.Name, g.GameType }).ToList();
                     if (playable != null)
                         games = games.Where(g => playable.Contains(g.GameId)).ToList();
                     var enabledIds = games.Select(g => g.GameId).ToList();
-                    // 独立的 30 槽记录不受后台明细七天清理影响。开关在查询内过滤，
-                    // 同秒按环形写入时更新的 ID 排序；游戏编号使用参数绑定。
+                    // 分类与记录共用已过滤的整数编号，必须在 LIMIT 前过滤，避免隐藏游戏挤占最新 30 条。
+                    string gamesSql = enabledIds.Count == 0 ? " AND 1=0"
+                        : " AND h.GameId IN (" + string.Join(",", enabledIds) + ")";
+                    // 独立的 30 槽记录不受后台明细七天清理影响；同秒按环形写入时更新的 ID 排序。
                     string scopeSql = !scoped ? string.Empty
-                        : " AND (h.LineAgent='' OR h.LineAgent=@p1)" + (playable == null ? string.Empty
-                            : " AND h.GameId IN (" + string.Join(",", playable) + ")");
+                        : " AND (h.LineAgent='' OR h.LineAgent=@p1)";
                     var records = ef.Database.SqlQuery<HistoryRow>(
                         "SELECT h.GameId,h.UserID,h.CardType,h.Score,h.RecTime,p.RoomId,p.TableId FROM gamerankhistory h " +
                         "INNER JOIN games g ON g.GameId=h.GameId AND g.Enable=1 " +
                         "LEFT JOIN gameprizerecord p ON p.EventId=h.EventId AND p.GameId=h.GameId " +
-                        "WHERE h.Score>0 AND (@p0=0 OR h.GameId=@p0)" + scopeSql + " " +
+                        "WHERE h.Score>0 AND (@p0=0 OR h.GameId=@p0)" + gamesSql + scopeSql + " " +
                         "ORDER BY h.RecTime DESC,h.ID DESC LIMIT 30", gameId, line)
                         .ToList().Where(r => enabledIds.Contains(r.GameId)).ToList();
                     var userIds = records.Select(r => r.UserID).Distinct().ToList();

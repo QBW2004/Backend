@@ -1194,7 +1194,7 @@ namespace YYT.BLL.EF
 
                 string gameName;
                 if (gameNames.TryGetValue(log.GAME_TYPE, out gameName))
-                    user.CurrentGameName = gameName;
+                    user.CurrentGameName = GameDisplayNames.GetName(log.GAME_TYPE, gameName);
             }
         }
 

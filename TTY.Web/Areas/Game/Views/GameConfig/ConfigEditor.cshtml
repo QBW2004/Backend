@@ -1502,7 +1502,7 @@
         }
         var gfTag = gfRtp > 0 ? '；以上含金拇指 ≈ ' + (gfRtp * 100).toFixed(2) + '%' : '';
         var $el = $('#gcPayoutSum');
-        var estTag = (key === 'dscj') ? '（dscj 按 phenix 近似，待实测校准）' : '';
+        var estTag = (key === 'dscj') ? '（点石成金按火凤凰近似，待实测校准）' : '';
         var color = rtpReal >= 100 ? '#d33b3b' : (rtpReal > 98 ? '#c98f2b' : '#9aa4b1');
         $el.text('中奖牌型出现率合计（仅启用行）：' + winSum + ' / 10000（余量自动落入杂牌）；' +
             gcGetMagRtpNote() + '，理论返奖率 RTP ≈ ' + (rtp * 100).toFixed(2) + '%' +

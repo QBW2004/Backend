@@ -476,7 +476,7 @@
 
     M.loadGames = function () {
         if (gamesCache) return $.Deferred().resolve(gamesCache).promise();
-        return M.get('/api/Games').then(function (data) {
+        return M.get('/Game/GameSetting/GetDisplayGames').then(function (data) {
             gamesCache = data || [];
             return gamesCache;
         }, function () {

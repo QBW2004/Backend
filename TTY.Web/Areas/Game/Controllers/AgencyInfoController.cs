@@ -753,7 +753,7 @@ namespace YYT.Web.Areas.Game.Controllers
                         msg.content = "无权查看该代理！";
                         return Json(msg);
                     }
-                    var games = LineScopeRules.GetEnabledGames(ef).Select(g => new { g.GameId, g.Name, g.GameType }).ToList();
+                    var games = LineScopeRules.GetEnabledGames(ef).Select(g => new { g.GameId, Name = GameDisplayNames.GetName(g.GameId, g.Name), g.GameType }).ToList();
                     List<int> selected = string.IsNullOrEmpty(id) ? null
                         : LineScopeRules.GetLinePlayableGames(ef, LineScopeRules.ResolveLineOfAgency(ef, id));
                     msg.code = 1;
@@ -824,7 +824,7 @@ namespace YYT.Web.Areas.Game.Controllers
             if (playable == null)
                 return "不限";
             Dictionary<int, string> names = ef.Games.AsNoTracking().Where(g => playable.Contains(g.GameId))
-                .Select(g => new { g.GameId, g.Name }).ToList().ToDictionary(g => g.GameId, g => g.Name);
+                .Select(g => new { g.GameId, g.Name }).ToList().ToDictionary(g => g.GameId, g => GameDisplayNames.GetName(g.GameId, g.Name));
             return string.Join("、", playable.Select(id => names.ContainsKey(id) ? names[id] : ("游戏" + id)));
         }
 

@@ -276,7 +276,7 @@ namespace YYT.BLL.EF
                             ROOM = x.ROOM,
                             TABLE_ID = x.TABLE_ID,
                             SEAT_ID = x.SEAT_ID,
-                            GameName = x.GameName,
+                            GameName = GameDisplayNames.GetName(x.GAME_TYPE, x.GameName),
                             GAME_TYPE = x.GAME_TYPE,
                             REC_TIME = x.REC_TIME,
                             REC_WEEK = x.REC_WEEK

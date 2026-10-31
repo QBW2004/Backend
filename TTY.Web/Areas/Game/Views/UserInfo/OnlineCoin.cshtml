@@ -28,7 +28,7 @@
             $('#txtContents').height(_h - 135);
         }
         function getGames() {
-            request('/api/Games', {}, function (data) {
+            request('/Game/GameSetting/GetDisplayGames', {}, function (data) {
                 $('body').data('games', data);
             }, 'GET');
         }

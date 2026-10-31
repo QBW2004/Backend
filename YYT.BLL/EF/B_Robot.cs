@@ -197,7 +197,8 @@ namespace YYT.BLL.EF
 
                 IEnumerable<M_Robot> rst = ef.Robots;
                 if (!string.IsNullOrWhiteSpace(entity.GAME_NAME))
-                    rst = rst.Where(c => c.GAME_NAME.Contains(entity.GAME_NAME));
+                    rst = rst.Where(c => c.GAME_NAME.Contains(entity.GAME_NAME)
+                        || GameDisplayNames.GetName(c.GAME_ID, c.GAME_NAME).Contains(entity.GAME_NAME));
                 if (entity.ROOM_ID >= 0)
                     rst = rst.Where(c => c.ROOM_ID.Equals(entity.ROOM_ID));
                 if (entity.TABLE_ID >= 0)
@@ -207,6 +208,7 @@ namespace YYT.BLL.EF
                 // 填充桌子名称(缺配置或空名一律保底"桌台n")
                 foreach (var item in ListRobot)
                 {
+                    item.GAME_NAME = GameDisplayNames.GetName(item.GAME_ID, item.GAME_NAME);
                     string key = item.GAME_ID + "_" + item.TABLE_ID;
                     string name;
                     item.TABLE_NAME = tableNameMap.TryGetValue(key, out name) ? name : ("桌台" + item.TABLE_ID);

@@ -122,6 +122,7 @@
     <Compile Include="EF\B_GameRecords.cs" />
     <Compile Include="EF\B_PlatType.cs" />
     <Compile Include="EF\B_Games.cs" />
+    <Compile Include="EF\GameDisplayNames.cs" />
     <Compile Include="EF\B_LoginMissRecord.cs" />
     <Compile Include="EF\B_ManagerOpt.cs" />
     <Compile Include="EF\B_Notice.cs" />

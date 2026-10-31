@@ -17,6 +17,14 @@ namespace YYT.Web.Areas.Game.Controllers
         {
             return View();
         }
+
+        [HttpGet]
+        public ActionResult GetDisplayGames()
+        {
+            var games = new B_Games().GetGames(new M_Games { Enable = 1 });
+            return Json(games.Select(GameDisplayNames.ToDisplayGame).ToList(), JsonRequestBehavior.AllowGet);
+        }
+
         // Game/GameSetting/ResetACC
         [AjaxOnly]
         [HttpPost]
