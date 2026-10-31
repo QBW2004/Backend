@@ -1,4 +1,4 @@
-(function ($) {
+﻿(function ($) {
     'use strict';
     var state = null, generation = 0, previewNumber = 0, timer, saving = false;
     var fruitNames = ['BAR', '77', '星星', '铃铛', '西瓜', '芒果', '橘子', '苹果'];
@@ -29,6 +29,7 @@
     function meanHint(game, item) {
         if (item.code === 0) return '＝' + SCALE + ' － 中奖奖型合计（自动计算）';
         var text = Math.round(item.mean) + ' 倍单线注';
+        if (game === 53 && item.code >= 440) text += '（＝总押注 ' + Math.round(item.mean / 9) + ' 倍）';
         return text;
     }
     // 中奖奖型合计与未中奖自动值；返回中奖合计（输入不合法时按 0 计，read() 会再报错）
@@ -46,7 +47,7 @@
     }
     function result(r) {
         $('#lwRtp').text('理论 RTP ' + r.totalRtp.toFixed(4) + '%');
-        $('#lwParts').text('基础奖 ' + r.baseRtp.toFixed(4) + '% ＋ 免费局/额外玩法 ' + r.extraRtp.toFixed(4) + '%');
+        $('#lwParts').text('基础奖 ' + r.baseRtp.toFixed(4) + '% ＋ 额外玩法 ' + r.extraRtp.toFixed(4) + '%');
         $('#lwBasis').text(r.basis);
         $('#lwAreas').text(r.areaRtp ? r.areaRtp.map(function (p, i) { return fruitNames[i] + '：' + p.toFixed(3) + '%'; }).join('　') : '基础盘面中奖率 ' + r.hitRate.toFixed(4) + '%');
     }
@@ -80,9 +81,9 @@
         if (game === 40) {
             var names = ['小三元', '大三元', '大四喜', '小满贯', '大满贯', '纵横四海', '随机1至5灯', '开火车', '天女散花7灯', '天龙八部8灯', '九莲宝灯9灯'];
             names.forEach(function (name, i) { defs.push([i + 1, name + '权重']); });
-            defs.push([12, '原免费局权重', '与11种特殊奖共同抽取；免费局可继续派生。']);
+            defs.push([12, '吃灯权重', '与11种特殊奖共同抽取；未开启额外玩法时幸运灯按“送1-5个灯或者吃灯”各半。']);
         } else if (game === 16) {
-            defs = [[20, '明星倍触发（万分比）'], [21, '2倍明星权重'], [22, '3倍明星权重'], [23, '4倍明星权重'], [24, 'BONUS半额概率（万分比）'], [25, 'BONUS全额概率（万分比）'], [26, '系统奖概率（万分比）'], [27, '系统奖倍数']];
+            defs = [];
         } else {
             var outer = ['退出', '鲁智深', '枪', '忠义堂', '斧', '刀', '退出', '宋江', '鲁智深', '枪', '斧', '替天行道', '退出', '林冲', '刀', '斧', '鲁智深', '忠义堂', '退出', '枪', '宋江', '斧', '刀', '替天行道'];
             outer.forEach(function (name, i) { defs.push([40 + i, '外圈' + (i + 1) + '·' + name + '权重']); });
@@ -107,7 +108,7 @@
             data.items.forEach(function (item, i) { main.append(input(item.name, i, data.config.main[i], 'main', game === 40 ? '' : meanHint(game, item), i === state.noWin)); });
             syncNoWin();
             extras(game, data.config); result(data.result); $('#lwEditor').show(); $('#lwSave').prop('disabled', false);
-            if (data.stale) status('本机台原先保存的权重与当前目录不匹配；下方为默认值，请确认后勾选启用并保存。', true);
+            if (data.stale) status('开奖规则已更新，本机台原先保存的权重已失效（游戏服当前未使用）；下方为新规则默认值，请确认后勾选启用并保存。', true);
             else if (data.converted) status('原权重已按比例换算为每 ' + SCALE + ' 次（不足 1 次的奖型变为 0，请核对理论 RTP）；保存后才生效。', true);
             else status(data.config.enabled ? '已启用相对权重；下方为已保存配置。' : '当前使用旧配置；下方是新模式默认试算，勾选启用后保存。', false);
         });

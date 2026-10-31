@@ -16,7 +16,7 @@ namespace YYT.Web.Controllers.Api
     public class RankingListController : ApiController
     {
         /// <summary>
-        /// 大厅中奖历史：仅展示已开放的牌机和拉霸，麻将胡了单独排除；真人和机器人共用时间序列。
+        /// 大厅大奖历史：只展示游戏服同一次判定确认的大奖，真人和机器人共用时间序列。
         /// 玩家账号在服务端按鱼机规则匿名，只返回展示字段，不下发完整账号或控牌信息。
         /// </summary>
         [HttpGet, Route("History")]
@@ -47,7 +47,7 @@ namespace YYT.Web.Controllers.Api
                         "SELECT h.GameId,h.UserID,h.CardType,h.Score,h.RecTime,p.RoomId,p.TableId FROM gamerankhistory h " +
                         "INNER JOIN games g ON g.GameId=h.GameId AND g.Enable=1 " +
                         "LEFT JOIN gameprizerecord p ON p.EventId=h.EventId AND p.GameId=h.GameId " +
-                        "WHERE h.Score>0 AND (@p0=0 OR h.GameId=@p0)" + gamesSql + scopeSql + " " +
+                        "WHERE h.IsBigWin=1 AND h.Score>=0 AND (@p0=0 OR h.GameId=@p0)" + gamesSql + scopeSql + " " +
                         "ORDER BY h.RecTime DESC,h.ID DESC LIMIT 30", gameId, line)
                         .ToList().Where(r => enabledIds.Contains(r.GameId)).ToList();
                     var userIds = records.Select(r => r.UserID).Distinct().ToList();

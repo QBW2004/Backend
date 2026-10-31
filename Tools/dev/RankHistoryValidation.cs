@@ -39,21 +39,29 @@ class BackendValidation
             sql("INSERT INTO users(ID,NAME,PWD,AGENCY) VALUES('rankplayer','真人昵称','x','')");
             sql("INSERT INTO userrobot(UserName,UserNick,PassW,Ico,Lev,Sex,Gold,IsRobot) VALUES('rankbot','机器人昵称','x',1,1,0,0,2)");
             for (int i = 1; i <= 35; i++)
-                sql("INSERT INTO gameprizerecord(EventId,UserID,GameId,GameType,RoomId,TableId,CardType,Score,RecTime) VALUES('event" + i + "','" + (i % 2 == 0 ? "rankbot" : "rankplayer") + "',5,1,0,25,'普通中奖'," + i + ",'2026-10-27 12:00:00')");
+                sql("INSERT INTO gameprizerecord(EventId,UserID,GameId,GameType,RoomId,TableId,CardType,Score,RecTime) VALUES('event" + i + "','" + (i % 2 == 0 ? "rankbot" : "rankplayer") + "',5,1,0,25,'大奖'," + i + ",'2026-10-27 12:00:00')");
             sql("INSERT INTO gameprizerecord(EventId,UserID,GameId,GameType,CardType,Score,RecTime) VALUES('closed','rankbot',99,0,'关闭游戏中奖',999999,'2026-10-27 13:00:00')");
             for (int i = 0; i < 35; i++)
                 sql("INSERT INTO gameprizerecord(EventId,UserID,GameId,GameType,CardType,Score,RecTime) VALUES('hidden" + i + "','rankbot'," + new[] { 3, 2, 54, 901, 99 }[i % 5] + ",0,'隐藏游戏中奖',999999,'2026-10-27 14:00:00')");
             string migration = File.ReadAllText(Path.Combine(backendRoot, "Docs/sql/大厅排行榜最新30条-20261027.sql"));
-            Action migrate = () => {
-                int a = migration.IndexOf("DELIMITER $$"), b = migration.IndexOf("DELIMITER ;");
-                sql(migration.Substring(0, a));
-                sql(migration.Substring(a + 12, b - a - 12).Trim().TrimEnd('$'));
-                sql(migration.Substring(b + 11));
+            Action<string> migrateSql = migrationText => {
+                int a = migrationText.IndexOf("DELIMITER $$"), b = migrationText.IndexOf("DELIMITER ;");
+                sql(migrationText.Substring(0, a));
+                sql(migrationText.Substring(a + 12, b - a - 12).Trim().TrimEnd('$'));
+                sql(migrationText.Substring(b + 11));
             };
-            migrate();
-            migrate();
+            migrateSql(migration);
+            migrateSql(migration);
             Check(true, "migration and repeated migration");
             sql("ALTER TABLE gamerankhistory ADD COLUMN LineAgent VARCHAR(50) NOT NULL DEFAULT ''; ALTER TABLE gameprizerecord ADD COLUMN LineAgent VARCHAR(50) NOT NULL DEFAULT ''");
+            sql("ALTER TABLE gamerankhistory DROP KEY uq_rank_game_slot, ADD UNIQUE KEY uq_rank_line_game_slot(LineAgent,GameId,Slot)");
+            sql("UPDATE gameprizerecord SET IsBroadcast=1 WHERE EventId LIKE 'event%'");
+            sql("INSERT INTO gameprizerecord(EventId,UserID,GameId,GameType,Score,IsBroadcast,RecTime) VALUES('old-small','rankbot',40,3,99999,0,'2026-10-28 00:00:00')");
+            sql("INSERT INTO gamerankhistory(GameId,Slot,EventId,UserID,Score,RecTime) VALUES(40,0,'old-small','rankbot',99999,'2026-10-28 00:00:00')");
+            string bigWinMigration = File.ReadAllText(Path.Combine(backendRoot, "Docs/sql/大奖榜与播报统一事件-20261031.sql"));
+            migrateSql(bigWinMigration);
+            migrateSql(bigWinMigration);
+            Check(Convert.ToInt32(new MySqlCommand("SELECT COUNT(*) FROM gamerankhistory WHERE EventId='old-small'", db).ExecuteScalar()) == 0, "migration removes ordinary wins and is repeatable");
             using (var config = new HttpConfiguration())
             {
                 config.MapHttpAttributeRoutes();
@@ -85,7 +93,7 @@ class BackendValidation
                     sql("INSERT INTO gameprizerecord(EventId,UserID,GameId,GameType,Score,RecTime) VALUES('newwin','rankbot',5,1,400,'2026-10-27 12:00:01')");
                     // 与中心服同一环形写入 SQL，自动编号更新后同秒仍能区分新旧。
                     sql("SET @slot=(SELECT (Slot+1)%30 FROM gamerankhistory WHERE GameId=5 ORDER BY ID DESC LIMIT 1);");
-                    sql("INSERT INTO gamerankhistory(GameId,Slot,EventId,UserID,CardType,Score,RecTime) VALUES(5,@slot,'newwin','rankbot','普通中奖',400,'2026-10-27 12:00:01') ON DUPLICATE KEY UPDATE ID=VALUES(ID),EventId=VALUES(EventId),UserID=VALUES(UserID),CardType=VALUES(CardType),Score=VALUES(Score),RecTime=VALUES(RecTime)");
+                    sql("INSERT INTO gamerankhistory(GameId,Slot,EventId,UserID,CardType,Score,RecTime,IsBigWin) VALUES(5,@slot,'newwin','rankbot','大奖',400,'2026-10-27 12:00:01',1) ON DUPLICATE KEY UPDATE ID=VALUES(ID),EventId=VALUES(EventId),UserID=VALUES(UserID),CardType=VALUES(CardType),Score=VALUES(Score),RecTime=VALUES(RecTime)");
                     rows = (JArray)read(5)["Rows"];
                     Check(rows.Count == 30 && (string)rows[0]["Score"] == "400" && (string)rows[29]["Score"] == "7", "31st win replaces oldest");
                     Check(((JArray)read(40)["Rows"]).Count == 0, "empty game");
@@ -98,8 +106,11 @@ class BackendValidation
                     sql("DELETE FROM gameprizerecord");
                     rows = (JArray)read(5)["Rows"];
                     Check(rows.Count == 30 && rows.All(r => (string)r["Machine"] == "--"), "detail cleanup preserves history and marks unavailable machine");
-                    sql("INSERT INTO gamerankhistory(GameId,Slot,EventId,UserID,CardType,Score,RecTime) VALUES(40,0,'slot-win','rankbot','拉霸中奖',123,'2026-10-27 15:00:00')");
+                    sql("INSERT INTO gamerankhistory(GameId,Slot,EventId,UserID,CardType,Score,RecTime,IsBigWin) VALUES(40,0,'slot-win','rankbot','拉霸中奖',123,'2026-10-27 15:00:00',1)");
                     Check((string)read(40)["Rows"][0]["Score"] == "123", "slot wins remain visible");
+                    sql("INSERT INTO gamerankhistory(GameId,Slot,EventId,UserID,CardType,Score,RecTime,IsBigWin) VALUES(40,1,'zero-extra','rankbot','额外玩法',0,'2026-10-27 16:00:00',1),(40,2,'legacy-small','rankbot','普通小奖',999999,'2026-10-27 17:00:00',0)");
+                    rows = (JArray)read(40)["Rows"];
+                    Check(rows.Count == 2 && (string)rows[0]["Score"] == "0", "zero-score qualified extra is ranked; large ordinary win is excluded before LIMIT");
                     sql("UPDATE games SET Enable=0 WHERE GameId IN (5,40)");
                     snapshot = read(0);
                     Check(((JArray)snapshot["Games"]).Count == 0 && ((JArray)snapshot["Rows"]).Count == 0, "no eligible games returns empty snapshot without invalid IN clause");
@@ -149,7 +160,7 @@ class BackendValidation
     {
         using (var command = new MySqlCommand("SELECT DATABASE()", db))
             if ((string)command.ExecuteScalar() != "mth_rankhistory_validation") throw new InvalidOperationException("Wrong fixture database");
-        using (var command = new MySqlCommand("UPDATE games SET Enable=0 WHERE GameId<>777; UPDATE games SET Name='中奖联调',Enable=1,GameType=3 WHERE GameId=777", db)) command.ExecuteNonQuery();
+        using (var command = new MySqlCommand("UPDATE games SET Enable=0 WHERE GameId<>14; UPDATE games SET Name='中奖联调',Enable=1,GameType=3 WHERE GameId=14", db)) command.ExecuteNonQuery();
         using (var config = new HttpConfiguration())
         using (var listener = new HttpListener())
         {
@@ -171,7 +182,7 @@ class BackendValidation
                     {
                         if (path == "/__test/advance") RunStoreTest("--append");
                         else if (path == "/__test/close" || path == "/__test/open")
-                            using (var command = new MySqlCommand("UPDATE games SET Enable=" + (path.EndsWith("open") ? "1" : "0") + " WHERE GameId=777", db)) command.ExecuteNonQuery();
+                            using (var command = new MySqlCommand("UPDATE games SET Enable=" + (path.EndsWith("open") ? "1" : "0") + " WHERE GameId=14", db)) command.ExecuteNonQuery();
                         else if (path == "/__test/stop") stop = true;
                         else context.Response.StatusCode = 404;
                         content = System.Text.Encoding.UTF8.GetBytes("{}");

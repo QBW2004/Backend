@@ -1,6 +1,6 @@
-<section id="labaWeights" style="display:none;margin:20px 0;padding:18px;border:1px solid #cbd7e8;border-radius:8px;background:#f7faff;">
+﻿<section id="labaWeights" style="display:none;margin:20px 0;padding:18px;border:1px solid #cbd7e8;border-radius:8px;background:#f7faff;">
     <div class="gc-section-title">拉霸出货权重与理论 RTP</div>
-    <p class="gc-hint">0 表示不抽取。明星97按“每 10000 次出现几次”、水浒传按“每 100000 次出现几次”填写，未中奖＝口径减中奖奖型合计，自动计算；水果机24灯为相对权重，每项最高10000；额外玩法权重最高10000。叠加线奖及额外玩法仍按当前线上规则结算。此处独立保存，按当前机台生效。</p>
+    <p class="gc-hint">0 表示不抽取。明星97按“每 10000 次出现几次”填写，水浒传按“每 100000 次出现几次”填写（全屏大奖赔率高，需要更细的精度），未中奖＝10000（水浒传 100000）－中奖奖型权重合计，自动计算；水果机 24 灯为相对权重（每项最高 10000），概率＝该灯权重÷24 灯合计；额外玩法权重最高 10000。出全盘奖时只赔全盘倍数、不叠加线奖；明星97 每局消耗＝单线注×8，水浒传＝单线注×9（全盘奖按总押注赔）。此处独立保存，按当前机台生效。</p>
     <label><input type="checkbox" id="lwEnabled" /> 启用相对权重开奖（关闭时继续使用旧配置）</label>
     <div id="lwStatus" role="status" style="margin:10px 0;"></div>
     <div id="lwEditor" style="display:none;">
@@ -10,7 +10,7 @@
             <div id="lwAreas" style="margin-top:6px;"></div>
             <p id="lwBasis" class="gc-hint"></p>
             <label>试算单局下注 <input id="lwBet" type="number" min="1" max="1000000" step="1" value="1" style="width:100px;" /></label>
-            <div class="gc-hint">理论值是自然局长期期望，实际短期结果会波动；不含人为控牌、比倍、余额容量拒绝。明星倍按持续游玩的稳态计算，整数半奖随下注额变化。</div>
+            <div class="gc-hint">理论值是自然局长期期望，实际短期结果会波动；不含人为控牌、比倍、余额容量拒绝。RTP 按单局实际消耗计算；水浒传小玛丽计入额外玩法，水果机幸运灯按“送1-5个灯或者吃灯”计入。</div>
         </div>
         <div id="lwMain" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px;"></div>
         <details style="margin:16px 0;"><summary>额外玩法权重与触发设置</summary>

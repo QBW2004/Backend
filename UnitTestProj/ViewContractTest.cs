@@ -816,7 +816,7 @@ namespace UnitTestProj
             StringAssert.Contains(phoneCore, "M.CARD_ACTIONS = [");
             StringAssert.Contains(phoneCore, "M.cardActionName = function (action)");
             StringAssert.Contains(phoneCore, "M.cardTypeName = function (action, value)");
-            StringAssert.Contains(phoneCore, "M.cardTypeData = function (action)");
+            StringAssert.Contains(phoneCore, "M.cardTypeData = function (action, full)");
             StringAssert.Contains(phoneCore, "M.cardControlParams = function (gameId, cardValue)");
             StringAssert.Contains(phoneCore, "M.cardControlText = function (gameId, cardValue)");
             // 大字版控制同花顺 = 150 倍（dazhi 档），与控制页下拉同源
@@ -862,14 +862,14 @@ namespace UnitTestProj
 
             // 拉霸牌型补全：水浒传按结果类 code（三连/四连/五连/纯万能线/全屏/混合），手机端与电脑端同列表
             foreach (string code in new[] { "400", "407", "410", "417", "420", "427", "430", "431", "432",
-                                            "444", "445", "446", "447", "448", "450", "451" })
+                                            "442", "443", "444", "445", "446", "447", "448", "450", "451" })
             {
                 StringAssert.Contains(indexView, "id: " + code + ",");
                 StringAssert.Contains(onlineView, "id: " + code + ",");
                 StringAssert.Contains(phoneCore, "id: " + code + ",");
             }
-            // 赔率超过 2000 倍的全屏水浒项（440 14000倍 / 441 11500倍 / 442 4600倍 / 443 2300倍）不下发
-            foreach (string code in new[] { "440", "441", "442", "443" })
+            // 新规则按总押注计算全盘奖，只有 440（5000倍）与 441（2500倍）超过上限。
+            foreach (string code in new[] { "440", "441" })
             {
                 Assert.IsFalse(indexView.Contains("id: " + code + ","), "水浒传控牌不应提供 " + code);
                 Assert.IsFalse(onlineView.Contains("id: " + code + ","), "水浒传控牌不应提供 " + code);
