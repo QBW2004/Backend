@@ -898,26 +898,35 @@ namespace UnitTestProj
         }
 
         [TestMethod]
-        public void OfflineLabaGamesRemovedFromCardControlSelectors()
+        public void ReopenedLabaGamesAppearInCardControlSelectors()
         {
             string phoneCore = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.core.js");
             string indexView = ReadRepoFile(@"TTY.Web\Areas\Game\Views\UserInfo\Index.cshtml");
             string onlineView = ReadRepoFile(@"TTY.Web\Areas\Game\Views\UserInfo\OnlineUsers.cshtml");
 
-            // 拉霸三款（水浒传15/明星97 16/水果拉霸17）已下线，控牌游戏下拉不再提供选择；
-            // 可选列表只剩开放中的六款牌机 5/7/8/12/13/14
-            foreach (string removed in new[] { "id: 15, text: '水浒传'", "id: 16, text: '明星97'", "id: 17, text: '水果拉霸'" })
+            // 检查实际可选列表，不能由历史记录回显表或旧入口中的同名项冒充。
+            string phoneActions = phoneCore.Substring(phoneCore.IndexOf("M.CARD_ACTIONS = [", StringComparison.Ordinal));
+            phoneActions = phoneActions.Substring(0, phoneActions.IndexOf("];", StringComparison.Ordinal));
+            string indexActions = indexView.Substring(indexView.IndexOf("function totalCardActionData()", StringComparison.Ordinal));
+            indexActions = indexActions.Substring(0, indexActions.IndexOf("]);", StringComparison.Ordinal));
+            string onlineActions = onlineView.Substring(onlineView.IndexOf("function totalCardActionData()", StringComparison.Ordinal));
+            onlineActions = onlineActions.Substring(0, onlineActions.IndexOf("]);", StringComparison.Ordinal));
+            foreach (string restored in new[] { "id: 15, text: '水浒传'", "id: 16, text: '明星97'", "id: 17, text: '水果拉霸'" })
             {
-                Assert.IsFalse(phoneCore.Contains(removed), "M.CARD_ACTIONS 不应再提供 " + removed);
-                Assert.IsFalse(indexView.Contains(removed), "totalCardActionData 不应再提供 " + removed);
-                Assert.IsFalse(onlineView.Contains(removed), "totalCardActionData 不应再提供 " + removed);
+                StringAssert.Contains(phoneActions, restored);
+                StringAssert.Contains(indexActions, restored);
+                StringAssert.Contains(onlineActions, restored);
             }
-            foreach (string kept in new[] { "id: 5,", "id: 7,", "id: 8,", "id: 12,", "id: 13,", "id: 14," })
+            foreach (string kept in new[] { "id: 5,", "id: 7,", "id: 8,", "id: 12,", "id: 13,", "id: 14,", "id: 19," })
             {
-                StringAssert.Contains(phoneCore, kept);
-                StringAssert.Contains(indexView, kept);
-                StringAssert.Contains(onlineView, kept);
+                StringAssert.Contains(phoneActions, kept);
+                StringAssert.Contains(indexActions, kept);
+                StringAssert.Contains(onlineActions, kept);
             }
+
+            StringAssert.Contains(indexActions, "window.mthFilterCardActions([");
+            StringAssert.Contains(onlineActions, "window.mthFilterCardActions([");
+            StringAssert.Contains(ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.control.js"), "M.playableCardActions(M.CARD_ACTIONS)");
 
             // 但已下发的历史拉霸控牌记录仍要能回显：手机端靠名称回退表，电脑端靠 labaTypeName 的 15/16/17 分支
             StringAssert.Contains(phoneCore, "CARD_ACTION_NAMES_OFFLINE");

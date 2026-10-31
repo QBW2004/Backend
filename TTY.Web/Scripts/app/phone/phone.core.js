@@ -597,8 +597,10 @@
 
     // 控牌指令类型与平台 gameID 不同：19=麻将胡了(gameID 54)，18 保留旧水果牌机。
     M.CARD_ACTIONS = [
-        { id: 5, text: '大字版控制' }, { id: 7, text: '点石成金控制' }, { id: 8, text: 'ATT满花版控制' }, { id: 12, text: '金皇冠' },
-        { id: 13, text: 'NBA' }, { id: 14, text: '火凤凰' }, { id: 19, text: '麻将胡了' }
+        { id: 5, text: '大字版' }, { id: 7, text: '点石成金' }, { id: 8, text: 'ATT满花版' }, { id: 12, text: '金皇冠' },
+        { id: 13, text: 'NBA' }, { id: 14, text: '火凤凰' },
+        { id: 15, text: '水浒传' }, { id: 16, text: '明星97' }, { id: 17, text: '水果拉霸' },
+        { id: 19, text: '麻将胡了' }
     ];
 
     // 代理线隔离（2026-10-30）：控牌游戏下拉只列登录账号所在线可玩的游戏（MConfig.playableGames 为 null 表示不限）；
@@ -613,10 +615,10 @@
         });
     };
 
-    // 已下线游戏的名称回退：历史控牌记录仍能回显游戏名（与电脑端 labaTypeName 同口径）
+    // 历史控牌游戏名兼容表；当前可选列表优先，游戏暂时移出列表时仍能回显。
     var CARD_ACTION_NAMES_OFFLINE = { 15: '水浒传', 16: '明星97', 17: '水果拉霸' };
 
-    /** 控牌游戏(GameId/cardAction) -> 名称，如 5 -> “大字版控制” */
+    /** 控牌游戏(GameId/cardAction) -> 名称，如 5 -> “大字版” */
     M.cardActionName = function (action) {
         for (var i = 0; i < M.CARD_ACTIONS.length; i++)
             if (M.CARD_ACTIONS[i].id == action) return M.CARD_ACTIONS[i].text;
@@ -646,7 +648,7 @@
         '三连·黄BAR(30倍)', '三连·红BAR(50倍)', '三连·蓝BAR(70倍)', '三连·七(80倍+)'
     ];
 
-    /** 牌型值 -> 名称，如 大字版控制(5) + 9 -> “同花顺(150倍)” */
+    /** 牌型值 -> 名称，如 大字版(5) + 9 -> “同花顺(150倍)” */
     M.cardTypeName = function (action, value) {
         action = parseInt(action, 10);
         value = parseInt(value, 10);
@@ -666,7 +668,7 @@
 
     /**
      * 控牌参数主体（不含"（1次/5把）"后缀，供各页套自己的外层格式）：
-     * “大字版控制 同花顺(150倍)”。
+     * “大字版 同花顺(150倍)”。
      * GameId<5 属历史/异常数据，没有游戏类型可映射，退回只显示牌型值。
      */
     M.cardControlParams = function (gameId, cardValue) {
@@ -678,7 +680,7 @@
 
     /**
      * 控牌完整参数文案（控制页状态行与玩家列表卡片共用）：
-     * “大字版控制 同花顺(150倍)（1次/5把）”。
+     * “大字版 同花顺(150倍)（1次/5把）”。
      */
     M.cardControlText = function (gameId, cardValue) {
         return M.cardControlParams(gameId, cardValue) + '（1次/5把）';

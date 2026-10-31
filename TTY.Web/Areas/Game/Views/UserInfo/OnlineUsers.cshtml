@@ -521,16 +521,18 @@
         if (items.length > 0) items[0].selected = true;
         return items;
     }
-    @*仅含线上开放游戏的控牌项（2026-10-16 起拉霸三款 15/16/17 下线不再提供选择；
-       历史控牌值回显仍由 labaTypeName/valSelDataShz 等保留，勿删）*@
+    @*拉霸三款重新开放后恢复控牌入口；按代理线过滤可玩游戏，牌型沿用当前全盘奖/面板位规则。*@
     function totalCardActionData() {
         return window.mthFilterCardActions([
-            { id: 5, text: '大字版控制', selected: true },
-            { id: 7, text: '点石成金控制' },
-            { id: 8, text: 'ATT满花版控制' },
+            { id: 5, text: '大字版', selected: true },
+            { id: 7, text: '点石成金' },
+            { id: 8, text: 'ATT满花版' },
             { id: 12, text: '金皇冠' },
             { id: 13, text: 'NBA' },
             { id: 14, text: '火凤凰' },
+            { id: 15, text: '水浒传' },
+            { id: 16, text: '明星97' },
+            { id: 17, text: '水果拉霸' },
             { id: 19, text: '麻将胡了' }
         ]);
     }
@@ -863,9 +865,9 @@
 
     function actionSelDataPAIJI() {
         return [
-            { id: 5, text: '大字版控制', selected: true  },
-            { id: 7, text: '点石成金控制' },
-            { id: 8, text: 'ATT满花版控制' },
+            { id: 5, text: '大字版', selected: true  },
+            { id: 7, text: '点石成金' },
+            { id: 8, text: 'ATT满花版' },
             { id: 12, text: '金皇冠' },
             { id: 13, text: 'NBA' },
             { id: 14, text: '火凤凰' }
