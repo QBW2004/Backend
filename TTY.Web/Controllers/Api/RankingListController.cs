@@ -106,9 +106,8 @@ namespace YYT.Web.Controllers.Api
             if (!tableId.HasValue || tableId.Value < 0 || tableId.Value == long.MaxValue) return "--";
             long number = gameType == 1 || gameType == 2 ? tableId.Value : tableId.Value + 1;
             if (number <= 0) return "--";
-            string room = roomId.HasValue && roomId.Value > 0 && roomId.Value < long.MaxValue
-                ? (roomId.Value + 1).ToString(CultureInfo.InvariantCulture) + "场·" : "";
-            return room + number.ToString(CultureInfo.InvariantCulture) + "号机";
+            // 与中奖播报一致，只展示机台号；房间仍用于业务路由，不拼进展示文字。
+            return number.ToString(CultureInfo.InvariantCulture) + "号机";
         }
 
         public class HistoryRow

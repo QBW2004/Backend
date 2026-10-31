@@ -125,9 +125,11 @@ class BackendValidation
                         && RankingListController.DisplayAccount("a\u0301bcde\u0301") == "a\u0301b..de\u0301", "fish anonymity covers short empty and combining text");
                     Check(RankingListController.DisplayMachine(1, 0, 25) == "25号机"
                         && RankingListController.DisplayMachine(3, 0, 24) == "25号机"
-                        && RankingListController.DisplayMachine(2, 2, 25) == "3场·25号机"
+                        && RankingListController.DisplayMachine(2, 2, 25) == "25号机"
+                        && RankingListController.DisplayMachine(1, 2, 25) == "25号机"
+                        && RankingListController.DisplayMachine(3, 2, 24) == "25号机"
                         && RankingListController.DisplayMachine(1, 0, 0) == "--"
-                        && RankingListController.DisplayMachine(3, null, null) == "--", "machine bases rooms and unavailable metadata");
+                        && RankingListController.DisplayMachine(3, null, null) == "--", "machine bases without rooms and unavailable metadata");
                 }
             }
             string storeTest = Path.Combine(serverRoot, "tests/_out/rank_history_store_test.exe");
