@@ -12,6 +12,7 @@
     window.labaWeightsClear = function () {
         generation++; previewNumber++; clearTimeout(timer); state = null;
         $('#labaWeights').hide(); $('#lwEditor').hide(); $('#lwSave').prop('disabled', true);
+        $('#lwFruitHint,#lwMx97Hint,#lwShzHint,#lwMx97BonusHint,#lwShzBonusHint,#lwBonusToggle').hide();
     };
     var SCALE = 10000; // 当前游戏的主权重口径：明星97/水果机 10000，水浒传 100000（由服务端 scale 下发）
     // 明星97/水浒传第 0 项是“未中奖”：只读，＝10000－中奖奖型合计；水果机没有未中奖项
@@ -25,11 +26,23 @@
         if (hint) $('<small>').text(hint).css('color', '#637087').appendTo(box);
         return box;
     }
-    // 倍数一律取整显示（按单线注=1 计）；水浒传全盘奖另标总押注倍数（单线注×9），明星97七三连按全盘3个七结算
+    // 只调整展示名称，不改目录/指纹或保存的奖型下标。
+    function itemName(game, item) {
+        if (game === 53 && item.code === 432) return '水浒传（万能图标）5连';
+        if (game === 53 && item.code === 450) return '全盘人物（宋江／林冲／鲁智深）';
+        if (game === 53 && item.code === 451) return '全盘兵器（刀／枪／斧）';
+        if (game === 16 && item.code === 308) return '7三连（按 ALL 3个7 结算）';
+        if (game === 16 && item.code >= 322 && item.code <= 329) return 'ALL ' + (item.code - 320) + '个7（全盘计数）';
+        return item.name.replace('全屏', '全盘');
+    }
+    function multiple(value) { return Number(value.toFixed(3)).toString(); }
     function meanHint(game, item) {
         if (item.code === 0) return '＝' + SCALE + ' － 中奖奖型合计（自动计算）';
-        var text = Math.round(item.mean) + ' 倍单线注';
-        if (game === 53 && item.code >= 440) text += '（＝总押注 ' + Math.round(item.mean / 9) + ' 倍）';
+        if (game === 53 && item.code >= 440) return '全盘奖 ' + multiple(item.mean / 9) + ' 倍总押注（＝' + multiple(item.mean) + ' 倍单线注），不叠加线奖';
+        var text = '本类整盘平均 ' + multiple(item.mean) + ' 倍单线注';
+        if (game === 16 && (item.code === 308 || item.code >= 322)) text = '全盘奖 ' + multiple(item.mean) + ' 倍单线注，不叠加线奖';
+        else text += '（含同盘其他中奖线）';
+        if (game === 53 && item.code === 432) text += '；同线5个万能送3次小玛丽，奖励另计';
         return text;
     }
     // 中奖奖型合计与未中奖自动值；返回中奖合计（输入不合法时按 0 计，read() 会再报错）
@@ -53,7 +66,9 @@
     }
     function read() {
         var c = JSON.parse(JSON.stringify(state.config));
-        c.enabled = $('#lwEnabled').prop('checked'); c.extra[0] = $('#lwBonus').prop('checked') ? 1 : 0;
+        c.enabled = $('#lwEnabled').prop('checked');
+        // 明星97无额外玩法，小玛丽恒开启；隐藏的旧开关值按原样保存。
+        if (state.gameId === 40) c.extra[0] = $('#lwBonus').prop('checked') ? 1 : 0;
         if (state.noWin >= 0 && syncNoWin() > SCALE) throw new Error('中奖奖型权重合计不能超过' + SCALE + '。');
         $('#lwMain input,#lwExtra input').each(function () {
             var value = $(this).val(), main = $(this).attr('data-main'), extra = $(this).attr('data-extra');
@@ -76,18 +91,31 @@
             else { status(data && data.content || '试算失败。', true); $('#lwRtp').text('无法计算 RTP'); }
         });
     }
+    function group(text) {
+        return $('<div>').text(text).css({ gridColumn: '1 / -1', marginTop: '10px', paddingBottom: '4px', borderBottom: '1px solid #dbe4f0', fontWeight: '600', color: '#2f6fed' });
+    }
+    // 水果机两个幸运灯各自一套奖池：右侧(灯10/面板位9)用 extra[1..11]+extra[12]，
+    // 左侧(灯22/面板位21)用 extra[28..38]+extra[39]；左侧 12 项全为 0 时沿用右侧（与游戏服同口径）。
     function extras(game, c) {
         var box = $('#lwExtra').empty(), defs = [];
+        $('#lwBonusToggle').toggle(game === 40);
+        $('#lwMx97BonusHint').toggle(game === 16); $('#lwShzBonusHint').toggle(game === 53);
+        $('#lwExtraTitle').text(game === 16 ? '玩法说明（本游戏无额外玩法）' : game === 53 ? 'BONUS GAME（小玛丽）：触发规则与外圈权重' : '幸运灯：奖池权重与触发设置');
         if (game === 40) {
             var names = ['小三元', '大三元', '大四喜', '小满贯', '大满贯', '纵横四海', '随机1至5灯', '开火车', '天女散花7灯', '天龙八部8灯', '九莲宝灯9灯'];
-            names.forEach(function (name, i) { defs.push([i + 1, name + '权重']); });
-            defs.push([12, '吃灯权重', '与11种特殊奖共同抽取；未开启额外玩法时幸运灯按“送1-5个灯或者吃灯”各半。']);
+            box.append(group('右侧幸运灯（灯10 / 面板位9）奖池'));
+            names.forEach(function (name, i) { box.append(input(name + '权重', i + 1, c.extra[i + 1], 'extra')); });
+            box.append(input('吃灯权重', 12, c.extra[12], 'extra', '与11种特殊奖共同抽取；未开启额外玩法时两个幸运灯都按“送1-5个灯或者吃灯”各半。'));
+            box.append(group('左侧幸运灯（灯22 / 面板位21）奖池'));
+            names.forEach(function (name, i) { box.append(input(name + '权重', 28 + i, c.extra[28 + i], 'extra')); });
+            box.append(input('吃灯权重', 39, c.extra[39], 'extra', '12 项全为 0 表示沿用右侧奖池（旧配置默认如此）。'));
         } else if (game === 16) {
             defs = [];
-        } else {
+        } else if (game === 53) {
+            box.append(group('BONUS GAME（小玛丽）外圈24格（按游戏转灯顺序）'));
             var outer = ['退出', '鲁智深', '枪', '忠义堂', '斧', '刀', '退出', '宋江', '鲁智深', '枪', '斧', '替天行道', '退出', '林冲', '刀', '斧', '鲁智深', '忠义堂', '退出', '枪', '宋江', '斧', '刀', '替天行道'];
             outer.forEach(function (name, i) { defs.push([40 + i, '外圈' + (i + 1) + '·' + name + '权重']); });
-            defs.push([64, '小玛丽最大回合', '27至512；接近上限时强制消耗退出次数。']);
+            defs.push([64, '小玛丽最大回合', '每次进入的总转灯上限，27至512；不是赠送次数。接近上限时强制退出，耗尽剩余次数。']);
         }
         defs.forEach(function (d) { box.append(input(d[1], d[0], c.extra[d[0]], 'extra', d[2])); });
     }
@@ -96,7 +124,8 @@
         var game = parseInt($('#gcGameId').val(), 10), id = scope();
         if ([16, 40, 53].indexOf(game) < 0 || id < 0) return;
         var gen = generation;
-        $('#labaWeights').show(); status('加载当前机台权重…', false);
+        $('#labaWeights').show(); $('#lwFruitHint').toggle(game === 40);
+        $('#lwMx97Hint').toggle(game === 16); $('#lwShzHint').toggle(game === 53); status('加载当前机台权重…', false);
         send(LABA_WEIGHTS_URLS.get, { gameId: game, tableIndex: id % 1000 }, function (data) {
             if (gen !== generation || id !== scope()) return;
             if (!data || data.code !== 1) { status(data && data.content || '加载失败。', true); return; }
@@ -105,7 +134,7 @@
             $('#lwEnabled').prop('checked', data.config.enabled); $('#lwBonus').prop('checked', data.config.extra[0] === 1); $('#lwBet').val(1);
             var main = $('#lwMain').empty();
             if (state.noWin >= 0) main.append($('<div id="lwWinSum">').css({ gridColumn: '1 / -1', padding: '0 6px' }));
-            data.items.forEach(function (item, i) { main.append(input(item.name, i, data.config.main[i], 'main', game === 40 ? '' : meanHint(game, item), i === state.noWin)); });
+            data.items.forEach(function (item, i) { main.append(input(itemName(game, item), i, data.config.main[i], 'main', game === 40 ? '' : meanHint(game, item), i === state.noWin)); });
             syncNoWin();
             extras(game, data.config); result(data.result); $('#lwEditor').show(); $('#lwSave').prop('disabled', false);
             if (data.stale) status('开奖规则已更新，本机台原先保存的权重已失效（游戏服当前未使用）；下方为新规则默认值，请确认后勾选启用并保存。', true);

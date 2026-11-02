@@ -1,6 +1,27 @@
 ﻿<section id="labaWeights" style="display:none;margin:20px 0;padding:18px;border:1px solid #cbd7e8;border-radius:8px;background:#f7faff;">
     <div class="gc-section-title">拉霸出货权重与理论 RTP</div>
     <p class="gc-hint">0 表示不抽取。明星97按“每 10000 次出现几次”填写，水浒传按“每 100000 次出现几次”填写（全屏大奖赔率高，需要更细的精度），未中奖＝10000（水浒传 100000）－中奖奖型权重合计，自动计算；水果机 24 灯为相对权重（每项最高 10000），概率＝该灯权重÷24 灯合计；额外玩法权重最高 10000。出全盘奖时只赔全盘倍数、不叠加线奖；明星97 每局消耗＝单线注×8，水浒传＝单线注×9（全盘奖按总押注赔）。此处独立保存，按当前机台生效。</p>
+    <p class="gc-hint" id="lwFruitHint" style="display:none;">水果机 24 灯按转盘顺时针排布：灯1~7 上排、灯8~12 右列、灯13~19 下排、灯20~24 左列。右列正中为灯10（右侧幸运灯）、左列正中为灯22（左侧幸运灯），两项权重各自独立生效，改一个不影响另一个。两个幸运灯的开奖奖池也各自一套（“额外玩法权重”里分左右两组）：左侧 12 项全为 0 时沿用右侧那套，旧配置无需改动即保持原行为。</p>
+    <div class="gc-hint" id="lwMx97Hint" style="display:none;">
+        <strong>明星97：3×3 九宫格，A～H 共8条线齐押。</strong>
+        <p>图案名称：樱桃、橘子、蓝莓、铃铛、西瓜、黄BAR、红BAR、蓝BAR、7。三连＝同一条线的3格同图案；樱桃一连／二连从该线线首连续计算；混合BAR＝同一条线由不同颜色BAR组成。</p>
+        <p>ALL N个7＝全盘9格中共有N个7，不要求连线；全水果＝9格都是樱桃／橘子／蓝莓／西瓜，可混合（铃铛不算水果）；全盘混合BAR＝9格都是BAR、颜色可混合；全盘同图案＝9格全相同。同图案奖优先于混合奖。</p>
+        <p>全盘奖＝单线注×全盘倍数，只赔全盘奖；没有全盘奖时，各中奖线累加。下方“本类整盘平均”含同盘其他中奖线，并非单条线的固定赔率。“7三连”和“ALL 3个7”均按全盘3个7的5倍结算，分别设置的权重会共同贡献这一结果的出现概率。</p>
+        <details><summary>查看游戏内赔率（均为单线注倍数）</summary>
+            <p>三连：樱桃10、橘子10、蓝莓14、铃铛18、西瓜20、黄BAR30、红BAR50、蓝BAR70；混合BAR三连10；线首樱桃二连5、一连2。</p>
+            <p>ALL 2／3／4／5／6／7／8／9个7：依次2／5／20／40／60／80／100／200倍；全水果15倍；全盘樱桃80、橘子40、蓝莓40、铃铛40、西瓜60、黄BAR60、红BAR90、蓝BAR100；全盘混合BAR40倍。</p>
+        </details>
+    </div>
+    <div class="gc-hint" id="lwShzHint" style="display:none;">
+        <strong>水浒传：5×3 共15格，9线齐押、双边对奖。</strong>
+        <p>图案名称：水浒传（龙头万能图标）、忠义堂、替天行道、宋江、林冲、鲁智深、刀、枪、斧。万能图标可替代其他图案。3／4／5连＝同一条线从最左端或最右端连续命中，只有中间相连不算；同一条5连只计一次。</p>
+        <p>全盘同图案＝15格为同一图案（允许万能替代）；全盘人物＝宋江／林冲／鲁智深混合，全盘兵器＝刀／枪／斧混合，均允许万能替代。同图案奖优先于混合奖。全盘奖＝总押注×全盘倍数，只赔全盘奖；没有全盘奖时，各中奖线按单线注累加。小玛丽奖励另计。</p>
+        <p>“水浒传（万能图标）5连”是同线5个万能，线奖2000倍单线注，并送3次小玛丽；纯万能3／4连只送小玛丽，不单独赔线奖。下方普通连线奖的“本类整盘平均”含其他中奖线，实际单线赔率见下表。</p>
+        <details><summary>查看游戏内赔率（3连／4连／5连为单线注倍数）</summary>
+            <p>忠义堂50／200／1000；替天行道20／80／400；宋江15／40／200；林冲10／30／160；鲁智深7／20／100；刀5／15／60；枪3／10／40；斧2／5／20。</p>
+            <p>全盘奖按总押注：水浒传5000倍、忠义堂2500倍、替天行道1000倍、宋江500倍、林冲400倍、鲁智深250倍、刀150倍、枪100倍、斧50倍；混合人物50倍、混合兵器15倍。</p>
+        </details>
+    </div>
     <label><input type="checkbox" id="lwEnabled" /> 启用相对权重开奖（关闭时继续使用旧配置）</label>
     <div id="lwStatus" role="status" style="margin:10px 0;"></div>
     <div id="lwEditor" style="display:none;">
@@ -13,8 +34,14 @@
             <div class="gc-hint">理论值是自然局长期期望，实际短期结果会波动；不含人为控牌、比倍、余额容量拒绝。RTP 按单局实际消耗计算；水浒传小玛丽计入额外玩法，水果机幸运灯按“送1-5个灯或者吃灯”计入。</div>
         </div>
         <div id="lwMain" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px;"></div>
-        <details style="margin:16px 0;"><summary>额外玩法权重与触发设置</summary>
-            <label style="display:block;margin:12px 0;"><input id="lwBonus" type="checkbox" /> 启用原包额外玩法</label>
+        <details style="margin:16px 0;"><summary id="lwExtraTitle">额外玩法权重与触发设置</summary>
+            <p class="gc-hint" id="lwMx97BonusHint" style="display:none;">明星97原包帮助没有明星倍、BONUS或系统奖，当前游戏也不触发这些玩法；ALL N个7、全水果、全盘BAR均属于基础盘面奖，已在上方配置，无需另开额外玩法。</p>
+            <div class="gc-hint" id="lwShzBonusHint" style="display:none;">
+                <p><strong>BONUS GAME（小玛丽）：按牌面触发，固定开启。</strong>同一条线从左端或右端连续出现3／4／5个“水浒传”万能图标，分别送1／2／3次；每线按两端较长的一段计算，不重复计次，9条线相加，最多27次。全盘15格万能＝9线×3次＝27次。散落3个万能、只有中间3个万能或3个相同普通图案均不触发。</p>
+                <p>进入后每回合显示内圈4张图案、外圈24格转灯。外圈停在普通图案时，内圈每张相同图案各赔一次；忠义堂200、替天行道100、宋江70、林冲50、鲁智深20、刀10、枪5、斧2倍单线注。内圈恰有左3张或右3张相同额外奖20倍；4张全同则额外奖500倍（不再加20倍），可叠加普通匹配奖（仅非退出回合派彩）。</p>
+                <p>外圈“退出”（第1／7／13／19格）每命中一次扣1次剩余次数，扣完结束；中奖回合不扣次数，不另扣押注。下方权重只决定进入后的外圈停位，不是触发概率；权重0表示不抽取，概率＝本格权重÷24格权重合计。所有外圈权重合计须大于0。接近回合上限时强制退出，直至耗尽剩余次数。</p>
+            </div>
+            <label id="lwBonusToggle" style="display:block;margin:12px 0;"><input id="lwBonus" type="checkbox" /> 使用自定义幸运灯奖池（水果机）</label>
             <div id="lwExtra" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:8px;"></div>
         </details>
         <button type="button" id="lwSave" class="gc-btn gc-btn-primary">保存本机台权重</button>
@@ -24,4 +51,4 @@
 <script>
 window.LABA_WEIGHTS_URLS={get:'@Url.Action("GetLabaWeights", "GameConfig", new { area="Game" })',preview:'@Url.Action("PreviewLabaWeights", "GameConfig", new { area="Game" })',save:'@Url.Action("SaveLabaWeights", "GameConfig", new { area="Game" })'};
 </script>
-<script src="@Url.Content("~/Scripts/app/game.labaweights.js?v=1.0.73")"></script>
+<script src="@Url.Content("~/Scripts/app/game.labaweights.js?v=" + YYT.Common.ConfigHelper.Get("WebVer"))"></script>

@@ -33,6 +33,20 @@ namespace YYT.Web.Models
         public const int Scale = 10000;
         public const int ShzScale = 100000;
         public static int ScaleOf(int game) { return game==53 ? ShzScale : Scale; }
+        /// <summary>
+        /// 水果机两个幸运灯各自一套奖池：右侧(灯10/面板位9)用 extra[1..11] 特殊奖 + extra[12] 吃灯；
+        /// 左侧(灯22/面板位21)用 extra[28..38] + extra[39]。左侧 12 项全为 0 表示沿用右侧那套，
+        /// 旧配置（只有 1..12 有值）行为不变；游戏服 LabaWeightEngine::FruitType 同一口径。
+        /// </summary>
+        public const int FruitPoolBStart = 28;
+        public const int FruitPoolCount = 12;
+        public static int[] FruitPool(Config c, int lamp)
+        {
+            bool useB = lamp==21 && Enumerable.Range(FruitPoolBStart,FruitPoolCount).Any(i=>c.extra[i]>0);
+            var pool = new int[FruitPoolCount];
+            Array.Copy(c.extra, useB ? FruitPoolBStart : 1, pool, 0, FruitPoolCount);
+            return pool;
+        }
         public readonly Catalog Data;
         public LabaWeightMath(string json) { Data = JsonConvert.DeserializeObject<Catalog>(json); }
         public Game Find(int game) { return Data.games.Single(g => g.game == game); }
@@ -149,7 +163,7 @@ namespace YYT.Web.Models
             if (game==40)
             {
                 double award=c.extra.Skip(1).Take(12).Sum(v=>(double)v);
-                if (c.extra[0]==1 && award==0) throw new ArgumentException("幸运灯至少配置一种特殊奖或吃灯权重。");
+                if (c.extra[0]==1 && award==0) throw new ArgumentException("右侧幸运灯（灯10）至少配置一种特殊奖或吃灯权重；左侧留空时沿用右侧。");
             }
         }
         public Result Calculate(int game, Config c, int bet)
@@ -191,21 +205,24 @@ namespace YYT.Web.Models
         }
         private Result Fruit(Config c)
         {
-            Game g=Find(40); double sum=c.main.Sum(v=>(double)v), lucky=(c.main[9]+c.main[21])/sum;
-            double award=c.extra.Skip(1).Take(12).Sum(v=>(double)v);
+            Game g=Find(40); double sum=c.main.Sum(v=>(double)v);
+            int[] poolA=FruitPool(c,9), poolB=FruitPool(c,21);
+            double awardA=poolA.Sum(v=>(double)v), awardB=poolB.Sum(v=>(double)v);
+            double p9=c.main[9]/sum, p21=c.main[21]/sum;
             var main=new double[8]; var extra=new double[8]; var areas=new double[8];
             for (int i=0;i<24;i++) if (g.area[i]>=0) main[g.area[i]]+=c.main[i]/sum*g.rat[i];
             for (int type=0;type<11;type++)
             {
-                double chance=c.extra[0]==1 ? c.extra[1+type]/award : (type==6 ? 0.5 : 0);
-                if (chance<=0) continue;
+                double chanceA=c.extra[0]==1 ? (awardA>0 ? poolA[type]/awardA : 0) : (type==6 ? 0.5 : 0);
+                double chanceB=c.extra[0]==1 ? (awardB>0 ? poolB[type]/awardB : 0) : (type==6 ? 0.5 : 0);
+                if (chanceA<=0 && chanceB<=0) continue;
                 double[] value=FruitAward(g,type);
-                for (int a=0;a<8;a++) extra[a]+=lucky*chance*value[a];
+                for (int a=0;a<8;a++) extra[a]+=(p9*chanceA+p21*chanceB)*value[a];
             }
             for (int a=0;a<8;a++) areas[a]=(main[a]+extra[a])*100;
             double baseMean=main.Average()*100, total=areas.Average();
             return new Result { baseRtp=baseMean, extraRtp=total-baseMean,totalRtp=total,areaRtp=areas,
-                basis="八区等额下注为总RTP；单押或不等额下注按各区RTP加权。幸运灯按“送1-5个灯或者吃灯”（额外玩法开启时按特殊奖/吃灯权重）计入，无免费局；不包括人为控牌、比倍和余额容量拒绝。" };
+                basis="八区等额下注为总RTP；单押或不等额下注按各区RTP加权。两个幸运灯各有奖池（灯10 右侧用 extra[1..12]，灯22 左侧用 extra[28..39]，左侧全 0 时沿用右侧），按“送1-5个灯或者吃灯”（额外玩法开启时按特殊奖/吃灯权重）计入，无免费局；不包括人为控牌、比倍和余额容量拒绝。" };
         }
         private static double[] FruitAward(Game g, int type)
         {

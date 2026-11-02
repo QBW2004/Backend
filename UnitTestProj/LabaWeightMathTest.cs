@@ -65,6 +65,42 @@ namespace UnitTestProj
             Assert.AreEqual(expected,math.Calculate(40,c,1).totalRtp,1e-8);
         }
         [TestMethod]
+        public void FruitLuckyLightsUseIndependentAwardPools()
+        {
+            // 右侧(灯10/面板位9)用 extra[1..12]，左侧(灯22/面板位21)用 extra[28..39]；左侧全 0 沿用右侧。
+            var math=MathModel(); var c=math.Defaults(40); Array.Clear(c.main,0,c.main.Length);
+            c.extra[0]=1; c.extra[9]=1; c.extra[12]=0;
+            c.main[9]=1; c.main[21]=0;
+            double right=math.Calculate(40,c,1).totalRtp;
+            c.main[9]=0; c.main[21]=1;
+            Assert.AreEqual(right,math.Calculate(40,c,1).totalRtp,1e-9,"左侧未配置奖池时应沿用右侧");
+            CollectionAssert.AreEqual(new[]{0,0,0,0,0,0,0,0,1,0,0,0},LabaWeightMath.FruitPool(c,9));
+            CollectionAssert.AreEqual(new[]{0,0,0,0,0,0,0,0,1,0,0,0},LabaWeightMath.FruitPool(c,21));
+            // 左侧单独配成另一种奖（大四喜=索引2），只影响左灯
+            c.extra[30]=1;
+            CollectionAssert.AreEqual(new[]{0,0,1,0,0,0,0,0,0,0,0,0},LabaWeightMath.FruitPool(c,21));
+            CollectionAssert.AreEqual(new[]{0,0,0,0,0,0,0,0,1,0,0,0},LabaWeightMath.FruitPool(c,9));
+            double leftOnly=math.Calculate(40,c,1).totalRtp;
+            c.main[9]=1; c.main[21]=0;
+            Assert.AreEqual(right,math.Calculate(40,c,1).totalRtp,1e-9,"左灯奖池不能影响右灯");
+            c.main[9]=0; c.main[21]=1;
+            Assert.AreEqual(leftOnly,math.Calculate(40,c,1).totalRtp,1e-9);
+            Assert.AreNotEqual(right,leftOnly,1e-9);
+            // 两灯各半时是两种奖池的加权平均
+            c.main[9]=1; c.main[21]=1;
+            Assert.AreEqual((right+leftOnly)/2,math.Calculate(40,c,1).totalRtp,1e-9);
+            // 左侧 12 项全 0 时保存/回读仍是全 0（沿用标记不能丢）
+            c.main[9]=1; c.main[21]=1; c.extra[12]=1; Array.Clear(c.extra,28,12);
+            var restored=math.ReadProfiles(40,math.WriteProfiles(40,c));
+            CollectionAssert.AreEqual(new int[12],restored.extra.Skip(28).Take(12).ToArray());
+            Assert.AreEqual(1,restored.extra[12]);
+            c.extra[30]=2; c.extra[39]=3;
+            restored=math.ReadProfiles(40,math.WriteProfiles(40,c));
+            Assert.AreEqual(2,restored.extra[30]);
+            Assert.AreEqual(3,restored.extra[39]);
+        }
+
+        [TestMethod]
         public void MaryUsesFiniteExitBudgetAndStackedInnerAwards()
         {
             var math=MathModel(); var c=math.Defaults(53); Array.Clear(c.main,0,c.main.Length);
@@ -87,6 +123,31 @@ namespace UnitTestProj
             Assert.AreEqual(0,r.extraRtp,1e-12);
             Assert.AreEqual(mean*100,r.totalRtp,1e-8);
         }
+        [TestMethod]
+        public void FruitWheelExposesBothLuckyLightsIndependently()
+        {
+            // 转盘 24 灯：灯10（面板位 9）是右列正中=右侧幸运灯，灯22（面板位 21）是左列正中=左侧幸运灯。
+            // 两项必须都能在桌台设置里单独改，保存/回读不得互相覆盖或均分。
+            var math=MathModel(); var g=math.Find(40);
+            Assert.AreEqual(24,g.items.Length);
+            Assert.AreEqual(9,g.items[9].code);
+            Assert.AreEqual(21,g.items[21].code);
+            StringAssert.Contains(g.items[9].name,"右侧");
+            StringAssert.Contains(g.items[21].name,"左侧");
+            Assert.AreEqual(0,g.rat[9]); Assert.AreEqual(0,g.rat[21]);
+            Assert.AreEqual(-1,g.area[9]); Assert.AreEqual(-1,g.area[21]);
+            var c=math.Defaults(40); c.enabled=true; c.main[9]=111; c.main[21]=222;
+            var restored=math.ReadProfiles(40,math.WriteProfiles(40,c));
+            Assert.AreEqual(111,restored.main[9]);
+            Assert.AreEqual(222,restored.main[21]);
+            Assert.IsFalse(restored.main[9]==restored.main[21],"两个幸运灯权重不能合并");
+            string view=File.ReadAllText(Path.Combine(Root(),"TTY.Web/Areas/Game/Views/GameConfig/_LabaWeights.cshtml"));
+            StringAssert.Contains(view,"lwFruitHint");
+            StringAssert.Contains(view,"灯10（右侧幸运灯）");
+            StringAssert.Contains(view,"灯22（左侧幸运灯）");
+            StringAssert.Contains(view,"game.labaweights.js?v=");
+        }
+
         [TestMethod]
         public void InvalidConfigAndStaleCatalogCannotBeSaved()
         {
