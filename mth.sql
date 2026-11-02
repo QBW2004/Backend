@@ -762,7 +762,7 @@ INSERT INTO `games` VALUES (10, '幸运六狮', 1, 0, 0);
 INSERT INTO `games` VALUES (11, '3D猎鸟', 0, 2, 0);
 INSERT INTO `games` VALUES (12, '幸运牛牛', 0, 0, 0);
 INSERT INTO `games` VALUES (13, '李逵劈鱼', 1, 2, 0);
-INSERT INTO `games` VALUES (14, '金皇冠', 1, 1, 0);
+INSERT INTO `games` VALUES (14, '金皇冠', 0, 1, 0);
 INSERT INTO `games` VALUES (15, '大字板', 1, 1, 0);
 INSERT INTO `games` VALUES (16, '明星97', 1, 3, 0);
 INSERT INTO `games` VALUES (17, '海王2', 0, 2, 0);

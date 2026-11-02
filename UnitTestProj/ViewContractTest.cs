@@ -24,6 +24,22 @@ namespace UnitTestProj
         }
 
         [TestMethod]
+        public void PlayerWinLossKeepsCoinFractionsAndInitialPageTotals()
+        {
+            string users = ReadRepoFile(@"YYT.BLL\EF\B_Users.cs");
+            int start = users.IndexOf("public M_EasyuiGridData<M_Users_DTO> GetUsersList");
+            int end = users.IndexOf("public List<M_Users_DTO> GetUserRowsByIds", start);
+            StringAssert.Contains(users.Substring(start, end - start), "FillTotalWinLoss(ef, users);");
+            Assert.IsFalse(users.Contains("CAST(IFNULL(SUM(WINLOSS),0) AS SIGNED)"));
+            Assert.IsFalse(users.Contains("CAST(IFNULL(SUM(w.WINLOSS),0) AS SIGNED)"));
+            StringAssert.Contains(users, "[\"user_winloss_ledger\"] = \"UserID = {0}\"");
+            Assert.AreEqual(typeof(decimal?), typeof(YYT.Entity.M_Users_DTO).GetProperty("Profit").PropertyType);
+            Assert.AreEqual(typeof(decimal?), typeof(YYT.Entity.M_Users_DTO).GetProperty("TodayWinLoss").PropertyType);
+            Assert.AreEqual(typeof(decimal?), typeof(YYT.Entity.M_UserPhoneDetail).GetProperty("TotalWinLoss").PropertyType);
+            StringAssert.Contains(ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.core.js"), "return Number(n.toFixed(8)).toString();");
+        }
+
+        [TestMethod]
         public void AdminPermissionViewExposesVisiblePermissionSwitches()
         {
             string view = ReadRepoFile(@"TTY.Web\Areas\Game\Views\Admin\Index.cshtml");
@@ -641,8 +657,17 @@ namespace UnitTestProj
                 StringAssert.Contains(controlView, "id=\"" + id + "\"");
             Assert.IsFalse(controlView.Contains("id=\"stScore\""));
             Assert.IsFalse(controlView.Contains("id=\"stCoins\""));
+            // 控制页统计卡对齐参考站送奖管理：账号标签与三张统计卡均标注「钻」单位
+            StringAssert.Contains(controlView, "送奖账号");
+            StringAssert.Contains(controlView, "当前押注（钻）");
+            StringAssert.Contains(controlView, "今日输赢（钻）");
+            StringAssert.Contains(controlView, "总输赢（钻）");
+            // 吃分/放水目标按钻累计（中心服按结算报文实际桌台兑换比折算）：两端目标输入标注钻单位
+            StringAssert.Contains(controlView, "目标（钻）");
+            StringAssert.Contains(ReadRepoFile(@"TTY.Web\Areas\Game\Views\UserInfo\OnlineUsers.cshtml"), "目标（钻）");
+            StringAssert.Contains(ReadRepoFile(@"TTY.Web\Areas\Game\Views\UserInfo\Index.cshtml"), "目标（钻）");
             StringAssert.Contains(controlView, "flex-wrap: nowrap");
-            foreach (string header in new[] { "今日盈亏", "今日充值", "今日退币", "所属代理" })
+            foreach (string header in new[] { "今日盈亏", "今日充值", "今日退钻", "所属代理" })
                 StringAssert.Contains(memberView, header);
             Assert.IsFalse(playerDetailView.Contains("id=\"btnControl\""));
             Assert.IsFalse(prizeView.Contains("historyNext"));
@@ -670,8 +695,11 @@ namespace UnitTestProj
             Assert.IsFalse(userRecordController.Contains("cardGameIds"));
             Assert.IsTrue(userRecordController.IndexOf(prizeFilter, StringComparison.Ordinal)
                 < userRecordController.IndexOf("int total = query.Count()", StringComparison.Ordinal));
+            // 中奖历史只保留 50 倍及以上：低于 50 倍的播报记录不进中奖历史，过滤同样先于计数/分页。
+            StringAssert.Contains(userRecordController, "PrizeHistoryMinMultiplier = 50m");
+            StringAssert.Contains(userRecordController, "&& r.Multiplier >= PrizeHistoryMinMultiplier");
             StringAssert.Contains(ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.prizehistory.js"),
-                "条大奖记录（与中奖播报使用同一规则）");
+                "条大奖记录（仅统计50倍及以上中奖）");
         }
 
         [TestMethod]
@@ -706,7 +734,7 @@ namespace UnitTestProj
             string gameRecordScript = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.gamerecord.js");
 
             // 下注列（OPT_COINS = mCurBet）是游戏内部单位：0.1 分炮鱼机必须 ÷10 显示。
-            // 进入/离开余额（COINS = mCoins 钱包金币）与「得分」(离开-进入) 是真实币量，不能 ÷10。
+            // 进入/离开余额（COINS = mCoins 钱包钻）与「得分」(离开-进入) 是真实钻量，不能 ÷10。
             StringAssert.Contains(recordView, "isDecimalBetFish(rowData && rowData.GAME_TYPE)");
             StringAssert.Contains(recordView, "return top.goldFormat((v / 10).toFixed(1));");
             StringAssert.Contains(gameRecordScript, "M.betGold(Number(rowData.OPT_COINS || 0), rowData.GAME_TYPE)");
@@ -723,7 +751,7 @@ namespace UnitTestProj
             string phoneCore = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.core.js");
 
             // 得分列：gameprizerecord.Score 是游戏内部单位，0.1 分炮鱼机（金蟾捕鱼/牛魔王/李逵劈鱼等）
-            // 库存值是真实得分的 10 倍（中 100 金币显示成 1000），必须 ÷10 保留 1 位小数。
+            // 库存值是真实得分的 10 倍（中 100 钻显示成 1000），必须 ÷10 保留 1 位小数。
             StringAssert.Contains(prizeScript, "M.isDecimalBetFish(r.GameId) ? (score / 10).toFixed(1) : M.gold(score)");
             StringAssert.Contains(phoneCore, "M.isDecimalBetFish = function (gameId) {");
         }
@@ -796,7 +824,7 @@ namespace UnitTestProj
             Assert.IsFalse(controlScript.Contains("已受理"));
             Assert.IsFalse(controlBll.Contains("已受理"));
             StringAssert.Contains(rechargeScript, "成功！已向");
-            StringAssert.Contains(rechargeScript, "币。");
+            StringAssert.Contains(rechargeScript, "钻。");
             Assert.IsFalse(rechargeView.Contains("💎"));
             Assert.IsFalse(recordsView.Contains("<th>备注</th>"));
             StringAssert.Contains(rechargeBll, "c.Processed == 1");
@@ -853,14 +881,20 @@ namespace UnitTestProj
             string indexView = ReadRepoFile(@"TTY.Web\Areas\Game\Views\UserInfo\Index.cshtml");
             string onlineView = ReadRepoFile(@"TTY.Web\Areas\Game\Views\UserInfo\OnlineUsers.cshtml");
 
-            // 牌机（5-14）：所有游戏都不再提供 0 倍杂牌；五鬼(12)与电脑端一致一律隐藏；大四梅(8)仅火凤凰(14)保留
+            // 牌机（5-14/20大白兔）：所有游戏都不再提供 0 倍杂牌；五鬼(12)与电脑端一致一律隐藏；
+            // 大四梅(8)仅火凤凰(14)/大白兔(20)保留
             StringAssert.Contains(phoneCore, "if (t.ht == 0 || t.ht == 12) continue;");
-            StringAssert.Contains(phoneCore, "if (t.ht == 8 && action != 14) continue;");
+            StringAssert.Contains(phoneCore, "if (t.ht == 8 && action != 14 && action != 20) continue;");
             foreach (string view in new[] { indexView, onlineView })
             {
                 StringAssert.Contains(view, "if (t.ht == 0 || t.ht == 12) continue;");
-                StringAssert.Contains(view, "if (t.ht == 8 && cardAction != 14) continue;");
+                StringAssert.Contains(view, "if (t.ht == 8 && cardAction != 14 && cardAction != 20) continue;");
             }
+            // 扩展控牌正宗大四梅：火凤凰 X1~X6（控牌值 13-18）、大白兔 X1~X14（13-26，服务端 MTH_DABAITU 放开到 26）
+            StringAssert.Contains(phoneCore, "k <= (action == 20 ? 14 : 6)");
+            foreach (string view in new[] { indexView, onlineView })
+                StringAssert.Contains(view, "k <= (cardAction == 20 ? 14 : 6)");
+            StringAssert.Contains(ReadRepoFile(@"YYT.BLL\EF\B_UserControl.cs"), "cardValue <= (cardAction == 20 ? 26 : 18)");
             // 含"杂牌(0倍)/大四梅(65倍)"的旧牌型表（valSelDataPAIJI2/3 死代码）已删除，防止再被接回下拉
             foreach (string file in new[] { phoneCore, indexView, onlineView })
             {
@@ -925,7 +959,7 @@ namespace UnitTestProj
                 StringAssert.Contains(indexActions, restored);
                 StringAssert.Contains(onlineActions, restored);
             }
-            foreach (string kept in new[] { "id: 5,", "id: 7,", "id: 8,", "id: 12,", "id: 13,", "id: 14,", "id: 19," })
+            foreach (string kept in new[] { "id: 5,", "id: 7,", "id: 8,", "id: 13,", "id: 14,", "id: 19," })
             {
                 StringAssert.Contains(phoneActions, kept);
                 StringAssert.Contains(indexActions, kept);
@@ -941,6 +975,89 @@ namespace UnitTestProj
             StringAssert.Contains(phoneCore, "15: '水浒传'");
             StringAssert.Contains(indexView, "if (action == 15) list = valSelDataShz();");
             StringAssert.Contains(onlineView, "if (action == 15) list = valSelDataShz();");
+        }
+
+        [TestMethod]
+        public void RemovedKing3AbsentFromCardControlSelectors()
+        {
+            string phoneCore = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.core.js");
+            string indexView = ReadRepoFile(@"TTY.Web\Areas\Game\Views\UserInfo\Index.cshtml");
+            string onlineView = ReadRepoFile(@"TTY.Web\Areas\Game\Views\UserInfo\OnlineUsers.cshtml");
+
+            // 金皇冠(gameId=14/cardAction=12)已下线：全部可选控牌入口不再提供。
+            // 检查实际可选列表，不能由历史回显表或注释里的同名项冒充。
+            string phoneActions = phoneCore.Substring(phoneCore.IndexOf("M.CARD_ACTIONS = [", StringComparison.Ordinal));
+            phoneActions = phoneActions.Substring(0, phoneActions.IndexOf("];", StringComparison.Ordinal));
+            var selectorBlocks = new System.Collections.Generic.List<string> { phoneActions };
+            foreach (string view in new[] { indexView, onlineView })
+            {
+                string total = view.Substring(view.IndexOf("function totalCardActionData()", StringComparison.Ordinal));
+                selectorBlocks.Add(total.Substring(0, total.IndexOf("]);", StringComparison.Ordinal)));
+                string paiji = view.Substring(view.IndexOf("function actionSelDataPAIJI()", StringComparison.Ordinal));
+                selectorBlocks.Add(paiji.Substring(0, paiji.IndexOf("];", StringComparison.Ordinal)));
+            }
+            foreach (string block in selectorBlocks)
+            {
+                Assert.IsFalse(block.Contains("id: 12,"), "控牌下拉不应提供金皇冠");
+                Assert.IsFalse(block.Contains("金皇冠"));
+            }
+
+            // 历史控牌记录仍要能回显：手机端走名称回退表，三端保留 king3 倍率映射与 5-14 回显分支
+            StringAssert.Contains(phoneCore, "12: '金皇冠'");
+            foreach (string file in new[] { phoneCore, indexView, onlineView })
+            {
+                StringAssert.Contains(file, "king3:  [0, 1, 2, 3, 5, 7, 10, 60, 60, 120, 250, 500, 1000]");
+                StringAssert.Contains(file, "if (action == 12) return 'king3';");
+            }
+            StringAssert.Contains(indexView, "else if ((action >= 5 && action <= 14) || action == 20) list = valSelDataPAIJI(action);");
+            StringAssert.Contains(onlineView, "else if ((action >= 5 && action <= 14) || action == 20) list = valSelDataPAIJI(action);");
+            StringAssert.Contains(phoneCore, "(action >= 5 && action <= 14)");
+        }
+
+        [TestMethod]
+        public void DaBaiTuCardControlUsesPhenixTypesWithX14()
+        {
+            string phoneCore = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.core.js");
+            string indexView = ReadRepoFile(@"TTY.Web\Areas\Game\Views\UserInfo\Index.cshtml");
+            string onlineView = ReadRepoFile(@"TTY.Web\Areas\Game\Views\UserInfo\OnlineUsers.cshtml");
+            string userControl = ReadRepoFile(@"YYT.BLL\EF\B_UserControl.cs");
+
+            // 大白兔(cardAction=20, GameId=55)在全部可选控牌入口提供：手机共享列表、电脑端总控与牌机单控
+            string phoneActions = phoneCore.Substring(phoneCore.IndexOf("M.CARD_ACTIONS = [", StringComparison.Ordinal));
+            StringAssert.Contains(phoneActions.Substring(0, phoneActions.IndexOf("];", StringComparison.Ordinal)),
+                "{ id: 20, text: '大白兔' }");
+            foreach (string view in new[] { indexView, onlineView })
+            {
+                string total = view.Substring(view.IndexOf("function totalCardActionData()", StringComparison.Ordinal));
+                StringAssert.Contains(total.Substring(0, total.IndexOf("]);", StringComparison.Ordinal)),
+                    "{ id: 20, text: '大白兔' }");
+                string paiji = view.Substring(view.IndexOf("function actionSelDataPAIJI()", StringComparison.Ordinal));
+                StringAssert.Contains(paiji.Substring(0, paiji.IndexOf("];", StringComparison.Ordinal)),
+                    "{ id: 20, text: '大白兔' }");
+            }
+
+            // 牌型与火凤凰同一套：保留大四梅(8)，扩展正宗大四梅；唯一区别是大白兔到 X14（控牌值 13-26）
+            StringAssert.Contains(phoneCore, "if (t.ht == 8 && action != 14 && action != 20) continue;");
+            StringAssert.Contains(phoneCore, "if (action == 14 || action == 20)");
+            StringAssert.Contains(phoneCore, "k <= (action == 20 ? 14 : 6)");
+            StringAssert.Contains(phoneCore, "'正宗大四梅X' + k + '(' + (80 * k) + '倍)'");
+            foreach (string view in new[] { indexView, onlineView })
+            {
+                StringAssert.Contains(view, "if (t.ht == 8 && cardAction != 14 && cardAction != 20) continue;");
+                StringAssert.Contains(view, "if (cardAction == 14 || cardAction == 20)");
+                StringAssert.Contains(view, "k <= (cardAction == 20 ? 14 : 6)");
+                StringAssert.Contains(view, "n == 20");
+            }
+
+            // 服务端校验同步放开：cardAction 20 合法、牌型值 13-26
+            StringAssert.Contains(userControl, "cardAction != 20");
+            StringAssert.Contains(userControl, "cardValue <= (cardAction == 20 ? 26 : 18)");
+
+            // 历史控牌记录回显：三端都走牌机分支（含 13-26 扩展值）与显示名映射
+            StringAssert.Contains(indexView, "|| action == 20) list = valSelDataPAIJI(action);");
+            StringAssert.Contains(onlineView, "|| action == 20) list = valSelDataPAIJI(action);");
+            StringAssert.Contains(phoneCore, "|| action == 20) {");
+            Assert.AreEqual("大白兔", YYT.BLL.EF.GameDisplayNames.GetName(55, "DaBaiTu"));
         }
 
         [TestMethod]
@@ -1030,7 +1147,7 @@ namespace UnitTestProj
             StringAssert.Contains(recordEntity, "public bool MONEY_ONLY { get; set; }");
             StringAssert.Contains(controller, "form.Q<int>(\"MONEY_ONLY\")");
             StringAssert.Contains(controller, "MONEY_ONLY = moneyOnly");
-            // 白名单：充值/兑换/赠送/扣币（0/1 为历史遗留数据），登录退出(2/3)与封禁审计(24-27)不在内
+            // 白名单：充值/兑换/赠送/扣钻（0/1 为历史遗留数据），登录退出(2/3)与封禁审计(24-27)不在内
             StringAssert.Contains(recordsBll, "if (queryPara.MONEY_ONLY)");
             StringAssert.Contains(recordsBll, "int?[] moneyOpts = { 0, 1, 20, 21, 22, 23 };");
             StringAssert.Contains(recordsBll, "rst = rst.Where(c => moneyOpts.Contains(c.OPT));");
@@ -1486,7 +1603,7 @@ namespace UnitTestProj
             StringAssert.Contains(usersBll, "SELECT IFNULL(SUM(w2.WINLOSS),0) FROM user_daily_winloss w2 WHERE w2.UserID = c.ID) AS TotalWinLoss");
             string entityFile = ReadRepoFile(@"YYT.Entity\EF\M_Users.cs");
             int detailClass = entityFile.IndexOf("class M_UserPhoneDetail", StringComparison.Ordinal);
-            Assert.IsTrue(detailClass > 0 && entityFile.Substring(detailClass).Contains("public long? TotalWinLoss { get; set; }"),
+            Assert.IsTrue(detailClass > 0 && entityFile.Substring(detailClass).Contains("public decimal? TotalWinLoss { get; set; }"),
                 "M_UserPhoneDetail 需要 TotalWinLoss 字段，否则 SQL 列别名映射不上");
             StringAssert.Contains(controller, "detail.TotalWinLoss,");
         }
@@ -1777,6 +1894,29 @@ namespace UnitTestProj
         }
 
         [TestMethod]
+        public void RegistrationPathsTrimAccountAndPasswordBeforePersist()
+        {
+            // 2026-11-02 线上事故：后台添加用户时账号带进两个前导空格，落库为 '  tt1'，
+            // 中心服 WHERE ID='tt1' 精确匹配查不到 → 客户端报"账号或密码错误"。
+            // 所有建号路径必须在落库前去空格，不能再原样写库。
+            string usersBll = ReadRepoFile(@"YYT.BLL\EF\B_Users.cs");
+            string controller = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\UserInfoController.cs");
+
+            // BLL 两个入口（Regist 覆盖扫码注册/添加用户，Add 为公开注册路径）都先 Trim
+            Assert.IsTrue(usersBll.Split(new[] { "entity.ID = entity.ID == null ? null : entity.ID.Trim();" },
+                StringSplitOptions.None).Length - 1 >= 2,
+                "B_Users.Regist 与 B_Users.Add 都必须在查重/落库前 Trim entity.ID");
+            Assert.IsTrue(usersBll.Split(new[] { "entity.PWD = entity.PWD == null ? null : entity.PWD.Trim();" },
+                StringSplitOptions.None).Length - 1 >= 2,
+                "B_Users.Regist 与 B_Users.Add 都必须 Trim entity.PWD");
+
+            // 添加用户表单读入即 Trim（IsNullOrWhiteSpace 能过纯空格的前置校验，但不防 "  tt1" 这种夹带）
+            StringAssert.Contains(controller, "(form.Q<string>(\"txtE_UID1\") ?? \"\").Trim()");
+            StringAssert.Contains(controller, "(form.Q<string>(\"PWD1\") ?? \"\").Trim()");
+            StringAssert.Contains(controller, "(form.Q<string>(\"RE_PWD1\") ?? \"\").Trim()");
+        }
+
+        [TestMethod]
         public void PlayerControlStatusVisibleToSetterTopAgentAndSuperAdmin()
         {
             string rules = ReadRepoFile(@"YYT.BLL\EF\AgencyRules.cs");
@@ -1806,7 +1946,7 @@ namespace UnitTestProj
             Assert.IsFalse(managerOptBll.Contains("GetManagedPlayerAgencyAccounts(ef, loginUser)"),
                 "控制操作记录不得再用管理范围过滤");
 
-            // 控牌配置回显(GetUserCtrlConfigs)与金币上限回显(GetUserGoldLimit)也按设置人过滤
+            // 控牌配置回显(GetUserCtrlConfigs)与钻上限回显(GetUserGoldLimit)也按设置人过滤
             Assert.IsTrue(controller.Split(new[] { "CanViewPlayerControl(loginUser," }, StringSplitOptions.None).Length - 1 >= 2,
                 "GetUserCtrlConfigs 与 GetUserGoldLimit 都应校验 CanViewPlayerControl");
         }
@@ -1838,6 +1978,183 @@ namespace UnitTestProj
         }
 
         [TestMethod]
+        public void RobotSeatActionColumnUsesExplicitFormatter()
+        {
+            string view = ReadRepoFile(@"TTY.Web\Areas\Game\Views\Robot\Index.cshtml");
+
+            // The live seat table must render actions, never expose RobotId as
+            // the visible value when EasyUI parses a dynamically initialized grid.
+            StringAssert.Contains(view, "rowData = rowData || {};");
+            StringAssert.Contains(view, "|| value || ''");
+            StringAssert.Contains(view, "window.fmtSeatAction = fmtSeatAction;");
+            StringAssert.Contains(view, "field: 'SeatActions'");
+            StringAssert.Contains(view, "formatter: window.fmtSeatAction");
+            StringAssert.Contains(view, "指定座位");
+            StringAssert.Contains(view, "移除座位");
+        }
+
+        [TestMethod]
+        public void RobotSeatTableHasIndependentGameLineTableFilters()
+        {
+            string view = ReadRepoFile(@"TTY.Web\Areas\Game\Views\Robot\Index.cshtml");
+            string controller = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\RobotController.cs");
+
+            StringAssert.Contains(view, "id=\"seatFilterGame\"");
+            StringAssert.Contains(view, "id=\"seatFilterLine\"");
+            StringAssert.Contains(view, "id=\"seatFilterTable\"");
+            StringAssert.Contains(view, "id=\"seatFilterStatus\"");
+            StringAssert.Contains(view, "onclick=\"filterRobotSeats();\"");
+            StringAssert.Contains(view, "onclick=\"resetRobotSeatFilter();\"");
+            StringAssert.Contains(view, "SeatGameId:");
+            StringAssert.Contains(view, "SeatLine:");
+            StringAssert.Contains(view, "SeatTable:");
+            StringAssert.Contains(view, "SeatStatus:");
+            StringAssert.Contains(controller, "form.Q<int>(\"SeatGameId\", -1)");
+            StringAssert.Contains(controller, "form.Q<string>(\"SeatLine\")");
+            StringAssert.Contains(controller, "form.Q<string>(\"SeatTable\")");
+            StringAssert.Contains(controller, "form.Q<string>(\"SeatStatus\")");
+            StringAssert.Contains(controller, "statusFilter == \"idle\"");
+            StringAssert.Contains(controller, "StringComparison.OrdinalIgnoreCase");
+        }
+
+        [TestMethod]
+        public void RobotSeatActionsRefreshQuotaAndLiveTablesTogether()
+        {
+            string view = ReadRepoFile(@"TTY.Web\Areas\Game\Views\Robot\Index.cshtml");
+            StringAssert.Contains(view, "function reloadRobotViews()");
+
+            int reloadIdx = view.IndexOf("function reloadRobotViews()", StringComparison.Ordinal);
+            Assert.IsTrue(reloadIdx >= 0);
+            string reloadBody = view.Substring(reloadIdx, Math.Min(500, view.Length - reloadIdx));
+            StringAssert.Contains(reloadBody, "queryData();");
+            StringAssert.Contains(reloadBody, "queryRobotSeats();");
+
+            int saveIdx = view.IndexOf("function saveRobotSeat()", StringComparison.Ordinal);
+            Assert.IsTrue(saveIdx >= 0);
+            string saveBody = view.Substring(saveIdx, Math.Min(2500, view.Length - saveIdx));
+            StringAssert.Contains(saveBody, "reloadRobotViews();");
+        }
+
+        [TestMethod]
+        public void RobotManagementPageMergesAccountsAndOnlineSeatActions()
+        {
+            string view = ReadRepoFile(@"TTY.Web\Areas\Game\Views\Robot\Index.cshtml");
+            string controller = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\RobotController.cs");
+            string menu = ReadRepoFile(@"TTY.Web\Views\Mgr\Index.cshtml");
+
+            StringAssert.Contains(view, "机器人账户与入座状态");
+            StringAssert.Contains(view, "showRobotAccountWin");
+            StringAssert.Contains(view, "OnlineRobot");
+            StringAssert.Contains(view, "ReloadRobotAccounts");
+            StringAssert.Contains(view, "SeatAccount:");
+            StringAssert.Contains(controller, "public ActionResult OnlineRobot");
+            StringAssert.Contains(controller, "public ActionResult ReloadRobotAccounts");
+            StringAssert.Contains(controller, "liveIds");
+            StringAssert.Contains(controller, "Status = \"未上线\"");
+            StringAssert.Contains(menu, "href=\"/Game/Robot\">机器人管理</a>");
+            Assert.IsFalse(menu.Contains("href=\"/Game/UserRobot\""));
+        }
+
+        [TestMethod]
+        public void RobotBatchAccountCreateAndDeleteUsesChineseNamePool()
+        {
+            string view = ReadRepoFile(@"TTY.Web\Areas\Game\Views\Robot\Index.cshtml");
+            string controller = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\RobotController.cs");
+            string bll = ReadRepoFile(@"YYT.BLL\EF\B_UserRobot.cs");
+
+            // 批量入口必须仍由超管保护的账户接口承载，删除请求必须传递选中的
+            // 多个账户 ID，而不是在浏览器逐行循环调用单删接口。
+            StringAssert.Contains(controller, "public ActionResult BatchCreateRobotAccounts");
+            StringAssert.Contains(controller, "public ActionResult BatchDeleteRobotAccounts");
+            StringAssert.Contains(controller, "SuperAdminAuthorize");
+            Assert.IsTrue(controller.Contains("ids") || view.Contains("ids"),
+                "批量删除必须接收选中的账户 ID 列表");
+            Assert.IsTrue(controller.Contains("Split(new[] { ',', ';'") || controller.Contains("Split(',')"),
+                "批量删除必须按 ID 列表拆分并逐个删除");
+
+            // 批量创建的昵称不能再是旧版数字账号：名字来自可维护的中文名字库，
+            // 并在服务端限制为 2～8 个中文字符，避免直接信任前端输入。
+            bool hasNamePool = controller.Contains("NamePool") || controller.Contains("ChineseName") ||
+                               controller.Contains("中文名字") || bll.Contains("NamePool") || bll.Contains("ChineseName");
+            Assert.IsTrue(hasNamePool, "批量创建必须使用中文名字库");
+            StringAssert.Contains(controller, "RobotNameLibrary");
+            StringAssert.Contains(controller, "RobotNameRandom.Next(2, 9)");
+            StringAssert.Contains(controller, "usedNames");
+            bool hasLengthGuard = controller.Contains("Next(2, 9)") || controller.Contains("Length < 2") ||
+                                  controller.Contains("Length > 8") || controller.Contains("name.Length") ||
+                                  controller.Contains("昵称长度");
+            Assert.IsTrue(hasLengthGuard, "服务端必须校验随机昵称长度为2～8字");
+            bool hasChineseGuard = controller.Contains("4e00") || controller.Contains("9fff") ||
+                                   controller.Contains("中文") || bll.Contains("4e00") || bll.Contains("中文");
+            Assert.IsTrue(hasChineseGuard, "服务端必须保证批量昵称来自中文字符范围");
+
+            // 合并后的机器人页应直接提供批量创建、勾选和批量删除操作，成功后刷新
+            // 同一页的账户/座位视图。
+            Assert.IsTrue(view.Contains("批量创建") || view.Contains("批量添加"),
+                "机器人管理页必须提供批量创建入口");
+            Assert.IsTrue(view.Contains("批量删除") || view.Contains("batchDelete"),
+                "机器人管理页必须提供批量删除入口");
+            Assert.IsTrue(view.Contains("checkbox") || view.Contains("selectedRows") || view.Contains("getSelections"),
+                "批量删除必须允许勾选多个机器人账户");
+            Assert.IsTrue(view.Contains("BatchCreateRobotAccounts") || view.Contains("saveBatchRobot"),
+                "页面批量创建必须调用批量接口");
+            Assert.IsTrue(view.Contains("BatchDeleteRobotAccounts") || view.Contains("deleteBatchRobot") || view.Contains("batchDeleteRobotAccounts"),
+                "页面批量删除必须调用批量接口");
+            Assert.IsTrue(view.Contains("ReloadRobotAccounts") && view.Contains("reloadRobotViews"),
+                "批量账户变更后必须热更账户池并刷新机器人视图");
+        }
+
+        [TestMethod]
+        public void RobotOnlinePipeProtocolIsWired()
+        {
+            string header = File.ReadAllText(@"E:\MTH\MTH-Server\ServerRobot\ServerRun.h");
+            string source = File.ReadAllText(@"E:\MTH\MTH-Server\ServerRobot\ServerRun.cpp");
+            StringAssert.Contains(header, "OnlineRobotRuntime");
+            StringAssert.Contains(source, "cmd.rfind(\"ONLINE \", 0)");
+            StringAssert.Contains(source, "ONLINE_OK");
+            StringAssert.Contains(source, "RobotReadDB()");
+        }
+
+        [TestMethod]
+        public void RobotQuotaSummarySeparatesCapacityTargetAndLiveCount()
+        {
+            string view = ReadRepoFile(@"TTY.Web\Areas\Game\Views\Robot\Index.cshtml");
+            string controller = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\RobotController.cs");
+
+            StringAssert.Contains(view, "field=\"GAME_NAME\"");
+            StringAssert.Contains(view, "field=\"LINE_AGENT\"");
+            StringAssert.Contains(view, "field=\"ROBOT_COUNT\"");
+            StringAssert.Contains(view, "formatter=\"fmtRobotCount\"");
+            StringAssert.Contains(view, "field=\"TOTAL_SEATS\"");
+            StringAssert.Contains(view, "field=\"CONFIGURED_ROBOT_COUNT\"");
+            StringAssert.Contains(view, "ROBOT_COUNT");
+            StringAssert.Contains(view, "deleteRobotSummary");
+            Assert.IsFalse(view.Contains("field=\"GAME_TYPE\" width=\"110\""));
+            Assert.IsFalse(view.Contains("field=\"TABLE_NAME\" width=\"150\""));
+            StringAssert.Contains(controller, "BuildRobotSummaryRows");
+            StringAssert.Contains(controller, "g.Enable == 1 && g.GameId != 54");
+            StringAssert.Contains(controller, "TOTAL_TABLES = totalTables");
+            StringAssert.Contains(controller, "TOTAL_SEATS = totalSeats");
+            StringAssert.Contains(controller, "MaxSeats");
+            StringAssert.Contains(controller, "CONFIGURED_ROBOT_COUNT = item.RobotCount");
+            StringAssert.Contains(controller, "public ActionResult DeleteRobotSummary");
+        }
+
+        [TestMethod]
+        public void RobotQuotaSummaryUsesLiveSittingCount()
+        {
+            string view = ReadRepoFile(@"TTY.Web\Areas\Game\Views\Robot\Index.cshtml");
+            string controller = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\RobotController.cs");
+
+            StringAssert.Contains(controller, "SendRobotStatus()");
+            StringAssert.Contains(controller, ".Where(r => r.Sitting).ToList()");
+            StringAssert.Contains(controller, "actualRobotCount = liveSeats.Count");
+            StringAssert.Contains(controller, "CONFIGURED_ROBOT_COUNT = item.RobotCount");
+            StringAssert.Contains(view, "if (Number(robotCount) < 0)");
+            StringAssert.Contains(view, "实时状态暂不可用");
+        }
+
+        [TestMethod]
         public void RechargeOrderMutationsAreScopedAndIdempotent()
         {
             string bll = ReadRepoFile(@"YYT.BLL\EF\B_ReChargeRecords.cs");
@@ -1857,7 +2174,7 @@ namespace UnitTestProj
             StringAssert.Contains(controller, "OrderOrderRefuseEx(loginUser, orderNo)");
 
             // RefuseEx（动账回滚）必须有 Processed 幂等守卫：
-            // 同一订单禁止重复触发用户加币/代理扣币（重放造账）
+            // 同一订单禁止重复触发用户加钻/代理扣钻（重放造账）
             int exIdx = bll.IndexOf("public Msg OrderOrderRefuseEx");
             Assert.IsTrue(exIdx > 0);
             StringAssert.Contains(bll.Substring(exIdx), "if (rst.Processed > 0)");
@@ -1933,6 +2250,22 @@ namespace UnitTestProj
 
             // 新过滤器必须登记进老式 csproj，否则部署产物缺文件
             StringAssert.Contains(csproj, @"Filters\JsonAntiForgeryAttribute.cs");
+        }
+
+        [TestMethod]
+        public void GameConfigNewTableSupportsCustomBatchCount()
+        {
+            string view = ReadRepoFile(@"TTY.Web\Areas\Game\Views\GameConfig\ConfigEditor.cshtml");
+
+            // 新建入口先询问数量；确认后保留参数编辑流程，保存时按顺序创建多张桌台。
+            StringAssert.Contains(view, "id=\"gcNewTableWin\"");
+            StringAssert.Contains(view, "id=\"gcNewTableCount\"");
+            StringAssert.Contains(view, "function gcConfirmNewTable()");
+            StringAssert.Contains(view, "GC_NEW_TABLE_MAX = 1000");
+            StringAssert.Contains(view, "GC_NEW_TABLE_COUNT > 1");
+            StringAssert.Contains(view, "function gcSaveNewTables(basePara, count)");
+            StringAssert.Contains(view, "$.extend({}, basePara, { ID: -1 })");
+            StringAssert.Contains(view, "$('#gcNewTableConfirm').on('click', gcConfirmNewTable)");
         }
 
     }
