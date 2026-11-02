@@ -49,6 +49,17 @@ namespace YYT.Web.Areas.Game.Controllers
             return Execute(user => new B_PrizePool().GetControlRecords(user, page, (form["ID"] ?? "").Trim(), start.Date, end.Date.AddDays(1)));
         }
 
+        [AjaxOnly, HttpPost, JsonAntiForgery]
+        public ActionResult RemoveRecord(FormCollection form)
+        {
+            int controlId, mode;
+            string id = (form["ID"] ?? "").Trim();
+            if (!int.TryParse(form["ControlId"], out controlId) || controlId <= 0 ||
+                !int.TryParse(form["Mode"], out mode) || mode < 4 || mode > 6 || id.Length == 0)
+                return Json(new Msg(0, "无效的送奖记录！"));
+            return Execute(user => new B_UserControl().CloseTotalControl(user, id, mode, true, controlId));
+        }
+
         [AjaxOnly, HttpPost]
         public ActionResult CardQuote(FormCollection form)
         {

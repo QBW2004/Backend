@@ -28,6 +28,7 @@
         var canApply = !!current && !submitting && (currentMode() == 4 || !!wallet);
         $("#applyBtn").prop("disabled", !canApply);
         $("#closeCtrlBtn").prop("disabled", !current || submitting);
+        $('.record-remove-btn').prop('disabled', submitting);
     }
 
     /* ---------------- 控牌参数 ---------------- */
@@ -326,15 +327,39 @@
     function recordHtml(row) {
         var isCard = Number(row.ControlMode) === 6;
         var opened = row.AwardTime != null;
-        var status = opened ? '已开' : Number(row.Status) === 0 ? '未开' : '移除';
+        var pending = !opened && Number(row.Status) === 0;
+        var status = pending
+            ? '<button type="button" class="record-remove-btn" data-control-id="' + M.esc(row.ID) +
+              '" data-account="' + M.esc(row.UserID) + '" data-mode="' + M.esc(row.ControlMode) + '">移除</button>'
+            : '<span class="control-record-status ' + (opened ? 'done' : '') + '">' + (opened ? '已开' : '移除') + '</span>';
         var game = row.GameName || (isCard ? M.cardActionName(row.CardAction) : modeName(row.ControlMode));
         var hand = isCard ? M.cardTypeName(row.CardAction, row.CardValue) : '--';
         var date = opened ? M.fmtTime(row.AwardTime, true) : M.fmtTime(row.CreatedTime, true);
-        return '<tr><td>' + M.esc(game) + '</td><td>' + M.esc(row.UserID) + '</td><td><span class="control-record-status ' +
-            (opened ? 'done' : Number(row.Status) === 0 ? 'pending' : '') + '">' + status + '</span></td><td>' +
+        return '<tr><td>' + M.esc(game) + '</td><td>' + M.esc(row.UserID) + '</td><td>' + status + '</td><td>' +
             M.esc(row.TableId == null ? '--' : row.TableId) + '</td><td>' + M.esc(hand) + '</td><td>' +
             M.esc(isCard ? row.ActualCardType || '--' : '--') + '</td><td>' +
             M.esc(opened ? diamonds(row.AwardDiamonds) : '--') + '</td><td>' + M.esc(date) + '</td></tr>';
+    }
+
+    function removeRecord() {
+        if (submitting) return;
+        var $button = $(this), target = $button.attr('data-account');
+        var controlId = Number($button.attr('data-control-id')), mode = Number($button.attr('data-mode'));
+        M.confirm('确认移除玩家 ' + target + ' 的这条未开奖送奖？', '移除送奖').then(function (ok) {
+            if (!ok || submitting) return;
+            submitting = true; updateButtons(); M.loading('处理中...');
+            M.post('/Game/PrizePool/RemoveRecord', { ID: target, Mode: mode, ControlId: controlId }).always(M.hideLoading)
+                .then(function (res) {
+                    var r = M.result(res);
+                    M.alert(r.text || (r.ok ? '移除成功' : '移除失败'), r.ok);
+                    if (r.ok) {
+                        if (current && current.ID === target) refreshCtrlStatus();
+                        refreshWallet();
+                    }
+                    loadHistory(true);
+                }, function () { M.toast('移除结果暂未确认，请刷新记录后核对', 'error'); loadHistory(true); })
+                .always(function () { submitting = false; updateButtons(); });
+        });
     }
 
     function loadHistory(reset) {
@@ -352,6 +377,7 @@
                 var html = res.rows.map(recordHtml).join('');
                 if (reset) $('#controlRows').html(html || '<tr><td class="empty-row" colspan="8">暂无送奖记录</td></tr>');
                 else $('#controlRows').append(html);
+                updateButtons();
                 $('#sentDiamonds').text(diamonds(res.sentDiamonds));
                 $('#controlCount').text('共 ' + res.total + ' 条');
                 $('#controlMore').toggle(page * 20 < res.total);
@@ -398,6 +424,7 @@
         $('#controlStart').val(dateValue(first)); $('#controlEnd').val(dateValue(today));
         $('#controlRefresh').on('click', function () { loadHistory(true); refreshWallet(); });
         $('#controlMore').on('click', function () { loadHistory(false); });
+        $('#controlRows').on('click', '.record-remove-btn', removeRecord);
         $('#poolRechargeBtn').on('click', rechargePool);
         refreshWallet(); loadHistory(true);
         var preset = window.MPagePreset || {};

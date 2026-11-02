@@ -192,6 +192,15 @@
     <Reference Include="Z.EntityFramework.Extensions, Version=3.19.0.0, Culture=neutral, PublicKeyToken=59b66d028979105b, processorArchitecture=MSIL">
       <HintPath>..\packages\Z.EntityFramework.Extensions.3.19.0\lib\net45\Z.EntityFramework.Extensions.dll</HintPath>
     </Reference>
+    <Compile Include="Models\MjhlAgentConfig.cs" />
+    <Compile Include="Models\MjhlAgentConfigStore.cs" />
+    <Compile Include="Models\MjhlAuditModels.cs" />
+    <Compile Include="Areas\Game\Controllers\GameConfigMjhlAgentController.cs" />
+    <Content Include="Scripts\app\mjhl.agent.rtp.worker.js" />
+    <Content Include="Scripts\app\mjhl.agent.worker.js" />
+    <Content Include="Scripts\app\mjhl.agent.simulation.js" />
+    <Content Include="Scripts\app\mjhl.rtp.pool.js" />
+    <Content Include="Scripts\app\mjhl.rtp.sample.worker.js" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="App_GlobalResources\Language.Designer.cs">

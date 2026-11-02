@@ -1567,21 +1567,16 @@ namespace UnitTestProj
         }
 
         [TestMethod]
-        public void MobileRechargeQueryFillsAgentScoreFromRemainingScore()
+        public void MobileAgentScreensHideRemainingScoreAndKeepPlayerScore()
         {
+            string phoneCore = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.core.js");
             string rechargeScript = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.recharge.js");
-            string agencyController = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\AgencyInfoController.cs");
 
-            // 充值页查询代理时「剩余分数」曾是硬编码 null，页面上永远显示 "--"（运营反馈）。
-            // 口径：代理的剩余分 = 直属玩家 GAME_SCORE 合计（列表接口的 RemainingScore，
-            // 与代理详细信息弹窗一致）；玩家仍取 users.GAME_SCORE。
-            StringAssert.Contains(rechargeScript, "score: Number(row.RemainingScore || 0)");
+            // 代理不展示剩余分；充值页切换为玩家时仍显示玩家自身分数。
+            Assert.IsFalse(phoneCore.Contains("<span>剩余分</span>"));
+            Assert.IsFalse(rechargeScript.Contains("row.RemainingScore"));
             StringAssert.Contains(rechargeScript, "score: Number(row.GAME_SCORE || 0)");
-            Assert.IsFalse(rechargeScript.Contains("score: null"),
-                "代理分支不得再返回 null，否则剩余分数又变回 '--'");
-            Assert.IsFalse(rechargeScript.Contains("info.score === null"),
-                "渲染不得再保留只给代理走的 '--' 分支");
-            StringAssert.Contains(agencyController, "item.RemainingScore = scoreMap.TryGetValue(item.ID, out score) ? score : 0;");
+            StringAssert.Contains(rechargeScript, ".closest('.info-row').toggle(role === 'player')");
         }
 
         [TestMethod]

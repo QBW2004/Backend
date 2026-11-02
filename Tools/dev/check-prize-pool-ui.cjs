@@ -14,7 +14,7 @@ function html(view,script,agent=false){
  try{
  const page=await browser.newPage({viewport:{width:390,height:1000}});page.setDefaultTimeout(5000);const errors=[],requests=[];
  page.on('pageerror',e=>errors.push(e.message));
- const wallet={Balance:324,Diamonds:100};
+ const wallet={Balance:324,Diamonds:100};let recordStatus=0,rejectRemoval=false;
  await page.route('http://mth-preview.test/**',async route=>{
   const u=new URL(route.request().url()),form=Object.fromEntries(new URLSearchParams(route.request().postData()||''));
   if(u.pathname==='/')return route.fulfill({contentType:'text/html',body:html('TTY.Web/Areas/Mobile/Views/Home/Control.cshtml','TTY.Web/Scripts/app/phone/phone.control.js')});
@@ -23,7 +23,8 @@ function html(view,script,agent=false){
   if(u.pathname.endsWith('/Wallet'))data.datas={...wallet};
   if(u.pathname.endsWith('/Player'))data=form.ID==='125847'?{code:1,datas:{Player:{ID:'125847',INHALL:true,TodayWinLoss:128.25,Profit:-356.5},CurrentBetDiamonds:5}}:{code:0,content:'未查询到该玩家'};
   if(u.pathname.endsWith('/CardQuote'))data={code:1,datas:{Quote:{BetDiamonds:5,Multiplier:65,RequiredDiamonds:325,Estimated:false},Wallet:{...wallet}}};
-  if(u.pathname.endsWith('/Records'))data={total:2,sentDiamonds:325,rows:[{ID:1,UserID:'125847',ControlMode:6,CardAction:5,CardValue:7,Status:2,GameName:'大字版',TableId:15,ActualCardType:'小四梅',AwardDiamonds:325,AwardTime:'2026-11-02T14:10:00',CreatedTime:'2026-11-02T14:00:00'},{ID:2,UserID:'125847',ControlMode:5,CardAction:0,Status:0,CreatedTime:'2026-11-02T15:00:00'}]};
+  if(u.pathname.endsWith('/Records'))data={total:2,sentDiamonds:325,rows:[{ID:1,UserID:'125847',ControlMode:6,CardAction:5,CardValue:7,Status:2,GameName:'大字版',TableId:15,ActualCardType:'小四梅',AwardDiamonds:325,AwardTime:'2026-11-02T14:10:00',CreatedTime:'2026-11-02T14:00:00'},{ID:2,UserID:'125848',ControlMode:5,CardAction:0,Status:recordStatus,CreatedTime:'2026-11-02T15:00:00'}]};
+  if(u.pathname.endsWith('/RemoveRecord')){if(rejectRemoval)data={code:0,content:'该送奖记录已变化，请刷新后重试！'};else{recordStatus=1;data={code:1,content:'移除成功'};}}
   if(u.pathname.endsWith('/Transfer')){const n=Number(form.Amount);if(form.Withdraw==='1'){wallet.Balance-=n;wallet.Diamonds+=n;}else{wallet.Balance+=n;wallet.Diamonds-=n;}data.content=form.Withdraw==='1'?'奖池提取成功':'奖池充值成功';}
   if(u.pathname.endsWith('/GetAgencyDetail'))data={code:1,datas:{ID:'operator',COINS:100,PrizePoolBalance:324}};
   if(u.pathname.endsWith('/Ledger'))data={total:1,balance:324,summary:{Recharge:100,Withdrawal:-20,Sent:325},rows:[{ID:1,Kind:3,ChangeDiamonds:-325,BalanceAfter:324,GameName:'大字版',UserID:'125847',RecTime:'2026-11-02T14:00:00'}]};
@@ -55,8 +56,25 @@ function html(view,script,agent=false){
  assert.equal(wallet.Balance,325);assert.equal(wallet.Diamonds,100);checks+=2;
  await page.locator('.upsel-trigger').click();await page.locator('.upsel-item[data-v="7"]').click();
  await page.screenshot({path:path.join(out,'control-390.png'),fullPage:true});
+ await page.locator('.history-section').screenshot({path:path.join(out,'control-records-390.png')});
  await page.locator('.control-table-scroll').evaluate(e=>{e.scrollLeft=e.scrollWidth;});assert.ok(await page.locator('.control-table-scroll').evaluate(e=>e.scrollLeft>0));checks++;
  await page.locator('#ctrlAccount').fill('missing');assert.equal(await page.locator('#applyBtn').isDisabled(),true);checks++;
+ assert.equal(await page.locator('.record-remove-btn').count(),1);checks++;
+ assert.equal(await page.locator('#controlRows tr').first().locator('button').count(),0);checks++;
+ assert.equal(await page.locator('.record-remove-btn').evaluate(e=>getComputedStyle(e).backgroundColor),'rgb(255, 59, 48)');checks++;
+ await page.locator('.record-remove-btn').click();await page.locator('.modal-overlay.show .modal-btn').first().click();
+ assert.equal(requests.filter(r=>r.url.endsWith('/RemoveRecord')).length,0);checks++;
+ rejectRemoval=true;
+ await page.locator('.record-remove-btn').click();await page.locator('.modal-overlay.show .modal-btn.confirm').click();
+ await page.getByText('该送奖记录已变化，请刷新后重试！',{exact:true}).waitFor();await page.locator('.modal-overlay.show .modal-btn.confirm').click();
+ await page.locator('.record-remove-btn:enabled').waitFor();assert.equal(recordStatus,0);checks++;
+ rejectRemoval=false;
+ await page.locator('.record-remove-btn').click();await page.locator('.modal-overlay.show .modal-btn.confirm').click();
+ await page.getByText('移除成功',{exact:true}).waitFor();await page.locator('.modal-overlay.show .modal-btn.confirm').click();
+ await page.waitForFunction(()=>document.querySelectorAll('.record-remove-btn').length===0);checks++;
+ const removal=requests.filter(r=>r.url.endsWith('/RemoveRecord')).at(-1);
+ assert.equal(removal.form.ControlId,'2');assert.equal(removal.form.ID,'125848');assert.equal(removal.form.Mode,'5');checks+=3;
+ assert.equal(removal.form.__RequestVerificationToken,'fixture-token');checks++;
  await page.goto('http://mth-preview.test/flow');await page.waitForFunction(()=>document.querySelector('#poolSentTotal').textContent==='325');
  assert.equal(await page.locator('#poolWithdrawTotal').innerText(),'-20');checks++;
  await page.locator('#poolQueryType').selectOption('player');await page.locator('#poolPlayer').fill('125847');await page.locator('#filterBtn').click();

@@ -1,8 +1,12 @@
 ﻿@{
-    DateTime minDate;
-    DateTime maxDate;
-    new FengBo.BLL.B_ScdManage_HistoryDB().GetDataYearMonth(out minDate, out maxDate);
+    // 旧模板引用的 FengBo 历史库不属于本项目。由调用方提供范围，缺失时不虚构历史年月。
+    DateTime? suppliedMin = ViewBag.MinDate as DateTime?;
+    DateTime? suppliedMax = ViewBag.MaxDate as DateTime?;
+    bool hasRange = suppliedMin.HasValue && suppliedMax.HasValue && suppliedMin.Value <= suppliedMax.Value;
+    DateTime minDate = hasRange ? suppliedMin.Value : DateTime.MinValue;
+    DateTime maxDate = hasRange ? suppliedMax.Value : DateTime.MinValue;
 }
+@if (hasRange) {
 <script type="text/javascript">
     var minYear = @minDate.Year;
     var minMonth = @minDate.Month;
@@ -39,17 +43,20 @@
         $('#selMonth').combobox('loadData',monthArr);
     }
 </script>
-&nbsp;年份：
+<span>&nbsp;年份：</span>
 <select class="easyui-combobox" style="width:95px;" id="selYear" name="selYear" data-options="onChange:yearChang">
     @for (int i = minDate.Year; i <= maxDate.Year; i++)
     {
         <option value="@(i)">@(i)年</option>
     }
 </select>
-&nbsp;月份：
+<span>&nbsp;月份：</span>
 <select class="easyui-combobox" style="width:95px;" id="selMonth" name="selMonth" data-options="valueField: 'id',textField: 'text'">
     @for (int i = 1; i <= maxDate.Month; i++)
     {
         <option value="@(i)">@(i)月</option>
     }
 </select>
+} else {
+    <span>暂无可用年月</span>
+}

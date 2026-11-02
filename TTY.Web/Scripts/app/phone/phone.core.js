@@ -818,7 +818,6 @@
                 '<div><span>邀请码</span><b>' + M.esc(a.InviteCode || '--') + '</b></div>' +
                 '<div><span>上级代理</span><b>' + M.esc(a.AGENCY || '--') + '</b></div>' +
                 '<div><span>剩余钻</span><b class="blue-text">' + M.gold(a.COINS) + '</b></div>' +
-                '<div><span>剩余分</span><b>' + M.num(a.RemainingScore || 0) + '</b></div>' +
                 '<div><span>奖池余额</span><b class="blue-text">' + M.diamonds(a.PrizePoolBalance) + '</b></div>' +
                 '<div class="agent-create-child-row"><span>创建下级</span><label class="m-switch"><input type="checkbox" id="agentCreateChild" ' + (Number(a.IsCreateAgent) === 1 ? 'checked' : '') + '><span></span></label><span class="agent-save-state" id="agentSaveState"></span></div>' +
                 '</div>';

@@ -653,13 +653,13 @@
             para.CardTotal = $('#selE_Total_Total').combobox('getValue');
         } else {
             // 吃分/放分需要钻阈值
+            para.Strength = $('#selE_Strength_Total').combobox('getValue');
             var gold = $('#numGold_Total').numberbox('getValue');
-            if (!gold || parseInt(gold) <= 0) {
+            if (parseInt(para.Strength) != 0 && (!gold || parseInt(gold) <= 0)) {
                 showUserToast('请填写大于 0 的目标！', 'danger');
                 return;
             }
-            para.GoldThreshold = gold;
-            para.Strength = $('#selE_Strength_Total').combobox('getValue');
+            para.GoldThreshold = gold || 0;
         }
         request('/Game/UserInfo/ApplyTotalControl', para, function (data) {
             showUserResult(data);

@@ -569,6 +569,9 @@ namespace YYT.BLL.EF
                 msg.content = "请填写玩家账号！";
                 return msg;
             }
+            // 下拉框的“关闭”与关闭按钮走同一事务，不能创建强度0但仍累计目标的 Active 行。
+            if (mode != (int)EControlMode.TotalCard && strength == 0)
+                return CloseTotalControl(loginUser, userId, mode, mobileFixedCard);
             // 控牌按次数控制，不需要钻阈值；仅吃分/放分需要钻阈值
             if (mode != (int)EControlMode.TotalCard && goldThreshold <= 0)
             {
@@ -665,6 +668,8 @@ namespace YYT.BLL.EF
                 using (var ef = new GameDbContext())
                 using (var transaction = ef.Database.BeginTransaction(System.Data.IsolationLevel.ReadCommitted))
                 {
+                    // 与麻将结算统一先锁玩家；指令状态及次数同时提交，避免并发替换读到半份赠送。
+                    ef.Database.SqlQuery<string>("SELECT ID FROM users WHERE ID={0} FOR UPDATE", target).ToList();
                     var user = ef.Users.FirstOrDefault(u => u.ID == target);
                     if (user == null)
                     {
@@ -721,6 +726,13 @@ namespace YYT.BLL.EF
                         "INSERT INTO manageropt(UserID,NAME,Opt,OptValue,Type,OPERATOR) VALUES({0},{1},{2},{3},'UC',{4})",
                         target, user.NAME ?? "", optCode, optValue, loginUser.Accounts);
 
+                    // 换成其他游戏赠送也清除已过期的旧次数，禁止下次进原游戏恢复旧赠送。
+                    foreach (var oldCard in olds.Where(o => o.ControlMode == (int)EControlMode.TotalCard))
+                    {
+                        ef.Database.ExecuteSqlCommand(
+                            "DELETE FROM usercontrolvalue WHERE USERID={0} AND CONTROL_TYPE={1}", target, oldCard.GameId);
+                    }
+
                     // 控牌模式：同步写入 usercontrolvalue（控牌类型/控牌值/次数/总次数），供状态回显次数
                     // 按 (USERID, CONTROL_TYPE) 区分游戏：金皇冠(12)和火凤凰(14)各自独立一行
                     if (mode == (int)EControlMode.TotalCard)
@@ -765,14 +777,22 @@ namespace YYT.BLL.EF
                 try
                 {
                     using (var ef = new GameDbContext())
+                    using (var transaction = ef.Database.BeginTransaction(System.Data.IsolationLevel.ReadCommitted))
                     {
+                        ef.Database.SqlQuery<string>("SELECT ID FROM users WHERE ID={0} FOR UPDATE", target).ToList();
                         var rejected = ef.UserControlStatuses.FirstOrDefault(c => c.ID == createdControlId);
                         if (rejected != null && rejected.Status == (int)EControlStatus.Active)
                         {
                             rejected.Status = (int)EControlStatus.Expired;
                             rejected.ExpiredTime = DateTime.Now;
                             ef.SaveChanges();
+                            if (rejected.ControlMode == (int)EControlMode.TotalCard)
+                            {
+                                ef.Database.ExecuteSqlCommand(
+                                    "DELETE FROM usercontrolvalue WHERE USERID={0} AND CONTROL_TYPE={1}", target, rejected.GameId);
+                            }
                         }
+                        transaction.Commit();
                     }
                 }
                 catch (Exception ex)
@@ -786,7 +806,7 @@ namespace YYT.BLL.EF
                 return msg;
             }
             msg.code = 1;
-            msg.content = "操作成功";
+            msg.content = serverMsg != null && serverMsg.code == 1 ? "操作成功" : "已保存，等待游戏同步";
             return msg;
         }
 
@@ -973,6 +993,12 @@ namespace YYT.BLL.EF
         /// </summary>
         public Msg CloseTotalControl(M_LoginUser loginUser, string userId, int mode, bool mobileRequest = false)
         {
+            return CloseTotalControl(loginUser, userId, mode, mobileRequest, 0);
+        }
+
+        /// <summary>送奖明细移除时校验原记录，避免旧列表误关闭同玩家后来设置的控制。</summary>
+        public Msg CloseTotalControl(M_LoginUser loginUser, string userId, int mode, bool mobileRequest, int expectedControlId)
+        {
             Msg msg = new Msg(0, "关闭失败！");
             if (loginUser == null)
             {
@@ -998,7 +1024,9 @@ namespace YYT.BLL.EF
             try
             {
                 using (var ef = new GameDbContext())
+                using (var transaction = ef.Database.BeginTransaction())
                 {
+                    ef.Database.SqlQuery<string>("SELECT ID FROM users WHERE ID={0} FOR UPDATE", target).ToList();
                     if (loginUser.UserPriv > 0)
                     {
                         var user = ef.Users.FirstOrDefault(u => u.ID == target);
@@ -1011,6 +1039,13 @@ namespace YYT.BLL.EF
                     var olds = ef.UserControlStatuses
                         .Where(c => c.UserID == target && c.GameType == GAMETYPE_TOTAL && c.ControlMode == mode && c.Status == (int)EControlStatus.Active)
                         .ToList();
+                    if (expectedControlId != 0 && (expectedControlId < 0 || olds.Count != 1 ||
+                        olds[0].ID != expectedControlId || olds[0].CreatedBy != loginUser.Accounts ||
+                        ef.Database.SqlQuery<int>("SELECT COUNT(*) FROM agentprizecontrol WHERE ControlId={0} AND AwardTime IS NOT NULL", expectedControlId).Single() != 0))
+                    {
+                        msg.content = "该送奖记录已变化，请刷新后重试！";
+                        return msg;
+                    }
                     if (olds.Count < 1)
                     {
                         msg.content = "该玩家没有执行中的" + ModeName(mode) + "！";
@@ -1022,13 +1057,22 @@ namespace YYT.BLL.EF
                         old.ExpiredTime = DateTime.Now;
                     }
                     ef.SaveChanges();
+                    if (mode == (int)EControlMode.TotalCard)
+                    {
+                        foreach (var old in olds)
+                        {
+                            ef.Database.ExecuteSqlCommand(
+                                "DELETE FROM usercontrolvalue WHERE USERID={0} AND CONTROL_TYPE={1}", target, old.GameId);
+                        }
+                    }
+                    transaction.Commit();
                 }
 
                 // 强度/控牌类型 0 表示解除。电脑端/手机端都直发：手机端只入发件箱排队的旧逻辑
                 // 要等定时重试（间隔 60s）才下发，控制会"点了半天不生效"；失败由发件箱+重试服务兜底。
-                SendTotalUcCommand(mode, 0, 0, 0, 0, 0, loginUser, target);
+                Msg serverMsg = SendTotalUcCommand(mode, 0, 0, 0, 0, 0, loginUser, target);
                 msg.code = 1;
-                msg.content = "移除成功";
+                msg.content = serverMsg != null && serverMsg.code == 1 ? "移除成功" : "已移除，等待游戏同步";
             }
             catch (Exception ex)
             {

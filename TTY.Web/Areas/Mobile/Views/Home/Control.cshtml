@@ -8,59 +8,73 @@
 }
 @section head {
 <style>
-    .container { padding: 14px 12px; max-width: 600px; margin: 0 auto; }
-    .input-section { padding: 14px 12px; max-width: 100%; display: block; }
-    .account-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
-    .account-row > label { flex: 0 0 auto; font-size: 14px; white-space: nowrap; }
-    .input-with-btn { display: flex; position: relative; flex: 1; min-width: 0; gap: 8px; }
+    /* 仅本页样式对齐送奖参考页，表单字段、权限与交互保持原样。 */
+    .header { height: 76px; }
+    #poolRechargeBtn { background: transparent; }
+    .container { padding: 20px 10px 28px; max-width: 600px; margin: 0 auto; }
+    .input-section { padding: 18px 16px 22px; max-width: 100%; display: block; margin-bottom: 20px; }
+    .account-row { display: block; margin-bottom: 20px; }
+    .account-row > label { display: block; margin-bottom: 8px; color: #666; font-size: 14px; }
+    .input-with-btn { display: flex; position: relative; min-width: 0; gap: 10px; }
     .input-with-btn .input-field { flex: 1; width: 0; min-width: 0; }
-    .query-btn { height: 44px; padding: 0 14px; background: #007aff; color: #fff; border: 0; border-radius: 7px; font-size: 14px; white-space: nowrap; }
-    .stat-cards { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 6px; margin-bottom: 16px; }
-    .stat-card { background: #f5f7fa; border: 1px solid #e9edf2; border-radius: 7px; padding: 9px 2px; text-align: center; min-width: 0; }
-    .stat-label { color: #86868b; font-size: 11px; white-space: nowrap; }
-    .stat-value { font-size: 19px; font-weight: 600; margin-top: 3px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+    .input-section .input-field { height: 46px; background-color: #f7f8fa; border-color: #e9e9ec; font-size: 15px; }
+    .query-btn { height: 46px; padding: 0 20px; background: #f5f5f7; color: #007aff; border: 0; border-radius: 8px; font-size: 15px; font-weight: 500; white-space: nowrap; cursor: pointer; }
+    .stat-cards { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; margin-bottom: 24px; }
+    .stat-card { background: #f0f7ff; border-radius: 6px; padding: 13px 3px; text-align: center; min-width: 0; }
+    .stat-label { color: #666; font-size: 12px; white-space: nowrap; }
+    .stat-value { font-size: 22px; font-weight: 600; margin-top: 7px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
     .stat-value.positive { color: #34c759; }
     .stat-value.negative { color: #ff3b30; }
-    .player-meta { display: none; }
-    .player-meta.show { display: flex; flex-wrap: nowrap; gap: 6px; font-size: 12px; color: #86868b; margin-bottom: 12px; }
-    .ctrl-status-list { display: flex; flex: 1; min-width: 0; flex-wrap: wrap; gap: 4px; }
-    .ctrl-status-item { color: #d86d00; }
-    .control-pair { display: flex; gap: 10px; margin-bottom: 12px; }
-    .form-row { display: flex; align-items: center; gap: 7px; min-width: 0; margin-bottom: 12px; }
-    .control-pair .form-row { flex: 1; margin: 0; }
-    .form-label { flex: 0 0 auto; font-size: 13px; white-space: nowrap; }
-    .form-row > .input-field, .form-row > .upsel { flex: 1; width: 0; min-width: 0; }
-    select.input-field { background: #fff; padding-left: 8px; padding-right: 3px; font-size: 14px; }
-    .pool-balances { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; background: #edf5ff; border-radius: 7px; padding: 13px 7px; margin: 14px 0; }
-    .pool-balances > div { display: flex; align-items: center; justify-content: center; gap: 5px; min-width: 0; }
-    .pool-balances span { font-size: 12px; color: #86868b; white-space: nowrap; }
-    .pool-balances strong { font-size: 15px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+    .player-meta { display: none; flex-direction: column; gap: 6px; margin-bottom: 20px; }
+    .player-meta.show { display: flex; }
+    .player-meta .info-row { display: flex; align-items: center; min-width: 0; padding: 7px 10px; background: rgba(0,122,255,.06); border: 1px solid #eef0f2; border-radius: 8px; font-size: 14px; color: #666; }
+    .player-meta .info-row > span:first-child { flex: 0 0 auto; white-space: nowrap; }
+    .player-meta .info-value { margin-left: auto; min-width: 0; font-size: 14px; font-weight: 600; color: #1d1d1f; text-align: right; }
+    .player-meta .status-online { color: #34c759; }
+    .player-meta .status-offline { color: #8e8e93; }
+    .ctrl-status-list { display: flex; flex: 1 1 auto; width: 0; min-width: 0; flex-wrap: nowrap; gap: 4px; align-items: center; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; }
+    .ctrl-status-item:first-child { margin-left: auto; }
+    .ctrl-status-item { flex: 0 0 auto; color: #ff3b30; font-size: 13px; font-weight: 500; white-space: nowrap; text-align: right; }
+    #piControl:empty::before { content: '--'; color: #8e8e93; font-weight: 400; }
+    .control-pair { display: block; }
+    .form-row { display: block; min-width: 0; margin-bottom: 22px; }
+    .form-label { display: block; margin-bottom: 8px; color: #666; font-size: 14px; }
+    .form-row > .input-field, .form-row > .upsel { width: 100%; min-width: 0; }
+    select.input-field { padding-left: 12px; padding-right: 34px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24'%3E%3Cpath d='m7 10 5 5 5-5' fill='none' stroke='%2386868b' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; }
+    .pool-balances { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); background: #f7f8fa; border-radius: 6px; padding: 15px 6px; margin: 24px 0 16px; }
+    .pool-balances > div { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 5px; min-width: 0; padding: 0 5px; }
+    .pool-balances > div + div { border-left: 1px solid #e9edf2; }
+    .pool-balances span { font-size: 13px; color: #86868b; white-space: nowrap; }
+    .pool-balances strong { color: #007aff; font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; min-width: 0; }
     .control-actions { display: flex; gap: 10px; }
-    .control-actions button { flex: 1; min-width: 0; height: 44px; border-radius: 7px; font-size: 15px; }
-    .apply-btn { background: #34b75d; border: 1px solid #34b75d; color: #fff; }
-    .close-ctrl-btn { background: #fff; border: 1px solid #ff3b30; color: #ff3b30; }
+    .control-actions button { flex: 1; min-width: 0; height: 46px; border-radius: 8px; font-size: 16px; font-weight: 500; cursor: pointer; }
+    .apply-btn { background: #007aff; border: 1px solid #007aff; color: #fff; }
+    .close-ctrl-btn { background: #fff; border: 1px solid #ffd9d6; color: #ff3b30; }
     .control-actions button:disabled, .query-btn:disabled { opacity: .5; }
-    .history-section { background: #fff; margin-top: 12px; border-radius: 10px; overflow: hidden; padding-top: 14px; }
-    .history-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 12px 13px; }
-    .history-heading h2 { font-size: 15px; font-weight: 600; }
+    .history-section { background: #fff; border-radius: 12px; overflow: hidden; padding-top: 18px; box-shadow: 0 1px 3px #0000001a; }
+    .history-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin: 0 16px 16px; }
+    .history-heading h2 { font-size: 15px; font-weight: 500; }
     .history-heading span { font-size: 12px; color: #86868b; }
-    .history-heading strong { color: #007aff; font-size: 18px; margin-left: 5px; }
-    .control-dates { display: flex; align-items: center; gap: 6px; margin: 0 12px 13px; }
-    .control-dates input { flex: 1; width: 0; min-width: 0; height: 36px; font-size: 12px; padding: 0 5px; }
+    .history-heading strong { color: #ff9500; font-size: 15px; margin-left: 5px; }
+    .control-dates { display: grid; grid-template-columns: minmax(0,1fr) auto minmax(0,1fr); align-items: center; gap: 8px 6px; margin: 0 16px 16px; }
+    .control-dates input { width: 100%; min-width: 0; height: 36px; font-size: 12px; padding: 0 6px; background: #f7f8fa; border-color: #e9e9ec; border-radius: 4px; }
     .control-dates > span { font-size: 12px; color: #86868b; }
-    .control-dates button { height: 36px; padding: 0 10px; font-size: 13px; }
+    .control-dates button { grid-column: 1 / -1; width: 100%; height: 36px; font-size: 13px; }
     .control-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .control-table { border-collapse: separate; border-spacing: 0; min-width: 800px; width: 100%; font-size: 12px; }
-    .control-table th, .control-table td { padding: 12px 9px; text-align: center; white-space: nowrap; border-bottom: 1px solid #e9edf2; }
-    .control-table th { background: #f5f7fa; color: #86868b; font-size: 11px; font-weight: 400; }
+    .control-table th, .control-table td { padding: 12px 10px; text-align: center; white-space: nowrap; border-bottom: 1px solid #efeff4; }
+    .control-table th { background: #fff; color: #86868b; font-size: 12px; font-weight: 400; }
     .control-table td { background: #fff; }
     .control-table th:first-child, .control-table td:first-child { position: sticky; left: 0; z-index: 1; }
     .control-table .empty-row { text-align: left; padding-left: 16px; color: #86868b; }
-    .control-record-status { display: inline-block; padding: 2px 7px; background: #f5f7fa; color: #86868b; border-radius: 4px; font-size: 11px; }
+    .control-record-status { display: inline-block; padding: 3px 8px; background: #f5f7fa; color: #86868b; border-radius: 4px; font-size: 12px; }
     .control-record-status.pending { background: #fff4df; color: #b7730d; }
     .control-record-status.done { background: #eaf8ef; color: #24aa55; }
-    .history-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 11px 12px; color: #86868b; font-size: 11px; }
+    .record-remove-btn { padding: 4px 9px; border: 0; border-radius: 4px; background: #ff3b30; color: #fff; font-size: 12px; white-space: nowrap; cursor: pointer; }
+    .record-remove-btn:disabled { opacity: .5; cursor: default; }
+    .history-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 16px; color: #86868b; font-size: 12px; }
     .history-footer button { background: none; color: #007aff; border: 0; padding: 8px; }
+    .history-footer > span:last-child { flex-basis: 100%; background: #e5f1ff; border-radius: 6px; padding: 10px; color: #007aff; text-align: center; }
     .pool-modal-field { display: block; margin-top: 14px; font-size: 14px; }
     .pool-modal-field input { display: block; width: 100%; margin-top: 8px; }
     .pool-modal-tip { color: #86868b; font-size: 12px; margin-top: 8px; }
@@ -71,7 +85,7 @@
     .ac-name { font-size: 13px; flex: 1; min-width: 0; color: #86868b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .ac-coins, .ac-hl { color: #007aff; font-size: 13px; }
     .ac-empty { padding: 14px 12px; text-align: center; color: #86868b; }
-    @@media(max-width:360px) { .container { padding: 10px 8px; } .input-section { padding: 12px 9px; } .control-pair { gap: 7px; } .form-row { gap: 4px; } .form-label { font-size: 12px; } .pool-balances span { font-size: 11px; } .pool-balances strong { font-size: 14px; } .control-dates { gap: 3px; margin-left: 9px; margin-right: 9px; } .control-dates input { font-size: 11px; padding: 0 2px; } }
+    @@media(max-width:360px) { .input-section { padding: 16px 12px 20px; } .query-btn { padding: 0 16px; } .stat-cards { gap: 6px; } .stat-label { font-size: 11px; } .stat-value { font-size: 19px; } .pool-balances span { font-size: 12px; } .control-dates, .history-heading { margin-left: 12px; margin-right: 12px; } .control-dates input { font-size: 11px; padding: 0 4px; } }
 </style>
 }
 <div class="container">
@@ -89,7 +103,10 @@
             <div class="stat-card"><div class="stat-label">今日盈亏（钻）</div><div class="stat-value" id="stToday">--</div></div>
             <div class="stat-card"><div class="stat-label">总盈亏（钻）</div><div class="stat-value" id="stTotal">--</div></div>
         </div>
-        <div class="player-meta" id="playerMeta"><span id="piOnline"></span><span class="ctrl-status-list" id="piControl"></span></div>
+        <div class="player-meta" id="playerMeta">
+            <div class="info-row"><span>在线状态</span><span class="info-value" id="piOnline">--</span></div>
+            <div class="info-row"><span>当前控制</span><span class="info-value" id="piControl">--</span></div>
+        </div>
         <div id="ctrlParams">
             <div class="control-pair">
                 <div class="form-row"><label class="form-label" for="ctrlMode">控制类型</label><select id="ctrlMode" class="input-field">
@@ -101,7 +118,7 @@
             </div>
             <div class="form-row" id="rowGold"><label class="form-label" for="ctrlGold">目标（钻）</label><input type="number" id="ctrlGold" class="input-field" min="1" step="1" placeholder="达到目标后自动结束" inputmode="numeric" autocomplete="off"></div>
             <div class="form-row" id="rowCardValue"><label class="form-label" for="ctrlCardValue">控制牌型</label><select id="ctrlCardValue" class="input-field"></select></div>
-            <div class="pool-balances"><div><span>奖池余额</span><strong id="poolBalance">--</strong></div><div><span>我的余额</span><strong id="myDiamonds">--</strong></div></div>
+            <div class="pool-balances"><div><span>奖池余额</span><strong id="poolBalance">--</strong></div><div><span>我的钻石</span><strong id="myDiamonds">--</strong></div></div>
             <div class="control-actions"><button class="apply-btn" id="applyBtn" type="button" disabled>应用控制</button><button class="close-ctrl-btn" id="closeCtrlBtn" type="button" disabled>移除控制</button></div>
         </div>
     </div>
