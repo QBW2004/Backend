@@ -36,6 +36,7 @@
         .gc-pill-off { background: #fbe9e9; color: #d33b3b; }
         .gc-foot { padding: 14px 16px; border-top: 1px solid #eef1f6; text-align: right; }
         .gc-btn { height: 36px; padding: 0 20px; border-radius: 6px; border: 1px solid transparent; font-size: 14px; cursor: pointer; }
+        .gc-btn:disabled { background: #e5e9f0 !important; color: #9aa5b1; border-color: #d4dae3; cursor: not-allowed; }
         .gc-btn-primary { background: #2f6fed; color: #fff; }
         .gc-btn-primary:hover { background: #2560d6; }
         .gc-btn-default { background: #fff; color: #5a6573; border-color: #d4dae3; margin-right: 10px; }
@@ -991,7 +992,8 @@
         var disabled = !GC_MJHL_AGENT_CAN_EDIT || (GC_MJHL_CALIBRATING && GC_MJHL_RTP_JOB === 'calibrate');
         // 手动编辑时的后台复核允许继续输入；新输入会取消旧任务，只有一键调权重才锁定表单。
         $('#gcMjhlAgentPanel input,#mjhlAgentReset').prop('disabled', disabled);
-        $('#mjhlAgentSave').prop('disabled', !GC_MJHL_AGENT_CAN_EDIT || GC_MJHL_CALIBRATING);
+        $('#mjhlAgentSave').prop('disabled', !GC_MJHL_AGENT_CAN_EDIT || GC_MJHL_CALIBRATING)
+            .text(!GC_MJHL_AGENT_CAN_EDIT ? '保存代理线参数' : GC_MJHL_RTP_JOB === 'calibrate' ? 'RTP调校复核中…' : GC_MJHL_RTP_JOB === 'verify' ? 'RTP复核中…' : '保存代理线参数');
         $('#mjhlRtpCalibrate').prop('disabled', !GC_MJHL_AGENT_CAN_EDIT || (GC_MJHL_CALIBRATING && GC_MJHL_RTP_JOB !== 'calibrate')).text(GC_MJHL_CALIBRATING && GC_MJHL_RTP_JOB === 'calibrate' ? '停止调权重' : '一键按目标 RTP 调权重');
         $('#mjhlRtpVerify').prop('disabled', !GC_MJHL_AGENT || (GC_MJHL_CALIBRATING && GC_MJHL_RTP_JOB !== 'verify')).text(GC_MJHL_CALIBRATING && GC_MJHL_RTP_JOB === 'verify' ? '停止计算' : '计算当前权重 RTP');
     }
@@ -1219,7 +1221,8 @@
         });
     }
     function gcMjhlSave() {
-        if (!GC_MJHL_AGENT || !GC_MJHL_AGENT_CAN_EDIT || GC_MJHL_CALIBRATING || GC_MJHL_LOADED_LINE !== gcCurLine()) { showToast('请先载入该代理线参数。', 'warning'); return; }
+        if (!GC_MJHL_AGENT || !GC_MJHL_AGENT_CAN_EDIT || GC_MJHL_LOADED_LINE !== gcCurLine()) { showToast('请先载入该代理线参数。', 'warning'); return; }
+        if (GC_MJHL_CALIBRATING) { showToast(GC_MJHL_RTP_JOB === 'calibrate' ? '正在调校并复核 RTP，完成后才能保存。' : '正在复核 RTP，完成后才能保存。', 'warning'); return; }
         var cfg = gcMjhlCollect(), line = gcCurLine(), seq = GC_MJHL_LOAD_SEQ;
         if ($.trim($('#mjhlTargetRtp').val()) === '' || !isFinite(cfg.targetRtp) || cfg.targetRtp < 0 || cfg.targetRtp > 1000) { showToast('目标 RTP 必须在 0～1000%。', 'warning'); return; }
         if (!isFinite(cfg.goldChance) || cfg.goldChance < 0 || cfg.goldChance > 100) { showToast('金色牌概率必须在 0～100%。', 'warning'); return; }
