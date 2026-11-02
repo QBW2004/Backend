@@ -7,6 +7,21 @@ namespace UnitTestProj
     [TestClass]
     public class ViewContractTest
     {
+        [TestMethod]
+        public void RobotPlayTimeSettingsAreWiredToDedicatedRuntimeConfiguration()
+        {
+            string view = ReadRepoFile(@"TTY.Web\Areas\Game\Views\Robot\Index.cshtml");
+            string controller = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\RobotController.cs");
+            StringAssert.Contains(view, "loadRobotPlayTime();");
+            StringAssert.Contains(view, "id=\"playTimeMinHours\"");
+            StringAssert.Contains(view, "id=\"playTimeMaxHours\"");
+            StringAssert.Contains(view, "超时后随机等待 1～5 分钟");
+            StringAssert.Contains(view, "由空闲机器人接替原座位");
+            StringAssert.Contains(controller, "PLAYTIME_GET");
+            StringAssert.Contains(controller, "PLAYTIME {0} {1} {2}");
+            StringAssert.Contains(controller, "TryPlayTimeSeconds");
+        }
+
         private static DirectoryInfo FindRepoRoot()
         {
             DirectoryInfo dir = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory);
@@ -2261,6 +2276,40 @@ namespace UnitTestProj
             StringAssert.Contains(view, "function gcSaveNewTables(basePara, count)");
             StringAssert.Contains(view, "$.extend({}, basePara, { ID: -1 })");
             StringAssert.Contains(view, "$('#gcNewTableConfirm').on('click', gcConfirmNewTable)");
+        }
+
+        [TestMethod]
+        public void RabbitConfigSectionIsAFormNotARawJsonBox()
+        {
+            string view = ReadRepoFile(@"TTY.Web\Areas\Game\Views\GameConfig\_RabbitConfig.cshtml");
+
+            // 大白兔独立玩法规则用中文分区表单编辑，不再让运营直接改整段 JSON；
+            // 各组字段名与 RabbitConfig.Parse 的服务端校验口径一一对应。
+            foreach (string id in new[]
+            {
+                "rbSmallFour", "rbReveal",
+                "rbAuthOn", "rbAuthBase", "rbAuthTable",
+                "rbFiveOn", "rbFiveBase", "rbFiveSuccess", "rbFiveMiss", "rbFiveChanceN", "rbFiveForceN",
+                "rbStreakOn", "rbBurn", "rbContribution", "rbInitPool", "rbStreakTable",
+                "rbStartN", "rbContinueN", "rbExpiredN", "rbSecondJokerN", "rbJokerFirstN",
+                "rbGuaranteeLast", "rbBlockHigher",
+                "rbPassOn", "rbPassTarget", "rbExplodeOn", "rbExplodeTarget",
+                "rbKeepMax", "rbKeepMinHands",
+                "rbRaceOn", "rbRaceId", "rbRaceStart", "rbRaceEnd", "rbRaceTotal", "rbRaceMag"
+            })
+                StringAssert.Contains(view, "id=\"" + id + "\"");
+
+            // 概率字段一律「分子/分母」两个输入，而不是让运营写小数
+            StringAssert.Contains(view, "分子 / 分母");
+            // 留机最少手数已不参与判定，文案须提示仅为兼容字段
+            StringAssert.Contains(view, "兼容字段");
+            // 原始 JSON 仍可核对：折叠只读预览，保存仍走同一 configJson 合同
+            StringAssert.Contains(view, "id=\"rabbitConfigJson\" readonly");
+            StringAssert.Contains(view, "configJson:JSON.stringify(cfg)");
+            StringAssert.Contains(view, "window.rabbitConfigLoad");
+            // schemaVersion/默认值与 RabbitConfig.DefaultJson 同源，不能靠手填
+            StringAssert.Contains(view, "\"schemaVersion\":3");
+            StringAssert.Contains(ReadRepoFile(@"TTY.Web\Models\RabbitConfig.cs"), "specialRules");
         }
 
     }
