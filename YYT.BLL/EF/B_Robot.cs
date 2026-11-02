@@ -14,6 +14,11 @@ namespace YYT.BLL.EF
 {
     public class B_Robot
     {
+        public static bool IsMachineRobotGame(int gameId, int gameType)
+        {
+            return gameId != 54 && (gameType == 1 || gameType == 3);
+        }
+
         // 每行保留一个机器人名额，TABLE_ID 只用于定位所属代理线；实际入座由 ServerRobot 随机寻找空机台。
         public static List<int> PlanCardRobotAddition(IEnumerable<int> tables, IEnumerable<M_Robot> robots, int count)
         {
@@ -42,7 +47,7 @@ namespace YYT.BLL.EF
         }
 
         /// <summary>
-        /// 把某线牌机机器人总数直接设置为 target（0~本线启用机台数）：多了按差额增加名额，少了从高桌号起删减名额。
+        /// 牌机/拉霸共用（保留原方法名兼容）：把某线机器人总数设置为 target（0~本线启用机台数）。
         /// 每个名额仍是一行 ROBOT_NO=1 的 robot_seat，TABLE_ID 只用于定位所属代理线，实际入座由 ServerRobot 随机寻找空机台。
         /// </summary>
         public Msg SetCardRobots(int gameId, int target, string line)
@@ -52,8 +57,8 @@ namespace YYT.BLL.EF
             {
                 // 同一游戏串行校验和调整，防止同时保存突破机台数量上限。
                 ef.Database.SqlQuery<int>("SELECT GameId FROM games WHERE GameId={0} FOR UPDATE", gameId).ToList();
-                var game = ef.Games.SingleOrDefault(g => g.GameId == gameId && g.Enable == 1 && g.GameType == 1);
-                if (game == null || gameId == 54) return new Msg(0, "该游戏不支持设置牌机机器人！");
+                var game = ef.Games.SingleOrDefault(g => g.GameId == gameId && g.Enable == 1);
+                if (game == null || !IsMachineRobotGame(gameId, game.GameType)) return new Msg(0, "该游戏不支持按机台设置机器人数量！");
                 var tables = GetCardRobotTables(ef, gameId, line);
                 var existing = GetCardRobots(ef, gameId, line);
                 int current = existing.Sum(r => Math.Max(0, r.ROBOT_NO));
@@ -76,7 +81,7 @@ namespace YYT.BLL.EF
                             row = new M_Robot { GAME_ID = gameId, ROOM_ID = 0, TABLE_ID = index };
                             ef.Robots.Add(row);
                         }
-                        row.GAME_TYPE = 1;
+                        row.GAME_TYPE = game.GameType;
                         row.GAME_NAME = game.Name;
                         row.ROOM_NAME = "初级场";
                         row.ROBOT_NO = 1;
@@ -212,7 +217,7 @@ namespace YYT.BLL.EF
                     string key = item.GAME_ID + "_" + item.TABLE_ID;
                     string name;
                     item.TABLE_NAME = tableNameMap.TryGetValue(key, out name) ? name : ("桌台" + item.TABLE_ID);
-                    if (item.GAME_TYPE == 1) item.TABLE_NAME = "随机空机台";
+                    if (IsMachineRobotGame(item.GAME_ID, item.GAME_TYPE)) item.TABLE_NAME = "随机空机台";
                 }
                 // 所属代理线：没有归属记录 = 公共桌台(空串)；SQL 补丁未执行时全部按公共处理
                 Dictionary<string, string> ownerMap = new Dictionary<string, string>();

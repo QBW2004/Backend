@@ -44,12 +44,13 @@ const context = { $: x => typeof x === 'function' ? undefined : element(x), wind
 vm.createContext(context);
 vm.runInContext(script, context);
 context.robotInputsReady = true;
-element('#addGameType').combobox('setValue', 1);
+for (const [type, game] of [[1, 5], [3, 16], [3, 40], [3, 53]]) {
+element('#addGameType').combobox('setValue', type);
 context.configureRobotInputs();
 assert(!elements.get('#tableRobotRow,#tableRobotCountRow').visible);
 assert(elements.get('#cardRobotCountRow,#cardRobotHintRow').visible);
 assert(elements.get('#addTABLE_ID').disabled);
-element('#addGameId').combobox('setValue', 5);
+element('#addGameId').combobox('setValue', game);
 element('#addLine').combobox('setValue', '_public');
 context.getRoom();
 const stale = requests.pop();
@@ -75,6 +76,8 @@ for (const value of ['0', '2', '10']) {
     context.SaveRobot();
     const save = requests.pop();
     assert.strictEqual(save.data.RobotNo, value);
+    assert.strictEqual(save.data.GameType, String(type));
+    assert.strictEqual(save.data.GameId, String(game));
     assert(!('TABLE_ID' in save.data));
 }
 context.getRoom();
@@ -91,4 +94,5 @@ context.configureRobotInputs();
 assert(elements.get('#tableRobotRow,#tableRobotCountRow').visible);
 assert(!elements.get('#addTABLE_ID').disabled);
 assert(!elements.get('#addRobotNo').disabled);
-console.log('PASS card robot page: total entry 0~capacity, prefilled current count, stale response, no-table line, request payload and type switch');
+}
+console.log('PASS card and 3 laba robot pages: total entry 0~capacity, prefill, stale response, no-table line, payload and type switch');

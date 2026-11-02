@@ -1,8 +1,7 @@
-﻿
-@{
+﻿@{
     Layout = "~/Views/Shared/Layout/_ContentLayout.cshtml";
 
-    ViewBag.RouteMap = "机器人设置";
+    ViewBag.RouteMap = "机器人管理";
     M_LoginUser loginUser = WebHelper.GetLoginInfo();
 }
 <script src="~/Scripts/jquery.form.js"></script>
@@ -10,40 +9,523 @@
     <script>
         $(function () {
             // 加载指定的模块
-            easyloader.load(['textbox', 'numberbox', 'combobox', 'linkbutton', 'datagrid'], function () {
+            easyloader.load(['textbox', 'numberbox', 'combobox', 'linkbutton', 'datagrid', 'timespinner', 'dialog'], function () {
                 //适应窗口大小变化
-                $(window).resize(function () {
-                    if ($('body').data('grid-init')) {
-                        setGridSize();
-                    }
-                });
+                $(window).resize(setGridSize);
                 //初始化插件
                 pluginInit();
                 //初始化查询
-                queryData();
+                initRobotWorkspace();
                 //根据游戏类型查询所有游戏
                 robotInputsReady = true;
                 configureRobotInputs();
                 //列表“代理线”筛选
                 request('/Game/Robot/GetRobotLineFilter', {}, function (data) {
                     $('#srchLine').combobox('loadData', data || []);
+                    $('#seatFilterLine').combobox('loadData', data || []);
                 });
+                loadRobotSeatGameFilter();
             });
         })
+        var robotActiveTab = 'live';
+        function initRobotWorkspace() {
+            $('.robot-tab').on('click', function () { selectRobotTab($(this).attr('data-tab')); });
+            $('.robot-tab').on('keydown', function (event) {
+                var tabs = $('.robot-tab'), index = tabs.index(this), next = index;
+                if (event.which === 37) next = (index + tabs.length - 1) % tabs.length;
+                else if (event.which === 39) next = (index + 1) % tabs.length;
+                else if (event.which === 36) next = 0;
+                else if (event.which === 35) next = tabs.length - 1;
+                else return;
+                event.preventDefault();
+                tabs.eq(next).focus().click();
+            });
+            selectRobotTab('live');
+        }
+        function selectRobotTab(name) {
+            robotActiveTab = name;
+            $('.robot-more').removeAttr('open');
+            $('.robot-tab').each(function () {
+                var selected = $(this).attr('data-tab') === name;
+                $(this).toggleClass('is-active', selected).attr('aria-selected', String(selected)).attr('tabindex', selected ? 0 : -1);
+            });
+            $('.robot-panel').hide().attr('aria-hidden', 'true');
+            $('#robot-' + name).show().attr('aria-hidden', 'false');
+            if (name === 'live') queryRobotSeats();
+            else if (name === 'quota') queryData();
+            else if (name === 'accounts') queryRobotAccounts();
+            else if (name === 'schedule') loadRobotShuffleSchedule();
+            setGridSize();
+        }
         //重置表格大小
         function setGridSize(param) {
-            var w = $(window).width() - 8;
-            var h = $(window).height() - 78;
-            resizeGrid('tb_Robot', 'auto', h);
+            var ids = { live: 'tb_RobotSeat', quota: 'tb_Robot', accounts: 'tb_RobotAccount' };
+            var grid = $('#' + ids[robotActiveTab]);
+            if (!grid.length || !grid.data('datagrid')) return;
+            var panel = grid.datagrid('getPanel');
+            var height = Math.max(300, $(window).height() - panel.offset().top - 16);
+            resizeGrid(ids[robotActiveTab], $('#robot-' + robotActiveTab).width(), height);
         }
         //查询数据
         function queryData() {
             var para = $("#frm_srch").serializeObject();
             bindGridData(para);
         }
+
+        function updateRobotOverview(summary) {
+            $.each(['Total', 'Online', 'Seated', 'Idle'], function (_, key) {
+                $('#robotStat' + key).text(summary && summary[key] !== undefined ? summary[key] : '—');
+            });
+            $('#robotSnapshot').text(summary ? '全局状态 · 更新于 ' + new Date().toLocaleTimeString() : '状态暂不可用，请刷新重试');
+        }
+        function robotListLoaded(data) {
+            hideLoading();
+            updateRobotOverview(data && data.summary);
+            setGridSize();
+        }
+        function robotListFilter(data) {
+            if (!data || !$.isArray(data.rows)) {
+                updateRobotOverview(null);
+                showMsg(data || { code: 0, content: '机器人状态暂不可用。' });
+                return { total: 0, rows: [] };
+            }
+            return data;
+        }
+        function robotListError() {
+            hideLoading();
+            updateRobotOverview(null);
+            showMsg({ code: 0, content: '机器人状态读取失败，请刷新重试。' });
+        }
+
+        // 当前实际入座的机器人明细（与 robot_seat 配额列表分开，便于逐个移除/调座）
+        function getRobotSeatFilterParams() {
+            var table = $('#seatFilterTable').textbox('getValue') || '';
+            var account = $('#seatFilterAccount').textbox('getValue') || '';
+            return {
+                SeatGameId: $('#seatFilterGame').combobox('getValue') || -1,
+                SeatLine: $('#seatFilterLine').combobox('getValue') || '*',
+                SeatTable: table,
+                SeatAccount: account,
+                SeatStatus: $('#seatFilterStatus').combobox('getValue') || 'all',
+                page: 1,
+                rows: $('#tb_RobotSeat').data('datagrid') ? $('#tb_RobotSeat').datagrid('options').pageSize : 20
+            };
+        }
+        function queryRobotSeats() {
+            var para = getRobotSeatFilterParams();
+            if ($('#tb_RobotSeat').data('datagrid')) $('#tb_RobotSeat').datagrid('load', para);
+            else bindRobotSeatData(para);
+        }
+        function filterRobotSeats() {
+            queryRobotSeats();
+        }
+        function resetRobotSeatFilter() {
+            $('#seatFilterGame').combobox('setValue', -1);
+            $('#seatFilterLine').combobox('setValue', '*');
+            $('#seatFilterTable').textbox('clear');
+            $('#seatFilterAccount').textbox('clear');
+            $('#seatFilterStatus').combobox('setValue', 'all');
+            queryRobotSeats();
+        }
+        function loadRobotSeatGameFilter() {
+            request('/Game/Robot/GetGamesTreeData', { GameType: -1 }, function (datas) {
+                var games = [{ id: -1, text: '全部游戏', selected: true }];
+                for (var i = 0; i < (datas || []).length; i++) {
+                    games = games.concat(datas[i].children || []);
+                }
+                $('#seatFilterGame').combobox('loadData', games).combobox('setValue', -1);
+                $('#quotaFilterGame').combobox('loadData', $.extend(true, [], games)).combobox('setValue', -1);
+            });
+        }
+        function bindRobotSeatData(para) {
+            $('#tb_RobotSeat').datagrid({
+                url: '/Game/Robot/GetRobotSeats',
+                queryParams: $.extend({}, para),
+                // Pass columns explicitly so EasyUI always resolves the action formatter.
+                columns: [[
+                    { field: 'UserName', width: 110, title: '账户' },
+                    { field: 'UserNick', width: 110, title: '昵称' },
+                    { field: 'GAME_NAME', width: 120, title: '游戏' },
+                    { field: 'LINE_AGENT', width: 100, title: '代理线', formatter: fmtLine },
+                    { field: 'TABLE_NAME', width: 140, title: '机台' },
+                    { field: 'SeatIndex', width: 80, title: '座位', formatter: fmtSeat },
+                    { field: 'Status', width: 90, title: '状态', formatter: fmtRobotStatus },
+                    { field: 'SeatActions', width: 170, title: '操作', formatter: window.fmtSeatAction }
+                ]],
+                pagination: true,
+                fitColumns: true,
+                singleSelect: true,
+                striped: true,
+                rownumbers: true,
+                height: 360,
+                pageSize: 20,
+                pageList: [10, 20, 50],
+                idField: 'RobotId',
+                onBeforeLoad: setGridSize,
+                loadFilter: robotListFilter,
+                onLoadSuccess: robotListLoaded,
+                onLoadError: robotListError
+            });
+        }
+        function queryRobotAccounts() {
+            var para = { SeatAccount: $('#accountFilter').textbox('getValue') || '', page: 1 };
+            var grid = $('#tb_RobotAccount');
+            if (grid.data('datagrid')) { grid.datagrid('load', para); return; }
+            grid.datagrid({
+                url: '/Game/Robot/GetRobotSeats', queryParams: para,
+                columns: [[
+                    { field: 'ck', checkbox: true },
+                    { field: 'RobotId', width: 80, title: '编号' },
+                    { field: 'UserName', width: 130, title: '账户' },
+                    { field: 'UserNick', width: 130, title: '昵称' },
+                    { field: 'Gold', width: 110, title: '钻' },
+                    { field: 'Lev', width: 65, title: '等级' },
+                    { field: 'Sex', width: 65, title: '性别', formatter: function (value) { return Number(value) === 1 ? '女' : '男'; } },
+                    { field: 'AccountActions', width: 160, title: '操作', formatter: fmtAccountAction }
+                ]],
+                pagination: true, fitColumns: true, singleSelect: false,
+                checkOnSelect: false, selectOnCheck: false, striped: true, rownumbers: true,
+                height: 360, pageSize: 20, pageList: [10, 20, 50], idField: 'RobotId',
+                onBeforeLoad: function () { grid.datagrid('clearChecked'); updateAccountSelection(); setGridSize(); },
+                loadFilter: robotListFilter, onLoadSuccess: robotListLoaded, onLoadError: robotListError,
+                onCheck: updateAccountSelection, onUncheck: updateAccountSelection,
+                onCheckAll: updateAccountSelection, onUncheckAll: updateAccountSelection
+            });
+        }
+        function updateAccountSelection() {
+            var count = getCheckedRobotAccounts().length;
+            $('#robotSelectedCount').text('已选 ' + count + ' 个');
+            $('#deleteSelectedAccounts').prop('disabled', count === 0);
+        }
+        function fmtAccountAction(value, row) {
+            window.robotAccountCache = window.robotAccountCache || {};
+            window.robotAccountCache[String(row.RobotId)] = row;
+            var id = String(row.RobotId).replace(/'/g, "\\'");
+            return '<a href="javascript:void(0)" class="blue Lpd5" onclick="showRobotAccountWin(\'' + id + '\')">编辑</a> ' +
+                '<a href="javascript:void(0)" class="robot-danger Lpd5" onclick="deleteRobotAccount(\'' + id + '\')">删除账户</a>';
+        }
+        function fmtRobotStatus(value, row) {
+            var state = row.Sitting ? 'seated' : (row.Connected ? 'idle' : 'offline');
+            var label = row.Sitting ? '已入座' : (row.Connected ? '在线空闲' : '未上线');
+            return '<span class="robot-status robot-status-' + state + '">' + label + '</span>';
+        }
+        function reloadRobotViews() {
+            if ($('#tb_Robot').data('datagrid')) queryData();
+            queryRobotSeats();
+            if ($('#tb_RobotAccount').data('datagrid')) queryRobotAccounts();
+        }
+        function seatText(value) {
+            return value === null || typeof value === 'undefined' || value === '' ? '未入座' : $('<span/>').text(value).prop('outerHTML');
+        }
+        function fmtSeatAction(value, rowData) {
+            // EasyUI may call a formatter with only the cell value while it is
+            // parsing a dynamically loaded grid. Keep the action cell usable in
+            // both paths instead of falling back to the raw robot id.
+            rowData = rowData || {};
+            var id = rowData.RobotId || rowData.robotId || rowData.ID || rowData.UserId || rowData.USER_ID || value || '';
+            if (!id) return '<span style="color:#999;">等待入座</span>';
+            window.robotAccountCache = window.robotAccountCache || {};
+            window.robotAccountCache[String(id)] = rowData;
+            var safe = String(id).replace(/'/g, "\\'");
+            var actions = [];
+            if (rowData.Connected === false && (rowData.Status === '未上线' || rowData.Sitting === false))
+                actions.push('<a href="javascript:void(0)" class="blue Lpd5" onclick="showAssignWin(\'' + safe + '\', true)">上线入座</a>');
+            else
+                actions.push('<a href="javascript:void(0)" class="blue Lpd5" onclick="showAssignWin(\'' + safe + '\', false)">指定座位</a>');
+            if (rowData.Sitting) actions.push('<a href="javascript:void(0)" class="blue Lpd5" onclick="removeRobotSeat(\'' + safe + '\')">移除座位</a>');
+            return actions.join(' ');
+        }
+        // The EasyUI markup parser resolves formatter names with eval(). Make
+        // the intended formatter explicit on window so the action column never
+        // degrades to displaying RobotId when the page is loaded in an iframe.
+        window.fmtSeatAction = fmtSeatAction;
+        function fmtSeat(value) {
+            if (value === null || typeof value === 'undefined' || value === '' || value < 0) return '未入座';
+            return '座位' + (Number(value) + 1);
+        }
+        function removeRobotSeat(id) {
+            confirm('确认让该机器人离开当前座位？', function () {
+                request('/Game/Robot/RemoveRobotSeat', { RobotId: id, ID: id }, function (data) {
+                    showMsg(data);
+                    if (data && data.code == 1) reloadRobotViews();
+                });
+            });
+        }
+        function shuffleRobots() {
+            var min = Number($('#shuffleMinSeconds').numberbox('getValue') || 1);
+            var max = Number($('#shuffleMaxSeconds').numberbox('getValue') || 5);
+            if (!isFinite(min) || !isFinite(max) || min < 1 || max < min || min > 5 || max > 5) {
+                showMsg({ code: 0, content: '离开间隔须为 1~5 秒，且最小值不能大于最大值！' });
+                return;
+            }
+            confirm('确认打乱全部机器人？机器人会按每个' + min + '~' + max + '秒的随机间隔离开当前座位。', function () {
+                request('/Game/Robot/ShuffleRobots', { MinDelaySeconds: min, MaxDelaySeconds: max, MinDelayMs: min * 1000, MaxDelayMs: max * 1000 }, function (data) {
+                    showMsg(data);
+                    if (data && data.code == 1) queryRobotSeats();
+                });
+            });
+        }
+        function loadRobotShuffleSchedule() {
+            $('#saveRobotSchedule').prop('disabled', true);
+            $('#scheduleStatus').text('正在读取…');
+            $.ajax({ url: '/Game/Robot/GetRobotShuffleSchedule', type: 'POST', dataType: 'json' }).done(function (data) {
+                data = data || {};
+                if (data.Enabled === undefined && data.enabled === undefined) {
+                    $('#scheduleStatus').text('读取失败，请重新读取');
+                    showMsg(data);
+                    return;
+                }
+                $('#shuffleEnabled').prop('checked', data.Enabled === true || data.Enabled === 1 || data.enabled === true || data.enabled === 1);
+                var start = data.StartTime || data.startTime || minuteToTime(data.StartMinute !== undefined ? data.StartMinute : data.startMinute) || '02:00';
+                var end = data.EndTime || data.endTime || minuteToTime(data.EndMinute !== undefined ? data.EndMinute : data.endMinute) || '05:00';
+                $('#shuffleStart').timespinner('setValue', start);
+                $('#shuffleEnd').timespinner('setValue', end);
+                $('#scheduleStatus').text($('#shuffleEnabled').prop('checked') ? '已启用 · 每日 ' + start + '–' + end : '未启用');
+                $('#saveRobotSchedule').prop('disabled', false);
+            }).fail(function () {
+                $('#scheduleStatus').text('读取失败，请重新读取');
+            });
+        }
+        function minuteToTime(value) {
+            var n = Number(value);
+            if (!isFinite(n) || n < 0 || n > 1439) return '';
+            return ('0' + Math.floor(n / 60)).slice(-2) + ':' + ('0' + (n % 60)).slice(-2);
+        }
+        function saveRobotShuffleSchedule() {
+            if ($('#saveRobotSchedule').prop('disabled')) return;
+            var start = $('#shuffleStart').timespinner('getValue');
+            var end = $('#shuffleEnd').timespinner('getValue');
+            if (!/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(start) || !/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(end)) {
+                showMsg({ code: 0, content: '请输入有效的每日时间（HH:mm）。' });
+                return;
+            }
+            request('/Game/Robot/SaveRobotShuffleSchedule', {
+                Enabled: $('#shuffleEnabled').prop('checked') ? 1 : 0,
+                StartTime: start, EndTime: end, StartMinute: timeToMinute(start), EndMinute: timeToMinute(end),
+                minDelayMs: 1000, maxDelayMs: 5000
+            }, function (data) { showMsg(data); if (data && data.code == 1) loadRobotShuffleSchedule(); });
+        }
+        function timeToMinute(value) {
+            var p = String(value || '').split(':');
+            return p.length === 2 ? Number(p[0]) * 60 + Number(p[1]) : -1;
+        }
+        function showShuffleWin() {
+            openWin({ winId: '#shuffleWin', title: '【打乱机器人】', height: 280, width: 430, iconCls: 'icon-reload' });
+        }
+        function showScheduleWin() {
+            selectRobotTab('schedule');
+        }
+        function showAssignWin(robotId, onlineMode) {
+            $('#assignRobotId').val(robotId);
+            $('#assignOnlineMode').val(onlineMode ? '1' : '0');
+            $('#assignGameId').combobox('clear').combobox('loadData', []);
+            $('#assignLine').combobox('clear').combobox('loadData', publicLineData());
+            $('#assignTable').combobox('clear').combobox('loadData', []);
+            request('/Game/Robot/GetRobotSeatOptions', { RobotId: robotId, ID: robotId }, function (data) {
+                data = data || {};
+                var current = data.current || data.Current || data;
+                var gameId = current.GameId || current.gameId;
+                var line = current.Line || current.line || '_public';
+                if (gameId !== undefined && gameId !== null && gameId !== '' && Number(gameId) >= 0) {
+                    loadAssignGames(gameId, data.games || data.Games);
+                    var tableOptions = data.tables || data.Tables || [];
+                    if (tableOptions.length) {
+                        $('#assignLine').combobox('loadData', data.lines || data.Lines || publicLineData());
+                        $('#assignLine').combobox('setValue', line);
+                        $('#assignTable').combobox('loadData', tableOptions);
+                        if (current.TableId !== undefined || current.tableId !== undefined) $('#assignTable').combobox('setValue', current.TableId !== undefined ? current.TableId : current.tableId);
+                    } else {
+                        loadAssignLines(gameId, line, current.TableId || current.tableId);
+                    }
+                }
+                else {
+                    // 离线账号没有 live 当前座位，仍要能从同一页选择目标游戏/机台。
+                    loadAssignGames(-1, data.games || data.Games);
+                }
+                if (current.SeatIndex !== undefined || current.seatIndex !== undefined) $('#assignSeat').numberbox('setValue', Number(current.SeatIndex !== undefined ? current.SeatIndex : current.seatIndex) + 1);
+            });
+            openWin({ winId: '#assignWin', title: '【指定机器人座位】', height: 390, width: 500, iconCls: 'icon-user_add' });
+        }
+        function loadAssignGames(selectedGame, presetGames) {
+            if (presetGames && presetGames.length) {
+                $('#assignGameId').combobox('loadData', presetGames);
+                if (selectedGame !== undefined && selectedGame !== null && Number(selectedGame) >= 0)
+                    $('#assignGameId').combobox('setValue', selectedGame);
+                return;
+            }
+            request('/Game/Robot/GetGamesTreeData', { GameType: -1 }, function (datas) {
+                var arr = [];
+                for (var i = 0; i < (datas || []).length; i++) arr = arr.concat(datas[i].children || []);
+                $('#assignGameId').combobox('loadData', arr);
+                if (selectedGame !== undefined && selectedGame !== null && Number(selectedGame) >= 0)
+                    $('#assignGameId').combobox('setValue', selectedGame);
+            });
+        }
+        function assignGameChanged(newValue, oldValue) {
+            if (newValue === undefined || newValue === null || newValue === '') return;
+            $('#assignLine').combobox('loadData', publicLineData());
+            $('#assignTable').combobox('clear').combobox('loadData', []);
+            loadAssignLines(newValue, '_public');
+        }
+        function assignLineChanged(newValue, oldValue) {
+            var gameId = $('#assignGameId').combobox('getValue');
+            if (gameId !== undefined && gameId !== null && gameId !== '') loadAssignTables(gameId, newValue || '_public');
+        }
+        function loadAssignLines(gameId, selectedLine, selectedTable) {
+            request('/Game/Robot/GetRobotLineOptions', { GameId: gameId }, function (data) {
+                $('#assignLine').combobox('loadData', (data && data.length) ? data : publicLineData());
+                $('#assignLine').combobox('setValue', selectedLine || '_public');
+                loadAssignTables(gameId, selectedLine || '_public', selectedTable);
+            });
+        }
+        function loadAssignTables(gameId, line, selectedTable) {
+            request('/Game/Robot/GetRobotTableList', { GameId: gameId, Line: line || '_public' }, function (data) {
+                $('#assignTable').combobox('loadData', data || []);
+                if (selectedTable !== undefined && selectedTable !== null) $('#assignTable').combobox('setValue', selectedTable);
+            });
+        }
+        function saveRobotSeat() {
+            var seat = Number($('#assignSeat').numberbox('getValue'));
+            if (!/^[1-9][0-9]*$/.test(String(seat)) || seat > 99) { showMsg({ code: 0, content: '请输入有效的座位号（从1开始）。' }); return; }
+            var gameId = $('#assignGameId').combobox('getValue');
+            var tableId = $('#assignTable').combobox('getValue');
+            if (gameId === '' || tableId === '') { showMsg({ code: 0, content: '请选择游戏和机台。' }); return; }
+            var endpoint = $('#assignOnlineMode').val() === '1' ? '/Game/Robot/OnlineRobot' : '/Game/Robot/SetRobotSeat';
+            request(endpoint, {
+                RobotId: $('#assignRobotId').val(), ID: $('#assignRobotId').val(), GameId: gameId,
+                TableId: tableId, TableIndex: tableId, SeatIndex: seat - 1, SeatId: seat - 1, SeatNo: seat,
+                Line: $('#assignLine').combobox('getValue') || '_public'
+            }, function (data) { showMsg(data); if (data && data.code == 1) { $('#assignWin').dialog('close'); reloadRobotViews(); } });
+        }
+
+        function showRobotAccountWin(id) {
+            var row = (window.robotAccountCache || {})[String(id)] || {};
+            $('#accountId').val(id || '');
+            $('#accountUserName').textbox('setValue', row.UserName || '');
+            $('#accountUserNick').textbox('setValue', row.UserNick || '');
+            $('#accountIco').numberbox('setValue', row.Ico || 0);
+            $('#accountLev').numberbox('setValue', row.Lev || 1);
+            $('#accountSex').combobox('setValue', row.Sex || 0);
+            $('#accountGold').numberbox('setValue', row.Gold || 100000);
+            openWin({ winId: '#accountWin', title: id ? '【编辑机器人账户】' : '【新增机器人账户】', height: 360, width: 480, iconCls: 'icon-user_add' });
+        }
+        function saveRobotAccount() {
+            var id = $('#accountId').val();
+            var isEdit = !!id;
+            var payload = isEdit ? {
+                ID1: id,
+                UserName1: $('#accountUserName').textbox('getValue'),
+                UserNick1: $('#accountUserNick').textbox('getValue'),
+                Ico1: $('#accountIco').numberbox('getValue'),
+                Lev1: $('#accountLev').numberbox('getValue'),
+                Sex1: $('#accountSex').combobox('getValue'),
+                Gold1: $('#accountGold').numberbox('getValue')
+            } : {
+                UserName: $('#accountUserName').textbox('getValue'),
+                UserNick: $('#accountUserNick').textbox('getValue'),
+                Ico: $('#accountIco').numberbox('getValue'),
+                Lev: $('#accountLev').numberbox('getValue'),
+                Sex: $('#accountSex').combobox('getValue'),
+                Gold: $('#accountGold').numberbox('getValue')
+            };
+            request(isEdit ? '/Game/UserRobot/UpdateRobot' : '/Game/UserRobot/SaveRobot', payload, function (data) {
+                showMsg(data);
+                if (data && data.code == 1) {
+                    request('/Game/Robot/ReloadRobotAccounts', {}, function (reload) {
+                        showMsg(reload);
+                        if (reload && reload.code == 1) {
+                            $('#accountWin').dialog('close');
+                            reloadRobotViews();
+                        }
+                    });
+                }
+            });
+        }
+        function deleteRobotAccount(id) {
+            confirm('确认删除该机器人账户？删除后将无法继续上线入座。', function () {
+                request('/Game/UserRobot/DelRobot', { ID: id }, function (data) {
+                    showMsg(data);
+                    if (data && data.code == 1) {
+                        request('/Game/Robot/ReloadRobotAccounts', {}, function (reload) {
+                            showMsg(reload);
+                            if (reload && reload.code == 1) reloadRobotViews();
+                        });
+                    }
+                });
+            });
+        }
+        function showBatchRobotAccountWin() {
+            $('#batchRobotNum').numberbox('setValue', 10);
+            $('#batchRobotIco').numberbox('setValue', 0);
+            $('#batchRobotLev').numberbox('setValue', 1);
+            $('#batchRobotSex').combobox('setValue', 0);
+            $('#batchRobotGold').numberbox('setValue', 100000);
+            $('#batchRobotNames').text('创建后将在这里显示本次生成的昵称。');
+            openWin({ winId: '#batchAccountWin', title: '【批量创建机器人账户】', height: 410, width: 520, iconCls: 'icon-user_add' });
+        }
+        function saveBatchRobotAccounts() {
+            var num = Number($('#batchRobotNum').numberbox('getValue'));
+            if (!/^[1-9][0-9]*$/.test(String(num)) || num > 1000) {
+                showMsg({ code: 0, content: '批量创建数量须为 1~1000。' });
+                return;
+            }
+            var payload = {
+                Num: num,
+                Ico: Number($('#batchRobotIco').numberbox('getValue') || 0),
+                Lev: Number($('#batchRobotLev').numberbox('getValue') || 1),
+                Sex: Number($('#batchRobotSex').combobox('getValue') || 0),
+                Gold: Number($('#batchRobotGold').numberbox('getValue') || 100000)
+            };
+            confirm('确认批量创建 ' + num + ' 个机器人账户？昵称将从名字库随机生成 2~8 个汉字。', function () {
+                request('/Game/Robot/BatchCreateRobotAccounts', payload, function (data) {
+                    showMsg(data);
+                    if (data && data.code == 1) {
+                        var names = data.names || data.Names || [];
+                        if ($.isArray(names) && names.length) {
+                            var nickNames = $.map(names, function (item) {
+                                return typeof item === 'string' ? item : (item.UserNick || item.userNick || item.UserName || item.userName || '');
+                            });
+                            $('#batchRobotNames').text('本次生成昵称：' + nickNames.join('、'));
+                        }
+                        request('/Game/Robot/ReloadRobotAccounts', {}, function (reload) {
+                            showMsg(reload);
+                            if (reload && reload.code == 1) {
+                                $('#batchAccountWin').dialog('close');
+                                reloadRobotViews();
+                            }
+                        });
+                    }
+                });
+            });
+        }
+        function getCheckedRobotAccounts() {
+            if (!$('#tb_RobotAccount').data('datagrid')) return [];
+            return $('#tb_RobotAccount').datagrid('getChecked') || [];
+        }
+        function batchDeleteRobotAccounts() {
+            var rows = getCheckedRobotAccounts();
+            var ids = [];
+            $.each(rows, function (_, row) {
+                var id = row && (row.RobotId || row.robotId || row.ID || row.UserId || row.USER_ID);
+                if (id && $.inArray(String(id), ids) < 0) ids.push(String(id));
+            });
+            if (!ids.length) {
+                showMsg({ code: 0, content: '请先勾选要删除的机器人账户。' });
+                return;
+            }
+            confirm('确认删除已勾选的 ' + ids.length + ' 个机器人账户？删除后无法继续上线入座。', function () {
+                request('/Game/Robot/BatchDeleteRobotAccounts', { Ids: ids.join(','), ids: ids.join(',') }, function (data) {
+                    showMsg(data);
+                    if (data && data.code == 1) reloadRobotViews();
+                });
+            });
+        }
+        // Short aliases kept for the legacy page scripts and browser contract checks.
+        function saveBatchRobot() { saveBatchRobotAccounts(); }
+        function deleteBatchRobot() { batchDeleteRobotAccounts(); }
         //绑定表格数据
         function bindGridData(para) {
-            if (!$('body').data('grid-init')) {
+            if (!$('#tb_Robot').data('datagrid')) {
                 $('#tb_Robot').datagrid({
                     url: "/Game/Robot/GetRobot",
                     queryParams: $.extend({}, para),
@@ -53,12 +535,12 @@
                     striped: true,
                     rownumbers: true,
                     showFooter: true,  
-                    height: 768,
+                    height: 360,
                     pageSize: 20,
                     pageList: [10, 20, 50],
                     idField: 'ID',
                     onBeforeLoad: setGridSize,
-                    onLoadSuccess: onLoaded
+                    onLoadSuccess: function (data) { onLoaded(data); setGridSize(); }
                 });
             } else {
                 $('#tb_Robot').datagrid('load', para);
@@ -67,7 +549,7 @@
 
         function SaveRobot() {
             @Html.Raw(@"var para = $('#form3').serializeObject();
-                if (para.GameType == 1) {
+                if (usesMachineRobotCount()) {
                     var count = $('#addCardRobotNo').numberbox('getValue');
                     if (!cardCapacityReady || !/^(0|[1-9][0-9]*)$/.test(count) || Number(count) > cardTotal) {
                         showMsg({ code: 0, content: '请输入 0~' + cardTotal + ' 之间的机器人数量！' });
@@ -82,7 +564,7 @@
                     if (data && data.code == 1) {
                         $('#addWin').dialog('close');
                         $('#form3').form('reset');
-                        queryData();//重新绑定表格数据
+                        reloadRobotViews();//同步配置与实时状态
                     }
              });");
         }
@@ -100,12 +582,12 @@
         }
 
         function deleteAllRobot() {
-            @Html.Raw(@" confirm('确认删除全部机器人？删除后不可恢复！', function () {
+            @Html.Raw(@" confirm('确认清空所有游戏、所有代理线的机器人配置？账户仍保留，此操作不受当前筛选条件限制。', function () {
                 request('/Game/Robot/DelAllRobot', {}, function (data) {
                     //提示消息
                     showMsg(data);
                     if (data && data.code == 1) {
-                        queryData();//重新加载数据
+                        reloadRobotViews();//同步配置与实时状态
                     }
                 });
             });");
@@ -114,7 +596,7 @@
         function showAddWin() {
             var para = {
                 winId: '#addWin',
-                title: '【添加机器人】',
+                title: '【设置机器人数量】',
                 height: 400,
                 iconCls: 'icon-user_add',
                 callBack: function () {
@@ -146,10 +628,8 @@
                     $('#addTABLE_ID').combobox('clear').combobox('loadData', []);
                     if (newValue == 0) {
                         $('#addRobotNo').combobox('loadData', getComboSelData(9,1))
-                    } else if (newValue == 1) {
-                        $('#addRobotNo').combobox('loadData', getComboSelData(2,1))
-                    } else {
-                        // 鱼机/拉霸一桌6个座位，机器人数可选范围 1~6
+                    } else if (newValue == 2) {
+                        // 鱼机一桌6个座位，机器人数可选范围 1~6
                         $('#addRobotNo').combobox('loadData', getComboSelData(7,1))
                     }
                 })
@@ -207,11 +687,12 @@
                 return '<span>拉霸类</span>';
         }
 
-        function fmtRobotNo(value, rowData, rowIndex) {
-            if (rowData.GAME_TYPE != 5)
-                return value;
-            else
-                return '机器人总数量:' +value;
+        function fmtRobotCount(value, rowData, rowIndex) {
+            rowData = rowData || {};
+            var robotCount = rowData.ROBOT_COUNT;
+            if (robotCount === undefined || robotCount === null) robotCount = value;
+            if (Number(robotCount) < 0) return '<span title="实时状态暂不可用">—</span>';
+            return robotCount === undefined || robotCount === null ? '—' : String(robotCount);
         }
         // 获取桌台列表(所有游戏类型统一从 roomtableconfig 读取，空名保底"桌台n")
         var cardRemaining = 0;
@@ -228,7 +709,7 @@
             $('#cardRobotHint').text('请选择游戏和代理线');
         }
         function configureRobotInputs() {
-            var card = $('#addGameType').combobox('getValue') == 1;
+            var card = usesMachineRobotCount();
             $('#tableRobotRow,#tableRobotCountRow').toggle(!card);
             $('#cardRobotCountRow,#cardRobotHintRow').toggle(card);
             // 数量框在隐藏行里初始化时宽度为 0，显示后要重新计算宽度
@@ -237,17 +718,21 @@
             $('#addRobotNo').combobox(card ? 'disable' : 'enable');
             resetCardCapacity();
         }
+        function usesMachineRobotCount() {
+            var type = $('#addGameType').combobox('getValue');
+            return type == 1 || type == 3;
+        }
         function getRoom() {
             resetCardCapacity();
             var version = roomRequestVersion;
-            var GameId = $("input[name='GameId']").val();
+            var GameId = $('#addGameId').combobox('getValue');
             var Line = $("#form3 input[name='Line']").val() || '_public';
             //console.log("游戏名称：" + GameId);
             if (GameId == -1 || GameId=='') {
               //alert("请选择游戏");
                 return;
             }
-            if ($('#addGameType').combobox('getValue') == 1) {
+            if (usesMachineRobotCount()) {
                 request('/Game/Robot/GetCardRobotCapacity', { GameId: GameId, Line: Line }, function (data) {
                     if (version != roomRequestVersion) return;
                     if (!data || data.code != 1) {
@@ -282,54 +767,171 @@
         }
 
         function fmtOpt(value, rowData, rowIndex) {
-              var arr = [];
-              if (rowData.ID != 0) {
-                  arr.push('<a href="javascript:void(0)" class="blue Lpd5" onclick="deleteRobot(\'' + rowData.ID + '\')">删除</a>');
-              }
-              return arr.join('  ');
+            rowData = rowData || {};
+            if (!rowData.GAME_ID) return '';
+            var line = String(rowData.LINE_AGENT || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+            return '<a href="javascript:void(0)" class="robot-danger Lpd5" onclick="deleteRobotSummary(' + Number(rowData.GAME_ID) + ',\'' + line + '\')">清空配置</a>';
+        }
+        function deleteRobotSummary(gameId, line) {
+            confirm('确认清零该游戏/代理线的全部机器人配置？', function () {
+                request('/Game/Robot/DeleteRobotSummary', { GameId: gameId, Line: line || '_public' }, function (data) {
+                    showMsg(data);
+                    if (data && data.code == 1) reloadRobotViews();
+                });
+            });
         }
 
     </script>
+    <style>
+        .robot-page { padding: 10px 12px 0; color: #334155; }
+        .robot-heading, .robot-section-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+        .robot-heading { margin-bottom: 16px; }
+        .robot-page h1 { margin: 0; font-size: 23px; font-weight: 600; color: #172b4d; }
+        .robot-page h2 { margin: 0; font-size: 16px; color: #172b4d; }
+        .robot-page h3 { margin: 0; font-size: 15px; color: #172b4d; }
+        .robot-page p { margin: 6px 0 0; color: #64748b; line-height: 1.6; }
+        .robot-muted { color: #64748b; font-size: 12px; font-weight: normal; }
+        .robot-overview { display: flex; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
+        .robot-stat { flex: 1 1 130px; padding: 14px 18px; border: 1px solid #e2e8f0; border-radius: 6px; background: #fff; }
+        .robot-stat span, .robot-stat small { display: block; color: #64748b; }
+        .robot-stat strong { display: block; margin: 4px 0; font-size: 27px; color: #172b4d; font-weight: 600; }
+        .robot-stat small { font-size: 12px; }
+        .robot-tabs { display: flex; gap: 8px; border-bottom: 1px solid #dbe3ed; margin-bottom: 18px; overflow-x: auto; }
+        .robot-tab { flex-shrink: 0; background: none; border: 0; border-bottom: 3px solid transparent; padding: 11px 20px; color: #64748b; font-size: 14px; cursor: pointer; }
+        .robot-tab.is-active { color: #2563eb; border-bottom-color: #2563eb; font-weight: 600; }
+        .robot-tab:hover { color: #2563eb; background: #eff6ff; }
+        .robot-page button:focus-visible, .robot-page summary:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+        .robot-section-heading { margin-bottom: 14px; }
+        .robot-actions, .robot-selection { display: flex; align-items: center; gap: 8px; }
+        .robot-actions { flex-wrap: wrap; }
+        .robot-button { display: inline-block; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 4px; background: #fff; padding: 7px 13px; line-height: 18px; font-size: 13px; color: #334155; cursor: pointer; white-space: nowrap; }
+        .robot-button:hover { background: #f1f5f9; }
+        .robot-primary { background: #2563eb; border-color: #2563eb; color: #fff; }
+        .robot-primary:hover { background: #1d4ed8; }
+        .robot-danger { color: #b42318 !important; }
+        .robot-button:disabled { opacity: .45; cursor: default; }
+        .robot-filters { display: flex; gap: 12px 16px; flex-wrap: wrap; align-items: center; padding: 12px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 4px; margin: 0 0 12px; }
+        .robot-filters label, .robot-schedule-fields label { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; margin: 0; font-weight: normal; }
+        .robot-selection { margin-left: auto; }
+        .robot-status { display: inline-block; border-radius: 4px; padding: 2px 7px; }
+        .robot-status-seated { color: #166534; background: #dcfce7; }
+        .robot-status-idle { color: #92400e; background: #fef3c7; }
+        .robot-status-offline { color: #64748b; background: #f1f5f9; }
+        .robot-more { position: relative; }
+        .robot-more summary { list-style: none; }
+        .robot-more summary::-webkit-details-marker { display: none; }
+        .robot-more summary:after { content: ' ▾'; }
+        .robot-more > div { position: absolute; top: 100%; right: 0; z-index: 20; min-width: 175px; background: #fff; border: 1px solid #e2e8f0; border-radius: 4px; box-shadow: 0 6px 16px #0002; padding: 5px; }
+        .robot-more > div button { background: #fff; border: 0; padding: 10px; text-align: left; width: 100%; cursor: pointer; }
+        .robot-more > div button:hover { background: #fff1f2; }
+        .robot-schedule-card { border: 1px solid #e2e8f0; border-radius: 6px; background: #fff; padding: 22px; margin-bottom: 16px; }
+        .robot-schedule-card h3 span { margin-left: 16px; }
+        .robot-schedule-fields { display: flex; flex-wrap: wrap; gap: 20px; margin-top: 22px; }
+        .robot-schedule-card > button { margin-top: 18px; }
+        .robot-manual-shuffle { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+        .robot-page .datagrid-header td, .robot-page .datagrid-body td { padding-top: 5px; padding-bottom: 5px; }
+        .robot-page .datagrid-header { background: #f8fafc; }
+        .robot-page .datagrid-row-alt { background: #fafcff; }
+        .robot-page td[field="SeatActions"] .datagrid-cell, .robot-page td[field="AccountActions"] .datagrid-cell { white-space: normal; height: auto; }
+        .robot-page td[field="SeatActions"] a, .robot-page td[field="AccountActions"] a { display: inline-block; white-space: nowrap; }
+        @@media (max-width: 700px) {
+            .robot-page { padding: 8px 4px 0; }
+            .robot-overview { gap: 8px; }
+            .robot-stat { flex-basis: 35%; padding: 10px 12px; }
+            .robot-tab { padding: 10px 14px; }
+            .robot-selection { margin-left: 0; }
+            .robot-heading #robotSnapshot { width: 100%; }
+        }
+    </style>
 }
 
-<form id="frm_srch">
-    <table width="100%" border="0" cellpadding="0" cellspacing="0" class="titleQueBg" style="height:40px;">
-        <tr>
-            <td>
-                <div class="left Lpd5">
-                    游戏名称
-                    <input type="text" class="easyui-textbox" name="GameName" id="txtS_GameName" />
-                </div>
-                <div class="left Lpd5">
-                    桌子名称
-                    <input type="text" class="easyui-textbox" name="TABLE_NAME" id="txtS_TABLE_NAME" />
-                </div>
-                <div class="left Lpd5">
-                    代理线
-                    <select class="easyui-combobox" name="LINE" id="srchLine" style="width:140px;" data-options="valueField:'id',textField:'text',panelHeight:200,editable:false,data:[{id:'*',text:'全部',selected:true}]"></select>
-                </div>
-                <div class="left Lmg10">
-                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="queryData();" data-options="plain:true,iconCls:'icon-search'">查找</a>
-                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="showAddWin();" data-options="plain:true,iconCls:'icon-add'">添加机器人</a>
-                    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="deleteAllRobot();" data-options="plain:true,iconCls:'icon-remove'">删除全部机器人</a>
-                </div>
-            </td>
-        </tr>
-    </table>
-</form>
-<table id="tb_Robot">
-    <thead>
-        <tr>
-            <th field="GAME_TYPE" width="110" formatter="fmtGameType">游戏类型</th>
-            <th field="GAME_NAME" width="110">游戏名称</th>
-            <th field="LINE_AGENT" width="110" formatter="fmtLine">代理线</th>
-            <th field="TABLE_NAME" width="150">桌子名称</th>
-            <th field="ROBOT_NO" width="110"  formatter="fmtRobotNo">机器人数</th>
-            <th field="ID" width="110" align="center" formatter="fmtOpt">操作</th>
-        </tr>
-    </thead>
-</table>
+<div id="robotWorkspace" class="robot-page">
+    <div class="robot-heading">
+        <div><h1>机器人管理</h1><p>查看运行状态，按需配置人数与维护账户。</p></div>
+        <span id="robotSnapshot" class="robot-muted" aria-live="polite">正在读取状态…</span>
+    </div>
+    <div class="robot-overview" aria-label="机器人全局概览">
+        <div class="robot-stat"><span>账户总数</span><strong id="robotStatTotal">—</strong><small>全部机器人账户</small></div>
+        <div class="robot-stat"><span>在线数</span><strong id="robotStatOnline">—</strong><small>当前已连接</small></div>
+        <div class="robot-stat"><span>已入座</span><strong id="robotStatSeated">—</strong><small>当前占用座位</small></div>
+        <div class="robot-stat"><span>空闲数</span><strong id="robotStatIdle">—</strong><small>未入座，含未上线</small></div>
+    </div>
+    <div class="robot-tabs" role="tablist" aria-label="机器人管理功能">
+        <button type="button" id="robot-tab-live" class="robot-tab is-active" data-tab="live" role="tab" aria-controls="robot-live" aria-selected="true">实时状态</button>
+        <button type="button" id="robot-tab-quota" class="robot-tab" data-tab="quota" role="tab" aria-controls="robot-quota" aria-selected="false" tabindex="-1">座位配置</button>
+        <button type="button" id="robot-tab-accounts" class="robot-tab" data-tab="accounts" role="tab" aria-controls="robot-accounts" aria-selected="false" tabindex="-1">账户管理</button>
+        <button type="button" id="robot-tab-schedule" class="robot-tab" data-tab="schedule" role="tab" aria-controls="robot-schedule" aria-selected="false" tabindex="-1">自动调度</button>
+    </div>
 
+    <section id="robot-live" class="robot-panel" role="tabpanel" aria-labelledby="robot-tab-live" aria-hidden="false">
+        <div class="robot-section-heading"><div><h2>机器人当前状态</h2><p>查看机器人账户与入座状态，选择账户上线或调整座位。</p></div><button type="button" class="robot-button" onclick="queryRobotSeats();">刷新状态</button></div>
+        <div id="robotSeatFilter" class="robot-filters">
+            <label>账户 <input type="text" class="easyui-textbox" id="seatFilterAccount" style="width:140px;" data-options="prompt:'账户或昵称'" /></label>
+            <label>游戏 <select class="easyui-combobox" id="seatFilterGame" style="width:150px;" data-options="valueField:'id',textField:'text',panelHeight:220,editable:false,data:[{id:-1,text:'全部游戏',selected:true}]"></select></label>
+            <label>代理线 <select class="easyui-combobox" id="seatFilterLine" style="width:130px;" data-options="valueField:'id',textField:'text',panelHeight:200,editable:false,data:[{id:'*',text:'全部',selected:true}]"></select></label>
+            <label>机台 <input type="text" class="easyui-textbox" id="seatFilterTable" style="width:125px;" data-options="prompt:'名称或编号'" /></label>
+            <label>状态 <select class="easyui-combobox" id="seatFilterStatus" style="width:115px;" data-options="valueField:'id',textField:'text',editable:false,data:[{id:'all',text:'全部',selected:true},{id:'idle',text:'空闲（未入座）'},{id:'offline',text:'未上线'},{id:'seated',text:'已入座'}]"></select></label>
+            <div class="robot-actions"><button type="button" class="robot-button robot-primary" onclick="filterRobotSeats();">筛选</button><button type="button" class="robot-button" onclick="resetRobotSeatFilter();">重置</button></div>
+        </div>
+        <table id="tb_RobotSeat"></table>
+    </section>
+
+    <section id="robot-quota" class="robot-panel" role="tabpanel" aria-labelledby="robot-tab-quota" aria-hidden="true" style="display:none;">
+        <div class="robot-section-heading"><div><h2>机器人目标配置</h2><p>按游戏与代理线设置人数；实际入座受空位和账户数量影响。</p></div>
+            <div class="robot-actions"><button type="button" class="robot-button robot-primary" onclick="showAddWin();">设置机器人数量</button>
+                <details class="robot-more"><summary class="robot-button">更多操作</summary><div><button type="button" class="robot-danger" onclick="this.closest('details').removeAttribute('open'); deleteAllRobot();">清空全部配置</button></div></details>
+            </div>
+        </div>
+        <form id="frm_srch" class="robot-filters" onsubmit="queryData(); return false;">
+            <label>游戏名称 <select class="easyui-combobox" name="GameId" id="quotaFilterGame" style="width:170px;" data-options="valueField:'id',textField:'text',panelHeight:220,editable:false,data:[{id:-1,text:'全部游戏',selected:true}]"></select></label>
+            <label>代理线 <select class="easyui-combobox" name="LINE" id="srchLine" style="width:140px;" data-options="valueField:'id',textField:'text',panelHeight:200,editable:false,data:[{id:'*',text:'全部',selected:true}]"></select></label>
+            <button type="submit" class="robot-button">查询配置</button>
+        </form>
+        <table id="tb_Robot">
+            <thead><tr>
+                <th field="GAME_NAME" width="180">游戏名称</th>
+                <th field="LINE_AGENT" width="160" formatter="fmtLine">代理线</th>
+                <th field="TOTAL_SEATS" width="110">开放座位</th>
+                <th field="CONFIGURED_ROBOT_COUNT" width="110">目标人数</th>
+                <th field="ROBOT_COUNT" width="110" formatter="fmtRobotCount">实际入座</th>
+                <th field="ID" width="110" align="center" formatter="fmtOpt">操作</th>
+            </tr></thead>
+        </table>
+    </section>
+
+    <section id="robot-accounts" class="robot-panel" role="tabpanel" aria-labelledby="robot-tab-accounts" aria-hidden="true" style="display:none;">
+        <div class="robot-section-heading"><div><h2>机器人账户</h2><p>创建与维护账户；安排上线请切换到“实时状态”。</p></div>
+            <div class="robot-actions"><button type="button" class="robot-button" onclick="showRobotAccountWin('');">新增账户</button><button type="button" class="robot-button robot-primary" onclick="showBatchRobotAccountWin();">批量创建账户</button></div>
+        </div>
+        <div class="robot-filters">
+            <label>账户 <input id="accountFilter" class="easyui-textbox" style="width:200px;" data-options="prompt:'账户或昵称'" /></label>
+            <button type="button" class="robot-button" onclick="queryRobotAccounts();">查询账户</button>
+            <button type="button" class="robot-button" onclick="$('#accountFilter').textbox('clear'); queryRobotAccounts();">重置</button>
+            <div class="robot-selection"><span id="robotSelectedCount">已选 0 个</span><button type="button" id="deleteSelectedAccounts" class="robot-button robot-danger" disabled onclick="batchDeleteRobotAccounts();">删除选中账户</button></div>
+        </div>
+        <table id="tb_RobotAccount"></table>
+    </section>
+
+    <section id="robot-schedule" class="robot-panel" role="tabpanel" aria-labelledby="robot-tab-schedule" aria-hidden="true" style="display:none;">
+        <div class="robot-section-heading"><div><h2>自动调度</h2><p>机器人按现有配置重新寻找空位，作用于全部游戏与代理线。</p></div></div>
+        <div class="robot-schedule-card">
+            <h3>每日定时打乱 <span id="scheduleStatus" class="robot-muted">正在读取…</span></h3>
+            <p>每天在指定时间范围内执行一次，机器人以 1～5 秒的随机间隔逐个离座。</p>
+            <div class="robot-schedule-fields">
+                <label><input type="checkbox" id="shuffleEnabled" /> 启用每日打乱</label>
+                <label>开始时间 <input id="shuffleStart" class="easyui-timespinner" style="width:110px;" data-options="showSeconds:false" value="02:00" /></label>
+                <label>结束时间 <input id="shuffleEnd" class="easyui-timespinner" style="width:110px;" data-options="showSeconds:false" value="05:00" /></label>
+            </div>
+            <p class="robot-muted">跨午夜时，开始时间可晚于结束时间，例如 23:00 至 02:00。</p>
+            <button type="button" id="saveRobotSchedule" class="robot-button robot-primary" disabled onclick="saveRobotShuffleSchedule();">保存定时设置</button>
+            <button type="button" class="robot-button" onclick="loadRobotShuffleSchedule();">重新读取</button>
+        </div>
+        <div class="robot-schedule-card robot-manual-shuffle">
+            <div><h3>手动调度</h3><p>立即让当前已入座的机器人逐个离座，再按配置寻找空位。</p></div>
+            <details class="robot-more"><summary class="robot-button">更多操作</summary><div><button type="button" class="robot-danger" onclick="this.closest('details').removeAttribute('open'); showShuffleWin();">打乱全部机器人</button></div></details>
+        </div>
+    </section>
+</div>
 
 @*添加机器人窗口*@
 <div id="addWin" class="hide">
@@ -337,7 +939,7 @@
         <table cellpadding="0" cellspacing="0" border="0" width="100%" align="center">
             <tr>
                 <td colspan="2" align="left" style="padding-left: 50px;color:#999;">
-                    <p style="margin-left:-35px;">温馨提示：添加成功后即时生效。</p>
+                    <p style="margin-left:-35px;">温馨提示：保存数量后即时生效，机器人会寻找可用座位。</p>
                 </td>
             </tr>
             <tr>
@@ -394,5 +996,53 @@
             </tr>
         </table>
     </form>
+</div>
+
+<div id="shuffleWin" class="hide">
+    <table cellpadding="0" cellspacing="0" border="0" width="100%" align="center">
+        <tr><td align="right" class="pd5">最小间隔（秒）</td><td class="pd5"><input id="shuffleMinSeconds" class="easyui-numberbox" style="width:150px;" data-options="min:1,max:5,precision:0" value="1" /></td></tr>
+        <tr><td align="right" class="pd5">最大间隔（秒）</td><td class="pd5"><input id="shuffleMaxSeconds" class="easyui-numberbox" style="width:150px;" data-options="min:1,max:5,precision:0" value="5" /></td></tr>
+        <tr><td colspan="2" class="pd5" style="color:#999;">所有当前入座机器人会逐个离座，间隔在区间内随机取值；离座后按现有机器人规则重新寻找空机台。</td></tr>
+        <tr><td align="center" colspan="2" class="pd5"><a href="javascript:void(0);" class="easyui-linkbutton" onclick="shuffleRobots();" data-options="plain:true,iconCls:'icon-reload'">开始打乱</a></td></tr>
+    </table>
+</div>
+
+<div id="assignWin" class="hide">
+    <input type="hidden" id="assignRobotId" />
+    <input type="hidden" id="assignOnlineMode" value="0" />
+    <table cellpadding="0" cellspacing="0" border="0" width="100%" align="center">
+        <tr><td align="right" class="pd5">游戏</td><td class="pd5"><select id="assignGameId" class="easyui-combobox" style="width:240px;" data-options="valueField:'id',textField:'text',panelHeight:180,onChange:assignGameChanged"></select></td></tr>
+        <tr><td align="right" class="pd5">代理线</td><td class="pd5"><select id="assignLine" class="easyui-combobox" style="width:240px;" data-options="valueField:'id',textField:'text',panelHeight:150,onChange:assignLineChanged"></select></td></tr>
+        <tr><td align="right" class="pd5">机台</td><td class="pd5"><select id="assignTable" class="easyui-combobox" style="width:240px;" data-options="valueField:'id',textField:'text',panelHeight:180"></select></td></tr>
+        <tr><td align="right" class="pd5">座位号</td><td class="pd5"><input id="assignSeat" class="easyui-numberbox" style="width:150px;" data-options="min:1,max:99,precision:0" value="1" /></td></tr>
+        <tr><td colspan="2" class="pd5" style="color:#999;">座位号从1开始，后台会校验机台实际座位数及占用情况。</td></tr>
+        <tr><td align="center" colspan="2" class="pd5"><a href="javascript:void(0);" class="easyui-linkbutton" onclick="saveRobotSeat();" data-options="plain:true,iconCls:'icon-save'">保存座位</a></td></tr>
+    </table>
+</div>
+
+<div id="accountWin" class="hide">
+    <input type="hidden" id="accountId" />
+    <table cellpadding="0" cellspacing="0" border="0" width="100%" align="center">
+        <tr><td align="right" class="pd5">机器人账户</td><td class="pd5"><input id="accountUserName" class="easyui-textbox" style="width:240px;" /></td></tr>
+        <tr><td align="right" class="pd5">机器人昵称</td><td class="pd5"><input id="accountUserNick" class="easyui-textbox" style="width:240px;" /></td></tr>
+        <tr><td align="right" class="pd5">头像编号</td><td class="pd5"><input id="accountIco" class="easyui-numberbox" style="width:120px;" data-options="min:0,precision:0" /></td></tr>
+        <tr><td align="right" class="pd5">等级</td><td class="pd5"><input id="accountLev" class="easyui-numberbox" style="width:120px;" data-options="min:1,precision:0" /></td></tr>
+        <tr><td align="right" class="pd5">性别</td><td class="pd5"><select id="accountSex" class="easyui-combobox" style="width:120px;" data-options="valueField:'id',textField:'text',editable:false,data:[{id:0,text:'男'},{id:1,text:'女'}]"></select></td></tr>
+        <tr><td align="right" class="pd5">钻</td><td class="pd5"><input id="accountGold" class="easyui-numberbox" style="width:150px;" data-options="min:1,precision:0" /></td></tr>
+        <tr><td align="center" colspan="2" class="pd5"><a href="javascript:void(0);" class="easyui-linkbutton" onclick="saveRobotAccount();" data-options="plain:true,iconCls:'icon-save'">保存账户</a></td></tr>
+    </table>
+</div>
+
+<div id="batchAccountWin" class="hide">
+    <table cellpadding="0" cellspacing="0" border="0" width="100%" align="center">
+        <tr><td align="right" class="pd5">创建数量</td><td class="pd5"><input id="batchRobotNum" class="easyui-numberbox" style="width:150px;" data-options="min:1,max:1000,precision:0" value="10" /></td></tr>
+        <tr><td align="right" class="pd5">头像编号</td><td class="pd5"><input id="batchRobotIco" class="easyui-numberbox" style="width:120px;" data-options="min:0,precision:0" value="0" /></td></tr>
+        <tr><td align="right" class="pd5">等级</td><td class="pd5"><input id="batchRobotLev" class="easyui-numberbox" style="width:120px;" data-options="min:1,precision:0" value="1" /></td></tr>
+        <tr><td align="right" class="pd5">性别</td><td class="pd5"><select id="batchRobotSex" class="easyui-combobox" style="width:120px;" data-options="valueField:'id',textField:'text',editable:false,data:[{id:0,text:'男'},{id:1,text:'女'}]"></select></td></tr>
+        <tr><td align="right" class="pd5">钻</td><td class="pd5"><input id="batchRobotGold" class="easyui-numberbox" style="width:150px;" data-options="min:1,precision:0" value="100000" /></td></tr>
+        <tr><td colspan="2" class="pd5" style="color:#777;line-height:20px;">昵称由后台名字库随机生成，每个昵称为 2~8 个汉字；账户名为系统自动生成的数字账号。</td></tr>
+        <tr><td colspan="2" class="pd5" style="color:#555;word-break:break-all;"><span id="batchRobotNames">创建后将在这里显示本次生成的昵称。</span></td></tr>
+        <tr><td align="center" colspan="2" class="pd5"><a href="javascript:void(0);" class="easyui-linkbutton" onclick="saveBatchRobotAccounts();" data-options="plain:true,iconCls:'icon-save'">批量创建</a></td></tr>
+    </table>
 </div>
 

@@ -13,6 +13,74 @@ namespace YYT.BLL.EF
 {
     public class B_UserRobot
     {
+        /// <summary>
+        /// Adds a batch of robot accounts in one transaction.  The merged robot
+        /// management page uses this instead of issuing one INSERT per row so a
+        /// partially-created batch cannot be mistaken for a successful request.
+        /// </summary>
+        public Msg AddRobots(IList<M_UserRobot> entities)
+        {
+            Msg msg = new Msg(0, "机器人添加失败！");
+            if (entities == null || entities.Count == 0)
+            {
+                msg.content = "请填写要创建的机器人数量！";
+                return msg;
+            }
+            using (var ef = new GameDbContext())
+            using (var trans = ef.Database.BeginTransaction())
+            {
+                try
+                {
+                    ef.userRobots.AddRange(entities);
+                    int val = ef.SaveChanges();
+                    if (val != entities.Count)
+                    {
+                        trans.Rollback();
+                        msg.content = "机器人账户创建数量不完整，已回滚。";
+                        return msg;
+                    }
+                    trans.Commit();
+                    msg.code = 1;
+                    msg.content = "机器人账户创建成功！";
+                }
+                catch (Exception ex)
+                {
+                    try { trans.Rollback(); } catch { }
+                    LogHelper.WriteLog(typeof(B_UserRobot), ex);
+                    msg.content = "机器人账户创建失败，已回滚。";
+                }
+            }
+            return msg;
+        }
+
+        /// <summary>Deletes several robot accounts in one transaction.</summary>
+        public int DelRobots(IList<long> ids)
+        {
+            if (ids == null || ids.Count == 0) return 0;
+            int val = 0;
+            using (var ef = new GameDbContext())
+            using (var trans = ef.Database.BeginTransaction())
+            {
+                try
+                {
+                    var rows = ef.userRobots.Where(r => ids.Contains(r.ID)).ToList();
+                    if (rows.Count > 0)
+                    {
+                        ef.userRobots.RemoveRange(rows);
+                        val = ef.SaveChanges();
+                    }
+                    trans.Commit();
+                }
+                catch (Exception ex)
+                {
+                    try { trans.Rollback(); } catch { }
+                    LogHelper.WriteLog(typeof(B_UserRobot), ex);
+                    val = 0;
+                }
+            }
+            return val;
+        }
+
         public bool Exists(M_UserRobot entity)
         {
             using (var ef = new GameDbContext())
@@ -46,6 +114,7 @@ namespace YYT.BLL.EF
                 if (usr != null)
                 {
                     usr.UserName = entity.UserName;
+                    if (!string.IsNullOrWhiteSpace(entity.UserNick)) usr.UserNick = entity.UserNick;
                     usr.Ico = entity.Ico;
                     usr.Lev = entity.Lev;
                     usr.Sex = entity.Sex;

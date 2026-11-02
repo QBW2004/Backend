@@ -81,5 +81,6 @@ Tools/
 | `_add_csproj.py` | 把手机端新增文件登记进 `YYT.Web.csproj`（在仓库根运行）。 |
 | `_fix_ready_init.py` | phone.*.js 的 jQuery ready 初始化改为直接执行。 |
 | `_rename_diamond.py` | 手机端文案 钻石→金币 批量替换。 |
+| `_rename_coin_to_diamond.py` | 后台全端文案 金币/币→钻 批量替换（保护 货币/造币）。 |
 
 注意：`_check_db.ps1`、`_check_login.ps1` 内嵌了数据库口令，若此目录会对外分发，先清理这两个文件。

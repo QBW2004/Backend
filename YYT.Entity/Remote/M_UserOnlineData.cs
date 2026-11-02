@@ -18,7 +18,7 @@ namespace YYT.Entity
         /// </summary>
         public int Ret { get; set; }
         /// <summary>
-        /// 金币数
+        /// 钻数
         /// </summary>
         public long? Coin { get; set; }
         /// <summary>

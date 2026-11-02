@@ -351,6 +351,85 @@ namespace YYT.Remote
             }
             return msg;
         }
+
+        /// <summary>
+        /// Sends a command to ServerRobot's control pipe and returns the raw, single-frame
+        /// reply.  Robot administration commands intentionally use a separate helper instead
+        /// of the centre-server XML command path: ServerRobot owns the live account/seat
+        /// state and may reply with JSON (STATUS) or a short status token (MOVE_OK, ...).
+        /// </summary>
+        public string SendRobotPipeCommand(string command, int timeoutMs = 10000)
+        {
+            if (string.IsNullOrWhiteSpace(command))
+                throw new ArgumentException("机器人命令不能为空。", nameof(command));
+
+            NamedPipeClientStream pipe = null;
+            try
+            {
+                string pipeName = ConfigHelper.Get("robotPipeName");
+                if (string.IsNullOrWhiteSpace(pipeName))
+                    pipeName = "MTH_RobotPipe";
+                pipe = new NamedPipeClientStream(this.ServerName, pipeName, PipeDirection.InOut,
+                    PipeOptions.Asynchronous, TokenImpersonationLevel.None);
+                pipe.Connect(Math.Max(1000, Math.Min(timeoutMs, 30000)));
+
+                byte[] payload = Encoding.UTF8.GetBytes(command + "\0");
+                pipe.Write(payload, 0, payload.Length);
+                pipe.Flush();
+
+                byte[] buffer = new byte[64 * 1024];
+                var readTask = pipe.ReadAsync(buffer, 0, buffer.Length);
+                if (!readTask.Wait(Math.Max(1000, timeoutMs)))
+                    throw new TimeoutException("等待机器人服务回复超时。");
+                int length = readTask.Result;
+                if (length <= 0)
+                    return string.Empty;
+                return Encoding.UTF8.GetString(buffer, 0, length).Trim('\r', '\n', '\0', ' ');
+            }
+            finally
+            {
+                try { if (pipe != null) pipe.Dispose(); } catch { }
+            }
+        }
+
+        /// <summary>Queries the currently connected robots and their actual game/table/seat.</summary>
+        public Msg SendRobotStatus()
+        {
+            try
+            {
+                string raw = SendRobotPipeCommand("STATUS", 10000);
+                if (string.IsNullOrWhiteSpace(raw))
+                    return new Msg(0, "机器人服务未返回状态。");
+                // Keep the wire payload as text here. YYT.Remote intentionally has no
+                // dependency on Newtonsoft.Json; the MVC layer parses it into JSON.
+                return new Msg(1, "机器人状态读取成功。") { datas = raw };
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(SConnect), ex);
+                return new Msg(0, "机器人状态读取失败：" + ex.Message);
+            }
+        }
+
+        /// <summary>Runs a short robot administration command and maps its *_OK reply to Msg.</summary>
+        public Msg SendRobotAction(string command, string successToken, string successMessage)
+        {
+            try
+            {
+                string raw = SendRobotPipeCommand(command, 120000);
+                if (string.Equals(raw, successToken, StringComparison.OrdinalIgnoreCase))
+                    return new Msg(1, successMessage) { datas = raw };
+                string prefix = successToken + " ";
+                if (raw.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                    return new Msg(1, successMessage) { datas = raw.Substring(prefix.Length).Trim() };
+                return new Msg(0, "机器人服务拒绝操作：" + (string.IsNullOrWhiteSpace(raw) ? "无回复" : raw)) { datas = raw };
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(SConnect), ex);
+                return new Msg(0, "机器人操作失败：" + ex.Message);
+            }
+        }
         public byte[] SendReadBytes(EScMsgType eScMsgType, params object[] para)
         {
             StreamWriter sw = null;

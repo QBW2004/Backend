@@ -113,7 +113,7 @@ namespace YYT.Web.Areas.Game.Controllers
                 }
                 if (Gold <= 0)
                 {
-                    msg.content = "金币不能小于等于0！";
+                    msg.content = "钻不能小于等于0！";
                     return Json(msg);
                 }
                 M_UserRobot entity = new M_UserRobot
@@ -158,7 +158,7 @@ namespace YYT.Web.Areas.Game.Controllers
                 }
                 if (Gold <= 0)
                 {
-                    msg.content = "金币不能小于等于0！";
+                    msg.content = "钻不能小于等于0！";
                     return Json(msg);
                 }
                 if (Num <= 0)
@@ -214,7 +214,7 @@ namespace YYT.Web.Areas.Game.Controllers
             {
                 long ID = form.Q<long>("ID1");
                 string UserName = form.Q<string>("UserName1");
-                //string UserNick = form.Q<string>("UserNick1");
+                string UserNick = form.Q<string>("UserNick1");
                 int Ico = form.Q<int>("Ico1");
                 int Lev = form.Q<int>("Lev1");
                 int Sex = form.Q<int>("Sex1");
@@ -237,14 +237,14 @@ namespace YYT.Web.Areas.Game.Controllers
                 }
                 if (Gold <= 0)
                 {
-                    msg.content = "金币不能小于等于0！";
+                    msg.content = "钻不能小于等于0！";
                     return Json(msg);
                 }
                 M_UserRobot entity = new M_UserRobot
                 {
                     ID = ID,
                     UserName = UserName,
-                    //UserNick = UserNick,
+                    UserNick = UserNick,
                     Ico = Ico,
                     Lev = Lev,
                     Sex = Sex,
@@ -280,7 +280,7 @@ namespace YYT.Web.Areas.Game.Controllers
                 }
                 if (Gold <= 0)
                 {
-                    msg.content = "金币不能小于等于0！";
+                    msg.content = "钻不能小于等于0！";
                     return Json(msg);
                 }
                 if (ID.Contains(","))

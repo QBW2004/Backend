@@ -40,7 +40,7 @@ namespace YYT.Entity
         /// </summary>
         public int Sex { get; set; }
         /// <summary>
-        /// 金币
+        /// 钻
         /// </summary>
         public int Gold { get; set; }
         /// <summary>

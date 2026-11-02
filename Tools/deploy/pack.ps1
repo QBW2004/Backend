@@ -13,6 +13,10 @@ param(
 $ErrorActionPreference = 'Stop'
 $SourcePath = (Resolve-Path -LiteralPath $SourcePath).Path
 if (-not (Test-Path -LiteralPath (Join-Path $SourcePath 'Web.config'))) { throw 'SourcePath must be a complete TTY.Web site.' }
+# Validate the staged assembly combination; checking source or individual DLL
+# existence misses a new controller accidentally paired with an old BLL.
+& "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'Test-RobotAccountPackage.ps1') -SitePath $SourcePath
+if ($LASTEXITCODE -ne 0) { throw 'Robot account package dependencies are incomplete.' }
 $stage = Join-Path $env:TEMP 'mth_pack_stage'
 $stage = [IO.Path]::GetFullPath($stage)
 if ((Split-Path -Parent $stage) -ne [IO.Path]::GetFullPath($env:TEMP).TrimEnd('\')) { throw 'Unexpected staging path.' }

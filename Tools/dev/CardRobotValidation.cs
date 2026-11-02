@@ -94,6 +94,40 @@ class CardRobotValidation
                     }
                     Check(bll.SetCardRobots(5, 1, "missing").code == 0, "set unknown line rejected");
                     Check(bll.SetCardRobots(54, 1, "").code == 0, "set mjhl rejected");
+                    foreach (int gameId in new[] { 16, 40, 53 })
+                    {
+                        sql("INSERT INTO games(GameId,Name,Enable,GameType) VALUES(" + gameId + ",'laba',1,3)");
+                        sql("INSERT INTO roomtableconfig(GAME_ID,RoomIndex,TableIndex,TableName,Enabled) SELECT " + gameId + ",RoomIndex,TableIndex,TableName,Enabled FROM roomtableconfig WHERE GAME_ID=5");
+                        sql("INSERT INTO roomtableowner SELECT " + gameId + ",RoomIndex,TableIndex,LineAgent FROM roomtableowner WHERE GAME_ID=5");
+                        foreach (int count in new[] { -1, 3 }) Check(bll.SetCardRobots(gameId, count, "").code == 0, "laba range rejected");
+                        Check(bll.SetCardRobots(gameId, 2, "").code == 1, "laba public target set");
+                        Check(bll.SetCardRobots(gameId, 1, "lineA").code == 1, "laba agent target set");
+                        using (var ef = new GameDbContext())
+                        {
+                            Check(B_Robot.GetCardRobots(ef, gameId, "").Sum(r => r.ROBOT_NO) == 2, "laba capacity used");
+                            Check(ef.Robots.Where(r => r.GAME_ID == gameId).All(r => r.GAME_TYPE == 3 && r.ROBOT_NO == 1), "laba type preserved");
+                        }
+                        Check(bll.SetCardRobots(gameId, 1, "").code == 1, "laba target reduced");
+                        Check(bll.SetCardRobots(gameId, 0, "").code == 1, "laba target cleared");
+                        using (var ef = new GameDbContext())
+                        {
+                            Check(B_Robot.GetCardRobots(ef, gameId, "").Count == 0, "laba rows cleared");
+                            Check(B_Robot.GetCardRobots(ef, gameId, "lineA").Sum(r => r.ROBOT_NO) == 1, "laba other line untouched");
+                        }
+                        sql("INSERT INTO robot_seat(GAME_ID,GAME_TYPE,ROOM_ID,TABLE_ID,ROBOT_NO) VALUES(" + gameId + ",3,0,0,6)");
+                        Check(bll.SetCardRobots(gameId, 2, "").code == 1, "laba legacy multi-count reduced");
+                        using (var ef = new GameDbContext()) Check(B_Robot.GetCardRobots(ef, gameId, "").Sum(r => r.ROBOT_NO) == 2, "laba legacy target exact");
+                        Check(bll.SetCardRobots(gameId, 0, "").code == 1, "laba legacy cleared");
+                        var sets = Enumerable.Range(0, 2).Select(i => Task.Run(() => new B_Robot().SetCardRobots(gameId, 2, "").code)).ToArray();
+                        Task.WaitAll(sets);
+                        Check(sets.All(t => t.Result == 1), "laba concurrent targets serialized");
+                        using (var ef = new GameDbContext()) Check(B_Robot.GetCardRobots(ef, gameId, "").Sum(r => r.ROBOT_NO) == 2, "laba concurrent target exact");
+                        Check(bll.SetCardRobots(gameId, 1, "missing").code == 0, "laba unknown line rejected");
+                        Check(bll.SetCardRobots(gameId, 1, "#").code == 0, "laba recycled line rejected");
+                        sql("UPDATE games SET Enable=0 WHERE GameId=" + gameId);
+                        Check(bll.SetCardRobots(gameId, 1, "").code == 0, "laba closed game rejected");
+                    }
+                    Check(bll.SetCardRobots(3, 1, "").code == 0, "fish target mode rejected");
                 }
                 finally { sql("DROP DATABASE `" + schema + "`"); }
             }

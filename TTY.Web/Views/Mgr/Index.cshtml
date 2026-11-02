@@ -212,8 +212,7 @@
                             <li><a class="menu-item" href="/Game/GameMo">@Resources.Language.String30</a></li>
                             <li><a class="menu-item" href="/Game/Admin">@Resources.Language.String31</a></li>
                           
-                            <li><a class="menu-item" href="/Game/UserRobot">@Resources.Language.String33</a></li>
-                            <li><a class="menu-item" href="/Game/Robot">@Resources.Language.String42</a></li>
+                            <li><a class="menu-item" href="/Game/Robot">机器人管理</a></li>
                             <li><a class="menu-item" href="/Game/GameSetting">@Resources.Language.String34</a></li>
                         </ul>
                     </li>
@@ -350,12 +349,12 @@
             });
 
         });
-        // 金币显示格式化
+        // 钻显示格式化
         function goldFormat(score) {
             if ((typeof score == "number" || /\d+\.\d+/g.test(score)) && isRMB == true)
                 return formatMoney(score / ExchangeRate, '');
             else
-                return score;
+                return typeof score == "number" ? Number(score.toFixed(8)) : score;
         }
         function formatMoney(s, dot) {
             s = parseFloat((s + "").replace(/[^\d\.-]/g, "")).toFixed(2) + "";

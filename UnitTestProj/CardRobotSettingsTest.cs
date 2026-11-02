@@ -9,6 +9,16 @@ namespace UnitTestProj
     public class CardRobotSettingsTest
     {
         [TestMethod]
+        public void MachineRobotCountsSupportCardAndLabaButExcludeMahjongFishAndBet()
+        {
+            foreach (int id in new[] { 5, 15, 25, 37, 44 }) Assert.IsTrue(B_Robot.IsMachineRobotGame(id, 1));
+            foreach (int id in new[] { 16, 40, 53 }) Assert.IsTrue(B_Robot.IsMachineRobotGame(id, 3));
+            Assert.IsFalse(B_Robot.IsMachineRobotGame(54, 1));
+            Assert.IsFalse(B_Robot.IsMachineRobotGame(3, 2));
+            Assert.IsFalse(B_Robot.IsMachineRobotGame(2, 0));
+        }
+
+        [TestMethod]
         public void AdditionUsesRemainingMachineCapacityAndKeepsExistingRobots()
         {
             var robots = new[] { new M_Robot { TABLE_ID = 3, ROBOT_NO = 1 } };

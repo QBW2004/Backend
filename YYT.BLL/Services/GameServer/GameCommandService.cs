@@ -29,6 +29,11 @@ namespace YYT.BLL.Services.GameServer
             return gameServerClient.SetUserControl(args);
         }
 
+        public PlayerRuntimeState QueryPlayerRuntimeState(string userAccount)
+        {
+            return gameServerClient.QueryPlayerRuntimeState(userAccount);
+        }
+
         public Msg QueueUserControl(params object[] args)
         {
             return gameServerClient.QueueUserControl(args);

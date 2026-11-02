@@ -17,7 +17,7 @@ namespace YYT.Web.Controllers.Api
     {
         /// <summary>
         /// 大厅大奖历史：只展示游戏服同一次判定确认的大奖，真人和机器人共用时间序列。
-        /// 玩家账号在服务端按鱼机规则匿名，只返回展示字段，不下发完整账号或控牌信息。
+        /// 玩家展示字段只返回完整昵称，旧 PlayerAccount 字段兼容同一昵称，不下发登录账号或控牌信息。
         /// </summary>
         [HttpGet, Route("History")]
         public IHttpActionResult History(int gameId = 0, string account = null)
@@ -58,18 +58,23 @@ namespace YYT.Web.Controllers.Api
                         .GroupBy(u => u.UserName).ToDictionary(g => g.Key, g => g.First().UserNick);
                     var names = games.ToDictionary(g => g.GameId, g => g.Name);
                     var types = games.ToDictionary(g => g.GameId, g => g.GameType);
-                    var rows = records.Select(r => new
+                    var rows = records.Select(r =>
                     {
-                        r.GameId,
-                        GameName = names[r.GameId],
-                        PlayerAccount = DisplayAccount(r.UserID),
-                        Machine = DisplayMachine(types[r.GameId], r.RoomId, r.TableId),
-                        Nickname = DisplayNickname(players.ContainsKey(r.UserID) ? players[r.UserID]
-                            : robots.ContainsKey(r.UserID) ? robots[r.UserID] : null),
-                        Prize = r.CardType ?? "中奖",
-                        // 分数字符串避免客户端 JSON 转 double 丢失 Int64 精度。
-                        Score = DisplayScore(r.GameId, r.Score),
-                        Time = r.RecTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)
+                        string nickname = DisplayNickname(players.ContainsKey(r.UserID) ? players[r.UserID]
+                            : robots.ContainsKey(r.UserID) ? robots[r.UserID] : null);
+                        return new
+                        {
+                            r.GameId,
+                            GameName = names[r.GameId],
+                            // 旧包固定读此字段，继续回传完整名称，避免旧包显示账号。
+                            PlayerAccount = nickname,
+                            Machine = DisplayMachine(types[r.GameId], r.RoomId, r.TableId),
+                            Nickname = nickname,
+                            Prize = r.CardType ?? "中奖",
+                            // 分数字符串避免客户端 JSON 转 double 丢失 Int64 精度。
+                            Score = DisplayScore(r.GameId, r.Score),
+                            Time = r.RecTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)
+                        };
                     }).ToList();
                     var response = Request.CreateResponse(HttpStatusCode.OK, new { Games = games, Rows = rows, Limit = 30 });
                     response.Headers.CacheControl = new CacheControlHeaderValue { NoStore = true, NoCache = true, MustRevalidate = true };
@@ -85,19 +90,7 @@ namespace YYT.Web.Controllers.Api
 
         public static string DisplayNickname(string nickname)
         {
-            return string.IsNullOrWhiteSpace(nickname) ? "匿名玩家" : nickname;
-        }
-
-        /// <summary>
-        /// 与客户端鱼机 PlayerNameFormatter 一致：按文字元素取前两位和后两位，中间固定两个点。
-        /// </summary>
-        public static string DisplayAccount(string account)
-        {
-            if (string.IsNullOrEmpty(account)) return "..";
-            int[] indexes = StringInfo.ParseCombiningCharacters(account);
-            int visible = Math.Min(2, indexes.Length);
-            int prefixEnd = visible < indexes.Length ? indexes[visible] : account.Length;
-            return account.Substring(0, prefixEnd) + ".." + account.Substring(indexes[indexes.Length - visible]);
+            return string.IsNullOrWhiteSpace(nickname) ? "未知玩家" : nickname;
         }
 
         public static string DisplayMachine(int gameType, long? roomId, long? tableId)
