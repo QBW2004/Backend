@@ -131,6 +131,7 @@
     <Compile Include="EF\B_ReChargeRecords.cs" />
     <Compile Include="EF\B_SuperRecords.cs" />
     <Compile Include="EF\B_UserControl.cs" />
+    <Compile Include="EF\B_PrizePool.cs" />
     <Compile Include="EF\B_UserLockRecord.cs" />
     <Compile Include="EF\B_UserRelations.cs" />
     <Compile Include="EF\shit\B_LabaGamePara.cs" />
