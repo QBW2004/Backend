@@ -54,7 +54,7 @@
             if (name === 'live') queryRobotSeats();
             else if (name === 'quota') queryData();
             else if (name === 'accounts') queryRobotAccounts();
-            else if (name === 'schedule') loadRobotShuffleSchedule();
+            else if (name === 'schedule') { loadRobotShuffleSchedule(); loadRobotPlayTime(); }
             setGridSize();
         }
         //重置表格大小
@@ -285,6 +285,36 @@
             }).fail(function () {
                 $('#scheduleStatus').text('读取失败，请重新读取');
             });
+        }
+        function loadRobotPlayTime() {
+            $('#saveRobotPlayTime').prop('disabled', true);
+            $('#playTimeStatus').text('正在读取…');
+            $.ajax({ url: '/Game/Robot/GetRobotPlayTime', type: 'POST', dataType: 'json' }).done(function (data) {
+                if (!data || data.code != 1 || data.Enabled === undefined) {
+                    $('#playTimeStatus').text('读取失败，请重新读取');
+                    showMsg(data);
+                    return;
+                }
+                $('#playTimeEnabled').prop('checked', data.Enabled === true);
+                $('#playTimeMinHours').numberbox('setValue', data.MinHours);
+                $('#playTimeMaxHours').numberbox('setValue', data.MaxHours);
+                $('#playTimeStatus').text(data.Enabled ? '已启用 · ' + data.MinHours + '～' + data.MaxHours + ' 小时' : '未启用');
+                $('#saveRobotPlayTime').prop('disabled', false);
+            }).fail(function () { $('#playTimeStatus').text('读取失败，请重新读取'); });
+        }
+        function saveRobotPlayTime() {
+            if ($('#saveRobotPlayTime').prop('disabled')) return;
+            var min = Number($('#playTimeMinHours').numberbox('getValue'));
+            var max = Number($('#playTimeMaxHours').numberbox('getValue'));
+            if (!isFinite(min) || !isFinite(max) || min < 0.1 || max > 720 || min > max ||
+                Math.abs(min * 10 - Math.round(min * 10)) > 0.000001 || Math.abs(max * 10 - Math.round(max * 10)) > 0.000001) {
+                showMsg({ code: 0, content: '游玩时长须为0.1～720小时，最多一位小数，且最小值不能大于最大值。' });
+                return;
+            }
+            $('#saveRobotPlayTime').prop('disabled', true);
+            request('/Game/Robot/SaveRobotPlayTime', {
+                Enabled: $('#playTimeEnabled').prop('checked') ? 1 : 0, MinHours: min, MaxHours: max
+            }, function (data) { showMsg(data); loadRobotPlayTime(); });
         }
         function minuteToTime(value) {
             var n = Number(value);
@@ -914,6 +944,18 @@
 
     <section id="robot-schedule" class="robot-panel" role="tabpanel" aria-labelledby="robot-tab-schedule" aria-hidden="true" style="display:none;">
         <div class="robot-section-heading"><div><h2>自动调度</h2><p>机器人按现有配置重新寻找空位，作用于全部游戏与代理线。</p></div></div>
+        <div class="robot-schedule-card">
+            <h3>最大游玩时间 <span id="playTimeStatus" class="robot-muted">正在读取…</span></h3>
+            <p>每次成功入座后，在以下小时范围内随机分配游玩上限；超时后随机等待 1～5 分钟，由空闲机器人接替原座位。</p>
+            <div class="robot-schedule-fields">
+                <label><input type="checkbox" id="playTimeEnabled" /> 启用超时换人</label>
+                <label>最短上限（小时） <input id="playTimeMinHours" class="easyui-numberbox" style="width:110px;" data-options="min:0.1,max:720,precision:1" value="2" /></label>
+                <label>最长上限（小时） <input id="playTimeMaxHours" class="easyui-numberbox" style="width:110px;" data-options="min:0.1,max:720,precision:1" value="4" /></label>
+            </div>
+            <p class="robot-muted">支持 0.1～720 小时，两端相同表示固定时长。无空闲账号时保留原机器人并重试；保存后立即生效，已游玩时间继续计入。</p>
+            <button type="button" id="saveRobotPlayTime" class="robot-button robot-primary" disabled onclick="saveRobotPlayTime();">保存游玩时长</button>
+            <button type="button" class="robot-button" onclick="loadRobotPlayTime();">重新读取</button>
+        </div>
         <div class="robot-schedule-card">
             <h3>每日定时打乱 <span id="scheduleStatus" class="robot-muted">正在读取…</span></h3>
             <p>每天在指定时间范围内执行一次，机器人以 1～5 秒的随机间隔逐个离座。</p>

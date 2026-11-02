@@ -25,6 +25,8 @@ const errors = [];
 const calls = [];
 let statusUnavailable = false;
 let scheduleUnavailable = false;
+let playTimeUnavailable = false;
+let playTime = { code: 1, Enabled: false, MinHours: 2, MaxHours: 4 };
 let schedule = { Enabled: 0, StartTime: '02:00', EndTime: '05:00' };
 let accounts = Array.from({ length: 27 }, (_, i) => ({
     RobotId: i + 1, UserName: 'robot' + (i + 1), UserNick: '测试账户' + (i + 1),
@@ -69,6 +71,8 @@ const server = http.createServer(async (req, res) => {
             }
             case '/Game/Robot/GetRobotLineFilter': data = [{ id: '*', text: '全部', selected: true }, { id: 'sucai', text: 'sucai' }]; break;
             case '/Game/Robot/GetRobotShuffleSchedule': data = scheduleUnavailable ? { code: 0, content: '计划读取失败' } : schedule; break;
+            case '/Game/Robot/GetRobotPlayTime': data = playTimeUnavailable ? { code: 0, content: '游玩时长读取失败' } : playTime; break;
+            case '/Game/Robot/SaveRobotPlayTime': playTime = { code: 1, Enabled: params.Enabled === '1', MinHours: Number(params.MinHours), MaxHours: Number(params.MaxHours) }; data = { code: 1, content: '游玩时长已保存' }; break;
             case '/Game/Robot/GetRobotSeatOptions': data = { code: 1, GameId: 5, Line: '_public', TableId: 0, SeatIndex: 0 }; break;
             case '/Game/Robot/GetGamesTreeData':
                 data = [{ id: Number(params.GameType), children: Number(params.GameType) === 3
@@ -221,6 +225,38 @@ const server = http.createServer(async (req, res) => {
 
         await page.getByRole('tab', { name: '自动调度' }).click();
         await page.waitForFunction(() => $('#scheduleStatus').text() === '未启用');
+        await page.waitForFunction(() => $('#playTimeStatus').text() === '未启用');
+        const playTimeCard = page.locator('.robot-schedule-card').filter({ has: page.locator('#playTimeEnabled') });
+        const shuffleCard = page.locator('.robot-schedule-card').filter({ has: page.locator('#shuffleEnabled') });
+        assert(await playTimeCard.innerText().then(text => text.includes('1～5 分钟') && text.includes('原座位')));
+        await page.locator('#playTimeEnabled').check();
+        await page.evaluate(() => { $('#playTimeMinHours').numberbox('setValue', 1.5); $('#playTimeMaxHours').numberbox('setValue', 3); });
+        await page.locator('#saveRobotPlayTime').click();
+        await page.waitForFunction(() => $('#playTimeStatus').text() === '已启用 · 1.5～3 小时');
+        assert.deepStrictEqual(calls.find(c => c.url.endsWith('/SaveRobotPlayTime')).params, { Enabled: '1', MinHours: '1.5', MaxHours: '3' });
+        await page.getByText('确定', { exact: true }).click();
+        const savesBeforeInvalid = calls.filter(c => c.url.endsWith('/SaveRobotPlayTime')).length;
+        await page.evaluate(() => { $('#playTimeMinHours').numberbox('setValue', 4); $('#playTimeMaxHours').numberbox('setValue', 2); });
+        await page.locator('#saveRobotPlayTime').click();
+        await page.getByText('确定', { exact: true }).click();
+        assert.strictEqual(calls.filter(c => c.url.endsWith('/SaveRobotPlayTime')).length, savesBeforeInvalid);
+        await page.evaluate(() => { $('#playTimeMinHours').numberbox('setValue', 0.1); $('#playTimeMaxHours').numberbox('setValue', 0.1); });
+        await page.locator('#saveRobotPlayTime').click();
+        await page.waitForFunction(() => $('#playTimeStatus').text() === '已启用 · 0.1～0.1 小时');
+        await page.getByText('确定', { exact: true }).click();
+        playTimeUnavailable = true;
+        await playTimeCard.getByRole('button', { name: '重新读取' }).click();
+        await page.waitForFunction(() => $('#playTimeStatus').text().includes('读取失败'));
+        assert.strictEqual(await page.locator('#saveRobotPlayTime').isDisabled(), true);
+        assert.strictEqual(await page.locator('#saveRobotSchedule').isDisabled(), false);
+        await page.getByText('确定', { exact: true }).click();
+        playTimeUnavailable = false;
+        await playTimeCard.getByRole('button', { name: '重新读取' }).click();
+        await page.waitForFunction(() => !$('#saveRobotPlayTime').prop('disabled'));
+        await page.locator('#playTimeEnabled').uncheck();
+        await page.locator('#saveRobotPlayTime').click();
+        await page.waitForFunction(() => $('#playTimeStatus').text() === '未启用');
+        await page.getByText('确定', { exact: true }).click();
         await page.locator('#shuffleEnabled').check();
         await page.evaluate(() => { $('#shuffleStart').timespinner('setValue', '23:00'); $('#shuffleEnd').timespinner('setValue', '02:00'); });
         await page.getByRole('button', { name: '保存定时设置' }).click();
@@ -229,12 +265,12 @@ const server = http.createServer(async (req, res) => {
         await page.getByText('确定', { exact: true }).click();
         if (output) await page.screenshot({ path: path.join(output, 'schedule.png') });
         scheduleUnavailable = true;
-        await page.getByRole('button', { name: '重新读取' }).click();
+        await shuffleCard.getByRole('button', { name: '重新读取' }).click();
         await page.waitForFunction(() => $('#scheduleStatus').text().includes('读取失败'));
         assert.strictEqual(await page.locator('#saveRobotSchedule').isDisabled(), true, 'failed read must not enable saving default settings');
         await page.getByText('确定', { exact: true }).click();
         scheduleUnavailable = false;
-        await page.getByRole('button', { name: '重新读取' }).click();
+        await shuffleCard.getByRole('button', { name: '重新读取' }).click();
         await page.waitForFunction(() => !$('#saveRobotSchedule').prop('disabled'));
 
         // Inspect all three grids after being initialized hidden, and after changing viewport size.
@@ -265,7 +301,7 @@ const server = http.createServer(async (req, res) => {
         await page.getByRole('button', { name: '刷新状态' }).click();
         await page.waitForFunction(() => $('#robotStatTotal').text() === '25');
         assert.deepStrictEqual(errors, [], 'no browser JS errors');
-        console.log(`PASS real EasyUI: four tabs, global counts, isolated filters, exact batch deletion, cross-midnight schedule, 4 viewport widths, failure recovery; card + 3 laba quantity regression (${Date.now() - start} ms)`);
+        console.log(`PASS real EasyUI: play-time range/fixed/decimal/disable/invalid/failure recovery; four tabs, global counts, isolated filters, exact batch deletion, cross-midnight schedule, 4 viewport widths; card + 3 laba quantity regression (${Date.now() - start} ms)`);
     } finally {
         if (browser) await browser.close();
         server.close();

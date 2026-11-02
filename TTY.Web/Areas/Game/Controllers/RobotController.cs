@@ -577,6 +577,59 @@ namespace YYT.Web.Areas.Game.Controllers
             return Json(new SConnect().SendRobotAction(command, "SCHEDULE_OK", "每日打乱机器人时间已保存。"));
         }
 
+        [MemberAuthorize]
+        [AjaxOnly]
+        [HttpPost]
+        public ActionResult GetRobotPlayTime(FormCollection form)
+        {
+            try
+            {
+                string raw = new SConnect().SendRobotPipeCommand("PLAYTIME_GET", 10000);
+                const string prefix = "PLAYTIME_JSON ";
+                if (!raw.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                    return Json(new Msg(0, "机器人游玩时长读取失败，请确认 ServerRobot 已配套更新：" + raw));
+                JObject config = JObject.Parse(raw.Substring(prefix.Length).Trim());
+                return Json(new
+                {
+                    code = 1,
+                    Enabled = (int)config["enabled"] != 0,
+                    MinHours = (decimal)config["minSeconds"] / 3600m,
+                    MaxHours = (decimal)config["maxSeconds"] / 3600m
+                });
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLog(typeof(RobotController), ex);
+                return Json(new Msg(0, "机器人游玩时长读取失败：" + ex.Message));
+            }
+        }
+
+        [MemberAuthorize]
+        [AjaxOnly]
+        [HttpPost]
+        [SuperAdminAuthorize]
+        public ActionResult SaveRobotPlayTime(FormCollection form)
+        {
+            int minSeconds, maxSeconds;
+            if (!TryPlayTimeSeconds(form.Q<string>("MinHours"), out minSeconds) ||
+                !TryPlayTimeSeconds(form.Q<string>("MaxHours"), out maxSeconds) || minSeconds > maxSeconds)
+                return Json(new Msg(0, "游玩时长须为0.1～720小时，最多一位小数，且最小值不能大于最大值。"));
+            string enabled = (form.Q<string>("Enabled") ?? string.Empty).Trim();
+            if (enabled != "0" && enabled != "1") return Json(new Msg(0, "请选择是否启用超时换人。"));
+            string command = string.Format(CultureInfo.InvariantCulture, "PLAYTIME {0} {1} {2}", enabled, minSeconds, maxSeconds);
+            return Json(new SConnect().SendRobotAction(command, "PLAYTIME_OK", "机器人游玩时长已保存，超时后随机等待1～5分钟由空闲机器人接替原座位。"));
+        }
+
+        private static bool TryPlayTimeSeconds(string raw, out int seconds)
+        {
+            seconds = 0;
+            decimal hours;
+            if (!decimal.TryParse((raw ?? string.Empty).Trim(), NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out hours) ||
+                hours < 0.1m || hours > 720m || decimal.Round(hours, 1) != hours) return false;
+            seconds = (int)(hours * 3600m);
+            return true;
+        }
+
         private static string NormalizeScheduleTime(string raw)
         {
             TimeSpan value;
