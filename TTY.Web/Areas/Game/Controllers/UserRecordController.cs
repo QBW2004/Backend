@@ -19,6 +19,10 @@ namespace YYT.Web.Areas.Game.Controllers
         // 只作用于本页，不动 games.Enable——该字段同时决定游戏配置/游戏记录/鱼机控制等页面的可见性。
         private static readonly int[] PrizeHistoryExcludedGameIds = { 42 };
 
+        // 中奖历史只保留 50 倍及以上的中奖记录：低于 50 倍的播报记录（如鱼机 40~49 倍击杀、
+        // 水果 30 倍面板奖）不再出现在本页；数据库明细不删，播报/排行榜规则不变。
+        private const decimal PrizeHistoryMinMultiplier = 50m;
+
         // GET: Game/UserRecord
         public ActionResult Index()
         {
@@ -77,7 +81,8 @@ namespace YYT.Web.Areas.Game.Controllers
         }
 
         /// <summary>
-        /// 玩家中奖历史：统一展示服务端按大奖规则确认的播报记录，不再为牌机放行普通小奖。
+        /// 玩家中奖历史：统一展示服务端按大奖规则确认的播报记录，不再为牌机放行普通小奖；
+        /// 且只保留 Multiplier≥50 的记录，低于 50 倍的中奖不进入中奖历史。
         /// IsManualControl=1 表示该奖项由手动控牌牌型送出。
         /// </summary>
         [AjaxOnly]
@@ -127,10 +132,12 @@ namespace YYT.Web.Areas.Game.Controllers
                         .OrderBy(g => g.GameType).ThenBy(g => g.GameId).ToList();
                     gameMeta = games.Select(g => (object)new { GameId = g.GameId, Name = GameDisplayNames.GetName(g.GameId, g.Name), GameType = g.GameType }).ToList();
                     List<int> gameIds = games.Select(g => g.GameId).ToList();
-                    // 复用结算时的大奖判定，不在后台另算倍率；水果额外玩法的零分大奖也须保留。
+                    // 复用结算时的大奖判定与落库倍率，不在后台另算；只保留 50 倍及以上记录，
+                    // 水果额外玩法的零分大奖若倍率达标仍须保留（Score>=0 不因零分误删）。
                     IQueryable<M_GamePrizeRecord> query = ef.GamePrizeRecords
                         .Where(r => r.UserID == user.ID && gameIds.Contains(r.GameId)
                             && r.IsBroadcast == 1 && r.Score >= 0
+                            && r.Multiplier >= PrizeHistoryMinMultiplier
                             && r.RecTime >= start && r.RecTime < end);
                     int total = query.Count();
                     List<M_GamePrizeRecord> result = query.OrderByDescending(r => r.RecTime)

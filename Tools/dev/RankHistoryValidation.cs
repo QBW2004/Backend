@@ -81,7 +81,9 @@ class BackendValidation
                     Check(rows.Count == 30, "latest 30");
                     Check((string)rows[0]["Score"] == "35" && (string)rows[29]["Score"] == "6", "same-second ID order, oldest evicted; hidden wins do not consume LIMIT");
                     Check(rows.Any(r => (string)r["Nickname"] == "机器人昵称") && rows.Any(r => (string)r["Nickname"] == "真人昵称"), "all players and robots");
-                    Check(rows.Any(r => (string)r["PlayerAccount"] == "ra..ot") && rows.Any(r => (string)r["PlayerAccount"] == "ra..er"), "accounts use fish anonymization instead of nicknames");
+                    Check(rows.All(r => (string)r["PlayerAccount"] == (string)r["Nickname"])
+                        && !snapshot.ToString().Contains("rankbot") && !snapshot.ToString().Contains("rankplayer"),
+                        "old and new display fields contain full nicknames, never login accounts");
                     Check(rows.All(r => (string)r["Machine"] == "25号机"), "recorded one-based card machine");
                     Check(((JArray)snapshot["Games"]).Select(g => (int)g["GameId"]).SequenceEqual(new[] { 5, 40 }), "only enabled card and slot categories, excluding Mahjong fish bet and unknown");
                     foreach (int hidden in new[] { 3, 2, 54, 901, 99, 9876 })
@@ -116,13 +118,13 @@ class BackendValidation
                     Check(((JArray)snapshot["Games"]).Count == 0 && ((JArray)snapshot["Rows"]).Count == 0, "no eligible games returns empty snapshot without invalid IN clause");
                     Check(http.GetAsync("api/RankingList/History?gameId=-1").Result.StatusCode == HttpStatusCode.BadRequest, "invalid game rejected");
                     Check(RankingListController.DisplayScore(40, long.MaxValue) == "9223372036854775807", "Int64 precision");
-                    Check(RankingListController.DisplayNickname(null) == "匿名玩家", "missing nickname fallback");
-                    Check(RankingListController.DisplayAccount("77123418") == "77..18"
-                        && RankingListController.DisplayAccount(null) == ".."
-                        && RankingListController.DisplayAccount("") == ".."
-                        && RankingListController.DisplayAccount("7") == "7..7"
-                        && RankingListController.DisplayAccount("77") == "77..77"
-                        && RankingListController.DisplayAccount("a\u0301bcde\u0301") == "a\u0301b..de\u0301", "fish anonymity covers short empty and combining text");
+                    Check(RankingListController.DisplayNickname(null) == "未知玩家", "missing nickname never exposes account");
+                    Check(RankingListController.DisplayNickname("玩家名称测试") == "玩家名称测试"
+                        && RankingListController.DisplayNickname("") == "未知玩家"
+                        && RankingListController.DisplayNickname(" ") == "未知玩家"
+                        && RankingListController.DisplayNickname("7") == "7"
+                        && RankingListController.DisplayNickname("77") == "77"
+                        && RankingListController.DisplayNickname("a\u0301bcde\u0301") == "a\u0301bcde\u0301", "full nickname display handles missing short and combining text");
                     Check(RankingListController.DisplayMachine(1, 0, 25) == "25号机"
                         && RankingListController.DisplayMachine(3, 0, 24) == "25号机"
                         && RankingListController.DisplayMachine(2, 2, 25) == "25号机"

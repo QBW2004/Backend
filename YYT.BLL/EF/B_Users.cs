@@ -143,16 +143,34 @@ namespace YYT.BLL.EF
             return msg;
         }
 
+        /// <summary>只读数据库中的完成标记；账号默认昵称不能代表玩家已经设置过。</summary>
+        public NicknameState GetNicknameState(string playerId, string password)
+        {
+            using (var ef = new GameDbContext())
+            {
+                return ef.Database.SqlQuery<NicknameState>(
+                    "SELECT NAME AS Name, NICKNAME_SET AS NicknameSet FROM users WHERE ID={0} AND BINARY PWD=BINARY {1}",
+                    playerId, password).FirstOrDefault();
+            }
+        }
+
+        public class NicknameState
+        {
+            public string Name { get; set; }
+            public int NicknameSet { get; set; }
+        }
+
         public Msg updateUsersName(M_Users entity)
         {
             Msg msg = new Msg(1002, "Sửa đổi thất bại（修改失败）！");
             using (var ef = new GameDbContext())
             {
-                var usr = ef.Users.Where(c => c.ID.Equals(entity.ID)).FirstOrDefault();
-                if (usr != null)
+                // 名称和完成标记同一条 SQL 落库，失败不会误记已设置；再次校验密码防止鉴权后发生变更。
+                int updated = ef.Database.ExecuteSqlCommand(
+                    "UPDATE users SET NAME={0}, NICKNAME_SET=1 WHERE ID={1} AND BINARY PWD=BINARY {2}",
+                    entity.NAME, entity.ID, entity.PWD);
+                if (updated > 0)
                 {
-                    usr.NAME = entity.NAME;
-                    ef.SaveChanges();
                     msg.code = 10000;
                     msg.content = "Sửa đổi thành công（修改成功）！";
 
@@ -282,8 +300,8 @@ namespace YYT.BLL.EF
 
                 try
                 {
-                    rst.COINS = rst.COINS - coin;//用户余额=余额-兑换金币
-                    rst.COINS_BACK = rst.COINS_BACK + coin;//用户兑换金币数量=兑换+兑换金币
+                    rst.COINS = rst.COINS - coin;//用户余额=余额-兑换钻
+                    rst.COINS_BACK = rst.COINS_BACK + coin;//用户兑换钻数量=兑换+兑换钻
                     val = ef.SaveChanges();
                     msg.code = 10000;
                     msg.content = "兑换成功！";
@@ -327,8 +345,8 @@ namespace YYT.BLL.EF
 
                 try
                 {
-                    rst.COINS = rst.COINS + coin;//用户余额=余额+兑换金币
-                    rst.COINS_BACK = rst.COINS_BACK - coin;//用户兑换金币数量=兑换-兑换金币
+                    rst.COINS = rst.COINS + coin;//用户余额=余额+兑换钻
+                    rst.COINS_BACK = rst.COINS_BACK - coin;//用户兑换钻数量=兑换-兑换钻
                     val = ef.SaveChanges();
                     msg.code = 10000;
                     msg.content = "兑换回滚成功！";
@@ -378,8 +396,8 @@ namespace YYT.BLL.EF
             string srvCode = string.Empty;
             try
             {
-                //0是加金币,不等于0是减金币
-                // 发送解锁用户指令  指令内容：UL + 充值0/兑换1 +充值金币数+ 操作结果失败0/成功1 + 玩家账号
+                //0是加钻,不等于0是减钻
+                // 发送解锁用户指令  指令内容：UL + 充值0/兑换1 +充值钻数+ 操作结果失败0/成功1 + 玩家账号
                 srvCode = this.GameServerClient.UnlockPlayer(type, val, coins, ID);
             }
             catch (Exception ex)
@@ -403,12 +421,12 @@ namespace YYT.BLL.EF
 
 
             /// <summary>
-            /// 金币数
+            /// 钻数
             /// </summary>
             public long? coins { get; set; }
 
             /// <summary>
-            /// 保险柜金币数
+            /// 保险柜钻数
             /// </summary>
             public long? safeCoins { get; set; }
 
@@ -476,6 +494,7 @@ namespace YYT.BLL.EF
                     .Skip(mPage.PageSize * (mPage.PageIndex - 1)).Take(mPage.PageSize)
                     .ToList();
 
+                FillTotalWinLoss(ef, users);
                 FillCurrentPlayInfo(ef, users);
                 FillTodayWinLoss(ef, users);
                 ApplySensitiveFieldPermissions(users, loginUser);
@@ -558,7 +577,7 @@ namespace YYT.BLL.EF
         /// <param name="sort">空/last-time 默认序；win-most 今日赢最多；loss-most 今日输最多；profit-desc 总盈亏降序；profit-asc 总盈亏升序</param>
         /// <param name="rollingFinancials">true 时充退列取最近 7x24h 流水（rechargerecords），false 取 users 累计列</param>
         /// <param name="gameWinLossProfit">true（会员盈亏详情页）时：总盈亏(Profit) 与 profit 排序改为实际游戏累计输赢
-        /// （SUM user_daily_winloss 全量，与 FillTotalWinLoss 同口径），不再按充值/退币差额——没玩过游戏的玩家无记录即为 0</param>
+        /// （SUM user_daily_winloss 全量，与 FillTotalWinLoss 同口径），不再按充值/退钻差额——没玩过游戏的玩家无记录即为 0</param>
         private M_EasyuiGridData<M_Users_DTO> QueryUsersPaged(M_Page mPage, M_Users_DTO entity, M_LoginUser loginUser, bool onlyOffline, bool onlyFrozen, string sort, bool includeDescendants = false, bool rollingFinancials = false, bool gameWinLossProfit = false)
         {
             M_EasyuiGridData<M_Users_DTO> list = new M_EasyuiGridData<M_Users_DTO>();
@@ -653,7 +672,7 @@ namespace YYT.BLL.EF
                 string whereSql = where.ToString();
                 object[] baseArgs = args.ToArray();
 
-                // 盈亏排序键：默认按充值/退币差额（与列口径一致）；会员盈亏详情页（gameWinLossProfit）
+                // 盈亏排序键：默认按充值/退钻差额（与列口径一致）；会员盈亏详情页（gameWinLossProfit）
                 // 按实际游戏累计输赢排序（user_daily_winloss 全量，赢正输负）。
                 string profitExpr = gameWinLossProfit
                     ? "IFNULL(tg.TotalWl,0)"
@@ -773,7 +792,7 @@ namespace YYT.BLL.EF
         /// <summary>
         /// 手机端：离线玩家分页（支持排序）。
         /// 总盈亏(Profit)与 profit 排序统一取实际游戏输赢（user_daily_winloss 全量，赢正输负），
-        /// 与在线列表、会员盈亏详情、电脑端"总盈亏"同口径；不再按充值/退币差额（那是资金口径，不是输赢）。
+        /// 与在线列表、会员盈亏详情、电脑端"总盈亏"同口径；不再按充值/退钻差额（那是资金口径，不是输赢）。
         /// </summary>
         public M_EasyuiGridData<M_Users_DTO> GetOfflineUsersList(M_Page mPage, M_Users_DTO entity, M_LoginUser loginUser, string sort)
         {
@@ -786,7 +805,7 @@ namespace YYT.BLL.EF
             return QueryUsersPaged(mPage, entity, loginUser, false, true, null);
         }
 
-        /// <summary>手机端：会员盈亏分页（今日输赢 + 总盈亏，支持排序）。盈亏=实际游戏输赢，不按充值退币。</summary>
+        /// <summary>手机端：会员盈亏分页（今日输赢 + 总盈亏，支持排序）。盈亏=实际游戏输赢，不按充值退钻。</summary>
         public M_EasyuiGridData<M_Users_DTO> GetMemberWinLossList(M_Page mPage, M_Users_DTO entity, M_LoginUser loginUser, string sort, bool includeDescendants = false)
         {
             // 总盈亏/今日盈亏均取 user_daily_winloss（累计/当日）：没玩过游戏的玩家没有记录，盈亏为 0
@@ -796,13 +815,13 @@ namespace YYT.BLL.EF
         /// <summary>
         /// 手机端：今日玩家总输赢合计（权限范围内）
         /// </summary>
-        public long GetTodayTotalWinLoss(M_LoginUser loginUser)
+        public decimal GetTodayTotalWinLoss(M_LoginUser loginUser)
         {
             using (var ef = new GameDbContext())
             {
                 if (loginUser != null && loginUser.UserPriv == 0)
                 {
-                    return ef.Database.SqlQuery<long>("SELECT CAST(IFNULL(SUM(WINLOSS),0) AS SIGNED) FROM user_daily_winloss WHERE DAY = CURDATE()").FirstOrDefault();
+                    return ef.Database.SqlQuery<decimal>("SELECT IFNULL(SUM(WINLOSS),0) FROM user_daily_winloss WHERE DAY = CURDATE()").FirstOrDefault();
                 }
 
                 if (loginUser == null)
@@ -812,7 +831,7 @@ namespace YYT.BLL.EF
                 if (agencies.Count < 1)
                     return 0;
 
-                long total = 0;
+                decimal total = 0;
                 for (int i = 0; i < agencies.Count; i += 300)
                 {
                     List<string> chunk = agencies.Skip(i).Take(300).ToList();
@@ -820,10 +839,10 @@ namespace YYT.BLL.EF
                     // ⚠️ user_daily_winloss.UserID 存的是玩家账号，直接连 users.ID 即可。
                     // 不能连 userrelations（那张表的 UserID 是数字平台 ID，与账号串比较恒不相等，
                     // 结果恒为 0：代理账号看到的"今日总输赢"一直是 0）。
-                    string sql = "SELECT CAST(IFNULL(SUM(w.WINLOSS),0) AS SIGNED) FROM user_daily_winloss w " +
+                    string sql = "SELECT IFNULL(SUM(w.WINLOSS),0) FROM user_daily_winloss w " +
                                  "INNER JOIN Users u ON u.ID = w.UserID " +
                                  "WHERE w.DAY = CURDATE() AND u.AGENCY IN (" + placeholders + ")";
-                    total += ef.Database.SqlQuery<long>(sql, chunk.Cast<object>().ToArray()).FirstOrDefault();
+                    total += ef.Database.SqlQuery<decimal>(sql, chunk.Cast<object>().ToArray()).FirstOrDefault();
                 }
                 return total;
             }
@@ -831,10 +850,10 @@ namespace YYT.BLL.EF
 
         /// <summary>
         /// 手机端：会员盈亏统计卡聚合（权限范围内，可按代理模糊过滤）。
-        /// 总充值/总退币 = 最近 7x24 小时内已生效充退流水合计；
+        /// 总充值/总退钻 = 最近 7x24 小时内已生效充退流水合计；
         /// 今日充值/今日退分 = 当日充退流水合计（TypeFlag 口径与 GetUserPhoneDetail 一致）。
         /// 总盈亏/今日盈亏 = 实际游戏输赢（user_daily_winloss 累计 / 当日）：
-        /// 只有真正玩过游戏产生结算的玩家才有记录，没玩的玩家不计入盈亏，与充值退币无关。
+        /// 只有真正玩过游戏产生结算的玩家才有记录，没玩的玩家不计入盈亏，与充值退钻无关。
         /// </summary>
         public M_MemberWinLossStats GetMemberWinLossStats(M_LoginUser loginUser, string agency, bool includeDescendants = false)
         {
@@ -884,7 +903,7 @@ namespace YYT.BLL.EF
                     " WHERE x.CreateTime >= {" + cutoffIndex + "} AND x.CreateTime <= {" + nowIndex + "}" +
                     " AND x.Processed = 1" +
                     // 会员口径：只统计目标为玩家的流水。总台给代理充值写的是代理账号（admin 表 ID），
-                    // 不是会员数据，必须排除；否则该账号名下会员的"总充值/总退币"会被代理充值撑大。
+                    // 不是会员数据，必须排除；否则该账号名下会员的"总充值/总退钻"会被代理充值撑大。
                     " AND NOT EXISTS (SELECT 1 FROM admin ra WHERE ra.ID = x.GameID)" + scope,
                     args.ToArray()).FirstOrDefault();
                 if (stats == null)
@@ -906,17 +925,17 @@ namespace YYT.BLL.EF
                     stats.TodayBack = today.TodayBack;
                 }
 
-                // 盈亏 = 实际游戏输赢（user_daily_winloss），不按充值/退币统计；
+                // 盈亏 = 实际游戏输赢（user_daily_winloss），不按充值/退钻统计；
                 // 范围与上方充退聚合一致（agencies=null 表示超管全量）。跨天记录逐条带出，玩家没玩的天数没有行，天然不计。
-                long totalWinLoss = 0;
-                long todayWinLoss = 0;
+                decimal totalWinLoss = 0;
+                decimal todayWinLoss = 0;
                 if (agencies == null || agencies.Count < 1)
                 {
                     // 超管全量：直接整表聚合；当日口径可走 idx_udw_day 索引
-                    totalWinLoss = ef.Database.SqlQuery<long>(
-                        "SELECT CAST(IFNULL(SUM(WINLOSS),0) AS SIGNED) FROM user_daily_winloss").FirstOrDefault();
-                    todayWinLoss = ef.Database.SqlQuery<long>(
-                        "SELECT CAST(IFNULL(SUM(WINLOSS),0) AS SIGNED) FROM user_daily_winloss WHERE DAY = CURDATE()").FirstOrDefault();
+                    totalWinLoss = ef.Database.SqlQuery<decimal>(
+                        "SELECT IFNULL(SUM(WINLOSS),0) FROM user_daily_winloss").FirstOrDefault();
+                    todayWinLoss = ef.Database.SqlQuery<decimal>(
+                        "SELECT IFNULL(SUM(WINLOSS),0) FROM user_daily_winloss WHERE DAY = CURDATE()").FirstOrDefault();
                 }
                 else
                 {
@@ -929,12 +948,12 @@ namespace YYT.BLL.EF
                         // 连 userrelations（UserID 是数字平台 ID）会因列语义不同而恒不匹配，聚合恒为 0。
                         string joins = " FROM user_daily_winloss w" +
                                        " INNER JOIN Users u ON u.ID = w.UserID";
-                        totalWinLoss += ef.Database.SqlQuery<long>(
-                            "SELECT CAST(IFNULL(SUM(w.WINLOSS),0) AS SIGNED)" + joins +
+                        totalWinLoss += ef.Database.SqlQuery<decimal>(
+                            "SELECT IFNULL(SUM(w.WINLOSS),0)" + joins +
                             " WHERE u.AGENCY IN (" + placeholders + ")",
                             chunkArgs).FirstOrDefault();
-                        todayWinLoss += ef.Database.SqlQuery<long>(
-                            "SELECT CAST(IFNULL(SUM(w.WINLOSS),0) AS SIGNED)" + joins +
+                        todayWinLoss += ef.Database.SqlQuery<decimal>(
+                            "SELECT IFNULL(SUM(w.WINLOSS),0)" + joins +
                             " WHERE u.AGENCY IN (" + placeholders + ") AND w.DAY = CURDATE()",
                             chunkArgs).FirstOrDefault();
                     }
@@ -1114,7 +1133,9 @@ namespace YYT.BLL.EF
                         .OrderBy(c => c.UserID)
                         .Skip(mPage.PageSize * (mPage.PageIndex - 1)).Take(mPage.PageSize)
                         .ToList();
+                    FillTotalWinLoss(ef, users);
                     FillCurrentPlayInfo(ef, users);
+                    FillTodayWinLoss(ef, users);
                     ApplySensitiveFieldPermissions(users, loginUser);
                     list.rows = users;
                     list.total = mPage.TotalCount;
@@ -1209,14 +1230,14 @@ namespace YYT.BLL.EF
 
             string placeholders = string.Join(",", userIds.Select((c, i) => "{" + i + "}"));
             string sql = "SELECT UserID, WINLOSS FROM user_daily_winloss WHERE DAY = CURDATE() AND UserID IN (" + placeholders + ")";
-            Dictionary<string, long> winLossMap = ef.Database.SqlQuery<M_UserDailyWinLoss>(sql, userIds.Cast<object>().ToArray())
+            Dictionary<string, decimal> winLossMap = ef.Database.SqlQuery<M_UserDailyWinLoss>(sql, userIds.Cast<object>().ToArray())
                 .ToList()
                 .GroupBy(c => c.UserID)
                 .ToDictionary(g => g.Key, g => g.First().WINLOSS);
 
             foreach (M_Users_DTO user in users)
             {
-                user.TodayWinLoss = winLossMap.TryGetValue(user.ID, out long winLoss) ? winLoss : (long?)0;
+                user.TodayWinLoss = winLossMap.TryGetValue(user.ID, out decimal winLoss) ? winLoss : (decimal?)0;
             }
         }
 
@@ -1234,14 +1255,14 @@ namespace YYT.BLL.EF
 
             string placeholders = string.Join(",", userIds.Select((c, i) => "{" + i + "}"));
             string sql = "SELECT UserID, SUM(WINLOSS) AS WINLOSS FROM user_daily_winloss WHERE UserID IN (" + placeholders + ") GROUP BY UserID";
-            Dictionary<string, long> winLossMap = ef.Database.SqlQuery<M_UserDailyWinLoss>(sql, userIds.Cast<object>().ToArray())
+            Dictionary<string, decimal> winLossMap = ef.Database.SqlQuery<M_UserDailyWinLoss>(sql, userIds.Cast<object>().ToArray())
                 .ToList()
                 .GroupBy(c => c.UserID)
                 .ToDictionary(g => g.Key, g => g.First().WINLOSS);
 
             foreach (M_Users_DTO user in users)
             {
-                user.Profit = winLossMap.TryGetValue(user.ID, out long total) ? (long?)total : 0;
+                user.Profit = winLossMap.TryGetValue(user.ID, out decimal total) ? (decimal?)total : 0;
             }
         }
 
@@ -1308,7 +1329,7 @@ namespace YYT.BLL.EF
                     if (rst != null)
                     {
                         rst.COINS  += (coin ?? 0);
-                        rst.COINS_BUY += coin;// 购币
+                        rst.COINS_BUY += coin;// 购钻
                         val = ef.SaveChanges();
                     }
                 }
@@ -1333,7 +1354,7 @@ namespace YYT.BLL.EF
                     if (rst != null)
                     {
                         rst.COINS -= (coin ?? 0);
-                        rst.COINS_BUY += coin;// 购币
+                        rst.COINS_BUY += coin;// 购钻
                         val = ef.SaveChanges();
                     }
                 }
@@ -1372,6 +1393,7 @@ namespace YYT.BLL.EF
                         {
                             ["userrelations"] = "ID = {0}",
                             ["user_daily_winloss"] = "UserID = {0}",
+                            ["user_winloss_ledger"] = "UserID = {0}",
                             ["useroptlog"] = "UserID = {0}",
                             ["userloginrecord"] = "UserID = {0}",
                             ["rechargerecords"] = "GameID = {0} AND AccountType = 0",
@@ -1611,6 +1633,9 @@ namespace YYT.BLL.EF
         public Msg Regist(M_Users entity)
         {
             Msg msg = new Msg(0, "注册失败！");
+            // 登录按 ID 精确匹配：表单带入的空格会原样落库导致玩家登不上，落库前先去掉
+            entity.ID = entity.ID == null ? null : entity.ID.Trim();
+            entity.PWD = entity.PWD == null ? null : entity.PWD.Trim();
             using (var ef = new GameDbContext())
             {
                 var usr = ef.Users.Where(c => c.ID.Equals(entity.ID));
@@ -1686,6 +1711,9 @@ namespace YYT.BLL.EF
         public Msg Add(M_Users entity)
         {
             Msg msg = new Msg(0, "注册失败！");
+            // 同 Regist：ID/PWD 去首尾空格，避免带空格落库后玩家无法登录
+            entity.ID = entity.ID == null ? null : entity.ID.Trim();
+            entity.PWD = entity.PWD == null ? null : entity.PWD.Trim();
             using (var ef = new GameDbContext())
             {
                 var usr = ef.Users.Where(c => c.ID.Equals(entity.ID));
