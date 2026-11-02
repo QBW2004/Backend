@@ -551,7 +551,7 @@ namespace YYT.BLL.EF
         /// 覆盖时先给旧模式补发解除指令；控牌与吃分/放水共存，新控牌仅替换旧控牌。
         /// </summary>
         public Msg ApplyTotalControl(M_LoginUser loginUser, string userId, int mode, int strength, long goldThreshold,
-            int cardAction, int cardValue, int cardNumber, int cardTotal, bool mobileFixedCard = false)
+            int cardAction, int cardValue, int cardNumber, int cardTotal, bool mobileFixedCard = false, decimal? expectedBetDiamonds = null)
         {
             Msg msg = new Msg(0, "设置失败！");
             if (loginUser == null)
@@ -645,6 +645,8 @@ namespace YYT.BLL.EF
                 }
             }
 
+            if (mode == 6 && (cardValue == 99 || (cardAction >= 15 && cardAction <= 17 && cardValue == 10)))
+                return CloseTotalControl(loginUser, userId.Trim(), 6, mobileFixedCard);
             string target = userId.Trim();
             Msg currentCapability = ValidateCurrentGameCapability(target, mode);
             if (currentCapability != null)
@@ -655,6 +657,11 @@ namespace YYT.BLL.EF
             int createdControlId = 0;
             try
             {
+                var cardQuote = mode == 6 ? B_PrizePool.QuoteCard(target, cardAction, cardValue, cardNumber) : null;
+                if (cardQuote != null && expectedBetDiamonds.HasValue && Math.Round(cardQuote.BetDiamonds, 8) != Math.Round(expectedBetDiamonds.Value, 8))
+                    return new Msg(0, "玩家押注已变化，请重新查询后送奖！");
+                decimal cardAmount = cardQuote == null ? 0 : cardQuote.RequiredDiamonds;
+                var location = cardQuote == null ? new YYT.BLL.Services.GameServer.PipeGameServerClient().QueryAllOnlinePlayers()?.FirstOrDefault(p => p.ID == target && p.Status == 0) : null;
                 using (var ef = new GameDbContext())
                 using (var transaction = ef.Database.BeginTransaction(System.Data.IsolationLevel.ReadCommitted))
                 {
@@ -670,7 +677,7 @@ namespace YYT.BLL.EF
                         return msg;
                     }
 
-                    B_PrizePool.CheckFunding(ef, loginUser, mode, goldThreshold);
+                    B_PrizePool.CheckFunding(ef, loginUser, mode, goldThreshold, cardAmount);
 
                     // 总控互斥新口径：吃分(4)/放水(5)互斥，后下的覆盖先下的；控牌(6)只替换旧控牌，与吃分/放水共存
                     var replaced = TotalControlRules.ModesReplacedBy(mode);
@@ -704,7 +711,8 @@ namespace YYT.BLL.EF
                     ef.UserControlStatuses.Add(row);
                     ef.SaveChanges();
                     createdControlId = row.ID;
-                    B_PrizePool.AttachControl(ef, loginUser, row);
+                    B_PrizePool.AttachControl(ef, loginUser, row, cardQuote != null ? cardQuote.GameId : (location == null ? 0 : location.GameID),
+                        cardQuote != null ? (int?)cardQuote.TableId : (location == null ? null : (int?)location.TableId));
 
                     // 点杀记录由后台写入（含操作员），服务器侧不再记录，避免指令重发产生重复记录
                     int optCode = mode == (int)EControlMode.TotalKill ? 21 : (mode == (int)EControlMode.TotalRelease ? 22 : 23);

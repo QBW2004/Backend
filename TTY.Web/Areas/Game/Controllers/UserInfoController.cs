@@ -1327,7 +1327,8 @@ namespace YYT.Web.Areas.Game.Controllers
                     }
                 }
                 msg = new B_UserControl().ApplyTotalControl(loginUser, id, mode, strength, goldThreshold,
-                    cardAction, cardValue, cardNumber, cardTotal, mobileFixedCard);
+                    cardAction, cardValue, cardNumber, cardTotal, mobileFixedCard,
+                    string.IsNullOrWhiteSpace(form["ExpectedBetDiamonds"]) ? (decimal?)null : form.Q<decimal>("ExpectedBetDiamonds"));
             }
             catch (Exception ex)
             {

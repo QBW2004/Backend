@@ -660,8 +660,8 @@ namespace UnitTestProj
             // 控制页统计卡对齐参考站送奖管理：账号标签与三张统计卡均标注「钻」单位
             StringAssert.Contains(controlView, "送奖账号");
             StringAssert.Contains(controlView, "当前押注（钻）");
-            StringAssert.Contains(controlView, "今日输赢（钻）");
-            StringAssert.Contains(controlView, "总输赢（钻）");
+            StringAssert.Contains(controlView, "今日盈亏（钻）");
+            StringAssert.Contains(controlView, "总盈亏（钻）");
             // 吃分/放水目标按钻累计（中心服按结算报文实际桌台兑换比折算）：两端目标输入标注钻单位
             StringAssert.Contains(controlView, "目标（钻）");
             StringAssert.Contains(ReadRepoFile(@"TTY.Web\Areas\Game\Views\UserInfo\OnlineUsers.cshtml"), "目标（钻）");
@@ -1362,7 +1362,7 @@ namespace UnitTestProj
             StringAssert.Contains(playersScript, "aborted = (status === 'abort');");
             StringAssert.Contains(playersScript, "if (aborted || document.hidden) return;");
             // 各页裸轮询与在线页同一口径：页面隐藏时暂停，在途请求交给 M.post 的中断
-            StringAssert.Contains(controlScript, "if (!document.hidden) refreshCtrlStatus(true);");
+            StringAssert.Contains(controlScript, "if (!document.hidden) { refreshCtrlStatus(true);");
             StringAssert.Contains(detailScript, "if (!account || document.hidden) return;");
         }
 
@@ -1496,7 +1496,7 @@ namespace UnitTestProj
             // 有吃分进度时会显示负数，与电脑端显示相反）
             Assert.IsFalse(control.Contains(": -r.ConsumedCoins"), "控制页已吃分进度不能取反");
             Assert.IsFalse(detail.Contains(": -Number(r.ConsumedCoins || 0)"), "玩家详情页已吃分进度不能取反");
-            StringAssert.Contains(control, "M.gold(Number(r.ControlMode) == 5 ? r.GrantedCoins : r.ConsumedCoins)");
+            StringAssert.Contains(control, "diamonds(Number(r.ControlMode) == 5 ? r.GrantedCoins : r.ConsumedCoins)");
             StringAssert.Contains(detail, "Number(r.ConsumedCoins || 0)");
         }
 

@@ -193,10 +193,20 @@
         font-size: 14px;
     }
 
-    .pool-flow-options { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
-    .pool-flow-options label { display:flex; align-items:center; gap:6px; font-size:13px; }
+    .agent-info-card { padding:12px; margin-bottom:12px; }
+    .pool-agent-heading { display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:13px; }
+    .pool-agent-heading > span { min-width:0; overflow-wrap:anywhere; }
+    .pool-agent-heading label { display:flex; align-items:center; gap:5px; flex-shrink:0; }
+    .pool-agent-heading select { height:36px; width:88px; background:#fff; border:1px solid #e5e5e5; border-radius:6px; }
+    .pool-agent-balance { display:flex; justify-content:space-between; padding-top:10px; margin-top:10px; border-top:1px solid #f0f0f0; font-size:13px; }
+    .pool-date-filter { display:grid; grid-template-columns:minmax(0,1fr) 12px minmax(0,1fr) 48px; align-items:center; gap:5px; margin-bottom:12px; }
+    .pool-date-filter input { min-width:0; width:100%; height:36px; padding:0 4px; border:1px solid #e5e5e5; border-radius:6px; background:#fff; font-size:11px; }
+    .pool-date-filter .filter-btn { width:48px; height:36px; padding:0; font-size:12px; }
+    .pool-flow-options { display:flex; align-items:center; gap:8px; flex-wrap:nowrap; margin-bottom:12px; }
+    .pool-flow-options label { min-width:0; white-space:nowrap; display:flex; align-items:center; gap:6px; font-size:13px; }
     .pool-flow-options select, .pool-flow-options input { min-width:0; height:40px; border:1px solid #e5e5e5; border-radius:6px; padding:0 8px; background:#fff; }
-    .pool-flow-options input { width:120px; }
+    .pool-flow-options input { width:100%; }
+    #poolPlayerField { flex:1; }
     .pool-flow-summary { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; margin-bottom:12px; }
     .pool-flow-summary > div { text-align:center; background:#f5f7fa; padding:10px 3px; border-radius:7px; }
     .pool-flow-summary span { display:block; font-size:11px; color:#86868b; }
@@ -210,36 +220,13 @@
 }
 
     <div class="container">
-        <!-- 代理信息卡片 -->
-        <div class="agent-info-card" id="agentInfoCard" style="display: none;">
-            <div class="agent-info-title">代理信息</div>
-            <div class="agent-info-row">
-                <span class="agent-info-label">代理账号:</span>
-                <span class="agent-info-value highlight" id="agentAccount">--</span>
-            </div>
-            <div class="agent-info-row">
-                <span class="agent-info-label" id="flowBalanceLabel">奖池余额:</span>
-                <span class="agent-info-value" id="agentCoins">--</span>
-            </div>
+        <div class="agent-info-card" id="agentInfoCard" style="display:none;">
+            <div class="pool-agent-heading"><span>代理账号：<strong id="agentAccount">--</strong></span><label>类型<select id="flowType"><option value="pool">奖池</option><option value="money">资金流水</option></select></label></div>
+            <div class="pool-agent-balance"><span id="flowBalanceLabel">奖池余额:</span><strong id="agentCoins">--</strong></div>
         </div>
-
-        <div class="pool-flow-options"><label>类型<select id="flowType"><option value="pool">奖池</option><option value="money">资金流水</option></select></label><label id="poolQueryField">查询类型<select id="poolQueryType"><option value="all">全部</option><option value="player">玩家</option><option value="recharge">充值</option><option value="withdraw">提取</option></select></label><label id="poolPlayerField" style="display:none;">玩家账号<input id="poolPlayer" placeholder="输入玩家账号"></label></div>
         <div class="pool-flow-summary" id="poolFlowSummary"><div><span>充值总计（钻）</span><strong id="poolRechargeTotal">--</strong></div><div><span>奖池提取（钻）</span><strong id="poolWithdrawTotal">--</strong></div><div><span>送奖总计（钻）</span><strong id="poolSentTotal">--</strong></div></div>
-
-        <!-- 筛选控件 -->
-        <div class="filter-container">
-            <div class="m-date-field">
-                <div class="m-date-label">日期</div>
-                <div class="m-date-range">
-                    <input type="date" id="startDate" value="@today">
-                    <span class="m-date-range-sep">至</span>
-                    <input type="date" id="endDate" value="@today">
-                </div>
-            </div>
-            <div class="filter-actions">
-                <button class="filter-btn" id="filterBtn">筛选</button>
-            </div>
-        </div>
+        <div class="pool-flow-options"><label id="poolQueryField">查询类型<select id="poolQueryType"><option value="all">全部</option><option value="player">玩家</option><option value="recharge">充值</option><option value="withdraw">提取</option></select></label><label id="poolPlayerField" style="display:none;">玩家账号<input id="poolPlayer" placeholder="输入玩家账号"></label></div>
+        <div class="pool-date-filter"><input type="date" id="startDate" value="@today" aria-label="开始日期"><span>至</span><input type="date" id="endDate" value="@today" aria-label="结束日期"><button class="filter-btn" id="filterBtn">查询</button></div>
 
         <!-- 表格容器 -->
         <div class="table-container flow-table-container">

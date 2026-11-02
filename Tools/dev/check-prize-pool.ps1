@@ -1,11 +1,16 @@
-param([switch]$SkipBuild)
+﻿param([switch]$SkipBuild)
 $ErrorActionPreference = 'Stop'
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
 $server = (Resolve-Path (Join-Path $repo '../MTH-Server')).Path
-if (-not $SkipBuild) { & (Join-Path $PSScriptRoot 'build.bat') noclean }
+if (-not $SkipBuild) {
+    & (Join-Path $PSScriptRoot 'build.bat') noclean
+    if ($LASTEXITCODE -ne 0) { throw 'Backend build failed' }
+}
 $out = Join-Path $repo '.build/prize-pool-validation'
 New-Item -ItemType Directory -Path $out -Force | Out-Null
 Copy-Item -Path (Join-Path $repo 'TTY.Web/bin/*.dll') -Destination $out
+New-Item -ItemType Directory -Path (Join-Path $out 'Config') -Force | Out-Null
+Copy-Item -LiteralPath (Join-Path $repo 'TTY.Web/Config/card-prize-quotes.json') -Destination (Join-Path $out 'Config')
 [xml]$config = New-Object xml
 $config.Load((Join-Path $repo 'TTY.Web/Web.config'))
 $schema = 'mth_prize_validation_' + (Get-Date -Format 'yyyyMMdd_HHmmss')

@@ -86,7 +86,10 @@ class PrizePoolValidation
                 Check(number("SELECT Balance FROM agentprizepool WHERE AgentID='prize_a'") == 1070, "card actual units/rate");
                 award(1, "test-award-1", 3000, 100);
                 Check(number("SELECT Balance FROM agentprizepool WHERE AgentID='prize_a'") == 1070, "duplicate award ignored");
-                Check(service.Transfer(a, 1, Guid.NewGuid().ToString(), true).code == 0, "no withdrawal during active awards");
+                Check(service.Transfer(a, 10, Guid.NewGuid().ToString(), true).code == 1, "return pool funds to own wallet");
+                Check(number("SELECT COINS FROM admin WHERE ID='prize_a'") == 1910, "return credits own wallet");
+                Check(number("SELECT Balance FROM agentprizepool WHERE AgentID='prize_a'") == 1060, "return debits pool");
+                Check(service.Transfer(a, 10, Guid.NewGuid().ToString(), false).code == 1, "recharge reverses return");
                 sql("UPDATE usercontrolstatus SET Status=2,ExpiredTime=DATE_SUB(NOW(6),INTERVAL 2 MINUTE) WHERE ID=1");
                 control(2, 5, "player1", a.Accounts);
                 release(2, "net-1", 25, 100);
@@ -119,6 +122,15 @@ class PrizePoolValidation
                 try { using (var ef = new GameDbContext()) using (var tx = ef.Database.BeginTransaction()) B_PrizePool.CheckFunding(ef, a, 5, 999999); }
                 catch (InvalidOperationException) { denied = true; }
                 Check(denied, "unaffordable release target blocked");
+                sql("UPDATE agentprizepool SET Balance=324 WHERE AgentID='prize_a'");
+                denied = false;
+                try { using (var ef = new GameDbContext()) using (var tx = ef.Database.BeginTransaction()) B_PrizePool.CheckFunding(ef, a, 6, 0, 5m * 65m); }
+                catch (InvalidOperationException ex) { denied = ex.Message == "奖池余额不足，请充值奖池"; }
+                Check(denied, "5 diamonds times 65 requires at least 325 with exact prompt");
+                sql("UPDATE agentprizepool SET Balance=325 WHERE AgentID='prize_a'");
+                using (var ef = new GameDbContext()) using (var tx = ef.Database.BeginTransaction()) B_PrizePool.CheckFunding(ef, a, 6, 0, 5m * 65m);
+                Check(number("SELECT Balance FROM agentprizepool WHERE AgentID='prize_a'") == 325, "exactly 325 accepted without premature charge");
+                Check(CardPrizeQuoteRules.Find(5, 7).Multiplier == 65, "actual Dazhi four-kind multiplier");
                 sql("UPDATE agentprizepool SET Balance=10 WHERE AgentID='prize_a'");
                 award(6, "overrun", 2000, 100);
                 Check(number("SELECT Balance FROM agentprizepool WHERE AgentID='prize_a'") == -10, "overrun retains debt");

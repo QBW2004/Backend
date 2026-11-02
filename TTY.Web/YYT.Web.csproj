@@ -1740,5 +1740,6 @@
     <Content Include="Scripts\app\mjhl.engine.js" />
     <Content Include="Scripts\app\game.mjhlweights.js" />
     <Content Include="Config\laba-weight-catalog.json" />
+    <Content Include="Config\card-prize-quotes.json" />
   </ItemGroup>
 </Project>

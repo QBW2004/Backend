@@ -16,7 +16,7 @@
 
     var current = null; // 当前查询的玩家
     var submitting = false;
-    var querySeq = 0, historySeq = 0, historyPage = 1;
+    var querySeq = 0, historySeq = 0, historyPage = 1, walletSeq = 0;
     var historyBusy = false, wallet = null;
 
     function diamonds(value) {
@@ -39,7 +39,7 @@
         $sel.html(rows.map(function (r) {
             return '<option value="' + M.esc(r.id) + '">' + M.esc(r.text) + '</option>';
         }).join(''));
-        if (prev != null && $sel.find('option[value="' + $.escapeSelector(String(prev)) + '"]').length) {
+        if (prev != null && $sel.find('option').filter(function () { return this.value === String(prev); }).length) {
             $sel.val(prev);
         }
         // 换成向上展开浮层的字段（控制牌型）在选项重建后同步按钮文案
@@ -57,6 +57,7 @@
     var acSeq = 0; // 防止乱序响应覆盖新结果
 
     function acHide() {
+        if (acTimer) { clearTimeout(acTimer); acTimer = null; }
         ++acSeq;
         $('#acSuggest').removeClass('show').empty();
     }
@@ -176,11 +177,12 @@
 
     function refreshCtrlStatus(quiet) {
         if (!current) return;
+        var seq = querySeq, account = current.ID;
         if (!quiet) renderCtrlStatus(null);
         M.post('/Game/UserInfo/GetTotalControlStatus', { ID: current.ID })
             .then(function (res) {
                 var r = M.result(res);
-                if (r.ok) renderCtrlStatus(r.datas);
+                if (r.ok && seq === querySeq && current && current.ID === account) renderCtrlStatus(r.datas);
             }, function () { });
     }
 
@@ -228,11 +230,34 @@
             para.GoldThreshold = parseInt(gold, 10);
         }
 
-        var desc = mode == 6
-            ? '对玩家 ' + current.ID + ' 执行 控牌（' + M.cardActionName(para.CardAction) +
-              ' ' + M.cardTypeName(para.CardAction, para.CardValue) + '，1 次（5 把之内））？'
-            : '对玩家 ' + current.ID + ' 执行 ' + modeName(mode) + '（目标 ' + M.gold(para.GoldThreshold) + '）？';
+        if (mode == 6 && (para.CardValue == 99 || (para.CardAction >= 15 && para.CardAction <= 17 && para.CardValue == 10))) { closeControl(); return; }
+        if (mode == 6) {
+            if (submitting) return;
+            submitting = true; updateButtons(); M.loading('核算送奖金额...');
+            M.post('/Game/PrizePool/CardQuote', {ID:para.ID,CardAction:para.CardAction,CardValue:para.CardValue}).always(M.hideLoading)
+                .then(function (res) {
+                    var r = M.result(res);
+                    if (!r.ok) { M.alert(r.text, false); return; }
+                    wallet = r.datas.Wallet;
+                    $('#poolBalance').text(diamonds(wallet.Balance)); $('#myDiamonds').text(diamonds(wallet.Diamonds));
+                    if (Number(wallet.Balance) < Number(r.datas.Quote.RequiredDiamonds)) { M.alert('奖池余额不足，请充值奖池', false); return; }
+                    confirmApply(para, r.datas.Quote);
+                }, function () { M.toast('送奖金额读取失败，请重试', 'error'); })
+                .always(function () { submitting = false; updateButtons(); });
+            return;
+        }
+        confirmApply(para, null);
+    }
 
+    function confirmApply(para, quote) {
+        var mode = para.Mode;
+        if (quote) para.ExpectedBetDiamonds = quote.BetDiamonds;
+        var desc = mode == 6
+            ? '对玩家 ' + para.ID + ' 执行 控牌（' + M.cardActionName(para.CardAction) +
+              ' ' + M.cardTypeName(para.CardAction, para.CardValue) + '，1 次（5 把之内））？'
+            : '对玩家 ' + para.ID + ' 执行 ' + modeName(mode) + '（目标 ' + diamonds(para.GoldThreshold) + '钻）？';
+
+        if (quote) desc += '\n' + (quote.Estimated ? '预计需备足 ' : '本次送奖需 ') + diamonds(quote.RequiredDiamonds) + '钻（押注 ' + diamonds(quote.BetDiamonds) + '钻 × ' + quote.Multiplier + '倍）';
         M.confirm(desc, '控制确认').then(function (ok) {
             if (!ok || !current || current.ID !== para.ID) return;
             if (submitting) return;
@@ -287,13 +312,15 @@
 
     /* ---------------- 奖池与送奖记录（服务端分页、真实钻口径） ---------------- */
     function refreshWallet() {
+        var seq = ++walletSeq;
         return M.post('/Game/PrizePool/Wallet', {}).then(function (res) {
             var r = M.result(res);
+            if (seq !== walletSeq) return;
             wallet = r.ok ? r.datas : null;
             $('#poolBalance').text(wallet ? diamonds(wallet.Balance) : '--');
             $('#myDiamonds').text(wallet ? diamonds(wallet.Diamonds) : '--');
             updateButtons();
-        }, function () { wallet = null; updateButtons(); });
+        }, function () { if (seq === walletSeq) { wallet = null; updateButtons(); } });
     }
 
     function recordHtml(row) {
@@ -341,21 +368,22 @@
     function rechargePool() {
         if (submitting) return;
         if (!wallet) { refreshWallet(); M.toast('请等待奖池余额读取完成', 'error'); return; }
-        var amount = 0, token = requestId();
-        M.modal({ title: '充值奖池', bodyHTML: '<div>奖池余额（钻）：' + M.esc(diamonds(wallet.Balance)) + '</div><div>我的钻石：' +
-            M.esc(diamonds(wallet.Diamonds)) + '</div><label class="pool-modal-field">充值金额（钻）<input id="poolAmount" class="input-field" type="number" min="1" step="1" inputmode="numeric" placeholder="请输入整数钻数"></label><div class="pool-modal-tip">从我的钻石转入奖池</div>',
-            buttons: [{label:'取消',value:false},{label:'确认充值',type:'confirm',value:true}],
+        var amount = 0, withdraw = false, token = requestId();
+        M.modal({ title: '奖池充值 / 退回', bodyHTML: '<div>奖池余额（钻）：' + M.esc(diamonds(wallet.Balance)) + '</div><div>我的余额（钻）：' +
+            M.esc(diamonds(wallet.Diamonds)) + '</div><label class="pool-modal-field">操作<select id="poolDirection" class="input-field"><option value="in">充值奖池</option><option value="out">退回我的余额</option></select></label><label class="pool-modal-field">操作金额（钻）<input id="poolAmount" class="input-field" type="number" min="1" step="1" inputmode="numeric" placeholder="请输入整数钻数"></label><div class="pool-modal-tip">充值：我的余额 → 奖池；退回：奖池 → 我的余额</div>',
+            buttons: [{label:'取消',value:false},{label:'确认',type:'confirm',value:true}],
             beforeClose: function (value, $modal) {
                 if (!value) return true;
                 var text = $.trim($modal.find('#poolAmount').val());
                 amount = Number(text);
-                if (!/^[1-9][0-9]*$/.test(text) || amount > 9007199254740991 || amount > Number(wallet.Diamonds)) { M.toast('请输入不超过可用钻石的正整数金额', 'error'); return false; }
+                withdraw = $modal.find('#poolDirection').val() === 'out';
+                if (!/^[1-9][0-9]*$/.test(text) || amount > 9007199254740991 || amount > Number(withdraw ? wallet.Balance : wallet.Diamonds)) { M.toast('请输入不超过可用余额的正整数金额', 'error'); return false; }
                 return true;
             }
         }).then(function (ok) {
             if (!ok || submitting) return;
-            submitting = true; updateButtons(); M.loading('充值中...');
-            M.post('/Game/PrizePool/Transfer', {Amount:amount,RequestId:token}).always(M.hideLoading)
+            submitting = true; updateButtons(); M.loading(withdraw ? '退回中...' : '充值中...');
+            M.post('/Game/PrizePool/Transfer', {Amount:amount,RequestId:token,Withdraw:withdraw ? 1 : 0}).always(M.hideLoading)
                 .then(function (res) { var r = M.result(res); M.alert(r.text, r.ok); refreshWallet(); }, function () { M.toast('充值结果暂未确认，请刷新余额后核对流水', 'error'); refreshWallet(); })
                 .always(function () { submitting = false; updateButtons(); });
         });
@@ -416,7 +444,7 @@
         //（牌机 11 项、水浒传 35 项都要能点到；原生 select 仍作为取值来源）
         M.upwardSelect($('#ctrlCardValue'));
 
-        // 控制状态轮询：查询到玩家后每 5s 重拉一次进度（已吃分/剩余次数靠游戏服回写库表，
+        // 控制状态轮询：查询到玩家后每 10s 重拉一次进度（已吃分/剩余次数靠游戏服回写库表，
         // 不轮询就停在下发时的快照）。页面隐藏时暂停（与在线页同一口径）；
         // 独立页面离开即销毁，在途请求由 M.post 在 pagehide 统一中断，无需手动清定时器。
         setInterval(function () { if (!document.hidden) { refreshCtrlStatus(true); refreshWallet(); if (historyPage <= 2 && !historyBusy) loadHistory(true); } }, 10000);

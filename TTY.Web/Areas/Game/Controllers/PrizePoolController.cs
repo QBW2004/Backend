@@ -50,6 +50,22 @@ namespace YYT.Web.Areas.Game.Controllers
         }
 
         [AjaxOnly, HttpPost]
+        public ActionResult CardQuote(FormCollection form)
+        {
+            return Execute(user =>
+            {
+                string id = (form["ID"] ?? "").Trim();
+                var rows = new B_Users().GetUserRowsByIds(new System.Collections.Generic.List<string> { id }, user, false);
+                if (!rows.Any()) return new Msg(0, "无权操作该玩家！");
+                if (user.UserPriv != 0 && user.IsRelease != 1) return new Msg(0, "没有控牌权限！");
+                var quote = B_PrizePool.QuoteCard(id, form.Q<int>("CardAction"), form.Q<int>("CardValue"), 1);
+                var wallet = new B_PrizePool().GetWallet(user);
+                if (wallet.code != 1) return wallet;
+                return new Msg(1, "查询成功") { datas = new { Quote = quote, Wallet = wallet.datas } };
+            });
+        }
+
+        [AjaxOnly, HttpPost]
         public ActionResult Player(FormCollection form)
         {
             return Execute(user =>

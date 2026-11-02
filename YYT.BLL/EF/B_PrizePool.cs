@@ -15,6 +15,30 @@ namespace YYT.BLL.EF
             public long Diamonds { get; set; }
         }
 
+        public class CardQuote
+        {
+            public int GameId { get; set; }
+            public int TableId { get; set; }
+            public decimal BetDiamonds { get; set; }
+            public decimal Multiplier { get; set; }
+            public decimal RequiredDiamonds { get; set; }
+            public bool Estimated { get; set; }
+        }
+
+        public static CardQuote QuoteCard(string target, int action, int value, int count)
+        {
+            var choice = CardPrizeQuoteRules.Find(action, value);
+            if (choice == null) throw new InvalidOperationException("无效的送奖牌型！");
+            var online = new YYT.BLL.Services.GameServer.PipeGameServerClient().QueryAllOnlinePlayers();
+            var live = online == null ? null : online.FirstOrDefault(p => p.ID == target);
+            if (live == null || live.Status != 0 || live.GameID != choice.GameId || !live.CurBetUnitsPerCoin.HasValue || live.CurBetUnitsPerCoin.Value == 0)
+                throw new InvalidOperationException("请让玩家进入所选游戏并完成押注后再送奖！");
+            decimal bet = live.CurBetDiamonds ?? (decimal)live.CurBet / live.CurBetUnitsPerCoin.Value;
+            if (bet <= 0) throw new InvalidOperationException("请让玩家完成押注后再送奖！");
+            return new CardQuote { GameId = live.GameID, TableId = live.TableId, BetDiamonds = bet, Multiplier = choice.Multiplier,
+                RequiredDiamonds = checked(bet * choice.Multiplier * count), Estimated = choice.Estimated };
+        }
+
         public class ControlRecord
         {
             public int ID { get; set; }
@@ -23,6 +47,7 @@ namespace YYT.BLL.EF
             public int CardAction { get; set; }
             public int CardValue { get; set; }
             public int Status { get; set; }
+            public int GameId { get; set; }
             public string GameName { get; set; }
             public long? TableId { get; set; }
             public string ActualCardType { get; set; }
@@ -38,6 +63,7 @@ namespace YYT.BLL.EF
             public decimal BalanceAfter { get; set; }
             public decimal ChangeDiamonds { get; set; }
             public string UserID { get; set; }
+            public int GameId { get; set; }
             public string GameName { get; set; }
             public DateTime RecTime { get; set; }
         }
@@ -60,7 +86,8 @@ namespace YYT.BLL.EF
             using (var ef = new GameDbContext())
             {
                 string account = string.IsNullOrWhiteSpace(agent) ? user.Accounts : agent.Trim();
-                if (!new B_Admin().CanManageAgent(ef, user, account, true)) throw new InvalidOperationException("无权查看该代理奖池！");
+                if (!string.Equals(account, user.Accounts, StringComparison.OrdinalIgnoreCase) && !new B_Admin().CanManageAgent(ef, user, account, true))
+                    throw new InvalidOperationException("无权查看该代理奖池！");
                 string where = " FROM agentprizeledger l WHERE l.AgentID={0} AND l.RecTime>={1} AND l.RecTime<{2}";
                 if (kind == "player") where += " AND l.Kind IN(3,4,5)";
                 else if (kind == "recharge") where += " AND l.Kind=1";
@@ -71,9 +98,10 @@ namespace YYT.BLL.EF
                 var summary = ef.Database.SqlQuery<LedgerSummary>("SELECT IFNULL(SUM(CASE WHEN l.Kind=1 THEN l.ChangeDiamonds ELSE 0 END),0) Recharge," +
                     "IFNULL(SUM(CASE WHEN l.Kind=2 THEN l.ChangeDiamonds ELSE 0 END),0) Withdrawal," +
                     "IFNULL(SUM(CASE WHEN l.Kind IN(3,4,5) THEN -l.ChangeDiamonds ELSE 0 END),0) Sent" + where, args).Single();
-                var rows = ef.Database.SqlQuery<LedgerRecord>("SELECT l.ID,l.Kind,l.BalanceAfter,l.ChangeDiamonds,l.UserID,l.RecTime," +
+                var rows = ef.Database.SqlQuery<LedgerRecord>("SELECT l.ID,l.Kind,l.BalanceAfter,l.ChangeDiamonds,l.UserID,l.RecTime,l.GameId," +
                     "(SELECT Name FROM games WHERE GameId=l.GameId LIMIT 1) GameName" + where +
                     " ORDER BY l.ID DESC LIMIT " + page.PageSize + " OFFSET " + ((page.PageIndex - 1) * page.PageSize), args).ToList();
+                foreach (var row in rows) row.GameName = GameDisplayNames.GetName(row.GameId, row.GameName);
                 return new { total = total, rows = rows, summary = summary, balance = ReadBalance(ef, account) };
             }
         }
@@ -97,19 +125,19 @@ namespace YYT.BLL.EF
         }
 
         /// <summary>由 ApplyTotalControl 持有事务调用，先锁自己的奖池，防止并发充值/下控绕过余额检查。</summary>
-        public static void CheckFunding(GameDbContext ef, M_LoginUser user, int mode, long target)
+        public static void CheckFunding(GameDbContext ef, M_LoginUser user, int mode, long target, decimal cardAmount = 0)
         {
             if (mode != 5 && mode != 6) return;
             ef.Database.ExecuteSqlCommand("INSERT INTO agentprizepool(AgentID,Balance) VALUES({0},0) ON DUPLICATE KEY UPDATE AgentID=VALUES(AgentID)", user.Accounts);
             decimal balance = ef.Database.SqlQuery<decimal>("SELECT Balance FROM agentprizepool WHERE AgentID={0} FOR UPDATE", user.Accounts).Single();
-            if (balance <= 0 || (mode == 5 && balance < target))
-                throw new InvalidOperationException(mode == 5 ? "奖池余额不足以支付放水目标，请先充值奖池！" : "奖池余额不足，请先充值奖池！");
+            if (balance <= 0 || (mode == 5 && balance < target) || (mode == 6 && balance < cardAmount))
+                throw new InvalidOperationException("奖池余额不足，请充值奖池");
         }
 
-        public static void AttachControl(GameDbContext ef, M_LoginUser user, M_UserControlStatus row)
+        public static void AttachControl(GameDbContext ef, M_LoginUser user, M_UserControlStatus row, int gameId = 0, int? tableId = null)
         {
-            ef.Database.ExecuteSqlCommand("INSERT INTO agentprizecontrol(ControlId,AgentID,UserID,ControlMode) VALUES({0},{1},{2},{3})",
-                row.ID, user.Accounts, row.UserID, row.ControlMode);
+            ef.Database.ExecuteSqlCommand("INSERT INTO agentprizecontrol(ControlId,AgentID,UserID,ControlMode,ActualGameId,ActualTableId) VALUES({0},{1},{2},{3},{4},{5})",
+                row.ID, user.Accounts, row.UserID, row.ControlMode, gameId, (object)tableId ?? DBNull.Value);
         }
 
         public Msg Transfer(M_LoginUser user, long amount, string requestId, bool withdraw)
@@ -127,8 +155,6 @@ namespace YYT.BLL.EF
                     return new Msg(1, "此笔操作已完成，请勿重复提交");
                 long coins = ef.Database.SqlQuery<long>("SELECT IFNULL(COINS,0) FROM admin WHERE ID={0} FOR UPDATE", user.Accounts).Single();
                 if ((!withdraw && coins < amount) || (withdraw && pool < amount)) return new Msg(0, "可用余额不足！");
-                if (withdraw && ef.Database.SqlQuery<int>("SELECT COUNT(*) FROM agentprizecontrol p JOIN usercontrolstatus c ON c.ID=p.ControlId WHERE p.AgentID={0} AND c.Status=0 AND c.ControlMode IN (5,6)", user.Accounts).Single() > 0)
-                    return new Msg(0, "请先结束执行中的送奖控制，再提取奖池！");
                 long change = withdraw ? -amount : amount;
                 if (withdraw && coins > long.MaxValue - amount) return new Msg(0, "钱包余额超过可存储范围！");
                 ef.Database.ExecuteSqlCommand("UPDATE admin SET COINS=COINS-{0} WHERE ID={1}", change, user.Accounts);
@@ -152,11 +178,18 @@ namespace YYT.BLL.EF
                 int total = ef.Database.SqlQuery<int>("SELECT COUNT(*)" + where, args).Single();
                 decimal sent = ef.Database.SqlQuery<decimal>("SELECT IFNULL(SUM(p.BookedDiamonds),0)" + where, args).Single();
                 int skip = (page.PageIndex - 1) * page.PageSize;
-                string sql = "SELECT c.ID,c.UserID,c.ControlMode,c.GameId CardAction,c.KillRatio CardValue,c.Status,c.CreatedTime," +
+                string sql = "SELECT c.ID,c.UserID,c.ControlMode,c.GameId CardAction,c.KillRatio CardValue,c.Status,c.CreatedTime,COALESCE(p.ActualGameId,0) GameId," +
                     "(SELECT Name FROM games WHERE GameId=p.ActualGameId LIMIT 1) GameName,p.ActualTableId TableId,p.ActualCardType,p.AwardTime," +
                     "CASE WHEN p.AwardTime IS NULL THEN NULL ELSE CASE WHEN c.ControlMode=5 THEN p.BookedDiamonds ELSE p.AwardDiamonds END END AwardDiamonds" + where +
                     " ORDER BY c.ID DESC LIMIT " + page.PageSize + " OFFSET " + skip;
                 var rows = ef.Database.SqlQuery<ControlRecord>(sql, args).ToList();
+                foreach (var row in rows)
+                {
+                    row.GameName = GameDisplayNames.GetName(row.GameId, row.GameName);
+                    // QA/放水与拉霸/麻将开奖用0基下标；牌机开奖已是1基roomTableID。
+                    if (row.TableId.HasValue && (!row.AwardTime.HasValue || row.ControlMode != 6 ||
+                        row.GameId == 16 || row.GameId == 40 || row.GameId == 53 || row.GameId == 54)) row.TableId++;
+                }
                 return new { total = total, rows = rows, sentDiamonds = sent };
             }
         }
