@@ -193,6 +193,14 @@
         font-size: 14px;
     }
 
+    .pool-flow-options { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+    .pool-flow-options label { display:flex; align-items:center; gap:6px; font-size:13px; }
+    .pool-flow-options select, .pool-flow-options input { min-width:0; height:40px; border:1px solid #e5e5e5; border-radius:6px; padding:0 8px; background:#fff; }
+    .pool-flow-options input { width:120px; }
+    .pool-flow-summary { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; margin-bottom:12px; }
+    .pool-flow-summary > div { text-align:center; background:#f5f7fa; padding:10px 3px; border-radius:7px; }
+    .pool-flow-summary span { display:block; font-size:11px; color:#86868b; }
+    .pool-flow-summary strong { display:block; margin-top:4px; font-size:17px; overflow-wrap:anywhere; }
     @@media (max-width: 768px) {
         .container {
             padding: 12px;
@@ -210,10 +218,13 @@
                 <span class="agent-info-value highlight" id="agentAccount">--</span>
             </div>
             <div class="agent-info-row">
-                <span class="agent-info-label">当前钻:</span>
+                <span class="agent-info-label" id="flowBalanceLabel">奖池余额:</span>
                 <span class="agent-info-value" id="agentCoins">--</span>
             </div>
         </div>
+
+        <div class="pool-flow-options"><label>类型<select id="flowType"><option value="pool">奖池</option><option value="money">资金流水</option></select></label><label id="poolQueryField">查询类型<select id="poolQueryType"><option value="all">全部</option><option value="player">玩家</option><option value="recharge">充值</option><option value="withdraw">提取</option></select></label><label id="poolPlayerField" style="display:none;">玩家账号<input id="poolPlayer" placeholder="输入玩家账号"></label></div>
+        <div class="pool-flow-summary" id="poolFlowSummary"><div><span>充值总计（钻）</span><strong id="poolRechargeTotal">--</strong></div><div><span>奖池提取（钻）</span><strong id="poolWithdrawTotal">--</strong></div><div><span>送奖总计（钻）</span><strong id="poolSentTotal">--</strong></div></div>
 
         <!-- 筛选控件 -->
         <div class="filter-container">

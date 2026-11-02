@@ -15,6 +15,9 @@
     var pageSize = 20;
     var totalPages = 0;
     var agentId = '';
+    var flowSeq = 0, agentData = null;
+    var moneyColumns = $('.flow-table thead tr').html();
+    function isPool() { return $('#flowType').val() === 'pool'; }
 
     /* 资金记录：有钻变动，COINS 为操作钻量 */
     var OPT_IN = { '0': 1, '20': 1, '22': 1 };      // 充值/赠送：被操作账号收到钻
@@ -31,6 +34,10 @@
     /* ---------------- 数据 ---------------- */
 
     function fetchAgentFlow(params) {
+        if (isPool()) return M.post('/Game/PrizePool/Ledger', {
+            AgentID:agentId, Kind:$('#poolQueryType').val(), PlayerID:$('#poolQueryType').val() === 'player' ? $.trim($('#poolPlayer').val()) : '',
+            StartTime:params.TIME, EndTime:params.END, page:currentPage, rows:pageSize
+        });
         // 日期参数必须是 "yyyy-MM-dd" 字符串（TIME=开始日, END=结束日），
         // 传 Date 对象会被 jQuery 序列化成无法解析的英文日期导致服务端日期过滤失效。
         // MONEY_ONLY=1：本页是「流水」，登录/退出(2/3)与封禁审计(24-27)这类没有金额的记录整条不展示。
@@ -54,7 +61,7 @@
     function renderAgentInfo(agentData) {
         if (!agentData) return;
         $('#agentAccount').text(M.esc(agentData.ID || '--'));
-        $('#agentCoins').text(M.gold(agentData.COINS));
+        $('#agentCoins').text(isPool() ? M.diamonds(agentData.PrizePoolBalance) : M.gold(agentData.COINS));
         $('#agentInfoCard').show();
     }
 
@@ -119,6 +126,15 @@
     }
 
     function renderRows(rows) {
+        if (isPool()) {
+            $('#noData').toggle(!rows || !rows.length);
+            $('#flowTableBody').html((rows || []).map(function (r) {
+                var kind = Number(r.Kind), amount = Number(r.ChangeDiamonds), name = kind === 1 ? '充值' : kind === 2 ? '提取' : r.GameName || '送奖';
+                return '<tr><td>' + M.esc(M.diamonds(r.BalanceAfter)) + '</td><td>' + M.esc(name) + '</td><td>' + M.esc(r.UserID || '--') + '</td><td>' +
+                    (kind === 1 ? M.esc(M.diamonds(amount)) : '--') + '</td><td>' + (kind === 1 ? '--' : M.esc(M.diamonds(kind === 2 ? amount : -amount))) + '</td><td>' + M.esc(M.fmtTime(r.RecTime, true)) + '</td></tr>';
+            }).join(''));
+            return;
+        }
         var $body = $('#flowTableBody');
         if (!rows || !rows.length) {
             $body.empty();
@@ -170,6 +186,7 @@
 
         // 服务端按 TIME(开始日) ~ END(结束日) 过滤；不传 Date 对象，
         // 避免 jQuery 序列化成不可解析的日期字符串。日期筛选/分页全在服务端完成。
+        var seq = ++flowSeq;
         fetchAgentFlow({
             TIME: startDate,
             END: endDate,
@@ -181,6 +198,14 @@
                 }
             })
             .then(function (res) {
+                if (seq !== flowSeq) return;
+                if (!res || res.rows == null) { M.toast(M.result(res).text || '流水读取失败', 'error'); return; }
+                if (isPool()) {
+                    $('#poolRechargeTotal').text(M.diamonds(res.summary.Recharge));
+                    $('#poolWithdrawTotal').text(M.diamonds(res.summary.Withdrawal));
+                    $('#poolSentTotal').text(M.diamonds(res.summary.Sent));
+                    $('#agentCoins').text(M.diamonds(res.balance));
+                }
                 var rows = (res && res.rows) ? res.rows : [];
                 var total = res ? Number(res.total || 0) : 0;
 
@@ -205,11 +230,25 @@
             return;
         }
 
+        var today = new Date(), first = new Date();first.setDate(today.getDate()-6);
+        function dateValue(d) { return d.getFullYear()+'-'+M.pad2(d.getMonth()+1)+'-'+M.pad2(d.getDate()); }
+        $('#startDate').val(dateValue(first));$('#endDate').val(dateValue(today));
+        function changeType() {
+            var pool = isPool();
+            $('#poolFlowSummary, #poolQueryField').toggle(pool);
+            $('#poolPlayerField').toggle(pool && $('#poolQueryType').val() === 'player');
+            $('#flowBalanceLabel').text(pool ? '奖池余额:' : '当前钻:');
+            $('.flow-table thead tr').html(pool ? '<th>奖池余额</th><th>游戏类型</th><th>玩家账号</th><th>充值金额（钻）</th><th>支出金额（钻）</th><th>时间</th>' : moneyColumns);
+            if (agentData) renderAgentInfo(agentData);
+            currentPage = 1;loadData();
+        }
+        $('#flowType, #poolQueryType').on('change', changeType);
+        $('.flow-table thead tr').html('<th>奖池余额</th><th>游戏类型</th><th>玩家账号</th><th>充值金额（钻）</th><th>支出金额（钻）</th><th>时间</th>');
         // 加载代理信息
         fetchAgentInfo().then(function(res) {
             var r = M.result(res);
             if (r.ok && r.datas) {
-                renderAgentInfo(r.datas);
+                agentData = r.datas;renderAgentInfo(agentData);
             }
         });
 

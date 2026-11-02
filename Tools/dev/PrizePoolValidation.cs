@@ -134,6 +134,8 @@ class PrizePoolValidation
                 Check((decimal)wallet["Balance"] == -10 && (long)wallet["Diamonds"] == 1900, "real wallet response");
                 if (args.Length > 1)
                 {
+                    sql("CREATE TABLE prize_fixture_failure(reject_write int); INSERT INTO prize_fixture_failure VALUES(0)");
+                    sql("CREATE TRIGGER reject_prize_fixture BEFORE INSERT ON agentprizeledger FOR EACH ROW BEGIN IF (SELECT reject_write FROM prize_fixture_failure LIMIT 1)=1 THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='fixture rollback'; END IF; END");
                     var info = new ProcessStartInfo(args[1]) { UseShellExecute = false };
                     info.EnvironmentVariables["MTH_PRIZE_TEST_CONN"] = "host=127.0.0.1;port=33308;user=root;password=;db=" + schema + ";auto-reconnect=true";
                     using (var process = Process.Start(info)) { process.WaitForExit(); Check(process.ExitCode == 0, "actual Poco persistence and stop methods"); }

@@ -31,6 +31,53 @@ namespace YYT.BLL.EF
             public DateTime CreatedTime { get; set; }
         }
 
+        public class LedgerRecord
+        {
+            public long ID { get; set; }
+            public int Kind { get; set; }
+            public decimal BalanceAfter { get; set; }
+            public decimal ChangeDiamonds { get; set; }
+            public string UserID { get; set; }
+            public string GameName { get; set; }
+            public DateTime RecTime { get; set; }
+        }
+
+        public class LedgerSummary
+        {
+            public decimal Recharge { get; set; }
+            public decimal Withdrawal { get; set; }
+            public decimal Sent { get; set; }
+        }
+
+        public static decimal ReadBalance(GameDbContext ef, string agent)
+        {
+            return ef.Database.SqlQuery<decimal>("SELECT IFNULL((SELECT Balance FROM agentprizepool WHERE AgentID={0}),0)", agent).Single();
+        }
+
+        public object GetLedger(M_LoginUser user, string agent, string kind, string player, M_Page page, DateTime start, DateTime end)
+        {
+            if (user == null) throw new InvalidOperationException("登录信息失效！");
+            using (var ef = new GameDbContext())
+            {
+                string account = string.IsNullOrWhiteSpace(agent) ? user.Accounts : agent.Trim();
+                if (!new B_Admin().CanManageAgent(ef, user, account, true)) throw new InvalidOperationException("无权查看该代理奖池！");
+                string where = " FROM agentprizeledger l WHERE l.AgentID={0} AND l.RecTime>={1} AND l.RecTime<{2}";
+                if (kind == "player") where += " AND l.Kind IN(3,4,5)";
+                else if (kind == "recharge") where += " AND l.Kind=1";
+                else if (kind == "withdraw") where += " AND l.Kind=2";
+                if (!string.IsNullOrWhiteSpace(player)) where += " AND l.UserID={3}";
+                object[] args = { account, start, end, player ?? "" };
+                int total = ef.Database.SqlQuery<int>("SELECT COUNT(*)" + where, args).Single();
+                var summary = ef.Database.SqlQuery<LedgerSummary>("SELECT IFNULL(SUM(CASE WHEN l.Kind=1 THEN l.ChangeDiamonds ELSE 0 END),0) Recharge," +
+                    "IFNULL(SUM(CASE WHEN l.Kind=2 THEN l.ChangeDiamonds ELSE 0 END),0) Withdrawal," +
+                    "IFNULL(SUM(CASE WHEN l.Kind IN(3,4,5) THEN -l.ChangeDiamonds ELSE 0 END),0) Sent" + where, args).Single();
+                var rows = ef.Database.SqlQuery<LedgerRecord>("SELECT l.ID,l.Kind,l.BalanceAfter,l.ChangeDiamonds,l.UserID,l.RecTime," +
+                    "(SELECT Name FROM games WHERE GameId=l.GameId LIMIT 1) GameName" + where +
+                    " ORDER BY l.ID DESC LIMIT " + page.PageSize + " OFFSET " + ((page.PageIndex - 1) * page.PageSize), args).ToList();
+                return new { total = total, rows = rows, summary = summary, balance = ReadBalance(ef, account) };
+            }
+        }
+
         private static void CheckPermission(M_LoginUser user)
         {
             if (user == null || (user.UserPriv != 0 && user.IsRelease != 1 && user.IsProbability != 1 && user.IsKill != 1))

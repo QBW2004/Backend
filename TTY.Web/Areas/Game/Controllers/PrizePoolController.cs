@@ -69,5 +69,15 @@ namespace YYT.Web.Areas.Game.Controllers
                 return new Msg(1, "查询成功") { datas = new { Player = row, CurrentBetDiamonds = bet } };
             });
         }
+
+        [AjaxOnly, HttpPost]
+        public ActionResult Ledger(FormCollection form)
+        {
+            DateTime start, end;
+            if (!DateTime.TryParse(form["StartTime"], out start) || !DateTime.TryParse(form["EndTime"], out end) || start.Date > end.Date || end.Date == DateTime.MaxValue.Date)
+                return Json(new Msg(0, "请选择有效的日期范围！"));
+            var page = new M_Page(Math.Max(1, Math.Min(1000000, form.Q<int>("page", 1))), Math.Max(1, Math.Min(100, form.Q<int>("rows", 20))));
+            return Execute(user => new B_PrizePool().GetLedger(user, form["AgentID"], form["Kind"], (form["PlayerID"] ?? "").Trim(), page, start.Date, end.Date.AddDays(1)));
+        }
     }
 }

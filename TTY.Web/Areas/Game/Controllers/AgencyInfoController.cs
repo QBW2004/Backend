@@ -212,6 +212,7 @@ namespace YYT.Web.Areas.Game.Controllers
                         AGENCY = agent.AGENCY,
                         COINS = agent.COINS ?? 0,
                         RemainingScore = remainingScore,
+                        PrizePoolBalance = B_PrizePool.ReadBalance(ef, agent.ID),
                         RECHARGE = agent.RECHARGE ?? 0,
                         EXCHANGE = agent.EXCHANGE ?? 0,
                         RE_ENABLE = agent.RE_ENABLE ?? 0,

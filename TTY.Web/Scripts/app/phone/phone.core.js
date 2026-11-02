@@ -115,6 +115,12 @@
     };
 
     /** .NET JSON 日期 /Date(1234)/ 或 ISO 字符串 -> yyyy-MM-dd HH:mm */
+    // 已经按钻结算的奖池金额不受 IsRMB/ExchangeRate 的旧展示换算影响。
+    M.diamonds = function (value) {
+        var n = Number(value);
+        return value == null || !isFinite(n) ? '--' : n.toFixed(8).replace(/\.?0+$/, '');
+    };
+
     M.fmtTime = function (v, withSec) {
         if (!v) return '--';
         var d = null;
@@ -813,6 +819,7 @@
                 '<div><span>上级代理</span><b>' + M.esc(a.AGENCY || '--') + '</b></div>' +
                 '<div><span>剩余钻</span><b class="blue-text">' + M.gold(a.COINS) + '</b></div>' +
                 '<div><span>剩余分</span><b>' + M.num(a.RemainingScore || 0) + '</b></div>' +
+                '<div><span>奖池余额</span><b class="blue-text">' + M.diamonds(a.PrizePoolBalance) + '</b></div>' +
                 '<div class="agent-create-child-row"><span>创建下级</span><label class="m-switch"><input type="checkbox" id="agentCreateChild" ' + (Number(a.IsCreateAgent) === 1 ? 'checked' : '') + '><span></span></label><span class="agent-save-state" id="agentSaveState"></span></div>' +
                 '</div>';
             var dlg = M.modal({
