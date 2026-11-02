@@ -10,7 +10,7 @@ using YYT.Web.Controllers;
 namespace YYT.Web.Areas.Game.Controllers
 {
     /// <summary>
-    /// 鱼机和玩家控制（金币上限/放水/点杀）
+    /// 鱼机和玩家控制（钻上限/放水/点杀）
     /// </summary>
     [MemberAuthorize]
     public class FishUserCtrlController : BaseController

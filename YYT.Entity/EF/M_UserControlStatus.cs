@@ -30,23 +30,23 @@ namespace YYT.Entity
         /// </summary>
         public int GameId { get; set; }
         /// <summary>
-        /// 1=Kill(点杀), 2=Release(放水), 3=Limit(金币上限)
+        /// 1=Kill(点杀), 2=Release(放水), 3=Limit(钻上限)
         /// </summary>
         public int ControlMode { get; set; }
         /// <summary>
-        /// 目标吸/放金币总数
+        /// 目标吸/放钻总数
         /// </summary>
         public long TargetCoins { get; set; }
         /// <summary>
-        /// 已吃/已消耗金币数
+        /// 已吃/已消耗钻数
         /// </summary>
         public long ConsumedCoins { get; set; }
         /// <summary>
-        /// 已放/已赠予金币数
+        /// 已放/已赠予钻数
         /// </summary>
         public long GrantedCoins { get; set; }
         /// <summary>
-        /// 金币上限阈值
+        /// 钻上限阈值
         /// </summary>
         public long LimitCoins { get; set; }
         /// <summary>
@@ -90,19 +90,19 @@ namespace YYT.Entity
         /// </summary>
         Release = 2,
         /// <summary>
-        /// 金币上限（超出部分逐步消耗）
+        /// 钻上限（超出部分逐步消耗）
         /// </summary>
         Limit = 3,
         /// <summary>
-        /// 总点杀（鱼机+押注+牌机+拉霸，累计吃分达到金币阈值后失效）
+        /// 总点杀（鱼机+押注+牌机+拉霸，累计吃分达到钻阈值后失效）
         /// </summary>
         TotalKill = 4,
         /// <summary>
-        /// 总放水（鱼机+押注，累计放分达到金币阈值后失效）
+        /// 总放水（鱼机+押注，累计放分达到钻阈值后失效）
         /// </summary>
         TotalRelease = 5,
         /// <summary>
-        /// 总控牌（牌机+拉霸，累计吃分达到金币阈值后失效）
+        /// 总控牌（牌机+拉霸，累计吃分达到钻阈值后失效）
         /// </summary>
         TotalCard = 6
     }

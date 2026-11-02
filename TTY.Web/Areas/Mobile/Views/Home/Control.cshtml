@@ -1,9 +1,4 @@
 ﻿@{
-    /* 控制管理（吃分 / 放水 / 控牌）
-       页面框架对齐参考站送奖管理：账号查询 → 统计卡 → 控制类型 → 动态参数 → 应用。
-       房间已锁定为 1 个，无场次选择。
-       复用电脑端总控接口：/Game/UserInfo/ApplyTotalControl、GetTotalControlStatus、CloseTotalControl、
-       玩家查询复用 /Game/UserInfo/GetVisibleUserRows。 */
     string webVer = ConfigHelper.Get("WebVer");
     string presetAccount = (string)(ViewBag.PresetAccount ?? "");
     bool canKill = ViewBag.CanKill == true;
@@ -11,442 +6,111 @@
     bool canCard = ViewBag.CanCard == true;
     Layout = "~/Views/Shared/Layout/_MobileLayout.cshtml";
 }
-
 @section head {
 <style>
-    .container {
-        padding: 16px;
-        max-width: 1200px;
-        margin: 0 auto;
-    }
-
-    .input-section {
-        padding: 16px;
-        gap: 10px;
-    }
-
-    .form-row {
-        margin-bottom: 10px;
-    }
-
-    .form-row:last-child {
-        margin-bottom: 0;
-    }
-
-    .form-label {
-        display: block;
-        font-size: 14px;
-        font-weight: 500;
-        color: #666;
-        margin-bottom: 8px;
-    }
-
-    .input-with-btn {
-        display: flex;
-        gap: 8px;
-    }
-
-    .input-with-btn .input-field {
-        flex: 1;
-    }
-
-    .query-btn {
-        height: 44px;
-        padding: 0 20px;
-        background-color: #007aff;
-        color: white;
-        border: none;
-        border-radius: 8px;
-        font-size: 16px;
-        font-weight: 500;
-        cursor: pointer;
-        white-space: nowrap;
-        -webkit-appearance: none;
-        appearance: none;
-    }
-
-    .query-btn:active {
-        transform: scale(0.98);
-    }
-
-    select.input-field {
-        height: 44px;
-        background-color: white;
-    }
-
-    /* 统计卡：当前押注 / 今日盈亏 / 总盈亏 */
-    .stat-cards {
-        display: none;
-        gap: 8px;
-        margin-bottom: 12px;
-    }
-
-    .stat-cards.show {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        overflow-x: hidden;
-    }
-
-    .stat-card {
-        flex: 1;
-        background: #f8f9fa;
-        border: 1px solid #eef0f2;
-        border-radius: 6px;
-        padding: 9px 6px;
-        text-align: center;
-        min-width: 0;
-    }
-
-    .stat-label {
-        font-size: 12px;
-        color: #86868b;
-        white-space: nowrap;
-    }
-
-    .stat-value {
-        font-size: 17px;
-        font-weight: 600;
-        color: #1d1d1f;
-        margin-top: 4px;
-        font-family: -apple-system-monospace, monospace;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .stat-value.positive {
-        color: #34c759;
-    }
-
-    .stat-value.negative {
-        color: #ff3b30;
-    }
-
-    /* 在线状态 / 当前控制 摘要条 */
-    .player-meta {
-        display: none;
-        flex-direction: column;
-        gap: 6px;
-        margin-bottom: 10px;
-    }
-
-    .player-meta.show {
-        display: flex;
-    }
-
-    .player-meta .info-row {
-        display: flex;
-        align-items: center;
-        min-width: 0;
-        padding: 7px 10px;
-        background: rgba(0, 122, 255, 0.06);
-        border-radius: 8px;
-        border: 1px solid #eef0f2;
-        font-size: 14px;
-        color: #666;
-    }
-
-    .player-meta .info-value {
-        margin-left: auto;
-        min-width: 0;
-        font-size: 14px;
-        font-weight: 600;
-        color: #1d1d1f;
-        text-align: right;
-    }
-
-    .player-meta .info-row > span:first-child {
-        flex: 0 0 auto;
-        white-space: nowrap;
-    }
-
-    .status-online {
-        color: #34c759;
-    }
-
-    .status-offline {
-        color: #8e8e93;
-    }
-
-    .ctrl-status-list {
-        flex: 1 1 auto;
-        width: 0;
-        min-width: 0;
-        display: flex;
-        flex-direction: row;
-        flex-wrap: nowrap;
-        gap: 4px;
-        align-items: center;
-        justify-content: flex-end;
-        overflow-x: auto;
-        white-space: nowrap;
-        text-align: right;
-        -webkit-overflow-scrolling: touch;
-    }
-
-    .ctrl-status-item {
-        flex: 0 0 auto;
-        font-size: 13px;
-        font-weight: 500;
-        color: #ff3b30;
-        white-space: nowrap;
-        text-align: right;
-    }
-
-    .ctrl-status-empty {
-        color: #8e8e93;
-        font-weight: 400;
-    }
-
-    /* 控制参数区（切换控制类型时显隐） */
-    #ctrlParams {
-        display: none;
-    }
-
-    #ctrlParams.show {
-        display: block;
-    }
-
-    .tip-text {
-        font-size: 12px;
-        color: #999;
-        margin: 4px 0 12px;
-        text-align: center;
-    }
-
-    .apply-btn {
-        height: 44px;
-        background-color: #34c759;
-        color: white;
-        border: none;
-        border-radius: 8px;
-        padding: 0 20px;
-        font-size: 16px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.3s;
-        text-align: center;
-        white-space: nowrap;
-        width: 100%;
-        -webkit-appearance: none;
-        appearance: none;
-    }
-
-    .apply-btn:hover {
-        background-color: #2db149;
-    }
-
-    .apply-btn:active {
-        transform: scale(0.98);
-    }
-
-    .apply-btn:disabled {
-        background-color: #a1a1a6;
-        cursor: not-allowed;
-    }
-
-    .close-ctrl-btn {
-        height: 44px;
-        background-color: white;
-        color: #ff3b30;
-        border: 1px solid #ff3b30;
-        border-radius: 8px;
-        padding: 0 20px;
-        font-size: 16px;
-        font-weight: 500;
-        cursor: pointer;
-        text-align: center;
-        white-space: nowrap;
-        width: 100%;
-        margin-top: 10px;
-        -webkit-appearance: none;
-        appearance: none;
-    }
-
-    .close-ctrl-btn:active {
-        transform: scale(0.98);
-    }
-
-    .close-ctrl-btn:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-
-    /* ============ 账号实时模糊联想下拉 ============ */
-    .input-with-btn {
-        position: relative;
-    }
-
-    .ac-suggest {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        z-index: 60;
-        background: white;
-        border: 1px solid #e5e5e5;
-        border-radius: 8px;
-        box-shadow: 0 6px 16px rgba(0,0,0,0.14);
-        max-height: 228px;
-        overflow-y: auto;
-        display: none;
-        margin-top: 4px;
-        -webkit-overflow-scrolling: touch;
-    }
-
-    .ac-suggest.show {
-        display: block;
-    }
-
-    .ac-item {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 10px 12px;
-        border-bottom: 1px solid #f0f0f0;
-        cursor: pointer;
-    }
-
-    .ac-item:last-child {
-        border-bottom: none;
-    }
-
-    .ac-item:active {
-        background: #f5f5f7;
-    }
-
-    .ac-account {
-        font-weight: 600;
-        color: #1d1d1f;
-        font-size: 14px;
-        flex-shrink: 0;
-        max-width: 45%;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .ac-name {
-        color: #86868b;
-        font-size: 13px;
-        flex: 1;
-        min-width: 0;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .ac-coins {
-        color: #007aff;
-        font-size: 13px;
-        flex-shrink: 0;
-        font-family: -apple-system-monospace, monospace;
-    }
-
-    .ac-hl {
-        color: #007aff;
-    }
-
-    .ac-empty {
-        padding: 14px 12px;
-        text-align: center;
-        color: #8e8e93;
-        font-size: 13px;
-    }
-
-    @@media (max-width: 768px) {
-        .table-container {
-            overflow-x: auto;
-        }
-    }
+    .container { padding: 14px 12px; max-width: 600px; margin: 0 auto; }
+    .input-section { padding: 14px 12px; max-width: 100%; display: block; }
+    .account-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+    .account-row > label { flex: 0 0 auto; font-size: 14px; white-space: nowrap; }
+    .input-with-btn { display: flex; position: relative; flex: 1; min-width: 0; gap: 8px; }
+    .input-with-btn .input-field { flex: 1; width: 0; min-width: 0; }
+    .query-btn { height: 44px; padding: 0 14px; background: #007aff; color: #fff; border: 0; border-radius: 7px; font-size: 14px; white-space: nowrap; }
+    .stat-cards { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 6px; margin-bottom: 16px; }
+    .stat-card { background: #f5f7fa; border: 1px solid #e9edf2; border-radius: 7px; padding: 9px 2px; text-align: center; min-width: 0; }
+    .stat-label { color: #86868b; font-size: 11px; white-space: nowrap; }
+    .stat-value { font-size: 19px; font-weight: 600; margin-top: 3px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+    .player-meta { display: none; }
+    .player-meta.show { display: flex; flex-wrap: nowrap; gap: 6px; font-size: 12px; color: #86868b; margin-bottom: 12px; }
+    .ctrl-status-list { display: flex; flex: 1; min-width: 0; flex-wrap: wrap; gap: 4px; }
+    .ctrl-status-item { color: #d86d00; }
+    .control-pair { display: flex; gap: 10px; margin-bottom: 12px; }
+    .form-row { display: flex; align-items: center; gap: 7px; min-width: 0; margin-bottom: 12px; }
+    .control-pair .form-row { flex: 1; margin: 0; }
+    .form-label { flex: 0 0 auto; font-size: 13px; white-space: nowrap; }
+    .form-row .input-field, .form-row .upward-select { flex: 1; width: 0; min-width: 0; }
+    select.input-field { background: #fff; padding-left: 8px; padding-right: 3px; font-size: 14px; }
+    .pool-balances { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; background: #edf5ff; border-radius: 7px; padding: 13px 7px; margin: 14px 0; }
+    .pool-balances > div { display: flex; align-items: center; justify-content: center; gap: 5px; min-width: 0; }
+    .pool-balances span { font-size: 12px; color: #86868b; white-space: nowrap; }
+    .pool-balances strong { font-size: 15px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+    .control-actions { display: flex; gap: 10px; }
+    .control-actions button { flex: 1; min-width: 0; height: 44px; border-radius: 7px; font-size: 15px; }
+    .apply-btn { background: #34b75d; border: 1px solid #34b75d; color: #fff; }
+    .close-ctrl-btn { background: #fff; border: 1px solid #ff3b30; color: #ff3b30; }
+    .control-actions button:disabled, .query-btn:disabled { opacity: .5; }
+    .history-section { background: #fff; margin-top: 12px; border-radius: 10px; overflow: hidden; padding-top: 14px; }
+    .history-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 12px 13px; }
+    .history-heading h2 { font-size: 15px; font-weight: 600; }
+    .history-heading span { font-size: 12px; color: #86868b; }
+    .history-heading strong { color: #007aff; font-size: 18px; margin-left: 5px; }
+    .control-dates { display: flex; align-items: center; gap: 6px; margin: 0 12px 13px; }
+    .control-dates input { flex: 1; width: 0; min-width: 0; height: 36px; font-size: 12px; padding: 0 5px; }
+    .control-dates > span { font-size: 12px; color: #86868b; }
+    .control-dates button { height: 36px; padding: 0 10px; font-size: 13px; }
+    .control-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .control-table { border-collapse: separate; border-spacing: 0; min-width: 800px; width: 100%; font-size: 12px; }
+    .control-table th, .control-table td { padding: 12px 9px; text-align: center; white-space: nowrap; border-bottom: 1px solid #e9edf2; }
+    .control-table th { background: #f5f7fa; color: #86868b; font-size: 11px; font-weight: 400; }
+    .control-table td { background: #fff; }
+    .control-table th:first-child, .control-table td:first-child { position: sticky; left: 0; z-index: 1; }
+    .control-table .empty-row { text-align: left; padding-left: 16px; color: #86868b; }
+    .control-record-status { display: inline-block; padding: 2px 7px; background: #f5f7fa; color: #86868b; border-radius: 4px; font-size: 11px; }
+    .control-record-status.pending { background: #fff4df; color: #b7730d; }
+    .control-record-status.done { background: #eaf8ef; color: #24aa55; }
+    .history-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 11px 12px; color: #86868b; font-size: 11px; }
+    .history-footer button { background: none; color: #007aff; border: 0; padding: 8px; }
+    .pool-modal-field { display: block; margin-top: 14px; font-size: 14px; }
+    .pool-modal-field input { display: block; width: 100%; margin-top: 8px; }
+    .pool-modal-tip { color: #86868b; font-size: 12px; margin-top: 8px; }
+    .ac-suggest { position: absolute; top: 100%; left: 0; right: 0; z-index: 60; background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; box-shadow: 0 6px 16px #0002; max-height: 228px; overflow-y: auto; display: none; margin-top: 4px; }
+    .ac-suggest.show { display: block; }
+    .ac-item { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid #f0f0f0; }
+    .ac-account { font-size: 14px; font-weight: 600; max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ac-name { font-size: 13px; flex: 1; min-width: 0; color: #86868b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ac-coins, .ac-hl { color: #007aff; font-size: 13px; }
+    .ac-empty { padding: 14px 12px; text-align: center; color: #86868b; }
+    @@media(max-width:360px) { .container { padding: 10px 8px; } .input-section { padding: 12px 9px; } .control-pair { gap: 7px; } .form-row { gap: 4px; } .form-label { font-size: 12px; } .pool-balances span { font-size: 11px; } .pool-balances strong { font-size: 14px; } .control-dates { gap: 3px; margin-left: 9px; margin-right: 9px; } .control-dates input { font-size: 11px; padding: 0 2px; } }
 </style>
 }
-
-    <div class="container">
-        <div class="input-section" style="max-width:100%;">
-            <div class="form-row">
-                <label class="form-label" for="ctrlAccount">控制账号</label>
-                <div class="input-with-btn">
-                    <input type="text" id="ctrlAccount" class="input-field" placeholder="输入玩家账号，支持模糊匹配" autocomplete="off">
-                    <button class="query-btn" id="queryBtn" type="button">查询</button>
-                    <div class="ac-suggest" id="acSuggest"></div>
-                </div>
-            </div>
-
-            @* 统计卡：当前押注 / 今日盈亏 / 总盈亏 *@
-            <div class="stat-cards" id="statCards">
-                <div class="stat-card">
-                    <div class="stat-label">当前押注</div>
-                    <div class="stat-value" id="stBet">--</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">今日盈亏</div>
-                    <div class="stat-value" id="stToday">--</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">总盈亏</div>
-                    <div class="stat-value" id="stTotal">--</div>
-                </div>
-            </div>
-
-            <div class="player-meta" id="playerMeta">
-                <div class="info-row"><span>在线状态</span><span class="info-value" id="piOnline">--</span></div>
-                <div class="info-row">
-                    <span>当前控制</span>
-                    <span class="info-value" id="piControl">--</span>
-                </div>
-            </div>
-
-            <div id="ctrlParams">
-                <div class="form-row">
-                    <label class="form-label" for="ctrlMode">控制类型</label>
-                    <select id="ctrlMode" class="input-field">
-                        @if (canKill)
-                        {
-                            <option value="4">吃分</option>
-                        }
-                        @if (canRelease)
-                        {
-                            <option value="5">放水</option>
-                        }
-                        @if (canCard)
-                        {
-                            <option value="6">控牌</option>
-                        }
-                    </select>
-                </div>
-
-                @* 吃分 / 放水：直接输入目标，控制默认启用。 *@
-                <div class="form-row" id="rowGold">
-                    <label class="form-label" for="ctrlGold">目标</label>
-                    <input type="number" id="ctrlGold" class="input-field" placeholder="必填，累计达到目标后自动失效" inputmode="numeric" autocomplete="off">
-                    <div class="tip-text">温馨提示：吃分 / 放水累计达到目标后自动失效</div>
-                </div>
-
-                @* 控牌：游戏类型 / 控制牌型。固定控制 1 次，限制在 5 把内。 *@
-                <div class="form-row" id="rowCardAction" style="display:none;">
-                    <label class="form-label" for="ctrlCardAction">游戏类型</label>
-                    <select id="ctrlCardAction" class="input-field"></select>
-                </div>
-                <div class="form-row" id="rowCardValue" style="display:none;">
-                    <label class="form-label" for="ctrlCardValue">控制牌型</label>
-                    <select id="ctrlCardValue" class="input-field"></select>
-                </div>
-
-                <div class="form-row">
-                    <button class="apply-btn" id="applyBtn" type="button" disabled>应用控制</button>
-                </div>
-                <div class="form-row">
-                    <button class="close-ctrl-btn" id="closeCtrlBtn" type="button" disabled>移除当前控制</button>
-                </div>
+<div class="container">
+    <div class="input-section">
+        <div class="account-row">
+            <label for="ctrlAccount">送奖账号</label>
+            <div class="input-with-btn">
+                <input type="text" id="ctrlAccount" class="input-field" placeholder="输入玩家账号" autocomplete="off">
+                <button class="query-btn" id="queryBtn" type="button">查询</button>
+                <div class="ac-suggest" id="acSuggest"></div>
             </div>
         </div>
-
+        <div class="stat-cards" id="statCards">
+            <div class="stat-card"><div class="stat-label">当前押注（钻）</div><div class="stat-value" id="stBet">--</div></div>
+            <div class="stat-card"><div class="stat-label">今日盈亏（钻）</div><div class="stat-value" id="stToday">--</div></div>
+            <div class="stat-card"><div class="stat-label">总盈亏（钻）</div><div class="stat-value" id="stTotal">--</div></div>
+        </div>
+        <div class="player-meta" id="playerMeta"><span id="piOnline"></span><span class="ctrl-status-list" id="piControl"></span></div>
+        <div id="ctrlParams">
+            <div class="control-pair">
+                <div class="form-row"><label class="form-label" for="ctrlMode">控制类型</label><select id="ctrlMode" class="input-field">
+                    @if (canCard) { <option value="6">控牌</option> }
+                    @if (canRelease) { <option value="5">放水</option> }
+                    @if (canKill) { <option value="4">吃分</option> }
+                </select></div>
+                <div class="form-row" id="rowCardAction"><label class="form-label" for="ctrlCardAction">游戏类型</label><select id="ctrlCardAction" class="input-field"></select></div>
+            </div>
+            <div class="form-row" id="rowGold"><label class="form-label" for="ctrlGold">目标（钻）</label><input type="number" id="ctrlGold" class="input-field" min="1" step="1" placeholder="达到目标后自动结束" inputmode="numeric" autocomplete="off"></div>
+            <div class="form-row" id="rowCardValue"><label class="form-label" for="ctrlCardValue">控制牌型</label><select id="ctrlCardValue" class="input-field"></select></div>
+            <div class="pool-balances"><div><span>奖池余额</span><strong id="poolBalance">--</strong></div><div><span>我的钻石</span><strong id="myDiamonds">--</strong></div></div>
+            <div class="control-actions"><button class="apply-btn" id="applyBtn" type="button" disabled>应用控制</button><button class="close-ctrl-btn" id="closeCtrlBtn" type="button" disabled>移除控制</button></div>
+        </div>
     </div>
-
+    <section class="history-section" aria-label="送奖明细">
+        <div class="history-heading"><h2>送奖明细</h2><span>已送出钻<strong id="sentDiamonds">--</strong></span></div>
+        <div class="control-dates"><input type="date" id="controlStart" class="input-field" aria-label="开始日期"><span>至</span><input type="date" id="controlEnd" class="input-field" aria-label="结束日期"><button type="button" class="query-btn" id="controlRefresh">刷新</button></div>
+        <div class="control-table-scroll" role="region" aria-label="送奖记录，可左右滑动查看全部列"><table class="control-table"><thead><tr><th>游戏</th><th>送奖账号</th><th>状态</th><th>机台</th><th>送奖牌型</th><th>开奖牌型</th><th>开奖金额（钻）</th><th>开奖时间</th></tr></thead><tbody id="controlRows"><tr><td colspan="8" class="empty-row">正在读取...</td></tr></tbody></table></div>
+        <div class="history-footer"><span id="controlCount">共 -- 条</span><button id="controlMore" type="button" style="display:none;">加载更多</button><span>左右滑动查看完整明细 ↔</span></div>
+    </section>
+</div>
 @section scripts {
-    <script>
-        window.MPagePreset = { account: '@Html.Raw(HttpUtility.JavaScriptStringEncode(presetAccount))' };
-    </script>
+    <script>window.MPagePreset = { account: '@Html.Raw(HttpUtility.JavaScriptStringEncode(presetAccount))' };</script>
     <script src="@Url.Content("~/Scripts/app/phone/phone.control.js?v=" + webVer)"></script>
 }

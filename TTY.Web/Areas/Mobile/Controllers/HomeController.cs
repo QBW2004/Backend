@@ -35,7 +35,7 @@ namespace YYT.Web.Areas.Mobile.Controllers
         }
 
         /// <summary>
-        /// 当前登录账号的金币余额（超管账号在 Admin 表可能不存在，返回 0）
+        /// 当前登录账号的钻余额（超管账号在 Admin 表可能不存在，返回 0）
         /// </summary>
         private long GetOwnCoins(M_LoginUser user)
         {
@@ -66,7 +66,7 @@ namespace YYT.Web.Areas.Mobile.Controllers
             ViewBag.MShowRefresh = true;
             ViewBag.MShowSearch = true;
             ViewBag.MHeaderTall = true;
-            ViewBag.MSubtitleHtml = "<div id=\"totalWinLossLabel\">今日在线玩家总输赢（币）</div><div class=\"total-win-loss\" id=\"totalWinLoss\">0</div>";
+            ViewBag.MSubtitleHtml = "<div id=\"totalWinLossLabel\">今日在线玩家总输赢（钻）</div><div class=\"total-win-loss\" id=\"totalWinLoss\">0</div>";
             ViewBag.CanUpDown = CanUpDown(user);
             ViewBag.CanFrozen = user != null;
             ViewBag.CanKick = IsSuper(user) || (user != null && user.IsKicking == 1);
@@ -123,7 +123,7 @@ namespace YYT.Web.Areas.Mobile.Controllers
             ViewBag.MTitle = "充值管理";
             ViewBag.MShowRefresh = false;
             ViewBag.OwnCoins = GetOwnCoins(user);
-            ViewBag.MSubtitleHtml = "当前币余额: <span class=\"diamond-count\" id=\"currentDiamond\">" + ViewBag.OwnCoins + "</span>";
+            ViewBag.MSubtitleHtml = "当前钻余额: <span class=\"diamond-count\" id=\"currentDiamond\">" + ViewBag.OwnCoins + "</span>";
             ViewBag.IsSuper = IsSuper(user);
 
             // 可操作对象范围，与桌面端 RechargeController.GetTreeDataByPermission 保持一致：
@@ -143,7 +143,7 @@ namespace YYT.Web.Areas.Mobile.Controllers
         }
 
         /// <summary>
-        /// 充值页页头"当前币余额"实时刷新接口：每次实时查库返回登录账号最新余额。
+        /// 充值页页头"当前钻余额"实时刷新接口：每次实时查库返回登录账号最新余额。
         /// 余额会随本账号上下分（代理扣/加）及上级给本账号充值而变化，页面轮询此接口即可保持实时。
         /// </summary>
         [AjaxOnly]
@@ -228,7 +228,7 @@ namespace YYT.Web.Areas.Mobile.Controllers
                 return RedirectToAction("Index");
 
             ViewBag.MPage = "control";
-            ViewBag.MTitle = "控制管理";
+            ViewBag.MTitle = "送奖管理";
             ViewBag.MSubtitle = null;
             ViewBag.MShowRefresh = false;
             ViewBag.CanKill = canKill;

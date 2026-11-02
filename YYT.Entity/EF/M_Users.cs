@@ -64,7 +64,7 @@ namespace YYT.Entity
         /// 玩家盈利
         /// </summary>
         [NotMapped]
-        public long? Profit { get; set; }
+        public decimal? Profit { get; set; }
         public override string ToString()
         {
             return JsonConvert.SerializeObject(this);
@@ -141,11 +141,11 @@ namespace YYT.Entity
         /// 今日盈亏
         /// </summary>
         [NotMapped]
-        public long? TodayWinLoss { get; set; }
+        public decimal? TodayWinLoss { get; set; }
         /// <summary>今日充值。</summary>
         [NotMapped]
         public long? TodayBuy { get; set; }
-        /// <summary>今日退币。</summary>
+        /// <summary>今日退钻。</summary>
         [NotMapped]
         public long? TodayBack { get; set; }
         /// <summary>
@@ -157,7 +157,7 @@ namespace YYT.Entity
         /// 总盈亏（SUM user_daily_winloss 全量，与在线用户页同口径）
         /// </summary>
         [NotMapped]
-        public long? Profit { get; set; }
+        public decimal? Profit { get; set; }
         /// <summary>最近一次冻结操作人（手机端冻结账号列表）。</summary>
         [NotMapped]
         public string FrozenOperator { get; set; }
@@ -173,7 +173,7 @@ namespace YYT.Entity
     public class M_UserDailyWinLoss
     {
         public string UserID { get; set; }
-        public long WINLOSS { get; set; }
+        public decimal WINLOSS { get; set; }
     }
 
     /// <summary>
@@ -190,9 +190,9 @@ namespace YYT.Entity
         /// <summary>今日退分（当日退分类流水合计）</summary>
         public long? TodayBack { get; set; }
         /// <summary>总盈亏（累计实际游戏输赢：user_daily_winloss 全量合计，玩过才有记录）</summary>
-        public long? TotalWinLoss { get; set; }
+        public decimal? TotalWinLoss { get; set; }
         /// <summary>今日盈亏（当日实际游戏输赢：user_daily_winloss 当日合计，玩过才有记录）</summary>
-        public long? TodayWinLoss { get; set; }
+        public decimal? TodayWinLoss { get; set; }
     }
 
     /// <summary>
@@ -213,9 +213,9 @@ namespace YYT.Entity
         /// <summary>注册时间（users.CreateTime）</summary>
         public DateTime? CreateTime { get; set; }
         /// <summary>今日盈亏（user_daily_winloss 当日）</summary>
-        public long? TodayWinLoss { get; set; }
+        public decimal? TodayWinLoss { get; set; }
         /// <summary>总盈亏（user_daily_winloss 全量合计：实际游戏输赢，没玩过即为 0）</summary>
-        public long? TotalWinLoss { get; set; }
+        public decimal? TotalWinLoss { get; set; }
         /// <summary>最后登录（UserOptLog 最新操作时间）</summary>
         public DateTime? LastLoginTime { get; set; }
         /// <summary>今日充值（当日充值类流水合计）</summary>
@@ -236,7 +236,7 @@ namespace YYT.Entity
 
         public int PROCESSED { get; set; }
         /// <summary>
-        /// 后台充值、后台赠送、前端充值;后台兑换、后台扣币、前端提现   
+        /// 后台充值、后台赠送、前端充值;后台兑换、后台扣钻、前端提现   
         /// </summary>
         public int RECHARGE_TYPE { get; set; }
         public DateTime GAMETIME { get; set; }

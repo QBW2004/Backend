@@ -47,6 +47,38 @@ namespace UnitTestProj
         }
 
         [TestMethod]
+        public void TotalControlCapabilityMatchesOpenGameProtocols()
+        {
+            int[] openGames = { 2, 3, 5, 10, 13, 15, 16, 25, 37, 40, 44, 53, 54 };
+            int[] killGames = { 2, 3, 5, 10, 13, 15, 16, 25, 37, 40, 44, 53, 54 };
+            int[] releaseGames = { 2, 3, 5, 10, 13, 15, 16, 25, 37, 40, 44, 53, 54 };
+
+            foreach (int gameId in openGames)
+            {
+                Assert.AreEqual(killGames.Contains(gameId),
+                    TotalControlRules.IsModeSupportedForGame((int)EControlMode.TotalKill, gameId),
+                    "总吃分能力矩阵错误: " + gameId);
+                Assert.AreEqual(releaseGames.Contains(gameId),
+                    TotalControlRules.IsModeSupportedForGame((int)EControlMode.TotalRelease, gameId),
+                    "总放水能力矩阵错误: " + gameId);
+            }
+            Assert.IsFalse(TotalControlRules.IsModeSupportedForGame((int)EControlMode.TotalRelease, 999));
+            Assert.AreEqual("当前游戏暂不支持总放水！",
+                TotalControlRules.UnsupportedModeMessage((int)EControlMode.TotalRelease, 999));
+        }
+
+        [TestMethod]
+        public void CenterUcErrorUsesRawProtocolKeyWhileUcNotLoggedInRemainsPending()
+        {
+            var rejected = new Msg(0, "服务器内部错误") { datas = "UCER" };
+            var pending = new Msg(0, "玩家下次登陆后生效") { datas = "UCNL" };
+
+            Assert.IsTrue(TotalControlRules.IsServerCapabilityRejected(rejected));
+            Assert.IsFalse(TotalControlRules.IsServerCapabilityRejected(pending));
+            Assert.IsFalse(TotalControlRules.IsServerCapabilityRejected(new Msg(0, "管道失败")));
+        }
+
+        [TestMethod]
         public void CardControlHidesKillWhenBothActive()
         {
             List<M_UserControlStatus_DTO> picked = TotalControlRules.PickDisplayControls(new[]

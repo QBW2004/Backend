@@ -9,13 +9,26 @@
      - /Game/UserInfo/CloseTotalControl     移除当前控制
    权限：服务端渲染控制类型下拉（吃分需 IsKill、放水需 IsProbability、控牌需 IsRelease）。
    记录行参数解析：GameId=控牌游戏(cardAction)、LimitCoins=控牌值(cardValue)/强度、
-   TargetCoins=控牌次数(cardNumber)/金币阈值。
+   TargetCoins=控牌次数(cardNumber)/钻阈值。
    ============================================================ */
 (function (window, $, M) {
     'use strict';
 
     var current = null; // 当前查询的玩家
     var submitting = false;
+    var querySeq = 0, historySeq = 0, historyPage = 1;
+    var historyBusy = false, wallet = null;
+
+    function diamonds(value) {
+        var n = Number(value);
+        return value == null || !isFinite(n) ? "--" : n.toFixed(8).replace(/\.?0+$/, "");
+    }
+
+    function updateButtons() {
+        var canApply = !!current && !submitting && (currentMode() == 4 || !!wallet);
+        $("#applyBtn").prop("disabled", !canApply);
+        $("#closeCtrlBtn").prop("disabled", !current || submitting);
+    }
 
     /* ---------------- 控牌参数 ---------------- */
     /* 牌型表与命名（M.CARD_ACTIONS / M.cardActionName / M.cardTypeData / M.cardControlText）
@@ -44,6 +57,7 @@
     var acSeq = 0; // 防止乱序响应覆盖新结果
 
     function acHide() {
+        ++acSeq;
         $('#acSuggest').removeClass('show').empty();
     }
 
@@ -69,7 +83,7 @@
             return '<div class="ac-item" data-account="' + M.esc(p.ID) + '">' +
                 '<span class="ac-account">' + acHighlight(p.ID, kw) + (online ? ' <span class="positive">·在线</span>' : '') + '</span>' +
                 '<span class="ac-name">' + M.esc(p.NAME || '') + '</span>' +
-                '<span class="ac-coins">' + M.gold(p.COINS) + '币</span>' +
+                '<span class="ac-coins">' + M.gold(p.COINS) + '钻</span>' +
                 '</div>';
         }).join('')).addClass('show');
     }
@@ -89,35 +103,45 @@
         var acc = $.trim($('#ctrlAccount').val());
         if (!acc) { M.toast('请输入玩家账号', 'error'); return; }
         acHide();
+        var seq = ++querySeq;
+        current = null;
+        $('#stBet, #stToday, #stTotal').text('--').removeClass('positive negative');
+        $('#playerMeta').removeClass('show');
+        updateButtons();
 
         M.loading('查询中...');
-        M.post('/Game/UserInfo/GetVisibleUserRows', { UserIDs: JSON.stringify([acc]) })
+        M.post('/Game/PrizePool/Player', { ID: acc })
             .always(M.hideLoading)
             .then(function (res) {
-                var row = (res && res.datas && res.datas.length) ? res.datas[0] : null;
+                if (seq !== querySeq) return;
+                var r = M.result(res);
+                var row = r.ok && r.datas ? r.datas.Player : null;
                 if (!row) {
                     current = null;
-                    $('#statCards, #playerMeta').removeClass('show');
-                    $('#ctrlParams').removeClass('show');
+                    $('#playerMeta').removeClass('show');
+                    loadHistory(true);
                     $('#applyBtn, #closeCtrlBtn').prop('disabled', true);
                     M.alert('未查询到该玩家，请确认账号是否正确', false, '查询失败');
                     return;
                 }
                 current = row;
-                renderPlayer(row);
-                $('#applyBtn, #closeCtrlBtn').prop('disabled', false);
+                renderPlayer(row, r.datas.CurrentBetDiamonds);
+                updateButtons();
+                refreshWallet();
+                loadHistory(true);
                 refreshCtrlStatus();
             });
     }
 
-    function renderPlayer(row) {
+    function renderPlayer(row, betDiamonds) {
         var online = row.INHALL === true;
-        $('#stBet').text(M.gold(row.CurrentBetCoins || 0)).removeClass('positive negative');
+        // 当前押注使用中心服报文中的实际桌台兑换比；旧中心无比率时显示 --，不把机台分标成钻。
+        $('#stBet').text(diamonds(betDiamonds)).removeClass('positive negative');
         var today = Number(row.TodayWinLoss || 0);
-        $('#stToday').text((today > 0 ? '+' : '') + M.gold(today))
+        $('#stToday').text((today > 0 ? '+' : '') + diamonds(today))
             .toggleClass('positive', today > 0).toggleClass('negative', today < 0);
         var total = Number(row.Profit || 0);
-        $('#stTotal').text((total > 0 ? '+' : '') + M.gold(total))
+        $('#stTotal').text((total > 0 ? '+' : '') + diamonds(total))
             .toggleClass('positive', total > 0).toggleClass('negative', total < 0);
         $('#piOnline').text(online ? '在线' : '离线').attr('class', 'info-value ' + (online ? 'status-online' : 'status-offline'));
         $('#statCards, #playerMeta').addClass('show');
@@ -134,7 +158,7 @@
         }
         var items = rows.map(function (r) {
             return ctrlParamText(r.ControlMode, r.GameId, r.LimitCoins, r.TargetCoins, r.CardNumber, r.CardTotal) +
-                (Number(r.ControlMode) == 6 ? '' : ' 已' + (Number(r.ControlMode) == 5 ? '放' : '吃') + '分 ' + M.gold(Number(r.ControlMode) == 5 ? r.GrantedCoins : r.ConsumedCoins));
+                (Number(r.ControlMode) == 6 ? '' : ' 已' + (Number(r.ControlMode) == 5 ? '放' : '吃') + '钻 ' + diamonds(Number(r.ControlMode) == 5 ? r.GrantedCoins : r.ConsumedCoins));
         });
         $el.attr('class', 'info-value ctrl-status-list')
             .html(items.map(function (t) { return '<span class="ctrl-status-item">' + M.esc(t) + '</span>'; }).join(''));
@@ -147,7 +171,7 @@
             // 与玩家列表卡片同一份文案（含 GameId<5 的历史数据回退）
             return M.cardControlText(gameId, killRatio);
         }
-        return '目标 ' + M.gold(targetCoins);
+        return '目标 ' + diamonds(targetCoins) + '钻';
     }
 
     function refreshCtrlStatus(quiet) {
@@ -171,6 +195,7 @@
         var isCard = (mode == 6);
         $('#rowGold').toggle(!isCard);
         $('#rowCardAction, #rowCardValue').toggle(isCard);
+        updateButtons();
         if (isCard) {
             fillSelect($('#ctrlCardAction'), M.playableCardActions(M.CARD_ACTIONS), true);
             fillSelect($('#ctrlCardValue'), M.cardTypeData(parseInt($('#ctrlCardAction').val(), 10)), false);
@@ -185,7 +210,7 @@
         var para = { ID: current.ID, Mode: mode, MobileRequest: 1 };
 
         if (mode == 6) {
-            // 控牌按次数控制，不需要金币阈值
+            // 控牌按次数控制，不需要钻阈值
             para.GoldThreshold = 0;
             para.CardAction = parseInt($('#ctrlCardAction').val(), 10);
             para.CardValue = parseInt($('#ctrlCardValue').val(), 10);
@@ -196,8 +221,8 @@
             // 吃分/放水无需再选择开关，默认按开启状态提交。
             para.Strength = 3;
             var gold = $.trim($('#ctrlGold').val());
-            if (!gold || parseInt(gold, 10) <= 0) {
-                M.toast('请填写大于 0 的目标', 'error');
+            if (!/^[1-9][0-9]*$/.test(gold) || Number(gold) > 9007199254740991) {
+                M.toast('请填写大于 0 的整数钻数', 'error');
                 return;
             }
             para.GoldThreshold = parseInt(gold, 10);
@@ -209,7 +234,7 @@
             : '对玩家 ' + current.ID + ' 执行 ' + modeName(mode) + '（目标 ' + M.gold(para.GoldThreshold) + '）？';
 
         M.confirm(desc, '控制确认').then(function (ok) {
-            if (!ok) return;
+            if (!ok || !current || current.ID !== para.ID) return;
             if (submitting) return;
             submitting = true;
             $('#applyBtn, #closeCtrlBtn').prop('disabled', true);
@@ -219,13 +244,15 @@
                 M.alert(r.ok ? (r.text || '操作成功') : r.text, r.ok, r.ok ? '操作成功' : '操作失败').then(function () {
                     if (r.ok) {
                         refreshCtrlStatus();
+                        refreshWallet();
+                        loadHistory(true);
                     }
                 });
             }, function () {
                 M.toast('操作失败，请稍后重试', 'error');
             }).always(function () {
                 submitting = false;
-                $('#applyBtn, #closeCtrlBtn').prop('disabled', false);
+                updateButtons();
             });
         });
     }
@@ -233,31 +260,118 @@
     function closeControl() {
         if (!current) { M.toast('请先查询玩家信息', 'error'); return; }
         var mode = currentMode();
+        var target = current.ID;
         M.confirm('确认移除该玩家的' + modeName(mode) + '？', '移除控制').then(function (ok) {
-            if (!ok) return;
+            if (!ok || !current || current.ID !== target) return;
             if (submitting) return;
             submitting = true;
             $('#applyBtn, #closeCtrlBtn').prop('disabled', true);
             M.loading('处理中...');
-            M.post('/Game/UserInfo/CloseTotalControl', { ID: current.ID, Mode: mode, MobileRequest: 1 }).always(M.hideLoading).then(function (res) {
+            M.post('/Game/UserInfo/CloseTotalControl', { ID: target, Mode: mode, MobileRequest: 1 }).always(M.hideLoading).then(function (res) {
                 var r = M.result(res);
                 M.alert(r.ok ? (r.text || '移除成功') : r.text, r.ok, r.ok ? '移除成功' : '操作失败').then(function () {
                     if (r.ok) {
                         refreshCtrlStatus();
+                        refreshWallet();
+                        loadHistory(true);
                     }
                 });
             }, function () {
                 M.toast('操作失败，请稍后重试', 'error');
             }).always(function () {
                 submitting = false;
-                $('#applyBtn, #closeCtrlBtn').prop('disabled', false);
+                updateButtons();
             });
+        });
+    }
+
+    /* ---------------- 奖池与送奖记录（服务端分页、真实钻口径） ---------------- */
+    function refreshWallet() {
+        return M.post('/Game/PrizePool/Wallet', {}).then(function (res) {
+            var r = M.result(res);
+            wallet = r.ok ? r.datas : null;
+            $('#poolBalance').text(wallet ? diamonds(wallet.Balance) : '--');
+            $('#myDiamonds').text(wallet ? diamonds(wallet.Diamonds) : '--');
+            updateButtons();
+        }, function () { wallet = null; updateButtons(); });
+    }
+
+    function recordHtml(row) {
+        var isCard = Number(row.ControlMode) === 6;
+        var opened = row.AwardTime != null;
+        var status = opened ? '已开' : Number(row.Status) === 0 ? '未开' : '移除';
+        var game = row.GameName || (isCard ? M.cardActionName(row.CardAction) : modeName(row.ControlMode));
+        var hand = isCard ? M.cardTypeName(row.CardAction, row.CardValue) : '--';
+        var date = opened ? M.fmtTime(row.AwardTime, true) : M.fmtTime(row.CreatedTime, true);
+        return '<tr><td>' + M.esc(game) + '</td><td>' + M.esc(row.UserID) + '</td><td><span class="control-record-status ' +
+            (opened ? 'done' : Number(row.Status) === 0 ? 'pending' : '') + '">' + status + '</span></td><td>' +
+            M.esc(row.TableId == null ? '--' : row.TableId) + '</td><td>' + M.esc(hand) + '</td><td>' +
+            M.esc(isCard ? row.ActualCardType || '--' : '--') + '</td><td>' +
+            M.esc(opened ? diamonds(row.AwardDiamonds) : '--') + '</td><td>' + M.esc(date) + '</td></tr>';
+    }
+
+    function loadHistory(reset) {
+        var start = $('#controlStart').val(), end = $('#controlEnd').val();
+        if (!start || !end || start > end) { M.toast('请选择有效的日期范围', 'error'); return; }
+        if (!reset && historyBusy) return;
+        if (reset) historyPage = 1;
+        var seq = ++historySeq, page = historyPage;
+        historyBusy = true;
+        $('#controlMore').prop('disabled', true);
+        M.post('/Game/PrizePool/Records', { ID: current ? current.ID : $.trim($('#ctrlAccount').val()), StartTime: start, EndTime: end, page: page, rows: 20 })
+            .then(function (res) {
+                if (seq !== historySeq) return;
+                if (!res || res.rows == null) { M.toast(M.result(res).text || '送奖明细读取失败', 'error'); return; }
+                var html = res.rows.map(recordHtml).join('');
+                if (reset) $('#controlRows').html(html || '<tr><td class="empty-row" colspan="8">暂无送奖记录</td></tr>');
+                else $('#controlRows').append(html);
+                $('#sentDiamonds').text(diamonds(res.sentDiamonds));
+                $('#controlCount').text('共 ' + res.total + ' 条');
+                $('#controlMore').toggle(page * 20 < res.total);
+                historyPage = page + 1;
+            }, function () { if (seq === historySeq) M.toast('送奖明细读取失败，请重试', 'error'); })
+            .always(function () { if (seq === historySeq) { historyBusy = false; $('#controlMore').prop('disabled', false); } });
+    }
+
+    function requestId() {
+        if (window.crypto && window.crypto.randomUUID) return window.crypto.randomUUID();
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) { var r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16); });
+    }
+
+    function rechargePool() {
+        if (submitting) return;
+        if (!wallet) { refreshWallet(); M.toast('请等待奖池余额读取完成', 'error'); return; }
+        var amount = 0, token = requestId();
+        M.modal({ title: '充值奖池', bodyHTML: '<div>奖池余额（钻）：' + M.esc(diamonds(wallet.Balance)) + '</div><div>我的钻石：' +
+            M.esc(diamonds(wallet.Diamonds)) + '</div><label class="pool-modal-field">充值金额（钻）<input id="poolAmount" class="input-field" type="number" min="1" step="1" inputmode="numeric" placeholder="请输入整数钻数"></label><div class="pool-modal-tip">从我的钻石转入奖池</div>',
+            buttons: [{label:'取消',value:false},{label:'确认充值',type:'confirm',value:true}],
+            beforeClose: function (value, $modal) {
+                if (!value) return true;
+                var text = $.trim($modal.find('#poolAmount').val());
+                amount = Number(text);
+                if (!/^[1-9][0-9]*$/.test(text) || amount > 9007199254740991 || amount > Number(wallet.Diamonds)) { M.toast('请输入不超过可用钻石的正整数金额', 'error'); return false; }
+                return true;
+            }
+        }).then(function (ok) {
+            if (!ok || submitting) return;
+            submitting = true; updateButtons(); M.loading('充值中...');
+            M.post('/Game/PrizePool/Transfer', {Amount:amount,RequestId:token}).always(M.hideLoading)
+                .then(function (res) { var r = M.result(res); M.alert(r.text, r.ok); refreshWallet(); }, function () { M.toast('充值结果暂未确认，请刷新余额后核对流水', 'error'); refreshWallet(); })
+                .always(function () { submitting = false; updateButtons(); });
         });
     }
 
     /* ---------------- 初始化 ---------------- */
 
     function initPage() {
+        var today = new Date(), first = new Date();
+        first.setDate(today.getDate() - 6);
+        function dateValue(d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+        $('#controlStart').val(dateValue(first)); $('#controlEnd').val(dateValue(today));
+        $('#controlRefresh').on('click', function () { loadHistory(true); refreshWallet(); });
+        $('#controlMore').on('click', function () { loadHistory(false); });
+        $('#poolRechargeBtn').on('click', rechargePool);
+        refreshWallet(); loadHistory(true);
         var preset = window.MPagePreset || {};
         if (preset.account) {
             $('#ctrlAccount').val(preset.account);
@@ -273,6 +387,9 @@
         });
         // 实时模糊联想：输入防抖 300ms，下拉展示权限范围内的匹配账号，点选即回填并查询
         $('#ctrlAccount').on('input', function () {
+            ++querySeq; current = null; updateButtons();
+            $('#stBet, #stToday, #stTotal').text('--').removeClass('positive negative');
+            $('#playerMeta').removeClass('show');
             var kw = $.trim($(this).val());
             if (acTimer) { clearTimeout(acTimer); acTimer = null; }
             if (!kw) { acHide(); return; }
@@ -302,7 +419,7 @@
         // 控制状态轮询：查询到玩家后每 5s 重拉一次进度（已吃分/剩余次数靠游戏服回写库表，
         // 不轮询就停在下发时的快照）。页面隐藏时暂停（与在线页同一口径）；
         // 独立页面离开即销毁，在途请求由 M.post 在 pagehide 统一中断，无需手动清定时器。
-        setInterval(function () { if (!document.hidden) refreshCtrlStatus(true); }, 5000);
+        setInterval(function () { if (!document.hidden) { refreshCtrlStatus(true); refreshWallet(); if (historyPage <= 2 && !historyBusy) loadHistory(true); } }, 10000);
 
         bindMode();
     }

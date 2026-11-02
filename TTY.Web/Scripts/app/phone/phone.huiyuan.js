@@ -1,10 +1,10 @@
 /* ============================================================
    会员盈亏详情页
    数据源：
-     - /Game/UserInfo/GetMemberWinLossStats  统计卡（总盈亏/总充值/总退币、今日盈亏/今日充值/今日退币）
+     - /Game/UserInfo/GetMemberWinLossStats  统计卡（总盈亏/总充值/总退钻、今日盈亏/今日充值/今日退钻）
      - /Game/UserInfo/GetMemberWinLoss       会员分页（按总盈亏排序）
    口径说明：总盈亏/今日盈亏 = 实际游戏输赢（user_daily_winloss 累计/当日，赢正输负）——
-     只有真正玩过游戏产生结算的会员才有记录，没玩的会员盈亏为 0，不按充值/退币差额计算。
+     只有真正玩过游戏产生结算的会员才有记录，没玩的会员盈亏为 0，不按充值/退钻差额计算。
    支持手机端"我的代理-我的会员-查看"跳转：
      ?agency=xxx  默认显示该代理整条线（含非直属会员，与其管理范围一致），可切换只看直属会员
    ============================================================ */
@@ -21,7 +21,7 @@
     // 需要收窄时点"仅看直属"。
     var includeDescendants = true;
 
-    /* 统计卡单项：退币类(asNegative)以负数展示；盈亏类(colorBySign)按正负着色 */
+    /* 统计卡单项：退钻类(asNegative)以负数展示；盈亏类(colorBySign)按正负着色 */
     function setStat(sel, value, colorBySign, asNegative) {
         var n = Number(value || 0);
         if (asNegative) n = -n;

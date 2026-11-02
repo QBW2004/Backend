@@ -42,7 +42,7 @@ namespace YYT.BLL.Services.GameServer
         public long Score { get; set; }
 
         /// <summary>
-        /// 机台内金币（子游戏上报的原始 mCoins，未做币分折算；玩家坐下兑分后通常为 0）。
+        /// 机台内钻（子游戏上报的原始 mCoins，未做钻分折算；玩家坐下兑分后通常为 0）。
         /// 旧版中心服不下发时为 null，展示侧回退 Coins 口径。
         /// </summary>
         [JsonProperty("GameCoins")]
@@ -58,6 +58,12 @@ namespace YYT.BLL.Services.GameServer
         [JsonProperty("CurGameScore")]
         public long CurGameScore { get; set; }
 
+        [JsonProperty("CurBetDiamonds")]
+        public decimal? CurBetDiamonds { get; set; }
+
+        [JsonProperty("CurBetUnitsPerCoin")]
+        public uint? CurBetUnitsPerCoin { get; set; }
+
         [JsonProperty("CurBet")]
         public long CurBet { get; set; }
 
@@ -68,13 +74,13 @@ namespace YYT.BLL.Services.GameServer
         /// 总盈亏 = 用户注册以来每天「今日盈亏」之和（后台补充，SUM user_daily_winloss 全量，与用户管理页总盈亏同口径）
         /// </summary>
         [JsonProperty("Profit")]
-        public long Profit { get; set; }
+        public decimal Profit { get; set; }
 
         /// <summary>
         /// 今日盈亏（后台补充，取 user_daily_winloss 当日数据，与用户管理页今日盈亏同口径）
         /// </summary>
         [JsonProperty("TodayWinLoss")]
-        public long TodayWinLoss { get; set; }
+        public decimal TodayWinLoss { get; set; }
 
         /// <summary>
         /// 状态: 0=游戏中, 1=大厅, 2=其他

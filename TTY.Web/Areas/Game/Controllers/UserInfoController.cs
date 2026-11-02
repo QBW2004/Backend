@@ -148,7 +148,8 @@ namespace YYT.Web.Areas.Game.Controllers
                     long? tatolGAME_SCORE = 0;
                     long? tatolCOINS_BUY = 0;
                     long? tatolCOINS_BACK = 0;
-                    long? tatolProfit = 0;
+                    decimal? tatolProfit = 0;
+                    decimal? totalTodayWinLoss = 0;
                     foreach (var item in list.rows)
                     {
                         tatolCOINS += item.COINS;
@@ -156,6 +157,7 @@ namespace YYT.Web.Areas.Game.Controllers
                         tatolCOINS_BUY += item.COINS_BUY;
                         tatolCOINS_BACK += item.COINS_BACK;
                         tatolProfit += item.Profit;
+                        totalTodayWinLoss += item.TodayWinLoss;
                     }
 
                     footer.FROZEN = 2;
@@ -165,6 +167,7 @@ namespace YYT.Web.Areas.Game.Controllers
                     footer.COINS_BUY = tatolCOINS_BUY;
                     footer.COINS_BACK = tatolCOINS_BACK;
                     footer.Profit = tatolProfit;
+                    footer.TodayWinLoss = totalTodayWinLoss;
                     
                     listFooter.Add(footer);
                     list.footer = listFooter;
@@ -237,16 +240,6 @@ namespace YYT.Web.Areas.Game.Controllers
                 // 9 副管理
                 // 10 运营
                 list = new B_Users().GetOnlinePlayersList(mPage, mUsers, loginUser);
-                if (list != null && list.rows != null)
-                {
-                    //  List<M_UserProit> profits = bll.GetAgencyProfits(loginUser);
-                    foreach (var item in list.rows)
-                    {
-                        //  var tmp = profits.Find(c => c.Agency.Equals(item.ID));
-                        item.Profit = item.COINS_BUY - item.COINS_BACK;
-                        // item.PlayerBalance = (tmp != null ? tmp.PlayerBalance : 0);
-                    }
-                }
             }
             catch (Exception ex)
             {
@@ -271,7 +264,7 @@ namespace YYT.Web.Areas.Game.Controllers
                 if (loginUser == null)
                     return Json(msg);
 
-                long total = new B_Users().GetTodayTotalWinLoss(loginUser);
+                decimal total = new B_Users().GetTodayTotalWinLoss(loginUser);
                 msg.code = 1;
                 msg.content = "查询成功！";
                 msg.datas = new { total = total };
@@ -308,7 +301,7 @@ namespace YYT.Web.Areas.Game.Controllers
                 string sort = form.Q<string>("sort");
                 // 总盈亏(Profit) = 实际游戏输赢（user_daily_winloss 全量），由 B_Users.GetOfflineUsersList 直接给出，
                 // 与在线列表/会员盈亏详情/电脑端"总盈亏"同口径。这里不能再按充退差额（COINS_BUY-COINS_BACK）覆盖：
-                // 那是资金口径，会让同一个玩家的"总输赢"在线与离线显示成两个不同的数（离线也变成充值-退币）。
+                // 那是资金口径，会让同一个玩家的"总输赢"在线与离线显示成两个不同的数（离线也变成充值-退钻）。
                 list = new B_Users().GetOfflineUsersList(mPage, mUsers, loginUser, sort);
             }
             catch (Exception ex)
@@ -379,8 +372,8 @@ namespace YYT.Web.Areas.Game.Controllers
         /// <summary>
         /// 手机端：会员盈亏统计卡（权限范围内，支持代理过滤）。
         /// 口径：总盈亏/今日盈亏 = 实际游戏输赢（user_daily_winloss 累计/当日），赢正输负，
-        /// 只有真正玩过游戏产生结算的会员才有记录，不按充值/退币差额统计；
-        /// 总充值/总退币 = 最近 7x24 小时内已生效充退流水，今日充值/今日退分 = 当日已生效充退流水。
+        /// 只有真正玩过游戏产生结算的会员才有记录，不按充值/退钻差额统计；
+        /// 总充值/总退钻 = 最近 7x24 小时内已生效充退流水，今日充值/今日退分 = 当日已生效充退流水。
         /// </summary>
         [MemberAuthorize]
         [AjaxOnly]
@@ -405,7 +398,7 @@ namespace YYT.Web.Areas.Game.Controllers
                     TotalBack = stats.TotalBack ?? 0,
                     TodayBuy = stats.TodayBuy ?? 0,
                     TodayBack = stats.TodayBack ?? 0,
-                    // 盈亏按实际游戏输赢统计（user_daily_winloss），不再按充值/退币差额
+                    // 盈亏按实际游戏输赢统计（user_daily_winloss），不再按充值/退钻差额
                     TotalWinLoss = stats.TotalWinLoss ?? 0,
                     TodayWinLoss = stats.TodayWinLoss ?? 0
                 };
@@ -978,7 +971,7 @@ namespace YYT.Web.Areas.Game.Controllers
             try
             {
                 string id = form.Q<string>("ID3");
-                int coin = form.Q<int>("txtE_COINS1");// 充值币数量
+                int coin = form.Q<int>("txtE_COINS1");// 充值钻数量
                 if (string.IsNullOrWhiteSpace(id))
                 {
                     msg.content = "用户ID不能为空！";
@@ -1056,7 +1049,7 @@ namespace YYT.Web.Areas.Game.Controllers
             try
             {
                 string id = form.Q<string>("ID4");
-                int coin = form.Q<int>("txtE_COINS2");// 赠送币数量
+                int coin = form.Q<int>("txtE_COINS2");// 赠送钻数量
                 if (string.IsNullOrWhiteSpace(id))
                 {
                     msg.content = "用户ID不能为空！";
@@ -1116,7 +1109,7 @@ namespace YYT.Web.Areas.Game.Controllers
         }
 
         /// <summary>
-        /// 扣币
+        /// 扣钻
         /// </summary>
         /// <param name="form"></param>
         /// <returns></returns>
@@ -1124,11 +1117,11 @@ namespace YYT.Web.Areas.Game.Controllers
         [HttpPost]
         public ActionResult SaveDeduct(FormCollection form)
         {
-            Msg msg = new Msg(0, "扣币失败！");
+            Msg msg = new Msg(0, "扣钻失败！");
             try
             {
                 string id = form.Q<string>("ID5");
-                int coin = form.Q<int>("txtE_COINS3");// 扣币数量
+                int coin = form.Q<int>("txtE_COINS3");// 扣钻数量
                 if (string.IsNullOrWhiteSpace(id))
                 {
                     msg.content = "用户ID不能为空！";
@@ -1136,7 +1129,7 @@ namespace YYT.Web.Areas.Game.Controllers
                 }
                 if (coin <= 0)
                 {
-                    msg.content = "请填扣币数量！";
+                    msg.content = "请填扣钻数量！";
                     return Json(msg);
                 }
                 M_Users usr = new B_Users().GetSingle(new M_Users { ID = id });
@@ -1171,7 +1164,7 @@ namespace YYT.Web.Areas.Game.Controllers
                 }
                 if (usr.COINS < coin)
                 {
-                    msg.content = "请重新填写扣币数量，用户金币不够！";
+                    msg.content = "请重新填写扣钻数量，用户钻不够！";
                     return Json(msg);
                 }
                 if (loginUser != null)
@@ -1244,7 +1237,7 @@ namespace YYT.Web.Areas.Game.Controllers
                 M_LoginUser loginUser = WebHelper.GetLoginInfo();
                 using (var ef = new GameDbContext())
                 {
-                    // 金币上限属控制状态：普通代理仅能看到自己设置的（按状态行 CreatedBy 判定）
+                    // 钻上限属控制状态：普通代理仅能看到自己设置的（按状态行 CreatedBy 判定）
                     var row = ef.UserControlStatuses
                         .Where(c => c.UserID == id && c.ControlMode == (int)EControlMode.Limit && c.Status == (int)EControlStatus.Active)
                         .OrderByDescending(c => c.ID)
@@ -1298,11 +1291,11 @@ namespace YYT.Web.Areas.Game.Controllers
         }
 
         /// <summary>
-        /// 设置总控（总点杀/总放水/总控牌），带金币阈值：
-        /// Mode=4 总点杀（鱼机+押注+牌机+拉霸，Strength=强度）
+        /// 设置总控（总点杀/总放水/总控牌），带钻阈值：
+        /// Mode=4 总点杀（鱼机+押注+牌机+拉霸+麻将胡了，Strength=强度）
         /// Mode=5 总放水（鱼机+押注，Strength=强度）
         /// Mode=6 总控牌（牌机+拉霸，CardAction/CardValue/CardNumber/CardTotal=精确控牌参数）
-        /// GoldThreshold=金币阈值（必填>0），累计吃分/放分达到后自动失效并恢复桌台参数难度
+        /// GoldThreshold=钻阈值（必填>0），累计吃分/放分达到后自动失效并恢复桌台参数难度
         /// </summary>
         [MemberAuthorize]
         [AjaxOnly]
@@ -1436,7 +1429,7 @@ namespace YYT.Web.Areas.Game.Controllers
                     return Json(msg);
                 }
 
-                // 押注点杀(3)/押注放水(4) 已收编进总控（总点杀 mode=4 / 总放水 mode=5，带金币阈值与进度），
+                // 押注点杀(3)/押注放水(4) 已收编进总控（总点杀 mode=4 / 总放水 mode=5，带钻阈值与进度），
                 // 此旧通道已废弃，统一走总控对话框设置。
                 if (action == 3 || action == 4)
                 {
@@ -1818,11 +1811,12 @@ namespace YYT.Web.Areas.Game.Controllers
         public ActionResult AddUser(FormCollection form)
         {
             Msg msg = new Msg(0, "操作失败！");
-            string txtE_UID1 = form.Q<string>("txtE_UID1");
+            // 账号/密码读入即去首尾空格：带空格落库后中心服按 ID 精确匹配会查不到，玩家报"账号或密码错误"
+            string txtE_UID1 = (form.Q<string>("txtE_UID1") ?? "").Trim();
             string txtE_NAME1 = form.Q<string>("txtE_NAME1");
             string txtE_TELEPHONE1 = form.Q<string>("txtE_TELEPHONE1");
-            string PWD1 = form.Q<string>("PWD1");
-            string RE_PWD1 = form.Q<string>("RE_PWD1");
+            string PWD1 = (form.Q<string>("PWD1") ?? "").Trim();
+            string RE_PWD1 = (form.Q<string>("RE_PWD1") ?? "").Trim();
             if (string.IsNullOrWhiteSpace(txtE_UID1))
             {
                 msg.content = "用户登录账户不能为空！";

@@ -30,7 +30,7 @@
 
     function renderTotalWinLoss(isOnline) {
         var total = isOnline ? onlineTotalWinLoss : offlineTotalWinLoss;
-        $('#totalWinLossLabel').text(isOnline ? '今日在线玩家总输赢（币）' : '今日所有玩家总输赢（币）');
+        $('#totalWinLossLabel').text(isOnline ? '今日在线玩家总输赢（钻）' : '今日所有玩家总输赢（钻）');
         var $el = $('#totalWinLoss');
         $el.text(M.gold(total));
         $el.removeClass('positive negative');
@@ -116,7 +116,7 @@
             }).join('') + '</div>'
             : '';
 
-        // 余额：新版中心服下发 GameScore/GameCoins = 机台内原始分/币（与游戏客户端同口径）；
+        // 余额：新版中心服下发 GameScore/GameCoins = 机台内原始分/钻（与游戏客户端同口径）；
         // 旧版缺字段回退 Score/Coins。GameScore 是原始内部单位，0.1 分炮鱼机需 ÷10；
         // 回退路径的 Score/GAME_SCORE 已是折后"分"单位，不再除。
         var scoreText;
@@ -139,7 +139,7 @@
                     '</div>' +
                     '<div class="player-balances">' +
                         '<span class="remaining-score">' + scoreText + '分</span>' +
-                        '<span class="remaining-diamond">' + M.gold(coinVal) + '币</span>' +
+                        '<span class="remaining-diamond">' + M.gold(coinVal) + '钻</span>' +
                     '</div>' +
                 '</div>' +
                 '<div class="player-info">' +
@@ -150,8 +150,8 @@
                         '<div class="info-item"><span class="info-label">押注</span><span class="info-value money-value">' + M.esc(betText) + '</span></div>' +
                     '</div>' +
                     '<div class="info-row money-row">' +
-                        '<div class="info-item"><span class="info-label">今日输赢(币)</span><span class="info-value money-value ' + twColor + '">' + (today > 0 ? '+' : '') + M.gold(today) + '</span></div>' +
-                        '<div class="info-item"><span class="info-label">总输赢(币)</span><span class="info-value money-value ' + ttColor + '">' + (total > 0 ? '+' : '') + M.gold(total) + '</span></div>' +
+                        '<div class="info-item"><span class="info-label">今日输赢(钻)</span><span class="info-value money-value ' + twColor + '">' + (today > 0 ? '+' : '') + M.gold(today) + '</span></div>' +
+                        '<div class="info-item"><span class="info-label">总输赢(钻)</span><span class="info-value money-value ' + ttColor + '">' + (total > 0 ? '+' : '') + M.gold(total) + '</span></div>' +
                     '</div>' +
                     controlRow +
                     loginRow +
@@ -499,7 +499,7 @@
                             '<span class="search-result-name">' + M.esc(p.NAME || '') + '</span>' +
                             '<span class="search-result-status ' + (online ? 'online' : 'offline') + '">' + (online ? '在线' : '离线') + '</span>' +
                         '</div>' +
-                        '<div class="search-result-info">' + M.esc(p.AGENCY || '--') + ' · 余额: ' + M.gold(p.COINS) + '币</div>' +
+                        '<div class="search-result-info">' + M.esc(p.AGENCY || '--') + ' · 余额: ' + M.gold(p.COINS) + '钻</div>' +
                         '</div>';
                 }).join(''));
             });

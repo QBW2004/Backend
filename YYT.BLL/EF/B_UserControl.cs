@@ -8,7 +8,7 @@ using YYT.Entity;
 namespace YYT.BLL.EF
 {
     /// <summary>
-    /// 鱼机和玩家控制（点杀/放水/金币上限）状态机
+    /// 鱼机和玩家控制（点杀/放水/钻上限）状态机
     /// </summary>
     public class B_UserControl
     {
@@ -22,7 +22,7 @@ namespace YYT.BLL.EF
         public const int GAMETYPE_FISH = 1;
 
         /// <summary>
-        /// UC 扩展指令码：05=点杀目标金额 06=放水目标金额 07=金币上限（金额=0 表示取消该项控制）
+        /// UC 扩展指令码：05=点杀目标金额 06=放水目标金额 07=钻上限（金额=0 表示取消该项控制）
         /// </summary>
         private static string ModeToUcCode(int mode)
         {
@@ -75,7 +75,7 @@ namespace YYT.BLL.EF
                 }
             }
 
-            // 权限校验：点杀需 IsKill，放水/金币上限需 IsProbability；机台范围仅超级管理员
+            // 权限校验：点杀需 IsKill，放水/钻上限需 IsProbability；机台范围仅超级管理员
             if (loginUser.UserPriv > 0)
             {
                 if (scope == 1)
@@ -481,7 +481,7 @@ namespace YYT.BLL.EF
             {
                 case (int)EControlMode.Kill: return "点杀";
                 case (int)EControlMode.Release: return "放水";
-                case (int)EControlMode.Limit: return "金币上限";
+                case (int)EControlMode.Limit: return "钻上限";
                 case (int)EControlMode.TotalKill: return "总点杀";
                 case (int)EControlMode.TotalRelease: return "总放水";
                 case (int)EControlMode.TotalCard: return "总控牌";
@@ -517,8 +517,35 @@ namespace YYT.BLL.EF
         }
 
         /// <summary>
-        /// 设置总控：总点杀(4)=鱼机+押注+牌机+拉霸；总放水(5)=鱼机+押注；总控牌(6)=牌机+拉霸。
-        /// 累计吃分/放分达到金币阈值(goldThreshold)后自动失效，恢复桌台参数难度。
+        /// 在线玩家的当前游戏能力校验。离线/大厅玩家不在这里拒绝，
+        /// 由中心服在玩家真正进入子游戏时按同一能力矩阵判定。
+        /// </summary>
+        private static Msg ValidateCurrentGameCapability(string userId, int mode)
+        {
+            if (mode != (int)EControlMode.TotalKill && mode != (int)EControlMode.TotalRelease)
+                return null;
+            try
+            {
+                PlayerRuntimeState state = new GameCommandService().QueryPlayerRuntimeState(userId);
+                if (state == null || !state.QuerySucceeded || state.RuntimeStatus != 1 || !state.GameId.HasValue)
+                    return null;
+                int gameId = state.GameId.Value;
+                if (!TotalControlRules.IsModeSupportedForGame(mode, gameId))
+                    return new Msg(0, TotalControlRules.UnsupportedModeMessage(mode, gameId));
+            }
+            catch (Exception ex)
+            {
+                // 实时查询失败时保留离线设置语义，中心服会在实际应用时返回明确拒绝。
+                LogHelper.WriteLog(typeof(B_UserControl), ex);
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// 设置总控：总点杀(4)=鱼机+押注+牌机+三款拉霸+麻将胡了54；
+        /// 总放水(5)累计上述游戏实际净收益（含控牌），仅鱼机/押注应用放水强度；
+        /// 总控牌(6)=牌机+拉霸（含麻将胡了送奖控牌）。
+        /// 累计吃分/放分达到钻阈值(goldThreshold)后自动失效，恢复桌台参数难度。
         /// 总控牌时 cardAction/cardValue/cardNumber/cardTotal 为精确控牌参数（与牌机控牌一致）。
         /// 互斥口径（TotalControlRules.ModesReplacedBy）：吃分/放水互斥，后下的覆盖先下的，
         /// 覆盖时先给旧模式补发解除指令；控牌与吃分/放水共存，新控牌仅替换旧控牌。
@@ -542,7 +569,7 @@ namespace YYT.BLL.EF
                 msg.content = "请填写玩家账号！";
                 return msg;
             }
-            // 控牌按次数控制，不需要金币阈值；仅吃分/放分需要金币阈值
+            // 控牌按次数控制，不需要钻阈值；仅吃分/放分需要钻阈值
             if (mode != (int)EControlMode.TotalCard && goldThreshold <= 0)
             {
                 msg.content = "目标必须大于 0！";
@@ -557,7 +584,7 @@ namespace YYT.BLL.EF
                     msg.content = "控牌规则固定为 1 次、5 把之内！";
                     return msg;
                 }
-                if ((cardAction < 5 || cardAction > 17) && cardAction != 19)
+                if ((cardAction < 5 || cardAction > 17) && cardAction != 19 && cardAction != 20)
                 {
                     msg.content = "无效的控牌类型！";
                     return msg;
@@ -567,13 +594,14 @@ namespace YYT.BLL.EF
                     msg.content = "无效的麻将胡了送奖牌型！";
                     return msg;
                 }
-                // 牌机型(5-14)牌型值 0-12（与服务端 te_CardsType 枚举一致），99=关闭控制；
-                // 火凤凰(14)扩展 13-18=正宗大四梅x1~x6（服务端 AlgProb 按 ctrl_value-12 取倍数）；
+                // 牌机型(5-14/20大白兔)牌型值 0-12（与服务端 te_CardsType 枚举一致），99=关闭控制；
+                // 火凤凰(14)扩展 13-18=正宗大四梅x1~x6、大白兔(20)扩展 13-26=x1~x14
+                //（服务端 AlgProb 按 ctrl_value-12 取倍数，MTH_DABAITU 放开到 26）；
                 // 拉霸型(15-17)为符号/面板位体系，值范围不同，保持宽松校验
-                if (cardAction >= 5 && cardAction <= 14 && cardValue != 99 &&
-                    (cardValue < 0 || cardValue > 12) && !(cardAction == 14 && cardValue >= 13 && cardValue <= 18))
+                if (((cardAction >= 5 && cardAction <= 14) || cardAction == 20) && cardValue != 99 &&
+                    (cardValue < 0 || cardValue > 12) && !((cardAction == 14 || cardAction == 20) && cardValue >= 13 && cardValue <= (cardAction == 20 ? 26 : 18)))
                 {
-                    msg.content = "无效的控牌牌型（0-12，火凤凰正宗大四梅 13-18，或 99 关闭）！";
+                    msg.content = "无效的控牌牌型（0-12，火凤凰正宗大四梅 13-18、大白兔 13-26，或 99 关闭）！";
                     return msg;
                 }
                 // 大字板(5)五鬼已下线：控牌牌型 12(五鬼) 与服务端 AlgProb 控制通道封死保持一致
@@ -618,11 +646,17 @@ namespace YYT.BLL.EF
             }
 
             string target = userId.Trim();
+            Msg currentCapability = ValidateCurrentGameCapability(target, mode);
+            if (currentCapability != null)
+                return currentCapability;
+
             // 本次设置覆盖掉的旧总控模式（吃分/放水互斥时记录旧模式），DB 落库后先补发解除指令
             List<int> overriddenModes = new List<int>();
+            int createdControlId = 0;
             try
             {
                 using (var ef = new GameDbContext())
+                using (var transaction = ef.Database.BeginTransaction(System.Data.IsolationLevel.ReadCommitted))
                 {
                     var user = ef.Users.FirstOrDefault(u => u.ID == target);
                     if (user == null)
@@ -635,6 +669,8 @@ namespace YYT.BLL.EF
                         msg.content = "只能控制自己管理范围内的玩家！";
                         return msg;
                     }
+
+                    B_PrizePool.CheckFunding(ef, loginUser, mode, goldThreshold);
 
                     // 总控互斥新口径：吃分(4)/放水(5)互斥，后下的覆盖先下的；控牌(6)只替换旧控牌，与吃分/放水共存
                     var replaced = TotalControlRules.ModesReplacedBy(mode);
@@ -667,6 +703,8 @@ namespace YYT.BLL.EF
                     };
                     ef.UserControlStatuses.Add(row);
                     ef.SaveChanges();
+                    createdControlId = row.ID;
+                    B_PrizePool.AttachControl(ef, loginUser, row);
 
                     // 点杀记录由后台写入（含操作员），服务器侧不再记录，避免指令重发产生重复记录
                     int optCode = mode == (int)EControlMode.TotalKill ? 21 : (mode == (int)EControlMode.TotalRelease ? 22 : 23);
@@ -686,7 +724,12 @@ namespace YYT.BLL.EF
                             "INSERT INTO usercontrolvalue (USERID,GAME_TYPE,CONTROL_TYPE,CONTROL_VALUE,NUMBER,TOTAL_NUMBER) VALUES({0},1,{1},{2},{3},{4})",
                             target, cardAction, cardValue, cardNumber, cardTotal);
                     }
+                    transaction.Commit();
                 }
+            }
+            catch (InvalidOperationException ex)
+            {
+                return new Msg(0, ex.Message);
             }
             catch (Exception ex)
             {
@@ -700,10 +743,40 @@ namespace YYT.BLL.EF
             {
                 SendTotalUcCommand(m, 0, 0, 0, 0, 0, loginUser, target);
             }
-            // 下发服务器指令（DB 已落库，玩家下次进游戏时服务端也会按 DB 应用总控）
-            // 手机端与电脑端统一走直发：只入发件箱等定时重试（间隔 60s）会让控制"点了半天不生效"，
-            // 发送结果不改变接口语义（DB 已落库即视为成功，与电脑端一致），失败由发件箱+重试服务兜底。
-            SendTotalUcCommand(mode, strength, cardAction, cardValue, cardNumber, cardTotal, loginUser, target);
+            // 下发服务器指令（DB 已落库，玩家下次进游戏时服务端也会按 DB 应用总控）。
+            // 手机端与电脑端统一走直发：只入发件箱等定时重试（间隔 60s）会让控制"点了半天不生效"；
+            // 传输失败由发件箱+重试服务兜底，但中心服明确返回 UCER 的能力拒绝必须回滚本次 Active 行。
+            Msg serverMsg = SendTotalUcCommand(mode, strength, cardAction, cardValue, cardNumber, cardTotal, loginUser, target);
+            // UCER 表示中心服明确拒绝当前游戏能力；不能把已拒绝的行留在 Active，
+            // 否则玩家下次进游戏会再次尝试并在后台显示“正在执行”。UCNL（离线/大厅）
+            // 仍保留数据库状态，等待玩家进入游戏后应用。
+            // SConnect 将所有非成功协议码归一为 code=0，但保留原始协议码在 datas。
+            // 只能以 datas=UCER 区分“中心服明确拒绝”与可重试的管道失败/UCNL。
+            if (TotalControlRules.IsServerCapabilityRejected(serverMsg))
+            {
+                try
+                {
+                    using (var ef = new GameDbContext())
+                    {
+                        var rejected = ef.UserControlStatuses.FirstOrDefault(c => c.ID == createdControlId);
+                        if (rejected != null && rejected.Status == (int)EControlStatus.Active)
+                        {
+                            rejected.Status = (int)EControlStatus.Expired;
+                            rejected.ExpiredTime = DateTime.Now;
+                            ef.SaveChanges();
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    LogHelper.WriteLog(typeof(B_UserControl), ex);
+                }
+                msg.code = 0;
+                msg.content = string.IsNullOrWhiteSpace(serverMsg.content)
+                    ? "当前游戏不支持该总控模式！"
+                    : serverMsg.content;
+                return msg;
+            }
             msg.code = 1;
             msg.content = "操作成功";
             return msg;
