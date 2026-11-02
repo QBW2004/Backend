@@ -21,7 +21,7 @@ namespace YYT.Web.Controllers.Api
             public string playerId { get; set; }
 
             /// <summary>
-            /// 兑换金币
+            /// 兑换钻
             /// </summary>
             public long? coins { get; set; }
 
@@ -96,7 +96,7 @@ namespace YYT.Web.Controllers.Api
                     }
                     if (coins <= 0)
                     {
-                        msg1.content = "请重新输入要兑换的金币！";
+                        msg1.content = "请重新输入要兑换的钻！";
                         return msg1;
                     }
                     if (string.IsNullOrWhiteSpace(phoneNumber))
@@ -117,7 +117,7 @@ namespace YYT.Web.Controllers.Api
                     }
                     if (coins > usr.COINS)
                     {
-                        msg1.content = "输入的金币大于拥有的金币！";
+                        msg1.content = "输入的钻大于拥有的钻！";
                         return msg1;
                     }
                     M_Admin admin = new B_Admin().GetSingle(new M_Admin { ID = usr.AGENCY });
@@ -125,14 +125,14 @@ namespace YYT.Web.Controllers.Api
                     {
                         if (admin.COINS < coins)
                         {
-                            msg1.content = "该代理[" + usr.AGENCY + "]金币不够兑换！请重新输入金币数量！";
+                            msg1.content = "该代理[" + usr.AGENCY + "]钻不够兑换！请重新输入钻数量！";
                             return msg1;
                         }
                     }
-                    msg1 = new B_Users().ExChangeCoin(playerId, coins);//修改用户金币
+                    msg1 = new B_Users().ExChangeCoin(playerId, coins);//修改用户钻
                     if (msg1.code == 10000)
                     {
-                        int val1 = new B_Admin().ExChangeCoin(usr.AGENCY, coins);//修改代理金币
+                        int val1 = new B_Admin().ExChangeCoin(usr.AGENCY, coins);//修改代理钻
                         ReturnModel returnModel = new ReturnModel();
                         M_Users usr1 = new B_Users().GetSingle(new M_Users { ID = model.playerId });
                         returnModel.coins = usr1.COINS;

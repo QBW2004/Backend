@@ -24,7 +24,7 @@ namespace YYT.Entity
         /// <para>20 后台充值</para>
         /// <para>21 后台兑换</para>
         /// <para>22 后台赠送</para>
-        /// <para>23 后台扣币</para>
+        /// <para>23 后台扣钻</para>
         /// <para>30 前端充值</para>
         /// <para>31 前端提现</para>
         /// </summary>
@@ -34,11 +34,11 @@ namespace YYT.Entity
         /// </summary>
         public long? Coin { get; set; }
         /// <summary>
-        /// 充值前金币
+        /// 充值前钻
         /// </summary>
         public long? BEF_COINS { get; set; }
         /// <summary>
-        /// 充值后金币
+        /// 充值后钻
         /// </summary>
         public long? AFT_COINS { get; set; }
         /// <summary>
@@ -62,7 +62,7 @@ namespace YYT.Entity
         /// <para>0 未处理</para>
         /// <para>1 已处理</para>
         /// <para>2 拒绝处理</para>
-        /// <para>3 拒绝处理并扣币</para>
+        /// <para>3 拒绝处理并扣钻</para>
         /// </summary>
         public int Processed { get; set; }
 
@@ -78,7 +78,7 @@ namespace YYT.Entity
         public string UserName { get; set; }
 
         /// <summary>
-        /// 充退类型名称（后台充值/后台兑换/赠送/扣币/前端充值/前端提现）
+        /// 充退类型名称（后台充值/后台兑换/赠送/扣钻/前端充值/前端提现）
         /// </summary>
         [NotMapped]
         public string TypeName { get; set; }
@@ -135,11 +135,11 @@ namespace YYT.Entity
         /// </summary>
         public long? Coin { get; set; }
         /// <summary>
-        /// 充值前金币
+        /// 充值前钻
         /// </summary>
         public long? BEF_COINS { get; set; }
         /// <summary>
-        /// 充值后金币
+        /// 充值后钻
         /// </summary>
         public long? AFT_COINS { get; set; }
         /// <summary>

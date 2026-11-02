@@ -96,7 +96,7 @@ namespace YYT.BLL.EF
                 }
             }
             Msg hot = PushHotUpdate(room.GAME_ID, EGameType.Fish, machine);
-            // 鱼机按桌下发最低带入：仅携带 coinsNeed，炮值/一币分保持 0，
+            // 鱼机按桌下发最低带入：仅携带 coinsNeed，炮值/一钻分保持 0，
             // 由 center 下发时用 ParaRoom 房间值(含小数炮值换算)回填，避免单位不一致。
             var tableExt = new SConnect.TcTableExt
             {

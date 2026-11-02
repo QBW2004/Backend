@@ -52,7 +52,7 @@ namespace YYT.Entity
         public string AGENCY { get; set; }
 
         /// <summary>
-        /// 拥有金币数
+        /// 拥有钻数
         /// </summary>
         public long? COINS { get; set; }
 
@@ -67,12 +67,12 @@ namespace YYT.Entity
         public long? EXCHANGE { get; set; }
 
         /// <summary>
-        /// 购币数
+        /// 购钻数
         /// </summary>
         public long? COINS_BUY { get; set; }
 
         /// <summary>
-        /// 总兑币数
+        /// 总兑钻数
         /// </summary>
         public long? COINS_BACK { get; set; }
 

@@ -39,7 +39,7 @@ namespace UnitTestProj.ReCharge
         /// 设置被充、兑换账户
         /// </summary>
         /// <param name="account">账号</param>
-        /// <param name="coins">充值、兑换金币数量</param>
+        /// <param name="coins">充值、兑换钻数量</param>
         /// <param name="rechargeType">充值类型</param>
         public void SetRechargeDstUsr(string account, int coins, ERechargeType rechargeType)
         {

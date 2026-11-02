@@ -131,7 +131,7 @@ namespace YYT.Web.Controllers.Api
         
 
             /// <summary>
-            /// 金币数
+            /// 钻数
             /// </summary>
             public long? coins { get; set; }
 

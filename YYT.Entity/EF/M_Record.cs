@@ -111,15 +111,15 @@ namespace YYT.Entity
         /// </summary>
         public int? OPT { get; set; }
         /// <summary>
-        /// 操作金币量
+        /// 操作钻量
         /// </summary>
         public long? COINS { get; set; }
         /// <summary>
-        /// 操作前金币量
+        /// 操作前钻量
         /// </summary>
         public long? BEF_COINS { get; set; }
         /// <summary>
-        /// 操作后金币量
+        /// 操作后钻量
         /// </summary>
         public long? AFT_COINS { get; set; }
         /// <summary>

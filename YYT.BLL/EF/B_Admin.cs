@@ -612,9 +612,9 @@ namespace YYT.BLL.EF
                     {
                         if (playerId != "atmadmin")
                         {
-                            rst.COINS = rst.COINS + coin;//代理余额=余额+兑换金币
+                            rst.COINS = rst.COINS + coin;//代理余额=余额+兑换钻
                         }
-                        rst.EXCHANGE = rst.EXCHANGE + coin;//代理总兑换=总兑换+兑换金币
+                        rst.EXCHANGE = rst.EXCHANGE + coin;//代理总兑换=总兑换+兑换钻
                         val = ef.SaveChanges();
                     }
                 }
@@ -638,9 +638,9 @@ namespace YYT.BLL.EF
                     {
                         if (playerId != "atmadmin")
                         {
-                            rst.COINS = rst.COINS - coin;//代理余额=余额+兑换金币
+                            rst.COINS = rst.COINS - coin;//代理余额=余额+兑换钻
                         }
-                        rst.EXCHANGE = rst.EXCHANGE - coin;//代理总兑换=总兑换+兑换金币
+                        rst.EXCHANGE = rst.EXCHANGE - coin;//代理总兑换=总兑换+兑换钻
                         val = ef.SaveChanges();
                     }
                 }

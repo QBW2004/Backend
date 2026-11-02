@@ -9,11 +9,11 @@ namespace YYT.Remote
     public enum EScMsgType
     {
         /// <summary>
-        /// 锁定玩家金币充值、兑换
+        /// 锁定玩家钻充值、兑换
         /// </summary>
         LK,
         /// <summary>
-        /// 解锁玩家金币充值、兑换
+        /// 解锁玩家钻充值、兑换
         /// </summary>
         UL,
         /// <summary>

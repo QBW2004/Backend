@@ -20,7 +20,7 @@ namespace YYT.Web.Controllers.Api
             /// </summary>
             public int type { get; set; }
             /// <summary>
-            /// 取出、存储金币
+            /// 取出、存储钻
             /// </summary>
             public int coins { get; set; }
             /// <summary>

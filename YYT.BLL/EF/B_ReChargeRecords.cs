@@ -107,7 +107,7 @@ namespace YYT.BLL.EF
                 footer.GameID = "后台总充值：" + tatolReCharge;
                 footer.Agency = "后台总兑换：" + tatolExCharge;
                 footer.Operator = "后台总赠送：" + tatolGive;
-                footer.OrderNo = "后台总扣币：" + tatolDelCoins;
+                footer.OrderNo = "后台总扣钻：" + tatolDelCoins;
                 footer.Processed = 4;
                 mPage.SetTotalCount(rst.Count());
                 List<M_ReChargeRecords> users = rst
@@ -124,7 +124,7 @@ namespace YYT.BLL.EF
 
         /// <summary>
         /// 手机端：充退记录分页（支持操作人/类型筛选，返回筛选范围内的总充值/总退分，并补充玩家名称与类型名称）
-        /// TypeFlag：0 全部；1 充值类（后台充值/赠送/前端充值）；2 退分类（后台兑换/扣币/前端提现）。
+        /// TypeFlag：0 全部；1 充值类（后台充值/赠送/前端充值）；2 退分类（后台兑换/扣钻/前端提现）。
         /// 手机端只展示已经生效的流水（Processed=1），避免未处理/已拒绝订单混入分类和汇总。
         /// </summary>
         public M_EasyuiGridData<M_ReChargeRecords> GetReChargeRecordsForPhone(M_LoginUser loginUser, M_Page mPage, M_ReChargeRecordsDao entity, out long sumRecharge, out long sumWithdraw)
@@ -228,7 +228,7 @@ namespace YYT.BLL.EF
                 case 20: return "后台充值";
                 case 21: return "后台兑换";
                 case 22: return "赠送";
-                case 23: return "扣币";
+                case 23: return "扣钻";
                 case 30: return "前端充值";
                 case 31: return "前端提现";
                 default: return "类型" + rechargeType;
@@ -393,7 +393,7 @@ namespace YYT.BLL.EF
                     return msg;
                 }
 
-                // 订单中金币数量为0，没有必要和服务器通知，直接修改订单处理状态
+                // 订单中钻数量为0，没有必要和服务器通知，直接修改订单处理状态
                 if (rst.Coin == 0)
                 {
                     rst.Processed = 1;
@@ -615,7 +615,7 @@ namespace YYT.BLL.EF
                     return msg;
                 }
                 // 幂等守卫：已处理的订单禁止再次"拒绝回滚"，
-                // 否则可对同一订单重复触发用户加币/代理扣币（重放造账）。
+                // 否则可对同一订单重复触发用户加钻/代理扣钻（重放造账）。
                 if (rst.Processed > 0)
                 {
                     msg.content = "订单已处理过，请不要重复确认！";
@@ -633,8 +633,8 @@ namespace YYT.BLL.EF
                     msg.content = "获取用户信息失败！";
                     return msg;
                 }
-                msg = new B_Users().ExChangeCoinEx(rst.GameID, rst.Coin);//修改用户金币
-                int val1 = new B_Admin().ExChangeCoinEx(rst.Agency, rst.Coin);//修改代理金币
+                msg = new B_Users().ExChangeCoinEx(rst.GameID, rst.Coin);//修改用户钻
+                int val1 = new B_Admin().ExChangeCoinEx(rst.Agency, rst.Coin);//修改代理钻
                 using (var trans = ef.Database.BeginTransaction())
                 {
                     try

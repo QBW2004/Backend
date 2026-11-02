@@ -49,11 +49,11 @@
         /// </summary>
         public int EX_COIN { get; set; }
         /// <summary>
-        /// 兑换币值
+        /// 兑换钻值
         /// </summary>
         public int COIN_SC { get; set; }
         /// <summary>
-        /// 入场金币
+        /// 入场钻
         /// </summary>
         public int COIN_NEED { get; set; }
         /// <summary>
@@ -120,11 +120,11 @@
         /// </summary>
         public int EX_COIN_0 { get; set; }
         /// <summary>
-        /// 兑换币值
+        /// 兑换钻值
         /// </summary>
         public int COIN_SC_0 { get; set; }
         /// <summary>
-        /// 入场金币
+        /// 入场钻
         /// </summary>
         public int COIN_NEED_0 { get; set; }
         /// <summary>
@@ -141,7 +141,7 @@
         public int SC_LIMIT_ALL_0 { get; set; }
 
         /// <summary>
-        /// 兑换金币数
+        /// 兑换钻数
         /// </summary>
         public int Game_Mo_0 { get; set; }
 
@@ -187,11 +187,11 @@
         /// </summary>
         public int EX_COIN_1 { get; set; }
         /// <summary>
-        /// 兑换币值
+        /// 兑换钻值
         /// </summary>
         public int COIN_SC_1 { get; set; }
         /// <summary>
-        /// 入场金币
+        /// 入场钻
         /// </summary>
         public int COIN_NEED_1 { get; set; }
         /// <summary>
@@ -208,7 +208,7 @@
         public int SC_LIMIT_ALL_1 { get; set; }
 
         /// <summary>
-        /// 兑换金币数
+        /// 兑换钻数
         /// </summary>
         public int Game_Mo_1 { get; set; }
 
@@ -254,11 +254,11 @@
         /// </summary>
         public int EX_COIN_2 { get; set; }
         /// <summary>
-        /// 兑换币值
+        /// 兑换钻值
         /// </summary>
         public int COIN_SC_2 { get; set; }
         /// <summary>
-        /// 入场金币
+        /// 入场钻
         /// </summary>
         public int COIN_NEED_2 { get; set; }
         /// <summary>
@@ -275,7 +275,7 @@
         public int SC_LIMIT_ALL_2 { get; set; }
 
         /// <summary>
-        /// 兑换金币数
+        /// 兑换钻数
         /// </summary>
         public int Game_Mo_2 { get; set; }
 
@@ -313,11 +313,11 @@
         /// </summary>
         public int EX_COIN_0 { get; set; }
         /// <summary>
-        /// 初级场_兑换币值
+        /// 初级场_兑换钻值
         /// </summary>
         public int COIN_SC_0 { get; set; }
         /// <summary>
-        /// 初级场_入场金币
+        /// 初级场_入场钻
         /// </summary>
         public int COIN_NEED_0 { get; set; }
         /// <summary>
@@ -334,7 +334,7 @@
         public int BetMaxValLimit_0 { get; set; }
 
         /// <summary>
-        /// 兑换金币数
+        /// 兑换钻数
         /// </summary>
         public int Game_Mo_0 { get; set; }
         /// <summary>
@@ -354,11 +354,11 @@
         /// </summary>
         public int EX_COIN_1 { get; set; }
         /// <summary>
-        /// 中级场_兑换币值
+        /// 中级场_兑换钻值
         /// </summary>
         public int COIN_SC_1 { get; set; }
         /// <summary>
-        /// 中级场_入场金币
+        /// 中级场_入场钻
         /// </summary>
         public int COIN_NEED_1 { get; set; }
         /// <summary>
@@ -375,7 +375,7 @@
         public int BetMaxValLimit_1 { get; set; }
 
         /// <summary>
-        /// 兑换金币数
+        /// 兑换钻数
         /// </summary>
         public int Game_Mo_1 { get; set; }
         /// <summary>
@@ -395,11 +395,11 @@
         /// </summary>
         public int EX_COIN_2 { get; set; }
         /// <summary>
-        /// 高级场_兑换币值
+        /// 高级场_兑换钻值
         /// </summary>
         public int COIN_SC_2 { get; set; }
         /// <summary>
-        /// 高级场_入场金币
+        /// 高级场_入场钻
         /// </summary>
         public int COIN_NEED_2 { get; set; }
         /// <summary>
@@ -417,7 +417,7 @@
 
 
         /// <summary>
-        /// 兑换金币数
+        /// 兑换钻数
         /// </summary>
         public int Game_Mo_2 { get; set; }
 
@@ -438,11 +438,11 @@
         /// </summary>
         public int EX_COIN_3 { get; set; }
         /// <summary>
-        /// VIP场_兑换币值
+        /// VIP场_兑换钻值
         /// </summary>
         public int COIN_SC_3 { get; set; }
         /// <summary>
-        /// VIP场_入场金币
+        /// VIP场_入场钻
         /// </summary>
         public int COIN_NEED_3 { get; set; }
         /// <summary>
@@ -459,7 +459,7 @@
         public int BetMaxValLimit_3 { get; set; }
 
         /// <summary>
-        /// 兑换金币数
+        /// 兑换钻数
         /// </summary>
         public int Game_Mo_3 { get; set; }
     }

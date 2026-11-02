@@ -119,8 +119,8 @@
     }
 
     /* 统计项整体不收缩、不拆行：中文可在任意两字间断行，
-       本行还要和"筛选"按钮分宽度，窄屏上"总充值（币）:"曾被拆成
-       "总充值" / "（币）:" 两行。放不下时整项换行（由 .stats-container 负责）。 */
+       本行还要和"筛选"按钮分宽度，窄屏上"总充值（钻）:"曾被拆成
+       "总充值" / "（钻）:" 两行。放不下时整项换行（由 .stats-container 负责）。 */
     .stats-item {
         display: flex;
         align-items: center;
@@ -287,10 +287,10 @@
             <div class="filter-bottom-row">
                 <div class="stats-container">
                     <div class="stats-item">
-                        总充值（币）: <span class="stats-value positive" id="totalRecharge">0</span>
+                        总充值（钻）: <span class="stats-value positive" id="totalRecharge">0</span>
                     </div>
                     <div class="stats-item">
-                        总退分（币）: <span class="stats-value negative" id="totalWithdraw">0</span>
+                        总退分（钻）: <span class="stats-value negative" id="totalWithdraw">0</span>
                     </div>
                 </div>
                 <button class="filter-btn" id="filterBtn">筛选</button>
@@ -305,9 +305,9 @@
                         <th>操作人</th>
                         <th>玩家账号</th>
                         <th>玩家名称</th>
-                        <th>充退数量（币）</th>
-                        <th>充退前币</th>
-                        <th>充退后币</th>
+                        <th>充退数量（钻）</th>
+                        <th>充退前钻</th>
+                        <th>充退后钻</th>
                         <th>充退时间</th>
                     </tr>
                 </thead>

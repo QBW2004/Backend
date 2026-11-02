@@ -36,7 +36,7 @@ namespace UnitTestProj.ReCharge
         [TestMethod]
         public void Exchange_Test_2()
         {
-            // 兑币数量
+            // 兑钻数量
             int coins = 5;
 
             ReChargeCommon reCharge = new ReChargeCommon(EAdminType.One);
@@ -136,7 +136,7 @@ namespace UnitTestProj.ReCharge
         [TestMethod]
         public void Exchange_Test_2()
         {
-            // 兑币数量
+            // 兑钻数量
             int coins = 5;
 
             ReChargeCommon reCharge = new ReChargeCommon(EAdminType.One);

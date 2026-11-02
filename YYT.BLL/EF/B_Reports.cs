@@ -46,7 +46,7 @@ namespace YYT.BLL.EF
                         // 今日充值额度
                         ReChargeReports(ef);
                     }
-                    // 总金币、总充值、总兑换、盈利额度
+                    // 总钻、总充值、总兑换、盈利额度
                     CoinReports(ef);
 
                     // 统计权限内的代理
@@ -217,7 +217,7 @@ namespace YYT.BLL.EF
             //_sumCoinsBuy += agencies.Sum(c => c.COINS_BUY) ?? 0;
             //_sumCoinsBack += agencies.Sum(c => c.COINS_BACK) ?? 0;
 
-            _sumCoins += usrs.Sum(c => c.COINS) ?? 0;//总金币
+            _sumCoins += usrs.Sum(c => c.COINS) ?? 0;//总钻
             _sumCoinsBuy += usrs.Sum(c => c.COINS_BUY) ?? 0;//总充值
             _sumCoinsBack += usrs.Sum(c => c.COINS_BACK) ?? 0;//总兑换
 

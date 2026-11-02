@@ -90,7 +90,7 @@
                 '<div class="m-item-body">' +
                     '<div class="m-info-row cols-3">' +
                         infoItem('游戏分数', M.num(u.GAME_SCORE)) +
-                        infoItem('总购币', M.gold(u.COINS_BUY)) +
+                        infoItem('总购钻', M.gold(u.COINS_BUY)) +
                         infoItem('总兑换', M.gold(u.COINS_BACK)) +
                     '</div>' +
                     '<div class="m-info-row money cols-2">' +
@@ -307,7 +307,7 @@
                 var body = '<div class="m-kv">' +
                     kv('账号', d.id || account) +
                     kv('账号类型', d.title || '玩家') +
-                    kv('剩余金币', M.gold(d.coins)) +
+                    kv('剩余钻', M.gold(d.coins)) +
                     '</div>';
                 M.modal({ title: '余额查询', bodyHTML: body, buttons: [{ label: '关闭', value: null }] });
             });
@@ -319,7 +319,7 @@
         body += kv('昵称', p.NAME || '--');
         body += kv('所属代理', p.AGENCY || '--');
         if (kind === 'online') {
-            body += kv('剩余金币', M.gold(p.Coins));
+            body += kv('剩余钻', M.gold(p.Coins));
             body += kv('剩余分数', M.num(p.Score));
             body += kv('所在游戏', M.gameName(p.GameID));
             body += kv('房间 / 桌 / 座', (p.RoomId || '--') + ' / ' + (p.TableId || '--') + ' / ' + (p.SeatId || '--'));
@@ -329,10 +329,10 @@
             body += kv('总盈亏', M.signed(p.Profit));
             body += kv('状态', statusText(p.Status));
         } else {
-            body += kv('剩余金币', M.gold(p.COINS));
+            body += kv('剩余钻', M.gold(p.COINS));
             body += kv('游戏分数', M.num(p.GAME_SCORE));
             body += kv('保险柜', M.gold(p.SAFE_COINS));
-            body += kv('总购币', M.gold(p.COINS_BUY));
+            body += kv('总购钻', M.gold(p.COINS_BUY));
             body += kv('总兑换', M.gold(p.COINS_BACK));
             body += kv('总盈亏', M.signed(p.Profit));
             body += kv('手机号', p.TELEPHONE || '--');

@@ -21,7 +21,7 @@
     /* ---------------- 顶栏余额 ---------------- */
 
     function renderSubtitle() {
-        $('#mSubtitle').html('<span>我的金币</span><span class="m-coins">' + M.gold(state.ownCoins) + '</span>');
+        $('#mSubtitle').html('<span>我的钻</span><span class="m-coins">' + M.gold(state.ownCoins) + '</span>');
     }
 
     /* ---------------- 文案随操作类型变化 ---------------- */

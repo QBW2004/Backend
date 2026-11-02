@@ -37,11 +37,11 @@ namespace YYT.Entity
         /// </summary>
         public int EX_COIN { get; set; }
         /// <summary>
-        /// 兑换币值
+        /// 兑换钻值
         /// </summary>
         public int COIN_SC { get; set; }
         /// <summary>
-        /// 入场金币
+        /// 入场钻
         /// </summary>
         public int COIN_NEED { get; set; }
         /// <summary>
@@ -57,7 +57,7 @@ namespace YYT.Entity
         /// </summary>
         public int BetMaxValLimit { get; set; }
         /// <summary>
-        /// 兑换金币数
+        /// 兑换钻数
         /// </summary>
         public int Game_Mo { get; set; }
 

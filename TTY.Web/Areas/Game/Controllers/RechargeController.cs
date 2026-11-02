@@ -73,7 +73,7 @@ namespace YYT.Web.Areas.Game.Controllers
             Msg msg = new Msg(0, "操作失败！");
             try
             {
-                int coin = form.Q<int>("coin");// 充值币数量
+                int coin = form.Q<int>("coin");// 充值钻数量
                 string id = form.Q<string>("id");// 充值的对象ID
                 int idType = form.Q<int>("idType", 0);// 默认为 0通过用户账号充值  1通过平台用户唯一标识充值
                 EIDType eIDType = (EIDType)idType;

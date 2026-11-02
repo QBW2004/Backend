@@ -2,10 +2,10 @@
    代理流水页（展示单个代理与对方账号之间的资金变动记录）
    数据源：/Game/AgencyRecord/GetAgencyRecords
    交互：日期筛选、分页浏览；流向列可点击（代账号弹代理详情、玩账号跳玩家详情）
-   列：日期 / 代理账号 / 金币(COINS) / 剩余金币(AFT_COINS) / 来源 / 流向
+   列：日期 / 代理账号 / 钻(COINS) / 剩余钻(AFT_COINS) / 来源 / 流向
 
    OPT 取值（见 B_Recharge.AddAgentOptLog：OPT = RechargeType + 20）：
-     2 登录、3 退出、20 充值、21 兑换、22 赠送、23 扣币
+     2 登录、3 退出、20 充值、21 兑换、22 赠送、23 扣钻
      0 / 1 是历史遗留数据，一并兼容；24/25/26/27 为封禁/解冻审计（无金额）
    ============================================================ */
 (function (window, $, M) {
@@ -16,9 +16,9 @@
     var totalPages = 0;
     var agentId = '';
 
-    /* 资金记录：有金币变动，COINS 为操作金币量 */
-    var OPT_IN = { '0': 1, '20': 1, '22': 1 };      // 充值/赠送：被操作账号收到金币
-    var OPT_OUT = { '1': 1, '21': 1, '23': 1 };     // 兑换/扣币：金币回到操作人账号
+    /* 资金记录：有钻变动，COINS 为操作钻量 */
+    var OPT_IN = { '0': 1, '20': 1, '22': 1 };      // 充值/赠送：被操作账号收到钻
+    var OPT_OUT = { '1': 1, '21': 1, '23': 1 };     // 兑换/扣钻：钻回到操作人账号
 
     /* 玩家在日志里的职务文案（M_Admin/EAdminType 翻译结果）；
        服务端 DestIsPlayer 缺失时的兼容判定，正常走服务端字段。 */
@@ -70,7 +70,7 @@
         return OPT_IN[optKey(rowData)] === 1;
     }
 
-    /* 来源：本次资金变动的转出方账号（充值/赠送为操作人，兑换/扣币为被操作账号）。
+    /* 来源：本次资金变动的转出方账号（充值/赠送为操作人，兑换/扣钻为被操作账号）。
        这里直接显示账号，不拼“总代理/代理”等职务后缀。 */
     function getSourceAccount(rowData) {
         var opt = optKey(rowData);
@@ -88,7 +88,7 @@
     }
 
     /* 流向：本次资金变动的接收方账号，代理显示“代 xxx”、玩家显示“玩 xxx”。
-       充值/赠送收币的是被操作账号，兑换/扣币收币的是操作人（后台账号，必为代理）。 */
+       充值/赠送收钻的是被操作账号，兑换/扣钻收钻的是操作人（后台账号，必为代理）。 */
     function getTargetInfo(rowData) {
         var opt = optKey(rowData);
         if (OPT_IN[opt] === 1) {
@@ -130,7 +130,7 @@
             var isMoney = isMoneyRecord(r);
             var isIn = isInRecord(r);
             var amount = isMoney ? Number(r.COINS || 0) : 0;
-            // 金币：收币为正、付币为负；剩余金币 = 操作后余额
+            // 钻：收钻为正、付钻为负；剩余钻 = 操作后余额
             var amountHtml = isMoney
                 ? '<span class="amount ' + (isIn ? 'positive' : 'negative') + '">' +
                       (isIn ? '+' : '-') + M.gold(Math.abs(amount)) + '</span>'

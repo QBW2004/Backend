@@ -20,7 +20,7 @@ namespace YYT.Entity
         /// </summary>
         public string PLAYER_ID { get; set; }
         /// <summary>
-        /// 兑换金币数量
+        /// 兑换钻数量
         /// </summary>
         public long? COINS { get; set; }
 

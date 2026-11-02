@@ -30,7 +30,7 @@ namespace YYT.Entity
         /// </summary>
         public int TableID { get; set; }
         /// <summary>
-        /// 金币
+        /// 钻
         /// </summary>
         public long Coins { get; set; }
         /// <summary>
@@ -62,7 +62,7 @@ namespace YYT.Entity
         /// </summary>
         public int TableID { get; set; }
         /// <summary>
-        /// 金币
+        /// 钻
         /// </summary>
         public long Coins { get; set; }
         /// <summary>

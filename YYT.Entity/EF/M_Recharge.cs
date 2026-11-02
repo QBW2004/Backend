@@ -21,7 +21,7 @@ namespace YYT.Entity
         /// <para>20 充值</para>
         /// <para>21 兑换</para>
         /// <para>22 赠送</para>
-        /// <para>23 扣币</para>
+        /// <para>23 扣钻</para>
         /// <para>24 保险柜存入</para>
         /// <para>25 保险柜取出</para>
         /// <para>26 兑换后 人工拒绝</para>
@@ -38,7 +38,7 @@ namespace YYT.Entity
         /// </summary>
         public EIDType IDType { get; set; }
         /// <summary>
-        /// 充值金币数
+        /// 充值钻数
         /// </summary>
         public long? Coin { get; set; }
         /// <summary>

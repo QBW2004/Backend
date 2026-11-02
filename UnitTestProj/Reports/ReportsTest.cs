@@ -54,7 +54,7 @@ namespace UnitTestProj.Reports
             using (var ef = new GameDbContext())
             {
                 reports.CoinReports(ef);
-                Assert.AreEqual(reports.reportList.Find(c => c.Title.Equals("总金币")).Val, 322614);
+                Assert.AreEqual(reports.reportList.Find(c => c.Title.Equals("总钻")).Val, 322614);
                 Assert.AreEqual(reports.reportList.Find(c => c.Title.Equals("总充值")).Val, 10429999);
                 Assert.AreEqual(reports.reportList.Find(c => c.Title.Equals("总兑换")).Val, 10000000);
                 Assert.AreEqual(reports.reportList.Find(c => c.Title.Equals("总赢利")).Val, 107385);

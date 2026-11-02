@@ -63,7 +63,7 @@
                  @Html.Raw("arr.push('<a href=\"javascript: void(0)\" class=\"green Lpd5\" onclick=\"EnableGameMoType(\\\'' + rowData.ID + '\\\',1)\">切换真钱模式</a>'); ");
             }
             else {
-                 @Html.Raw("arr.push('<a href=\"javascript: void(0)\" class=\"green Lpd5\" onclick=\"EnableGameMoType(\\\'' + rowData.ID + '\\\',0)\">切换金币模式</a>'); ");
+                 @Html.Raw("arr.push('<a href=\"javascript: void(0)\" class=\"green Lpd5\" onclick=\"EnableGameMoType(\\\'' + rowData.ID + '\\\',0)\">切换钻模式</a>'); ");
             }
             return arr.join('  ');
         }
@@ -71,10 +71,10 @@
             if (value == 1)
                 return '<span>真钱模式</span>';
             else
-                return '<span>金币模式</span>';
+                return '<span>钻模式</span>';
         }
         function EnableGameMoType(id, flag) {
-            confirm('确认' + (flag == 1 ? '切换真钱' : '切换金币') + '模式？', function () {
+            confirm('确认' + (flag == 1 ? '切换真钱' : '切换钻') + '模式？', function () {
                 request('/Game/GameMo/EnableGameMoType', { ID: id, GameMoType: flag }, function (data) {
                     //提示消息
                     showMsg(data);

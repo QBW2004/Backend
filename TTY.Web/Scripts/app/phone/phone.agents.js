@@ -130,7 +130,7 @@
                 return '<div class="search-result-item" data-id="' + M.esc(a.ID) + '" data-name="' + M.esc(a.ID) + '">' +
                     '<div class="search-result-row"><span class="search-result-label">账号</span><span class="search-result-value">' + M.esc(a.ID) + '</span></div>' +
                     '<div class="search-result-row"><span class="search-result-label">邀请码</span><span class="search-result-value">' + M.esc(a.InviteCode || '--') + '</span></div>' +
-                    '<div class="search-result-row"><span class="search-result-label">剩余币</span><span class="search-result-value">' + M.gold(a.COINS) + '</span></div>' +
+                    '<div class="search-result-row"><span class="search-result-label">剩余钻</span><span class="search-result-value">' + M.gold(a.COINS) + '</span></div>' +
                     '<div class="search-result-row"><span class="search-result-label">注册时间</span><span class="search-result-value">' + M.fmtTime(a.CreateTime) + '</span></div>' +
                     '</div>';
             }).join(''));

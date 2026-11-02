@@ -357,7 +357,7 @@
                 {
                     <table border="0" cellpadding="0" cellspacing="0">
                         <tr class="recharge-tip-row">
-                            <td colspan="2">温馨提示：充值或兑换金额会自动换算成金币数量。</td>
+                            <td colspan="2">温馨提示：充值或兑换金额会自动换算成钻数量。</td>
                         </tr>
                     </table>
                 }
@@ -366,18 +366,18 @@
                         <td class="recharge-label">用户账号：</td>
                         <td class="recharge-field">
                             <select id="selUser" name="Val_1" class="account-combo"></select>
-                            <span class="coin-tip">当前剩余金币：<span id="txtCurrentCoins">--</span></span>
+                            <span class="coin-tip">当前剩余钻：<span id="txtCurrentCoins">--</span></span>
                         </td>
                     </tr>
                     <tr id="tr_2" class="hide">
                         <td class="recharge-label">代理账号：</td>
                         <td class="recharge-field">
                             <select id="selAgency" name="Val_2" class="account-combo"></select>
-                            <span class="coin-tip">当前剩余金币：<span id="txtCurrentCoins_agent">--</span></span>
+                            <span class="coin-tip">当前剩余钻：<span id="txtCurrentCoins_agent">--</span></span>
                         </td>
                     </tr>
                     <tr>
-                        <td class="recharge-label">@(isRMB == true ? "金额：" : "金币：")</td>
+                        <td class="recharge-label">@(isRMB == true ? "金额：" : "钻：")</td>
                         <td class="recharge-field">
                             @if (isRMB == true)
                             {

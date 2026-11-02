@@ -196,7 +196,7 @@
             kv('账号', a.ID) +
             kv('层级', M.privName(a.PRIV)) +
             kv('上级代理', a.AGENCY || '--') +
-            kv('剩余金币', M.gold(a.COINS)) +
+            kv('剩余钻', M.gold(a.COINS)) +
             kv('总充值', M.gold(a.RECHARGE)) +
             kv('总兑换', M.gold(a.EXCHANGE)) +
             kv('代理盈亏', M.signed(a.Profit)) +

@@ -63,17 +63,17 @@ namespace YYT.Entity
         public int BET_MIN_DRAW { get; set; }
         
         /// <summary>
-        /// 一次取几币
+        /// 一次取几钻
         /// </summary>
         public int EX_COIN { get; set; }
         
         /// <summary>
-        /// 一个币兑换几分
+        /// 一个钻兑换几分
         /// </summary>
         public int COIN_SC { get; set; }
         
         /// <summary>
-        /// 需要多少币才能进入该房间
+        /// 需要多少钻才能进入该房间
         /// </summary>
         public int COIN_NEED { get; set; }
         
@@ -93,13 +93,13 @@ namespace YYT.Entity
         public int SC_LIMIT_ALL { get; set; }
         
         /// <summary>
-        /// 兑换金币数
+        /// 兑换钻数
         /// </summary>
         public int Game_Mo { get; set; }
 
         /// <summary>
         /// 投注档位配置（逗号分隔）
-        /// 第0位：默认投注金额（不点快捷按钮时的投注金币）
+        /// 第0位：默认投注金额（不点快捷按钮时的投注钻）
         /// 第1-N位：快捷投注按钮
         /// 例如："1,5,10,15,20" 表示默认1，快捷按钮为5,10,15,20
         /// </summary>

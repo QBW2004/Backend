@@ -89,10 +89,10 @@
                 para.EnableLimit = 1;
                 para.LimitVal = $('#numLimit').numberbox('getValue');
                 if (!para.LimitVal || parseInt(para.LimitVal) <= 0) {
-                    $.messager.alert('提示', '请填写正确的金币上限！', 'warning');
+                    $.messager.alert('提示', '请填写正确的钻上限！', 'warning');
                     return;
                 }
-                names.push('金币上限 ' + para.LimitVal);
+                names.push('钻上限 ' + para.LimitVal);
             }
             if ($('#ckRelease').is(':checked')) {
                 para.EnableRelease = 1;
@@ -166,7 +166,7 @@
             switch (value) {
                 case 1: return '<span class="red">点杀</span>';
                 case 2: return '<span style="color:green;">放水</span>';
-                case 3: return '<span style="color:#c90;">金币上限</span>';
+                case 3: return '<span style="color:#c90;">钻上限</span>';
             }
             return value;
         }
@@ -236,9 +236,9 @@
                 <div class="fc-panel">
                     <h4>控制规则（可多选，数值可随时修改重设）</h4>
                     <div class="fc-row">
-                        <label><input type="checkbox" id="ckLimit" /> 金币上限</label>
+                        <label><input type="checkbox" id="ckLimit" /> 钻上限</label>
                         <span class="fc-val"><input id="numLimit" class="easyui-numberbox" data-options="min:1,precision:0,prompt:'如：500'" style="width:120px;" /></span>
-                        <span class="fc-tip">超出部分逐步消耗，玩家金币始终保持在上限以内</span>
+                        <span class="fc-tip">超出部分逐步消耗，玩家钻始终保持在上限以内</span>
                     </div>
                     <div class="fc-row">
                         <label><input type="checkbox" id="ckRelease" /> 放水</label>

@@ -76,7 +76,7 @@ namespace YYT.BLL.EF
                                     ef.Entry(row).State = EntityState.Modified;
                                 }
                             }
-                            // 金币兑换比例
+                            // 钻兑换比例
                             if (row.OptKey.Equals("ExchangeScore"))
                             {
                                 tmpObj = list.Find((_list) => { return _list.OptKey.Equals("ExchangeScore"); });

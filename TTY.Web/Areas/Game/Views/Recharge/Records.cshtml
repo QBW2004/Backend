@@ -65,7 +65,7 @@
             else if (value == 2)
                 return '<span class="red">拒绝处理</span>';
             else if (value == 3)
-                return '<span class="red">拒绝并扣币</span>';
+                return '<span class="red">拒绝并扣钻</span>';
         }
         function fmtOpt(value, rowData, rowIndex) {
             if (rowData.Processed == 4) {
@@ -79,7 +79,7 @@
                     if (rowData.RechargeType == 31) {
                         arr.push('<a class="red" href="javascript:void(0)" onclick="OrderRefuseEx(\'' + rowData.OrderNo + '\',\'' + rowData.GameID + '\',' + rowData.Coin + ',' + rowData.RechargeType + ')">拒绝处理</a>');
                         arr.push('<a class="blue" href="javascript:void(0)" onclick="OrderProcess(\'' + rowData.OrderNo + '\',\'' + rowData.GameID + '\',' + rowData.Coin + ',' + rowData.RechargeType + ')">确认处理</a>');
-                        arr.push('<a class="red" href="javascript:void(0)" onclick="OrderRefuseDelCoins(\'' + rowData.OrderNo + '\',\'' + rowData.GameID + '\',' + rowData.Coin + ',' + rowData.RechargeType + ')">拒绝并扣币</a>');
+                        arr.push('<a class="red" href="javascript:void(0)" onclick="OrderRefuseDelCoins(\'' + rowData.OrderNo + '\',\'' + rowData.GameID + '\',' + rowData.Coin + ',' + rowData.RechargeType + ')">拒绝并扣钻</a>');
                     } else {
                         arr.push('<a class="red" href="javascript:void(0)" onclick="OrderRefuse(\'' + rowData.OrderNo + '\',\'' + rowData.GameID + '\',' + rowData.Coin + ',' + rowData.RechargeType + ')">拒绝处理</a>');
                         arr.push('<a class="blue" href="javascript:void(0)" onclick="ConfirmReCharge(\'' + rowData.OrderNo + '\',\'' + rowData.GameID + '\',' + rowData.Coin + ',' + rowData.RechargeType + ')">确认处理</a>');
@@ -110,7 +110,7 @@
             else if (value == 22)
                 return '后台赠送';
             else if (value == 23)
-                return '后台扣币';
+                return '后台扣钻';
             else if (value == 30)
                 return '前端充值';
             else if (value == 31)
@@ -150,7 +150,7 @@
     }
 
     function OrderRefuseEx(orderNo, id, coin, RechargeType) {
-        confirm('确认拒绝处理账号【' + id + '】的提现，并返还金币？', function () {
+        confirm('确认拒绝处理账号【' + id + '】的提现，并返还钻？', function () {
             request('/Game/Recharge/OrderRefuseEx', { OrderNo: orderNo }, function (data) {
                 //提示消息
                 showMsg(data);
@@ -191,7 +191,7 @@
     }
    
     function OrderRefuseDelCoins(orderNo, id, coin, RechargeType) {
-        confirm('确认拒绝处理账号【' + id + '】兑换并扣币？', function () {
+        confirm('确认拒绝处理账号【' + id + '】兑换并扣钻？', function () {
             request('/Game/Recharge/OrderRefuseDelCoins', { OrderNo: orderNo }, function (data) {
                 //提示消息
                 showMsg(data);
@@ -282,8 +282,8 @@
             <th field="GameID" width="200">用户账号</th>
             <th field="Agency" width="200">所属代理</th>
             <th field="Coin" width="85" formatter="fmtCoins">充值数量</th>
-            <th field="BEF_COINS" width="95" formatter="fmtCoins">充值前金币</th>
-            <th field="AFT_COINS" width="95" formatter="fmtCoins">充值后金币</th>
+            <th field="BEF_COINS" width="95" formatter="fmtCoins">充值前钻</th>
+            <th field="AFT_COINS" width="95" formatter="fmtCoins">充值后钻</th>
             <th field="CreateTimeStr" width="135">充值时间</th>
             <th field="Processed" width="110" formatter="fmtProcessed">处理状态</th>
             <th field="CreateTime" width="230" formatter="fmtOpt">操作</th>

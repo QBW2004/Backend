@@ -77,7 +77,7 @@
     };
 
     /**
-     * 金币显示格式化，与桌面端 top.goldFormat 同口径：
+     * 钻显示格式化，与桌面端 top.goldFormat 同口径：
      * 真金版按兑换率折算成两位小数，否则原样千分位。
      */
     M.gold = function (v) {

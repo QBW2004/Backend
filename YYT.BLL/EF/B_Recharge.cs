@@ -41,11 +41,11 @@ namespace YYT.BLL.EF
         /// </summary>
         protected Msg _msg { get; set; }
         /// <summary>
-        /// 充值/兑换前金币
+        /// 充值/兑换前钻
         /// </summary>
         protected long BeforCoins { get; set; }
         /// <summary>
-        /// 充值/兑换后金币
+        /// 充值/兑换后钻
         /// </summary>
         protected long AfterCoins { get; set; }
         /// <summary>
@@ -271,8 +271,8 @@ namespace YYT.BLL.EF
                     return false;
                 }
 
-                this.AfterCoins = this.DestUser.COINS;// 操作后币数
-                this.BeforCoins = this.DestUser.COINS;// 操作前币数
+                this.AfterCoins = this.DestUser.COINS;// 操作后钻数
+                this.BeforCoins = this.DestUser.COINS;// 操作前钻数
 
                 _msg.code = 1;
                 _msg.content = "OK";
@@ -294,15 +294,15 @@ namespace YYT.BLL.EF
             // 充值账号
             if (this.SrcUser.PRIV != 0)
                 this.SrcUser.COINS -= this.ReChargeDataEntity.Coin;
-            this.SrcUser.RECHARGE += this.ReChargeDataEntity.Coin;// 充值币数
+            this.SrcUser.RECHARGE += this.ReChargeDataEntity.Coin;// 充值钻数
             ef.Admins.Attach(this.SrcUser);
             if (this.SrcUser.PRIV != 0)
                 ef.Entry<M_Admin>(this.SrcUser).Property(c => c.COINS).IsModified = true;
             ef.Entry<M_Admin>(this.SrcUser).Property(c => c.RECHARGE).IsModified = true;
 
             // 被充账号
-            this.DestUser.COINS = this.AfterCoins;                  // 当前币【注意：这里不累加了，上面(见该函数内第一行)已经加过了！！！！】
-            this.DestUser.COINS_BUY += this.ReChargeDataEntity.Coin;// 购币
+            this.DestUser.COINS = this.AfterCoins;                  // 当前钻【注意：这里不累加了，上面(见该函数内第一行)已经加过了！！！！】
+            this.DestUser.COINS_BUY += this.ReChargeDataEntity.Coin;// 购钻
             if (this.ReChargeDataEntity.AdminType != EAdminType.None)
             {
                 // 给代理充
@@ -327,15 +327,15 @@ namespace YYT.BLL.EF
             // 充值账号
             if (this.SrcUser.PRIV != 0)
                 this.SrcUser.COINS -= this.ReChargeDataEntity.Coin;
-            this.SrcUser.RECHARGE += this.ReChargeDataEntity.Coin;// 充值币数
+            this.SrcUser.RECHARGE += this.ReChargeDataEntity.Coin;// 充值钻数
             ef.Admins.Attach(this.SrcUser);
             if (this.SrcUser.PRIV != 0)
                 ef.Entry<M_Admin>(this.SrcUser).Property(c => c.COINS).IsModified = true;
             ef.Entry<M_Admin>(this.SrcUser).Property(c => c.RECHARGE).IsModified = true;
 
             // 被充账号
-            this.DestUser.COINS = this.AfterCoins;                  // 当前币【注意：这里不累加了，上面(见该函数内第一行)已经加过了！！！！】
-            this.DestUser.COINS_BUY += this.ReChargeDataEntity.Coin;// 购币
+            this.DestUser.COINS = this.AfterCoins;                  // 当前钻【注意：这里不累加了，上面(见该函数内第一行)已经加过了！！！！】
+            this.DestUser.COINS_BUY += this.ReChargeDataEntity.Coin;// 购钻
                                                                     // 给用户充
             ef.Users.Attach(this.DestUser);
             DbEntityEntry<M_Users> destUserEntry = ef.Entry<M_Users>(this.DestUser);
@@ -356,7 +356,7 @@ namespace YYT.BLL.EF
             // 充值账号
             if (this.SrcUser.PRIV != 0)
                 this.SrcUser.COINS += this.ReChargeDataEntity.Coin;
-            this.SrcUser.EXCHANGE += this.ReChargeDataEntity.Coin;// 充值人兑换币数
+            this.SrcUser.EXCHANGE += this.ReChargeDataEntity.Coin;// 充值人兑换钻数
             ef.Admins.Attach(this.SrcUser);
             if (this.SrcUser.PRIV != 0)
                 ef.Entry<M_Admin>(this.SrcUser).Property(c => c.COINS).IsModified = true;
@@ -364,7 +364,7 @@ namespace YYT.BLL.EF
 
             // 被充账号
             this.DestUser.COINS = this.AfterCoins;
-            this.DestUser.COINS_BACK += this.ReChargeDataEntity.Coin;// 总币
+            this.DestUser.COINS_BACK += this.ReChargeDataEntity.Coin;// 总钻
             if (this.ReChargeDataEntity.AdminType != EAdminType.None)
             {
                 // 给代理、副管兑换
@@ -395,8 +395,8 @@ namespace YYT.BLL.EF
             if (_msg.code > 0)
             {
                 //  消息示例：
-                //      {充值}成功！已向{用户}{充值}{100}个金币。{充值}前{10}，{充值}后：{110}。
-                //      {兑换}成功！已向{代理}{兑换}{50}个金币。{兑换}前{100}，{兑换}后：{150}。
+                //      {充值}成功！已向{用户}{充值}{100}个钻。{充值}前{10}，{充值}后：{110}。
+                //      {兑换}成功！已向{代理}{兑换}{50}个钻。{兑换}前{100}，{兑换}后：{150}。
 
                 StringBuilder sb = new StringBuilder();
                 sb.Append($"{this.OptStr}成功！已向");
@@ -522,7 +522,7 @@ namespace YYT.BLL.EF
                             else if (this.ReChargeDataEntity.RechargeType == 3)
                             {
                                 // 充值
-                                this.OptStr = "扣币";
+                                this.OptStr = "扣钻";
                                 this.ExChange(ef);
                             }
                             else
@@ -737,13 +737,13 @@ namespace YYT.BLL.EF
             //{
             //    type = 0;
             //}
-            //if (type == 3)//扣币
+            //if (type == 3)//扣钻
             //{
             //    type = 1;
             //}
             try
             {
-                // 发送解锁用户指令  指令内容：UL + 充值0/兑换1+操作结果失败0/成功1  +充值金币数+"/"+ 玩家账号
+                // 发送解锁用户指令  指令内容：UL + 充值0/兑换1+操作结果失败0/成功1  +充值钻数+"/"+ 玩家账号
                 // 手机端同样直发：UL 带回本次充值结果，必须立即下发，不能等定时重试（最长 60s 才生效）。
                 // 失败时 UnlockPlayer 已记录发件箱失败记录，由重试服务补偿。
                 srvCode = this.GameServerClient.UnlockPlayer(type, val, this.ReChargeDataEntity.Coin, this.DestUser.ID);
