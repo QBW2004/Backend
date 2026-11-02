@@ -1,0 +1,24 @@
+﻿<section id="rabbitConfig" style="display:none;">
+    <div class="gc-section-title">大白兔独立玩法规则</div>
+    <div class="gc-hint">大白兔的正宗倍率、五枚赠送、连庄、过关/爆机、留机次数和全兔赛跑按本桌独立保存。服务端按完整 JSON 校验；保存后由中心服推送，下一局生效。活动编号只能递增，避免重启后重复发放旧额度。</div>
+    <textarea id="rabbitConfigJson" style="width:100%;height:260px;box-sizing:border-box;font-family:Consolas,monospace;font-size:12px;"></textarea>
+    <div style="margin-top:8px;">
+        <button type="button" id="rabbitConfigLoad" class="easyui-linkbutton">重新载入</button>
+        <button type="button" id="rabbitConfigSave" class="easyui-linkbutton">保存并推送</button>
+        <span id="rabbitConfigStatus" class="gc-hint"></span>
+    </div>
+</section>
+<script>
+window.RABBIT_CONFIG_URLS={get:'@Url.Action("GetRabbitConfig", "GameConfig", new { area = "Game" })',save:'@Url.Action("SaveRabbitConfig", "GameConfig", new { area = "Game" })'};
+(function($){
+    var busy=false;
+    function token(){return $('input[name="__RequestVerificationToken"]').first().val()||'';}
+    function table(){var id=parseInt($('#gcId').val(),10);return id>=0?id%1000:-1;}
+    function setStatus(text,bad){$('#rabbitConfigStatus').text(text).css('color',bad?'#a33d3d':'#168052');}
+    function load(){var t=table();if(t<0)return;busy=true;setStatus('载入中…',false);$.post(RABBIT_CONFIG_URLS.get,{tableIndex:t,__RequestVerificationToken:token()},function(data){busy=false;if(data&&data.code===1){$('#rabbitConfigJson').val(JSON.stringify(data.config,null,2));setStatus('已载入本桌规则。',false);}else setStatus((data&&data.content)||'载入失败。',true);},'json').fail(function(){busy=false;setStatus('后台连接失败。',true);});}
+    function save(){var t=table(),json=$('#rabbitConfigJson').val();if(busy||t<0||!json)return;var parsed;try{parsed=JSON.parse(json);}catch(e){setStatus('JSON 格式无效：'+e.message,true);return;}busy=true;setStatus('保存并推送中…',false);$.post(RABBIT_CONFIG_URLS.save,{tableIndex:t,configJson:JSON.stringify(parsed),__RequestVerificationToken:token()},function(data){busy=false;setStatus((data&&data.content)||'保存失败。',!data||data.code!==1);},'json').fail(function(){busy=false;setStatus('后台连接失败。',true);});}
+    window.rabbitConfigClear=function(){$('#rabbitConfig').hide();$('#rabbitConfigJson').val('');setStatus('',false);};
+    window.rabbitConfigLoad=function(){window.rabbitConfigClear();if(parseInt($('#gcGameId').val(),10)!==55)return;$('#rabbitConfig').show();load();};
+    $(function(){$('#rabbitConfigLoad').on('click',load);$('#rabbitConfigSave').on('click',save);});
+})(jQuery);
+</script>

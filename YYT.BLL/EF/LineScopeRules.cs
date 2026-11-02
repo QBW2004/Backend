@@ -130,6 +130,7 @@ namespace YYT.BLL.EF
                 case 15: return 53;
                 case 16: return 16;
                 case 19: return 54;
+                case 20: return 55;
                 default: return 0;
             }
         }

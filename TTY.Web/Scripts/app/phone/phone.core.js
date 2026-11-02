@@ -79,7 +79,7 @@
             var fixed = Math.abs(val).toFixed(2);
             return (val < 0 ? '-' : '') + fixed;
         }
-        return M.num(n);
+        return Number(n.toFixed(8)).toString();
     };
 
     /**
@@ -489,7 +489,7 @@
         return 'phenix';
     }
 
-    // 牌机型(5-14)牌型下拉：杂牌(0)/五鬼(12)不提供，大四梅(8)仅火凤凰(14)保留；99=关闭控制。
+    // 牌机型(5-14/20大白兔)牌型下拉：杂牌(0)/五鬼(12)不提供，大四梅(8)仅火凤凰(14)/大白兔(20)保留；99=关闭控制。
     // 与电脑端 UserInfo/Index.cshtml 的 valSelDataPAIJI 同一口径（大字板五鬼已下线，与服务端 AlgProb 封死一致）
     function cardTypeDataForPaiji(action) {
         var mags = TC_MAG_TAB[tcMagKey(action)];
@@ -497,12 +497,13 @@
         for (var i = 0; i < TC_CARD_TYPES.length; i++) {
             var t = TC_CARD_TYPES[i];
             if (t.ht == 0 || t.ht == 12) continue;
-            if (t.ht == 8 && action != 14) continue;
+            if (t.ht == 8 && action != 14 && action != 20) continue;
             arr.push({ id: t.ht, text: t.name + '(' + mags[t.ht] + '倍)' });
         }
-        // 火凤凰(14)扩展控牌：正宗大四梅 x1~x6，控牌值 13-18（服务端 AlgProb 按 ctrl_value-12 取倍数）
-        if (action == 14) {
-            for (var k = 1; k <= 6; k++)
+        // 火凤凰(14)扩展控牌：正宗大四梅 x1~x6（控牌值 13-18）；大白兔(20) x1~x14（控牌值 13-26，
+        // 服务端 MTH_DABAITU 放开到 26），AlgProb 按 ctrl_value-12 取倍数
+        if (action == 14 || action == 20) {
+            for (var k = 1; k <= (action == 20 ? 14 : 6); k++)
                 arr.push({ id: 12 + k, text: '正宗大四梅X' + k + '(' + (80 * k) + '倍)' });
         }
         arr.push({ id: 99, text: '关闭控制' });
@@ -597,15 +598,15 @@
 
     // 控牌指令类型与平台 gameID 不同：19=麻将胡了(gameID 54)，18 保留旧水果牌机。
     M.CARD_ACTIONS = [
-        { id: 5, text: '大字版' }, { id: 7, text: '点石成金' }, { id: 8, text: 'ATT满花版' }, { id: 12, text: '金皇冠' },
-        { id: 13, text: 'NBA' }, { id: 14, text: '火凤凰' },
+        { id: 5, text: '大字版' }, { id: 7, text: '点石成金' }, { id: 8, text: 'ATT满花版' },
+        { id: 13, text: 'NBA' }, { id: 20, text: '大白兔' }, { id: 14, text: '火凤凰' },
         { id: 15, text: '水浒传' }, { id: 16, text: '明星97' }, { id: 17, text: '水果拉霸' },
         { id: 19, text: '麻将胡了' }
     ];
 
     // 代理线隔离（2026-10-30）：控牌游戏下拉只列登录账号所在线可玩的游戏（MConfig.playableGames 为 null 表示不限）；
     // M.CARD_ACTIONS 本身保持完整，历史控牌记录的游戏名回显不受影响。控牌指令号 → GameId 与中心服 cardActionToGameId 同口径。
-    var CARD_ACTION_GAME = { 5: 15, 7: 37, 8: 25, 12: 14, 13: 44, 14: 5, 15: 53, 16: 16, 17: 40, 19: 54 };
+    var CARD_ACTION_GAME = { 5: 15, 7: 37, 8: 25, 12: 14, 13: 44, 14: 5, 15: 53, 16: 16, 17: 40, 19: 54, 20: 55 };
     M.playableCardActions = function (list) {
         var pg = window.MConfig && window.MConfig.playableGames;
         if (!pg) return list;
@@ -616,7 +617,7 @@
     };
 
     // 历史控牌游戏名兼容表；当前可选列表优先，游戏暂时移出列表时仍能回显。
-    var CARD_ACTION_NAMES_OFFLINE = { 15: '水浒传', 16: '明星97', 17: '水果拉霸' };
+    var CARD_ACTION_NAMES_OFFLINE = { 12: '金皇冠', 15: '水浒传', 16: '明星97', 17: '水果拉霸' };
 
     /** 控牌游戏(GameId/cardAction) -> 名称，如 5 -> “大字版” */
     M.cardActionName = function (action) {
@@ -656,7 +657,7 @@
         for (var i = 0; i < rows.length; i++)
             if (rows[i].id == value) return rows[i].text;
         // 牌机：已隐藏牌型（杂牌0 / 大四梅8 / 五鬼12）不在下拉里，但历史控牌值按该游戏倍率表回显
-        if (action >= 5 && action <= 14) {
+        if ((action >= 5 && action <= 14) || action == 20) {
             var mags = TC_MAG_TAB[tcMagKey(action)];
             for (var j = 0; j < TC_CARD_TYPES.length; j++)
                 if (TC_CARD_TYPES[j].ht == value) return TC_CARD_TYPES[j].name + '(' + mags[value] + '倍)';
@@ -810,8 +811,7 @@
                 '<div><span>最后登录</span><b>' + M.esc(M.fmtTime(a.LastLoginTime, true)) + '</b></div>' +
                 '<div><span>邀请码</span><b>' + M.esc(a.InviteCode || '--') + '</b></div>' +
                 '<div><span>上级代理</span><b>' + M.esc(a.AGENCY || '--') + '</b></div>' +
-                '<div><span>可玩游戏</span><b>' + M.esc(a.PlayableGameNames || '不限') + '</b></div>' +
-                '<div><span>剩余币</span><b class="blue-text">' + M.gold(a.COINS) + '</b></div>' +
+                '<div><span>剩余钻</span><b class="blue-text">' + M.gold(a.COINS) + '</b></div>' +
                 '<div><span>剩余分</span><b>' + M.num(a.RemainingScore || 0) + '</b></div>' +
                 '<div class="agent-create-child-row"><span>创建下级</span><label class="m-switch"><input type="checkbox" id="agentCreateChild" ' + (Number(a.IsCreateAgent) === 1 ? 'checked' : '') + '><span></span></label><span class="agent-save-state" id="agentSaveState"></span></div>' +
                 '</div>';
@@ -819,11 +819,10 @@
                 title: '代理详细信息',
                 bodyHTML: body,
                 actionsInline: true,
-                actions: (window.MConfig && window.MConfig.perms && window.MConfig.perms.isSuper && Number(a.PRIV) === 1
-                    ? [{ label: '可玩游戏', value: 'playable', type: 'secondary' }] : []).concat([
+                actions: [
                     { label: '流水', value: 'flow', type: 'secondary' },
                     { label: '充值', value: 'recharge', type: 'primary' }
-                ]),
+                ],
                 buttons: [{ label: '关闭', value: null, type: 'confirm' }],
                 onRender: function ($modal) {
                     var $toggle = $modal.find('#agentCreateChild');
@@ -853,9 +852,6 @@
                 }
             });
             dlg.then(function (value) {
-                if (value === 'playable')
-                    M.editPlayableGames(a.ID);
-                else
                 if (value === 'flow')
                     window.location.href = '/Mobile/Home/AgentFlow?id=' + encodeURIComponent(a.ID);
                 else if (value === 'recharge')
@@ -864,46 +860,6 @@
         });
     };
 
-    /**
-     * 超管修改直属代理的玩家可玩游戏（2026-10-30）：整条线只能玩、只能看到勾选的游戏，至少勾选一款。
-     */
-    M.editPlayableGames = function (id) {
-        M.loading('查询可玩游戏...');
-        return M.post('/Game/AgencyInfo/GetPlayableGames', { ID: id }).always(M.hideLoading).then(function (res) {
-            var r = M.result(res);
-            if (!r.ok || !r.datas) {
-                M.alert(r.text, false, '查询失败');
-                return;
-            }
-            var selected = r.datas.Selected;
-            var body = '<div class="playable-grid">' + $.map(r.datas.Games || [], function (g) {
-                var on = !selected || selected.indexOf(g.GameId) >= 0;
-                return '<label class="playable-chip"><input type="checkbox" value="' + g.GameId + '"' + (on ? ' checked' : '') + '><span>' + M.esc(g.Name) + '</span></label>';
-            }).join('') + '</div><div class="playable-hint">整条线（该代理及其下级代理、玩家）只能玩、只能看到勾选的游戏，玩家下次进入游戏时生效。</div>';
-            var picked = '';
-            M.modal({
-                title: '玩家可玩游戏',
-                subtitle: id,
-                bodyHTML: body,
-                buttons: [{ label: '取消', value: null }, { label: '保存', value: 'save', type: 'confirm' }],
-                beforeClose: function (value, $modal) {
-                    if (value !== 'save') return true;
-                    picked = $modal.find('.playable-grid input:checked').map(function () { return this.value; }).get().join(',');
-                    if (!picked) {
-                        M.toast('请至少勾选一款玩家可玩游戏', 'error');
-                        return false;
-                    }
-                    return true;
-                }
-            }).then(function (value) {
-                if (value !== 'save') return;
-                M.post('/Game/AgencyInfo/SavePlayableGames', { ID: id, PlayableGames: picked }).then(function (saveRes) {
-                    var s = M.result(saveRes);
-                    M.toast(s.ok ? '保存成功' : s.text, s.ok ? 'success' : 'error');
-                });
-            });
-        });
-    };
     /* ---------------- 抽屉 ---------------- */
 
     M.openDrawer = function () {
@@ -1018,7 +974,7 @@
                 var account = row.ID || '';
                 rowMap[String(account)] = row;
                 var secondary = rowKind === 'player' ? (row.NAME || '') : (row.AGENCY || '');
-                var coins = row.COINS == null ? '' : M.gold(row.COINS) + '币';
+                var coins = row.COINS == null ? '' : M.gold(row.COINS) + '钻';
                 return '<div class="m-account-suggest-item" data-account="' + M.esc(account) + '">' +
                     '<span class="m-account-suggest-account">' + highlight(account, keyword) + '</span>' +
                     '<span class="m-account-suggest-secondary">' + M.esc(secondary) + '</span>' +

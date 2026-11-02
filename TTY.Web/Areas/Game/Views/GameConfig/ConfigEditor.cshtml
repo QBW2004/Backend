@@ -61,6 +61,11 @@
         .gc-para-empty-text { font-size: 13px; color: #9aa4b1; max-width: 380px; margin: 0 auto; line-height: 1.7; }
         .gc-switch-inline { display: flex; align-items: center; height: 36px; gap: 12px; }
         .gc-switch-inline .gc-switch-label { margin-left: 0; }
+        .gc-batch-create { padding: 22px 24px 18px; color: #36404a; font-size: 13px; }
+        .gc-batch-create-row { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 15px; }
+        .gc-batch-create-row .textbox { width: 90px !important; }
+        .gc-batch-create-tip { margin-top: 14px; color: #8a94a3; line-height: 1.7; text-align: center; }
+        .gc-batch-create-foot { margin-top: 18px; text-align: center; }
     </style>
 }
 <div class="gc-wrap">
@@ -149,21 +154,21 @@
                         </div>
                     </div>
                     <div class="gc-form-row">
-                        <!-- 兑换单位/兑换金币数：全类型(押注/牌机/鱼机/拉霸)隐藏，仅随表单提交保留（gcFill 仍按 base 行值回填，保存写回原值，功能保留） -->
+                        <!-- 兑换单位/兑换钻数：全类型(押注/牌机/鱼机/拉霸)隐藏，仅随表单提交保留（gcFill 仍按 base 行值回填，保存写回原值，功能保留） -->
                         <div class="gc-field" style="display:none">
                             <label>兑换单位</label>
                             <input type="number" id="gcExCoin" name="EX_COIN" class="gc-input" min="1" value="1" />
                         </div>
                         <div class="gc-field">
-                            <label>每个游戏币对应的分值</label>
+                            <label>每个钻对应的分值</label>
                             <input type="number" id="gcCoinSc" name="COIN_SC" class="gc-input" min="1" value="1" />
                         </div>
                         <div class="gc-field" style="display:none">
-                            <label>兑换金币数</label>
+                            <label>兑换钻数</label>
                             <input type="number" id="gcGameMo" name="Game_Mo" class="gc-input" min="0" value="0" />
                         </div>
                         <div class="gc-field">
-                            <label>进入房间所需金币</label>
+                            <label>进入房间所需钻</label>
                             <input type="number" id="gcCoinNeed" name="COIN_NEED" class="gc-input" min="0" value="0" />
                         </div>
                         <div class="gc-field gc-only-1 gc-only-2 gc-only-3">
@@ -193,7 +198,7 @@
                         </div>
                         <div class="gc-form-row gc-bet-banker-row">
                             <div class="gc-field">
-                                <label>申请当庄所需最低金币（0=关闭抢庄）</label>
+                                <label>申请当庄所需最低钻（0=关闭抢庄）</label>
                                 <input type="number" id="gcBankerScNeed" name="BANKER_SC_NEED" class="gc-input" min="0" step="1" value="500000" />
                             </div>
                         </div>
@@ -469,6 +474,7 @@
 
                     @Html.Partial("_LabaWeights")
                     @Html.Partial("_MjhlWeights")
+                    @Html.Partial("_RabbitConfig")
                     <div class="gc-common">
                     <div class="gc-section-title">玩法与闲置处理</div>
                     <div class="gc-form-row">
@@ -490,6 +496,21 @@
     </div>
 </div>
 
+<div id="gcNewTableWin" style="display:none;">
+    <div class="gc-batch-create">
+        <div class="gc-batch-create-row">
+            <span>新建</span>
+            <input id="gcNewTableCount" class="easyui-numberbox" value="1" data-options="min:1,max:1000,precision:0" />
+            <span>张桌台</span>
+        </div>
+        <div class="gc-batch-create-tip">确认后会沿用当前页面的基础参数；点击“保存并热更新”后一次创建指定数量的桌台。</div>
+        <div class="gc-batch-create-foot">
+            <button type="button" id="gcNewTableCancel" class="gc-btn gc-btn-default">取消</button>
+            <button type="button" id="gcNewTableConfirm" class="gc-btn gc-btn-primary">确定</button>
+        </div>
+    </div>
+</div>
+
 <script>
     var GC_URL = {
         gameList: '@Url.Action("GetGameList", "GameConfig", new { area = "Game" })',
@@ -502,6 +523,9 @@
     };
     var GC_GAMES = [];
     var GC_TABLES = [];
+    var GC_NEW_TABLE_COUNT = 1;
+    var GC_BATCH_SAVING = false;
+    var GC_NEW_TABLE_MAX = 1000;
     var GC_TYPE_META = [
         { v: 2, t: '鱼机类型' },
         { v: 0, t: '押注类型' },
@@ -580,10 +604,11 @@
         });
     }
 
-    // 加芬幅度归一化: 鱼机(2) 最小 0.1, 其它类型最小 1 且必须整数
+    // 加分幅度归一化：鱼机(2) 和麻将胡了(54，参数类型3)支持一位小数，
+    // 其它牌机/拉霸类型最小 1 且必须整数。
     function gcNormSs(val, type) {
         var v = parseFloat(val);
-        if (type === 2) {
+        if (type === 2 || (type === 3 && gcIsMjhl())) {
             if (isNaN(v) || v < 0.1) v = 0.1;
             return Math.round(v * 10) / 10;
         }
@@ -696,7 +721,7 @@
     function gcSelectTableById(id) {
         var found = -1;
         $.each(GC_TABLES, function (i, t) { if (parseInt(t.id, 10) === parseInt(id, 10)) found = i; });
-        if (found < 0) { gcNewTable(); return; }
+        if (found < 0) { gcPrepareNewTableForm(1); return; }
         $('#gcTableList li').removeClass('active');
         $('#gcTableList li[data-idx="' + found + '"]').addClass('active');
         gcFill(GC_TABLES[found]);
@@ -750,9 +775,9 @@
                 $('#gcMaxBetLbl').text('最大押分');
             }
             $('#gcScoreSwitchLbl').text((type === 1 || type === 3) ? '每次增加的分值' : '每次提升的炮值（0.1-0.9）');
-            var gcSsMin = (type === 2) ? 0.1 : 1;
-            $('#gcScoreSwitch').attr('step', (type === 2) ? '0.1' : '1');
-            $('#gcScoreSwitch').attr('min', (type === 2) ? '0.1' : '1');
+            var gcSsDecimal = (type === 2 || (type === 3 && gcIsMjhl()));
+            $('#gcScoreSwitch').attr('step', gcSsDecimal ? '0.1' : '1');
+            $('#gcScoreSwitch').attr('min', gcSsDecimal ? '0.1' : '1');
             $('#gcScoreSwitch').val(gcNormSs($('#gcScoreSwitch').val(), type));
             if (type === 1 && $('#gcPayoutTable tbody tr').length === 0) gcBuildPayoutTable();
             if (type === 1) gcUpdateJpBox(); else $('#gcJpBox').hide();
@@ -822,7 +847,7 @@
             else if (gameType === 3) {
                 if (GC_TABLES.length > 0) gcSelectTableById(GC_TABLES[0].id);
             }
-            else gcNewTable();
+            else gcPrepareNewTableForm(1);
         });
     }
 
@@ -875,6 +900,7 @@
         }
         if (window.labaWeightsLoad) window.labaWeightsLoad();
         if (window.mjhlWeightsLoad) window.mjhlWeightsLoad();
+        if (window.rabbitConfigLoad) window.rabbitConfigLoad();
         $('#gcCurTableName').text('当前编辑：' + t.tableName);
         gcSyncSwitch();
         gcUpdateSaveBtn();
@@ -929,7 +955,12 @@
     function gcResetForm() {
         gcZeroForm();
         if (gcGetType() !== 3) return;          // 非拉霸维持原"清空=默认"
-        // 拉霸可见的押分/兑换默认（最小/最大押分 1、每个游戏币分值 1、进房金币 1、加炮分值 1；与新建桌台一致）
+        if (gcIsMjhl()) {
+            // 麻将胡了默认 0.4～20 分、每次增加 0.1 分，与新建桌台保持一致。
+            gcApplyCardDefaults();
+            return;
+        }
+        // 拉霸可见的押分/兑换默认（最小/最大押分 1、每个钻分值 1、进房钻 1、加炮分值 1；与新建桌台一致）
         $('#gcMinBet').val(1);
         $('#gcMaxBet').val(1);
         $('#gcCoinSc').val(1);
@@ -937,7 +968,29 @@
         $('#gcScoreSwitch').val(1);
     }
 
-    function gcNewTable() {
+    function gcOpenNewTableDialog() {
+        openWin({
+            winId: '#gcNewTableWin',
+            title: '【新建桌台】',
+            height: 245,
+            width: 430,
+            iconCls: 'icon-add',
+            callBack: function () {
+                var $count = $('#gcNewTableCount');
+                if (!$count.data('numberbox')) $count.numberbox({ min: 1, max: GC_NEW_TABLE_MAX, precision: 0 });
+                $count.numberbox('setValue', GC_NEW_TABLE_COUNT > 0 ? GC_NEW_TABLE_COUNT : 1);
+            }
+        });
+    }
+
+    function gcReadNewTableCount() {
+        var $count = $('#gcNewTableCount');
+        var value = $count.data('numberbox') ? Number($count.numberbox('getValue')) : Number($count.val());
+        if (!isFinite(value) || Math.floor(value) !== value || value < 1 || value > GC_NEW_TABLE_MAX) return 0;
+        return value;
+    }
+
+    function gcPrepareNewTableForm(count) {
         var type = gcGetType();
         if (gcCurLine()) {
             showToast('专属桌台请用「从公共桌台复制一套」生成，不能直接新建！', 'warning');
@@ -957,14 +1010,40 @@
             $('#gcEnabled').prop('checked', true);
             if (type === 1 || type === 3) gcApplyCardDefaults();
         }
+        GC_NEW_TABLE_COUNT = count || 1;
         $('#gcId').val(-1);
         $('#gcGameId').val(isNaN(gameId) ? -1 : gameId);
         $('#gcGameType').val(type);
         $('#gcTableName').val('');
         gcApplyType();
-        $('#gcCurTableName').text(src ? '新建桌台（已套用最近桌台基础参数，填写桌名即可保存；中奖权重须单独设置）' : '新建桌台（保存基础信息后设置中奖权重）');
+        $('#gcCurTableName').text(src
+            ? '新建' + GC_NEW_TABLE_COUNT + '张桌台（已套用最近桌台基础参数，填写桌名后保存；中奖权重须单独设置）'
+            : '新建' + GC_NEW_TABLE_COUNT + '张桌台（保存基础信息后设置中奖权重）');
         gcSyncSwitch();
         gcUpdateSaveBtn();
+    }
+
+    function gcNewTable() {
+        var type = gcGetType();
+        if (gcCurLine()) {
+            showToast('专属桌台请用「从公共桌台复制一套」生成，不能直接新建！', 'warning');
+            return;
+        }
+        if (type != 0 && type != 1 && type != 2 && type != 3) {
+            showToast('请先选择游戏类型与游戏！', 'warning');
+            return;
+        }
+        gcOpenNewTableDialog();
+    }
+
+    function gcConfirmNewTable() {
+        var count = gcReadNewTableCount();
+        if (!count) {
+            showToast('新建数量必须是 1~' + GC_NEW_TABLE_MAX + ' 的整数！', 'warning');
+            return;
+        }
+        $('#gcNewTableWin').dialog('close');
+        gcPrepareNewTableForm(count);
     }
 
     // 牌机/拉霸新桌台默认值（715Web 文档：下注与兑换）；拉霸最小/最大押分只能整数，默认 1
@@ -1671,7 +1750,51 @@
         return '';
     }
 
+    function gcReloadAfterNewTables() {
+        gcLoadTables(function () {
+            if (GC_TABLES.length > 0) gcSelectTableById(gcLatestTable().id);
+            else gcPrepareNewTableForm(1);
+        });
+    }
+
+    // 批量新建仍复用单桌保存接口，按顺序提交，确保 AllocTableId 每次都读取到上一张新桌。
+    // 不在前端复制各游戏类型的落库规则，继续沿用原有事务、校验和热更新逻辑。
+    function gcSaveNewTables(basePara, count) {
+        var completed = 0;
+        GC_BATCH_SAVING = true;
+        $('#gcSave').prop('disabled', true).text('正在新建 0/' + count + ' 张');
+
+        function finish(data) {
+            GC_BATCH_SAVING = false;
+            $('#gcSave').prop('disabled', false);
+            gcUpdateSaveBtn();
+            gcMsg(data || { code: 0, content: '批量新建失败！' });
+            gcReloadAfterNewTables();
+        }
+
+        function saveNext() {
+            var para = $.extend({}, basePara, { ID: -1 });
+            request(GC_URL.save, para, function (data) {
+                if (!data || !(data.code == 1 || data.datas === true)) {
+                    var reason = data && (data.msg || data.content) ? (data.msg || data.content) : '服务器未返回成功结果';
+                    finish({ code: 0, content: '已成功新建 ' + completed + '/' + count + ' 张桌台；第 ' + (completed + 1) + ' 张失败：' + reason });
+                    return;
+                }
+                completed++;
+                $('#gcSave').text('正在新建 ' + completed + '/' + count + ' 张');
+                if (completed < count) {
+                    saveNext();
+                    return;
+                }
+                finish({ code: 1, content: '成功新建 ' + completed + ' 张桌台！' });
+            });
+        }
+
+        saveNext();
+    }
+
     function gcSave() {
+        if (GC_BATCH_SAVING) return;
         var type = gcGetType();
         if (type != 0 && type != 1 && type != 2 && type != 3) {
             showToast('请先选择游戏类型与对应游戏的桌台！', 'warning');
@@ -1706,9 +1829,11 @@
         }
         if (type === 1 || type === 2 || type === 3) { // gcCardStepInvalid
             var gcSs = parseFloat($('#gcScoreSwitch').val());
-            var gcSsBad = (type === 2) ? (isNaN(gcSs) || gcSs < 0.1) : (isNaN(gcSs) || gcSs < 1 || Math.floor(gcSs) !== gcSs);
+            var gcSsBad = (type === 2 || (type === 3 && gcIsMjhl()))
+                ? (isNaN(gcSs) || gcSs < 0.1)
+                : (isNaN(gcSs) || gcSs < 1 || Math.floor(gcSs) !== gcSs);
             if (gcSsBad) {
-                showToast((type === 2) ? '加芬幅度必须大于 0，鱼机最小 0.1!' : '加芬幅度必须为大于等于 1 的整数!', 'warning');
+                showToast((type === 2 || (type === 3 && gcIsMjhl())) ? '加分幅度必须大于 0，最小 0.1!' : '加分幅度必须为大于等于 1 的整数!', 'warning');
                 return;
             }
         }
@@ -1732,7 +1857,7 @@
         var wasNew = isNaN(savedId) || savedId < 0;
         // 已分配专属桌台后再新建公共桌台：新桌号排在专属桌台之后，旧版客户端按连续位置取配置，进不了这张桌，先确认
         if (wasNew && !gcCurLine() && GC_LINE_INFO && (GC_LINE_INFO.Owned > 0 || GC_LINE_INFO.Recycled > 0) && !gcSave.confirmedAppend) {
-            confirm('本游戏已经分配过专属桌台，新建的公共桌台会排在专属桌台之后，旧版客户端进不了这张桌。\n确定继续新建吗？', function () {
+            confirm('本游戏已经分配过专属桌台，新建的公共桌台会排在专属桌台之后，旧版客户端进不了这张桌。\n确定继续新建 ' + GC_NEW_TABLE_COUNT + ' 张吗？', function () {
                 gcSave.confirmedAppend = true;
                 try { gcSave(); } finally { gcSave.confirmedAppend = false; }
             });
@@ -1748,11 +1873,18 @@
             delete para.JP_DIA; delete para.JP_AR;
         }
         para.__RequestVerificationToken = $('#gcForm [name="__RequestVerificationToken"]').val();
+        if (wasNew && GC_NEW_TABLE_COUNT > 1) {
+            gcSaveNewTables(para, GC_NEW_TABLE_COUNT);
+            return;
+        }
         request(GC_URL.save, para, function (data) {
             gcMsg(data);
             if (data && (data.code == 1 || data.datas === true)) {
                 gcLoadTables(function () {
-                    if (wasNew) gcNewTable();
+                    if (wasNew) {
+                        if (GC_TABLES.length > 0) gcSelectTableById(gcLatestTable().id);
+                        else gcPrepareNewTableForm(1);
+                    }
                     else gcSelectTableById(savedId);
                 });
             }
@@ -1806,6 +1938,8 @@
         });
         $('#gcSave').on('click', gcSave);
         $('#gcNewTable').on('click', gcNewTable);
+        $('#gcNewTableConfirm').on('click', gcConfirmNewTable);
+        $('#gcNewTableCancel').on('click', function () { $('#gcNewTableWin').dialog('close'); });
         $('#gcEnabled').on('change', gcSyncSwitch);
         $('#gcPayoutOn').on('change', gcSyncSwitch);
         $('#gcJokerOn').on('change', gcSyncJoker);
@@ -1822,3 +1956,4 @@
         });
     });
 </script>
+

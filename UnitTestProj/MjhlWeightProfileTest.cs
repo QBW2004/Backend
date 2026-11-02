@@ -156,6 +156,9 @@ namespace UnitTestProj
             Assert.IsFalse(view.Contains("gc-only-0 gc-only-3"), "拉霸不再显示一到五级筹码");
             StringAssert.Contains(view, "if (gcGetType() === 3) { $('#gcBetScores').val(''); return; }");
             StringAssert.Contains(view, "function gcMjhlLadderError(");
+            StringAssert.Contains(view, "type === 3 && gcIsMjhl()", "麻将胡了参数类型3必须使用独立的小数步长规则");
+            StringAssert.Contains(view, "attr('step', gcSsDecimal ? '0.1' : '1')", "麻将胡了加分幅度控件必须允许0.1");
+            StringAssert.Contains(view, "var gcSsBad = (type === 2 || (type === 3 && gcIsMjhl()))", "保存校验不能按牌机整数规则拒绝麻将胡了");
 
             string controller = File.ReadAllText(Path.Combine(web, "Areas/Game/Controllers/GameConfigController.cs"));
             int start = controller.IndexOf("if (gameType == 3)", controller.IndexOf("public ActionResult SaveTableConfig"));

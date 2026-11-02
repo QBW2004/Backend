@@ -146,7 +146,7 @@
             return top.goldFormat((v / 10).toFixed(1));
         return top.goldFormat(v);
     }
-    // 剩余分数 = 大厅金币(Coins) + 带进游戏内的分(Score)，即账号总金币
+    // 剩余分数 = 大厅钻(Coins) + 带进游戏内的分(Score)，即账号总钻
     function fmtTotalCoins(value, row) {
         return top.goldFormat((row.Coins || 0) + (row.Score || 0));
     }
@@ -280,7 +280,7 @@
     function showDeduct(uid) {
         var para = {
             winId: '#chgDeduct',
-            title: '【用户扣币】',
+            title: '【用户扣钻】',
             iconCls: 'icon-user-edit',
             callBack: function () {
                 $('#txtE_UID5').textbox('setValue', uid);
@@ -414,7 +414,7 @@
                 loadUserCtrlConfigs(uid, function(data) {
                     if (data && data.length > 0) {
                         var row = data[0];
-                        if (row.CtrlType == 5 || row.CtrlType == 7 || row.CtrlType == 8 || row.CtrlType == 12 || row.CtrlType == 13 || row.CtrlType == 14) {
+                        if (row.CtrlType == 5 || row.CtrlType == 7 || row.CtrlType == 8 || row.CtrlType == 12 || row.CtrlType == 13 || row.CtrlType == 14 || row.CtrlType == 20) {
                             $('#selE_Action').combobox('setValue', row.CtrlType);
                             $('#selE_Type').combobox('setValue', row.CtrlValue);
                             $('#selE_Number').combobox('setValue', row.Number);
@@ -503,7 +503,7 @@
         else if (type == 'total') showTotalCtrlWin(uid);
     }
 
-    @*总控（总点杀/总放水/总控牌），达到金币阈值后自动失效并恢复桌台参数难度*@
+    @*总控（总点杀/总放水/总控牌），达到钻阈值后自动失效并恢复桌台参数难度*@
     function totalModeData() {
         var items = [];
         @if (loginUser.UserPriv == 0 || loginUser.IsKill == 1)
@@ -527,9 +527,8 @@
             { id: 5, text: '大字版', selected: true },
             { id: 7, text: '点石成金' },
             { id: 8, text: 'ATT满花版' },
-            { id: 12, text: '金皇冠' },
             { id: 13, text: 'NBA' },
-            { id: 14, text: '火凤凰' },
+            { id: 20, text: '大白兔' }, { id: 14, text: '火凤凰' },
             { id: 15, text: '水浒传' },
             { id: 16, text: '明星97' },
             { id: 17, text: '水果拉霸' },
@@ -545,7 +544,7 @@
         if (n == 6) {
             $('.trTotalStrength').hide();
             $('.trTotalCard').show();
-            // 控牌按次数控制，不需要金币阈值
+            // 控牌按次数控制，不需要钻阈值
             $('.trTotalGold').hide();
             $('#numGold_Total').numberbox('setValue', 0);
             // 默认次数 1 次、总次数五把之内
@@ -554,7 +553,7 @@
         } else {
             $('.trTotalCard').hide();
             $('.trTotalStrength').show();
-            // 吃分/放分需要金币阈值
+            // 吃分/放分需要钻阈值
             $('.trTotalGold').show();
             if (n == 5) $('#selE_Strength_Total').combobox('loadData', getComboValPut_Total());
             else $('#selE_Strength_Total').combobox('loadData', getComboValKill_Total());
@@ -562,7 +561,7 @@
     }
     function bindTotalCardAction(newValue, oldValue) {
         var n = parseInt(newValue);
-        if (n == 5 || n == 7 || n == 8 || n == 12 || n == 13 || n == 14) {
+        if (n == 5 || n == 7 || n == 8 || n == 12 || n == 13 || n == 14 || n == 20) {
             // 牌机型：按所选游戏动态生成0-12牌型+关闭(99)，倍率与台机设定一致
             $('#selE_Type_Total').combobox('loadData', valSelDataPAIJI(n));
         } else if (n == 15) $('#selE_Type_Total').combobox('loadData', valSelDataShzBoard());
@@ -646,14 +645,14 @@
         var mode = parseInt($('#selE_Mode_Total').combobox('getValue'));
         var para = { ID: uid, Mode: mode };
         if (mode == 6) {
-            // 控牌按次数控制，不需要金币阈值
+            // 控牌按次数控制，不需要钻阈值
             para.GoldThreshold = 0;
             para.CardAction = $('#selE_Action_Total').combobox('getValue');
             para.CardValue = $('#selE_Type_Total').combobox('getValue');
             para.CardNumber = $('#selE_Number_Total').combobox('getValue');
             para.CardTotal = $('#selE_Total_Total').combobox('getValue');
         } else {
-            // 吃分/放分需要金币阈值
+            // 吃分/放分需要钻阈值
             var gold = $('#numGold_Total').numberbox('getValue');
             if (!gold || parseInt(gold) <= 0) {
                 showUserToast('请填写大于 0 的目标！', 'danger');
@@ -848,7 +847,7 @@
         else if (action == 16) list = valSelDataMx97();
         else if (action == 17) list = valSelDataFruit();
         else if (action == 19) list = valSelDataMjhl();
-        else if (action >= 5 && action <= 14) list = valSelDataPAIJI(action);
+        else if ((action >= 5 && action <= 14) || action == 20) list = valSelDataPAIJI(action);
         // 10=关闭 仅拉霸体系；牌机 10=五梅、关闭为 99，均走下方列表解析
         if (value == 10 && list && action >= 15) return '关闭';
         if (list) {
@@ -868,9 +867,8 @@
             { id: 5, text: '大字版', selected: true  },
             { id: 7, text: '点石成金' },
             { id: 8, text: 'ATT满花版' },
-            { id: 12, text: '金皇冠' },
             { id: 13, text: 'NBA' },
-            { id: 14, text: '火凤凰' }
+            { id: 20, text: '大白兔' }, { id: 14, text: '火凤凰' }
         ];
     }
     function valSelData() {
@@ -914,7 +912,7 @@
         return 'phenix';
     }
     // 按 cardAction 动态生成牌机型牌型下拉：99=关闭控制（倍率随游戏类型变化）
-    // 隐藏牌型：杂牌(0)/五鬼(12)对所有牌机都不提供；大四梅(8)仅火凤凰(14)保留
+    // 隐藏牌型：杂牌(0)/五鬼(12)对所有牌机都不提供；大四梅(8)仅火凤凰(14)/大白兔(20)保留
     //（大字板五鬼已下线，与服务端 AlgProb 控制通道封死一致）
     function valSelDataPAIJI(cardAction) {
         var mags = TC_MAG_TAB[tcMagKey(cardAction)];
@@ -922,14 +920,15 @@
         for (var i = 0; i < TC_CARD_TYPES.length; i++) {
             var t = TC_CARD_TYPES[i];
             if (t.ht == 0 || t.ht == 12) continue;
-            if (t.ht == 8 && cardAction != 14) continue;
+            if (t.ht == 8 && cardAction != 14 && cardAction != 20) continue;
             var item = { id: t.ht, text: t.name + '(' + mags[t.ht] + '倍)' };
             if (t.ht == 4) item.selected = true; // 默认选中杂顺
             arr.push(item);
         }
-        // 火凤凰(14)扩展控牌：正宗大四梅 x1~x6，控牌值 13-18（服务端 AlgProb 按 ctrl_value-12 取倍数）
-        if (cardAction == 14) {
-            for (var k = 1; k <= 6; k++)
+        // 火凤凰(14)扩展控牌：正宗大四梅 x1~x6（控牌值 13-18）；大白兔(20) x1~x14（控牌值 13-26，
+        // 服务端 MTH_DABAITU 放开到 26），AlgProb 按 ctrl_value-12 取倍数
+        if (cardAction == 14 || cardAction == 20) {
+            for (var k = 1; k <= (cardAction == 20 ? 14 : 6); k++)
                 arr.push({ id: 12 + k, text: '正宗大四梅X' + k + '(' + (80 * k) + '倍)' });
         }
         arr.push({ id: 99, text: '关闭控制' });
@@ -938,7 +937,7 @@
 
     function bindGameTypePaiJi(newValue, oldValue) {
         if (oldValue && newValue > -1 && newValue != oldValue) {
-            if (newValue == 5 || newValue == 7 || newValue == 8 || newValue == 12 || newValue == 13 || newValue == 14) {
+            if (newValue == 5 || newValue == 7 || newValue == 8 || newValue == 12 || newValue == 13 || newValue == 14 || newValue == 20) {
                 // 牌机型：按所选游戏动态生成0-12牌型+关闭(99)，倍率与台机设定一致
                 $('#selE_Type').combobox('loadData', valSelDataPAIJI(newValue));
             }
@@ -1273,7 +1272,7 @@
                 <td align="right">目标</td>
                 <td align="left" class="pd5">
                     <input class="easyui-numberbox win-txt" id="numGoldLimit1" name="GoldLimit" data-options="min:0,precision:0,prompt:'0=不限制'" style="width:150px;" />
-                    <span style="color:#999;font-size:12px;">金币上限到达后恢复正常吞吐币，0=不限制</span>
+                    <span style="color:#999;font-size:12px;">钻上限到达后恢复正常吞吐钻，0=不限制</span>
                 </td>
             </tr>
             <tr>
@@ -1343,7 +1342,7 @@
                 <td align="right">目标</td>
                 <td align="left" class="pd5">
                     <input class="easyui-numberbox win-txt" id="numGoldLimit3" name="GoldLimitPaiJi" data-options="min:0,precision:0,prompt:'0=不限制'" style="width:150px;" />
-                    <span style="color:#999;font-size:12px;">金币上限到达后恢复正常吞吐币，0=不限制</span>
+                    <span style="color:#999;font-size:12px;">钻上限到达后恢复正常吞吐钻，0=不限制</span>
                 </td>
             </tr>
             <tr>
@@ -1412,7 +1411,7 @@
                 <td align="right">目标</td>
                 <td align="left" class="pd5">
                     <input class="easyui-numberbox win-txt" id="numGoldLimitLaba" name="GoldLimitLaba" data-options="min:0,precision:0,prompt:'0=不限制'" style="width:150px;" />
-                    <span style="color:#999;font-size:12px;">金币上限到达后恢复正常吞吐币，0=不限制</span>
+                    <span style="color:#999;font-size:12px;">钻上限到达后恢复正常吞吐钻，0=不限制</span>
                 </td>
             </tr>
             <tr>
@@ -1426,7 +1425,7 @@
     </form>
 </div>
 
-@*总控窗口（总点杀/总放水/总控牌 + 金币阈值）*@
+@*总控窗口（总点杀/总放水/总控牌 + 钻阈值）*@
 <div id="chgTotalCtrlWin" class="hide">
     <form id="formTotalCtrl">
         <table cellpadding="0" cellspacing="0" border="0" width="100%" align="center">
@@ -1478,7 +1477,7 @@
                 </td>
             </tr>
             <tr class="trTotalGold">
-                <td align="right">目标</td>
+                <td align="right">目标（钻）</td>
                 <td align="left" class="pd5">
                     <input class="easyui-numberbox win-txt" id="numGold_Total" name="GoldThreshold" data-options="min:0,precision:0,prompt:'必填，>0'" style="width:150px;" />
                 </td>
@@ -1513,11 +1512,11 @@
                 <td class="coin-dialog-label">用户账号</td>
                 <td class="pd5 coin-dialog-field">
                     <input class="easyui-textbox win-txt" id="txtE_UID3" disabled />
-                    <span class="dialog-coin-tip">当前剩余金币：<span id="txtCurrentCoins_Recharge">--</span></span>
+                    <span class="dialog-coin-tip">当前剩余钻：<span id="txtCurrentCoins_Recharge">--</span></span>
                 </td>
             </tr>
             <tr>
-                <td class="coin-dialog-label">金币</td>
+                <td class="coin-dialog-label">钻</td>
                 <td class="pd5 coin-dialog-field">
                     <input class="easyui-textbox win-txt" id="txtE_COINS1" name="txtE_COINS1" />
                 </td>
@@ -1532,24 +1531,24 @@
     </form>
 </div>
 
-@*扣币窗口*@
+@*扣钻窗口*@
 <div id="chgDeduct" class="hide">
     <form id="form10" class="coin-dialog-form">
         <table cellpadding="0" cellspacing="0" border="0" class="coin-dialog-table">
             <tr>
                 <td colspan="2" class="coin-dialog-tip">
-                    温馨提示:扣币后即时生效
+                    温馨提示:扣钻后即时生效
                 </td>
             </tr>
             <tr>
                 <td class="coin-dialog-label">用户账号</td>
                 <td class="pd5 coin-dialog-field">
                     <input class="easyui-textbox win-txt" id="txtE_UID5" disabled />
-                    <span class="dialog-coin-tip">当前剩余金币：<span id="txtCurrentCoins_Deduct">--</span></span>
+                    <span class="dialog-coin-tip">当前剩余钻：<span id="txtCurrentCoins_Deduct">--</span></span>
                 </td>
             </tr>
             <tr>
-                <td class="coin-dialog-label">金币</td>
+                <td class="coin-dialog-label">钻</td>
                 <td class="pd5 coin-dialog-field">
                     <input class="easyui-textbox win-txt" id="txtE_COINS3" name="txtE_COINS3" />
                 </td>
@@ -1576,7 +1575,7 @@
         @if (loginUser.UserPriv == 0 || loginUser.IsUpDown == 1)
         {
             <a href="javascript:void(0);" class="menu-btn-item menu-btn-recharge" onclick="menuRecharge()">充值</a>
-            <a href="javascript:void(0);" class="menu-btn-item menu-btn-deduct" onclick="menuDeduct()">扣币</a>
+            <a href="javascript:void(0);" class="menu-btn-item menu-btn-deduct" onclick="menuDeduct()">扣钻</a>
         }
         @if (loginUser.UserPriv == 0 || loginUser.IsKicking == 1)
         {

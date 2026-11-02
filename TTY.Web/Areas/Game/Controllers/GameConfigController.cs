@@ -717,18 +717,20 @@ namespace YYT.Web.Areas.Game.Controllers
                         efCard.Database.ExecuteSqlCommand("DELETE FROM robot_seat WHERE GAME_ID=" + cardGid + " AND TABLE_ID=" + delIdx);
                         efCard.Database.ExecuteSqlCommand("DELETE FROM roomtableconfig_card WHERE GAME_ID=" + cardGid + " AND TableIndex=" + delIdx);
                         efCard.Database.ExecuteSqlCommand("DELETE FROM paracard WHERE GAME_ID=" + cardGid + " AND ID=" + (cardGid * 1000 + delIdx));
+                        efCard.Database.ExecuteSqlCommand("DELETE FROM cardgamecfg WHERE GAME_ID={0} AND TableIndex={1}", cardGid, delIdx);
+                        efCard.Database.ExecuteSqlCommand("UPDATE cardgamecfg SET TableIndex=TableIndex-1 WHERE GAME_ID={0} AND TableIndex>{1} ORDER BY TableIndex", cardGid, delIdx);
                         efCard.Database.ExecuteSqlCommand("DELETE FROM cardpayoutprofile WHERE GAME_ID=" + cardGid + " AND TableId=" + delIdx);
                         // 压实 roomtableconfig.TableIndex 为 0..k-1
                         CompactFishTableIndexes(efCard, cardGid);
-                        efCard.Database.ExecuteSqlCommand("UPDATE robot_seat SET TABLE_ID=TABLE_ID-1 WHERE GAME_ID=" + cardGid + " AND TABLE_ID>" + delIdx);
+                        efCard.Database.ExecuteSqlCommand("UPDATE robot_seat SET TABLE_ID=TABLE_ID-1 WHERE GAME_ID=" + cardGid + " AND TABLE_ID>" + delIdx + " ORDER BY TABLE_ID");
                         // 压实 roomtableconfig_card.TableIndex 高位左移(与 cardpayoutprofile 同思路)
                         efCard.Database.ExecuteSqlCommand(
-                            "UPDATE roomtableconfig_card SET TableIndex=TableIndex-1 WHERE GAME_ID=" + cardGid + " AND TableIndex>" + delIdx);
+                            "UPDATE roomtableconfig_card SET TableIndex=TableIndex-1 WHERE GAME_ID=" + cardGid + " AND TableIndex>" + delIdx + " ORDER BY TableIndex");
                         // 压实 paracard ID 为 gameId*1000+0..k-1，与 roomtableconfig 保持同构
                         CompactCardParaIds(efCard, cardGid);
                         // 压实 cardpayoutprofile.TableId 高位左移
                         efCard.Database.ExecuteSqlCommand(
-                            "UPDATE cardpayoutprofile SET TableId=TableId-1 WHERE GAME_ID=" + cardGid + " AND TableId>" + delIdx);
+                            "UPDATE cardpayoutprofile SET TableId=TableId-1 WHERE GAME_ID=" + cardGid + " AND TableId>" + delIdx + " ORDER BY TableId");
                         // 同步 base 行 NUM = 剩余桌台数 + ROOM_MAX=1
                         LineTables.OnTableDeleted(efCard, cardGid, delIdx);
                         SyncCardTableNum(efCard, cardGid);
@@ -1419,9 +1421,9 @@ namespace YYT.Web.Areas.Game.Controllers
                         // 同步 pararoom base 行的共享参数(EX_COIN/COIN_SC/Game_Mo/scoreSwitch/BET_MIN/BET_MAX)，
                         // 服务端 GetCardPara 按 roomMax=1 只读 base 行(ID=gameId*1000)的这些字段，
                         // 必须与本次提交值一致，否则服务端读到的是旧值或自动补建的默认值。
-                        // 注意：COIN_NEED 不再随单桌保存同步——入场金币按桌存 roomtableconfig.CoinsNeed，
+                        // 注意：COIN_NEED 不再随单桌保存同步——入场钻按桌存 roomtableconfig.CoinsNeed，
                         // 0 值由服务端回退房间级兜底值（pararoom base 行 COIN_NEED，默认 10000），
-                        // 后台已不提供"房间入场金币（兜底）"字段，兜底值仅随库保留、不再可改。
+                        // 后台已不提供"房间入场钻（兜底）"字段，兜底值仅随库保留、不再可改。
                         int baseIdCard = gameId * 1000;
                         int affBase = ef.Database.ExecuteSqlCommand(
                             "UPDATE ParaRoom SET EX_COIN=" + cardExCoin + ",COIN_SC=" + coinSc +

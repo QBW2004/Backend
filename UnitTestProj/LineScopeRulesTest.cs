@@ -120,12 +120,12 @@ namespace UnitTestProj
         [TestMethod]
         public void CardActionMappingMatchesCenterServerAndPages()
         {
-            var expected = new Dictionary<int, int> { { 5, 15 }, { 7, 37 }, { 8, 25 }, { 12, 14 }, { 13, 44 }, { 14, 5 }, { 15, 53 }, { 16, 16 }, { 17, 40 }, { 19, 54 } };
+            var expected = new Dictionary<int, int> { { 5, 15 }, { 7, 37 }, { 8, 25 }, { 12, 14 }, { 13, 44 }, { 14, 5 }, { 15, 53 }, { 16, 16 }, { 17, 40 }, { 19, 54 }, { 20, 55 } };
             foreach (var kv in expected)
                 Assert.AreEqual(kv.Value, LineScopeRules.CardActionToGameId(kv.Key));
             Assert.AreEqual(0, LineScopeRules.CardActionToGameId(18));
 
-            const string jsMap = "{ 5: 15, 7: 37, 8: 25, 12: 14, 13: 44, 14: 5, 15: 53, 16: 16, 17: 40, 19: 54 }";
+            const string jsMap = "{ 5: 15, 7: 37, 8: 25, 12: 14, 13: 44, 14: 5, 15: 53, 16: 16, 17: 40, 19: 54, 20: 55 }";
             StringAssert.Contains(ReadRepoFile(@"TTY.Web\Views\Shared\Layout\_ContentLayout.cshtml"), jsMap);
             StringAssert.Contains(ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.core.js"), jsMap);
             StringAssert.Contains(ReadRepoFile(@"TTY.Web\Areas\Game\Views\UserInfo\Index.cshtml"), "return window.mthFilterCardActions([");

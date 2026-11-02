@@ -66,6 +66,7 @@ namespace YYT.BLL.EF
                     specs.Add(new CloneSpec("betgamecfg", "GAME_ID", "TableIndex", null));
                     break;
                 case 1:
+                    specs.Add(new CloneSpec("cardgamecfg", "GAME_ID", "TableIndex", null));
                     specs.Add(new CloneSpec("roomtableconfig_card", "GAME_ID", "TableIndex", null));
                     specs.Add(new CloneSpec("paracard", "GAME_ID", null, "ID"));
                     specs.Add(new CloneSpec("cardpayoutprofile", "GAME_ID", "TableId", null));

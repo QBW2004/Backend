@@ -108,6 +108,26 @@ check('实际后台页面校验接受0.4分和0.1步长，拒绝多位小数及�
     [[0.4, 20, 0.1], [0.1, 20, 0.1], [1, 200, 1], [0.4, 5, 0.1], [0.5, 20, 0.5]].forEach(function (a) { assert.strictEqual(checkBet.apply(null, a), ''); });
     [[0.1, 20.1, 0.1], [0, 20, 1], [0.45, 20, 0.1], [1, 20, 0.05], [1, 20, 0], [NaN, 20, 1], [0.4, Infinity, 1]].forEach(function (a) { assert.notStrictEqual(checkBet.apply(null, a), ''); });
 });
+check('麻将胡了0.1加分幅度不会被前端整数规则归一化或拒绝', function () {
+    var page = fs.readFileSync(path.join(__dirname, '../../TTY.Web/Areas/Game/Views/GameConfig/ConfigEditor.cshtml'), 'utf8');
+    var normBody = page.match(/function gcNormSs\(val, type\) \{[\s\S]*?\n    \}/);
+    assert(normBody, '页面必须提供加分幅度归一化函数');
+    var normMjhl = vm.runInNewContext('(' + normBody[0] + ')', { gcIsMjhl: function () { return true; } });
+    var normOther = vm.runInNewContext('(' + normBody[0] + ')', { gcIsMjhl: function () { return false; } });
+    assert.strictEqual(normMjhl(0.1, 3), 0.1, '麻将胡了0.1必须保留');
+    assert.strictEqual(normMjhl(0.4, 3), 0.4, '麻将胡了0.4必须保留');
+    assert.strictEqual(normOther(0.1, 3), 1, '其它参数类型3仍必须保持整数规则');
+
+    var applyBody = page.match(/function gcApplyType\(\) \{[\s\S]*?\n    \}/);
+    assert(applyBody && applyBody[0].indexOf('type === 3 && gcIsMjhl()') >= 0,
+        '类型切换必须按游戏54区分麻将胡了小数步长');
+    assert(applyBody[0].indexOf("attr('step', gcSsDecimal ? '0.1' : '1')") >= 0,
+        '麻将胡了步长控件必须允许0.1');
+
+    var saveBody = page.match(/function gcSave\(\) \{[\s\S]*?\n    \}/);
+    assert(saveBody && saveBody[0].indexOf('type === 3 && gcIsMjhl()') >= 0,
+        '保存校验必须绕过麻将胡了的整数步长限制');
+});
 check('至尊解析、同步和自动候选使用全部23格', function () {
     var p = profile([1, 2, 3, 4, 5], 1000, 1000), q = 0.1;
     var expected = 1 - Math.pow(1 - q, 23) - 23 * q * Math.pow(1 - q, 22) - 253 * q * q * Math.pow(1 - q, 21);

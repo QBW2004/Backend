@@ -7,6 +7,7 @@ namespace YYT.BLL.EF
     {
         public static string GetName(int gameId, string storedName)
         {
+            if (gameId == 55) return "大白兔";
             return gameId == 37 ? "点石成金" : storedName;
         }
 
