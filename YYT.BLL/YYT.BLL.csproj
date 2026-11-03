@@ -107,6 +107,7 @@
     <Compile Include="EF\B_SafeCoinsLog.cs" />
     <Compile Include="EF\AgencyRules.cs" />
     <Compile Include="EF\ClientPackages.cs" />
+    <Compile Include="EF\RabbitRaceActivity.cs" />
     <Compile Include="EF\LineScopeRules.cs" />
     <Compile Include="EF\LineTables.cs" />
     <Compile Include="EF\TotalControlRules.cs" />

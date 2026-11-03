@@ -1,0 +1,152 @@
+﻿@{
+    Layout = "~/Views/Shared/Layout/_ContentLayout.cshtml";
+    ViewBag.RouteMap = "活动配置";
+}
+@section include_res{
+    <style>
+        .ac-wrap { padding: 16px; box-sizing: border-box; }
+        .ac-card { background: #fff; border: 1px solid #e5e9f0; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.04); margin-bottom: 16px; }
+        .ac-hd { padding: 12px 16px; border-bottom: 1px solid #eef1f6; font-size: 14px; font-weight: 600; color: #1f2d3d; display: flex; align-items: center; justify-content: space-between; }
+        .ac-tabs { display: flex; gap: 8px; padding: 12px 16px 0; }
+        .ac-tab { padding: 6px 16px; border: 1px solid #2f6fed; border-radius: 16px; background: #2f6fed; color: #fff; font-size: 13px; cursor: default; }
+        .ac-guide { margin: 12px 16px 0; padding: 10px 12px; border: 1px solid #dce8ff; border-radius: 6px; background: #f7faff; color: #526173; font-size: 12px; line-height: 1.8; }
+        .ac-form { padding: 14px 16px; max-width: 760px; }
+        .ac-row { display: flex; gap: 16px; flex-wrap: wrap; }
+        .ac-field { margin-bottom: 14px; flex: 1 1 220px; }
+        .ac-field > label { display: block; font-size: 13px; color: #5a6573; margin-bottom: 6px; }
+        .ac-input { width: 100%; height: 34px; padding: 0 10px; box-sizing: border-box; border: 1px solid #d4dae3; border-radius: 6px; font-size: 13px; }
+        .ac-hint { font-size: 12px; color: #9aa4b1; margin-top: 4px; line-height: 1.6; }
+        .ac-types label { display: inline-block; margin: 0 16px 6px 0; font-size: 13px; color: #36404a; font-weight: normal; }
+        .ac-switch { font-size: 13px; color: #36404a; font-weight: normal; }
+        .ac-pill { font-size: 11px; padding: 1px 8px; border-radius: 10px; margin-left: 8px; }
+        .ac-on { background: #e6f7ed; color: #1a9d57; }
+        .ac-off { background: #fbe9e9; color: #d33b3b; }
+        .ac-idle { background: #f2f4f7; color: #7a8594; }
+        .ac-stat { padding: 0 16px 4px; font-size: 13px; color: #36404a; line-height: 2; }
+        .ac-stat b { color: #2f6fed; }
+        .ac-example { padding: 8px 12px; background: #fffaf0; border: 1px solid #f5e1b8; border-radius: 6px; font-size: 12px; color: #7a5b1e; line-height: 1.8; }
+        .ac-foot { padding: 12px 16px; border-top: 1px solid #eef1f6; }
+        .ac-btn { height: 32px; padding: 0 20px; border-radius: 6px; border: 1px solid #2f6fed; background: #2f6fed; color: #fff; font-size: 13px; cursor: pointer; }
+        .ac-btn.default { background: #fff; color: #5a6573; border-color: #d4dae3; }
+        .ac-empty { padding: 36px 16px; text-align: center; color: #d33b3b; font-size: 13px; display: none; }
+    </style>
+}
+<div class="ac-wrap">
+    <div class="ac-card">
+        <div class="ac-hd"><span>活动配置</span></div>
+        <div class="ac-tabs"><span class="ac-tab">全民赛跑（大白兔）</span></div>
+        <div class="ac-guide">
+            <strong>全民赛跑</strong>：每天在下方北京时间段内，大白兔玩家换牌开出勾选的牌型时，额外获得 <strong>押分 × 倍数</strong> 的活动奖金；
+            每触发一次扣 1 个当日总名额，名额用完当天停止派送，次日自动恢复。<br />
+            游戏中先自动滚入活动奖金，动画结束后玩家再点击得分收取牌型得分；活动局不能比倍。<br />
+            关闭活动后客户端大厅不再显示活动图标；玩家所在代理线没有开放大白兔时也不显示。保存后下一手牌生效。
+        </div>
+        <div class="ac-empty" id="acEmpty"></div>
+        <div id="acBody">
+            <div class="ac-stat" style="margin-top:12px;">
+                当前状态：<span id="acState"></span>
+                &nbsp;&nbsp;北京时间：<span id="acNow"></span>
+                &nbsp;&nbsp;今日已派：<b id="acUsed">0</b> 次&nbsp;&nbsp;今日剩余：<b id="acRemain">0</b> 个
+                <span id="acSaved" style="color:#9aa4b1;margin-left:8px;"></span>
+            </div>
+            <form id="acForm" class="ac-form" autocomplete="off">
+                @Html.AntiForgeryToken()
+                <div class="ac-field">
+                    <label class="ac-switch"><input type="checkbox" id="acEnabled" /> 开启全民赛跑活动</label>
+                </div>
+                <div class="ac-row">
+                    <div class="ac-field">
+                        <label>每日开始时间（北京时间）</label>
+                        <input type="time" class="ac-input" id="acStart" step="60" />
+                    </div>
+                    <div class="ac-field">
+                        <label>每日结束时间（北京时间）</label>
+                        <input type="time" class="ac-input" id="acEnd" step="60" />
+                        <div class="ac-hint">结束时间早于开始时间表示跨零点（如 22:00～02:00），凌晨段计入前一天的名额。</div>
+                    </div>
+                </div>
+                <div class="ac-row">
+                    <div class="ac-field">
+                        <label>每日奖励总名额（次）</label>
+                        <input type="number" class="ac-input" id="acQuota" min="1" max="1000000" step="1" />
+                        <div class="ac-hint">全服所有大白兔机台共用，触发 1 次扣 1 个。</div>
+                    </div>
+                    <div class="ac-field">
+                        <label>押分倍数（活动奖金 = 押分 × 倍数）</label>
+                        <input type="number" class="ac-input" id="acMultiplier" min="1" max="100000" step="1" />
+                    </div>
+                </div>
+                <div class="ac-field ac-types">
+                    <label style="display:block;color:#5a6573;margin-bottom:6px;">触发牌型（四梅及以上，可多选）</label>
+                    <div id="acTypes"></div>
+                </div>
+                <div class="ac-example" id="acExample"></div>
+            </form>
+            <div class="ac-foot">
+                <button type="button" class="ac-btn" id="acSave">保存</button>
+                <button type="button" class="ac-btn default" id="acReload">刷新</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    var AC_URL = {
+        get: '@Url.Action("GetRabbitRace", "ActivityConfig", new { area = "Game" })',
+        save: '@Url.Action("SaveRabbitRace", "ActivityConfig", new { area = "Game" })'
+    };
+    // 示例按需求口径：小四梅 50 倍（以机台规则为准，这里只做演示换算）
+    var AC_DEMO_BET = 500, AC_DEMO_CARD_MAG = 50;
+
+    function acEsc(s) { return $('<span></span>').text(s == null ? '' : String(s)).html(); }
+    function acToken() { return $('#acForm [name="__RequestVerificationToken"]').val(); }
+    function acMsg(data) {
+        var text = data ? (data.msg ? data.msg : data.content) : '操作失败！';
+        showToast(text, (data && data.code == 1) ? 'success' : 'error');
+    }
+    function acExample() {
+        var mag = parseInt($('#acMultiplier').val(), 10) || 0;
+        var bonus = AC_DEMO_BET * mag, card = AC_DEMO_BET * AC_DEMO_CARD_MAG;
+        $('#acExample').html('示例：倍数 ' + mag + '，押注 ' + AC_DEMO_BET + ' 分开出小四梅（' + AC_DEMO_CARD_MAG + ' 倍）→ 活动奖金 ' + AC_DEMO_BET + '×' + mag + '=<b>' + bonus +
+            '</b>（先自动滚入），牌型得分 ' + AC_DEMO_BET + '×' + AC_DEMO_CARD_MAG + '=<b>' + card + '</b>（点得分收取），本局合计 <b>' + (bonus + card) + '</b>。');
+    }
+    function acLoad() {
+        request(AC_URL.get, {}, function (data) {
+            if (!data || !data.ready) {
+                $('#acBody').hide();
+                $('#acEmpty').show().text((data && data.content) || '查询失败！');
+                return;
+            }
+            $('#acEmpty').hide(); $('#acBody').show();
+            $('#acEnabled').prop('checked', !!data.enabled);
+            $('#acStart').val(data.startTime); $('#acEnd').val(data.endTime);
+            $('#acQuota').val(data.dailyQuota); $('#acMultiplier').val(data.multiplier);
+            var $types = $('#acTypes').empty(), picked = data.types || [];
+            $.each(data.typeOptions || [], function (i, o) {
+                $types.append('<label><input type="checkbox" class="ac-type" value="' + o.value + '"' + (picked.indexOf(o.value) >= 0 ? ' checked' : '') + ' /> ' + acEsc(o.name) + '</label>');
+            });
+            var state = !data.enabled ? '<span class="ac-pill ac-off">已关闭</span>' : (data.open ? '<span class="ac-pill ac-on">进行中</span>' : '<span class="ac-pill ac-idle">已开启·未到时段</span>');
+            $('#acState').html(state);
+            $('#acNow').text(data.beijingNow); $('#acUsed').text(data.usedToday); $('#acRemain').text(data.enabled ? data.remainingToday : '--');
+            $('#acSaved').text(data.saved ? ('最后保存：' + data.updateTime + ' ' + (data.operatorName || '')) : '尚未保存过（显示的是默认值）');
+            acExample();
+        });
+    }
+    $('#acMultiplier').on('input', acExample);
+    $('#acReload').on('click', acLoad);
+    $('#acSave').on('click', function () {
+        var types = $('.ac-type:checked').map(function () { return this.value; }).get();
+        if (!$('#acStart').val() || !$('#acEnd').val()) { showToast('请填写开始和结束时间！', 'error'); return; }
+        if (types.length === 0) { showToast('请至少勾选一个触发牌型！', 'error'); return; }
+        request(AC_URL.save, {
+            __RequestVerificationToken: acToken(),
+            Enabled: $('#acEnabled').is(':checked') ? 1 : 0,
+            StartTime: $('#acStart').val(),
+            EndTime: $('#acEnd').val(),
+            DailyQuota: $('#acQuota').val(),
+            Multiplier: $('#acMultiplier').val(),
+            Types: types.join(',')
+        }, function (data) { acMsg(data); if (data && data.code == 1) acLoad(); });
+    });
+    $(acLoad);
+</script>

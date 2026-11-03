@@ -226,6 +226,7 @@
     <Compile Include="Areas\Game\Controllers\AdminController.cs" />
     <Compile Include="Areas\Game\Controllers\AgencyInfoController.cs" />
     <Compile Include="Areas\Game\Controllers\ClientPackageController.cs" />
+    <Compile Include="Areas\Game\Controllers\ActivityConfigController.cs" />
 
     <Compile Include="Areas\Game\Controllers\AbnormalController.cs" />
     <Compile Include="Areas\Game\Controllers\AgencyRecordController.cs" />
@@ -288,6 +289,7 @@
     <Compile Include="Controllers\Api\CashierController.cs" />
     <Compile Include="Controllers\Api\CashierPicController.cs" />
     <Compile Include="Controllers\Api\GamesController.cs" />
+    <Compile Include="Controllers\Api\RabbitRaceActivityController.cs" />
     <Compile Include="Controllers\Api\ReChargeController.cs" />
     <Compile Include="Models\AuthorizeAttribute.cs" />
     <Compile Include="Controllers\BaseController.cs" />
@@ -1114,6 +1116,7 @@
     <Content Include="Config\log4net.config" />
     <Content Include="Areas\Game\Views\AgencyInfo\Index.cshtml" />
     <Content Include="Areas\Game\Views\ClientPackage\Index.cshtml" />
+    <Content Include="Areas\Game\Views\ActivityConfig\Index.cshtml" />
     <Content Include="Areas\Game\Views\UserRecord\Index.cshtml" />
     <Content Include="Areas\Game\Views\GameConfig\ConfigEditor.cshtml" />
     <Content Include="Areas\Game\Views\UserInfo\Register.cshtml" />
