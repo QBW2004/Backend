@@ -330,6 +330,7 @@
     <Content Include="Content\css\bootstrap-rtl.css" />
     <Content Include="Content\css\bootstrap.min.css" />
     <Content Include="Content\css\common.css" />
+    <Content Include="Content\css\game.labaweights.css" />
     <Content Include="Content\css\demo\webuploader-demo.css" />
     <Content Include="Content\css\font-awesome.css" />
     <Content Include="Content\css\layout.css" />
@@ -1615,6 +1616,7 @@
     <Content Include="Scripts\app\phone\phone.prizehistory.js" />
     <Content Include="Scripts\app\phone\phone.gamerecord.js" />
 
+    <Content Include="Scripts\app\game.attmhb-controls.js" />
     <Content Include="Scripts\app\phone\phone.core.js" />
     <Content Include="Scripts\app\mobile\mobile.players.js" />
     <Content Include="Scripts\app\mobile\mobile.agents.js" />
@@ -1748,6 +1750,9 @@
     <Compile Include="Areas\Game\Controllers\GameConfigMjhlController.cs" />
     <Compile Include="Areas\Game\Controllers\GameConfigRabbitController.cs" />
     <Compile Include="Models\RabbitConfig.cs" />
+    <Compile Include="Areas\Game\Controllers\GameConfigPhenixController.cs" />
+    <Compile Include="Models\PhenixConfig.cs" />
+    <Content Include="Areas\Game\Views\GameConfig\_PhenixConfig.cshtml" />
     <Content Include="Areas\Game\Views\GameConfig\_MjhlWeights.cshtml" />
     <Content Include="Scripts\app\mjhl.engine.js" />
     <Content Include="Scripts\app\game.mjhlweights.js" />

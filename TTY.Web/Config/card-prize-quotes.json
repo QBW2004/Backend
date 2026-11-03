@@ -171,73 +171,225 @@
     "Action": 8,
     "GameId": 25,
     "Value": 2,
-    "Multiplier": 2,
-    "Estimated": false,
+    "Multiplier": 106,
+    "Estimated": true,
     "Name": "两对(2倍)"
   },
   {
     "Action": 8,
     "GameId": 25,
     "Value": 3,
-    "Multiplier": 3,
-    "Estimated": false,
+    "Multiplier": 109,
+    "Estimated": true,
     "Name": "三条(3倍)"
   },
   {
     "Action": 8,
     "GameId": 25,
     "Value": 4,
-    "Multiplier": 5,
-    "Estimated": false,
-    "Name": "杂顺(5倍)"
+    "Multiplier": 12,
+    "Estimated": true,
+    "Name": "杂顺（4~6倍）"
   },
   {
     "Action": 8,
     "GameId": 25,
     "Value": 5,
-    "Multiplier": 7,
-    "Estimated": false,
-    "Name": "同花(7倍)"
+    "Multiplier": 108,
+    "Estimated": true,
+    "Name": "同花（6~8倍，彩金另计）"
   },
   {
     "Action": 8,
     "GameId": 25,
     "Value": 6,
-    "Multiplier": 10,
-    "Estimated": false,
-    "Name": "葫芦(10倍)"
+    "Multiplier": 136,
+    "Estimated": true,
+    "Name": "葫芦（8~12倍）"
   },
   {
     "Action": 8,
     "GameId": 25,
     "Value": 7,
-    "Multiplier": 50,
-    "Estimated": false,
-    "Name": "小四梅(50倍)"
+    "Multiplier": 65,
+    "Estimated": true,
+    "Name": "小四梅（40~60倍，四梅彩金另计）"
+  },
+  {
+    "Action": 8,
+    "GameId": 25,
+    "Value": 8,
+    "Multiplier": 285,
+    "Estimated": true,
+    "Name": "大四梅（40~60倍，四梅彩金另计）"
   },
   {
     "Action": 8,
     "GameId": 25,
     "Value": 9,
-    "Multiplier": 120,
-    "Estimated": false,
-    "Name": "同花顺(120倍)"
+    "Multiplier": 260,
+    "Estimated": true,
+    "Name": "同花顺（100~140倍，彩金另计）"
   },
   {
     "Action": 8,
     "GameId": 25,
     "Value": 10,
-    "Multiplier": 400,
-    "Estimated": false,
-    "Name": "五梅(400倍)"
+    "Multiplier": 1200,
+    "Estimated": true,
+    "Name": "五梅（300~500倍，五梅彩金另计）"
   },
   {
     "Action": 8,
     "GameId": 25,
     "Value": 11,
+    "Multiplier": 600,
+    "Estimated": true,
+    "Name": "同花大顺（150~250倍，彩金另计）"
+  },
+  {
+    "Action": 8,
+    "GameId": 25,
+    "Value": 13,
+    "Multiplier": 6,
+    "Estimated": false,
+    "Name": "普通满花·三条(6倍)"
+  },
+  {
+    "Action": 8,
+    "GameId": 25,
+    "Value": 14,
+    "Multiplier": 12,
+    "Estimated": true,
+    "Name": "普通满花·杂顺（8~12倍）"
+  },
+  {
+    "Action": 8,
+    "GameId": 25,
+    "Value": 15,
+    "Multiplier": 24,
+    "Estimated": true,
+    "Name": "普通满花·葫芦（16~24倍）"
+  },
+  {
+    "Action": 8,
+    "GameId": 25,
+    "Value": 16,
+    "Multiplier": 125,
+    "Estimated": true,
+    "Name": "普通满花·大四梅（80~120倍，四梅彩金另计）"
+  },
+  {
+    "Action": 8,
+    "GameId": 25,
+    "Value": 17,
+    "Multiplier": 1200,
+    "Estimated": true,
+    "Name": "普通满花·五梅（600~1000倍，五梅彩金另计）"
+  },
+  {
+    "Action": 8,
+    "GameId": 25,
+    "Value": 18,
+    "Multiplier": 600,
+    "Estimated": true,
+    "Name": "普通满花·同花大顺（300~500倍，大顺彩金另计）"
+  },
+  {
+    "Action": 8,
+    "GameId": 25,
+    "Value": 19,
+    "Multiplier": 106,
+    "Estimated": true,
+    "Name": "正宗满花·两对（6倍，满花彩金另计）"
+  },
+  {
+    "Action": 8,
+    "GameId": 25,
+    "Value": 20,
+    "Multiplier": 109,
+    "Estimated": true,
+    "Name": "正宗满花·三条（9倍，满花彩金另计）"
+  },
+  {
+    "Action": 8,
+    "GameId": 25,
+    "Value": 21,
+    "Multiplier": 136,
+    "Estimated": true,
+    "Name": "正宗满花·葫芦（24~36倍，满花彩金另计）"
+  },
+  {
+    "Action": 8,
+    "GameId": 25,
+    "Value": 22,
+    "Multiplier": 285,
+    "Estimated": true,
+    "Name": "正宗满花·大四梅（120~180倍，四梅及满花彩金另计）"
+  },
+  {
+    "Action": 8,
+    "GameId": 25,
+    "Value": 23,
+    "Multiplier": 108,
+    "Estimated": true,
+    "Name": "方块彩金·同花（6~8倍，方块彩金另计）"
+  },
+  {
+    "Action": 8,
+    "GameId": 25,
+    "Value": 24,
+    "Multiplier": 260,
+    "Estimated": true,
+    "Name": "方块彩金·同花顺（100~140倍，顺及方块彩金另计）"
+  },
+  {
+    "Action": 8,
+    "GameId": 25,
+    "Value": 25,
+    "Multiplier": 450,
+    "Estimated": true,
+    "Name": "方块彩金·同花大顺（150~250倍，大顺及方块彩金另计）"
+  },
+  {
+    "Action": 8,
+    "GameId": 25,
+    "Value": 26,
+    "Multiplier": 20,
+    "Estimated": false,
+    "Name": "金拇指(20倍)"
+  },
+  {
+    "Action": 8,
+    "GameId": 25,
+    "Value": 27,
+    "Multiplier": 50,
+    "Estimated": false,
+    "Name": "金拇指(50倍)"
+  },
+  {
+    "Action": 8,
+    "GameId": 25,
+    "Value": 28,
+    "Multiplier": 100,
+    "Estimated": false,
+    "Name": "金拇指(100倍)"
+  },
+  {
+    "Action": 8,
+    "GameId": 25,
+    "Value": 29,
     "Multiplier": 200,
     "Estimated": false,
-    "Name": "同花大顺(200倍)"
+    "Name": "金拇指(200倍)"
+  },
+  {
+    "Action": 8,
+    "GameId": 25,
+    "Value": 30,
+    "Multiplier": 400,
+    "Estimated": false,
+    "Name": "金拇指(400倍)"
   },
   {
     "Action": 12,
@@ -1043,9 +1195,9 @@
     "Action": 20,
     "GameId": 55,
     "Value": 7,
-    "Multiplier": 40,
+    "Multiplier": 50,
     "Estimated": false,
-    "Name": "小四梅(40倍)"
+    "Name": "小四梅(50倍)"
   },
   {
     "Action": 20,
@@ -1190,5 +1342,77 @@
     "Multiplier": 1120,
     "Estimated": false,
     "Name": "正宗大四梅X14(1120倍)"
+  },
+  {
+    "Action": 20,
+    "GameId": 55,
+    "Value": 27,
+    "Multiplier": 100,
+    "Estimated": false,
+    "Name": "小四梅连庄X2(100倍)"
+  },
+  {
+    "Action": 20,
+    "GameId": 55,
+    "Value": 28,
+    "Multiplier": 150,
+    "Estimated": false,
+    "Name": "小四梅连庄X3(150倍)"
+  },
+  {
+    "Action": 20,
+    "GameId": 55,
+    "Value": 29,
+    "Multiplier": 200,
+    "Estimated": false,
+    "Name": "小四梅连庄X4(200倍)"
+  },
+  {
+    "Action": 20,
+    "GameId": 55,
+    "Value": 30,
+    "Multiplier": 250,
+    "Estimated": false,
+    "Name": "小四梅连庄X5(250倍)"
+  },
+  {
+    "Action": 20,
+    "GameId": 55,
+    "Value": 31,
+    "Multiplier": 300,
+    "Estimated": false,
+    "Name": "小四梅连庄X6(300倍)"
+  },
+  {
+    "Action": 20,
+    "GameId": 55,
+    "Value": 32,
+    "Multiplier": 350,
+    "Estimated": false,
+    "Name": "小四梅连庄X7(350倍)"
+  },
+  {
+    "Action": 20,
+    "GameId": 55,
+    "Value": 33,
+    "Multiplier": 400,
+    "Estimated": false,
+    "Name": "小四梅连庄X8(400倍)"
+  },
+  {
+    "Action": 20,
+    "GameId": 55,
+    "Value": 34,
+    "Multiplier": 450,
+    "Estimated": false,
+    "Name": "小四梅连庄X9(450倍)"
+  },
+  {
+    "Action": 20,
+    "GameId": 55,
+    "Value": 35,
+    "Multiplier": 500,
+    "Estimated": false,
+    "Name": "小四梅连庄X10(500倍)"
   }
 ]

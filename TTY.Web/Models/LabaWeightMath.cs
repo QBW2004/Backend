@@ -66,6 +66,13 @@ namespace YYT.Web.Models
             var c = new Config { enabled = (bool)value["enabled"], main = ReadArray(value["main"], Find(game).items.Length), extra = ReadArray(value["extra"],80) };
             Validate(game,c); ValidateEditor(game,c); return c;
         }
+        /// <summary>编辑页统一启用权重；仅在提交保存后生效，读取不改写存量配置。</summary>
+        public Config ActivateEditor(int game, Config source)
+        {
+            var c = new Config { enabled = true, main = (int[])source.main.Clone(), extra = (int[])source.extra.Clone() };
+            if (game == 40) c.extra[0] = 1;
+            return c;
+        }
         /// <summary>第 0 项是“未中奖”的游戏（明星97、水浒传）；水果机 24 灯每局必中一灯，没有未中奖项。</summary>
         public bool HasNoWin(int game)
         {
@@ -159,7 +166,7 @@ namespace YYT.Web.Models
             if (c.extra[0]>1 || c.extra[20]>10000 || c.extra[24]+c.extra[25]>10000 || c.extra[26]>10000 || c.extra[27]>10000) throw new ArgumentException("额外玩法概率范围为0至10000，半额与全额概率之和不得超过10000。");
             if (c.extra[64]<27 || c.extra[64]>512) throw new ArgumentException("小玛丽回合上限范围为27至512。");
             if (c.extra[0] == 1 && game==16 && c.extra[20]>0 && c.extra.Skip(21).Take(3).Sum()==0) throw new ArgumentException("明星倍触发时至少设置一个倍数权重。");
-            if (c.extra[0] == 1 && game==53 && c.extra.Skip(40).Take(24).Sum()==0) throw new ArgumentException("小玛丽外圈至少设置一个权重。");
+            if (game==53 && c.extra.Skip(40).Take(24).Sum()==0) throw new ArgumentException("小玛丽外圈至少设置一个权重。");
             if (game==40)
             {
                 double award=c.extra.Skip(1).Take(12).Sum(v=>(double)v);

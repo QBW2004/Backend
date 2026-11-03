@@ -575,11 +575,15 @@ namespace YYT.BLL.EF
                 // 牌机型(5-14/20大白兔)牌型值 0-12（与服务端 te_CardsType 枚举一致），99=关闭控制；
                 // 火凤凰(14)扩展 13-18=正宗大四梅x1~x6、大白兔(20)扩展 13-26=x1~x14
                 //（服务端 AlgProb 按 ctrl_value-12 取倍数，MTH_DABAITU 放开到 26）；
+                // 大白兔(20)另有 27-35=小四梅连庄x2~x10（服务端强制连送 N 手小四梅）；
                 // 拉霸型(15-17)为符号/面板位体系，值范围不同，保持宽松校验
                 if (((cardAction >= 5 && cardAction <= 14) || cardAction == 20) && cardValue != 99 &&
-                    (cardValue < 0 || cardValue > 12) && !((cardAction == 14 || cardAction == 20) && cardValue >= 13 && cardValue <= (cardAction == 20 ? 26 : 18)))
+                    (cardValue < 0 || cardValue > 12) &&
+                    !((cardAction == 14 || cardAction == 20) && cardValue >= 13 && cardValue <= (cardAction == 20 ? 26 : 18)) &&
+                    !(cardAction == 20 && cardValue >= 27 && cardValue <= 35) &&
+                    !(cardAction == 8 && cardValue >= 13 && cardValue <= 30))
                 {
-                    msg.content = "无效的控牌牌型（0-12，火凤凰正宗大四梅 13-18、大白兔 13-26，或 99 关闭）！";
+                    msg.content = "无效的控牌牌型（0-12，火凤凰正宗大四梅 13-18、大白兔正宗大四梅 13-26、大白兔小四梅连庄 27-35，或 99 关闭）！";
                     return msg;
                 }
                 // 大字板(5)五鬼已下线：控牌牌型 12(五鬼) 与服务端 AlgProb 控制通道封死保持一致

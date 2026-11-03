@@ -1,0 +1,75 @@
+﻿<section id="phenixConfig" style="display:none;">
+    <div class="gc-section-title">火凤凰独立规则</div>
+    <div class="gc-hint">本桌独立规则按区块编辑，保存时后台按完整规则 JSON 校验并经中心服推送，下一局生效。</div>
+    <details class="gc-hint" style="margin-bottom:10px;">
+        <summary style="cursor:pointer;">查看玩法说明</summary>
+        <p><strong>正宗大四梅</strong>：大四梅不带鬼自然开出时进入翻倍揭示，按下方权重抽 X1~X14 倍数档，赔分 = 押分 × 大四梅基础倍率 × 抽中倍数；关闭后大四梅只按普通牌型赔基础倍率，不再触发翻倍揭示。</p>
+        <p><strong>难度强放</strong>：系统强制放牌排期不变，但强出的倍数也按权重档抽取；后台权重 0 的档位不参与抽取。</p>
+        <p><strong>控牌</strong>：控制页指定正宗大四梅 X1~X6（控牌值 13-18）维持原样，不经本权重档。</p>
+    </details>
+
+    <div class="gc-form-row">
+        <div class="gc-field gc-switch-inline">
+            <label><input type="checkbox" id="pxAuthOn" /> 启用正宗大四梅（揭示翻倍）</label>
+        </div>
+    </div>
+    <div class="gc-field">
+        <label>倍数档与相对权重（自然开出与难度强出按权重抽档，权重 0 不抽）</label>
+        <table style="width:100%;max-width:560px;border-collapse:collapse;" id="pxAuthTable">
+            <thead>
+                <tr style="background:#f5f8ff;color:#5a6573;font-size:13px;">
+                    <th style="padding:6px;border:1px solid #e5e9f0;text-align:left;">倍数档（1~14，即 X 倍）</th>
+                    <th style="padding:6px;border:1px solid #e5e9f0;text-align:left;">相对权重</th>
+                    <th style="padding:6px;border:1px solid #e5e9f0;width:52px;"></th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        <button type="button" id="pxAuthAdd" class="gc-newbtn" style="margin-top:6px;">添加档位</button>
+        <span class="gc-hint" id="pxAuthSum" style="margin-left:10px;"></span>
+    </div>
+
+    <div style="margin-top:8px;">
+        <button type="button" id="phenixConfigLoad" class="easyui-linkbutton">重新载入</button>
+        <button type="button" id="phenixConfigSave" class="easyui-linkbutton">保存并推送</button>
+        <span id="phenixConfigStatus" class="gc-hint"></span>
+    </div>
+    <details style="margin-top:10px;">
+        <summary class="gc-hint" style="cursor:pointer;">查看原始规则 JSON（随表单实时生成，只读）</summary>
+        <textarea id="phenixConfigJson" readonly style="width:100%;height:160px;box-sizing:border-box;font-family:Consolas,monospace;font-size:12px;margin-top:6px;"></textarea>
+    </details>
+</section>
+<script>
+window.PHENIX_CONFIG_URLS={get:'@Url.Action("GetPhenixConfig", "GameConfig", new { area = "Game" })',save:'@Url.Action("SavePhenixConfig", "GameConfig", new { area = "Game" })'};
+(function($){
+    var busy=false,cfg=null;
+    var DEFAULTS={"schemaVersion":1,"specialRules":{"authentic":{"enabled":true,"multipliers":{"values":[1,2,3],"weights":[60,30,10]}}}};
+    function token(){return $('input[name="__RequestVerificationToken"]').first().val()||'';}
+    function table(){var id=parseInt($('#gcId').val(),10);return id>=0?id%1000:-1;}
+    function setStatus(text,bad){$('#phenixConfigStatus').text(text).css('color',bad?'#a33d3d':'#168052');}
+    function isObj(v){return v!==null&&typeof v==='object'&&!Array.isArray(v);}
+    function deepFill(dst,src){for(var k in src){if(isObj(src[k])){if(!isObj(dst[k]))dst[k]={};deepFill(dst[k],src[k]);}else if(dst[k]===undefined)dst[k]=src[k];}}
+    function weightRow(tbody){var tr=$('<tr/>');tr.append($('<td style="padding:4px;border:1px solid #e5e9f0;"/>').append($('<input type="number" class="gc-input px-wv" style="height:28px;" min="1" step="1"/>')));
+        tr.append($('<td style="padding:4px;border:1px solid #e5e9f0;"/>').append($('<input type="number" class="gc-input px-ww" style="height:28px;" min="0" step="1"/>')));
+        var td=$('<td style="padding:4px;border:1px solid #e5e9f0;text-align:center;"/>');var del=$('<button type="button" class="gc-newbtn">删</button>');
+        del.on('click',function(){if(tbody.children().length>1){tr.remove();}refreshSum();});td.append(del);tr.append(td);
+        tr.find('input').on('input',refreshSum);tbody.append(tr);return tr;}
+    function renderWeighted(weighted){var tbody=$('#pxAuthTable tbody').empty();var v=weighted.values||[],w=weighted.weights||[];
+        for(var i=0;i<v.length;i++){var tr=weightRow(tbody);tr.find('.px-wv').val(v[i]);tr.find('.px-ww').val(w[i]===undefined?0:w[i]);}if(v.length===0)weightRow(tbody);}
+    function collectWeighted(){var values=[],weights=[];$('#pxAuthTable tbody tr').each(function(){var v=parseInt($(this).find('.px-wv').val(),10),w=parseInt($(this).find('.px-ww').val(),10);if(!isNaN(v)){values.push(v);weights.push(isNaN(w)?0:w);}});return{values:values,weights:weights};}
+    function refreshSum(){var s=0;$('#pxAuthTable .px-ww').each(function(){s+=parseInt($(this).val(),10)||0;});$('#pxAuthSum').text('权重合计 '+s);}
+    function render(){var a=cfg.specialRules.authentic;
+        $('#pxAuthOn').prop('checked',!!a.enabled);renderWeighted(a.multipliers||{});refreshSum();preview();}
+    function collect(){var a=cfg.specialRules.authentic;
+        cfg.schemaVersion=1;a.enabled=$('#pxAuthOn').is(':checked');a.multipliers=collectWeighted();}
+    function preview(){if(!cfg){$('#phenixConfigJson').val('');return;}collect();$('#phenixConfigJson').val(JSON.stringify(cfg,null,2));}
+    function load(){var t=table();if(t<0)return;busy=true;setStatus('载入中…',false);$.post(PHENIX_CONFIG_URLS.get,{tableIndex:t,__RequestVerificationToken:token()},function(data){busy=false;if(data&&data.code===1){cfg=isObj(data.config)?data.config:{};deepFill(cfg,$.extend(true,{},DEFAULTS));render();setStatus('已载入本桌规则。',false);}else setStatus((data&&data.content)||'载入失败。',true);},'json').fail(function(){busy=false;setStatus('后台连接失败。',true);});}
+    function save(){var t=table();if(busy||t<0||!cfg)return;collect();busy=true;setStatus('保存并推送中…',false);$.post(PHENIX_CONFIG_URLS.save,{tableIndex:t,configJson:JSON.stringify(cfg),__RequestVerificationToken:token()},function(data){busy=false;if(data&&data.code===1)preview();setStatus((data&&data.content)||'保存失败。',!data||data.code!==1);},'json').fail(function(){busy=false;setStatus('后台连接失败。',true);});}
+    window.phenixConfigClear=function(){$('#phenixConfig').hide();cfg=null;$('#phenixConfigJson').val('');setStatus('',false);};
+    window.phenixConfigLoad=function(){window.phenixConfigClear();if(parseInt($('#gcGameId').val(),10)!==5)return;$('#phenixConfig').show();load();};
+    $(function(){$('#phenixConfigLoad').on('click',load);$('#phenixConfigSave').on('click',save);
+        $('#pxAuthAdd').on('click',function(){weightRow($('#pxAuthTable tbody'));refreshSum();});
+        $('#phenixConfig').on('input','input',function(){if(cfg)preview();refreshSum();});
+        $('#phenixConfig').on('change','input[type=checkbox]',function(){if(cfg)preview();});});
+})(jQuery);
+</script>

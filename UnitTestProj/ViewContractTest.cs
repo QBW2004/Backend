@@ -890,6 +890,27 @@ namespace UnitTestProj
         }
 
         [TestMethod]
+        public void AttMhbControlCatalogIsSharedAndExtendedValuesReachValidation()
+        {
+            string catalog = ReadRepoFile(@"TTY.Web\Scripts\app\game.attmhb-controls.js");
+            foreach (string name in new[] { "普通满花·三条", "普通满花·杂顺", "普通满花·葫芦", "普通满花·大四梅",
+                "普通满花·五梅", "普通满花·同花大顺", "正宗满花·两对", "正宗满花·三条", "正宗满花·葫芦",
+                "正宗满花·大四梅", "方块彩金·同花", "方块彩金·同花顺", "方块彩金·同花大顺", "金拇指(400倍)" })
+                StringAssert.Contains(catalog, name);
+            foreach (string file in new[] { @"TTY.Web\Areas\Game\Views\UserInfo\Index.cshtml", @"TTY.Web\Areas\Game\Views\UserInfo\OnlineUsers.cshtml" })
+            {
+                string view = ReadRepoFile(file);
+                StringAssert.Contains(view, "game.attmhb-controls.js?v=");
+                StringAssert.Contains(view, "if (cardAction == 8) return window.MthAttMhbControls.choices();");
+            }
+            StringAssert.Contains(ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.core.js"), "if (action == 8) return window.MthAttMhbControls.choices();");
+            StringAssert.Contains(ReadRepoFile(@"TTY.Web\Views\Shared\Layout\_MobileLayout.cshtml"), "game.attmhb-controls.js?v=");
+            StringAssert.Contains(ReadRepoFile(@"TTY.Web\YYT.Web.csproj"), @"Scripts\app\game.attmhb-controls.js");
+            StringAssert.Contains(ReadRepoFile(@"YYT.BLL\EF\B_UserControl.cs"), "cardAction == 8 && cardValue >= 13 && cardValue <= 30");
+            StringAssert.Contains(ReadRepoFile(@"TTY.Web\Config\card-prize-quotes.json"), "\"Name\": \"金拇指(400倍)\"");
+        }
+
+        [TestMethod]
         public void CardControlOptionsHideZeroPairAndJackpotsOverTwoThousand()
         {
             string phoneCore = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.core.js");
@@ -1064,9 +1085,27 @@ namespace UnitTestProj
                 StringAssert.Contains(view, "n == 20");
             }
 
-            // 服务端校验同步放开：cardAction 20 合法、牌型值 13-26
+            // 大白兔小四梅固定 50 倍（服务端 smallFourMultiplier 同口径），小四梅连庄 X2~X10 = 控牌值 27-35
+            foreach (string file in new[] { phoneCore, indexView, onlineView })
+            {
+                StringAssert.Contains(file, "dabaitu:[0, 1, 2, 3, 5, 7, 10, 50, 80, 120, 250, 500, 1000]");
+                StringAssert.Contains(file, "小四梅连庄X");
+                StringAssert.Contains(file, "id: 25 + n");
+                StringAssert.Contains(file, "mags[7] * n");
+            }
+            StringAssert.Contains(phoneCore, "if (action == 20) return 'dabaitu';");
+            foreach (string view in new[] { indexView, onlineView })
+                StringAssert.Contains(view, "if (action == 20) return 'dabaitu';");
+            string quotes = ReadRepoFile(@"TTY.Web\Config\card-prize-quotes.json");
+            StringAssert.Contains(quotes, "\"Name\": \"小四梅(50倍)\"");
+            StringAssert.Contains(quotes, "\"Name\": \"小四梅连庄X10(500倍)\"");
+            StringAssert.Contains(ReadRepoFile(@"TTY.Web\Models\RabbitConfig.cs"), "smallFourMultiplier\"\":50");
+            StringAssert.Contains(ReadRepoFile(@"TTY.Web\Areas\Game\Views\GameConfig\_RabbitConfig.cshtml"), "num('#rbSmallFour',50)");
+
+            // 服务端校验同步放开：cardAction 20 合法、牌型值 13-26，另含连庄 27-35
             StringAssert.Contains(userControl, "cardAction != 20");
             StringAssert.Contains(userControl, "cardValue <= (cardAction == 20 ? 26 : 18)");
+            StringAssert.Contains(userControl, "cardValue >= 27 && cardValue <= 35");
 
             // 历史控牌记录回显：三端都走牌机分支（含 13-26 扩展值）与显示名映射
             StringAssert.Contains(indexView, "|| action == 20) list = valSelDataPAIJI(action);");
@@ -1416,6 +1455,39 @@ namespace UnitTestProj
             Assert.IsFalse(agencyController.Contains("new B_Admin().SetRecharge(mUsers)"));
         }
 
+        [TestMethod]
+        public void PasswordMissAutoFreezeShowsAuditReasonAndUnblockClearsMissCount()
+        {
+            string abnormalController = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\AbnormalController.cs");
+            string userInfoController = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\UserInfoController.cs");
+            string usersBll = ReadRepoFile(@"YYT.BLL\EF\B_Users.cs");
+            string usersEntity = ReadRepoFile(@"YYT.Entity\EF\M_Users.cs");
+            string banPlayerView = ReadRepoFile(@"TTY.Web\Areas\Mobile\Views\Home\BanPlayer.cshtml");
+            string banPlayerJs = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.banplayer.js");
+            string abnormalJs = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.abnormal.js");
+
+            // 冻结明细：玩家行原因取最近一次冻结审计 DestUserTitle（自动冻结写「多次输入错误密码」）
+            StringAssert.Contains(abnormalController, "audit.OPT == B_Users.PlayerFreezeAuditOpt");
+            StringAssert.Contains(abnormalController, "row.Reason = audit.DestUserTitle;");
+            // 冻结明细解冻本就同时解冻玩家+清零失败计数，两条都得在
+            StringAssert.Contains(abnormalController, "userBll.FrozenUserWithAudit(loginUser, id, 0)");
+            StringAssert.Contains(abnormalController, "new B_LoginMissRecord().Unblock(id)");
+
+            // 冻结账号页解冻路径也必须清零失败计数：否则遗留 MissCount≥5 一两次错密码立即再冻结
+            StringAssert.Contains(userInfoController, "new B_LoginMissRecord().Unblock(id);");
+
+            // 冻结账号列表回填审计原因（仅冻结操作 OPT=26，解冻审计不能当冻结原因）
+            Assert.AreEqual(typeof(string), typeof(YYT.Entity.M_Users_DTO).GetProperty("FrozenReason").PropertyType);
+            StringAssert.Contains(usersEntity, "public string FrozenReason { get; set; }");
+            StringAssert.Contains(usersBll, "if (log.OPT == PlayerFreezeAuditOpt)");
+            StringAssert.Contains(usersBll, "user.FrozenReason = log.DestUserTitle;");
+
+            // 冻结账号页/明细页展示原因列（JS 必须过 M.esc 转义）
+            StringAssert.Contains(banPlayerView, "冻结原因");
+            StringAssert.Contains(banPlayerJs, "M.esc(u.FrozenReason || '--')");
+            StringAssert.Contains(abnormalJs, "M.esc(String(r.Reason || '')");
+        }
+
         /// <summary>取出 CSS 中某个选择器的声明块（选择器独占一行、以 " {" 结尾）</summary>
         private static string ExtractCssBlock(string css, string selector)
         {
@@ -1468,6 +1540,63 @@ namespace UnitTestProj
                 "FillCurrentPlayInfo 的回表投影不能直接构造实体类型（EF6 不支持，会在有玩家在线时整页查询失败）");
             StringAssert.Contains(usersBll, ".Select(c => new\r\n                {\r\n                    c.LID,\r\n                    c.UserID,");
             StringAssert.Contains(usersBll, ".Select(c => new M_UserOptLog\r\n                {\r\n                    LID = c.LID,");
+        }
+
+        [TestMethod]
+        public void MobilePrizePoolOperationRound20261103()
+        {
+            string control = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.control.js");
+            string controlView = ReadRepoFile(@"TTY.Web\Areas\Mobile\Views\Home\Control.cshtml");
+            string layout = ReadRepoFile(@"TTY.Web\Views\Shared\Layout\_MobileLayout.cshtml");
+            string home = ReadRepoFile(@"TTY.Web\Areas\Mobile\Controllers\HomeController.cs");
+            string flow = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.agentflow.js");
+            string flowView = ReadRepoFile(@"TTY.Web\Areas\Mobile\Views\Home\AgentFlow.cshtml");
+            string pool = ReadRepoFile(@"YYT.BLL\EF\B_PrizePool.cs");
+            string userControl = ReadRepoFile(@"YYT.BLL\EF\B_UserControl.cs");
+            string players = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.players.js");
+            string sql = ReadRepoFile(@"Docs\sql\奖池精准扣除与明细保留-20261103.sql");
+
+            // 1/2 在线按所在游戏预选“送奖+游戏”，离线/不支持送奖的游戏默认吃分
+            StringAssert.Contains(control, "presetMode(row, r.datas.CurrentGameId);");
+            StringAssert.Contains(control, "playable && hasMode(6) ? 6 : (hasMode(4) ? 4 :");
+            // 3 不再要求玩家已在所选游戏押注；4 不再做后台游戏能力预拦截
+            Assert.IsFalse(pool.Contains("请让玩家进入所选游戏并完成押注后再送奖"));
+            Assert.IsFalse(userControl.Contains("ValidateCurrentGameCapability("));
+            // 5 盈亏取整
+            StringAssert.Contains(players, "var today = M.roundInt(p.TodayWinLoss);");
+            StringAssert.Contains(control, "var today = M.roundInt(row.TodayWinLoss);");
+            // 6 记录按游戏筛选、不按账号框过滤，加载提示
+            StringAssert.Contains(control, "CardAction: historyCardAction(), StartTime: start");
+            StringAssert.Contains(control, "$('#sentDiamonds').text('加载中...');");
+            StringAssert.Contains(pool, "AND ((c.ControlMode=6 AND c.GameId={4}) OR (c.ControlMode<>6 AND p.ActualGameId={5}))");
+            // 7 送奖只要求余额>0，开奖与放水扣到0为止、放水封顶目标
+            StringAssert.Contains(control, "if (!(Number(wallet.Balance) > 0))");
+            StringAssert.Contains(sql, "SET vPaid=LEAST(vAmount,GREATEST(vBalance,0));");
+            StringAssert.Contains(sql, "IF vTarget>0 THEN SET vNew=LEAST(vNew,vTarget); END IF;");
+            // 8 充值奖池按钮：放水或控牌权限才显示，样式同返回按钮
+            StringAssert.Contains(layout, "@if (mPage == \"control\" && canPoolRecharge)");
+            Assert.IsFalse(controlView.Contains("#poolRechargeBtn { background: transparent; }"));
+            // 9 侧栏奖池记录（控牌权限），位于充退记录与冻结明细之间
+            int recIdx = layout.IndexOf("Url.Action(\"Records\""), poolIdx = layout.IndexOf("Url.Action(\"PoolRecords\""), frozenIdx = layout.IndexOf("Url.Action(\"Abnormal\"");
+            Assert.IsTrue(recIdx > 0 && recIdx < poolIdx && poolIdx < frozenIdx);
+            StringAssert.Contains(home, "public ActionResult PoolRecords()");
+            // 10 单输入框：正数充值、负数退回
+            StringAssert.Contains(control, "placeholder=\"正数充值，负数扣减奖池\"");
+            StringAssert.Contains(control, "withdraw = text.charAt(0) === '-';");
+            // 12 只有总台/特级代理可切奖池
+            StringAssert.Contains(flowView, "@if (canPool && !poolOnly)");
+            StringAssert.Contains(pool, "(user.UserPriv ?? -1) > AgencyRules.TopAgentPriv");
+            // 13/14 默认当天、备注列、余额列固定
+            StringAssert.Contains(flow, "$('#startDate').val(dateValue(today));$('#endDate').val(dateValue(today));");
+            StringAssert.Contains(flow, "if (kind === 3) return '控牌支出'");
+            StringAssert.Contains(flowView, ".flow-table.pool-mode th:first-child, .flow-table.pool-mode td:first-child { position:sticky; left:0;");
+            // 15 奖池明细保留 35 天
+            StringAssert.Contains(pool, "public const int LedgerKeepDays = 35;");
+            // 16 文案
+            StringAssert.Contains(home, "ViewBag.MTitle = \"操作管理\";");
+            StringAssert.Contains(controlView, "<label class=\"form-label\" for=\"ctrlMode\">操作类型</label>");
+            StringAssert.Contains(controlView, "<option value=\"6\">送奖</option>");
+            StringAssert.Contains(userControl, "case (int)EControlMode.TotalKill: return \"总吃分\";");
         }
 
         [TestMethod]
@@ -1542,63 +1671,6 @@ namespace UnitTestProj
         [TestMethod]
         public void MobileRechargeSendsLockUnlockImmediately()
         {
-        [TestMethod]
-        public void MobilePrizePoolOperationRound20261103()
-        {
-            string control = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.control.js");
-            string controlView = ReadRepoFile(@"TTY.Web\Areas\Mobile\Views\Home\Control.cshtml");
-            string layout = ReadRepoFile(@"TTY.Web\Views\Shared\Layout\_MobileLayout.cshtml");
-            string home = ReadRepoFile(@"TTY.Web\Areas\Mobile\Controllers\HomeController.cs");
-            string flow = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.agentflow.js");
-            string flowView = ReadRepoFile(@"TTY.Web\Areas\Mobile\Views\Home\AgentFlow.cshtml");
-            string pool = ReadRepoFile(@"YYT.BLL\EF\B_PrizePool.cs");
-            string userControl = ReadRepoFile(@"YYT.BLL\EF\B_UserControl.cs");
-            string players = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.players.js");
-            string sql = ReadRepoFile(@"Docs\sql\奖池精准扣除与明细保留-20261103.sql");
-
-            // 1/2 在线按所在游戏预选“送奖+游戏”，离线/不支持送奖的游戏默认吃分
-            StringAssert.Contains(control, "presetMode(row, r.datas.CurrentGameId);");
-            StringAssert.Contains(control, "playable && hasMode(6) ? 6 : (hasMode(4) ? 4 :");
-            // 3 不再要求玩家已在所选游戏押注；4 不再做后台游戏能力预拦截
-            Assert.IsFalse(pool.Contains("请让玩家进入所选游戏并完成押注后再送奖"));
-            Assert.IsFalse(userControl.Contains("ValidateCurrentGameCapability("));
-            // 5 盈亏取整
-            StringAssert.Contains(players, "var today = M.roundInt(p.TodayWinLoss);");
-            StringAssert.Contains(control, "var today = M.roundInt(row.TodayWinLoss);");
-            // 6 记录按游戏筛选、不按账号框过滤，加载提示
-            StringAssert.Contains(control, "CardAction: historyCardAction(), StartTime: start");
-            StringAssert.Contains(control, "$('#sentDiamonds').text('加载中...');");
-            StringAssert.Contains(pool, "AND ((c.ControlMode=6 AND c.GameId={4}) OR (c.ControlMode<>6 AND p.ActualGameId={5}))");
-            // 7 送奖只要求余额>0，开奖与放水扣到0为止、放水封顶目标
-            StringAssert.Contains(control, "if (!(Number(wallet.Balance) > 0))");
-            StringAssert.Contains(sql, "SET vPaid=LEAST(vAmount,GREATEST(vBalance,0));");
-            StringAssert.Contains(sql, "IF vTarget>0 THEN SET vNew=LEAST(vNew,vTarget); END IF;");
-            // 8 充值奖池按钮：放水或控牌权限才显示，样式同返回按钮
-            StringAssert.Contains(layout, "@if (mPage == \"control\" && canPoolRecharge)");
-            Assert.IsFalse(controlView.Contains("#poolRechargeBtn { background: transparent; }"));
-            // 9 侧栏奖池记录（控牌权限），位于充退记录与冻结明细之间
-            int recIdx = layout.IndexOf("Url.Action(\"Records\""), poolIdx = layout.IndexOf("Url.Action(\"PoolRecords\""), frozenIdx = layout.IndexOf("Url.Action(\"Abnormal\"");
-            Assert.IsTrue(recIdx > 0 && recIdx < poolIdx && poolIdx < frozenIdx);
-            StringAssert.Contains(home, "public ActionResult PoolRecords()");
-            // 10 单输入框：正数充值、负数退回
-            StringAssert.Contains(control, "placeholder=\"正数充值，负数扣减奖池\"");
-            StringAssert.Contains(control, "withdraw = text.charAt(0) === '-';");
-            // 12 只有总台/特级代理可切奖池
-            StringAssert.Contains(flowView, "@if (canPool && !poolOnly)");
-            StringAssert.Contains(pool, "(user.UserPriv ?? -1) > AgencyRules.TopAgentPriv");
-            // 13/14 默认当天、备注列、余额列固定
-            StringAssert.Contains(flow, "$('#startDate').val(dateValue(today));$('#endDate').val(dateValue(today));");
-            StringAssert.Contains(flow, "if (kind === 3) return '控牌支出'");
-            StringAssert.Contains(flowView, ".flow-table.pool-mode th:first-child, .flow-table.pool-mode td:first-child { position:sticky; left:0;");
-            // 15 奖池明细保留 35 天
-            StringAssert.Contains(pool, "public const int LedgerKeepDays = 35;");
-            // 16 文案
-            StringAssert.Contains(home, "ViewBag.MTitle = \"操作管理\";");
-            StringAssert.Contains(controlView, "<label class=\"form-label\" for=\"ctrlMode\">操作类型</label>");
-            StringAssert.Contains(controlView, "<option value=\"6\">送奖</option>");
-            StringAssert.Contains(userControl, "case (int)EControlMode.TotalKill: return \"总吃分\";");
-        }
-
             string rechargeBll = ReadRepoFile(@"YYT.BLL\EF\B_Recharge.cs");
 
             // 手机端充退不能只把 LK/UL 记入发件箱等定时重试（间隔 60s），否则充退要等一会儿才在游戏内生效；
@@ -2367,6 +2439,32 @@ namespace UnitTestProj
             // schemaVersion/默认值与 RabbitConfig.DefaultJson 同源，不能靠手填
             StringAssert.Contains(view, "\"schemaVersion\":3");
             StringAssert.Contains(ReadRepoFile(@"TTY.Web\Models\RabbitConfig.cs"), "specialRules");
+        }
+
+        [TestMethod]
+        public void PhenixConfigSectionIsAFormNotARawJsonBox()
+        {
+            string view = ReadRepoFile(@"TTY.Web\Areas\Game\Views\GameConfig\_PhenixConfig.cshtml");
+
+            // 火凤凰独立规则只有正宗大四梅一块：启用开关 + X1~X14 倍数档权重表，
+            // 字段与 PhenixConfig.Parse 及服务端 ReadPhenixRules 的校验口径一一对应。
+            foreach (string id in new[] { "pxAuthOn", "pxAuthTable", "pxAuthAdd", "phenixConfigJson", "phenixConfigLoad", "phenixConfigSave" })
+                StringAssert.Contains(view, "id=\"" + id + "\"");
+
+            // 原始 JSON 仍可核对：折叠只读预览，保存仍走同一 configJson 合同
+            StringAssert.Contains(view, "id=\"phenixConfigJson\" readonly");
+            StringAssert.Contains(view, "configJson:JSON.stringify(cfg)");
+            StringAssert.Contains(view, "window.phenixConfigLoad");
+            // 只在火凤凰(GameId=5)机台下出现，schemaVersion/默认值与 PhenixConfig.DefaultJson 同源
+            StringAssert.Contains(view, "!==5");
+            StringAssert.Contains(view, "\"schemaVersion\":1");
+            StringAssert.Contains(view, "GetPhenixConfig");
+            StringAssert.Contains(view, "SavePhenixConfig");
+            StringAssert.Contains(ReadRepoFile(@"TTY.Web\Models\PhenixConfig.cs"), "specialRules");
+            StringAssert.Contains(ReadRepoFile(@"TTY.Web\Models\PhenixConfig.cs"), "Weighted(root, a + \".multipliers\", 14)");
+            string editor = ReadRepoFile(@"TTY.Web\Areas\Game\Views\GameConfig\ConfigEditor.cshtml");
+            StringAssert.Contains(editor, "@Html.Partial(\"_PhenixConfig\")");
+            StringAssert.Contains(editor, "window.phenixConfigLoad");
         }
 
     }

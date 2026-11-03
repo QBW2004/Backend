@@ -4,12 +4,14 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Web.Mvc;
+using Newtonsoft.Json;
 using YYT.BLL.EF;
 using YYT.Common;
 using YYT.Entity;
 using YYT.Web;
 using YYT.Web.Controllers;
 using YYT.Remote;
+using YYT.Web.Models;
 
 namespace YYT.Web.Areas.Game.Controllers
 {
@@ -902,7 +904,19 @@ namespace YYT.Web.Areas.Game.Controllers
                     // ── 构建 gameconfiglaba 参数列表（保留写兼容）──
                     List<M_GameConfigLaba> labaList = new List<M_GameConfigLaba>();
 
-                    // 开奖权重仅由 SaveLabaWeights 独立保存，基础保存忽略旧中奖表单字段。
+                    // 新页面一次提交基础参数与权重；旧页面未携带 JSON 时保留原开奖配置。
+                    string labaWeightsJson = form.Q<string>("LabaWeightsJson");
+                    LabaWeightMath labaMath = null;
+                    LabaWeightMath.Config labaWeights = null;
+                    List<LabaWeightMath.Profile> labaProfiles = null;
+                    if (!string.IsNullOrWhiteSpace(labaWeightsJson))
+                    {
+                        CheckWeightScope(gameId, tableId % 1000);
+                        labaMath = WeightMath();
+                        labaWeights = labaMath.ActivateEditor(gameId, labaMath.Parse(gameId, labaWeightsJson));
+                        labaMath.Calculate(gameId, labaWeights, form.Q<int>("LabaWeightsBet", 1));
+                        labaProfiles = labaMath.WriteProfiles(gameId, labaWeights);
+                    }
 
                     decimal labaBetMinD = form.Q<decimal>("MinBet", -1m);
                     decimal labaBetMaxD = form.Q<decimal>("MaxBet", -1m);
@@ -1003,18 +1017,24 @@ namespace YYT.Web.Areas.Game.Controllers
                     // 无发炮踢出时间：后台以分钟编辑，落库为秒；开关默认开启(1)
                     int rtIdleSec = IdleMinToSec(form.Q<int>("IdleFireTimeoutSec", 0));
                     int rtIdleKick = form.Q<int>("IdleFireKickEnabled", 1) == 1 ? 1 : 0;
-                    using (var efRt = new GameDbContext())
+                    Action<GameDbContext> saveLabaRelated = efRt =>
                     {
                         efRt.Database.ExecuteSqlCommand(
-                            "DELETE FROM roomtableconfig WHERE GAME_ID=" + gameId + " AND RoomIndex=0 AND TableIndex=" + rtTableIndex);
+                            "DELETE FROM roomtableconfig WHERE GAME_ID={0} AND RoomIndex=0 AND TableIndex={1}", gameId, rtTableIndex);
                         efRt.Database.ExecuteSqlCommand(
-                            "INSERT INTO roomtableconfig (GAME_ID, RoomIndex, TableIndex, TableName, Enabled, MaxSeats, OneCoinScore, BetMin, BetMax, CoinsNeed, IdleFireTimeoutSec, IdleFireKickEnabled, GunPowerStep) VALUES (" +
-                            gameId + ",0," + rtTableIndex + ",'" + labaTableName.Replace("'", "''") + "'," + labaEnabled + ",6," + (labaCoinSc > 0 ? labaCoinSc : 1) + "," +
-                            rtBetMin + "," + rtBetMax + "," + rtCoinsNeed + "," + rtIdleSec + "," + rtIdleKick + "," + rtGunStep + ")");
-                    }
+                            "INSERT INTO roomtableconfig (GAME_ID, RoomIndex, TableIndex, TableName, Enabled, MaxSeats, OneCoinScore, BetMin, BetMax, CoinsNeed, IdleFireTimeoutSec, IdleFireKickEnabled, GunPowerStep) VALUES ({0},0,{1},{2},{3},6,{4},{5},{6},{7},{8},{9},{10})",
+                            gameId, rtTableIndex, labaTableName, labaEnabled, labaCoinSc > 0 ? labaCoinSc : 1,
+                            rtBetMin, rtBetMax, rtCoinsNeed, rtIdleSec, rtIdleKick, rtGunStep);
+                        if (labaProfiles != null) WriteLabaWeightProfiles(efRt, gameId, rtTableIndex, labaProfiles);
+                    };
 
                     msg = new B_LabaGamePara().SaveTableFull(tableId, gameId, labaList, labaPara, labaTableName, labaEnabled,
-                        labaBetScores, labaDefaultBetIdx >= 0 ? labaDefaultBetIdx : 0);
+                        labaBetScores, labaDefaultBetIdx >= 0 ? labaDefaultBetIdx : 0, saveLabaRelated);
+                    if (msg != null && msg.code == 1 && labaWeights != null)
+                    {
+                        LogHelper.WriteLog(typeof(GameConfigController), "[LabaWeights] operator=" + loginUser.UserName + " game=" + gameId + " table=" + rtTableIndex + " catalog=" + labaMath.Data.hash + " config=" + JsonConvert.SerializeObject(labaWeights));
+                        msg.content = (msg.content ?? "保存成功") + "；基础参数与开奖权重已一并保存";
+                    }
                     if (msg != null && msg.code == 1) ReloadRobotSeatsBestEffort();
 
                     // ── 保存成功后补发 PC 热更：center UpdateGameConfig → SendExtendedPara，

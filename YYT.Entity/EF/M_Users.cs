@@ -164,6 +164,9 @@ namespace YYT.Entity
         /// <summary>最近一次冻结操作时间（手机端冻结账号列表）。</summary>
         [NotMapped]
         public DateTime? FrozenTime { get; set; }
+        /// <summary>最近一次冻结原因（AgencyOptLog.DestUserTitle，如「多次输入错误密码」；手机端冻结账号列表）。</summary>
+        [NotMapped]
+        public string FrozenReason { get; set; }
         public override string ToString()
         {
             return JsonConvert.SerializeObject(this);

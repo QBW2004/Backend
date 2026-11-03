@@ -5,6 +5,7 @@
 }
 
 @section include_res{
+    <script src="@Url.Content("~/Scripts/app/game.attmhb-controls.js?v=" + ConfigHelper.Get("WebVer"))"></script>
     <script>
     var canKickWholeLine = @((loginUser?.UserPriv == 0 || loginUser?.ManageScope == 2).ToString().ToLower());
     var loginAgencyAccount = "@(loginUser?.Accounts)";
@@ -1068,23 +1069,26 @@
         // 各牌机游戏倍率（与台机设定 GC_MAG_TAB 一致，客户端固定值只读；点石成金 取 middle 档）
         var TC_MAG_TAB = {
             phenix: [0, 1, 2, 3, 5, 7, 10, 40, 80, 120, 250, 500, 1000],
+            dabaitu:[0, 1, 2, 3, 5, 7, 10, 50, 80, 120, 250, 500, 1000],
             king3:  [0, 1, 2, 3, 5, 7, 10, 60, 60, 120, 250, 500, 1000],
             dazhi:  [0, 1, 2, 3, 5, 7, 15, 65, 65, 150, 350, 250, 350],
             nba:    [0, 1, 2, 3, 5, 7, 10, 50, 50, 100, 400, 200, 1000],
             dscj:   [0, 1, 2, 3, 5, 7, 10, 50, 50, 120, 400, 200, 1000]
         };
-        // cardAction -> 倍率key：5大字版/7点石成金/8ATT满花版(与点石成金同倍率表)/12金皇冠/13NBA/14火凤凰
+        // cardAction -> 倍率key：5大字版/7点石成金/8ATT满花版(与点石成金同倍率表)/12金皇冠/13NBA/14火凤凰/20大白兔
         function tcMagKey(action) {
             if (action == 5) return 'dazhi';
             if (action == 7 || action == 8) return 'dscj';
             if (action == 12) return 'king3';
             if (action == 13) return 'nba';
+            if (action == 20) return 'dabaitu';
             return 'phenix';
         }
         // 按 cardAction 动态生成牌机型牌型下拉：99=关闭控制（倍率随游戏类型变化）
         // 隐藏牌型：杂牌(0)/五鬼(12)对所有牌机都不提供；大四梅(8)仅火凤凰(14)/大白兔(20)保留
         //（大字板五鬼已下线，与服务端 AlgProb 控制通道封死一致）
         function valSelDataPAIJI(cardAction) {
+            if (cardAction == 8) return window.MthAttMhbControls.choices();
             var mags = TC_MAG_TAB[tcMagKey(cardAction)];
             var arr = [];
             for (var i = 0; i < TC_CARD_TYPES.length; i++) {
@@ -1100,6 +1104,11 @@
             if (cardAction == 14 || cardAction == 20) {
                 for (var k = 1; k <= (cardAction == 20 ? 14 : 6); k++)
                     arr.push({ id: 12 + k, text: '正宗大四梅X' + k + '(' + (80 * k) + '倍)' });
+            }
+            // 大白兔(20)小四梅连庄：X2~X10（控牌值 27-35），服务端按小四梅固定倍率连送 N 手
+            if (cardAction == 20) {
+                for (var n = 2; n <= 10; n++)
+                    arr.push({ id: 25 + n, text: '小四梅连庄X' + n + '(' + (mags[7] * n) + '倍)' });
             }
             arr.push({ id: 99, text: '关闭控制' });
             return arr;

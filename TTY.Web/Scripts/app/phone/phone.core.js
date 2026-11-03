@@ -492,6 +492,7 @@
     // 各牌机游戏倍率（与台机设定 GC_MAG_TAB 一致；点石成金 取 middle 档）
     var TC_MAG_TAB = {
         phenix: [0, 1, 2, 3, 5, 7, 10, 40, 80, 120, 250, 500, 1000],
+        dabaitu:[0, 1, 2, 3, 5, 7, 10, 50, 80, 120, 250, 500, 1000],
         king3:  [0, 1, 2, 3, 5, 7, 10, 60, 60, 120, 250, 500, 1000],
         dazhi:  [0, 1, 2, 3, 5, 7, 15, 65, 65, 150, 350, 250, 350],
         nba:    [0, 1, 2, 3, 5, 7, 10, 50, 50, 100, 400, 200, 1000],
@@ -503,12 +504,14 @@
         if (action == 7 || action == 8) return 'dscj';
         if (action == 12) return 'king3';
         if (action == 13) return 'nba';
+        if (action == 20) return 'dabaitu';
         return 'phenix';
     }
 
     // 牌机型(5-14/20大白兔)牌型下拉：杂牌(0)/五鬼(12)不提供，大四梅(8)仅火凤凰(14)/大白兔(20)保留；99=关闭控制。
     // 与电脑端 UserInfo/Index.cshtml 的 valSelDataPAIJI 同一口径（大字板五鬼已下线，与服务端 AlgProb 封死一致）
     function cardTypeDataForPaiji(action) {
+        if (action == 8) return window.MthAttMhbControls.choices();
         var mags = TC_MAG_TAB[tcMagKey(action)];
         var arr = [];
         for (var i = 0; i < TC_CARD_TYPES.length; i++) {
@@ -522,6 +525,11 @@
         if (action == 14 || action == 20) {
             for (var k = 1; k <= (action == 20 ? 14 : 6); k++)
                 arr.push({ id: 12 + k, text: '正宗大四梅X' + k + '(' + (80 * k) + '倍)' });
+        }
+        // 大白兔(20)小四梅连庄：X2~X10（控牌值 27-35），服务端按小四梅固定倍率连送 N 手
+        if (action == 20) {
+            for (var n = 2; n <= 10; n++)
+                arr.push({ id: 25 + n, text: '小四梅连庄X' + n + '(' + (mags[7] * n) + '倍)' });
         }
         arr.push({ id: 99, text: '关闭控制' });
         return arr;
@@ -624,6 +632,13 @@
     // 代理线隔离（2026-10-30）：控牌游戏下拉只列登录账号所在线可玩的游戏（MConfig.playableGames 为 null 表示不限）；
     // M.CARD_ACTIONS 本身保持完整，历史控牌记录的游戏名回显不受影响。控牌指令号 → GameId 与中心服 cardActionToGameId 同口径。
     var CARD_ACTION_GAME = { 5: 15, 7: 37, 8: 25, 12: 14, 13: 44, 14: 5, 15: 53, 16: 16, 17: 40, 19: 54, 20: 55 };
+    /** 平台 GameId → 控牌指令号（送奖页按玩家当前所在游戏默认选中游戏类型）；无对应送奖游戏返回 0 */
+    M.cardActionOfGame = function (gameId) {
+        gameId = Number(gameId);
+        for (var k in CARD_ACTION_GAME)
+            if (CARD_ACTION_GAME.hasOwnProperty(k) && CARD_ACTION_GAME[k] === gameId && Number(k) !== 12) return Number(k);
+        return 0;
+    };
     M.playableCardActions = function (list) {
         var pg = window.MConfig && window.MConfig.playableGames;
         if (!pg) return list;
@@ -631,13 +646,6 @@
             var gid = CARD_ACTION_GAME[a.id];
             return !gid || pg.indexOf(gid) >= 0;
         });
-    };
-    /** 平台 GameId → 控牌指令号（送奖页按玩家当前所在游戏默认选中游戏类型）；无对应送奖游戏返回 0 */
-    M.cardActionOfGame = function (gameId) {
-        gameId = Number(gameId);
-        for (var k in CARD_ACTION_GAME)
-            if (CARD_ACTION_GAME.hasOwnProperty(k) && CARD_ACTION_GAME[k] === gameId && Number(k) !== 12) return Number(k);
-        return 0;
     };
 
     // 历史控牌游戏名兼容表；当前可选列表优先，游戏暂时移出列表时仍能回显。

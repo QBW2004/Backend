@@ -28,10 +28,11 @@
             $body.html(rows.map(function (r) {
                 var type = String(r.Type || '未知');
                 var typeCls = type === '代理' ? 'admin' : (type === '玩家' ? 'player' : '');
+                var reasonHtml = M.esc(String(r.Reason || '')).replace(/(\d+)/, '<span class="error-count">$1</span>');
                 return '<tr>' +
                     '<td>' + M.esc(r.ID) + '</td>' +
                     '<td><span class="account-type ' + typeCls + '">' + M.esc(type) + '</span></td>' +
-                    '<td>' + M.esc(String(r.Reason || '').replace(/(\d+)/, '<span class="error-count">$1</span>')) + '</td>' +
+                    '<td>' + reasonHtml + '</td>' +
                     '<td>' + M.esc(r.Operator || '--') + '</td>' +
                     '<td>' + M.esc(r.OperationTime || '--') + '</td>' +
                     '<td><button class="unlock-btn" data-id="' + M.esc(r.ID) + '">解冻</button></td>' +

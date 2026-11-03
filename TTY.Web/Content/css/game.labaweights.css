@@ -1,0 +1,61 @@
+#gcForm.gc-laba-mode > .gc-guide { display:none; }
+#labaWeights { margin:20px 0; padding:0; color:#36404a; }
+#labaWeights .lw-rules { margin:8px 0 12px; font-size:12px; color:#637087; }
+#labaWeights .lw-rules summary { color:#2f6fed; cursor:pointer; }
+#labaWeights .lw-rules p { line-height:1.7; }
+#labaWeights .lw-status { margin:8px 0; font-size:12px; }
+#labaWeights .lw-summary { display:flex; flex-wrap:wrap; align-items:center; gap:6px 16px; padding:10px 12px; margin:12px 0; background:#f1f6ff; border:1px solid #dce5f3; border-radius:6px; }
+#labaWeights #lwRtp { font-size:20px; color:#2f6fed; font-weight:600; }
+#labaWeights #lwParts { font-size:12px; color:#637087; }
+#labaWeights .lw-bet { display:flex; align-items:center; gap:6px; margin-left:auto; font-size:12px; color:#637087; }
+#labaWeights #lwBet { width:74px; height:28px; padding:0 6px; }
+#labaWeights .lw-table { width:100%; table-layout:fixed; border-collapse:collapse; font-size:12px; }
+#labaWeights .lw-table th { padding:7px 8px; border:1px solid #e5e9f0; background:#f5f8ff; color:#5a6573; font-weight:500; text-align:left; }
+#labaWeights .lw-table td { padding:4px 8px; border:1px solid #e5e9f0; overflow-wrap:anywhere; }
+#labaWeights .lw-table th:first-child { width:33%; }
+#labaWeights .lw-table th:nth-child(2) { width:25%; }
+#labaWeights .lw-table th:nth-child(3) { width:27%; }
+#labaWeights .lw-table th:nth-child(4) { width:15%; }
+#labaWeights .lw-number { text-align:right; font-variant-numeric:tabular-nums; }
+#labaWeights .lw-weight { width:100%; max-width:130px; min-width:0; height:28px; padding:0 7px; box-sizing:border-box; border:1px solid #d4dae3; border-radius:4px; background:#fff; font-size:12px; color:#1f2d3d; text-align:right; }
+#labaWeights .lw-weight[readonly] { background:#f1f3f6; color:#637087; }
+#labaWeights .lw-weight:focus-visible { outline:2px solid #2f6fed; outline-offset:1px; }
+#labaWeights .lw-secondary { display:block; font-size:11px; color:#7c8797; font-weight:400; }
+#labaWeights #lwWinSum { margin:6px 0 8px; font-size:12px; }
+#labaWeights #lwMainNote { margin-bottom:14px; }
+#labaWeights #lwFruitPools { margin-top:18px; }
+#labaWeights .lw-pools { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+#labaWeights .lw-pool-title { margin:5px 0 8px; color:#526173; font-size:12px; }
+#labaWeights .lw-pools .lw-table th:first-child { width:60%; }
+#labaWeights .lw-pools .lw-table th:nth-child(2) { width:40%; }
+#labaWeights #lwMary { container-type:inline-size; margin:18px 0; padding-bottom:16px; border-bottom:1px solid #e5e9f0; }
+#labaWeights .lw-mary-title { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:8px; }
+#labaWeights .lw-fixed { font-size:11px; padding:1px 8px; color:#158752; background:#e7f6ef; border-radius:10px; }
+#labaWeights .lw-mary-layout { display:grid; grid-template-columns:minmax(0,1.7fr) minmax(210px,1fr); gap:14px; margin:12px 0; align-items:start; }
+#labaWeights .lw-mary-ring { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:4px; min-width:0; }
+#labaWeights .lw-mary-stop { display:flex; flex-direction:column; align-items:center; gap:3px; position:relative; min-width:0; margin:0; padding:14px 3px 4px; border:1px solid #e0e6ef; border-radius:5px; background:#fff; }
+#labaWeights .lw-mary-index { position:absolute; top:1px; left:4px; font-size:10px; color:#7c8797; }
+#labaWeights .lw-mary-name { font-size:12px; font-weight:500; white-space:nowrap; }
+#labaWeights .lw-mary-stop .lw-weight { height:25px; max-width:64px; padding:0 2px; text-align:center; appearance:textfield; }
+#labaWeights .lw-mary-stop input::-webkit-inner-spin-button, #labaWeights .lw-mary-stop input::-webkit-outer-spin-button { appearance:none; margin:0; }
+#labaWeights .lw-mary-prob { color:#637087; font-size:11px; white-space:nowrap; }
+#labaWeights .lw-exit { background:#fff3f1; border-color:#eccdc8; }
+#labaWeights .lw-exit .lw-mary-name { color:#b42318; }
+#labaWeights .lw-mary-center { grid-column:2/7; grid-row:2/7; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:12px; text-align:center; background:#f6f7f9; border-radius:5px; min-width:0; }
+#labaWeights .lw-mary-center strong { font-size:26px; color:#b42318; font-weight:500; }
+#labaWeights .lw-mary-center p { margin:0; font-size:12px; color:#637087; line-height:1.8; }
+#labaWeights .lw-mary-center-title { font-size:16px; }
+#labaWeights .lw-mary-overview { min-width:0; }
+#labaWeights .lw-mary-groups { width:100%; border-collapse:collapse; table-layout:fixed; font-size:11px; margin-top:8px; }
+#labaWeights .lw-mary-groups th { background:#f5f8ff; color:#637087; font-weight:400; padding:7px 4px; text-align:left; }
+#labaWeights .lw-mary-groups td { padding:8px 4px; border-bottom:1px solid #e5e9f0; overflow-wrap:anywhere; }
+#labaWeights .lw-mary-groups th:first-child { width:27%; }
+#labaWeights .lw-mary-groups th:nth-child(2) { width:14%; }
+#labaWeights .lw-mary-groups th:nth-child(3) { width:29%; }
+#labaWeights .lw-mary-groups th:nth-child(4) { width:30%; text-align:right; }
+#labaWeights .lw-mary-groups tr.lw-exit td { color:#b42318; }
+#labaWeights .lw-mary-limit { display:block; font-size:12px; color:#637087; margin-top:15px; }
+#labaWeights .lw-mary-limit input { display:block; width:94px; margin-top:6px; }
+@container (max-width:650px) { #labaWeights .lw-mary-layout { grid-template-columns:minmax(0,1fr); } #labaWeights .lw-mary-groups { font-size:12px; } }
+@container (max-width:410px) { #labaWeights .lw-mary-ring { grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; } #labaWeights .lw-mary-center { grid-column:1/-1; grid-row:1; gap:6px; } #labaWeights .lw-mary-stop { grid-column:auto !important; grid-row:auto !important; } }
+@media (max-width:700px) { #labaWeights .lw-pools { grid-template-columns:minmax(0,1fr); } #labaWeights .lw-table td, #labaWeights .lw-table th { padding:5px; } #labaWeights .lw-bet { margin-left:0; } }

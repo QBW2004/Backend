@@ -786,6 +786,8 @@ namespace YYT.BLL.EF
                     continue;
                 user.FrozenOperator = log.OptID;
                 user.FrozenTime = log.REC_TIME;
+                if (log.OPT == PlayerFreezeAuditOpt)
+                    user.FrozenReason = log.DestUserTitle;
             }
         }
 

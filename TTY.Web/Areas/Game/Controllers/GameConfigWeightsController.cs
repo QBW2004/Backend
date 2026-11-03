@@ -20,13 +20,13 @@ namespace YYT.Web.Areas.Game.Controllers
         { if ((game!=16 && game!=40 && game!=53) || table<0 || table>255) throw new ArgumentException("请选择三款拉霸的有效机台（0至255）。"); }
 
         [AjaxOnly, HttpPost]
-        public ActionResult GetLabaWeights(int gameId, int tableIndex)
+        public ActionResult GetLabaWeights(int gameId, int tableIndex, bool newTable=false)
         {
             try
             {
                 CheckWeightScope(gameId,tableIndex); var math=WeightMath(); var config=math.Defaults(gameId);
                 bool stale=false;
-                using (var ef=new GameDbContext())
+                if (!newTable) using (var ef=new GameDbContext())
                 {
                     var rows=ef.Database.SqlQuery<LabaWeightMath.Profile>("SELECT HandType,ProbabilityBasis,PayoutMultiplier FROM cardpayoutprofile WHERE GAME_ID={0} AND TableId={1} AND HandType BETWEEN 1000 AND 1279 AND Enabled=1",gameId,tableIndex).ToList();
                     // 规则/目录更新后旧权重的指纹或奖型数量不再匹配，游戏服也不会应用；回退默认值供重新设置保存
@@ -36,10 +36,16 @@ namespace YYT.Web.Areas.Game.Controllers
                 // 后台按“每 10000 次”（水浒传每 100000 次）编辑：旧配置/默认值先按比例换算显示，保存后才生效
                 bool converted;
                 config=math.ToEditorScale(gameId,config,out converted);
+                bool activationPending=!config.enabled || (gameId==40 && config.extra[0]!=1);
+                config=math.ActivateEditor(gameId,config);
+                LabaWeightMath.Result previewResult=null;
+                string validationError=null;
+                try { math.ValidateEditor(gameId,config); previewResult=math.Calculate(gameId,config,1); }
+                catch (ArgumentException ex) { validationError=ex.Message; }
                 var game=math.Find(gameId);
-                return Json(new { code=1, config, stale, converted, scale=LabaWeightMath.ScaleOf(gameId), hash=math.Data.hash, game=game.name,
-                    items=game.items.Select(i=>new { i.code,i.name, mean=i.boards.Length>0 ? i.boards.Average(b=>b.pay) : 0 }),
-                    result=math.Calculate(gameId,config,1) });
+                return Json(new { code=1, config, stale, converted, activationPending, validationError, scale=LabaWeightMath.ScaleOf(gameId), hash=math.Data.hash, game=game.name,
+                    items=game.items.Select((i,index)=>new { i.code,i.name, mean=i.boards.Length>0 ? i.boards.Average(b=>b.pay) : 0, multiplier=gameId==40 ? game.rat[index] : 0 }),
+                    result=previewResult });
             }
             catch (Exception ex) { return Json(new { code=0,content=ex.Message }); }
         }
@@ -47,7 +53,7 @@ namespace YYT.Web.Areas.Game.Controllers
         [AjaxOnly, HttpPost, ValidateAntiForgeryToken]
         public ActionResult PreviewLabaWeights(int gameId, int tableIndex, string weightsJson, int bet=1)
         {
-            try { CheckWeightScope(gameId,tableIndex); var math=WeightMath(); return Json(new { code=1,result=math.Calculate(gameId,math.Parse(gameId,weightsJson),bet) }); }
+            try { CheckWeightScope(gameId,tableIndex); var math=WeightMath(); return Json(new { code=1,result=math.Calculate(gameId,math.ActivateEditor(gameId,math.Parse(gameId,weightsJson)),bet) }); }
             catch (Exception ex) { return Json(new { code=0,content=ex.Message }); }
         }
 
@@ -57,17 +63,12 @@ namespace YYT.Web.Areas.Game.Controllers
         {
             try
             {
-                CheckWeightScope(gameId,tableIndex); var math=WeightMath(); var c=math.Parse(gameId,weightsJson);
+                CheckWeightScope(gameId,tableIndex); var math=WeightMath(); var c=math.ActivateEditor(gameId,math.Parse(gameId,weightsJson));
                 var result=math.Calculate(gameId,c,bet);
                 var rows=math.WriteProfiles(gameId,c);
                 using (var ef=new GameDbContext()) using (var tx=ef.Database.BeginTransaction())
                 {
-                    if (ef.Database.SqlQuery<int>("SELECT COUNT(*) FROM roomtableconfig WHERE GAME_ID={0} AND RoomIndex=0 AND TableIndex={1}",gameId,tableIndex).Single()==0) throw new ArgumentException("请先保存基础桌台，再保存开奖权重。");
-                    int others=ef.Database.SqlQuery<int>("SELECT COUNT(*) FROM cardpayoutprofile WHERE GAME_ID={0} AND NOT (TableId={1} AND HandType BETWEEN 1000 AND 1279)",gameId,tableIndex).Single();
-                    int tables=ef.Database.SqlQuery<int>("SELECT COUNT(*) FROM roomtableconfig WHERE GAME_ID={0}",gameId).Single();
-                    if ((others+rows.Count)*52L+tables*218L+8192>60000) throw new ArgumentException("该游戏的配置总量接近当前中心服单帧上限，请先扩展配置传输协议。");
-                    ef.Database.ExecuteSqlCommand("DELETE FROM cardpayoutprofile WHERE GAME_ID={0} AND TableId={1} AND HandType BETWEEN 1000 AND 1279",gameId,tableIndex);
-                    foreach (var row in rows) ef.Database.ExecuteSqlCommand("INSERT INTO cardpayoutprofile (GAME_ID,TableId,HandType,PayoutMultiplier,ProbabilityBasis,StockLimit,StockRemain,Enabled) VALUES ({0},{1},{2},{3},{4},-1,-1,1)",gameId,tableIndex,row.HandType,row.PayoutMultiplier,row.ProbabilityBasis);
+                    WriteLabaWeightProfiles(ef,gameId,tableIndex,rows);
                     tx.Commit();
                 }
                 LogHelper.WriteLog(typeof(GameConfigController),"[LabaWeights] operator="+WebHelper.GetLoginInfo().UserName+" game="+gameId+" table="+tableIndex+" catalog="+math.Data.hash+" config="+JsonConvert.SerializeObject(c));
@@ -76,6 +77,19 @@ namespace YYT.Web.Areas.Game.Controllers
                 return Json(new { code=1,content=hot!=null && hot.code==1 ? "权重已保存；热更指令已发送，游戏服接收后下一局使用新配置。" : "权重已保存；热更指令尚未成功，当前游戏服可能仍使用旧配置，请重试热更。",result,hotReload=hot!=null && hot.code==1 });
             }
             catch (Exception ex) { LogHelper.WriteLog(typeof(GameConfigController),ex); return Json(new { code=0,content=ex.Message }); }
+        }
+
+        private static void WriteLabaWeightProfiles(GameDbContext ef, int gameId, int tableIndex, IList<LabaWeightMath.Profile> rows)
+        {
+            if (ef.Database.SqlQuery<int>("SELECT COUNT(*) FROM roomtableconfig WHERE GAME_ID={0} AND RoomIndex=0 AND TableIndex={1}",gameId,tableIndex).Single()==0)
+                throw new ArgumentException("请先保存基础桌台，再保存开奖权重。");
+            int others=ef.Database.SqlQuery<int>("SELECT COUNT(*) FROM cardpayoutprofile WHERE GAME_ID={0} AND NOT (TableId={1} AND HandType BETWEEN 1000 AND 1279)",gameId,tableIndex).Single();
+            int tables=ef.Database.SqlQuery<int>("SELECT COUNT(*) FROM roomtableconfig WHERE GAME_ID={0}",gameId).Single();
+            if ((others+rows.Count)*52L+tables*218L+8192>60000)
+                throw new ArgumentException("该游戏的配置总量接近当前中心服单帧上限，请先扩展配置传输协议。");
+            ef.Database.ExecuteSqlCommand("DELETE FROM cardpayoutprofile WHERE GAME_ID={0} AND TableId={1} AND HandType BETWEEN 1000 AND 1279",gameId,tableIndex);
+            foreach (var row in rows)
+                ef.Database.ExecuteSqlCommand("INSERT INTO cardpayoutprofile (GAME_ID,TableId,HandType,PayoutMultiplier,ProbabilityBasis,StockLimit,StockRemain,Enabled) VALUES ({0},{1},{2},{3},{4},-1,-1,1)",gameId,tableIndex,row.HandType,row.PayoutMultiplier,row.ProbabilityBasis);
         }
     }
 }

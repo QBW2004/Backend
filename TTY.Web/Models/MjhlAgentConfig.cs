@@ -19,6 +19,8 @@ namespace YYT.Web.Models
         public MjhlWeightProfile.Weights weights;
         public BetConfig bets;
         public const long MaxRawUnits = 42949672950L;
+        /// <summary>代理线下拉的「默认」项：未单独保存配置的代理线（含无线的公共玩家）回退使用这一行，与游戏服 kDefaultLine 同值。</summary>
+        public const string DefaultLine = "*";
 
         public sealed class BetConfig
         {

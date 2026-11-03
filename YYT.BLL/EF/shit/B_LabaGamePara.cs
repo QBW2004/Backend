@@ -167,6 +167,12 @@ namespace YYT.BLL.EF
         /// <param name="defaultBetIndex">默认筹码档位索引(0起)</param>
         public Msg SaveTableFull(int tableId, int gameId, List<M_GameConfigLaba> paras, M_ParaLaba laba, string tableName, int enabled = 1, string betScores = null, int defaultBetIndex = 0)
         {
+            return SaveTableFull(tableId, gameId, paras, laba, tableName, enabled, betScores, defaultBetIndex, null);
+        }
+
+        /// <summary>关联的桌台基础行与开奖权重使用同一事务，全部成功后才发送热更。</summary>
+        public Msg SaveTableFull(int tableId, int gameId, List<M_GameConfigLaba> paras, M_ParaLaba laba, string tableName, int enabled, string betScores, int defaultBetIndex, Action<GameDbContext> saveRelated)
+        {
             Msg msg = new Msg(0, "保存失败！");
             int tableIndex = tableId % 1000;
             using (var ef = new GameDbContext())
@@ -175,6 +181,7 @@ namespace YYT.BLL.EF
                 {
                     try
                     {
+                        if (saveRelated != null) saveRelated(ef);
                         // ── 1. 写 gameconfiglaba（保留兼容）──
                         // 加芬幅度是游戏级全局参数：中心服 GetGameConfigParams 按 GameId 读全表
                         // （不按 TableIndex 过滤、无 ORDER BY），同 OptKey 多行时后写覆盖先写，
@@ -296,6 +303,7 @@ namespace YYT.BLL.EF
 
                         ef.SaveChanges();
                         trans.Commit();
+                        msg.datas = true;
                     }
                     catch (Exception ex)
                     {
@@ -312,12 +320,16 @@ namespace YYT.BLL.EF
             bool needRp = true;
             if (needRp)
             {
-                var srv = new SConnect();
-                var tmpMsg = srv.SendReadString(EScMsgType.RP, gameId);
-                if (msg.code == 0)
+                try
                 {
+                    var tmpMsg = new SConnect().SendReadString(EScMsgType.RP, gameId);
                     msg.code = tmpMsg.code;
-                    msg.content = tmpMsg.content;
+                    msg.content = tmpMsg.code == 1 ? tmpMsg.content : "配置已保存，但参数热更新失败：" + tmpMsg.content;
+                }
+                catch (Exception exRp)
+                {
+                    LogHelper.WriteLog(typeof(B_LabaGamePara), exRp);
+                    msg.content = "配置已保存，但参数热更新异常：" + exRp.Message;
                 }
             }
 

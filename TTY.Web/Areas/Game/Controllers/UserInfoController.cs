@@ -786,6 +786,11 @@ namespace YYT.Web.Areas.Game.Controllers
                             if (kickMsg.code != 1)
                                 msg.content += "，但踢出玩家指令未确认（" + kickMsg.content + "）";
                         }
+                        else
+                        {
+                            // 解冻同时清零密码错误失败计数（loginmissrecord），否则遗留计数会让账号一两次错密码立即再冻结
+                            new B_LoginMissRecord().Unblock(id);
+                        }
                     }
                 }
             }

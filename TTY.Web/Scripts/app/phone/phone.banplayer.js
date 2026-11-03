@@ -24,6 +24,7 @@
                         '<td>' + M.esc(u.ID) + '</td>' +
                         '<td><button class="unban-btn" data-id="' + M.esc(u.ID) + '">解冻</button></td>' +
                         '<td>' + M.esc(u.FrozenOperator || '--') + '</td>' +
+                        '<td>' + M.esc(u.FrozenReason || '--') + '</td>' +
                         '<td class="ban-time">' + M.fmtTime(u.FrozenTime, true) + '</td>' +
                         '</tr>';
                 }).join(''));

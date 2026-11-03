@@ -248,5 +248,36 @@ namespace UnitTestProj
             StringAssert.Contains(source,"tx.Commit()");
             StringAssert.Contains(source,"SendPcCommand");
         }
+
+        [TestMethod]
+        public void EditorActivationPreservesStoredValuesUntilExplicitSave()
+        {
+            var math=MathModel();
+            foreach (int game in new[]{16,40,53})
+            {
+                bool converted;
+                var stored=math.ToEditorScale(game,math.Defaults(game),out converted);
+                var main=(int[])stored.main.Clone(); var extra=(int[])stored.extra.Clone();
+                var editor=math.ActivateEditor(game,stored);
+                Assert.IsTrue(editor.enabled);
+                Assert.IsFalse(stored.enabled,"载入编辑页不能改写原配置");
+                CollectionAssert.AreEqual(main,stored.main);
+                CollectionAssert.AreEqual(extra,stored.extra);
+                CollectionAssert.AreEqual(main,editor.main);
+                if (game==40) extra[0]=1;
+                CollectionAssert.AreEqual(extra,editor.extra);
+                var restored=math.ReadProfiles(game,math.WriteProfiles(game,editor));
+                Assert.IsTrue(restored.enabled);
+                CollectionAssert.AreEqual(editor.extra,restored.extra);
+            }
+        }
+
+        [TestMethod]
+        public void MaryRejectsZeroOuterWeightsWithLegacyFlagOff()
+        {
+            var math=MathModel(); var c=math.Defaults(53);
+            c.extra[0]=0; Array.Clear(c.extra,40,24);
+            Reject(()=>math.Validate(53,c));
+        }
     }
 }

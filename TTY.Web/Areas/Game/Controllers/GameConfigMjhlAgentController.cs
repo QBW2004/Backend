@@ -19,6 +19,7 @@ namespace YYT.Web.Areas.Game.Controllers
             int viewerPriv = viewer.UserPriv.GetValueOrDefault(-1);
             if (string.IsNullOrEmpty(line) || line.Length > 64 || !MjhlAgentConfig.CanRead(viewerPriv, own, line))
                 throw new UnauthorizedAccessException("请选择有权查看的代理线。");
+            if (line == MjhlAgentConfig.DefaultLine) return MjhlAgentConfig.DefaultLine;
             string canonical = ef.Admins.Where(a => a.ID == line && a.PRIV == 1).Select(a => a.ID).FirstOrDefault();
             if (canonical == null) throw new ArgumentException("代理线不存在。");
             if (!LineScopeRules.IsGameAllowed(LineScopeRules.GetLinePlayableGames(ef, canonical), 54))
@@ -35,9 +36,12 @@ namespace YYT.Web.Areas.Game.Controllers
                 {
                     var viewer = WebHelper.GetLoginInfo();
                     string own = viewer.UserPriv == 0 ? "" : LineScopeRules.ResolveLineOfAgency(ef, viewer.Accounts);
-                    var lines = (viewer.UserPriv == 0 ? LineScopeRules.GetLineAgents(ef) : new System.Collections.Generic.List<string> { own })
+                    var lines = new System.Collections.Generic.List<object>();
+                    if (viewer.UserPriv == 0)
+                        lines.Add(new { id = MjhlAgentConfig.DefaultLine, text = "默认（未单独配置的代理线使用）", count = 1 });
+                    lines.AddRange((viewer.UserPriv == 0 ? LineScopeRules.GetLineAgents(ef) : new System.Collections.Generic.List<string> { own })
                         .Where(line => !string.IsNullOrEmpty(line) && LineScopeRules.IsGameAllowed(LineScopeRules.GetLinePlayableGames(ef, line), 54))
-                        .Select(line => new { id = line, text = line, count = 1 }).ToList();
+                        .Select(line => (object)new { id = line, text = line, count = 1 }));
                     return Json(new { code = 1, datas = new { Ready = true, Lines = lines, Owned = 0, Recycled = 0, CanEdit = viewer.UserPriv.GetValueOrDefault(-1) == 0 } });
                 }
             }

@@ -194,7 +194,7 @@
                     <div class="gc-para-empty-text">请先在上方选择「游戏类型」与「游戏」，选定后即可配置该游戏的桌台参数。</div>
                 </div>
                 <form id="gcForm">
-                    <div class="gc-guide"><strong>填写提示：</strong>押注/牌机类的“出现机会/权重”是相对值，不是百分比（例如 A=200、B=100，A 约是 B 的 2 倍机会）；<strong>拉霸中奖配置统一在“拉霸出货权重与理论 RTP”中独立保存</strong>。带“×100、×10000、万分比”的参数请按示例填写；留空、0 和默认值的含义以字段下方说明为准。</div>
+                    <div class="gc-guide"><strong>填写提示：</strong>押注/牌机类的“出现机会/权重”是相对值，不是百分比（例如 A=200、B=100，A 约是 B 的 2 倍机会）；<strong>拉霸中奖权重在下方“机台设定”中填写，与基础参数统一保存</strong>。带“×100、×10000、万分比”的参数请按示例填写；留空、0 和默认值的含义以字段下方说明为准。</div>
                     @Html.AntiForgeryToken()
                     <input type="hidden" id="gcId" name="ID" value="-1" />
                     <input type="hidden" id="gcGameId" name="GAME_ID" value="-1" />
@@ -599,6 +599,7 @@
                     @Html.Partial("_LabaWeights")
                     @Html.Partial("_MjhlWeights")
                     @Html.Partial("_RabbitConfig")
+                    @Html.Partial("_PhenixConfig")
                     <div class="gc-common">
                     <div class="gc-section-title">玩法与闲置处理</div>
                     <div class="gc-form-row">
@@ -652,6 +653,7 @@
     var GC_TABLES = [];
     var GC_NEW_TABLE_COUNT = 1;
     var GC_BATCH_SAVING = false;
+    var GC_LABA_SAVING = false;
     var GC_NEW_TABLE_MAX = 1000;
     var GC_TYPE_META = [
         { v: 2, t: '鱼机类型' },
@@ -726,7 +728,7 @@
         else if (hasGame && line && owned === 0) tip = '该线目前使用公共桌台';
         else if (hasGame && line) tip = '以下为该线专属桌台，参数只对该线玩家生效（需新版客户端）';
         $('#gcLineTip').text(tip);
-        if (gameId === 54) { $('#gcLineCopy,#gcLineRecall,#gcNewTable,#gcDelete,#gcRefresh').hide(); $('#gcLineTip').text(line ? '参数只对该代理线生效' : '请选择代理线'); }
+        if (gameId === 54) { $('#gcLineCopy,#gcLineRecall,#gcNewTable,#gcDelete,#gcRefresh').hide(); $('#gcLineTip').text(line === '*' ? '默认参数：未单独配置的代理线玩家按此生效' : (line ? '参数只对该代理线生效' : '请选择代理线')); }
     }
     function gcLineToken() { return $('#gcForm [name="__RequestVerificationToken"]').val(); }
     function gcReloadLinesAndTables() { gcLoadLines(function () { gcLoadTables(); }); }
@@ -919,7 +921,7 @@
         $('#gcParaFoot').toggle(!on);
         $('#gcNewTable,#gcDelete,#gcRefresh,#gcLineCopy,#gcLineRecall').toggle(!on && !gcCurLine());
         if (on) {
-            $('#gcCurTableName').text('麻将胡了 · ' + (gcCurLine() || '请选择代理线'));
+            $('#gcCurTableName').text('麻将胡了 · ' + (gcCurLine() === '*' ? '默认' : (gcCurLine() || '请选择代理线')));
             $('#gcMjhlAgentPanel .gc-weight-body').each(function () {
                 var body = $(this).empty(), mode = body.attr('data-mode'), modeName = mode === 'f' ? '免费局' : '普通局';
                 $.each(GC_MJHL_NAMES, function (i, name) {
@@ -1240,6 +1242,7 @@
         if (window.labaWeightsClear) window.labaWeightsClear();
         if (window.mjhlWeightsClear) window.mjhlWeightsClear();
         var type = gcGetType();
+        $('#gcForm').toggleClass('gc-laba-mode', gcLabaSubType() > 0);
         $('.gc-only-0,.gc-only-1,.gc-only-2,.gc-only-3').hide();
         $('.gc-common').show();
         $('.gc-base-info').show();
@@ -1283,7 +1286,7 @@
 
     function gcUpdateSaveBtn() {
         var isNew = parseInt($('#gcId').val(), 10) < 0;
-        $('#gcSave').text(isNew ? '新建桌台' : '更新桌台');
+        $('#gcSave').text(gcLabaSubType() > 0 ? '保存并热更新' : (isNew ? '新建桌台' : '更新桌台'));
     }
 
     function gcLoadTables(afterLoad) {
@@ -1330,6 +1333,7 @@
             }
             else if (gameType === 3) {
                 if (GC_TABLES.length > 0) gcSelectTableById(GC_TABLES[0].id);
+                else gcPrepareNewTableForm(1);
             }
             else gcPrepareNewTableForm(1);
         });
@@ -1385,6 +1389,7 @@
         if (window.labaWeightsLoad) window.labaWeightsLoad();
         if (window.mjhlWeightsLoad) window.mjhlWeightsLoad();
         if (window.rabbitConfigLoad) window.rabbitConfigLoad();
+        if (window.phenixConfigLoad) window.phenixConfigLoad();
         $('#gcCurTableName').text('当前编辑：' + t.tableName);
         gcSyncSwitch();
         gcUpdateSaveBtn();
@@ -1410,7 +1415,7 @@
     }
 
     function gcZeroForm() {
-        $('#gcForm input[type=number]').val(0);
+        $('#gcForm input[type=number]').not('#labaWeights input').val(0);
         $('#gcForm input[type=text]').val('');
         $('.gc-laba-ws, .gc-laba-ws-cat').val('');  // 水果每日次数（类别+隐藏面板位）：留空=不限（0=当天禁出，不能误存为 0）
         $('#gcCardDif').val('');
@@ -1435,7 +1440,7 @@
         gcSyncSwitch();
     }
 
-    // 恢复基础桌台默认值；中奖权重使用独立面板保存。
+    // 恢复基础桌台默认值，保留已编辑的中奖权重，统一由底部保存按钮提交。
     function gcResetForm() {
         gcZeroForm();
         if (gcGetType() !== 3) return;          // 非拉霸维持原"清空=默认"
@@ -1501,8 +1506,9 @@
         $('#gcTableName').val('');
         gcApplyType();
         $('#gcCurTableName').text(src
-            ? '新建' + GC_NEW_TABLE_COUNT + '张桌台（已套用最近桌台基础参数，填写桌名后保存；中奖权重须单独设置）'
-            : '新建' + GC_NEW_TABLE_COUNT + '张桌台（保存基础信息后设置中奖权重）');
+            ? '新建' + GC_NEW_TABLE_COUNT + '张桌台（已套用最近桌台基础参数，填写桌名并核对权重后保存）'
+            : '新建' + GC_NEW_TABLE_COUNT + '张桌台（基础参数与权重一并保存）');
+        if (window.labaWeightsLoad) window.labaWeightsLoad();
         gcSyncSwitch();
         gcUpdateSaveBtn();
     }
@@ -1946,6 +1952,7 @@
     // 服务端结算表与此处保持一致；后台只读展示，禁止被数据库旧值覆盖。
     var GC_MAG_TAB = {
         phenix: [0, 1, 2, 3, 5, 7, 10, 40, 80, 120, 250, 500, 1000],
+        dabaitu:[0, 1, 2, 3, 5, 7, 10, 50, 80, 120, 250, 500, 1000],
         king3:  [0, 1, 2, 3, 5, 7, 10, 60, 60, 120, 250, 500, 1000],
         dazhi:  [0, 1, 2, 3, 5, 7, 15, 65, 65, 150, 350, 250, 350],
         nba:    [0, 1, 2, 3, 5, 7, 10, 50, 50, 100, 400, 200, 1000],
@@ -1977,6 +1984,7 @@
         if (/dianshichengjin|dscj|点石成金|att|连环炮/i.test(name)) return 'dscj';
         if (/皇冠|king/i.test(name)) return 'king3';
         if (/大字|dazhi/i.test(name)) return 'dazhi';
+        if (/大白兔|dabaitu/i.test(name)) return 'dabaitu';
         return 'phenix';
     }
 
@@ -2006,6 +2014,7 @@
         if (key === 'dscj' && gcIsAttMhb()) return 'ATT满花版 倍数同 点石成金，按服务端 60% / 25% / 15% 抽档加权（满花 ×2/×3 与彩金未计入）';
         if (key === 'dscj') return '点石成金 倍数按服务端 60% / 25% / 15% 抽档加权';
         if (key === 'phenix') return '火凤凰小四梅按 40 档估算，实际结算由机台 40 / 50 档位决定';
+        if (key === 'dabaitu') return '大白兔小四梅按规则表单配置（默认 50 倍）';
         return '倍数取客户端固定值';
     }
 
@@ -2241,24 +2250,33 @@
         });
     }
 
+    function gcRequestTableSave(para, callback) {
+        if (para.LabaWeightsJson) { window.labaWeightsSubmit(GC_URL.save, para, callback); return; }
+        request(GC_URL.save, para, callback);
+    }
+
     // 批量新建仍复用单桌保存接口，按顺序提交，确保 AllocTableId 每次都读取到上一张新桌。
     // 不在前端复制各游戏类型的落库规则，继续沿用原有事务、校验和热更新逻辑。
     function gcSaveNewTables(basePara, count) {
         var completed = 0;
+        var batchGame = parseInt($('#gcGameId').val(), 10), batchLine = gcCurLine(), batchId = parseInt($('#gcId').val(), 10);
         GC_BATCH_SAVING = true;
+        if (basePara.LabaWeightsJson && window.labaWeightsSetSaving) window.labaWeightsSetSaving(true);
         $('#gcSave').prop('disabled', true).text('正在新建 0/' + count + ' 张');
 
         function finish(data) {
             GC_BATCH_SAVING = false;
+            if (basePara.LabaWeightsJson && window.labaWeightsSetSaving) window.labaWeightsSetSaving(false);
             $('#gcSave').prop('disabled', false);
             gcUpdateSaveBtn();
             gcMsg(data || { code: 0, content: '批量新建失败！' });
+            if (basePara.LabaWeightsJson && (batchGame !== parseInt($('#gcGameId').val(), 10) || batchLine !== gcCurLine() || batchId !== parseInt($('#gcId').val(), 10))) return;
             gcReloadAfterNewTables();
         }
 
         function saveNext() {
             var para = $.extend({}, basePara, { ID: -1 });
-            request(GC_URL.save, para, function (data) {
+            gcRequestTableSave(para, function (data) {
                 if (!data || !(data.code == 1 || data.datas === true)) {
                     var reason = data && (data.msg || data.content) ? (data.msg || data.content) : '服务器未返回成功结果';
                     finish({ code: 0, content: '已成功新建 ' + completed + '/' + count + ' 张桌台；第 ' + (completed + 1) + ' 张失败：' + reason });
@@ -2278,7 +2296,7 @@
     }
 
     function gcSave() {
-        if (GC_BATCH_SAVING) return;
+        if (GC_BATCH_SAVING || GC_LABA_SAVING) return;
         var type = gcGetType();
         if (type != 0 && type != 1 && type != 2 && type != 3) {
             showToast('请先选择游戏类型与对应游戏的桌台！', 'warning');
@@ -2357,13 +2375,28 @@
             delete para.JP_DIA; delete para.JP_AR;
         }
         para.__RequestVerificationToken = $('#gcForm [name="__RequestVerificationToken"]').val();
+        if (gcLabaSubType() > 0) {
+            if (!window.labaWeightsCollect) { showToast('开奖权重组件尚未载入，请刷新页面后重试。', 'warning'); return; }
+            try { $.extend(para, window.labaWeightsCollect()); }
+            catch (labaError) { showToast(labaError.message, 'warning'); return; }
+        }
         if (wasNew && GC_NEW_TABLE_COUNT > 1) {
             gcSaveNewTables(para, GC_NEW_TABLE_COUNT);
             return;
         }
-        request(GC_URL.save, para, function (data) {
+        var savingLaba = !!para.LabaWeightsJson, saveGame = parseInt($('#gcGameId').val(), 10), saveLine = gcCurLine();
+        if (savingLaba) {
+            GC_LABA_SAVING = true; $('#gcSave').prop('disabled', true);
+            if (window.labaWeightsSetSaving) window.labaWeightsSetSaving(true);
+        }
+        gcRequestTableSave(para, function (data) {
+            if (savingLaba) {
+                GC_LABA_SAVING = false; $('#gcSave').prop('disabled', false);
+                if (window.labaWeightsSetSaving) window.labaWeightsSetSaving(false);
+            }
             gcMsg(data);
             if (data && (data.code == 1 || data.datas === true)) {
+                if (savingLaba && (saveGame !== parseInt($('#gcGameId').val(), 10) || saveLine !== gcCurLine() || savedId !== parseInt($('#gcId').val(), 10))) return;
                 gcLoadTables(function () {
                     if (wasNew) {
                         if (GC_TABLES.length > 0) gcSelectTableById(gcLatestTable().id);

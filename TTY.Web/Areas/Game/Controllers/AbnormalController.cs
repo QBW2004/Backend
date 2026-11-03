@@ -121,6 +121,11 @@ namespace YYT.Web.Areas.Game.Controllers
                             continue;
                         row.Operator = audit.OptID;
                         row.OperationTime = audit.REC_TIME.ToString("yyyy-MM-dd HH:mm:ss");
+                        if (row.Type == "玩家" && audit.OPT == B_Users.PlayerFreezeAuditOpt
+                            && !string.IsNullOrWhiteSpace(audit.DestUserTitle))
+                        {
+                            row.Reason = audit.DestUserTitle;
+                        }
                     }
 
                     // 登录失败记录也必须服从同一管理范围。
