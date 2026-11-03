@@ -482,7 +482,7 @@ namespace YYT.BLL.EF
                 case (int)EControlMode.Kill: return "点杀";
                 case (int)EControlMode.Release: return "放水";
                 case (int)EControlMode.Limit: return "钻上限";
-                case (int)EControlMode.TotalKill: return "总点杀";
+                case (int)EControlMode.TotalKill: return "总吃分"; // 2026-11-03 手机端文案统一为“吃分”
                 case (int)EControlMode.TotalRelease: return "总放水";
                 case (int)EControlMode.TotalCard: return "总控牌";
             }
@@ -514,31 +514,6 @@ namespace YYT.BLL.EF
             if (mode == (int)EControlMode.TotalCard)
                 return (loginUser.IsRelease ?? 0) == 1;
             return false;
-        }
-
-        /// <summary>
-        /// 在线玩家的当前游戏能力校验。离线/大厅玩家不在这里拒绝，
-        /// 由中心服在玩家真正进入子游戏时按同一能力矩阵判定。
-        /// </summary>
-        private static Msg ValidateCurrentGameCapability(string userId, int mode)
-        {
-            if (mode != (int)EControlMode.TotalKill && mode != (int)EControlMode.TotalRelease)
-                return null;
-            try
-            {
-                PlayerRuntimeState state = new GameCommandService().QueryPlayerRuntimeState(userId);
-                if (state == null || !state.QuerySucceeded || state.RuntimeStatus != 1 || !state.GameId.HasValue)
-                    return null;
-                int gameId = state.GameId.Value;
-                if (!TotalControlRules.IsModeSupportedForGame(mode, gameId))
-                    return new Msg(0, TotalControlRules.UnsupportedModeMessage(mode, gameId));
-            }
-            catch (Exception ex)
-            {
-                // 实时查询失败时保留离线设置语义，中心服会在实际应用时返回明确拒绝。
-                LogHelper.WriteLog(typeof(B_UserControl), ex);
-            }
-            return null;
         }
 
         /// <summary>
@@ -651,9 +626,8 @@ namespace YYT.BLL.EF
             if (mode == 6 && (cardValue == 99 || (cardAction >= 15 && cardAction <= 17 && cardValue == 10)))
                 return CloseTotalControl(loginUser, userId.Trim(), 6, mobileFixedCard);
             string target = userId.Trim();
-            Msg currentCapability = ValidateCurrentGameCapability(target, mode);
-            if (currentCapability != null)
-                return currentCapability;
+            // 2026-11-03：取消“当前游戏暂不支持该总控模式”的后台预拦截（大白兔等游戏中也要能直接吃分/放水），
+            // 能力判定只以中心服实际回包为准：中心服明确返回 UCER 时下方仍会回滚本次 Active 行。
 
             // 本次设置覆盖掉的旧总控模式（吃分/放水互斥时记录旧模式），DB 落库后先补发解除指令
             List<int> overriddenModes = new List<int>();
@@ -663,7 +637,6 @@ namespace YYT.BLL.EF
                 var cardQuote = mode == 6 ? B_PrizePool.QuoteCard(target, cardAction, cardValue, cardNumber) : null;
                 if (cardQuote != null && expectedBetDiamonds.HasValue && Math.Round(cardQuote.BetDiamonds, 8) != Math.Round(expectedBetDiamonds.Value, 8))
                     return new Msg(0, "玩家押注已变化，请重新查询后送奖！");
-                decimal cardAmount = cardQuote == null ? 0 : cardQuote.RequiredDiamonds;
                 var location = cardQuote == null ? new YYT.BLL.Services.GameServer.PipeGameServerClient().QueryAllOnlinePlayers()?.FirstOrDefault(p => p.ID == target && p.Status == 0) : null;
                 using (var ef = new GameDbContext())
                 using (var transaction = ef.Database.BeginTransaction(System.Data.IsolationLevel.ReadCommitted))
@@ -682,7 +655,7 @@ namespace YYT.BLL.EF
                         return msg;
                     }
 
-                    B_PrizePool.CheckFunding(ef, loginUser, mode, goldThreshold, cardAmount);
+                    B_PrizePool.CheckFunding(ef, loginUser, mode, goldThreshold);
 
                     // 总控互斥新口径：吃分(4)/放水(5)互斥，后下的覆盖先下的；控牌(6)只替换旧控牌，与吃分/放水共存
                     var replaced = TotalControlRules.ModesReplacedBy(mode);
@@ -717,7 +690,7 @@ namespace YYT.BLL.EF
                     ef.SaveChanges();
                     createdControlId = row.ID;
                     B_PrizePool.AttachControl(ef, loginUser, row, cardQuote != null ? cardQuote.GameId : (location == null ? 0 : location.GameID),
-                        cardQuote != null ? (int?)cardQuote.TableId : (location == null ? null : (int?)location.TableId));
+                        cardQuote != null ? cardQuote.LiveTableId : (location == null ? null : (int?)location.TableId));
 
                     // 点杀记录由后台写入（含操作员），服务器侧不再记录，避免指令重发产生重复记录
                     int optCode = mode == (int)EControlMode.TotalKill ? 21 : (mode == (int)EControlMode.TotalRelease ? 22 : 23);

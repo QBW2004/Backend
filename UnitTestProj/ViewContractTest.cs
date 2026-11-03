@@ -1493,7 +1493,7 @@ namespace UnitTestProj
 
             // 总输赢取后台口径（user_daily_winloss 累计），不能优先取游戏服 QA 的 TotalWinLoss：
             // 后者是本局/本次在线口径，会让同一玩家在线与离线看到两个不同的数
-            StringAssert.Contains(players, "Number(p.Profit != null ? p.Profit : (p.TotalWinLoss || 0))");
+            StringAssert.Contains(players, "M.roundInt(p.Profit != null ? p.Profit : (p.TotalWinLoss || 0))");
 
             // 控制状态进度原样展示：ConsumedCoins 是净口径、可能为负，取反会把"已吃分 2608"显示成 -2608
             Assert.IsFalse(players.Contains("M.gold(-Number(control.ConsumedCoins"),
@@ -1542,6 +1542,63 @@ namespace UnitTestProj
         [TestMethod]
         public void MobileRechargeSendsLockUnlockImmediately()
         {
+        [TestMethod]
+        public void MobilePrizePoolOperationRound20261103()
+        {
+            string control = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.control.js");
+            string controlView = ReadRepoFile(@"TTY.Web\Areas\Mobile\Views\Home\Control.cshtml");
+            string layout = ReadRepoFile(@"TTY.Web\Views\Shared\Layout\_MobileLayout.cshtml");
+            string home = ReadRepoFile(@"TTY.Web\Areas\Mobile\Controllers\HomeController.cs");
+            string flow = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.agentflow.js");
+            string flowView = ReadRepoFile(@"TTY.Web\Areas\Mobile\Views\Home\AgentFlow.cshtml");
+            string pool = ReadRepoFile(@"YYT.BLL\EF\B_PrizePool.cs");
+            string userControl = ReadRepoFile(@"YYT.BLL\EF\B_UserControl.cs");
+            string players = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.players.js");
+            string sql = ReadRepoFile(@"Docs\sql\奖池精准扣除与明细保留-20261103.sql");
+
+            // 1/2 在线按所在游戏预选“送奖+游戏”，离线/不支持送奖的游戏默认吃分
+            StringAssert.Contains(control, "presetMode(row, r.datas.CurrentGameId);");
+            StringAssert.Contains(control, "playable && hasMode(6) ? 6 : (hasMode(4) ? 4 :");
+            // 3 不再要求玩家已在所选游戏押注；4 不再做后台游戏能力预拦截
+            Assert.IsFalse(pool.Contains("请让玩家进入所选游戏并完成押注后再送奖"));
+            Assert.IsFalse(userControl.Contains("ValidateCurrentGameCapability("));
+            // 5 盈亏取整
+            StringAssert.Contains(players, "var today = M.roundInt(p.TodayWinLoss);");
+            StringAssert.Contains(control, "var today = M.roundInt(row.TodayWinLoss);");
+            // 6 记录按游戏筛选、不按账号框过滤，加载提示
+            StringAssert.Contains(control, "CardAction: historyCardAction(), StartTime: start");
+            StringAssert.Contains(control, "$('#sentDiamonds').text('加载中...');");
+            StringAssert.Contains(pool, "AND ((c.ControlMode=6 AND c.GameId={4}) OR (c.ControlMode<>6 AND p.ActualGameId={5}))");
+            // 7 送奖只要求余额>0，开奖与放水扣到0为止、放水封顶目标
+            StringAssert.Contains(control, "if (!(Number(wallet.Balance) > 0))");
+            StringAssert.Contains(sql, "SET vPaid=LEAST(vAmount,GREATEST(vBalance,0));");
+            StringAssert.Contains(sql, "IF vTarget>0 THEN SET vNew=LEAST(vNew,vTarget); END IF;");
+            // 8 充值奖池按钮：放水或控牌权限才显示，样式同返回按钮
+            StringAssert.Contains(layout, "@if (mPage == \"control\" && canPoolRecharge)");
+            Assert.IsFalse(controlView.Contains("#poolRechargeBtn { background: transparent; }"));
+            // 9 侧栏奖池记录（控牌权限），位于充退记录与冻结明细之间
+            int recIdx = layout.IndexOf("Url.Action(\"Records\""), poolIdx = layout.IndexOf("Url.Action(\"PoolRecords\""), frozenIdx = layout.IndexOf("Url.Action(\"Abnormal\"");
+            Assert.IsTrue(recIdx > 0 && recIdx < poolIdx && poolIdx < frozenIdx);
+            StringAssert.Contains(home, "public ActionResult PoolRecords()");
+            // 10 单输入框：正数充值、负数退回
+            StringAssert.Contains(control, "placeholder=\"正数充值，负数扣减奖池\"");
+            StringAssert.Contains(control, "withdraw = text.charAt(0) === '-';");
+            // 12 只有总台/特级代理可切奖池
+            StringAssert.Contains(flowView, "@if (canPool && !poolOnly)");
+            StringAssert.Contains(pool, "(user.UserPriv ?? -1) > AgencyRules.TopAgentPriv");
+            // 13/14 默认当天、备注列、余额列固定
+            StringAssert.Contains(flow, "$('#startDate').val(dateValue(today));$('#endDate').val(dateValue(today));");
+            StringAssert.Contains(flow, "if (kind === 3) return '控牌支出'");
+            StringAssert.Contains(flowView, ".flow-table.pool-mode th:first-child, .flow-table.pool-mode td:first-child { position:sticky; left:0;");
+            // 15 奖池明细保留 35 天
+            StringAssert.Contains(pool, "public const int LedgerKeepDays = 35;");
+            // 16 文案
+            StringAssert.Contains(home, "ViewBag.MTitle = \"操作管理\";");
+            StringAssert.Contains(controlView, "<label class=\"form-label\" for=\"ctrlMode\">操作类型</label>");
+            StringAssert.Contains(controlView, "<option value=\"6\">送奖</option>");
+            StringAssert.Contains(userControl, "case (int)EControlMode.TotalKill: return \"总吃分\";");
+        }
+
             string rechargeBll = ReadRepoFile(@"YYT.BLL\EF\B_Recharge.cs");
 
             // 手机端充退不能只把 LK/UL 记入发件箱等定时重试（间隔 60s），否则充退要等一会儿才在游戏内生效；

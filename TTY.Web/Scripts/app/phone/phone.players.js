@@ -93,10 +93,11 @@
         var machineText = isOnline ? (p.TableId != null ? (Number(p.TableId) + 1) : '--') : '--';
         var betText = isOnline ? M.betGold(p.CurBet, p.GameID) : '--';
 
-        var today = Number(p.TodayWinLoss || 0);
+        // 今日/总输赢只显示整数（四舍五入），颜色按取整后的值判断，避免 +0 / -0 带色
+        var today = M.roundInt(p.TodayWinLoss);
         // 总输赢统一取后台口径（user_daily_winloss 累计，与电脑端"总盈亏"、手机端会员盈亏同口径）；
         // 不再优先用游戏服 QA 的 TotalWinLoss——那是本局/本次在线口径，同一玩家在线与离线会显示两个数。
-        var total = Number(p.Profit != null ? p.Profit : (p.TotalWinLoss || 0));
+        var total = M.roundInt(p.Profit != null ? p.Profit : (p.TotalWinLoss || 0));
         var twColor = today > 0 ? 'positive' : (today < 0 ? 'negative' : '');
         var ttColor = total > 0 ? 'positive' : (total < 0 ? 'negative' : '');
 
@@ -150,8 +151,8 @@
                         '<div class="info-item"><span class="info-label">押注</span><span class="info-value money-value">' + M.esc(betText) + '</span></div>' +
                     '</div>' +
                     '<div class="info-row money-row">' +
-                        '<div class="info-item"><span class="info-label">今日输赢(钻)</span><span class="info-value money-value ' + twColor + '">' + (today > 0 ? '+' : '') + M.gold(today) + '</span></div>' +
-                        '<div class="info-item"><span class="info-label">总输赢(钻)</span><span class="info-value money-value ' + ttColor + '">' + (total > 0 ? '+' : '') + M.gold(total) + '</span></div>' +
+                        '<div class="info-item"><span class="info-label">今日输赢(钻)</span><span class="info-value money-value ' + twColor + '">' + (today > 0 ? '+' : '') + today + '</span></div>' +
+                        '<div class="info-item"><span class="info-label">总输赢(钻)</span><span class="info-value money-value ' + ttColor + '">' + (total > 0 ? '+' : '') + total + '</span></div>' +
                     '</div>' +
                     controlRow +
                     loginRow +

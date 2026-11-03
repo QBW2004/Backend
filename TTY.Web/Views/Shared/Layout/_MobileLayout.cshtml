@@ -10,6 +10,9 @@
     bool canUpDown = isSuper || (mUser != null && mUser.IsUpDown == 1);
     bool canFrozen = mUser != null;
     bool canCreateAgent = isSuper || (mUser != null && mUser.IsCreateAgent == 1);
+    // 奖池：控牌(IsRelease)权限才有侧栏“奖池记录”；放水(IsProbability)或控牌任一权限才显示“充值奖池”按钮
+    bool canCardPool = isSuper || (mUser != null && mUser.IsRelease == 1);
+    bool canPoolRecharge = canCardPool || (mUser != null && mUser.IsProbability == 1);
 
     // 当前页标识，用于抽屉菜单高亮
     string mPage = ViewBag.MPage == null ? "" : (string)ViewBag.MPage;
@@ -90,9 +93,9 @@
                     <svg viewBox="0 0 24 24" width="24" height="24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"></path></svg>
                 </button>
             }
-            @if (mPage == "control")
+            @if (mPage == "control" && canPoolRecharge)
             {
-                <button type="button" class="refresh-btn" id="poolRechargeBtn" style="font-size:13px;padding:0 9px;">充值奖池</button>
+                <button type="button" class="refresh-btn pool-recharge-btn" id="poolRechargeBtn">充值奖池</button>
             }
             @if (showRefresh)
             {
@@ -159,6 +162,13 @@
                     <svg viewBox="0 0 24 24" width="24" height="24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-7-2h2v-4h4v-2h-4V7h-2v4H8v2h4z" fill="currentColor"></path></svg>
                     充退记录
                 </a>
+                @if (canCardPool)
+                {
+                    <a href="@Url.Action("PoolRecords", "Home", new { area = "Mobile" })" class="sidebar-menu-item">
+                        <svg viewBox="0 0 24 24" width="24" height="24"><path d="M21 7.28V5c0-1.1-.9-2-2-2H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-2.28c.59-.35 1-.98 1-1.72V9c0-.74-.41-1.37-1-1.72zM20 9v6h-7V9h7zM5 19V5h14v2h-6c-1.1 0-2 .9-2 2v6c0 1.1.9 2 2 2h6v2H5z" fill="currentColor"></path><circle cx="16" cy="12" r="1.5" fill="currentColor"></circle></svg>
+                        奖池记录
+                    </a>
+                }
                 <a href="@Url.Action("Abnormal", "Home", new { area = "Mobile" })" class="sidebar-menu-item">
                         <svg viewBox="0 0 24 24" width="24" height="24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z" fill="currentColor"></path></svg>
                         冻结明细

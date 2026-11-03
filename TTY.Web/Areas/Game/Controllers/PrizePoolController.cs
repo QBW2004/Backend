@@ -46,7 +46,7 @@ namespace YYT.Web.Areas.Game.Controllers
             if (!DateTime.TryParse(form["StartTime"], out start) || !DateTime.TryParse(form["EndTime"], out end) || start.Date > end.Date || end.Date == DateTime.MaxValue.Date)
                 return Json(new Msg(0, "请选择有效的日期范围！"));
             var page = new M_Page(Math.Max(1, Math.Min(1000000, form.Q<int>("page", 1))), Math.Max(1, Math.Min(100, form.Q<int>("rows", 20))));
-            return Execute(user => new B_PrizePool().GetControlRecords(user, page, (form["ID"] ?? "").Trim(), start.Date, end.Date.AddDays(1)));
+            return Execute(user => new B_PrizePool().GetControlRecords(user, page, (form["ID"] ?? "").Trim(), start.Date, end.Date.AddDays(1), form.Q<int>("CardAction", 0)));
         }
 
         [AjaxOnly, HttpPost, JsonAntiForgery]
@@ -86,14 +86,17 @@ namespace YYT.Web.Areas.Game.Controllers
                 var row = rows.FirstOrDefault();
                 if (row == null) return new Msg(0, "未查询到该玩家，请确认账号是否正确");
                 decimal? bet = null;
+                int? gameId = null;
                 if (row.INHALL)
                 {
                     var online = new PipeGameServerClient().QueryAllOnlinePlayers();
                     var live = online == null ? null : online.FirstOrDefault(p => p.ID == row.ID);
                     if (live != null && live.Status == 0 && live.CurBetUnitsPerCoin > 0)
                         bet = live.CurBetDiamonds ?? (decimal)live.CurBet / live.CurBetUnitsPerCoin.Value;
+                    // 当前所在游戏：手机送奖页据此默认选中“送奖+对应游戏类型”（大厅/房间内为 0）
+                    if (live != null && live.Status == 0) gameId = live.GameID;
                 }
-                return new Msg(1, "查询成功") { datas = new { Player = row, CurrentBetDiamonds = bet } };
+                return new Msg(1, "查询成功") { datas = new { Player = row, CurrentBetDiamonds = bet, CurrentGameId = gameId } };
             });
         }
 

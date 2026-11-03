@@ -151,6 +151,8 @@ button, a {
 .back-btn { left: 0; }
 .refresh-btn { right: 0; }
 .search-btn { right: 52px; }
+/* 送奖管理页“充值奖池”：与返回按钮同一底色/圆角/高度，只是带文字 */
+.refresh-btn.pool-recharge-btn { padding: 0 12px; font-size: 14px; font-weight: 500; white-space: nowrap; }
 
 /* 标题/副标题是纯文本，永不交互：从命中测试中剔除。其全宽盒子与头部按钮
    在垂直方向重叠，旧内核（微信 X5/老 WebKit）会按 DOM 顺序命中，导致

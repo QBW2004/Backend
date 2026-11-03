@@ -121,6 +121,17 @@
         return value == null || !isFinite(n) ? '--' : n.toFixed(8).replace(/\.?0+$/, '');
     };
 
+    /**
+     * 盈亏整数显示（2026-11-03 需求：今日/总盈亏不显示小数）：四舍五入（远离零），
+     * 只改展示，不改数据口径；-0 显示为 0。
+     */
+    M.roundInt = function (value) {
+        var n = Number(value || 0);
+        if (!isFinite(n)) return 0;
+        var r = (n < 0 ? -1 : 1) * Math.round(Math.abs(n));
+        return r === 0 ? 0 : r;
+    };
+
     M.fmtTime = function (v, withSec) {
         if (!v) return '--';
         var d = null;
@@ -620,6 +631,13 @@
             var gid = CARD_ACTION_GAME[a.id];
             return !gid || pg.indexOf(gid) >= 0;
         });
+    };
+    /** 平台 GameId → 控牌指令号（送奖页按玩家当前所在游戏默认选中游戏类型）；无对应送奖游戏返回 0 */
+    M.cardActionOfGame = function (gameId) {
+        gameId = Number(gameId);
+        for (var k in CARD_ACTION_GAME)
+            if (CARD_ACTION_GAME.hasOwnProperty(k) && CARD_ACTION_GAME[k] === gameId && Number(k) !== 12) return Number(k);
+        return 0;
     };
 
     // 历史控牌游戏名兼容表；当前可选列表优先，游戏暂时移出列表时仍能回显。

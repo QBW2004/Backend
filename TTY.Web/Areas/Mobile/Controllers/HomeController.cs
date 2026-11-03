@@ -228,7 +228,7 @@ namespace YYT.Web.Areas.Mobile.Controllers
                 return RedirectToAction("Index");
 
             ViewBag.MPage = "control";
-            ViewBag.MTitle = "送奖管理";
+            ViewBag.MTitle = "操作管理";
             ViewBag.MSubtitle = null;
             ViewBag.MShowRefresh = false;
             ViewBag.CanKill = canKill;
@@ -308,7 +308,27 @@ namespace YYT.Web.Areas.Mobile.Controllers
             ViewBag.MSubtitle = "查看代理资金流向";
             ViewBag.MShowRefresh = true;
             ViewBag.AgentId = Request.QueryString["id"] ?? string.Empty;
+            // 只有总台/特级代理查看下级时可切到“奖池”；1 级及以下只看代理流水（接口侧同样限制）
+            M_LoginUser user = WebHelper.GetLoginInfo();
+            ViewBag.CanPool = user != null && user.UserPriv.HasValue && user.UserPriv.Value <= YYT.BLL.EF.AgencyRules.TopAgentPriv && user.UserPriv.Value >= 0;
+            ViewBag.PoolOnly = false;
             return View();
+        }
+
+        /// <summary>侧栏“奖池记录”：只看自己的奖池明细（与代理流水-奖池同一份明细），需控牌权限。</summary>
+        public ActionResult PoolRecords()
+        {
+            M_LoginUser user = WebHelper.GetLoginInfo();
+            if (user == null || !(IsSuper(user) || user.IsRelease == 1))
+                return RedirectToAction("Index");
+            ViewBag.MPage = "poolrecords";
+            ViewBag.MTitle = "奖池记录";
+            ViewBag.MSubtitle = "查看我的奖池明细";
+            ViewBag.MShowRefresh = true;
+            ViewBag.AgentId = user.Accounts;
+            ViewBag.CanPool = true;
+            ViewBag.PoolOnly = true;
+            return View("AgentFlow");
         }
         #endregion
     }

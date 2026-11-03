@@ -2,6 +2,9 @@
     /* 代理流水（展示单个代理与对方账号之间的资金变动记录） */
     string webVer = ConfigHelper.Get("WebVer");
     string today = DateTime.Now.ToString("yyyy-MM-dd");
+    // CanPool：总台/特级代理才可选“奖池”；PoolOnly：侧栏“奖池记录”，固定看自己的奖池明细
+    bool canPool = ViewBag.CanPool == true;
+    bool poolOnly = ViewBag.PoolOnly == true;
     Layout = "~/Views/Shared/Layout/_MobileLayout.cshtml";
 }
 
@@ -215,9 +218,18 @@
     #poolQueryField { flex:0 0 112px; }
     #poolPlayerField { flex:1; }
     .pool-flow-summary { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-top:12px; background:#fff; }
-    .pool-flow-summary > div { min-width:0; text-align:left; background:#f5f7fa; padding:12px 8px; border-radius:8px; }
+    .pool-flow-summary > div { min-width:0; text-align:center; background:#f5f7fa; padding:12px 8px; border-radius:8px; }
     .pool-flow-summary span { display:block; font-size:11px; line-height:1.5; color:#86868b; }
     .pool-flow-summary strong { display:block; margin-top:6px; font-size:18px; line-height:1.25; overflow-wrap:anywhere; font-variant-numeric:tabular-nums; }
+    /* 奖池数值统一配色：余额蓝、充值/返还绿、支出红、退回橙 */
+    #poolRechargeTotal, .pool-in { color:#34c759; }
+    #poolWithdrawTotal, .pool-back { color:#ff9500; }
+    #poolSentTotal, .pool-out { color:#ff3b30; }
+    .pool-balance-cell, #agentCoins.pool { color:#007aff; font-weight:600; }
+    .pool-in, .pool-out, .pool-back { font-weight:500; font-variant-numeric:tabular-nums; }
+    .pool-remark { color:#666; }
+    /* 奖池明细左右滑动时“奖池余额”列固定（与控牌记录同一做法） */
+    .flow-table.pool-mode th:first-child, .flow-table.pool-mode td:first-child { position:sticky; left:0; z-index:1; background:#fff; box-shadow:1px 0 0 #f0f0f0; }
     .flow-table-container { margin-bottom:0; }
     .flow-table-container .no-data { padding:32px 12px; font-size:14px; }
     .flow-filter-card input:focus, .flow-filter-card select:focus, .pool-agent-heading select:focus { outline:2px solid rgba(0,122,255,.2); outline-offset:1px; border-color:#007aff; }
@@ -242,7 +254,7 @@
 
     <div class="container">
         <div class="agent-info-card" id="agentInfoCard" style="display:none;">
-            <div class="pool-agent-heading"><span>代理账号：<strong id="agentAccount">--</strong></span><label>类型<select id="flowType"><option value="pool">奖池</option><option value="money">资金流水</option></select></label></div>
+            <div class="pool-agent-heading"><span>代理账号：<strong id="agentAccount">--</strong></span>@if (canPool && !poolOnly) {<label>类型<select id="flowType"><option value="pool">奖池</option><option value="money">资金流水</option></select></label>} else {<input type="hidden" id="flowType" value="@(poolOnly ? "pool" : "money")">}</div>
             <div class="pool-agent-balance"><span id="flowBalanceLabel">奖池余额:</span><strong id="agentCoins">--</strong></div>
         </div>
         <div class="flow-filter-card">

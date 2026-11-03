@@ -49,7 +49,28 @@
 
     function modeName(mode) {
         mode = parseInt(mode, 10);
-        return mode == 4 ? '吃分' : (mode == 5 ? '放水' : (mode == 6 ? '控牌' : ''));
+        return mode == 4 ? '吃分' : (mode == 5 ? '放水' : (mode == 6 ? '送奖' : ''));
+    }
+
+    function hasMode(mode) {
+        return $('#ctrlMode option').filter(function () { return this.value === String(mode); }).length > 0;
+    }
+
+    /**
+     * 查到玩家后按状态预选操作类型（2026-11-03）：
+     * 在线且正在可送奖的游戏里 → 送奖 + 该游戏；其余（离线/大厅/鱼机押注等不支持送奖的游戏）→ 吃分；
+     * 没有对应权限时退回下拉第一项（只有一个权限时就只有那一项）。预选后仍可手动修改。
+     */
+    function presetMode(row, gameId) {
+        var action = row && row.INHALL === true ? M.cardActionOfGame(gameId) : 0;
+        var playable = action > 0 && $.grep(M.playableCardActions(M.CARD_ACTIONS), function (a) { return a.id == action; }).length > 0;
+        var mode = playable && hasMode(6) ? 6 : (hasMode(4) ? 4 : parseInt($('#ctrlMode option:first').val() || '0', 10));
+        $('#ctrlMode').val(String(mode));
+        bindMode();
+        if (mode == 6) {
+            $('#ctrlCardAction').val(String(action));
+            fillSelect($('#ctrlCardValue'), M.cardTypeData(action), false);
+        }
     }
 
     /* ---------------- 账号实时模糊联想 ---------------- */
@@ -128,6 +149,7 @@
                 }
                 current = row;
                 renderPlayer(row, r.datas.CurrentBetDiamonds);
+                presetMode(row, r.datas.CurrentGameId);
                 updateButtons();
                 refreshWallet();
                 loadHistory(true);
@@ -139,11 +161,12 @@
         var online = row.INHALL === true;
         // 当前押注使用中心服报文中的实际桌台兑换比；旧中心无比率时显示 --，不把机台分标成钻。
         $('#stBet').text(diamonds(betDiamonds)).removeClass('positive negative');
-        var today = Number(row.TodayWinLoss || 0);
-        $('#stToday').text((today > 0 ? '+' : '') + diamonds(today))
+        // 今日/总盈亏只显示整数（四舍五入），与玩家列表同口径
+        var today = M.roundInt(row.TodayWinLoss);
+        $('#stToday').text((today > 0 ? '+' : '') + today)
             .toggleClass('positive', today > 0).toggleClass('negative', today < 0);
-        var total = Number(row.Profit || 0);
-        $('#stTotal').text((total > 0 ? '+' : '') + diamonds(total))
+        var total = M.roundInt(row.Profit);
+        $('#stTotal').text((total > 0 ? '+' : '') + total)
             .toggleClass('positive', total > 0).toggleClass('negative', total < 0);
         $('#piOnline').text(online ? '在线' : '离线').attr('class', 'info-value ' + (online ? 'status-online' : 'status-offline'));
         $('#statCards, #playerMeta').addClass('show');
@@ -241,7 +264,8 @@
                     if (!r.ok) { M.alert(r.text, false); return; }
                     wallet = r.datas.Wallet;
                     $('#poolBalance').text(diamonds(wallet.Balance)); $('#myDiamonds').text(diamonds(wallet.Diamonds));
-                    if (Number(wallet.Balance) < Number(r.datas.Quote.RequiredDiamonds)) { M.alert('奖池余额不足，请充值奖池', false); return; }
+                    // 不再要求“送出得分 ≤ 奖池余额”：得分超过余额时开奖扣到 0 为止，奖池不出现负数；余额为 0 才拦
+                    if (!(Number(wallet.Balance) > 0)) { M.alert('奖池余额不足，请充值奖池', false); return; }
                     confirmApply(para, r.datas.Quote);
                 }, function () { M.toast('送奖金额读取失败，请重试', 'error'); })
                 .always(function () { submitting = false; updateButtons(); });
@@ -252,14 +276,16 @@
 
     function confirmApply(para, quote) {
         var mode = para.Mode;
-        if (quote) para.ExpectedBetDiamonds = quote.BetDiamonds;
+        if (quote && !quote.NoBet) para.ExpectedBetDiamonds = quote.BetDiamonds;
         var desc = mode == 6
-            ? '对玩家 ' + para.ID + ' 执行 控牌（' + M.cardActionName(para.CardAction) +
+            ? '对玩家 ' + para.ID + ' 执行 送奖（' + M.cardActionName(para.CardAction) +
               ' ' + M.cardTypeName(para.CardAction, para.CardValue) + '，1 次（5 把之内））？'
             : '对玩家 ' + para.ID + ' 执行 ' + modeName(mode) + '（目标 ' + diamonds(para.GoldThreshold) + '钻）？';
 
-        if (quote) desc += '\n' + (quote.Estimated ? '预计需备足 ' : '本次送奖需 ') + diamonds(quote.RequiredDiamonds) + '钻（押注 ' + diamonds(quote.BetDiamonds) + '钻 × ' + quote.Multiplier + '倍）';
-        M.confirm(desc, '控制确认').then(function (ok) {
+        if (quote && quote.NoBet) desc += '\n玩家当前未在该游戏押注，开奖时按实际押注 × ' + quote.Multiplier + '倍从奖池扣除';
+        else if (quote) desc += '\n' + (quote.Estimated ? '预计送出 ' : '本次送出 ') + diamonds(quote.RequiredDiamonds) + '钻（押注 ' + diamonds(quote.BetDiamonds) + '钻 × ' + quote.Multiplier + '倍）';
+        if (quote) desc += '\n奖池余额不足时扣至 0 为止';
+        M.confirm(desc, '操作确认').then(function (ok) {
             if (!ok || !current || current.ID !== para.ID) return;
             if (submitting) return;
             submitting = true;
@@ -362,7 +388,17 @@
         });
     }
 
-    function loadHistory(reset) {
+    /** 记录筛选的游戏：送奖模式下取“游戏类型”下拉；吃分/放水不分游戏（0 = 全部） */
+    function historyCardAction() {
+        return currentMode() == 6 ? (parseInt($('#ctrlCardAction').val(), 10) || 0) : 0;
+    }
+
+    /**
+     * 送奖明细：本代理在所选游戏、所选日期内的全部记录（不按查询的玩家过滤）。
+     * 原先按账号框过滤，账号框里残留内容时选日期点刷新看起来“没反应”。
+     * quiet=true 为 10 秒轮询，不改加载提示，避免数字闪烁。
+     */
+    function loadHistory(reset, quiet) {
         var start = $('#controlStart').val(), end = $('#controlEnd').val();
         if (!start || !end || start > end) { M.toast('请选择有效的日期范围', 'error'); return; }
         if (!reset && historyBusy) return;
@@ -370,10 +406,15 @@
         var seq = ++historySeq, page = historyPage;
         historyBusy = true;
         $('#controlMore').prop('disabled', true);
-        M.post('/Game/PrizePool/Records', { ID: current ? current.ID : $.trim($('#ctrlAccount').val()), StartTime: start, EndTime: end, page: page, rows: 20 })
+        if (reset && !quiet) {
+            $('#sentDiamonds').text('加载中...');
+            $('#controlCount').text('共 -- 条');
+            $('#controlRows').html('<tr><td class="empty-row" colspan="8">加载中...</td></tr>');
+        }
+        M.post('/Game/PrizePool/Records', { CardAction: historyCardAction(), StartTime: start, EndTime: end, page: page, rows: 20 })
             .then(function (res) {
                 if (seq !== historySeq) return;
-                if (!res || res.rows == null) { M.toast(M.result(res).text || '送奖明细读取失败', 'error'); return; }
+                if (!res || res.rows == null) { $('#sentDiamonds').text('--'); M.toast(M.result(res).text || '送奖明细读取失败', 'error'); return; }
                 var html = res.rows.map(recordHtml).join('');
                 if (reset) $('#controlRows').html(html || '<tr><td class="empty-row" colspan="8">暂无送奖记录</td></tr>');
                 else $('#controlRows').append(html);
@@ -382,7 +423,7 @@
                 $('#controlCount').text('共 ' + res.total + ' 条');
                 $('#controlMore').toggle(page * 20 < res.total);
                 historyPage = page + 1;
-            }, function () { if (seq === historySeq) M.toast('送奖明细读取失败，请重试', 'error'); })
+            }, function () { if (seq === historySeq) { $('#sentDiamonds').text('--'); M.toast('送奖明细读取失败，请重试', 'error'); } })
             .always(function () { if (seq === historySeq) { historyBusy = false; $('#controlMore').prop('disabled', false); } });
     }
 
@@ -391,26 +432,32 @@
         return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) { var r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16); });
     }
 
+    /**
+     * 充值奖池弹窗（对齐参考后台）：只有一个金额框——正数=从我的钻充值到奖池，
+     * 前面加“-”=从奖池退回我的钻；仍走原 Transfer 接口（Withdraw=1 为退回），请求号防重复提交。
+     */
     function rechargePool() {
         if (submitting) return;
         if (!wallet) { refreshWallet(); M.toast('请等待奖池余额读取完成', 'error'); return; }
         var amount = 0, withdraw = false, token = requestId();
-        M.modal({ title: '奖池充值 / 退回', bodyHTML: '<div>奖池余额（钻）：' + M.esc(diamonds(wallet.Balance)) + '</div><div>我的余额（钻）：' +
-            M.esc(diamonds(wallet.Diamonds)) + '</div><label class="pool-modal-field">操作<select id="poolDirection" class="input-field"><option value="in">充值奖池</option><option value="out">退回我的余额</option></select></label><label class="pool-modal-field">操作金额（钻）<input id="poolAmount" class="input-field" type="number" min="1" step="1" inputmode="numeric" placeholder="请输入整数钻数"></label><div class="pool-modal-tip">充值：我的余额 → 奖池；退回：奖池 → 我的余额</div>',
-            buttons: [{label:'取消',value:false},{label:'确认',type:'confirm',value:true}],
+        M.modal({ title: '充值奖池', bodyHTML: '<label class="pool-modal-field">充值金额 (钻石)<input id="poolAmount" class="input-field" type="text" inputmode="numeric" autocomplete="off" placeholder="正数充值，负数扣减奖池"></label><div class="pool-modal-error" id="poolAmountError"></div>',
+            buttons: [{label:'取消',value:false},{label:'确认充值',type:'confirm',value:true}],
             beforeClose: function (value, $modal) {
                 if (!value) return true;
                 var text = $.trim($modal.find('#poolAmount').val());
-                amount = Number(text);
-                withdraw = $modal.find('#poolDirection').val() === 'out';
-                if (!/^[1-9][0-9]*$/.test(text) || amount > 9007199254740991 || amount > Number(withdraw ? wallet.Balance : wallet.Diamonds)) { M.toast('请输入不超过可用余额的正整数金额', 'error'); return false; }
+                var $err = $modal.find('#poolAmountError');
+                if (!/^-?[1-9][0-9]*$/.test(text)) { $err.text('请输入非 0 整数，负数表示退回我的钻'); return false; }
+                withdraw = text.charAt(0) === '-';
+                amount = Number(withdraw ? text.substring(1) : text);
+                if (amount > 9007199254740991) { $err.text('金额过大'); return false; }
+                if (amount > Number(withdraw ? wallet.Balance : wallet.Diamonds)) { $err.text(withdraw ? '奖池余额不足' : '我的钻石不足'); return false; }
                 return true;
             }
         }).then(function (ok) {
             if (!ok || submitting) return;
             submitting = true; updateButtons(); M.loading(withdraw ? '退回中...' : '充值中...');
             M.post('/Game/PrizePool/Transfer', {Amount:amount,RequestId:token,Withdraw:withdraw ? 1 : 0}).always(M.hideLoading)
-                .then(function (res) { var r = M.result(res); M.alert(r.text, r.ok); refreshWallet(); }, function () { M.toast('充值结果暂未确认，请刷新余额后核对流水', 'error'); refreshWallet(); })
+                .then(function (res) { var r = M.result(res); M.alert(r.ok ? (withdraw ? '已退回 ' + amount + ' 钻到我的钻石' : '奖池充值成功') : r.text, r.ok); refreshWallet(); }, function () { M.toast('充值结果暂未确认，请刷新余额后核对流水', 'error'); refreshWallet(); })
                 .always(function () { submitting = false; updateButtons(); });
         });
     }
@@ -426,7 +473,7 @@
         $('#controlMore').on('click', function () { loadHistory(false); });
         $('#controlRows').on('click', '.record-remove-btn', removeRecord);
         $('#poolRechargeBtn').on('click', rechargePool);
-        refreshWallet(); loadHistory(true);
+        refreshWallet(); // 送奖明细在 bindMode 填好游戏下拉后再读（见本函数末尾）
         var preset = window.MPagePreset || {};
         if (preset.account) {
             $('#ctrlAccount').val(preset.account);
@@ -460,9 +507,10 @@
             acHide();
             queryPlayer();
         });
-        $('#ctrlMode').on('change', bindMode);
+        $('#ctrlMode').on('change', function () { bindMode(); loadHistory(true); });
         $('#ctrlCardAction').on('change', function () {
             fillSelect($('#ctrlCardValue'), M.cardTypeData(parseInt($(this).val(), 10)), false);
+            loadHistory(true); // 换游戏即按新游戏刷新送奖明细
         });
         $('#applyBtn').on('click', applyControl);
         $('#closeCtrlBtn').on('click', closeControl);
@@ -474,9 +522,10 @@
         // 控制状态轮询：查询到玩家后每 10s 重拉一次进度（已吃分/剩余次数靠游戏服回写库表，
         // 不轮询就停在下发时的快照）。页面隐藏时暂停（与在线页同一口径）；
         // 独立页面离开即销毁，在途请求由 M.post 在 pagehide 统一中断，无需手动清定时器。
-        setInterval(function () { if (!document.hidden) { refreshCtrlStatus(true); refreshWallet(); if (historyPage <= 2 && !historyBusy) loadHistory(true); } }, 10000);
+        setInterval(function () { if (!document.hidden) { refreshCtrlStatus(true); refreshWallet(); if (historyPage <= 2 && !historyBusy) loadHistory(true, true); } }, 10000);
 
         bindMode();
+        if (!preset.account) loadHistory(true);
     }
 
     // 脚本在 body 末尾加载，DOM 已就绪；不依赖 jQuery ready

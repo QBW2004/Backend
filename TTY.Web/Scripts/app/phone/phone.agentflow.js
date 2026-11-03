@@ -61,7 +61,7 @@
     function renderAgentInfo(agentData) {
         if (!agentData) return;
         $('#agentAccount').text(M.esc(agentData.ID || '--'));
-        $('#agentCoins').text(isPool() ? M.diamonds(agentData.PrizePoolBalance) : M.gold(agentData.COINS));
+        $('#agentCoins').toggleClass('pool', isPool()).text(isPool() ? M.diamonds(agentData.PrizePoolBalance) : M.gold(agentData.COINS));
         $('#agentInfoCard').show();
     }
 
@@ -125,13 +125,35 @@
             PREFIX_AGENT + M.esc(account) + '</span>';
     }
 
+    /* 奖池列：余额固定在第一列（左滑不动），时间后面是备注（变动原因） */
+    var POOL_COLUMNS = '<th>奖池余额</th><th>游戏类型</th><th>玩家账号</th><th>充值金额（钻）</th><th>支出金额（钻）</th><th>时间</th><th>备注</th>';
+
+    /** 奖池变动原因（agentprizeledger.Kind：1充值/2退回/3控牌支出/4放水/5控牌与放水重叠调整） */
+    function poolRemark(kind, amount, cardType) {
+        if (kind === 1) return '充值奖池';
+        if (kind === 2) return '退回我的钻';
+        if (kind === 3) return '控牌支出' + (cardType ? '（' + cardType + '）' : '');
+        if (kind === 4) return amount > 0 ? '放水返还' : '放水支出';
+        if (kind === 5) return amount > 0 ? '控牌与放水重叠返还' : '控牌与放水重叠扣除';
+        return '--';
+    }
+
+    function poolAmountHtml(amount, cls) {
+        return '<span class="' + cls + '">' + (amount > 0 ? '+' : '') + M.esc(M.diamonds(amount)) + '</span>';
+    }
+
     function renderRows(rows) {
         if (isPool()) {
             $('#noData').toggle(!rows || !rows.length);
             $('#flowTableBody').html((rows || []).map(function (r) {
-                var kind = Number(r.Kind), amount = Number(r.ChangeDiamonds), name = kind === 1 ? '充值' : kind === 2 ? '提取' : r.GameName || '送奖';
-                return '<tr><td>' + M.esc(M.diamonds(r.BalanceAfter)) + '</td><td>' + M.esc(name) + '</td><td>' + M.esc(r.UserID || '--') + '</td><td>' +
-                    (kind === 1 ? M.esc(M.diamonds(amount)) : '--') + '</td><td>' + (kind === 1 ? '--' : M.esc(M.diamonds(kind === 2 ? amount : -amount))) + '</td><td>' + M.esc(M.fmtTime(r.RecTime, true)) + '</td></tr>';
+                var kind = Number(r.Kind), amount = Number(r.ChangeDiamonds);
+                var name = kind === 1 || kind === 2 ? '--' : (r.GameName || '--');
+                // 充值列只放“充值奖池”；其余变动（支出为负、返还为正、退回为负）统一放支出列，带符号着色
+                var inHtml = kind === 1 ? poolAmountHtml(amount, 'pool-in') : '--';
+                var outHtml = kind === 1 ? '--' : poolAmountHtml(amount, kind === 2 ? 'pool-back' : (amount > 0 ? 'pool-in' : 'pool-out'));
+                return '<tr><td class="pool-balance-cell">' + M.esc(M.diamonds(r.BalanceAfter)) + '</td><td>' + M.esc(name) + '</td><td>' + M.esc(r.UserID || '--') + '</td><td>' +
+                    inHtml + '</td><td>' + outHtml + '</td><td class="time">' + M.esc(M.fmtTime(r.RecTime, true)) + '</td><td class="pool-remark">' +
+                    M.esc(poolRemark(kind, amount, r.CardType)) + '</td></tr>';
             }).join(''));
             return;
         }
@@ -202,9 +224,11 @@
                 if (!res || res.rows == null) { M.toast(M.result(res).text || '流水读取失败', 'error'); return; }
                 if (isPool()) {
                     $('#poolRechargeTotal').text(M.diamonds(res.summary.Recharge));
-                    $('#poolWithdrawTotal').text(M.diamonds(res.summary.Withdrawal));
+                    $('#poolWithdrawTotal').text(M.diamonds(Math.abs(Number(res.summary.Withdrawal || 0))));
                     $('#poolSentTotal').text(M.diamonds(res.summary.Sent));
-                    $('#agentCoins').text(M.diamonds(res.balance));
+                    $('#agentCoins').addClass('pool').text(M.diamonds(res.balance));
+                    // 侧栏“奖池记录”看自己时代理详情接口可能不返回本人，卡片以奖池接口为准显示
+                    if (!agentData) { $('#agentAccount').text(agentId); $('#agentInfoCard').show(); }
                 }
                 var rows = (res && res.rows) ? res.rows : [];
                 var total = res ? Number(res.total || 0) : 0;
@@ -230,20 +254,25 @@
             return;
         }
 
-        var today = new Date(), first = new Date();first.setDate(today.getDate()-6);
+        // 默认展示当天的记录
+        var today = new Date();
         function dateValue(d) { return d.getFullYear()+'-'+M.pad2(d.getMonth()+1)+'-'+M.pad2(d.getDate()); }
-        $('#startDate').val(dateValue(first));$('#endDate').val(dateValue(today));
-        function changeType() {
+        $('#startDate').val(dateValue(today));$('#endDate').val(dateValue(today));
+        function applyTypeLayout() {
             var pool = isPool();
             $('#poolFlowSummary, #poolQueryField').toggle(pool);
             $('#poolPlayerField').toggle(pool && $('#poolQueryType').val() === 'player');
             $('#flowBalanceLabel').text(pool ? '奖池余额:' : '当前钻:');
-            $('.flow-table thead tr').html(pool ? '<th>奖池余额</th><th>游戏类型</th><th>玩家账号</th><th>充值金额（钻）</th><th>支出金额（钻）</th><th>时间</th>' : moneyColumns);
+            $('.flow-table').toggleClass('pool-mode', pool);
+            $('.flow-table thead tr').html(pool ? POOL_COLUMNS : moneyColumns);
             if (agentData) renderAgentInfo(agentData);
+        }
+        function changeType() {
+            applyTypeLayout();
             currentPage = 1;loadData();
         }
         $('#flowType, #poolQueryType').on('change', changeType);
-        $('.flow-table thead tr').html('<th>奖池余额</th><th>游戏类型</th><th>玩家账号</th><th>充值金额（钻）</th><th>支出金额（钻）</th><th>时间</th>');
+        applyTypeLayout();
         // 加载代理信息
         fetchAgentInfo().then(function(res) {
             var r = M.result(res);
