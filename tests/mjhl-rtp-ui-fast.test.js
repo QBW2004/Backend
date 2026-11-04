@@ -21,13 +21,19 @@ function harness() {
             prop(k,v) { if (arguments.length > 1) { node.props[k] = v; return api; } return node.props[k]; },
             text(v) { if (arguments.length) { node.textValue = v; return api; } return node.textValue; },
             data(k,v) { if (arguments.length > 1) { node.dataValues[k] = v; return api; } return node.dataValues[k]; },
-            each() { return api; }, attr() { return api; }, toggleClass() { return api; },
+            each() { return api; }, attr() { return api; }, toggleClass() { return api; }, toggle(v) { node.visible = !!v; return api; },
             on(events, arg, handler) { events.split(' ').forEach(event => bindings[selector + ':' + event] = handler || arg); return api; }
         };
         return api;
     }
     $.extend = function (deep, target, ...values) { values.forEach(value => Object.assign(target, clone(value))); return target; };
     $.each = (items, fn) => items.forEach((value, index) => fn(index,value)); $.trim = v => String(v == null ? '' : v).trim();
+    $.ajax = options => {
+        let done, fail, always;
+        calls.push({url:options.url,data:options.data,callback(data){done(data);if(always)always();},fail(){fail();if(always)always();}});
+        const result={done(fn){done=fn;return result;},fail(fn){fail=fn;return result;},always(fn){always=fn;return result;}};
+        return result;
+    };
     function Worker(url) { this.url = url; this.stopped = false; this.postMessage = job => { this.job = clone(job); }; this.terminate = () => { this.stopped = true; }; workers.push(this); }
     const ctx = { $, console, Math, Number, String, JSON, isFinite, Worker,
         window:{ Worker, MjhlEngine:engine, setTimeout(fn) { const id = ++clock; timers.set(id,fn); return id; }, clearTimeout(id) { timers.delete(id); } },
@@ -83,6 +89,11 @@ check('相同代理已保存达标历史加载与恢复不启动Worker', () => {
     const h=harness(), meta=h.meta(); h.ctx.gcMjhlFill(h.config,meta); assert.equal(h.workers.length,0); assert(h.ctx.GC_MJHL_RTP_RESULT.historical);
     h.ctx.gcMjhlFill(h.ctx.GC_MJHL_AGENT_SAVED,h.ctx.GC_MJHL_META); assert.equal(h.workers.length,0); assert.equal(h.$('#mjhlScatterState').text(),'打开至尊');
 });
+check('继承默认配置复用来源版本的达标RTP，目标版本仍用于写入校验', () => {
+    const h=harness(),meta=h.meta();meta.configured=false;meta.inherited=true;meta.sourceLine='*';meta.sourceRevision='7';meta.revision='0';
+    h.ctx.gcMjhlFill(h.config,meta);assert.equal(h.workers.length,0);assert(h.ctx.GC_MJHL_RTP_RESULT.historical);assert.equal(h.$('#mjhlAgentStatus').data('revision'),'0');
+    assert(h.$('#mjhlAgentStatus').text().includes('默认版本 7'));
+});
 for (const [name, mutate] of [
     ['跨代理',m=>{m.lineAgent='anotherAgent';}],['无完整配置哈希',m=>{m.configHash='bad';}],['未保存',m=>{m.configured=false;}],
     ['旧规则指纹',m=>{const s=JSON.parse(m.simulationSummary.split('；')[1]);s.mathFingerprint='v9:abc';m.simulationSummary=JSON.stringify(s);}],
@@ -127,7 +138,38 @@ check('精确0只在数学可证明无奖时复用',()=>{
 check('只改筹码可沿用真实RTP保存，改变权重不能保存旧结果',()=>{
     const h=harness(),c=h.ctx;c.gcMjhlFill(h.config,h.meta());h.$('#mjhlBetEntry').val(8);c.gcMjhlSave();assert.equal(h.calls.length,1);assert.equal(h.calls[0].url,'save');
     const saved=JSON.parse(h.calls[0].data.simulated);assert.equal(saved.mathFingerprint,c.gcMjhlRtpFingerprint(c.gcMjhlRtpMathKey(c.gcMjhlEngineProfile())));assert.equal(h.calls[0].data.lineAgent,'realAgent');
-    c.GC_MJHL_AGENT.weights.n[0][0]++;c.gcMjhlSave();assert.equal(h.calls.length,1);assert(h.toasts.some(t=>t.type==='warning'));
+    c.gcMjhlSave();assert.equal(h.calls.length,1);assert(c.GC_MJHL_WRITING);
+    h.calls[0].callback({code:0});c.GC_MJHL_AGENT.weights.n[0][0]++;c.gcMjhlSave();assert.equal(h.calls.length,1);assert(h.toasts.some(t=>t.type==='warning'));
+});
+check('快速估算持续显示、无保存资格且不污染缓存，最终复核替换估算',()=>{
+    const h=harness(),c=h.ctx; c.gcMjhlFill(h.config,{}); const worker=h.workers[0], weights=JSON.stringify(c.GC_MJHL_AGENT.weights);
+    const preview=Object.assign(h.stats(),{count:2000,half95:0.15,precisionReached:false});
+    worker.onmessage({data:{preview}}); const shown=h.$('#mjhlActualRtp').text();
+    assert(shown.includes('估算 RTP')); assert(shown.includes('2,000')); assert(shown.includes('待精确复核'));
+    assert.equal(c.GC_MJHL_RTP_RESULT,null); assert.equal(Object.keys(c.GC_MJHL_RTP_CACHE).length,0); assert.equal(h.$('#mjhlAgentSave').prop('disabled'),true);
+    worker.onmessage({data:{progress:{phase:'verify',completed:10000,total:50000000}}});
+    assert.equal(h.$('#mjhlActualRtp').text(),shown); assert(h.$('#mjhlRtpProgress').text().includes('精确复核'));
+    assert.equal(JSON.stringify(c.GC_MJHL_AGENT.weights),weights); h.result(worker);
+    assert(!h.$('#mjhlActualRtp').text().includes('估算')); assert.equal(h.$('#mjhlRtpProgress').text(),''); assert(c.GC_MJHL_RTP_RESULT.precisionReached);
+});
+check('调权重区分调整前与候选估算，两者均不应用权重或解锁保存',()=>{
+    const h=harness(),c=h.ctx;c.gcMjhlFill(h.config,h.meta());c.gcMjhlRunRtp('calibrate');const worker=h.workers[0],weights=JSON.stringify(c.GC_MJHL_AGENT.weights);
+    worker.onmessage({data:{preview:h.stats(),beforeCalibration:true}});assert(h.$('#mjhlActualRtp').text().includes('调整前权重'));
+    worker.onmessage({data:{progress:{phase:'search',estimate:h.stats()}}});assert(h.$('#mjhlActualRtp').text().includes('候选权重'));
+    c.gcMjhlSave();assert.equal(h.calls.length,0);assert.equal(c.GC_MJHL_RTP_RESULT,null);assert.equal(JSON.stringify(c.GC_MJHL_AGENT.weights),weights);
+    assert.equal(h.$('#mjhlAgentSave').prop('disabled'),true);
+});
+check('取消与切换代理后忽略迟到估算，重新载入不能复用估算',()=>{
+    const h=harness(),c=h.ctx;c.gcMjhlFill(h.config,{});const worker=h.workers[0];worker.onmessage({data:{preview:h.stats()}});
+    c.gcMjhlVerify();const stopped=h.$('#mjhlActualRtp').text();worker.onmessage({data:{preview:h.stats()}});assert.equal(h.$('#mjhlActualRtp').text(),stopped);assert.equal(h.$('#mjhlRtpProgress').text(),'');
+    c.line='nextAgent';c.gcMjhlFill(h.config,{});assert.equal(h.workers.length,2);const loading=h.$('#mjhlActualRtp').text();worker.onmessage({data:{preview:h.stats()}});assert.equal(h.$('#mjhlActualRtp').text(),loading);assert.equal(c.GC_MJHL_RTP_RESULT,null);
+});
+check('估算失败不结束正式任务，未中奖估算不冒充精确0%',()=>{
+    const h=harness(),c=h.ctx;c.gcMjhlRunRtp('verify');const worker=h.workers[0];worker.onmessage({data:{previewError:'long chain'}});
+    assert(c.GC_MJHL_CALIBRATING);assert(!worker.stopped);assert.equal(c.GC_MJHL_RTP_RESULT,null);
+    worker.onmessage({data:{preview:Object.assign(h.stats(),{total:0,half95:0,unobservedReturn:true})}});
+    assert(h.$('#mjhlActualRtp').text().includes('未能确定误差'));assert(!h.$('#mjhlActualRtp').text().includes('精确值'));
+    worker.onmessage({data:{error:'复核失败'}});assert.equal(h.$('#mjhlRtpProgress').text(),'');assert.equal(c.GC_MJHL_RTP_RESULT,null);
 });
 assert(source.includes('误差不超过±1个百分点'));
 const report={completedAt:new Date().toISOString(),checksPassed:checks.length,checks};

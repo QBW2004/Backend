@@ -1,7 +1,7 @@
 ﻿using System.Web.Mvc;
 using YYT.Entity;
 using System;
-using Newtonsoft.Json;
+using System.Web.Script.Serialization;
 using YYT.BLL.EF;
 using YYT.Web.Models;
 
@@ -25,7 +25,8 @@ namespace YYT.Web.Areas.Game.Controllers
                 {
                     string source;
                     string json = RabbitConfig.ReadTable(ef, tableIndex, out source);
-                    return Json(new { code = 1, tableIndex, saved = source == "table", source, shared = false, config = JsonConvert.DeserializeObject(json) });
+                    // MVC JsonResult uses JavaScriptSerializer; JToken would lose its field names.
+                    return Json(new { code = 1, tableIndex, saved = source == "table", source, shared = false, config = new JavaScriptSerializer().DeserializeObject(json) });
                 }
             }
             catch (Exception ex) { return Json(new Msg(0, "规则载入失败：" + ex.Message)); }

@@ -25,7 +25,30 @@ class RabbitRulesValidation
 {
     static int checks;
     static void Check(bool value, string name) { if (!value) throw new Exception(name); checks++; }
-    static JObject Json(ActionResult result) { return JObject.FromObject(((JsonResult)result).Data); }
+    // Execute MVC's HTTP serializer: inspecting Data with Json.NET hides JToken corruption.
+    static string WireJson(ActionResult result)
+    {
+        var response = new JsonResponse();
+        result.ExecuteResult(new ControllerContext { HttpContext = new JsonContext(response) });
+        if (response.ContentType != "application/json") throw new Exception("Expected JSON response");
+        return response.Body.ToString();
+    }
+    static JObject Json(ActionResult result) { return JObject.Parse(WireJson(result)); }
+    sealed class JsonResponse : HttpResponseBase
+    {
+        public readonly StringWriter Body = new StringWriter();
+        public override string ContentType { get; set; }
+        public override Encoding ContentEncoding { get; set; }
+        public override void Write(string value) { Body.Write(value); }
+    }
+    sealed class JsonRequest : HttpRequestBase { public override string HttpMethod { get { return "POST"; } } }
+    sealed class JsonContext : HttpContextBase
+    {
+        readonly HttpResponseBase response;
+        public JsonContext(HttpResponseBase response) { this.response = response; }
+        public override HttpResponseBase Response { get { return response; } }
+        public override HttpRequestBase Request { get { return new JsonRequest(); } }
+    }
     static JObject ReadTable(GameConfigController controller, int id)
     {
         JObject result = Json(controller.GetTableConfig(new FormCollection { {"GAME_ID","55"}, {"GAME_TYPE","1"} }));
@@ -178,6 +201,16 @@ class RabbitRulesValidation
                 var load = Json(tableController.GetRabbitConfig(-1));
                 Check((int)load["code"]==1 && (int)load["config"]["smallFourMultiplier"]==50 && (string)load["source"]=="default", "new table starts with independent defaults");
                 Check(scalar("SELECT COUNT(*) FROM cardgamecfg")=="0", "reading rules does not persist");
+                File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"rabbit-default-response.json"),WireJson(tableController.GetRabbitConfig(-1)),new UTF8Encoding(false));
+                Check(JToken.DeepEquals(defaults,load["config"]), "HTTP response preserves every default rule value and JSON type");
+                var phenixDefaults=JObject.Parse(PhenixConfig.DefaultJson);
+                Check(JToken.DeepEquals(phenixDefaults,Json(tableController.GetPhenixConfig(0))["config"]), "Phenix defaults survive MVC HTTP serialization");
+                var phenixStored=(JObject)phenixDefaults.DeepClone();
+                phenixStored["specialRules"]["authentic"]["multipliers"]=JObject.Parse("{values:[2,14],weights:[3,7]}");
+                using(var command=new MySqlCommand("INSERT INTO cardgamecfg VALUES(5,0,@json)",db)) { command.Parameters.AddWithValue("@json",phenixStored.ToString());command.ExecuteNonQuery(); }
+                Check(JToken.DeepEquals(phenixStored,Json(tableController.GetPhenixConfig(0))["config"]), "Phenix stored fields, booleans and weighted arrays survive HTTP serialization");
+                File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"phenix-stored-response.json"),WireJson(tableController.GetPhenixConfig(0)),new UTF8Encoding(false));
+                sql("DELETE FROM cardgamecfg WHERE GAME_ID=5");
                 Check((int)Json(tableController.GetRabbitConfig(-2))["code"]==0 && (int)Json(tableController.GetRabbitPayoutRules(256))["code"]==0, "invalid table rejected");
                 Action<int,JObject> put = (index,c) => { using(var command=new MySqlCommand("INSERT INTO cardgamecfg VALUES(55,@index,@json) ON DUPLICATE KEY UPDATE CfgJson=VALUES(CfgJson)",db)) {command.Parameters.AddWithValue("@index",index);command.Parameters.AddWithValue("@json",c.ToString());command.ExecuteNonQuery();} };
                 sql("INSERT INTO roomtableconfig(GAME_ID,TableIndex,BetMax) VALUES(55,0,100),(55,1,200),(5,0,100)");

@@ -95,7 +95,7 @@
             $('#rbFiveWinPay').text(s.five.baseMultiplier*s.five.successMultiplier+' 倍');$('#rbFiveMissPay').text(s.five.baseMultiplier*s.five.missMultiplier+' 倍');
             if(publish&&window.rabbitPayoutUseDraft)window.rabbitPayoutUseDraft(c);
             return true;
-        }catch(e){$('#rabbitConfig .rb-prob,#rabbitConfig .rb-payout,#rabbitConfig .rb-sum,#rabbitConfig .rb-avg,#rbFiveWinPay,#rbFiveMissPay,#rbFiveAveragePay,#rbFiveWeightSum,#rbFiveProbSum').text('—');status(e.message,true);if(publish&&window.rabbitPayoutUseDraft)window.rabbitPayoutUseDraft(null,e.message);return false;}
+        }catch(e){$('#rabbitConfig .rb-prob,#rabbitConfig .rb-payout,#rabbitConfig .rb-sum,#rabbitConfig .rb-avg,#rbFiveWinPay,#rbFiveMissPay,#rbFiveAveragePay,#rbFiveWeightSum,#rbFiveProbSum').text('—');status(e.message,true);if(window.rabbitPayoutUseDraft)window.rabbitPayoutUseDraft(null,e.message);return false;}
     }
     function remember(){
         if(active===null||!cfg)return;if(active==='-1'&&dropNew){delete drafts[active];return;}
@@ -105,7 +105,9 @@
     }
     function publish(){
         if(dirty)return refresh(true);
-        if(refresh()&&window.rabbitPayoutUseRules)window.rabbitPayoutUseRules(collect(),source);
+        if(!refresh())return false;
+        if(window.rabbitPayoutUseRules)window.rabbitPayoutUseRules(collect(),source);
+        return true;
     }
     function restore(draft){
         cfg=copy(draft.cfg);dirty=!!draft.dirty;source=draft.source||'table';render();
@@ -117,22 +119,29 @@
             $.each(draft.fields,function(id,v){$('#'+id).val(v.value).prop('checked',v.checked);});
             $('#rbAuthMode').val(authMode);$('#rbFiveMode').val(fiveMode);applyModes();
         }
-        publish();controls();if(!dirty)status('已载入本桌独立规则 · 修改后需保存');
+        var valid=publish();controls();if(valid&&!dirty)status('已载入本桌独立规则 · 修改后需保存');
+    }
+    function failLoad(message){
+        cfg=null;loadFailed=true;status(message,true);
+        if(window.rabbitPayoutUseDraft)window.rabbitPayoutUseDraft(null,message);
     }
     function load(){
         var target=key();if(target===null)return;var request=++sequence;active=target;cfg=null;dropNew=false;loadFailed=false;loading=true;controls();status('载入本桌玩法规则…');
         if(window.rabbitPayoutUseDraft)window.rabbitPayoutUseDraft(null,'正在读取玩法规则…');
-        $.post(RABBIT_CONFIG_URLS.get,{tableIndex:Number(target)<0?-1:Number(target)%1000,__RequestVerificationToken:token()},function(data){
+        $.ajax({url:RABBIT_CONFIG_URLS.get,type:'POST',data:{tableIndex:Number(target)<0?-1:Number(target)%1000,__RequestVerificationToken:token()},dataType:'json',timeout:15000}).done(function(data){
             if(request!==sequence||target!==key()||active!==target)return;
             if(data&&data.code===1){
                 try{
-                    cfg=data.config||{};dirty=false;source=data.source||'table';fill(cfg,copy(RABBIT_RULE_DEFAULTS));render();publish();status(data.saved?'已载入本桌独立规则 · 修改后需保存':source==='legacy'?'本桌沿用旧规则 · 保存后独立生效':'本桌使用默认规则 · 保存后独立生效');
+                    if(!$.isPlainObject(data.config))throw new Error('规则返回格式异常。');
+                    cfg=data.config;dirty=false;source=data.source||'table';fill(cfg,copy(RABBIT_RULE_DEFAULTS));RabbitRulesMath.model(cfg);render();
+                    if(!publish())throw new Error($('#rabbitConfigStatus').text()||'规则校验失败。');
+                    status(data.saved?'已载入本桌独立规则 · 修改后需保存':source==='legacy'?'本桌沿用旧规则 · 保存后独立生效':'本桌使用默认规则 · 保存后独立生效');
                     if(load.addRequested){load.addRequested=false;append('#rbAuthTable');document.querySelector('#rbAuthentic').scrollIntoView({block:'start'});}
                 }
-                catch(e){cfg=null;loadFailed=true;status('规则无法读取，请点击顶部刷新：'+e.message,true);}
+                catch(e){failLoad('规则无法读取，请点击顶部刷新：'+e.message);}
             }
-            else{loadFailed=true;status(((data&&data.content)||'载入失败')+'，请点击顶部刷新后重试。',true);}
-        },'json').fail(function(){if(request!==sequence||target!==key()||active!==target)return;loadFailed=true;status('后台连接失败，请点击顶部刷新后重试。',true);}).always(function(){if(request!==sequence||active!==target)return;loading=false;controls();});
+            else{failLoad(((data&&data.content)||'载入失败')+'，请点击顶部刷新后重试。');}
+        }).fail(function(xhr,reason){if(request!==sequence||target!==key()||active!==target)return;failLoad((reason==='timeout'?'规则读取超时':'后台连接失败')+'，请点击顶部刷新后重试。');}).always(function(){if(request!==sequence||active!==target)return;loading=false;controls();});
     }
     function append(id){
         var used={},maximum=id==='#rbAuthTable'?14:255;$(id+' .rb-wv').each(function(){used[Number(this.value)]=true;});

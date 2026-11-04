@@ -18,33 +18,51 @@ self.onmessage = function (event) {
         if (error) self.postMessage({ error: error.message, code: error.code || '', diagnostic: result || null });
         else self.postMessage({ result: result });
     }
+    function runFullCalculation() {
+        try {
+            if (job.type === 'sample') {
+                MjhlEngine.sample(job.profile, 100000, 20261102, {
+                    onProgress: function (done, total) { progress({ completed:done, total:total }); }
+                }, done);
+            } else if (job.type === 'verify') {
+                MjhlEngine.verifyRtp(job.profile, {
+                    validationCount:50000000, tolerancePercent:1, quickCheckpoints:true, sampleRunner:pool.sample,
+                    onValidationProgress:function (done, total) { progress({ phase:'verify', completed:done, total:total }); },
+                    onCheckpoint:function (stats) { progress({ phase:'verify', actual:stats.total, count:stats.count, estimate:stats }); }
+                }, done);
+            } else if (job.type === 'calibrate') {
+                MjhlEngine.calibrateRtp(job.profile, job.target, {
+                    searchCount: 50000, refineCount: 1000000, validationCount: 50000000, tolerancePercent:1, preferSmallWins:true,
+                    quickCheckpoints:true, sampleRunner:pool.sample,
+                    iterations: 8, maxCorrections:1, maxTotalSamples:151000000, seed:job.seed === undefined ? MjhlEngine.freshSeed() : job.seed,
+                    validationSeed128:job.validationSeed128 || MjhlEngine.freshSeed128(), reservedScatter:job.reservedScatter,
+                    onProgress: function (best, factor, stats, phase) {
+                        progress({ phase:phase, actual:stats ? stats.total : null, count:stats ? stats.count : 0, estimate:stats });
+                    },
+                    onMeasureProgress:function (phase,done,total) {
+                        progress({ phase:phase, completed:done, total:total });
+                    },
+                    onValidationProgress: function (done, total, round) {
+                        progress({ phase:'verify', completed:done, total:total, verificationRound:round });
+                    }
+                }, done);
+            } else done(new Error('未知试算操作。'));
+        } catch (error) { done(error); }
+    }
+    // 固定小样本只供快速展示，不进入候选搜索、独立复核或可保存结果。
+    // 仍结算完整付费回合及全部免费链；独立随机流避免改变正式计算的样本。
     try {
-        if (job.type === 'sample') {
-            MjhlEngine.sample(job.profile, 100000, 20261102, {
-                onProgress: function (done, total) { progress({ completed:done, total:total }); }
-            }, done);
-        } else if (job.type === 'verify') {
-            MjhlEngine.verifyRtp(job.profile, {
-                validationCount:50000000, tolerancePercent:1, quickCheckpoints:true, sampleRunner:pool.sample,
-                onValidationProgress:function (done, total) { progress({ phase:'verify', completed:done, total:total }); },
-                onCheckpoint:function (stats) { progress({ phase:'verify', actual:stats.total, count:stats.count }); }
-            }, done);
-        } else if (job.type === 'calibrate') {
-            MjhlEngine.calibrateRtp(job.profile, job.target, {
-                searchCount: 50000, refineCount: 1000000, validationCount: 50000000, tolerancePercent:1, preferSmallWins:true,
-                quickCheckpoints:true, sampleRunner:pool.sample,
-                iterations: 8, maxCorrections:1, maxTotalSamples:151000000, seed:job.seed === undefined ? MjhlEngine.freshSeed() : job.seed,
-                validationSeed128:job.validationSeed128 || MjhlEngine.freshSeed128(), reservedScatter:job.reservedScatter,
-                onProgress: function (best, factor, stats, phase) {
-                    progress({ phase:phase, actual:stats ? stats.total : null, count:stats ? stats.count : 0 });
-                },
-                onMeasureProgress:function (phase,done,total) {
-                    progress({ phase:phase, completed:done, total:total });
-                },
-                onValidationProgress: function (done, total, round) {
-                    progress({ phase:'verify', completed:done, total:total, verificationRound:round });
-                }
-            }, done);
-        } else done(new Error('未知试算操作。'));
+        if ((job.type !== 'verify' && job.type !== 'calibrate') ||
+            (job.type === 'calibrate' && Number(job.target) === 0) || MjhlEngine.proveZeroReturn(job.profile)) {
+            runFullCalculation(); return;
+        }
+        MjhlEngine.sample(job.profile, 2000, 0, {
+            random:MjhlEngine.xoshiro128ss(MjhlEngine.freshSeed128()), batchSize:200
+        }, function (error, stats) {
+            // 初始配置的长链可能超限，不能因此阻断原本可调整成功的校准。
+            if (error) self.postMessage({ previewError:error.message });
+            else self.postMessage({ preview:stats, beforeCalibration:job.type === 'calibrate' });
+            setTimeout(runFullCalculation, 0);
+        });
     } catch (error) { done(error); }
 };

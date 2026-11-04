@@ -240,13 +240,14 @@ function checkDistribution(stats) {
     const workerSource=fs.readFileSync(path.join(__dirname,'../TTY.Web/Scripts/app/mjhl.agent.rtp.worker.js'),'utf8');
     const calls=[],messages=[];
     const poolSample=function(){},disposed=[];
-    const scope={importScripts:(...urls)=>urls.forEach(url=>assert(/mjhl\.(engine|rtp\.pool)\.js\?v=mjhl-agent-\d{8}-v\d+$/.test(url))),MjhlRtpPool:{create:()=>({sample:poolSample,dispose:()=>disposed.push(true)})},Date,self:{postMessage:value=>messages.push(value)},MjhlEngine:{
+    const scope={importScripts:(...urls)=>urls.forEach(url=>assert(/mjhl\.(engine|rtp\.pool)\.js\?v=mjhl-agent-\d{8}-v\d+$/.test(url))),MjhlRtpPool:{create:()=>({sample:poolSample,dispose:()=>disposed.push(true)})},Date,setTimeout:fn=>fn(),self:{postMessage:value=>messages.push(value)},MjhlEngine:{
+        proveZeroReturn:()=>false,xoshiro128ss:()=>()=>0.5,sample:(p,count,seed,opts,done)=>done(null,direct),
         freshSeed:()=>123456,freshSeed128:()=>words.slice(),
         verifyRtp:(p,opts,done)=>{calls.push({kind:'verify',p,opts});done(null,{stats:direct,precisionReached:false,exact:false});},
         calibrateRtp:(p,target,opts)=>calls.push({kind:'calibrate',p,target,opts})
     }};
     vm.runInNewContext(workerSource,scope);
-    scope.self.onmessage({data:{type:'verify',profile}});assert.equal(calls[0].p,profile);assert.equal(calls[0].opts.validationCount,50000000);assert.equal(calls[0].opts.tolerancePercent,1);assert(!calls[0].opts.preferSmallWins);assert.equal(messages[0].result.precisionReached,false);
+    scope.self.onmessage({data:{type:'verify',profile}});assert.equal(calls[0].p,profile);assert.equal(calls[0].opts.validationCount,50000000);assert.equal(calls[0].opts.tolerancePercent,1);assert(!calls[0].opts.preferSmallWins);assert(messages[0].preview);assert.equal(messages[1].result.precisionReached,false);
     scope.self.onmessage({data:{type:'calibrate',profile,target:97,reservedScatter:reserved}});assert.equal(calls[1].opts.preferSmallWins,true);assert.equal(calls[1].opts.tolerancePercent,1);assert.equal(calls[1].opts.validationCount,50000000);assert.equal(calls[1].opts.refineCount,1000000);assert.equal(calls[1].opts.reservedScatter,reserved);assert.equal(calls[1].opts.seed,123456);assert.deepEqual(calls[1].opts.validationSeed128,words);
     assert.equal(calls[0].opts.sampleRunner,poolSample);assert.equal(calls[1].opts.sampleRunner,poolSample);assert(calls[0].opts.quickCheckpoints && calls[1].opts.quickCheckpoints);assert.equal(disposed.length,1);
     assert.equal(calls[1].opts.maxCorrections,1);assert.equal(calls[1].opts.maxTotalSamples,151000000);

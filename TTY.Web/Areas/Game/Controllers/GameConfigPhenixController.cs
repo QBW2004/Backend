@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Web.Mvc;
+using System.Web.Script.Serialization;
 using Newtonsoft.Json;
 using YYT.BLL.EF;
 using YYT.Common;
@@ -23,7 +24,8 @@ namespace YYT.Web.Areas.Game.Controllers
                 using (var ef = new GameDbContext())
                 {
                     string json = ef.Database.SqlQuery<string>("SELECT CfgJson FROM cardgamecfg WHERE GAME_ID=5 AND TableIndex={0}", tableIndex).FirstOrDefault();
-                    return Json(new { code = 1, config = JsonConvert.DeserializeObject(json ?? PhenixConfig.DefaultJson) });
+                    // Keep the object tree compatible with MVC's HTTP JSON serializer.
+                    return Json(new { code = 1, config = new JavaScriptSerializer().DeserializeObject(json ?? PhenixConfig.DefaultJson) });
                 }
             }
             catch (Exception ex) { return Json(new { code = 0, content = ex.Message }); }

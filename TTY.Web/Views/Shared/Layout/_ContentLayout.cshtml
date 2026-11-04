@@ -19,7 +19,7 @@
 
 
 
-    @Scripts.Render("~/res/jquery-js")
+    @Scripts.RenderFormat("<script src=\"{0}?v=" + ConfigHelper.Get("WebVer") + "\"></script>", "~/res/jquery-js")
     <script>
         // 代理线隔离（2026-10-30）：登录账号所在线的可玩游戏（null = 不限，总台恒为 null）。控制页的游戏下拉按它过滤，
         // 保存控制时服务端还会按玩家所在线再校验。控牌指令号 → GameId 与中心服 cardActionToGameId 同口径。

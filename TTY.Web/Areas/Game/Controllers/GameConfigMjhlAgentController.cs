@@ -36,12 +36,13 @@ namespace YYT.Web.Areas.Game.Controllers
                 {
                     var viewer = WebHelper.GetLoginInfo();
                     string own = viewer.UserPriv == 0 ? "" : LineScopeRules.ResolveLineOfAgency(ef, viewer.Accounts);
+                    var configured = ef.Database.SqlQuery<string>("SELECT LineAgent FROM mjhl_agent_config WHERE GameId=54").ToList();
                     var lines = new System.Collections.Generic.List<object>();
                     if (viewer.UserPriv == 0)
                         lines.Add(new { id = MjhlAgentConfig.DefaultLine, text = "默认（未单独配置的代理线使用）", count = 1 });
                     lines.AddRange((viewer.UserPriv == 0 ? LineScopeRules.GetLineAgents(ef) : new System.Collections.Generic.List<string> { own })
                         .Where(line => !string.IsNullOrEmpty(line) && LineScopeRules.IsGameAllowed(LineScopeRules.GetLinePlayableGames(ef, line), 54))
-                        .Select(line => (object)new { id = line, text = line, count = 1 }));
+                        .Select(line => (object)new { id = line, text = line + (configured.Contains(line, StringComparer.OrdinalIgnoreCase) ? "（独立配置）" : "（使用默认配置）"), count = configured.Contains(line, StringComparer.OrdinalIgnoreCase) ? 1 : 0 }));
                     return Json(new { code = 1, datas = new { Ready = true, Lines = lines, Owned = 0, Recycled = 0, CanEdit = viewer.UserPriv.GetValueOrDefault(-1) == 0 } });
                 }
             }
@@ -57,13 +58,54 @@ namespace YYT.Web.Areas.Game.Controllers
                 {
                     string line = MjhlLine(ef, lineAgent);
                     var row = MjhlAgentConfigStore.Read(ef, line);
-                    return Json(new { code = 1, lineAgent = line, configured = row != null, revision = row == null ? "0" : row.Revision.ToString(CultureInfo.InvariantCulture),
-                        config = row == null ? MjhlAgentConfig.Default() : MjhlAgentConfig.Parse(row.ConfigJson), configHash = row == null ? "" : row.ConfigHash,
-                        canEdit = WebHelper.GetLoginInfo().UserPriv.GetValueOrDefault(-1) == 0, updatedAt = row == null ? "" : row.UpdatedAt.ToString("yyyy-MM-dd HH:mm:ss") + " UTC",
-                        simulationSummary = row == null ? "" : (row.SimulationSummary ?? "") });
+                    var defaults = line == MjhlAgentConfig.DefaultLine ? row : MjhlAgentConfigStore.Read(ef, MjhlAgentConfig.DefaultLine);
+                    var effective = row ?? defaults;
+                    return Json(new { code = 1, lineAgent = line, configured = row != null, inherited = row == null && defaults != null,
+                        revision = MjhlAgentConfigStore.Revision(ef, line, row).ToString(CultureInfo.InvariantCulture),
+                        defaultAvailable = defaults != null, defaultRevision = defaults == null ? "0" : defaults.Revision.ToString(CultureInfo.InvariantCulture),
+                        sourceLine = effective == null ? "" : effective.LineAgent, sourceRevision = effective == null ? "0" : effective.Revision.ToString(CultureInfo.InvariantCulture),
+                        config = effective == null ? MjhlAgentConfig.Default() : MjhlAgentConfig.Parse(effective.ConfigJson), configHash = effective == null ? "" : effective.ConfigHash,
+                        canEdit = WebHelper.GetLoginInfo().UserPriv.GetValueOrDefault(-1) == 0, updatedAt = effective == null ? "" : effective.UpdatedAt.ToString("yyyy-MM-dd HH:mm:ss") + " UTC",
+                        simulationSummary = effective == null ? "" : (effective.SimulationSummary ?? "") });
                 }
             }
             catch (Exception ex) { LogHelper.WriteLog(typeof(GameConfigController), ex); return Json(new { code = 0, content = ex is ArgumentException || ex is UnauthorizedAccessException ? ex.Message : "配置读取失败，请确认数据库补丁已执行。" }); }
+        }
+
+        [AjaxOnly, HttpPost, ValidateAntiForgeryToken, SuperAdminAuthorize]
+        public ActionResult CopyMjhlDefaultConfig(string lineAgent, string expectedRevision, string expectedDefaultRevision)
+        {
+            return ChangeMjhlAgentInheritance(lineAgent, expectedRevision, expectedDefaultRevision, true);
+        }
+
+        [AjaxOnly, HttpPost, ValidateAntiForgeryToken, SuperAdminAuthorize]
+        public ActionResult RecallMjhlAgentConfig(string lineAgent, string expectedRevision, string expectedDefaultRevision)
+        {
+            return ChangeMjhlAgentInheritance(lineAgent, expectedRevision, expectedDefaultRevision, false);
+        }
+
+        private ActionResult ChangeMjhlAgentInheritance(string lineAgent, string expectedRevision, string expectedDefaultRevision, bool copy)
+        {
+            try
+            {
+                long expected, expectedDefault;
+                if (!long.TryParse(expectedRevision, NumberStyles.None, CultureInfo.InvariantCulture, out expected) ||
+                    !long.TryParse(expectedDefaultRevision, NumberStyles.None, CultureInfo.InvariantCulture, out expectedDefault))
+                    throw new ArgumentException("配置版本不正确，请重新载入。");
+                MjhlAgentConfigStore.Row row;
+                using (var ef = new GameDbContext())
+                {
+                    string line = MjhlLine(ef, lineAgent);
+                    row = MjhlAgentConfigStore.ChangeInheritance(ef, line, expected, expectedDefault, copy, WebHelper.GetLoginInfo().Accounts);
+                }
+                var hot = SendMjhlHotReload(54);
+                bool sent = hot != null && hot.code == 1;
+                string action = copy ? "已复制默认配置，该代理线现使用独立配置" : "已收回独立配置，该代理线现跟随默认配置";
+                LogHelper.WriteLog(typeof(GameConfigController), "[MjhlAgentConfig] action=" + (copy ? "copy-default" : "recall") + " line=" + row.LineAgent + " revision=" + row.Revision + " defaultRevision=" + expectedDefault + " operator=" + row.UpdatedBy + " hotReload=" + sent);
+                return Json(new { code = 1, revision = row.Revision.ToString(CultureInfo.InvariantCulture), hotReload = sent,
+                    content = action + (sent ? "，更新指令已发送。" : "；更新指令未成功，游戏服可能仍使用旧版本。") });
+            }
+            catch (Exception ex) { LogHelper.WriteLog(typeof(GameConfigController), ex); return Json(new { code = 0, content = ex is ArgumentException || ex is UnauthorizedAccessException ? ex.Message : "配置操作失败，请重新载入或查看后台日志。" }); }
         }
 
         [AjaxOnly, HttpPost, ValidateAntiForgeryToken, SuperAdminAuthorize]

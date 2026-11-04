@@ -60,6 +60,7 @@
         .gc-refresh .fa { margin: 0; color: inherit; }
         .gc-newbtn { font-size: 12px; font-weight: 500; color: #2f6fed; cursor: pointer; padding: 3px 10px; border: 1px solid #cdd9f7; border-radius: 14px; background: #f5f8ff; }
         .gc-newbtn:hover { background: #2f6fed; color: #fff; border-color: #2f6fed; }
+        .gc-newbtn:disabled { color: #9aa5b1; background: #eef1f6; border-color: #d4dae3; cursor: not-allowed; }
         .gc-newbtn .fa { margin-right: 4px; color: inherit; }
         .gc-para-empty { display: none; padding: 72px 24px; text-align: center; }
         .gc-para-empty-icon { width: 88px; height: 88px; line-height: 88px; margin: 0 auto 20px; border-radius: 50%; background: linear-gradient(135deg, #eef3ff, #f7faff); color: #2f6fed; font-size: 42px; box-shadow: inset 0 0 0 1px #e2ebff; }
@@ -168,6 +169,8 @@
         <select id="gcLineSel" class="gc-select"><option value="">公共桌台</option></select>
         <a href="javascript:;" id="gcLineCopy" class="gc-newbtn" style="display:none;" title="把本游戏全部公共桌台的参数复制一套，作为该线的专属桌台">从公共桌台复制一套</a>
         <a href="javascript:;" id="gcLineRecall" class="gc-newbtn" style="display:none;" title="收回该线的专属桌台，该线玩家回到公共桌台">收回专属桌台</a>
+        <button type="button" id="mjhlAgentCopy" class="gc-newbtn" style="display:none;" title="复制当前已保存的默认参数和权重，作为该代理线的独立配置">复制默认配置</button>
+        <button type="button" id="mjhlAgentRecall" class="gc-newbtn" style="display:none;" title="收回独立配置，后续跟随默认参数和权重更新">恢复使用默认配置</button>
         <span id="gcLineTip" class="gc-line-tip"></span>
     </div>
 
@@ -219,7 +222,7 @@
                             </section>
                         </div>
                         <div class="gc-weight-help">奖金＝总押注÷20×赔率×组合数×连消倍数；补牌尽量避奖，不保证无奖，普通牌权重 0 仍可能补出。</div>
-                        <div class="gc-weight-meta"><span class="gc-agent-status" id="mjhlAgentStatus"></span><span class="gc-agent-status" id="mjhlActualRtp">计算 RTP：未计算</span><details class="gc-rule-detail"><summary>返奖分布</summary><div class="gc-rule-copy"><strong>按完整付费回合统计</strong><div id="mjhlRtpDistribution" style="white-space:pre-line;">请先计算当前权重 RTP。</div><p>包含该次付费及全部免费、连消。倍数＝总返奖÷押注，返奖不等于净盈利；不含人工赠送和吃分。</p></div></details></div>
+                        <div class="gc-weight-meta"><span class="gc-agent-status" id="mjhlAgentStatus"></span><span class="gc-agent-status" id="mjhlActualRtp">计算 RTP：未计算</span><span class="gc-agent-status" id="mjhlRtpProgress" role="status" aria-live="polite"></span><details class="gc-rule-detail"><summary>返奖分布</summary><div class="gc-rule-copy"><strong>按完整付费回合统计</strong><div id="mjhlRtpDistribution" style="white-space:pre-line;">请先计算当前权重 RTP。</div><p>包含该次付费及全部免费、连消。倍数＝总返奖÷押注，返奖不等于净盈利；不含人工赠送和吃分。</p></div></details></div>
                         <div class="gc-options">
                             <section class="gc-option-card" aria-labelledby="mjhlRulesTitle">
                                 <div class="gc-rules-heading"><div id="mjhlRulesTitle" class="gc-section-title">返奖与至尊规则</div><details class="gc-rule-detail"><summary>查看金牌规则</summary><div class="gc-rule-copy"><p><strong>金色牌如何出现</strong><br />普通局第 2、3、4 轴按下方概率生成金色牌。免费局第 3 轴普通牌固定全金，第 2、4 轴仍使用下方概率；第 1、5 轴不出金色牌。</p><p><strong>出现后如何结算</strong><br />中奖金牌变成百搭，留在盘面参加下一轮连消；没有中奖则保持金牌。百搭替代普通牌，不替代至尊，也不单独派奖。</p><p>设为 0 只关闭按概率生成的金牌，免费第 3 轴仍全金。补牌除免费第 3 轴外不另抽金色。金牌不额外乘奖，仍按赔率和连消倍数结算。</p></div></details></div>
@@ -246,7 +249,7 @@
                             </section>
                         </div>
 
-                        <div class="gc-agent-actions"><span class="gc-action-note" title="计算包含全部免费和连消，不含人工控牌；抽样结果会显示误差范围和回合数。">调权重后需保存才生效</span><span class="gc-agent-readonly" id="mjhlAgentReadonly"></span><button type="button" id="mjhlAgentReset" class="gc-btn gc-btn-default">恢复当前已保存值</button><button type="button" id="mjhlRtpVerify" class="gc-btn gc-btn-default" title="只计算当前权重，不改权重；按误差不超过±1个百分点复核，最多5000万完整回合。">计算当前权重 RTP</button><button type="button" id="mjhlRtpCalibrate" class="gc-btn gc-btn-default" title="偏向小奖配比，按目标RTP独立复核至误差不超过±1个百分点；未达标不改当前权重，0%使用固定无奖方案。">一键按目标 RTP 调权重</button><button type="button" id="mjhlAgentSave" class="gc-btn gc-btn-primary">保存代理线参数</button></div>
+                        <div class="gc-agent-actions"><span class="gc-action-note" title="计算包含全部免费和连消，不含人工控牌；抽样结果会显示误差范围和回合数。">先显示估算，精确复核后保存生效</span><span class="gc-agent-readonly" id="mjhlAgentReadonly"></span><button type="button" id="mjhlAgentReset" class="gc-btn gc-btn-default">恢复当前已保存值</button><button type="button" id="mjhlRtpVerify" class="gc-btn gc-btn-default" title="先显示小样本估算，再继续精确复核；只计算当前权重，不改权重，误差不超过±1个百分点后才能保存。">计算当前权重 RTP</button><button type="button" id="mjhlRtpCalibrate" class="gc-btn gc-btn-default" title="偏向小奖配比，按目标RTP独立复核至误差不超过±1个百分点；未达标不改当前权重，0%使用固定无奖方案。">一键按目标 RTP 调权重</button><button type="button" id="mjhlAgentSave" class="gc-btn gc-btn-primary">保存代理线参数</button></div>
                     </div>
 
                     <div class="gc-common gc-base-info">
@@ -626,7 +629,9 @@
         lineRecall: '@Url.Action("RecallLineTables", "GameConfig", new { area = "Game" })',
         mjhlAgentLines: '@Url.Action("GetMjhlAgentLines", "GameConfig", new { area = "Game" })',
         mjhlAgentGet: '@Url.Action("GetMjhlAgentConfig", "GameConfig", new { area = "Game" })',
-        mjhlAgentSave: '@Url.Action("SaveMjhlAgentConfig", "GameConfig", new { area = "Game" })'
+        mjhlAgentSave: '@Url.Action("SaveMjhlAgentConfig", "GameConfig", new { area = "Game" })',
+        mjhlAgentCopy: '@Url.Action("CopyMjhlDefaultConfig", "GameConfig", new { area = "Game" })',
+        mjhlAgentRecall: '@Url.Action("RecallMjhlAgentConfig", "GameConfig", new { area = "Game" })'
     };
     var GC_GAMES = [];
     var GC_TABLES = [];
@@ -668,7 +673,7 @@
                 var cur = gcCurLine(), $sel = $('#gcLineSel').empty();
                 $.each(lines, function (i, l) { $sel.append($('<option></option>').attr('value', l.id).text(l.text || l.id)); });
                 var keep = $sel.find('option').filter(function () { return $(this).val() === cur; }).length > 0;
-                if (!keep && $sel.find('option').length) $sel.prop('selectedIndex', 0);
+                if (keep) $sel.val(cur); else if ($sel.find('option').length) $sel.prop('selectedIndex', 0);
                 gcApplyLineUi();
                 if (typeof afterLoad === 'function') afterLoad();
             });
@@ -707,7 +712,8 @@
         else if (hasGame && line && owned === 0) tip = '该线目前使用公共桌台';
         else if (hasGame && line) tip = '以下为该线专属桌台，参数只对该线玩家生效（需新版客户端）';
         $('#gcLineTip').text(tip);
-        if (gameId === 54) { $('#gcLineCopy,#gcLineRecall,#gcNewTable,#gcDelete,#gcRefresh').hide(); $('#gcLineTip').text(line === '*' ? '默认参数：未单独配置的代理线玩家按此生效' : (line ? '参数只对该代理线生效' : '请选择代理线')); }
+        gcMjhlInheritanceUi();
+        if (gameId === 54) { $('#gcLineCopy,#gcLineRecall,#gcNewTable,#gcDelete,#gcRefresh').hide(); }
     }
     function gcLineToken() { return $('#gcForm [name="__RequestVerificationToken"]').val(); }
     function gcReloadLinesAndTables() { gcLoadLines(function () { gcLoadTables(); }); }
@@ -900,6 +906,7 @@
         $grid.toggleClass('gc-mjhl-grid', !!on);
         $('#gcParaFoot').toggle(!on);
         $('#gcNewTable,#gcDelete,#gcRefresh,#gcLineCopy,#gcLineRecall').toggle(!on && !gcCurLine());
+        gcMjhlInheritanceUi();
         if (on) {
             $('#gcCurTableName').text('麻将胡了 · ' + (gcCurLine() === '*' ? '默认' : (gcCurLine() || '请选择代理线')));
             $('#gcMjhlAgentPanel .gc-weight-body').each(function () {
@@ -964,20 +971,33 @@
     var GC_MJHL_RTP_SEQ = 0, GC_MJHL_LOAD_SEQ = 0;
     var GC_MJHL_RTP_WORKER = null, GC_MJHL_RTP_RESULT = null, GC_MJHL_RTP_KEY = '';
     var GC_MJHL_RTP_CACHE = {};
-    var GC_MJHL_CALIBRATING = false, GC_MJHL_RTP_JOB = '', GC_MJHL_LOADED_LINE = '', GC_MJHL_META = null;
+    var GC_MJHL_CALIBRATING = false, GC_MJHL_RTP_JOB = '', GC_MJHL_LOADED_LINE = '', GC_MJHL_META = null, GC_MJHL_WRITING = false;
     var GC_MJHL_RTP_RUNNING_KEY = '', GC_MJHL_RTP_PENDING_KEY = '', GC_MJHL_TARGET_COMMITTED = '';
     function gcMjhlSwitchText() {
         $('#mjhlScatterState').text($('#mjhlScatterEnabled').prop('checked') ? '打开至尊' : '关闭至尊');
         $('#mjhlFreeRetriggerState').text($('#mjhlFreeRetrigger').prop('checked') ? '打开触发' : '关闭触发');
     }
     function gcMjhlControls() {
-        var disabled = !GC_MJHL_AGENT_CAN_EDIT || (GC_MJHL_CALIBRATING && GC_MJHL_RTP_JOB === 'calibrate');
+        var disabled = GC_MJHL_WRITING || !GC_MJHL_AGENT_CAN_EDIT || (GC_MJHL_CALIBRATING && GC_MJHL_RTP_JOB === 'calibrate');
         // 手动编辑时的后台复核允许继续输入；新输入会取消旧任务，只有一键调权重才锁定表单。
         $('#gcMjhlAgentPanel input,#mjhlAgentReset').prop('disabled', disabled);
-        $('#mjhlAgentSave').prop('disabled', !GC_MJHL_AGENT_CAN_EDIT || GC_MJHL_CALIBRATING)
-            .text(!GC_MJHL_AGENT_CAN_EDIT ? '保存代理线参数' : GC_MJHL_RTP_JOB === 'calibrate' ? 'RTP调校复核中…' : GC_MJHL_RTP_JOB === 'verify' ? 'RTP复核中…' : '保存代理线参数');
-        $('#mjhlRtpCalibrate').prop('disabled', !GC_MJHL_AGENT_CAN_EDIT || (GC_MJHL_CALIBRATING && GC_MJHL_RTP_JOB !== 'calibrate')).text(GC_MJHL_CALIBRATING && GC_MJHL_RTP_JOB === 'calibrate' ? '停止调权重' : '一键按目标 RTP 调权重');
-        $('#mjhlRtpVerify').prop('disabled', !GC_MJHL_AGENT || (GC_MJHL_CALIBRATING && GC_MJHL_RTP_JOB !== 'verify')).text(GC_MJHL_CALIBRATING && GC_MJHL_RTP_JOB === 'verify' ? '停止计算' : '计算当前权重 RTP');
+        $('#mjhlAgentSave').prop('disabled', GC_MJHL_WRITING || !GC_MJHL_AGENT_CAN_EDIT || GC_MJHL_CALIBRATING)
+            .text(GC_MJHL_WRITING ? '正在提交…' : !GC_MJHL_AGENT_CAN_EDIT ? '保存代理线参数' : GC_MJHL_RTP_JOB === 'calibrate' ? 'RTP调校复核中…' : GC_MJHL_RTP_JOB === 'verify' ? 'RTP复核中…' : '保存代理线参数');
+        $('#mjhlRtpCalibrate').prop('disabled', GC_MJHL_WRITING || !GC_MJHL_AGENT_CAN_EDIT || (GC_MJHL_CALIBRATING && GC_MJHL_RTP_JOB !== 'calibrate')).text(GC_MJHL_CALIBRATING && GC_MJHL_RTP_JOB === 'calibrate' ? '停止调权重' : '一键按目标 RTP 调权重');
+        $('#mjhlRtpVerify').prop('disabled', GC_MJHL_WRITING || !GC_MJHL_AGENT || (GC_MJHL_CALIBRATING && GC_MJHL_RTP_JOB !== 'verify')).text(GC_MJHL_CALIBRATING && GC_MJHL_RTP_JOB === 'verify' ? '停止计算' : '计算当前权重 RTP');
+        gcMjhlInheritanceUi();
+    }
+    function gcMjhlInheritanceUi() {
+        var line = gcCurLine(), meta = GC_MJHL_META;
+        var current = gcIsMjhl() && meta && meta.lineAgent === line && GC_MJHL_LOADED_LINE === line;
+        var canChange = current && line !== '*' && GC_MJHL_AGENT_CAN_EDIT;
+        $('#mjhlAgentCopy').toggle(!!canChange && !meta.configured).prop('disabled', GC_MJHL_WRITING || !current || !meta.defaultAvailable);
+        $('#mjhlAgentRecall').toggle(!!canChange && !!meta.configured).prop('disabled', GC_MJHL_WRITING || !current || !meta.defaultAvailable);
+        if (gcIsMjhl()) $('#gcLineTip').text(line === '*' ? '默认参数：未单独配置的代理线玩家按此生效'
+            : !line ? '请选择代理线' : !current ? '正在读取代理线参数…'
+            : !meta.defaultAvailable ? (meta.configured ? '该代理线使用独立配置；默认配置尚未保存，暂不能恢复使用默认配置' : '默认配置尚未保存，请先配置默认参数')
+            : meta.configured ? '该代理线使用独立配置，默认配置的后续修改不会影响本线'
+            : meta.inherited ? '该代理线使用默认配置；复制后可独立调参' : '默认配置尚未保存，请先配置默认参数');
     }
     function gcMjhlCancelRtp() {
         GC_MJHL_RTP_SEQ++;
@@ -986,6 +1006,7 @@
         GC_MJHL_CALIBRATING = false; GC_MJHL_RTP_JOB = ''; GC_MJHL_RTP_RESULT = null; GC_MJHL_RTP_KEY = '';
         GC_MJHL_RTP_RUNNING_KEY = ''; GC_MJHL_RTP_PENDING_KEY = '';
         $('#mjhlRtpDistribution').text('请先计算当前权重 RTP。');
+        $('#mjhlRtpProgress').text('');
         gcMjhlControls();
     }
     function gcMjhlEngineProfile() {
@@ -1039,10 +1060,17 @@
         if (sum !== stats.count) return '奖型分布样本数不一致，请重新计算。';
         return lines.join('\n');
     }
+    function gcMjhlPreviewRtp(stats, beforeCalibration, calibrating) {
+        if (!gcMjhlRtpValid(stats, false)) return;
+        var label = beforeCalibration ? '调整前权重估算 RTP' : calibrating ? '候选权重估算 RTP' : '当前权重估算 RTP';
+        var note = stats.unobservedReturn || stats.half95 === 0 ? '本次样本未能确定误差' : '待精确复核';
+        $('#mjhlActualRtp').text(label + '：' + (stats.total * 100).toFixed(2) + '%（' + stats.count.toLocaleString() + '回合，' + note + '）');
+        $('#mjhlRtpDistribution').text('估算分布，仅供参考。\n' + gcMjhlDistributionText(stats, false));
+    }
     function gcMjhlSavedRtp(meta) {
         // 接口只返回当前版本且完整配置哈希匹配的记录，仍须核对代理和数学指纹；旧摘要只重算一次。
         var raw = meta && meta.simulationSummary;
-        if (!meta || meta.lineAgent !== gcCurLine() || !meta.configured || !/^[0-9a-f]{64}$/i.test(meta.configHash || '') || !/^[1-9][0-9]*$/.test(String(meta.revision)) || !raw || typeof raw !== 'string' || raw.length > 2048) return;
+        if (!meta || meta.lineAgent !== gcCurLine() || !(meta.configured || meta.inherited) || !/^[0-9a-f]{64}$/i.test(meta.configHash || '') || !/^[1-9][0-9]*$/.test(String(meta.sourceRevision || meta.revision)) || !raw || typeof raw !== 'string' || raw.length > 2048) return;
         try {
             var at = raw.indexOf('{'); if (at < 0) return;
             var summary = JSON.parse(raw.substring(at)), stats = summary.stats || summary;
@@ -1075,21 +1103,25 @@
         var originalWeights = $.extend(true, {}, GC_MJHL_AGENT.weights);
         var natural = $('#mjhlScatterEnabled').prop('checked'), free = $('#mjhlFreeRetrigger').prop('checked');
         GC_MJHL_RTP_JOB = type; GC_MJHL_RTP_RUNNING_KEY = profileKey; GC_MJHL_CALIBRATING = type === 'calibrate' || type === 'verify'; gcMjhlControls();
-        $('#mjhlActualRtp').text(type === 'calibrate' ? '正在调权重并复核…' : type === 'verify' ? '正在复核当前权重，权重不会改变…' : '正在按当前权重初算…');
+        $('#mjhlActualRtp').text('正在快速估算当前权重 RTP…');
+        $('#mjhlRtpProgress').text(type === 'calibrate' ? '随后调权重并精确复核' : '随后精确复核');
         var worker;
-        try { worker = new Worker('@Url.Content("~/Scripts/app/mjhl.agent.rtp.worker.js")?v=mjhl-agent-20261102-v10'); }
-        catch (error) { GC_MJHL_CALIBRATING = false; GC_MJHL_RTP_JOB = ''; gcMjhlControls(); $('#mjhlActualRtp').text('计算未启动：' + error.message); return; }
+        try { worker = new Worker('@Url.Content("~/Scripts/app/mjhl.agent.rtp.worker.js")?v=mjhl-agent-20261104-preview1'); }
+        catch (error) { GC_MJHL_CALIBRATING = false; GC_MJHL_RTP_JOB = ''; gcMjhlControls(); $('#mjhlRtpProgress').text(''); $('#mjhlActualRtp').text('计算未启动：' + error.message); return; }
         GC_MJHL_RTP_WORKER = worker;
         function current() { return seq === GC_MJHL_RTP_SEQ && line === gcCurLine() && gcIsMjhl(); }
-        function finish() { worker.terminate(); if (GC_MJHL_RTP_WORKER === worker) GC_MJHL_RTP_WORKER = null; GC_MJHL_CALIBRATING = false; GC_MJHL_RTP_JOB = ''; GC_MJHL_RTP_RUNNING_KEY = ''; gcMjhlControls(); }
+        function finish() { worker.terminate(); if (GC_MJHL_RTP_WORKER === worker) GC_MJHL_RTP_WORKER = null; GC_MJHL_CALIBRATING = false; GC_MJHL_RTP_JOB = ''; GC_MJHL_RTP_RUNNING_KEY = ''; $('#mjhlRtpProgress').text(''); gcMjhlControls(); }
         worker.onmessage = function (event) {
             if (!current()) { worker.terminate(); return; }
             var message = event.data;
+            if (message.preview) { gcMjhlPreviewRtp(message.preview, !!message.beforeCalibration, type === 'calibrate'); return; }
+            if (message.previewError) { $('#mjhlActualRtp').text('当前权重暂未得到完整估算，继续计算…'); return; }
             if (message.progress) {
                 var progress = message.progress, done = Number(progress.completed || 0), total = Number(progress.total || 0);
                 if (progress.phase === 'correction' || Number(progress.verificationRound) === 2) verificationRound = 2;
                 var phaseText = progress.phase === 'verify' ? (verificationRound === 2 ? '正在复核续调权重' : '正在独立复核') : progress.phase === 'correction' ? '正在小范围续调权重' : progress.phase === 'refine' ? '正在精调权重' : '正在寻找合适权重';
-                $('#mjhlActualRtp').text((type === 'calibrate' ? phaseText : type === 'verify' ? '正在复核当前权重' : '正在初算') + (total ? '：' + Math.min(100,Math.floor(done / total * 100)) + '%' : '…'));
+                if (progress.estimate) gcMjhlPreviewRtp(progress.estimate, false, type === 'calibrate');
+                $('#mjhlRtpProgress').text((type === 'calibrate' ? phaseText : type === 'verify' ? '正在精确复核当前权重' : '正在初算') + (total ? '：' + Math.min(100,Math.floor(done / total * 100)) + '%' : '…'));
                 return;
             }
             finish();
@@ -1167,7 +1199,7 @@
         $('#mjhlBetMin').val(b.min); $('#mjhlBetMax').val(b.max); $('#mjhlBetEntry').val(b.entry);
         $('#mjhlBetChips').val((b.chips || []).join(',')); $('#mjhlScorePerCoin').val(b.scorePerCoin);
         gcMjhlRenderWeights(); gcMjhlSavedRtp(meta); gcMjhlActualRtp();
-        $('#mjhlAgentStatus').text(meta ? ('版本 ' + (meta.revision || '0') + (meta.updatedAt ? ' · ' + meta.updatedAt : '')) : '').data('revision', meta && meta.revision ? String(meta.revision) : '0');
+        $('#mjhlAgentStatus').text(meta ? ((meta.inherited ? '使用默认配置 · 默认版本 ' : '版本 ') + (meta.sourceRevision || meta.revision || '0') + (meta.updatedAt ? ' · ' + meta.updatedAt : '')) : '').data('revision', meta && meta.revision ? String(meta.revision) : '0');
         var canEdit = !!(meta && meta.canEdit); GC_MJHL_AGENT_CAN_EDIT = canEdit; $('#mjhlAgentReadonly').text(canEdit ? '' : '当前账号只读'); gcMjhlControls();
     }
     function gcMjhlReadWeights() {
@@ -1192,7 +1224,7 @@
     function gcMjhlLoadConfig() {
         gcMjhlCancelRtp();
         var line = gcCurLine(), seq = ++GC_MJHL_LOAD_SEQ;
-        GC_MJHL_AGENT = null; GC_MJHL_AGENT_CAN_EDIT = false; GC_MJHL_LOADED_LINE = ''; gcMjhlControls();
+        GC_MJHL_AGENT = null; GC_MJHL_AGENT_SAVED = null; GC_MJHL_META = null; GC_MJHL_AGENT_CAN_EDIT = false; GC_MJHL_LOADED_LINE = ''; gcMjhlControls();
         $('#mjhlAgentStatus').text(line ? '正在读取…' : '请选择代理线');
         $('#mjhlActualRtp').text('');
         if (!line) return;
@@ -1203,6 +1235,7 @@
         });
     }
     function gcMjhlSave() {
+        if (GC_MJHL_WRITING) return;
         if (!GC_MJHL_AGENT || !GC_MJHL_AGENT_CAN_EDIT || GC_MJHL_LOADED_LINE !== gcCurLine()) { showToast('请先载入该代理线参数。', 'warning'); return; }
         if (GC_MJHL_CALIBRATING) { showToast(GC_MJHL_RTP_JOB === 'calibrate' ? '正在调校并复核 RTP，完成后才能保存。' : '正在复核 RTP，完成后才能保存。', 'warning'); return; }
         var cfg = gcMjhlCollect(), line = gcCurLine(), seq = GC_MJHL_LOAD_SEQ;
@@ -1211,10 +1244,35 @@
         if (!isFinite(cfg.bets.scorePerCoin) || cfg.bets.scorePerCoin < 1 || Math.floor(cfg.bets.scorePerCoin) !== cfg.bets.scorePerCoin) { showToast('兑换比例必须是正整数。', 'warning'); return; }
         var profile = gcMjhlEngineProfile();
         if (!GC_MJHL_RTP_RESULT || GC_MJHL_RTP_KEY !== gcMjhlRtpMathKey(profile) || !gcMjhlRtpReusable(GC_MJHL_RTP_RESULT, profile)) { showToast('请等待当前权重 RTP 复核完成，误差不超过±1个百分点后保存。', 'warning'); return; }
-        $('#mjhlAgentSave').prop('disabled', true);
-        request(GC_URL.mjhlAgentSave, { lineAgent:line, expectedRevision:$('#mjhlAgentStatus').data('revision') || '0', configJson:JSON.stringify(cfg), simulated:JSON.stringify(GC_MJHL_RTP_RESULT), __RequestVerificationToken:gcLineToken() }, function (data) {
+        gcMjhlWrite(GC_URL.mjhlAgentSave, { lineAgent:line, expectedRevision:$('#mjhlAgentStatus').data('revision') || '0', configJson:JSON.stringify(cfg), simulated:JSON.stringify(GC_MJHL_RTP_RESULT), __RequestVerificationToken:gcLineToken() }, function (data) {
             if (seq !== GC_MJHL_LOAD_SEQ || line !== gcCurLine() || !gcIsMjhl()) return;
             gcMsg(data); gcMjhlControls(); if (data && data.code == 1) gcMjhlLoadConfig();
+        });
+    }
+
+    function gcMjhlWrite(url, para, callback) {
+        if (GC_MJHL_WRITING) return;
+        GC_MJHL_WRITING = true; gcMjhlControls();
+        $.ajax({ url:url, type:'POST', dataType:'json', data:para, timeout:15000 })
+            .done(callback)
+            .fail(function () { callback({code:0, content:'请求失败或超时，请刷新确认配置状态后再操作。'}); })
+            .always(function () { GC_MJHL_WRITING = false; gcMjhlControls(); });
+    }
+    function gcMjhlChangeInheritance(copy) {
+        var line = gcCurLine(), meta = GC_MJHL_META, seq = GC_MJHL_LOAD_SEQ;
+        if (!gcIsMjhl() || !line || line === '*' || !GC_MJHL_AGENT_CAN_EDIT || GC_MJHL_LOADED_LINE !== line || !meta || meta.lineAgent !== line || GC_MJHL_WRITING) return;
+        if (!meta.defaultAvailable) { showToast('请先保存默认配置。', 'warning'); return; }
+        if (copy === !!meta.configured) return;
+        var question = copy ? '确定把当前已保存的默认参数和权重复制给【' + line + '】吗？复制后本线可独立调参，不再跟随默认配置。'
+            : '确定收回【' + line + '】的独立配置吗？本线将改用默认参数和权重，并跟随后续默认配置更新。';
+        confirm(question + '\n本页未保存的修改将放弃。', function () {
+            if (GC_MJHL_WRITING || seq !== GC_MJHL_LOAD_SEQ || line !== gcCurLine() || !gcIsMjhl()) return;
+            gcMjhlCancelRtp();
+            gcMjhlWrite(copy ? GC_URL.mjhlAgentCopy : GC_URL.mjhlAgentRecall, {lineAgent:line, expectedRevision:meta.revision, expectedDefaultRevision:meta.defaultRevision, __RequestVerificationToken:gcLineToken()}, function (data) {
+                if (seq !== GC_MJHL_LOAD_SEQ || line !== gcCurLine() || !gcIsMjhl()) return;
+                gcMsg(data);
+                if (data && data.code == 1) { GC_MJHL_AGENT_CAN_EDIT = false; delete GC_MJHL_RTP_CACHE[line]; gcReloadLinesAndTables(); }
+            });
         });
     }
 
@@ -2493,6 +2551,8 @@
         $('#gcLineSel').on('change', function () { gcMjhlCancelRtp(); GC_MJHL_LOAD_SEQ++; gcApplyLineUi(); gcLoadTables(); });
         $('#gcLineCopy').on('click', gcLineCopy);
         $('#gcLineRecall').on('click', gcLineRecall);
+        $('#mjhlAgentCopy').on('click', function () { gcMjhlChangeInheritance(true); });
+        $('#mjhlAgentRecall').on('click', function () { gcMjhlChangeInheritance(false); });
         $('#gcRefresh').on('click', function () {
             if ($('#gcGameId').val() === '55' && window.rabbitConfigReload) {
                 var refreshGame = $('#gcGameSel').val(), refreshLine = gcCurLine();

@@ -57,17 +57,21 @@ window.alert = function (msg, icon, callBack) {
             });
     });
 }
-window.confirm = function (msg, okCallback, noCallback) {
-    easyloader.load('messager', function () {
-        $.messager.confirm('系统提示', msg, function (r) {
-            if (r && typeof okCallback == 'function') {
-                okCallback();
-            } else if (typeof noCallback == 'function') {
-                noCallback();
-            }
-        });
-    });
-}
+;(function (nativeConfirm) {
+    window.confirm = function (msg, okCallback, noCallback) {
+        function complete(accepted) {
+            var callback = accepted ? okCallback : noCallback;
+            if (typeof callback === 'function') callback();
+        }
+        // easyloader 等待其他加载链超过 2 秒会丢弃回调；加载失败也不会通知调用方。
+        // 未就绪时直接使用浏览器确认框，避免操作静默失效或迟到后重复弹框/提交。
+        if ($.messager && typeof $.messager.confirm === 'function') {
+            $.messager.confirm('系统提示', msg, complete);
+        } else {
+            complete(nativeConfirm.call(window, msg));
+        }
+    };
+})(window.confirm);
 
 // 顶部居中、几秒后自动消失的优雅提示（toast）
 // type: success / error / warning / info；timeout 默认 2500ms
