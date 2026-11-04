@@ -66,14 +66,16 @@ namespace YYT.Web.Areas.Mobile.Controllers
             ViewBag.MShowRefresh = true;
             ViewBag.MShowSearch = true;
             ViewBag.MHeaderTall = true;
-            ViewBag.MSubtitleHtml = "<div id=\"totalWinLossLabel\">今日在线玩家总输赢（钻）</div><div class=\"total-win-loss\" id=\"totalWinLoss\">0</div>";
+            ViewBag.MSubtitleHtml = "<div id=\"totalWinLossLabel\">今日玩家总盈亏</div><div class=\"total-win-loss\" id=\"totalWinLoss\">0</div>";
             ViewBag.CanUpDown = CanUpDown(user);
             ViewBag.CanFrozen = user != null;
             ViewBag.CanKick = IsSuper(user) || (user != null && user.IsKicking == 1);
             ViewBag.CanModifyPwd = IsSuper(user) || (user != null && user.IsViewPwd == 1 && user.IsModifyPwd == 1);
-            // 控制管理入口：吃分(IsKill)/放水(IsProbability)/控牌(IsRelease) 任一权限即可
+            // 2026-11-04 对齐参考站弹窗：“操作”（送奖/放水）与“拉黑”（吃分）拆成两个按钮，各按权限显示。
+            // 操作：送奖(IsRelease)/放水(IsProbability) 任一权限即显示；拉黑：吃分(IsKill) 权限
             ViewBag.CanControl = IsSuper(user)
-                || (user != null && (user.IsKill == 1 || user.IsProbability == 1 || user.IsRelease == 1));
+                || (user != null && (user.IsProbability == 1 || user.IsRelease == 1));
+            ViewBag.CanBlacklist = IsSuper(user) || (user != null && user.IsKill == 1);
 
             return View();
         }
@@ -123,7 +125,8 @@ namespace YYT.Web.Areas.Mobile.Controllers
             ViewBag.MTitle = "充值管理";
             ViewBag.MShowRefresh = false;
             ViewBag.OwnCoins = GetOwnCoins(user);
-            ViewBag.MSubtitleHtml = "当前钻余额: <span class=\"diamond-count\" id=\"currentDiamond\">" + ViewBag.OwnCoins + "</span>";
+            // 2026-11-04 需求：页头文字“当前钻余额”改“当前余额”
+            ViewBag.MSubtitleHtml = "当前余额: <span class=\"diamond-count\" id=\"currentDiamond\">" + ViewBag.OwnCoins + "</span>";
             ViewBag.IsSuper = IsSuper(user);
 
             // 可操作对象范围，与桌面端 RechargeController.GetTreeDataByPermission 保持一致：
@@ -148,6 +151,7 @@ namespace YYT.Web.Areas.Mobile.Controllers
         /// </summary>
         [AjaxOnly]
         [HttpPost]
+        [ReadOnlySession] // 只读会话：不排会话锁（2026-11-04）
         public ActionResult GetOwnCoinsJson()
         {
             M_LoginUser user = WebHelper.GetLoginInfo();
@@ -221,11 +225,17 @@ namespace YYT.Web.Areas.Mobile.Controllers
         public ActionResult Control()
         {
             M_LoginUser user = WebHelper.GetLoginInfo();
-            bool canKill = IsSuper(user) || (user != null && user.IsKill == 1);
             bool canRelease = IsSuper(user) || (user != null && user.IsProbability == 1);
             bool canCard = IsSuper(user) || (user != null && user.IsRelease == 1);
-            if (!(canKill || canRelease || canCard))
+            // 2026-11-04：吃分拆到独立的“黑名单管理”页（Blacklist），操作管理只保留送奖/放水；
+            // 只有吃分权限的账号进来直接转到黑名单管理（保留 id 参数）
+            bool canKill = false;
+            if (!(canRelease || canCard))
+            {
+                if (IsSuper(user) || (user != null && user.IsKill == 1))
+                    return RedirectToAction("Blacklist", new { id = Request.QueryString["id"] });
                 return RedirectToAction("Index");
+            }
 
             ViewBag.MPage = "control";
             ViewBag.MTitle = "操作管理";
@@ -235,6 +245,27 @@ namespace YYT.Web.Areas.Mobile.Controllers
             ViewBag.CanRelease = canRelease;
             ViewBag.CanCard = canCard;
             ViewBag.PresetAccount = Request.QueryString["id"] ?? string.Empty;
+
+            return View();
+        }
+
+        /// <summary>
+        /// 黑名单管理（吃分，2026-11-04 从操作管理拆出，对齐参考站 heimingdang）：
+        /// 填玩家账号与吃分金额点“确定”下发吃分（Mode=4），“移除黑名单”移除执行中的吃分。
+        /// 复用电脑端总控接口 /Game/UserInfo/ApplyTotalControl、CloseTotalControl，需 IsKill 权限。
+        /// </summary>
+        public ActionResult Blacklist(string id)
+        {
+            M_LoginUser user = WebHelper.GetLoginInfo();
+            if (!(IsSuper(user) || (user != null && user.IsKill == 1)))
+                return RedirectToAction("Index");
+
+            ViewBag.MPage = "blacklist";
+            ViewBag.MTitle = "黑名单管理";
+            ViewBag.MSubtitle = "添加玩家到黑名单";
+            ViewBag.MShowRefresh = false;
+            // 用参数绑定取账号：?id=xxx 与操作管理转来的 /Blacklist/xxx（RedirectToAction 把 id 放进路径段）两种都能预填
+            ViewBag.PresetAccount = id ?? string.Empty;
 
             return View();
         }

@@ -549,7 +549,13 @@
                 <button class="modal-action-btn recharge" id="modalRechargeBtn">充值</button>
                 @if (ViewBag.CanControl != null && (bool)ViewBag.CanControl)
                 {
-                    <button class="modal-action-btn reward" id="modalControlBtn">控制</button>
+                    @* 2026-11-04：按钮文字“控制”改“操作”（跳转操作管理页：送奖/放水，任一权限即显示） *@
+                    <button class="modal-action-btn reward" id="modalControlBtn">操作</button>
+                }
+                @if (ViewBag.CanBlacklist != null && (bool)ViewBag.CanBlacklist)
+                {
+                    @* 2026-11-04 对齐参考站：“拉黑”放在“操作”下方，跳转黑名单管理（吃分）页，需吃分权限 *@
+                    <button class="modal-action-btn blacklist" id="modalBlacklistBtn">拉黑</button>
                 }
                 <button class="modal-action-btn details" id="modalDetailsBtn">玩家详细</button>
                 <button class="modal-action-btn prize-history" id="modalPrizeHistoryBtn">中奖历史</button>

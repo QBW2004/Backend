@@ -1,0 +1,13 @@
+{
+  "normalHallLogin": 0,
+  "normalHallLogoutClosed": true,
+  "player": [
+    {
+      "ID": "test02",
+      "COINS": 122043,
+      "GAME_SCORE": 64,
+      "INHALL": 0,
+      "FROZEN": 0
+    }
+  ]
+}

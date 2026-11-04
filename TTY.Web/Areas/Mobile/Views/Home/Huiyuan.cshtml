@@ -76,7 +76,19 @@
         flex-shrink: 0;
     }
 
+    /* 2026-11-04：“赢的最多/输的最多”同一行靠右（原来 display:block 两个按钮上下叠放）。
+       两个按钮始终并排不压缩；320px 这类窄屏放不下标题+按钮时整组换到标题下一行，仍靠右，不与标题重叠 */
+    .member-detail-header {
+        flex-wrap: wrap;
+        row-gap: 8px;
+    }
+
     .member-detail-header .sort-options {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        flex-shrink: 0;
+        margin-left: auto;
         padding: 0;
         background-color: transparent;
         border-bottom: none;

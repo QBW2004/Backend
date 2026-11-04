@@ -37,7 +37,8 @@
      */
     function refreshOwnCoins() {
         if (document.hidden) return;
-        M.post('/Mobile/Home/GetOwnCoinsJson', {}).then(function (res) {
+        // silent：15 秒轮询/充值后刷新余额，失败保留页头旧值，不弹通用“网络异常”（2026-11-04）
+        M.post('/Mobile/Home/GetOwnCoinsJson', {}, { silent: true }).then(function (res) {
             if (res && typeof res.coins !== 'undefined') {
                 $('#currentDiamond').text(M.gold(res.coins));
             }
@@ -151,9 +152,7 @@
         refreshAmountUi();
         renderHistory();
 
-        // 页头余额实时化：除操作成功后即时刷新外，停留页面期间定时轮询，
-        // 覆盖上级在其它端（如桌面充值管理）给本账号充退、兑换结算等外部变化。
-        setInterval(refreshOwnCoins, 15000);
+        // 2026-11-04：去掉页头余额每 15 秒轮询（对齐参考站）；进页渲染当前余额，充值/退分成功后即时刷新。
 
         // 预填（从玩家列表跳转过来）
         var preset = window.MPagePreset || {};

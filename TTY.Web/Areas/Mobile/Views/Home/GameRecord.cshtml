@@ -1,6 +1,6 @@
 ﻿@{
     /* 玩家游戏记录（独立页面，替代原玩家弹窗里的记录浮层）
-       数据源：/Game/UserRecord/GetUserRecords（按日期查询当日记录，留存窗口 7×24 小时）
+       数据源：/Game/UserRecord/GetUserRecords（按开始/结束时分区间查询，留存窗口 7×24 小时）
        列口径与电脑端"玩家记录"页一致（Areas/Game/Views/UserRecord/Index.cshtml） */
     string webVer = ConfigHelper.Get("WebVer");
     string today = (string)(ViewBag.Today ?? "");
@@ -218,14 +218,13 @@
 
         <!-- 筛选控件 -->
         <div class="filter-container">
-            <div class="m-date-field">
-                <div class="m-date-label">日期</div>
-                <input type="date" id="recordDate" value="@today">
+            @* 2026-11-04：开始框 / 结束框 / 查询一行（与代理流水同一布局），框内日期+时分居中 *@
+            <div class="m-dt-range">
+                <input type="date" id="recordStart" value="@today" aria-label="开始时间">
+                <input type="date" id="recordEnd" value="@today" aria-label="结束时间">
+                <button class="m-dt-btn" id="filterBtn" type="button">查询</button>
             </div>
-            <div class="filter-bottom-row">
-                <div class="record-summary" id="recordSummary">--</div>
-                <button class="filter-btn" id="filterBtn">查询</button>
-            </div>
+            <div class="record-summary" id="recordSummary">--</div>
         </div>
 
         <!-- 表格容器 -->

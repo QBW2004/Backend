@@ -1,0 +1,189 @@
+{
+  "Source": "deployed center isolated source SHA23E2E620...666D9",
+  "Method": "Compiled exact production UC32 and legacy guard expressions",
+  "Checks": 90,
+  "ElapsedSeconds": 2.385,
+  "Rows": [
+    {
+      "value": 1,
+      "total": 1,
+      "legacy": 1
+    },
+    {
+      "value": 2,
+      "total": 1,
+      "legacy": 1
+    },
+    {
+      "value": 3,
+      "total": 1,
+      "legacy": 1
+    },
+    {
+      "value": 4,
+      "total": 1,
+      "legacy": 1
+    },
+    {
+      "value": 5,
+      "total": 1,
+      "legacy": 1
+    },
+    {
+      "value": 6,
+      "total": 1,
+      "legacy": 1
+    },
+    {
+      "value": 7,
+      "total": 1,
+      "legacy": 1
+    },
+    {
+      "value": 8,
+      "total": 1,
+      "legacy": 1
+    },
+    {
+      "value": 9,
+      "total": 1,
+      "legacy": 1
+    },
+    {
+      "value": 10,
+      "total": 1,
+      "legacy": 1
+    },
+    {
+      "value": 11,
+      "total": 1,
+      "legacy": 1
+    },
+    {
+      "value": 13,
+      "total": 1,
+      "legacy": 1
+    },
+    {
+      "value": 14,
+      "total": 1,
+      "legacy": 1
+    },
+    {
+      "value": 15,
+      "total": 1,
+      "legacy": 1
+    },
+    {
+      "value": 16,
+      "total": 1,
+      "legacy": 1
+    },
+    {
+      "value": 17,
+      "total": 1,
+      "legacy": 1
+    },
+    {
+      "value": 18,
+      "total": 1,
+      "legacy": 1
+    },
+    {
+      "value": 19,
+      "total": 1,
+      "legacy": 1
+    },
+    {
+      "value": 20,
+      "total": 1,
+      "legacy": 1
+    },
+    {
+      "value": 21,
+      "total": 1,
+      "legacy": 1
+    },
+    {
+      "value": 22,
+      "total": 1,
+      "legacy": 1
+    },
+    {
+      "value": 23,
+      "total": 1,
+      "legacy": 1
+    },
+    {
+      "value": 24,
+      "total": 1,
+      "legacy": 1
+    },
+    {
+      "value": 25,
+      "total": 1,
+      "legacy": 1
+    },
+    {
+      "value": 26,
+      "total": 1,
+      "legacy": 1
+    },
+    {
+      "value": 27,
+      "total": 0,
+      "legacy": 0
+    },
+    {
+      "value": 28,
+      "total": 0,
+      "legacy": 0
+    },
+    {
+      "value": 29,
+      "total": 0,
+      "legacy": 0
+    },
+    {
+      "value": 30,
+      "total": 0,
+      "legacy": 0
+    },
+    {
+      "value": 31,
+      "total": 0,
+      "legacy": 0
+    },
+    {
+      "value": 32,
+      "total": 0,
+      "legacy": 0
+    },
+    {
+      "value": 33,
+      "total": 0,
+      "legacy": 0
+    },
+    {
+      "value": 34,
+      "total": 0,
+      "legacy": 0
+    },
+    {
+      "value": 35,
+      "total": 0,
+      "legacy": 0
+    }
+  ],
+  "RejectedValues": [
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35
+  ]
+}

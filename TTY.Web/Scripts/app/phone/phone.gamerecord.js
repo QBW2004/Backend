@@ -27,11 +27,12 @@
     /* ---------------- 数据 ---------------- */
 
     function fetchRecords() {
-        // 日期必须是 "yyyy-MM-dd" 字符串（服务端按该日 00:00 ~ 次日 00:00 过滤），
+        // 开始/结束为 "yyyy-MM-dd HH:mm" 字符串（TIME=开始, END=结束，服务端按分钟精确过滤，含结束那一分钟），
         // 传 Date 对象会被 jQuery 序列化成不可解析的日期字符串导致过滤失效。
         return M.post('/Game/UserRecord/GetUserRecords', {
             ID: account,
-            TIME: $('#recordDate').val(),
+            TIME: $('#recordStart').val(),
+            END: $('#recordEnd').val(),
             page: currentPage,
             rows: pageSize
         });
@@ -155,10 +156,15 @@
             window.location.href = '/Mobile/Home/PlayerDetail?id=' + encodeURIComponent(account);
         });
 
+        // 日期+时分字段（2026-11-04）：默认当天 00:00 ~ 23:59
+        M.dateTimeField($('#recordStart'), '00:00');
+        M.dateTimeField($('#recordEnd'), '23:59');
+
         loadData();
 
-        // 日期筛选 / 分页
+        // 时间筛选 / 分页
         $('#filterBtn').on('click', function () {
+            if ($('#recordStart').val() > $('#recordEnd').val()) { M.toast('开始时间不能晚于结束时间', 'error'); return; }
             currentPage = 1;
             loadData();
         });

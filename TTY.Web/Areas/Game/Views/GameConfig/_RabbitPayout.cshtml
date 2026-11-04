@@ -1,0 +1,13 @@
+<link rel="stylesheet" href="@Url.Content("~/Content/css/game.rabbitconfig.css?v=" + YYT.Common.ConfigHelper.Get("WebVer"))" />
+<section id="rabbitPayout" class="rb-shell" style="display:none;margin:16px 0;">
+    <div class="rb-stats" id="rbTableStats" aria-live="polite">
+        <div class="rb-stat"><span>牌型理论 RTP</span><strong id="rbTableRtp">—</strong><small>含正宗、五枚期望，不含连庄与赛跑</small></div>
+        <div class="rb-stat"><span>基础牌型 RTP</span><strong id="rbTableBase">—</strong><small>按未翻倍、未中赠的基础奖励</small></div>
+        <div class="rb-stat"><span>正宗翻倍增量</span><strong id="rbTableAuthExtra">—</strong><small id="rbTableAuthAvg">等待载入规则</small></div>
+        <div class="rb-stat"><span>五枚赠送增量</span><strong id="rbTableFiveExtra">—</strong><small id="rbTableFiveAvg">按自然中赠概率加权</small></div>
+    </div>
+    <p class="rb-caption" id="rbTableScope">RTP 按当前桌台的牌型机会与玩法规则计算。</p>
+    <p class="rb-mini-note">RTP 按普通付费牌型计算；连庄、赛跑需完整实测，不含人工控牌与比倍。<span id="rbTableStatus" role="status"></span></p>
+</section>
+<script src="@Url.Content("~/Scripts/app/game.rabbit-math.js?v=" + YYT.Common.ConfigHelper.Get("WebVer"))"></script>
+<script src="@Url.Content("~/Scripts/app/game.rabbit-payout.js?v=" + YYT.Common.ConfigHelper.Get("WebVer"))"></script>

@@ -8,6 +8,10 @@ namespace YYT.Web
         // 有关捆绑的详细信息，请访问 https://go.microsoft.com/fwlink/?LinkId=301862
         public static void RegisterBundles(BundleCollection bundles)
         {
+            // 2026-11-04：Web.config 关闭调试编译（debug=false）后，System.Web.Optimization 默认会把下列包合并压缩，
+            // 合并后 CSS 的虚拟路径变成 ~/res/...，easyui/font-awesome 里的相对图片、字体地址会失效。
+            // 这里显式关闭合并压缩，页面输出与调试模式时完全一致（逐个文件引用）。
+            BundleTable.EnableOptimizations = false;
             /*****************************************************************************************************************************************/
             bundles.Add(new ScriptBundle("~/res/jquery-js").Include(
                 "~/Scripts/jquery-{version}.js",

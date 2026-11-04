@@ -1,4 +1,4 @@
-/* ============================================================
+﻿/* ============================================================
    手机端后台运行时（1:1 复刻参考站点交互）
    依赖：jQuery + phone.css
    约定：
@@ -132,6 +132,17 @@
         return r === 0 ? 0 : r;
     };
 
+    /**
+     * 盈亏取整显示（2026-11-04 需求：会员盈亏详情、玩家详细信息的总盈亏舍去小数）：
+     * 向零截断（12.9→12，-12.9→-12），只改展示不改口径；-0 显示为 0。
+     */
+    M.truncInt = function (value) {
+        var n = Number(value || 0);
+        if (!isFinite(n)) return 0;
+        var r = n < 0 ? Math.ceil(n) : Math.floor(n);
+        return r === 0 ? 0 : r;
+    };
+
     M.fmtTime = function (v, withSec) {
         if (!v) return '--';
         var d = null;
@@ -194,7 +205,7 @@
      * 统一 POST 请求。自动附带防伪令牌；登录超时统一跳转手机登录页。
      * @param {String} url 接口地址
      * @param {Object} data 表单数据
-     * @param {Object} [opts] 可选项：{ timeoutMs: 12000 } 请求超时
+     * @param {Object} [opts] 可选项：{ timeoutMs: 12000 } 请求超时；{ silent: true } 失败不弹通用“网络异常”（轮询用）
      * @returns jQuery Promise，resolve 的是后端原始 JSON
      */
     // 在途 POST 登记表：页面离开（前进导航/bfcache 冻结）时统一 abort。
@@ -203,6 +214,21 @@
     // 恢复才执行，表现为"离开页面后在别的页面/返回时弹出网络连接失败"。
     var postReqSeq = 0;
     var postInFlight = {};
+    // 登录超时只提示一次（多个并发请求同时返回 code=-1 时不重复弹窗）
+    var loginTimedOut = false;
+
+    // 页面正在离开（2026-11-04 排查“点三行杆/切页面偶尔弹网络异常”）：
+    // 点菜单项/链接跳页时，部分手机 WebView 在 pagehide 之前就把在途请求掐成 status=0 的 error，
+    // 旧页面还在屏幕上，于是闪出红色“网络异常”。beforeunload 在导航开始时就触发，先打上标记。
+    var pageLeaving = false;
+    window.addEventListener('beforeunload', function () { pageLeaving = true; });
+    window.addEventListener('pagehide', function () { pageLeaving = true; });
+    window.addEventListener('pageshow', function () { pageLeaving = false; });
+
+    /** 是否应该弹通用“网络异常”：主动中断、后台页、正在跳页都不弹 */
+    function shouldToastNetError(status) {
+        return status !== 'abort' && !document.hidden && !pageLeaving;
+    }
 
     /** 中断全部在途 POST；显式 abort 报 status='abort'，错误提示按约定不弹 */
     function abortInFlightPosts() {
@@ -234,16 +260,29 @@
         return xhr.then(function (res) {
             delete postInFlight[reqId];
             if (res && Number(res.code) === -1) {
-                M.toast('登录超时，请重新登录', 'error');
-                setTimeout(M.toLogin, 1200);
+                // 2026-11-04：页面上多个请求同时撞到登录超时（列表+统计+控制状态等），只提示一次、只跳一次登录页；
+                // 之后其它请求的失败提示也不再弹（见 M.toast 的 loginTimedOut 判断）
+                if (!loginTimedOut) {
+                    loginTimedOut = true;
+                    M.toast('登录超时，请重新登录', 'error');
+                    setTimeout(M.toLogin, 1200);
+                }
                 return $.Deferred().reject('login-timeout').promise();
             }
             return res;
         }, function (xhr2, status) {
             delete postInFlight[reqId];
-            // abort = 页面离开时被主动中断；document.hidden = 后台/隐藏页的失败弹了也没人看见
-            if (status !== 'abort' && !document.hidden) {
-                M.toast('网络异常，请稍后重试', 'error');
+            // abort = 页面离开时被主动中断；document.hidden = 后台/隐藏页的失败弹了也没人看见。
+            // opts.silent：定时轮询等后台请求失败不打扰（页面保留上次数据，自身已有提示的也不重复弹）。
+            // status=0 的 error 多半是跳页时被浏览器掐断，延迟 1 秒再确认页面还在才弹，真要跳走就不会闪红字。
+            if (!(opts && opts.silent) && shouldToastNetError(status)) {
+                if (xhr2 && xhr2.status === 0 && status === 'error') {
+                    setTimeout(function () {
+                        if (shouldToastNetError(status)) M.toast('网络异常，请稍后重试', 'error');
+                    }, 1000);
+                } else {
+                    M.toast('网络异常，请稍后重试', 'error');
+                }
             }
             return $.Deferred().reject(status).promise();
         });
@@ -277,6 +316,8 @@
     /* ---------------- Toast ---------------- */
 
     M.toast = function (msg, type, duration) {
+        // 已提示登录超时、正在跳登录页：其余提示（含各请求失败回调里的“操作失败/读取失败”）一律不再弹
+        if (loginTimedOut && msg !== '登录超时，请重新登录') return;
         var $box = $('#mToast');
         if (!$box.length) return;
         var icon = '';
@@ -518,7 +559,7 @@
             var t = TC_CARD_TYPES[i];
             if (t.ht == 0 || t.ht == 12) continue;
             if (t.ht == 8 && action != 14 && action != 20) continue;
-            arr.push({ id: t.ht, text: t.name + '(' + mags[t.ht] + '倍)' });
+            arr.push({ id: t.ht, text: action == 20 && t.ht == 10 ? '五梅（250/500倍，含中赠）' : t.name + '(' + mags[t.ht] + '倍)' });
         }
         // 火凤凰(14)扩展控牌：正宗大四梅 x1~x6（控牌值 13-18）；大白兔(20) x1~x14（控牌值 13-26，
         // 服务端 MTH_DABAITU 放开到 26），AlgProb 按 ctrl_value-12 取倍数
@@ -659,15 +700,37 @@
         return '游戏' + action;
     };
 
-    /** 指定游戏的牌型下拉数据（含倍率文案） */
-    // full=true 返回含线奖的完整表（仅供历史控牌值回显）；下拉送牌只提供全盘奖（2026-10 规则对齐帮助）
-    M.cardTypeData = function (action, full) {
-        action = parseInt(action, 10);
-        if (action == 15) return full ? cardTypeDataForShz() : cardTypeDataForShz().filter(function (x) { return x.id == 10 || x.id >= 440; });
+    var CLOSE_CONTROL_TEXT = '关闭控制';
+
+    /**
+     * 牌型文案统一成「牌型（N倍）」（2026-11-04 需求）：ATT满花版去掉“彩金另计”等说明，
+     * 水浒传去掉“总押注”。只取括号里第一个“…倍”，括号统一全角；不带倍数的项（如“已取消”）原样保留。
+     */
+    function tidyCardText(text) {
+        return String(text).replace(/[（(]([^（）()]*?倍)[^（）()]*[）)]/, '（$1）');
+    }
+
+    function tidyRows(rows) {
+        return rows.map(function (r) { return $.extend({}, r, { text: tidyCardText(r.text) }); });
+    }
+
+    function cardTypeRows(action, full) {
+        if (action == 15) return tidyRows(full ? cardTypeDataForShz() : cardTypeDataForShz().filter(function (x) { return x.id == 10 || x.id >= 440; }));
         if (action == 16) return full ? cardTypeDataForMx97() : cardTypeDataForMx97().filter(function (x) { return x.id == 10 || x.id >= 322; });
         if (action == 17) return cardTypeDataForFruit();
         if (action == 19) return cardTypeDataForMjhl();
+        if (action == 8) return tidyRows(cardTypeDataForPaiji(action));
         return cardTypeDataForPaiji(action);
+    }
+
+    /** 指定游戏的牌型下拉数据（含倍率文案） */
+    // full=true 返回含线奖的完整表（仅供历史控牌值回显）；下拉送牌只提供全盘奖（2026-10 规则对齐帮助）。
+    // 下拉不再提供“关闭控制”（2026-11-04 需求：移除控制用「移除控制」按钮）；按文案过滤，
+    // 不能按 id——牌机 10 是五梅、拉霸 10 才是关闭。
+    M.cardTypeData = function (action, full) {
+        action = parseInt(action, 10);
+        var rows = cardTypeRows(action, full);
+        return full ? rows : $.grep(rows, function (r) { return r.text !== CLOSE_CONTROL_TEXT; });
     };
 
     // 历史控牌值名称回退（下拉已不再提供，但已下发的旧控牌记录仍要能回显，与电脑端 labaTypeName 同口径）：
@@ -700,7 +763,7 @@
     };
 
     /**
-     * 控牌参数主体（不含"（1次/5把）"后缀，供各页套自己的外层格式）：
+     * 控牌参数主体（供各页套自己的外层格式）：
      * “大字版 同花顺(150倍)”。
      * GameId<5 属历史/异常数据，没有游戏类型可映射，退回只显示牌型值。
      */
@@ -712,11 +775,11 @@
     };
 
     /**
-     * 控牌完整参数文案（控制页状态行与玩家列表卡片共用）：
-     * “大字版 同花顺(150倍)（1次/5把）”。
+     * 控牌完整参数文案（控制页状态行与玩家列表卡片共用）：“大字版 同花顺(150倍)”。
+     * 2026-11-04 需求：控制状态不再展示“（1次/5把）”（规则仍固定 1 次、5 把内，只是不显示）。
      */
     M.cardControlText = function (gameId, cardValue) {
-        return M.cardControlParams(gameId, cardValue) + '（1次/5把）';
+        return M.cardControlParams(gameId, cardValue);
     };
 
     /* ---------------- 默认向上展开的下拉（控制页「控制牌型」等页面底部的字段） ---------------- */
@@ -816,6 +879,140 @@
         }
         var fn = $wrap.data('upselRefresh');
         if (typeof fn === 'function') fn();
+    };
+
+    /* ---------------- 日期+时间选择（送奖明细 / 代理流水 / 中奖历史 / 游戏记录 共用） ---------------- */
+
+    /**
+     * 把原生 <input type="date"> 换成“日期 + 时分”选择（2026-11-04 需求）：
+     * 框内居中显示“yyyy-MM-dd HH:mm”（不显示秒），点击弹出日历，日历下方、右下角勾选按钮上方是时分选择。
+     * 原生 date 弹窗加不了时间，datetime-local 在各家 WebView 外观/交互不一致，所以自绘。
+     * 取值仍是原 input 的 .val()，格式“yyyy-MM-dd HH:mm”；脚本改值后 trigger('change') 即同步显示。
+     * 旧值只有日期（服务端渲染的 @today）时补默认时分：开始框 00:00、结束框 23:59（opts.time）。
+     */
+    var DT_RE = /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2}))?/;
+    var dtSeq = 0;
+
+    function dtParse(text, defTime) {
+        var m = DT_RE.exec(String(text || ''));
+        var t = /^(\d{2}):(\d{2})$/.exec(defTime || '00:00') || [0, '00', '00'];
+        if (!m) {
+            var d = new Date();
+            return { y: d.getFullYear(), mo: d.getMonth() + 1, d: d.getDate(), h: +t[1], mi: +t[2] };
+        }
+        return { y: +m[1], mo: +m[2], d: +m[3], h: m[4] != null ? +m[4] : +t[1], mi: m[5] != null ? +m[5] : +t[2] };
+    }
+
+    function dtFormat(v) {
+        return v.y + '-' + M.pad2(v.mo) + '-' + M.pad2(v.d) + ' ' + M.pad2(v.h) + ':' + M.pad2(v.mi);
+    }
+
+    function dtOptions(max, cur) {
+        var html = '';
+        for (var i = 0; i <= max; i++)
+            html += '<option value="' + i + '"' + (i === cur ? ' selected' : '') + '>' + M.pad2(i) + '</option>';
+        return html;
+    }
+
+    /** 打开选择弹窗；resolve 选中的“yyyy-MM-dd HH:mm”，取消/点遮罩 resolve null */
+    M.pickDateTime = function (value, title) {
+        var v = dtParse(value);
+        var view = { y: v.y, mo: v.mo };
+        var uid = 'mdtp' + (++dtSeq);
+        var body = '<div class="mdtp" id="' + uid + '">' +
+            '<div class="mdtp-nav"><button type="button" class="mdtp-prev" aria-label="上个月">‹</button>' +
+            '<span class="mdtp-month"></span><button type="button" class="mdtp-next" aria-label="下个月">›</button></div>' +
+            '<div class="mdtp-week"><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span></div>' +
+            '<div class="mdtp-days"></div>' +
+            '<div class="mdtp-time"><span>时间</span><select class="mdtp-hour" aria-label="时">' + dtOptions(23, v.h) + '</select>' +
+            '<b>:</b><select class="mdtp-minute" aria-label="分">' + dtOptions(59, v.mi) + '</select></div>' +
+            '</div>';
+
+        function renderDays($root) {
+            var first = new Date(view.y, view.mo - 1, 1);
+            var count = new Date(view.y, view.mo, 0).getDate();
+            var now = new Date();
+            var html = '';
+            for (var i = 0; i < first.getDay(); i++) html += '<span></span>';
+            for (var d = 1; d <= count; d++) {
+                var cls = 'mdtp-day';
+                if (view.y === v.y && view.mo === v.mo && d === v.d) cls += ' active';
+                if (view.y === now.getFullYear() && view.mo === now.getMonth() + 1 && d === now.getDate()) cls += ' today';
+                html += '<button type="button" class="' + cls + '" data-d="' + d + '">' + d + '</button>';
+            }
+            $root.find('.mdtp-month').text(view.y + '年' + view.mo + '月');
+            $root.find('.mdtp-days').html(html);
+        }
+
+        function shift(delta) {
+            var d = new Date(view.y, view.mo - 1 + delta, 1);
+            view.y = d.getFullYear(); view.mo = d.getMonth() + 1;
+        }
+
+        return M.modal({
+            title: title || '选择时间',
+            bodyHTML: body,
+            buttons: [
+                { label: '取消', value: null, type: 'mdtp-cancel' },
+                { label: '✓', value: 'ok', type: 'confirm mdtp-ok' }
+            ],
+            onRender: function ($modal) {
+                $modal.addClass('mdtp-modal');
+                var $root = $modal.find('#' + uid);
+                renderDays($root);
+                $root.on('click', '.mdtp-prev', function () { shift(-1); renderDays($root); });
+                $root.on('click', '.mdtp-next', function () { shift(1); renderDays($root); });
+                $root.on('click', '.mdtp-day', function () {
+                    v.y = view.y; v.mo = view.mo; v.d = parseInt($(this).attr('data-d'), 10);
+                    renderDays($root);
+                });
+                $root.on('change', '.mdtp-hour', function () { v.h = parseInt(this.value, 10) || 0; });
+                $root.on('change', '.mdtp-minute', function () { v.mi = parseInt(this.value, 10) || 0; });
+            }
+        }).then(function (res) {
+            return res === 'ok' ? dtFormat(v) : null;
+        });
+    };
+
+    /**
+     * 把一个 date 输入框升级为“日期+时分”字段。
+     * @param {jQuery} $input 原 <input type="date">（转为隐藏的取值来源，id/.val() 不变）
+     * @param {String} defTime 只有日期时补的时分：开始框 '00:00'、结束框 '23:59'
+     */
+    M.dateTimeField = function ($input, defTime) {
+        if (!$input || !$input.length || $input.data('mdtReady')) return;
+        $input.data('mdtReady', true);
+        var title = $input.attr('aria-label') || '选择时间';
+        // 原生 date 框已把带时分的值清空时，退回服务端渲染的 value 属性（只有日期）
+        var raw = $input.val() || $input.attr('value') || '';
+        $input.attr('type', 'hidden');
+        var $btn = $('<button type="button" class="m-dt-input"></button>')
+            .attr('aria-label', title).insertAfter($input);
+
+        function refresh() {
+            var cur = $input.val();
+            // 脚本只写了日期（如重置为今天）时同样补默认时分，保证提交的总是完整时间
+            if (!/\d{2}:\d{2}/.test(cur || '')) { cur = dtFormat(dtParse(cur, defTime)); $input.val(cur); }
+            var parts = cur.split(' ');
+            $btn.html('<span>' + M.esc(parts[0]) + '</span> <span>' + M.esc(parts[1] || '') + '</span>');
+        }
+
+        $btn.on('click', function () {
+            M.pickDateTime($input.val(), title).then(function (picked) {
+                if (picked == null || picked === $input.val()) return;
+                $input.val(picked).trigger('change');
+            });
+        });
+        $input.on('change', refresh);
+        $input.val(raw || '');
+        refresh();
+    };
+
+    /** 当天的“yyyy-MM-dd”（各页默认日期） */
+    M.todayValue = function (offsetDays) {
+        var d = new Date();
+        if (offsetDays) d.setDate(d.getDate() + offsetDays);
+        return d.getFullYear() + '-' + M.pad2(d.getMonth() + 1) + '-' + M.pad2(d.getDate());
     };
 
     /* ---------------- 代理详细信息弹窗 ---------------- */
@@ -1085,7 +1282,8 @@
     // 注意不能在离开页面的时机（pagehide）打标记：实测（Chromium）返回导航里恢复页面的
     // pageshow 先于离开页面的 pagehide，标记会晚一步写入、列表页看不到它。
     var PLAYERS_STALE_KEY = 'm_players_stale';
-    var PLAYERS_STALE_PAGES = { agents: true, huiyuan: true, recharge: true };
+    // control（操作管理）/ blacklist（黑名单管理）会改玩家控制状态，2026-11-04 去掉列表轮询后必须在返回时刷新
+    var PLAYERS_STALE_PAGES = { agents: true, huiyuan: true, recharge: true, control: true, blacklist: true };
 
     /** 当前页面是否属于"返回列表页时需要刷新"的那几个 */
     function isPlayersStalePage() {

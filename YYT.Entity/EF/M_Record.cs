@@ -62,6 +62,11 @@ namespace YYT.Entity
         /// 桌面「代理记录」需要展示这些记录，所以默认 false。
         /// </summary>
         public bool MONEY_ONLY { get; set; }
+        /// <summary>
+        /// 精确时间区间（手机端日期+时分筛选，2026-11-04）：true 时按 [S_TIME, E_TIME) 过滤，
+        /// E_TIME 已是“结束分钟 + 1 分钟”的开区间上界；false 沿用按天口径（桌面端不传）。
+        /// </summary>
+        public bool EXACT_TIME { get; set; }
 
         public override string ToString()
         {

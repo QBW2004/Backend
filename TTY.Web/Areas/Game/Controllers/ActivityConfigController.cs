@@ -2,11 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web.Mvc;
+using Newtonsoft.Json;
 using YYT.BLL.EF;
 using YYT.Common;
 using YYT.Entity;
 using YYT.Remote;
 using YYT.Web.Controllers;
+using YYT.Web.Models;
 
 namespace YYT.Web.Areas.Game.Controllers
 {
@@ -22,6 +24,19 @@ namespace YYT.Web.Areas.Game.Controllers
         public ActionResult Index()
         {
             return View();
+        }
+
+        // 拒绝缓存的全桌规则编辑器，避免覆盖已经分开的桌台参数。
+        [AjaxOnly, HttpPost]
+        public ActionResult GetRabbitConfig()
+        {
+            return Json(new Msg(0, "玩法规则已改为按桌台配置，请在大白兔桌台配置中选择具体桌台。"));
+        }
+
+        [AjaxOnly, HttpPost, ValidateAntiForgeryToken]
+        public ActionResult SaveRabbitConfig(string configJson)
+        {
+            return Json(new Msg(0, "已停止全桌规则保存，请在大白兔桌台配置中使用底部保存按钮。"));
         }
 
         [AjaxOnly]

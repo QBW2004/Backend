@@ -1,0 +1,37 @@
+{
+  "files": [
+    {
+      "Path": "Scripts\\app\\phone\\phone.core.js",
+      "MatchesRelease": true
+    },
+    {
+      "Path": "Scripts\\app\\phone\\phone.control.js",
+      "MatchesRelease": true
+    },
+    {
+      "Path": "Areas\\Game\\Views\\UserInfo\\Index.cshtml",
+      "MatchesRelease": true
+    },
+    {
+      "Path": "Areas\\Game\\Views\\UserInfo\\OnlineUsers.cshtml",
+      "MatchesRelease": true
+    },
+    {
+      "Path": "Config\\card-prize-quotes.json",
+      "MatchesRelease": true
+    },
+    {
+      "Path": "Views\\Shared\\Layout\\_ContentLayout.cshtml",
+      "MatchesRelease": true
+    },
+    {
+      "Path": "bin\\YYT.BLL.dll",
+      "MatchesRelease": true
+    },
+    {
+      "Path": "bin\\YYT.Web.dll",
+      "MatchesRelease": true
+    }
+  ],
+  "RabbitMatchesRelease": true
+}

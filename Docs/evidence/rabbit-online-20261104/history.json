@@ -1,0 +1,193 @@
+{
+  "Controls": [
+    {
+      "ID": 32,
+      "KillRatio": 9,
+      "Status": 2,
+      "CreatedTime": "/Date(1793642278000)/",
+      "AwardDiamonds": 2700.0,
+      "BookedDiamonds": 2700.0,
+      "ActualCardType": "一对",
+      "AwardTime": "/Date(1793642378344)/"
+    },
+    {
+      "ID": 33,
+      "KillRatio": 24,
+      "Status": 2,
+      "CreatedTime": "/Date(1793684020000)/",
+      "AwardDiamonds": 1920.0,
+      "BookedDiamonds": 1920.0,
+      "ActualCardType": "正宗大四梅",
+      "AwardTime": "/Date(1793684028082)/"
+    },
+    {
+      "ID": 34,
+      "KillRatio": 7,
+      "Status": 1,
+      "CreatedTime": "/Date(1793684058000)/",
+      "AwardDiamonds": 0.0,
+      "BookedDiamonds": 0.0,
+      "ActualCardType": null,
+      "AwardTime": null
+    },
+    {
+      "ID": 35,
+      "KillRatio": 7,
+      "Status": 1,
+      "CreatedTime": "/Date(1793684083000)/",
+      "AwardDiamonds": 0.0,
+      "BookedDiamonds": 0.0,
+      "ActualCardType": null,
+      "AwardTime": null
+    },
+    {
+      "ID": 36,
+      "KillRatio": 7,
+      "Status": 1,
+      "CreatedTime": "/Date(1793684085000)/",
+      "AwardDiamonds": 0.0,
+      "BookedDiamonds": 0.0,
+      "ActualCardType": null,
+      "AwardTime": null
+    },
+    {
+      "ID": 39,
+      "KillRatio": 7,
+      "Status": 1,
+      "CreatedTime": "/Date(1793719673000)/",
+      "AwardDiamonds": 0.0,
+      "BookedDiamonds": 0.0,
+      "ActualCardType": null,
+      "AwardTime": null
+    },
+    {
+      "ID": 40,
+      "KillRatio": 7,
+      "Status": 2,
+      "CreatedTime": "/Date(1793719743000)/",
+      "AwardDiamonds": 265.0,
+      "BookedDiamonds": 265.0,
+      "ActualCardType": "三条",
+      "AwardTime": "/Date(1793720086782)/"
+    },
+    {
+      "ID": 41,
+      "KillRatio": 27,
+      "Status": 1,
+      "CreatedTime": "/Date(1793719907000)/",
+      "AwardDiamonds": 0.0,
+      "BookedDiamonds": 0.0,
+      "ActualCardType": null,
+      "AwardTime": null
+    },
+    {
+      "ID": 42,
+      "KillRatio": 27,
+      "Status": 1,
+      "CreatedTime": "/Date(1793719909000)/",
+      "AwardDiamonds": 0.0,
+      "BookedDiamonds": 0.0,
+      "ActualCardType": null,
+      "AwardTime": null
+    },
+    {
+      "ID": 43,
+      "KillRatio": 27,
+      "Status": 1,
+      "CreatedTime": "/Date(1793719912000)/",
+      "AwardDiamonds": 0.0,
+      "BookedDiamonds": 0.0,
+      "ActualCardType": null,
+      "AwardTime": null
+    },
+    {
+      "ID": 44,
+      "KillRatio": 27,
+      "Status": 1,
+      "CreatedTime": "/Date(1793719977000)/",
+      "AwardDiamonds": 0.0,
+      "BookedDiamonds": 0.0,
+      "ActualCardType": null,
+      "AwardTime": null
+    }
+  ],
+  "Commands": [
+    {
+      "CardValue": 9,
+      "Count": 1,
+      "Total": 5,
+      "Status": 2,
+      "Response": "UCOK"
+    },
+    {
+      "CardValue": 27,
+      "Count": 1,
+      "Total": 5,
+      "Status": 3,
+      "Response": "UCER"
+    },
+    {
+      "CardValue": 24,
+      "Count": 1,
+      "Total": 5,
+      "Status": 2,
+      "Response": "UCOK"
+    },
+    {
+      "CardValue": 27,
+      "Count": 1,
+      "Total": 5,
+      "Status": 3,
+      "Response": "UCER"
+    },
+    {
+      "CardValue": 7,
+      "Count": 1,
+      "Total": 5,
+      "Status": 2,
+      "Response": "UCOK"
+    },
+    {
+      "CardValue": 7,
+      "Count": 1,
+      "Total": 5,
+      "Status": 2,
+      "Response": "UCOK"
+    },
+    {
+      "CardValue": 7,
+      "Count": 1,
+      "Total": 5,
+      "Status": 2,
+      "Response": "UCOK"
+    },
+    {
+      "CardValue": 27,
+      "Count": 1,
+      "Total": 5,
+      "Status": 3,
+      "Response": "UCER"
+    },
+    {
+      "CardValue": 7,
+      "Count": 1,
+      "Total": 5,
+      "Status": 2,
+      "Response": "UCOK"
+    },
+    {
+      "CardValue": 7,
+      "Count": 1,
+      "Total": 5,
+      "Status": 2,
+      "Response": "UCOK"
+    },
+    {
+      "CardValue": 27,
+      "Count": 1,
+      "Total": 5,
+      "Status": 3,
+      "Response": "UCER"
+    }
+  ]
+}

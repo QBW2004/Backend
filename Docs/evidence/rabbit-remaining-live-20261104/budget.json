@@ -1,0 +1,185 @@
+{
+  "At": "2026-11-04 15:44:15",
+  "BetDiamonds": 2.0,
+  "CasesPerEnd": 24,
+  "TotalCases": 48,
+  "Basic": [
+    {
+      "Value": 1,
+      "Name": "对子",
+      "Multiplier": 1,
+      "OneEndDiamonds": 2,
+      "TwoEndsDiamonds": 4
+    },
+    {
+      "Value": 2,
+      "Name": "两对",
+      "Multiplier": 2,
+      "OneEndDiamonds": 4,
+      "TwoEndsDiamonds": 8
+    },
+    {
+      "Value": 3,
+      "Name": "三条",
+      "Multiplier": 3,
+      "OneEndDiamonds": 6,
+      "TwoEndsDiamonds": 12
+    },
+    {
+      "Value": 4,
+      "Name": "杂顺",
+      "Multiplier": 5,
+      "OneEndDiamonds": 10,
+      "TwoEndsDiamonds": 20
+    },
+    {
+      "Value": 5,
+      "Name": "同花",
+      "Multiplier": 7,
+      "OneEndDiamonds": 14,
+      "TwoEndsDiamonds": 28
+    },
+    {
+      "Value": 6,
+      "Name": "葫芦",
+      "Multiplier": 10,
+      "OneEndDiamonds": 20,
+      "TwoEndsDiamonds": 40
+    },
+    {
+      "Value": 7,
+      "Name": "小四梅",
+      "Multiplier": 50,
+      "OneEndDiamonds": 100,
+      "TwoEndsDiamonds": 200
+    },
+    {
+      "Value": 8,
+      "Name": "大四梅",
+      "Multiplier": 80,
+      "OneEndDiamonds": 160,
+      "TwoEndsDiamonds": 320
+    },
+    {
+      "Value": 9,
+      "Name": "同花顺",
+      "Multiplier": 120,
+      "OneEndDiamonds": 240,
+      "TwoEndsDiamonds": 480
+    },
+    {
+      "Value": 11,
+      "Name": "同花大顺",
+      "Multiplier": 500,
+      "OneEndDiamonds": 1000,
+      "TwoEndsDiamonds": 2000
+    }
+  ],
+  "Authentic": [
+    {
+      "Value": 13,
+      "Name": "正宗大四梅X1",
+      "Multiplier": 80,
+      "OneEndDiamonds": 160,
+      "TwoEndsDiamonds": 320
+    },
+    {
+      "Value": 14,
+      "Name": "正宗大四梅X2",
+      "Multiplier": 160,
+      "OneEndDiamonds": 320,
+      "TwoEndsDiamonds": 640
+    },
+    {
+      "Value": 15,
+      "Name": "正宗大四梅X3",
+      "Multiplier": 240,
+      "OneEndDiamonds": 480,
+      "TwoEndsDiamonds": 960
+    },
+    {
+      "Value": 16,
+      "Name": "正宗大四梅X4",
+      "Multiplier": 320,
+      "OneEndDiamonds": 640,
+      "TwoEndsDiamonds": 1280
+    },
+    {
+      "Value": 17,
+      "Name": "正宗大四梅X5",
+      "Multiplier": 400,
+      "OneEndDiamonds": 800,
+      "TwoEndsDiamonds": 1600
+    },
+    {
+      "Value": 18,
+      "Name": "正宗大四梅X6",
+      "Multiplier": 480,
+      "OneEndDiamonds": 960,
+      "TwoEndsDiamonds": 1920
+    },
+    {
+      "Value": 19,
+      "Name": "正宗大四梅X7",
+      "Multiplier": 560,
+      "OneEndDiamonds": 1120,
+      "TwoEndsDiamonds": 2240
+    },
+    {
+      "Value": 20,
+      "Name": "正宗大四梅X8",
+      "Multiplier": 640,
+      "OneEndDiamonds": 1280,
+      "TwoEndsDiamonds": 2560
+    },
+    {
+      "Value": 21,
+      "Name": "正宗大四梅X9",
+      "Multiplier": 720,
+      "OneEndDiamonds": 1440,
+      "TwoEndsDiamonds": 2880
+    },
+    {
+      "Value": 22,
+      "Name": "正宗大四梅X10",
+      "Multiplier": 800,
+      "OneEndDiamonds": 1600,
+      "TwoEndsDiamonds": 3200
+    },
+    {
+      "Value": 23,
+      "Name": "正宗大四梅X11",
+      "Multiplier": 880,
+      "OneEndDiamonds": 1760,
+      "TwoEndsDiamonds": 3520
+    },
+    {
+      "Value": 24,
+      "Name": "正宗大四梅X12",
+      "Multiplier": 960,
+      "OneEndDiamonds": 1920,
+      "TwoEndsDiamonds": 3840
+    },
+    {
+      "Value": 25,
+      "Name": "正宗大四梅X13",
+      "Multiplier": 1040,
+      "OneEndDiamonds": 2080,
+      "TwoEndsDiamonds": 4160
+    },
+    {
+      "Value": 26,
+      "Name": "正宗大四梅X14",
+      "Multiplier": 1120,
+      "OneEndDiamonds": 2240,
+      "TwoEndsDiamonds": 4480
+    }
+  ],
+  "BasicTotal": 3112,
+  "AuthenticTotal": 33600,
+  "CalculatedTotal": 36712,
+  "SuggestedBudget": 40000,
+  "Buffer": 3288,
+  "FiveAlreadyVerified": true,
+  "PoolBefore": 0.0
+}

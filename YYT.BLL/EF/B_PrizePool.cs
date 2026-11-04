@@ -243,6 +243,10 @@ namespace YYT.BLL.EF
                 // 历史行缺乏开奖事件关联时保持空值，不能按时间相近猜测玩家的自然中奖。
                 string where = " FROM usercontrolstatus c LEFT JOIN agentprizecontrol p ON p.ControlId=c.ID WHERE c.GameType=9 AND c.CreatedBy={0} AND COALESCE(p.AwardTime,c.CreatedTime)>={1} AND COALESCE(p.AwardTime,c.CreatedTime)<{2}";
                 if (!string.IsNullOrWhiteSpace(account)) where += " AND c.UserID={3}";
+                // 2026-11-04 需求：已移除/已结束但没开出来的记录（未开的送奖牌型、放水送出 0）不展示，
+                // 明细只留已开的记录；执行中（Status=0）的仍展示，供“移除”按钮使用。条数与已送出合计同口径。
+                // 只对送奖(6)/放水(5)生效：吃分(4)本来就不写开奖时间，不能因此把已结束的吃分记录一起隐藏。
+                where += " AND NOT (c.Status<>0 AND c.ControlMode IN (5,6) AND (p.AwardTime IS NULL OR (c.ControlMode=5 AND IFNULL(p.BookedDiamonds,0)=0)))";
                 int gameId = CardActionGameId(cardAction);
                 if (cardAction > 0) where += " AND ((c.ControlMode=6 AND c.GameId={4}) OR (c.ControlMode<>6 AND p.ActualGameId={5}))";
                 object[] args = { user.Accounts, start, end, account ?? "", cardAction, gameId };

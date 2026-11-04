@@ -1,0 +1,11 @@
+{
+  "Time": "2026-11-04 15:17:31",
+  "Backup": "C:\\MTH-Deploy\\rabbit-controls-hotfix-20261104\\old_20261104_151715",
+  "DatabaseBackup": "C:\\MTH-Deploy\\rabbit-controls-hotfix-20261104\\before_20261104_151715.sql",
+  "NewCenterHash": "C0F3807449D3D458AFD44E22287488EA1DA8059E914CE64F9F0D0A91A5E7F1FE",
+  "CenterPid": 12108,
+  "WebVer": "1.0.102",
+  "ServerCount": 16,
+  "PlayerPorts": 15,
+  "ElapsedSeconds": 15.91
+}

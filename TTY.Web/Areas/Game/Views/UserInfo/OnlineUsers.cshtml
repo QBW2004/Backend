@@ -850,7 +850,7 @@
         else if (action == 19) list = valSelDataMjhl();
         else if ((action >= 5 && action <= 14) || action == 20) list = valSelDataPAIJI(action);
         // 10=关闭 仅拉霸体系；牌机 10=五梅、关闭为 99，均走下方列表解析
-        if (value == 10 && list && action >= 15) return '关闭';
+            if (value == 10 && list && action >= 15 && action <= 17) return '关闭';
         if (list) {
             for (var i = 0; i < list.length; i++)
                 if (list[i].id == value) return list[i].text;
@@ -925,7 +925,7 @@
             var t = TC_CARD_TYPES[i];
             if (t.ht == 0 || t.ht == 12) continue;
             if (t.ht == 8 && cardAction != 14 && cardAction != 20) continue;
-            var item = { id: t.ht, text: t.name + '(' + mags[t.ht] + '倍)' };
+            var item = { id: t.ht, text: cardAction == 20 && t.ht == 10 ? '五梅（250/500倍，含中赠）' : t.name + '(' + mags[t.ht] + '倍)' };
             if (t.ht == 4) item.selected = true; // 默认选中杂顺
             arr.push(item);
         }

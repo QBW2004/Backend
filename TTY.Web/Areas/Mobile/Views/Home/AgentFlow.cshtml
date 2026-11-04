@@ -208,10 +208,6 @@
     .pool-agent-balance { display:flex; align-items:center; justify-content:space-between; gap:12px; padding-top:12px; margin-top:12px; border-top:1px solid #f0f0f0; font-size:13px; }
     .pool-agent-balance strong { min-width:0; overflow-wrap:anywhere; text-align:right; font-size:18px; font-variant-numeric:tabular-nums; }
     .flow-filter-card { background:#fff; padding:12px; margin-bottom:12px; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
-    .pool-date-filter { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)) 60px; align-items:end; gap:8px; }
-    .pool-date-filter label { display:flex; flex-direction:column; min-width:0; gap:6px; font-size:12px; color:#86868b; }
-    .pool-date-filter input { min-width:0; width:100%; height:40px; padding:0 6px; border:1px solid #e4e7ec; border-radius:8px; background:#fff; font-size:12px; color:#333; }
-    .pool-date-filter .filter-btn { width:100%; height:40px; padding:0 8px; border-radius:8px; font-size:13px; }
     .pool-flow-options { display:flex; align-items:flex-end; gap:12px; }
     .pool-flow-options label { min-width:0; display:flex; flex-direction:column; align-items:stretch; gap:6px; margin-bottom:12px; font-size:12px; color:#86868b; }
     .pool-flow-options select, .pool-flow-options input { min-width:0; width:100%; height:40px; border:1px solid #e4e7ec; border-radius:8px; padding:0 8px; background:#fff; font-size:13px; color:#333; }
@@ -241,8 +237,6 @@
     @@media (max-width: 360px) {
         .pool-agent-heading { gap:8px; font-size:13px; }
         .pool-agent-heading select { width:96px; }
-        .pool-date-filter { grid-template-columns:repeat(2,minmax(0,1fr)) 52px; gap:6px; }
-        .pool-date-filter input { padding:0 4px; font-size:11px; }
         #poolQueryField { flex-basis:96px; }
         .pool-flow-summary { gap:6px; }
         .pool-flow-summary > div { padding:10px 6px; }
@@ -259,10 +253,11 @@
         </div>
         <div class="flow-filter-card">
             <div class="pool-flow-options"><label id="poolQueryField">查询类型<select id="poolQueryType"><option value="all">全部</option><option value="player">玩家</option><option value="recharge">充值</option><option value="withdraw">提取</option></select></label><label id="poolPlayerField" style="display:none;">玩家账号<input id="poolPlayer" placeholder="输入玩家账号"></label></div>
-            <div class="pool-date-filter">
-                <label for="startDate">开始日期<input type="date" id="startDate" value="@today" aria-label="开始日期"></label>
-                <label for="endDate">结束日期<input type="date" id="endDate" value="@today" aria-label="结束日期"></label>
-                <button class="filter-btn" id="filterBtn" type="button">查询</button>
+            @* 2026-11-04：开始框 / 结束框 / 查询一行（不再带“开始日期/结束日期”文字），框内日期+时分居中；奖池与资金流水同一布局 *@
+            <div class="m-dt-range pool-date-filter">
+                <input type="date" id="startDate" value="@today" aria-label="开始时间">
+                <input type="date" id="endDate" value="@today" aria-label="结束时间">
+                <button class="m-dt-btn" id="filterBtn" type="button">查询</button>
             </div>
             <div class="pool-flow-summary" id="poolFlowSummary"><div><span>充值总计（钻）</span><strong id="poolRechargeTotal">--</strong></div><div><span>奖池提取（钻）</span><strong id="poolWithdrawTotal">--</strong></div><div><span>送奖总计（钻）</span><strong id="poolSentTotal">--</strong></div></div>
         </div>

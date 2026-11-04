@@ -63,6 +63,14 @@ namespace YYT.Web.Areas.Game.Controllers
                 {
                     M_Page mPage = new M_Page(pageIndex, pageSize);
                     M_S_Record entity = new M_S_Record { S_TIME = date, ID = id, E_TIME = endDate, WEEK = week, AGENCY = agency, OPT = opt, MONEY_ONLY = moneyOnly};
+                    // 手机代理流水的开始/结束带时分（2026-11-04）：按分钟精确区间过滤，不再取整天
+                    DateTime exactStart, exactEnd;
+                    if (B_Records_MySQL.HasClock(form["TIME"]) && B_Records_MySQL.TryParseQueryRange(form["TIME"], form["END"], out exactStart, out exactEnd))
+                    {
+                        entity.S_TIME = exactStart;
+                        entity.E_TIME = exactEnd;
+                        entity.EXACT_TIME = true;
+                    }
                     list = new B_Records_MySQL().Get_AgencyRecords(loginUser, mPage, entity);
                 }
             }

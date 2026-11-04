@@ -1,0 +1,1429 @@
+{
+  "Time": "2026-11-04 16:03:35",
+  "Player": [
+    {
+      "ID": "test02",
+      "COINS": 158493,
+      "GAME_SCORE": 64,
+      "INHALL": 0,
+      "FROZEN": 0
+    }
+  ],
+  "Wallet": [
+    {
+      "ID": "atmadmin",
+      "COINS": 888830304,
+      "Balance": 0.0
+    }
+  ],
+  "ControlStatus": [
+    {
+      "Status": 2,
+      "N": 48
+    }
+  ],
+  "Active": [],
+  "Values": [
+    {
+      "CONTROL_TYPE": 0,
+      "NUMBER": 0,
+      "TOTAL_NUMBER": 0
+    },
+    {
+      "CONTROL_TYPE": 20,
+      "NUMBER": 0,
+      "TOTAL_NUMBER": 5
+    }
+  ],
+  "Ledger": [
+    {
+      "ControlId": 125,
+      "Entries": 1,
+      "Deducted": 2.0,
+      "MinBalance": 39998.0
+    },
+    {
+      "ControlId": 126,
+      "Entries": 1,
+      "Deducted": 4.0,
+      "MinBalance": 39994.0
+    },
+    {
+      "ControlId": 127,
+      "Entries": 1,
+      "Deducted": 6.0,
+      "MinBalance": 39988.0
+    },
+    {
+      "ControlId": 128,
+      "Entries": 1,
+      "Deducted": 10.0,
+      "MinBalance": 39978.0
+    },
+    {
+      "ControlId": 129,
+      "Entries": 1,
+      "Deducted": 14.0,
+      "MinBalance": 39964.0
+    },
+    {
+      "ControlId": 130,
+      "Entries": 1,
+      "Deducted": 20.0,
+      "MinBalance": 39944.0
+    },
+    {
+      "ControlId": 131,
+      "Entries": 1,
+      "Deducted": 100.0,
+      "MinBalance": 39844.0
+    },
+    {
+      "ControlId": 132,
+      "Entries": 1,
+      "Deducted": 160.0,
+      "MinBalance": 39684.0
+    },
+    {
+      "ControlId": 133,
+      "Entries": 1,
+      "Deducted": 240.0,
+      "MinBalance": 39444.0
+    },
+    {
+      "ControlId": 134,
+      "Entries": 1,
+      "Deducted": 1000.0,
+      "MinBalance": 38444.0
+    },
+    {
+      "ControlId": 135,
+      "Entries": 1,
+      "Deducted": 160.0,
+      "MinBalance": 38284.0
+    },
+    {
+      "ControlId": 136,
+      "Entries": 1,
+      "Deducted": 320.0,
+      "MinBalance": 37964.0
+    },
+    {
+      "ControlId": 137,
+      "Entries": 1,
+      "Deducted": 480.0,
+      "MinBalance": 37484.0
+    },
+    {
+      "ControlId": 138,
+      "Entries": 1,
+      "Deducted": 640.0,
+      "MinBalance": 36844.0
+    },
+    {
+      "ControlId": 139,
+      "Entries": 1,
+      "Deducted": 800.0,
+      "MinBalance": 36044.0
+    },
+    {
+      "ControlId": 140,
+      "Entries": 1,
+      "Deducted": 960.0,
+      "MinBalance": 35084.0
+    },
+    {
+      "ControlId": 141,
+      "Entries": 1,
+      "Deducted": 1120.0,
+      "MinBalance": 33964.0
+    },
+    {
+      "ControlId": 142,
+      "Entries": 1,
+      "Deducted": 1280.0,
+      "MinBalance": 32684.0
+    },
+    {
+      "ControlId": 143,
+      "Entries": 1,
+      "Deducted": 1440.0,
+      "MinBalance": 31244.0
+    },
+    {
+      "ControlId": 144,
+      "Entries": 1,
+      "Deducted": 1600.0,
+      "MinBalance": 29644.0
+    },
+    {
+      "ControlId": 145,
+      "Entries": 1,
+      "Deducted": 1760.0,
+      "MinBalance": 27884.0
+    },
+    {
+      "ControlId": 146,
+      "Entries": 1,
+      "Deducted": 1920.0,
+      "MinBalance": 25964.0
+    },
+    {
+      "ControlId": 147,
+      "Entries": 1,
+      "Deducted": 2080.0,
+      "MinBalance": 23884.0
+    },
+    {
+      "ControlId": 148,
+      "Entries": 1,
+      "Deducted": 2240.0,
+      "MinBalance": 21644.0
+    },
+    {
+      "ControlId": 149,
+      "Entries": 1,
+      "Deducted": 2.0,
+      "MinBalance": 21642.0
+    },
+    {
+      "ControlId": 150,
+      "Entries": 1,
+      "Deducted": 4.0,
+      "MinBalance": 21638.0
+    },
+    {
+      "ControlId": 151,
+      "Entries": 1,
+      "Deducted": 6.0,
+      "MinBalance": 21632.0
+    },
+    {
+      "ControlId": 152,
+      "Entries": 1,
+      "Deducted": 10.0,
+      "MinBalance": 21622.0
+    },
+    {
+      "ControlId": 153,
+      "Entries": 1,
+      "Deducted": 14.0,
+      "MinBalance": 21608.0
+    },
+    {
+      "ControlId": 154,
+      "Entries": 1,
+      "Deducted": 20.0,
+      "MinBalance": 21588.0
+    },
+    {
+      "ControlId": 155,
+      "Entries": 1,
+      "Deducted": 100.0,
+      "MinBalance": 21488.0
+    },
+    {
+      "ControlId": 156,
+      "Entries": 1,
+      "Deducted": 160.0,
+      "MinBalance": 21328.0
+    },
+    {
+      "ControlId": 157,
+      "Entries": 1,
+      "Deducted": 240.0,
+      "MinBalance": 21088.0
+    },
+    {
+      "ControlId": 158,
+      "Entries": 1,
+      "Deducted": 1000.0,
+      "MinBalance": 20088.0
+    },
+    {
+      "ControlId": 159,
+      "Entries": 1,
+      "Deducted": 160.0,
+      "MinBalance": 19928.0
+    },
+    {
+      "ControlId": 160,
+      "Entries": 1,
+      "Deducted": 320.0,
+      "MinBalance": 19608.0
+    },
+    {
+      "ControlId": 161,
+      "Entries": 1,
+      "Deducted": 480.0,
+      "MinBalance": 19128.0
+    },
+    {
+      "ControlId": 162,
+      "Entries": 1,
+      "Deducted": 640.0,
+      "MinBalance": 18488.0
+    },
+    {
+      "ControlId": 163,
+      "Entries": 1,
+      "Deducted": 800.0,
+      "MinBalance": 17688.0
+    },
+    {
+      "ControlId": 164,
+      "Entries": 1,
+      "Deducted": 960.0,
+      "MinBalance": 16728.0
+    },
+    {
+      "ControlId": 165,
+      "Entries": 1,
+      "Deducted": 1120.0,
+      "MinBalance": 15608.0
+    },
+    {
+      "ControlId": 166,
+      "Entries": 1,
+      "Deducted": 1280.0,
+      "MinBalance": 14328.0
+    },
+    {
+      "ControlId": 167,
+      "Entries": 1,
+      "Deducted": 1440.0,
+      "MinBalance": 12888.0
+    },
+    {
+      "ControlId": 168,
+      "Entries": 1,
+      "Deducted": 1600.0,
+      "MinBalance": 11288.0
+    },
+    {
+      "ControlId": 169,
+      "Entries": 1,
+      "Deducted": 1760.0,
+      "MinBalance": 9528.0
+    },
+    {
+      "ControlId": 170,
+      "Entries": 1,
+      "Deducted": 1920.0,
+      "MinBalance": 7608.0
+    },
+    {
+      "ControlId": 171,
+      "Entries": 1,
+      "Deducted": 2080.0,
+      "MinBalance": 5528.0
+    },
+    {
+      "ControlId": 172,
+      "Entries": 1,
+      "Deducted": 2240.0,
+      "MinBalance": 3288.0
+    }
+  ],
+  "Awards": [
+    {
+      "ControlId": 125,
+      "AwardDiamonds": 2.0,
+      "BookedDiamonds": 2.0,
+      "ActualGameId": 55,
+      "ActualTableId": 1,
+      "ActualCardType": "一对",
+      "AwardTime": "2026-11-04 15:51:07"
+    },
+    {
+      "ControlId": 126,
+      "AwardDiamonds": 4.0,
+      "BookedDiamonds": 4.0,
+      "ActualGameId": 55,
+      "ActualTableId": 1,
+      "ActualCardType": "两对",
+      "AwardTime": "2026-11-04 15:51:39"
+    },
+    {
+      "ControlId": 127,
+      "AwardDiamonds": 6.0,
+      "BookedDiamonds": 6.0,
+      "ActualGameId": 55,
+      "ActualTableId": 1,
+      "ActualCardType": "三条",
+      "AwardTime": "2026-11-04 15:51:47"
+    },
+    {
+      "ControlId": 128,
+      "AwardDiamonds": 10.0,
+      "BookedDiamonds": 10.0,
+      "ActualGameId": 55,
+      "ActualTableId": 1,
+      "ActualCardType": "杂顺",
+      "AwardTime": "2026-11-04 15:51:54"
+    },
+    {
+      "ControlId": 129,
+      "AwardDiamonds": 14.0,
+      "BookedDiamonds": 14.0,
+      "ActualGameId": 55,
+      "ActualTableId": 1,
+      "ActualCardType": "同花",
+      "AwardTime": "2026-11-04 15:52:01"
+    },
+    {
+      "ControlId": 130,
+      "AwardDiamonds": 20.0,
+      "BookedDiamonds": 20.0,
+      "ActualGameId": 55,
+      "ActualTableId": 1,
+      "ActualCardType": "葫芦",
+      "AwardTime": "2026-11-04 15:52:12"
+    },
+    {
+      "ControlId": 131,
+      "AwardDiamonds": 100.0,
+      "BookedDiamonds": 100.0,
+      "ActualGameId": 55,
+      "ActualTableId": 1,
+      "ActualCardType": "小四梅",
+      "AwardTime": "2026-11-04 15:52:19"
+    },
+    {
+      "ControlId": 132,
+      "AwardDiamonds": 160.0,
+      "BookedDiamonds": 160.0,
+      "ActualGameId": 55,
+      "ActualTableId": 1,
+      "ActualCardType": "正宗大四梅",
+      "AwardTime": "2026-11-04 15:52:26"
+    },
+    {
+      "ControlId": 133,
+      "AwardDiamonds": 240.0,
+      "BookedDiamonds": 240.0,
+      "ActualGameId": 55,
+      "ActualTableId": 1,
+      "ActualCardType": "同花顺",
+      "AwardTime": "2026-11-04 15:52:34"
+    },
+    {
+      "ControlId": 134,
+      "AwardDiamonds": 1000.0,
+      "BookedDiamonds": 1000.0,
+      "ActualGameId": 55,
+      "ActualTableId": 1,
+      "ActualCardType": "同花大顺",
+      "AwardTime": "2026-11-04 15:52:42"
+    },
+    {
+      "ControlId": 135,
+      "AwardDiamonds": 160.0,
+      "BookedDiamonds": 160.0,
+      "ActualGameId": 55,
+      "ActualTableId": 1,
+      "ActualCardType": "正宗大四梅",
+      "AwardTime": "2026-11-04 15:53:36"
+    },
+    {
+      "ControlId": 136,
+      "AwardDiamonds": 320.0,
+      "BookedDiamonds": 320.0,
+      "ActualGameId": 55,
+      "ActualTableId": 1,
+      "ActualCardType": "正宗大四梅",
+      "AwardTime": "2026-11-04 15:53:44"
+    },
+    {
+      "ControlId": 137,
+      "AwardDiamonds": 480.0,
+      "BookedDiamonds": 480.0,
+      "ActualGameId": 55,
+      "ActualTableId": 1,
+      "ActualCardType": "正宗大四梅",
+      "AwardTime": "2026-11-04 15:53:51"
+    },
+    {
+      "ControlId": 138,
+      "AwardDiamonds": 640.0,
+      "BookedDiamonds": 640.0,
+      "ActualGameId": 55,
+      "ActualTableId": 1,
+      "ActualCardType": "正宗大四梅",
+      "AwardTime": "2026-11-04 15:53:59"
+    },
+    {
+      "ControlId": 139,
+      "AwardDiamonds": 800.0,
+      "BookedDiamonds": 800.0,
+      "ActualGameId": 55,
+      "ActualTableId": 1,
+      "ActualCardType": "正宗大四梅",
+      "AwardTime": "2026-11-04 15:54:08"
+    },
+    {
+      "ControlId": 140,
+      "AwardDiamonds": 960.0,
+      "BookedDiamonds": 960.0,
+      "ActualGameId": 55,
+      "ActualTableId": 1,
+      "ActualCardType": "正宗大四梅",
+      "AwardTime": "2026-11-04 15:54:15"
+    },
+    {
+      "ControlId": 141,
+      "AwardDiamonds": 1120.0,
+      "BookedDiamonds": 1120.0,
+      "ActualGameId": 55,
+      "ActualTableId": 1,
+      "ActualCardType": "正宗大四梅",
+      "AwardTime": "2026-11-04 15:54:23"
+    },
+    {
+      "ControlId": 142,
+      "AwardDiamonds": 1280.0,
+      "BookedDiamonds": 1280.0,
+      "ActualGameId": 55,
+      "ActualTableId": 1,
+      "ActualCardType": "正宗大四梅",
+      "AwardTime": "2026-11-04 15:55:04"
+    },
+    {
+      "ControlId": 143,
+      "AwardDiamonds": 1440.0,
+      "BookedDiamonds": 1440.0,
+      "ActualGameId": 55,
+      "ActualTableId": 1,
+      "ActualCardType": "正宗大四梅",
+      "AwardTime": "2026-11-04 15:55:11"
+    },
+    {
+      "ControlId": 144,
+      "AwardDiamonds": 1600.0,
+      "BookedDiamonds": 1600.0,
+      "ActualGameId": 55,
+      "ActualTableId": 1,
+      "ActualCardType": "正宗大四梅",
+      "AwardTime": "2026-11-04 15:55:21"
+    },
+    {
+      "ControlId": 145,
+      "AwardDiamonds": 1760.0,
+      "BookedDiamonds": 1760.0,
+      "ActualGameId": 55,
+      "ActualTableId": 1,
+      "ActualCardType": "正宗大四梅",
+      "AwardTime": "2026-11-04 15:55:30"
+    },
+    {
+      "ControlId": 146,
+      "AwardDiamonds": 1920.0,
+      "BookedDiamonds": 1920.0,
+      "ActualGameId": 55,
+      "ActualTableId": 1,
+      "ActualCardType": "正宗大四梅",
+      "AwardTime": "2026-11-04 15:55:38"
+    },
+    {
+      "ControlId": 147,
+      "AwardDiamonds": 2080.0,
+      "BookedDiamonds": 2080.0,
+      "ActualGameId": 55,
+      "ActualTableId": 1,
+      "ActualCardType": "正宗大四梅",
+      "AwardTime": "2026-11-04 15:55:47"
+    },
+    {
+      "ControlId": 148,
+      "AwardDiamonds": 2240.0,
+      "BookedDiamonds": 2240.0,
+      "ActualGameId": 55,
+      "ActualTableId": 1,
+      "ActualCardType": "正宗大四梅",
+      "AwardTime": "2026-11-04 15:55:55"
+    },
+    {
+      "ControlId": 149,
+      "AwardDiamonds": 2.0,
+      "BookedDiamonds": 2.0,
+      "ActualGameId": 55,
+      "ActualTableId": 1,
+      "ActualCardType": "一对",
+      "AwardTime": "2026-11-04 15:56:28"
+    },
+    {
+      "ControlId": 150,
+      "AwardDiamonds": 4.0,
+      "BookedDiamonds": 4.0,
+      "ActualGameId": 55,
+      "ActualTableId": 1,
+      "ActualCardType": "两对",
+      "AwardTime": "2026-11-04 15:56:35"
+    },
+    {
+      "ControlId": 151,
+      "AwardDiamonds": 6.0,
+      "BookedDiamonds": 6.0,
+      "ActualGameId": 55,
+      "ActualTableId": 1,
+      "ActualCardType": "三条",
+      "AwardTime": "2026-11-04 15:56:42"
+    },
+    {
+      "ControlId": 152,
+      "AwardDiamonds": 10.0,
+      "BookedDiamonds": 10.0,
+      "ActualGameId": 55,
+      "ActualTableId": 1,
+      "ActualCardType": "杂顺",
+      "AwardTime": "2026-11-04 15:56:49"
+    },
+    {
+      "ControlId": 153,
+      "AwardDiamonds": 14.0,
+      "BookedDiamonds": 14.0,
+      "ActualGameId": 55,
+      "ActualTableId": 1,
+      "ActualCardType": "同花",
+      "AwardTime": "2026-11-04 15:56:56"
+    },
+    {
+      "ControlId": 154,
+      "AwardDiamonds": 20.0,
+      "BookedDiamonds": 20.0,
+      "ActualGameId": 55,
+      "ActualTableId": 1,
+      "ActualCardType": "葫芦",
+      "AwardTime": "2026-11-04 15:57:03"
+    },
+    {
+      "ControlId": 155,
+      "AwardDiamonds": 100.0,
+      "BookedDiamonds": 100.0,
+      "ActualGameId": 55,
+      "ActualTableId": 1,
+      "ActualCardType": "小四梅",
+      "AwardTime": "2026-11-04 15:57:10"
+    },
+    {
+      "ControlId": 156,
+      "AwardDiamonds": 160.0,
+      "BookedDiamonds": 160.0,
+      "ActualGameId": 55,
+      "ActualTableId": 1,
+      "ActualCardType": "正宗大四梅",
+      "AwardTime": "2026-11-04 15:57:17"
+    },
+    {
+      "ControlId": 157,
+      "AwardDiamonds": 240.0,
+      "BookedDiamonds": 240.0,
+      "ActualGameId": 55,
+      "ActualTableId": 1,
+      "ActualCardType": "同花顺",
+      "AwardTime": "2026-11-04 15:57:24"
+    },
+    {
+      "ControlId": 158,
+      "AwardDiamonds": 1000.0,
+      "BookedDiamonds": 1000.0,
+      "ActualGameId": 55,
+      "ActualTableId": 1,
+      "ActualCardType": "同花大顺",
+      "AwardTime": "2026-11-04 15:57:31"
+    },
+    {
+      "ControlId": 159,
+      "AwardDiamonds": 160.0,
+      "BookedDiamonds": 160.0,
+      "ActualGameId": 55,
+      "ActualTableId": 1,
+      "ActualCardType": "正宗大四梅",
+      "AwardTime": "2026-11-04 15:57:50"
+    },
+    {
+      "ControlId": 160,
+      "AwardDiamonds": 320.0,
+      "BookedDiamonds": 320.0,
+      "ActualGameId": 55,
+      "ActualTableId": 1,
+      "ActualCardType": "正宗大四梅",
+      "AwardTime": "2026-11-04 15:57:56"
+    },
+    {
+      "ControlId": 161,
+      "AwardDiamonds": 480.0,
+      "BookedDiamonds": 480.0,
+      "ActualGameId": 55,
+      "ActualTableId": 1,
+      "ActualCardType": "正宗大四梅",
+      "AwardTime": "2026-11-04 15:58:04"
+    },
+    {
+      "ControlId": 162,
+      "AwardDiamonds": 640.0,
+      "BookedDiamonds": 640.0,
+      "ActualGameId": 55,
+      "ActualTableId": 1,
+      "ActualCardType": "正宗大四梅",
+      "AwardTime": "2026-11-04 15:58:13"
+    },
+    {
+      "ControlId": 163,
+      "AwardDiamonds": 800.0,
+      "BookedDiamonds": 800.0,
+      "ActualGameId": 55,
+      "ActualTableId": 1,
+      "ActualCardType": "正宗大四梅",
+      "AwardTime": "2026-11-04 15:58:20"
+    },
+    {
+      "ControlId": 164,
+      "AwardDiamonds": 960.0,
+      "BookedDiamonds": 960.0,
+      "ActualGameId": 55,
+      "ActualTableId": 1,
+      "ActualCardType": "正宗大四梅",
+      "AwardTime": "2026-11-04 15:58:27"
+    },
+    {
+      "ControlId": 165,
+      "AwardDiamonds": 1120.0,
+      "BookedDiamonds": 1120.0,
+      "ActualGameId": 55,
+      "ActualTableId": 1,
+      "ActualCardType": "正宗大四梅",
+      "AwardTime": "2026-11-04 15:58:33"
+    },
+    {
+      "ControlId": 166,
+      "AwardDiamonds": 1280.0,
+      "BookedDiamonds": 1280.0,
+      "ActualGameId": 55,
+      "ActualTableId": 1,
+      "ActualCardType": "正宗大四梅",
+      "AwardTime": "2026-11-04 16:01:52"
+    },
+    {
+      "ControlId": 167,
+      "AwardDiamonds": 1440.0,
+      "BookedDiamonds": 1440.0,
+      "ActualGameId": 55,
+      "ActualTableId": 1,
+      "ActualCardType": "正宗大四梅",
+      "AwardTime": "2026-11-04 16:01:59"
+    },
+    {
+      "ControlId": 168,
+      "AwardDiamonds": 1600.0,
+      "BookedDiamonds": 1600.0,
+      "ActualGameId": 55,
+      "ActualTableId": 1,
+      "ActualCardType": "正宗大四梅",
+      "AwardTime": "2026-11-04 16:02:07"
+    },
+    {
+      "ControlId": 169,
+      "AwardDiamonds": 1760.0,
+      "BookedDiamonds": 1760.0,
+      "ActualGameId": 55,
+      "ActualTableId": 1,
+      "ActualCardType": "正宗大四梅",
+      "AwardTime": "2026-11-04 16:02:14"
+    },
+    {
+      "ControlId": 170,
+      "AwardDiamonds": 1920.0,
+      "BookedDiamonds": 1920.0,
+      "ActualGameId": 55,
+      "ActualTableId": 1,
+      "ActualCardType": "正宗大四梅",
+      "AwardTime": "2026-11-04 16:02:20"
+    },
+    {
+      "ControlId": 171,
+      "AwardDiamonds": 2080.0,
+      "BookedDiamonds": 2080.0,
+      "ActualGameId": 55,
+      "ActualTableId": 1,
+      "ActualCardType": "正宗大四梅",
+      "AwardTime": "2026-11-04 16:02:27"
+    },
+    {
+      "ControlId": 172,
+      "AwardDiamonds": 2240.0,
+      "BookedDiamonds": 2240.0,
+      "ActualGameId": 55,
+      "ActualTableId": 1,
+      "ActualCardType": "正宗大四梅",
+      "AwardTime": "2026-11-04 16:02:37"
+    }
+  ],
+  "PrizeRecords": [
+    {
+      "ControlId": 125,
+      "EventId": "55-1-1793778667951-5",
+      "CardType": "一对",
+      "Multiplier": 1.0,
+      "Score": 200,
+      "IsManualControl": 1,
+      "GameId": 55,
+      "TableId": 1
+    },
+    {
+      "ControlId": 126,
+      "EventId": "55-1-1793778699699-6",
+      "CardType": "两对",
+      "Multiplier": 2.0,
+      "Score": 400,
+      "IsManualControl": 1,
+      "GameId": 55,
+      "TableId": 1
+    },
+    {
+      "ControlId": 127,
+      "EventId": "55-1-1793778707465-7",
+      "CardType": "三条",
+      "Multiplier": 3.0,
+      "Score": 600,
+      "IsManualControl": 1,
+      "GameId": 55,
+      "TableId": 1
+    },
+    {
+      "ControlId": 128,
+      "EventId": "55-1-1793778714854-8",
+      "CardType": "杂顺",
+      "Multiplier": 5.0,
+      "Score": 1000,
+      "IsManualControl": 1,
+      "GameId": 55,
+      "TableId": 1
+    },
+    {
+      "ControlId": 129,
+      "EventId": "55-1-1793778721925-9",
+      "CardType": "同花",
+      "Multiplier": 7.0,
+      "Score": 1400,
+      "IsManualControl": 1,
+      "GameId": 55,
+      "TableId": 1
+    },
+    {
+      "ControlId": 130,
+      "EventId": "55-1-1793778732190-11",
+      "CardType": "葫芦",
+      "Multiplier": 10.0,
+      "Score": 2000,
+      "IsManualControl": 1,
+      "GameId": 55,
+      "TableId": 1
+    },
+    {
+      "ControlId": 131,
+      "EventId": "55-1-1793778739530-12",
+      "CardType": "小四梅",
+      "Multiplier": 50.0,
+      "Score": 10000,
+      "IsManualControl": 1,
+      "GameId": 55,
+      "TableId": 1
+    },
+    {
+      "ControlId": 132,
+      "EventId": "55-1-1793778746948-13",
+      "CardType": "正宗大四梅",
+      "Multiplier": 80.0,
+      "Score": 16000,
+      "IsManualControl": 1,
+      "GameId": 55,
+      "TableId": 1
+    },
+    {
+      "ControlId": 133,
+      "EventId": "55-1-1793778754242-14",
+      "CardType": "同花顺",
+      "Multiplier": 120.0,
+      "Score": 24000,
+      "IsManualControl": 1,
+      "GameId": 55,
+      "TableId": 1
+    },
+    {
+      "ControlId": 134,
+      "EventId": "55-1-1793778762368-15",
+      "CardType": "同花大顺",
+      "Multiplier": 500.0,
+      "Score": 100000,
+      "IsManualControl": 1,
+      "GameId": 55,
+      "TableId": 1
+    },
+    {
+      "ControlId": 135,
+      "EventId": "55-1-1793778816162-17",
+      "CardType": "正宗大四梅",
+      "Multiplier": 80.0,
+      "Score": 16000,
+      "IsManualControl": 1,
+      "GameId": 55,
+      "TableId": 1
+    },
+    {
+      "ControlId": 136,
+      "EventId": "55-1-1793778824147-18",
+      "CardType": "正宗大四梅",
+      "Multiplier": 160.0,
+      "Score": 32000,
+      "IsManualControl": 1,
+      "GameId": 55,
+      "TableId": 1
+    },
+    {
+      "ControlId": 137,
+      "EventId": "55-1-1793778831407-19",
+      "CardType": "正宗大四梅",
+      "Multiplier": 240.0,
+      "Score": 48000,
+      "IsManualControl": 1,
+      "GameId": 55,
+      "TableId": 1
+    },
+    {
+      "ControlId": 138,
+      "EventId": "55-1-1793778839173-20",
+      "CardType": "正宗大四梅",
+      "Multiplier": 320.0,
+      "Score": 64000,
+      "IsManualControl": 1,
+      "GameId": 55,
+      "TableId": 1
+    },
+    {
+      "ControlId": 139,
+      "EventId": "55-1-1793778848762-22",
+      "CardType": "正宗大四梅",
+      "Multiplier": 400.0,
+      "Score": 80000,
+      "IsManualControl": 1,
+      "GameId": 55,
+      "TableId": 1
+    },
+    {
+      "ControlId": 140,
+      "EventId": "55-1-1793778855726-23",
+      "CardType": "正宗大四梅",
+      "Multiplier": 480.0,
+      "Score": 96000,
+      "IsManualControl": 1,
+      "GameId": 55,
+      "TableId": 1
+    },
+    {
+      "ControlId": 141,
+      "EventId": "55-1-1793778863382-24",
+      "CardType": "正宗大四梅",
+      "Multiplier": 560.0,
+      "Score": 112000,
+      "IsManualControl": 1,
+      "GameId": 55,
+      "TableId": 1
+    },
+    {
+      "ControlId": 142,
+      "EventId": "55-1-1793778904198-25",
+      "CardType": "正宗大四梅",
+      "Multiplier": 640.0,
+      "Score": 128000,
+      "IsManualControl": 1,
+      "GameId": 55,
+      "TableId": 1
+    },
+    {
+      "ControlId": 143,
+      "EventId": "55-1-1793778911553-26",
+      "CardType": "正宗大四梅",
+      "Multiplier": 720.0,
+      "Score": 144000,
+      "IsManualControl": 1,
+      "GameId": 55,
+      "TableId": 1
+    },
+    {
+      "ControlId": 144,
+      "EventId": "55-1-1793778921092-28",
+      "CardType": "正宗大四梅",
+      "Multiplier": 800.0,
+      "Score": 160000,
+      "IsManualControl": 1,
+      "GameId": 55,
+      "TableId": 1
+    },
+    {
+      "ControlId": 145,
+      "EventId": "55-1-1793778930649-30",
+      "CardType": "正宗大四梅",
+      "Multiplier": 880.0,
+      "Score": 176000,
+      "IsManualControl": 1,
+      "GameId": 55,
+      "TableId": 1
+    },
+    {
+      "ControlId": 146,
+      "EventId": "55-1-1793778938333-31",
+      "CardType": "正宗大四梅",
+      "Multiplier": 960.0,
+      "Score": 192000,
+      "IsManualControl": 1,
+      "GameId": 55,
+      "TableId": 1
+    },
+    {
+      "ControlId": 147,
+      "EventId": "55-1-1793778947815-33",
+      "CardType": "正宗大四梅",
+      "Multiplier": 1040.0,
+      "Score": 208000,
+      "IsManualControl": 1,
+      "GameId": 55,
+      "TableId": 1
+    },
+    {
+      "ControlId": 148,
+      "EventId": "55-1-1793778955533-34",
+      "CardType": "正宗大四梅",
+      "Multiplier": 1120.0,
+      "Score": 224000,
+      "IsManualControl": 1,
+      "GameId": 55,
+      "TableId": 1
+    },
+    {
+      "ControlId": 149,
+      "EventId": "55-1-1793778988646-35",
+      "CardType": "一对",
+      "Multiplier": 1.0,
+      "Score": 200,
+      "IsManualControl": 1,
+      "GameId": 55,
+      "TableId": 1
+    },
+    {
+      "ControlId": 150,
+      "EventId": "55-1-1793778995750-36",
+      "CardType": "两对",
+      "Multiplier": 2.0,
+      "Score": 400,
+      "IsManualControl": 1,
+      "GameId": 55,
+      "TableId": 1
+    },
+    {
+      "ControlId": 151,
+      "EventId": "55-1-1793779002713-37",
+      "CardType": "三条",
+      "Multiplier": 3.0,
+      "Score": 600,
+      "IsManualControl": 1,
+      "GameId": 55,
+      "TableId": 1
+    },
+    {
+      "ControlId": 152,
+      "EventId": "55-1-1793779009189-38",
+      "CardType": "杂顺",
+      "Multiplier": 5.0,
+      "Score": 1000,
+      "IsManualControl": 1,
+      "GameId": 55,
+      "TableId": 1
+    },
+    {
+      "ControlId": 153,
+      "EventId": "55-1-1793779016326-39",
+      "CardType": "同花",
+      "Multiplier": 7.0,
+      "Score": 1400,
+      "IsManualControl": 1,
+      "GameId": 55,
+      "TableId": 1
+    },
+    {
+      "ControlId": 154,
+      "EventId": "55-1-1793779023165-40",
+      "CardType": "葫芦",
+      "Multiplier": 10.0,
+      "Score": 2000,
+      "IsManualControl": 1,
+      "GameId": 55,
+      "TableId": 1
+    },
+    {
+      "ControlId": 155,
+      "EventId": "55-1-1793779030567-41",
+      "CardType": "小四梅",
+      "Multiplier": 50.0,
+      "Score": 10000,
+      "IsManualControl": 1,
+      "GameId": 55,
+      "TableId": 1
+    },
+    {
+      "ControlId": 156,
+      "EventId": "55-1-1793779037621-42",
+      "CardType": "正宗大四梅",
+      "Multiplier": 80.0,
+      "Score": 16000,
+      "IsManualControl": 1,
+      "GameId": 55,
+      "TableId": 1
+    },
+    {
+      "ControlId": 157,
+      "EventId": "55-1-1793779044035-43",
+      "CardType": "同花顺",
+      "Multiplier": 120.0,
+      "Score": 24000,
+      "IsManualControl": 1,
+      "GameId": 55,
+      "TableId": 1
+    },
+    {
+      "ControlId": 158,
+      "EventId": "55-1-1793779051311-44",
+      "CardType": "同花大顺",
+      "Multiplier": 500.0,
+      "Score": 100000,
+      "IsManualControl": 1,
+      "GameId": 55,
+      "TableId": 1
+    },
+    {
+      "ControlId": 159,
+      "EventId": "55-1-1793779070047-45",
+      "CardType": "正宗大四梅",
+      "Multiplier": 80.0,
+      "Score": 16000,
+      "IsManualControl": 1,
+      "GameId": 55,
+      "TableId": 1
+    },
+    {
+      "ControlId": 160,
+      "EventId": "55-1-1793779076899-46",
+      "CardType": "正宗大四梅",
+      "Multiplier": 160.0,
+      "Score": 32000,
+      "IsManualControl": 1,
+      "GameId": 55,
+      "TableId": 1
+    },
+    {
+      "ControlId": 161,
+      "EventId": "55-1-1793779084177-47",
+      "CardType": "正宗大四梅",
+      "Multiplier": 240.0,
+      "Score": 48000,
+      "IsManualControl": 1,
+      "GameId": 55,
+      "TableId": 1
+    },
+    {
+      "ControlId": 162,
+      "EventId": "55-1-1793779093606-49",
+      "CardType": "正宗大四梅",
+      "Multiplier": 320.0,
+      "Score": 64000,
+      "IsManualControl": 1,
+      "GameId": 55,
+      "TableId": 1
+    },
+    {
+      "ControlId": 163,
+      "EventId": "55-1-1793779100222-50",
+      "CardType": "正宗大四梅",
+      "Multiplier": 400.0,
+      "Score": 80000,
+      "IsManualControl": 1,
+      "GameId": 55,
+      "TableId": 1
+    },
+    {
+      "ControlId": 164,
+      "EventId": "55-1-1793779107139-51",
+      "CardType": "正宗大四梅",
+      "Multiplier": 480.0,
+      "Score": 96000,
+      "IsManualControl": 1,
+      "GameId": 55,
+      "TableId": 1
+    },
+    {
+      "ControlId": 165,
+      "EventId": "55-1-1793779113788-52",
+      "CardType": "正宗大四梅",
+      "Multiplier": 560.0,
+      "Score": 112000,
+      "IsManualControl": 1,
+      "GameId": 55,
+      "TableId": 1
+    },
+    {
+      "ControlId": 166,
+      "EventId": "55-1-1793779312141-53",
+      "CardType": "正宗大四梅",
+      "Multiplier": 640.0,
+      "Score": 128000,
+      "IsManualControl": 1,
+      "GameId": 55,
+      "TableId": 1
+    },
+    {
+      "ControlId": 167,
+      "EventId": "55-1-1793779319671-54",
+      "CardType": "正宗大四梅",
+      "Multiplier": 720.0,
+      "Score": 144000,
+      "IsManualControl": 1,
+      "GameId": 55,
+      "TableId": 1
+    },
+    {
+      "ControlId": 168,
+      "EventId": "55-1-1793779327058-55",
+      "CardType": "正宗大四梅",
+      "Multiplier": 800.0,
+      "Score": 160000,
+      "IsManualControl": 1,
+      "GameId": 55,
+      "TableId": 1
+    },
+    {
+      "ControlId": 169,
+      "EventId": "55-1-1793779334430-56",
+      "CardType": "正宗大四梅",
+      "Multiplier": 880.0,
+      "Score": 176000,
+      "IsManualControl": 1,
+      "GameId": 55,
+      "TableId": 1
+    },
+    {
+      "ControlId": 170,
+      "EventId": "55-1-1793779340924-57",
+      "CardType": "正宗大四梅",
+      "Multiplier": 960.0,
+      "Score": 192000,
+      "IsManualControl": 1,
+      "GameId": 55,
+      "TableId": 1
+    },
+    {
+      "ControlId": 171,
+      "EventId": "55-1-1793779347685-58",
+      "CardType": "正宗大四梅",
+      "Multiplier": 1040.0,
+      "Score": 208000,
+      "IsManualControl": 1,
+      "GameId": 55,
+      "TableId": 1
+    },
+    {
+      "ControlId": 172,
+      "EventId": "55-1-1793779357036-60",
+      "CardType": "正宗大四梅",
+      "Multiplier": 1120.0,
+      "Score": 224000,
+      "IsManualControl": 1,
+      "GameId": 55,
+      "TableId": 1
+    }
+  ],
+  "Commands": [
+    {
+      "Status": 2,
+      "N": 48
+    }
+  ],
+  "Processes": [
+    {
+      "Name": "ServerBetAnimal.exe",
+      "ProcessId": 12452
+    },
+    {
+      "Name": "ServerBetDT.exe",
+      "ProcessId": 9952
+    },
+    {
+      "Name": "ServerCardAttMhb.exe",
+      "ProcessId": 5916
+    },
+    {
+      "Name": "ServerCardDaBaiTu.exe",
+      "ProcessId": 2916
+    },
+    {
+      "Name": "ServerCardDazhi.exe",
+      "ProcessId": 10808
+    },
+    {
+      "Name": "ServerCardDscj.exe",
+      "ProcessId": 9380
+    },
+    {
+      "Name": "ServerCardMjhl.exe",
+      "ProcessId": 7880
+    },
+    {
+      "Name": "ServerCardNBA.exe",
+      "ProcessId": 13096
+    },
+    {
+      "Name": "ServerCardPhenix.exe",
+      "ProcessId": 12216
+    },
+    {
+      "Name": "ServerCenterNew.exe",
+      "ProcessId": 12108
+    },
+    {
+      "Name": "ServerFishJC.exe",
+      "ProcessId": 10392
+    },
+    {
+      "Name": "ServerFishLikui.exe",
+      "ProcessId": 8800
+    },
+    {
+      "Name": "ServerLabaFruit.exe",
+      "ProcessId": 5964
+    },
+    {
+      "Name": "ServerLabaMx97.exe",
+      "ProcessId": 10524
+    },
+    {
+      "Name": "ServerLabaShz.exe",
+      "ProcessId": 2504
+    },
+    {
+      "Name": "ServerRobot.exe",
+      "ProcessId": 8264
+    }
+  ],
+  "Ports": [
+    {
+      "LocalPort": 9000,
+      "OwningProcess": 12108
+    },
+    {
+      "LocalPort": 9102,
+      "OwningProcess": 9952
+    },
+    {
+      "LocalPort": 9103,
+      "OwningProcess": 12452
+    },
+    {
+      "LocalPort": 9200,
+      "OwningProcess": 12216
+    },
+    {
+      "LocalPort": 9204,
+      "OwningProcess": 10808
+    },
+    {
+      "LocalPort": 9206,
+      "OwningProcess": 5916
+    },
+    {
+      "LocalPort": 9208,
+      "OwningProcess": 9380
+    },
+    {
+      "LocalPort": 9209,
+      "OwningProcess": 13096
+    },
+    {
+      "LocalPort": 9212,
+      "OwningProcess": 2916
+    },
+    {
+      "LocalPort": 9300,
+      "OwningProcess": 10392
+    },
+    {
+      "LocalPort": 9305,
+      "OwningProcess": 8800
+    },
+    {
+      "LocalPort": 9400,
+      "OwningProcess": 5964
+    },
+    {
+      "LocalPort": 9402,
+      "OwningProcess": 2504
+    },
+    {
+      "LocalPort": 9403,
+      "OwningProcess": 10524
+    },
+    {
+      "LocalPort": 9404,
+      "OwningProcess": 7880
+    }
+  ],
+  "Hashes": [
+    {
+      "Path": "C:\\Server\\ServerCenterNew\\x64\\Release\\ServerCenterNew.exe",
+      "Hash": "C0F3807449D3D458AFD44E22287488EA1DA8059E914CE64F9F0D0A91A5E7F1FE"
+    },
+    {
+      "Path": "C:\\Server\\ServerCardAttMhb\\x64\\Release\\ServerCardAttMhb.exe",
+      "Hash": "B49B5B66E09FF67E0C86644581BB6E68733EBA820A9619B62A0E0BE9D396CCD8"
+    },
+    {
+      "Path": "C:\\Server\\ServerCardDaBaiTu\\x64\\Release\\ServerCardDaBaiTu.exe",
+      "Hash": "9B5E708EE02AFE83AA7C7523D1A979AF2B95656442079F55093CB35A7317D7C4"
+    }
+  ],
+  "WebHashes": [
+    {
+      "Path": "C:\\Backend\\Scripts\\app\\phone\\phone.core.js",
+      "Hash": "2B0E43488FE70333232814F2545603EF08AD557A37CB4B67806D3AA09BB9AA44"
+    },
+    {
+      "Path": "C:\\Backend\\Areas\\Game\\Views\\UserInfo\\Index.cshtml",
+      "Hash": "D5A387F405D2C8E9666CB7959E45ADCA39E03E73159674B60ED69632A8ECEEFB"
+    },
+    {
+      "Path": "C:\\Backend\\Areas\\Game\\Views\\UserInfo\\OnlineUsers.cshtml",
+      "Hash": "A01C41E525EF0154924F8EAE158A799D0046FFE91243FFE2A2FAAF1D162BE87D"
+    },
+    {
+      "Path": "C:\\Backend\\Config\\card-prize-quotes.json",
+      "Hash": "752C77BB4ED1A382C15CB5CBB5D8A68124965B5F735345A062460EAC60293424"
+    }
+  ],
+  "WebVer": "1.0.102",
+  "Http": [
+    {
+      "Url": "http://127.0.0.1/",
+      "Status": 200
+    },
+    {
+      "Url": "http://127.0.0.1/Api/Games",
+      "Status": 200
+    },
+    {
+      "Url": "http://127.0.0.1:8081/",
+      "Status": 200
+    },
+    {
+      "Url": "https://abc.12.sqrdwj.top/Api/Games",
+      "Status": 200
+    }
+  ]
+}

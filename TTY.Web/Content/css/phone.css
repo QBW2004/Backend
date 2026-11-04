@@ -846,6 +846,8 @@ button, a {
     border-top: 1px solid #e5e5e5;
     display: flex;
     justify-content: center;
+    /* 2026-11-04：两个按钮（取消/确定）之间留 12px，原来并排贴在一起像一个框（充值确认等所有双按钮弹窗） */
+    gap: 12px;
 }
 
 .modal-btn {
@@ -1238,3 +1240,81 @@ button, a {
 }
 
 /* 玩家可玩游戏勾选样式由各使用页面内联定义（添加代理页 AddAgent.cshtml） */
+
+/* ---------------- 日期+时分字段（M.dateTimeField，2026-11-04） ----------------
+   框内上下左右居中显示“yyyy-MM-dd HH:mm”；框太窄时在日期与时间之间折成两行，仍居中，不裁字。 */
+.m-dt-input {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    column-gap: 4px;
+    width: 100%;
+    min-width: 0;
+    height: 40px;
+    padding: 0 6px;
+    border: 1px solid #e4e7ec;
+    border-radius: 8px;
+    background: #fff;
+    color: #333;
+    font-size: 13px;
+    line-height: 1.2;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.m-dt-input:focus {
+    outline: 2px solid rgba(0, 122, 255, .2);
+    outline-offset: 1px;
+    border-color: #007aff;
+}
+
+/* 开始框 + 结束框 + 查询按钮一行：三者之间留 8px 间隙，按钮宽度按文字自适应，不与框重叠 */
+.m-dt-range {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+}
+
+.m-dt-range > .m-dt-btn {
+    height: 40px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: 8px;
+    background: #007aff;
+    color: #fff;
+    font-size: 13px;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+@media (max-width: 360px) {
+    .m-dt-range { gap: 6px; }
+    .m-dt-input { padding: 0 4px; font-size: 12px; }
+    .m-dt-range > .m-dt-btn { padding: 0 10px; }
+}
+
+/* 选择弹窗：日历 → 时分 → 底部（左取消、右下角勾选） */
+.mdtp-modal .modal-body { padding: 12px 12px 8px; gap: 8px; }
+.mdtp { width: 100%; }
+.mdtp-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.mdtp-nav button { width: 36px; height: 32px; border: 0; border-radius: 6px; background: #f5f5f7; color: #007aff; font-size: 20px; line-height: 1; cursor: pointer; }
+.mdtp-month { font-size: 15px; font-weight: 600; color: #333; }
+.mdtp-week, .mdtp-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; text-align: center; }
+.mdtp-week span { font-size: 12px; color: #86868b; padding: 4px 0; }
+.mdtp-day { height: 34px; border: 0; border-radius: 17px; background: none; color: #333; font-size: 14px; font-variant-numeric: tabular-nums; cursor: pointer; }
+.mdtp-day.today { color: #007aff; font-weight: 600; }
+.mdtp-day.active { background: #007aff; color: #fff; }
+.mdtp-time { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #f0f0f0; font-size: 14px; color: #666; }
+.mdtp-time span { margin-right: 4px; }
+.mdtp-time select { height: 36px; min-width: 64px; padding: 0 8px; border: 1px solid #e4e7ec; border-radius: 8px; background: #fff; font-size: 15px; color: #333; text-align: center; text-align-last: center; }
+.mdtp-modal .modal-footer { justify-content: space-between; align-items: center; padding: 8px 12px 12px; border-top: 0; }
+.mdtp-modal .modal-btn { width: auto; }
+.mdtp-modal .modal-btn.mdtp-cancel { padding: 8px 12px; background: none; color: #86868b; font-size: 15px; }
+.mdtp-modal .modal-btn.mdtp-ok { width: 44px; height: 44px; padding: 0; border-radius: 22px; font-size: 22px; line-height: 44px; }

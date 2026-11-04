@@ -31,14 +31,14 @@ namespace YYT.Web.Filters
                     if (cookie != null && cookie.Value != "")
                     {
                         ///根据cookie设置语言
-                        langHeader = cookie.Value;
+                        langHeader = NormalizeLang(cookie.Value);
                         Thread.CurrentThread.CurrentUICulture = CultureInfo.CreateSpecificCulture(langHeader);
                     }
                     else
                     {
                         ///如果读取cookie失败则设置默认语言
                         if (filterContext.HttpContext.Request.UserLanguages != null && filterContext.HttpContext.Request.UserLanguages.Length > 0)
-                            langHeader = filterContext.HttpContext.Request.UserLanguages[0];
+                            langHeader = NormalizeLang(filterContext.HttpContext.Request.UserLanguages[0]);
                         else
                             langHeader = "zh-CN";
                         Thread.CurrentThread.CurrentUICulture = CultureInfo.CreateSpecificCulture(langHeader);
@@ -59,6 +59,20 @@ namespace YYT.Web.Filters
             }
 
         }
+        /// <summary>
+        /// 把浏览器语言/旧 cookie 收敛到路由支持的语言（RouteConfig 的 lang 约束：zh-CN|en-US|vi-VN）。
+        /// 2026-11-04：繁体系统手机 Accept-Language 为 zh-TW/zh-HK，原样拼进重定向地址后不满足路由约束，
+        /// /Login/Mobile 会被重定向到 /zh-TW/Login/Mobile 并 404；en-GB 等同理。
+        /// 中文一律 zh-CN、英文 en-US、越南语 vi-VN，其余回落 zh-CN；去掉 “;q=0.8” 这类权重后缀。
+        /// </summary>
+        public static string NormalizeLang(string lang)
+        {
+            string value = (lang ?? string.Empty).Split(';')[0].Trim();
+            if (value.StartsWith("en", StringComparison.OrdinalIgnoreCase)) return "en-US";
+            if (value.StartsWith("vi", StringComparison.OrdinalIgnoreCase)) return "vi-VN";
+            return "zh-CN";
+        }
+
         public class WithoutLocalizationAttribute : Attribute
         {
         }

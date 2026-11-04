@@ -1,0 +1,192 @@
+{
+  "Time": "2026-11-04 15:44:15",
+  "WebVer": "1.0.102",
+  "Tables": [
+    {
+      "RoomIndex": 0,
+      "TableIndex": 0,
+      "BetMin": 200,
+      "BetMax": 500,
+      "OneCoinScore": 100
+    },
+    {
+      "RoomIndex": 0,
+      "TableIndex": 1,
+      "BetMin": 200,
+      "BetMax": 500,
+      "OneCoinScore": 100
+    },
+    {
+      "RoomIndex": 0,
+      "TableIndex": 2,
+      "BetMin": 200,
+      "BetMax": 500,
+      "OneCoinScore": 100
+    },
+    {
+      "RoomIndex": 0,
+      "TableIndex": 3,
+      "BetMin": 200,
+      "BetMax": 500,
+      "OneCoinScore": 100
+    },
+    {
+      "RoomIndex": 0,
+      "TableIndex": 4,
+      "BetMin": 200,
+      "BetMax": 500,
+      "OneCoinScore": 100
+    },
+    {
+      "RoomIndex": 0,
+      "TableIndex": 5,
+      "BetMin": 200,
+      "BetMax": 500,
+      "OneCoinScore": 100
+    },
+    {
+      "RoomIndex": 0,
+      "TableIndex": 6,
+      "BetMin": 500,
+      "BetMax": 2000,
+      "OneCoinScore": 100
+    },
+    {
+      "RoomIndex": 0,
+      "TableIndex": 7,
+      "BetMin": 500,
+      "BetMax": 2000,
+      "OneCoinScore": 100
+    },
+    {
+      "RoomIndex": 0,
+      "TableIndex": 8,
+      "BetMin": 500,
+      "BetMax": 2000,
+      "OneCoinScore": 100
+    },
+    {
+      "RoomIndex": 0,
+      "TableIndex": 9,
+      "BetMin": 500,
+      "BetMax": 2000,
+      "OneCoinScore": 100
+    },
+    {
+      "RoomIndex": 0,
+      "TableIndex": 10,
+      "BetMin": 500,
+      "BetMax": 2000,
+      "OneCoinScore": 100
+    },
+    {
+      "RoomIndex": 0,
+      "TableIndex": 11,
+      "BetMin": 500,
+      "BetMax": 2000,
+      "OneCoinScore": 100
+    }
+  ],
+  "Rules": [
+    {
+      "GAME_ID": 55,
+      "TableIndex": 0,
+      "CfgJson": "{\"schemaVersion\":3,\"smallFourMultiplier\":50,\"specialRules\":{\"authentic\":{\"enabled\":true,\"baseMultiplier\":80,\"revealTimeoutSeconds\":20,\"multipliers\":{\"values\":[1,2,3,4,5,6],\"weights\":[60,30,10,0,0,0]}},\"five\":{\"enabled\":true,\"baseMultiplier\":250,\"successMultiplier\":2,\"missMultiplier\":1,\"revealTimeoutSeconds\":20,\"successChance\":{\"numerator\":1,\"denominator\":3},\"forcedSuccessChance\":{\"numerator\":1,\"denominator\":4}},\"streak\":{\"enabled\":true,\"burnRounds\":20,\"poolContributionBasisPoints\":200,\"initialPool\":0,\"awardCounts\":{\"values\":[2,3,4,5,6],\"weights\":[30,20,10,0,0]},\"startChance\":{\"numerator\":1,\"denominator\":100},\"continueChance\":{\"numerator\":1,\"denominator\":18},\"expiredChance\":{\"numerator\":1,\"denominator\":20},\"secondJokerChance\":{\"numerator\":1,\"denominator\":10},\"jokerFirstChance\":{\"numerator\":9,\"denominator\":10},\"guaranteeLastRound\":true,\"blockHigherPrizes\":true},\"settlement\":{\"passEnabled\":true,\"explodeEnabled\":true}},\"passTarget\":30000,\"passBonus\":3000,\"explodeTarget\":100000,\"explodeBonus\":10000,\"keepMax\":3,\"keepMinHands\":10,\"race\":{\"enabled\":false,\"id\":0,\"start\":0,\"end\":0,\"total\":0,\"multiplier\":1}}"
+    }
+  ],
+  "Payouts": [
+    {
+      "TableId": 0,
+      "HandType": 1,
+      "PayoutMultiplier": 0,
+      "ProbabilityBasis": 1,
+      "Enabled": 1
+    },
+    {
+      "TableId": 0,
+      "HandType": 2,
+      "PayoutMultiplier": 0,
+      "ProbabilityBasis": 1,
+      "Enabled": 1
+    },
+    {
+      "TableId": 0,
+      "HandType": 3,
+      "PayoutMultiplier": 0,
+      "ProbabilityBasis": 3,
+      "Enabled": 1
+    },
+    {
+      "TableId": 0,
+      "HandType": 4,
+      "PayoutMultiplier": 0,
+      "ProbabilityBasis": 400,
+      "Enabled": 1
+    },
+    {
+      "TableId": 0,
+      "HandType": 5,
+      "PayoutMultiplier": 0,
+      "ProbabilityBasis": 1260,
+      "Enabled": 1
+    },
+    {
+      "TableId": 0,
+      "HandType": 6,
+      "PayoutMultiplier": 0,
+      "ProbabilityBasis": 1220,
+      "Enabled": 1
+    },
+    {
+      "TableId": 0,
+      "HandType": 7,
+      "PayoutMultiplier": 0,
+      "ProbabilityBasis": 1210,
+      "Enabled": 1
+    },
+    {
+      "TableId": 0,
+      "HandType": 8,
+      "PayoutMultiplier": 0,
+      "ProbabilityBasis": 1223,
+      "Enabled": 1
+    },
+    {
+      "TableId": 0,
+      "HandType": 9,
+      "PayoutMultiplier": 0,
+      "ProbabilityBasis": 1225,
+      "Enabled": 1
+    },
+    {
+      "TableId": 0,
+      "HandType": 10,
+      "PayoutMultiplier": 0,
+      "ProbabilityBasis": 222,
+      "Enabled": 1
+    },
+    {
+      "TableId": 0,
+      "HandType": 11,
+      "PayoutMultiplier": 0,
+      "ProbabilityBasis": 224,
+      "Enabled": 1
+    }
+  ],
+  "Player": [
+    {
+      "ID": "test02",
+      "COINS": 122043,
+      "GAME_SCORE": 64,
+      "INHALL": 0,
+      "FROZEN": 0
+    }
+  ],
+  "Pool": [
+    {
+      "Balance": 0.0
+    }
+  ],
+  "Active": [],
+  "GameHash": "9B5E708EE02AFE83AA7C7523D1A979AF2B95656442079F55093CB35A7317D7C4"
+}

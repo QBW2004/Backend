@@ -221,6 +221,7 @@
     <Compile Include="App_Start\BundleConfig.cs" />
     <Compile Include="App_Start\FilterConfig.cs" />
     <Compile Include="App_Start\RouteConfig.cs" />
+    <Compile Include="App_Start\ReadOnlySessionControllerFactory.cs" />
     <Compile Include="App_Start\WebApiConfig.cs" />
     <Compile Include="Areas\Game\Controllers\AccountLogController.cs" />
     <Compile Include="Areas\Game\Controllers\AdminController.cs" />
@@ -331,6 +332,15 @@
     <Content Include="Content\css\bootstrap.min.css" />
     <Content Include="Content\css\common.css" />
     <Content Include="Content\css\game.labaweights.css" />
+    <Content Include="Content\css\game.phenixconfig.css" />
+    <Content Include="Content\css\game.rabbitconfig.css" />
+    <Content Include="Content\css\game.attmhb-config.css" />
+    <Content Include="Scripts\app\game.attmhb-config.js" />
+    <Content Include="Areas\Game\Views\GameConfig\_AttMhbConfig.cshtml" />
+    <Content Include="Scripts\app\game.rabbit-math.js" />
+    <Content Include="Scripts\app\game.rabbitconfig.js" />
+    <Content Include="Scripts\app\game.rabbit-payout.js" />
+    <Content Include="Areas\Game\Views\GameConfig\_RabbitPayout.cshtml" />
     <Content Include="Content\css\demo\webuploader-demo.css" />
     <Content Include="Content\css\font-awesome.css" />
     <Content Include="Content\css\layout.css" />
@@ -1118,6 +1128,7 @@
     <Content Include="Areas\Game\Views\AgencyInfo\Index.cshtml" />
     <Content Include="Areas\Game\Views\ClientPackage\Index.cshtml" />
     <Content Include="Areas\Game\Views\ActivityConfig\Index.cshtml" />
+    <Content Include="Areas\Game\Views\GameConfig\_RabbitConfig.cshtml" />
     <Content Include="Areas\Game\Views\UserRecord\Index.cshtml" />
     <Content Include="Areas\Game\Views\GameConfig\ConfigEditor.cshtml" />
     <Content Include="Areas\Game\Views\UserInfo\Register.cshtml" />
@@ -1139,6 +1150,7 @@
     <Content Include="Areas\Mobile\Views\Home\Huiyuan.cshtml" />
 
     <Content Include="Areas\Mobile\Views\Home\Control.cshtml" />
+    <Content Include="Areas\Mobile\Views\Home\Blacklist.cshtml" />
     <Content Include="Areas\Mobile\Views\Home\PlayerDetail.cshtml" />
 
 
@@ -1593,9 +1605,8 @@
     <Content Include="Scripts\app\phone\phone.huiyuan.js" />
 
     <Content Include="Scripts\app\phone\phone.control.js" />
-    <Content Include="Scripts\app\phone\phone.playerdetail.js" />
-
     <Content Include="Scripts\app\phone\phone.blacklist.js" />
+    <Content Include="Scripts\app\phone\phone.playerdetail.js" />
 
     <Content Include="Scripts\app\phone\phone.banagent.js" />
 
@@ -1746,6 +1757,7 @@
     <Compile Include="Areas\Game\Controllers\GameConfigWeightsController.cs" />
     <Content Include="Areas\Game\Views\GameConfig\_LabaWeights.cshtml" />
     <Content Include="Scripts\app\game.labaweights.js" />
+    <Content Include="Scripts\app\game.phenixconfig.js" />
     <Compile Include="Models\MjhlWeightProfile.cs" />
     <Compile Include="Areas\Game\Controllers\GameConfigMjhlController.cs" />
     <Compile Include="Areas\Game\Controllers\GameConfigRabbitController.cs" />

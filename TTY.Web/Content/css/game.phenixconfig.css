@@ -1,0 +1,50 @@
+.gc-px-only { display:none; }
+#gcForm.gc-phenix-mode .gc-px-only { display:table-cell; }
+#gcForm.gc-phenix-mode > .gc-guide, #gcForm.gc-phenix-mode #gcPayoutSum { display:none; }
+#gcForm.gc-phenix-mode .gc-only-1 > .gc-section-title { margin-top:16px; }
+#gcForm.gc-phenix-mode #gcPayoutTable { font-size:12px; table-layout:fixed; margin-bottom:8px !important; }
+#gcForm.gc-phenix-mode #gcPayoutTable th { padding:6px 8px !important; font-size:12px; font-weight:500; }
+#gcForm.gc-phenix-mode #gcPayoutTable th:nth-child(1) { width:18%; }
+#gcForm.gc-phenix-mode #gcPayoutTable th:nth-child(2) { width:28%; }
+#gcForm.gc-phenix-mode #gcPayoutTable th:nth-child(3) { width:23%; }
+#gcForm.gc-phenix-mode #gcPayoutTable td { padding:3px 8px !important; font-size:12px !important; }
+#gcForm.gc-phenix-mode #gcPayoutTable input[type=number] { height:26px; line-height:26px; font-size:12px; padding:0 8px; text-align:right; max-width:180px; }
+#gcForm.gc-phenix-mode #gcPayoutTable input[readonly] { background:#f2f5f9; color:#7b8798; }
+#gcForm.gc-phenix-mode #gcPayoutTable tr.px-four { background:#f3f7ff; }
+.px-main-rtp { text-align:right; font-variant-numeric:tabular-nums; color:#52637b; }
+#gcForm.gc-phenix-mode #gcPayoutTable .gc-px-only { padding:6px 8px; border:1px solid #e5e9f0; }
+#gcForm.gc-phenix-mode #gcPayoutTable thead .gc-px-only { width:17%; background:#f5f8ff; }
+.px-summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); margin:4px 0 18px; border:1px solid #dce5f3; border-radius:7px; overflow:hidden; background:#f9fbfe; }
+.px-stat { padding:12px 16px; border-right:1px solid #e2e9f2; }
+.px-stat:last-child { border:0; }
+.px-stat > span { display:block; font-size:12px; color:#637087; }
+.px-stat strong { display:block; margin:4px 0; font-size:25px; font-weight:600; color:#273b54; font-variant-numeric:tabular-nums; }
+.px-stat small { font-size:11px; color:#8190a3; }
+.px-total { background:#edf4ff; }
+.px-total strong { color:#2f6fed; }
+#phenixConfig { margin:18px 0; color:#36404a; }
+.px-heading { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:8px; }
+.px-heading .gc-section-title { margin:0; }
+.px-toggle { display:flex; align-items:center; gap:6px; font-size:12px; cursor:pointer; }
+.px-toggle input { accent-color:#2f6fed; }
+.px-note, .px-save-note { margin:8px 0 10px; font-size:12px; line-height:1.7; color:#7b8798; }
+.px-scroll { overflow-x:auto; }
+.px-table { width:100%; min-width:550px; table-layout:fixed; border-collapse:collapse; font-size:12px; }
+.px-table th { background:#f5f8ff; color:#5a6573; font-weight:500; text-align:left; padding:7px 8px; border:1px solid #e5e9f0; }
+.px-table th span { display:block; font-size:10px; font-weight:400; color:#8793a5; }
+.px-table td { padding:4px 8px; border:1px solid #e5e9f0; font-variant-numeric:tabular-nums; }
+.px-table td:nth-child(3), .px-table td:nth-child(4), .px-table td:nth-child(5) { text-align:right; }
+.px-table th:last-child { width:48px; }
+.px-table input { width:100%; box-sizing:border-box; height:28px; padding:0 6px; border:1px solid #d4dae3; border-radius:4px; font-size:12px; text-align:right; color:#273b54; background:#fff; }
+.px-table input:focus { outline:2px solid #dce8ff; border-color:#2f6fed; }
+.px-table input:invalid { border-color:#d33b3b; }
+.px-table tfoot { background:#f7f9fc; color:#4d607a; font-weight:600; }
+.px-delete, .px-reload { border:0; padding:3px 0; font-size:12px; cursor:pointer; background:transparent; color:#2f6fed; }
+.px-delete { color:#a96767; }
+.px-tools { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin:8px 0; font-size:12px; color:#8190a3; }
+.px-reload { margin-left:auto; }
+.px-help { margin:10px 0; font-size:12px; color:#748196; line-height:1.7; }
+.px-help summary { cursor:pointer; color:#617895; }
+.px-help p { margin:6px 0; }
+#gcForm.gc-phenix-mode .gc-joker-p { height:30px; font-size:12px; }
+@media(max-width:900px) { .px-summary { grid-template-columns:repeat(2,minmax(0,1fr)); } .px-stat { border-bottom:1px solid #e2e9f2; } .px-stat strong { font-size:22px; } }

@@ -69,6 +69,14 @@ namespace YYT.Web.Areas.Game.Controllers
                 {
                     M_Page mPage = new M_Page(pageIndex, pageSize);
                     M_S_Record entity = new M_S_Record { S_TIME = date, ID = id, E_TIME = date, WEEK = week };
+                    // 手机游戏记录页改为开始/结束时分区间（TIME + END，2026-11-04）；桌面只传 TIME 日期仍按单日
+                    DateTime exactStart, exactEnd;
+                    if (B_Records_MySQL.HasClock(form["TIME"]) && B_Records_MySQL.TryParseQueryRange(form["TIME"], form["END"], out exactStart, out exactEnd))
+                    {
+                        entity.S_TIME = exactStart;
+                        entity.E_TIME = exactEnd;
+                        entity.EXACT_TIME = true;
+                    }
                     list = new B_Records_MySQL().Get_PlayerRecords(loginUser, mPage, entity);
                 }
             }
@@ -105,6 +113,13 @@ namespace YYT.Web.Areas.Game.Controllers
                 DateTime cutoff = B_Records_MySQL.GetRetentionCutoff();
                 DateTime requestedStart = form.Q<DateTime>("StartTime", cutoff);
                 DateTime requestedEnd = form.Q<DateTime>("EndTime", now).Date.AddDays(1);
+                // 手机中奖历史带时分（2026-11-04）：按分钟精确区间；只传日期时仍按整天
+                DateTime exactStart, exactEnd;
+                if (B_Records_MySQL.HasClock(form["StartTime"]) && B_Records_MySQL.TryParseQueryRange(form["StartTime"], form["EndTime"], out exactStart, out exactEnd))
+                {
+                    requestedStart = exactStart;
+                    requestedEnd = exactEnd;
+                }
                 retentionAdjusted = requestedStart < cutoff || requestedEnd < cutoff;
                 DateTime start = requestedStart;
                 DateTime end = requestedEnd;

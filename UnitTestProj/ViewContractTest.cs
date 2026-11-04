@@ -819,7 +819,8 @@ namespace UnitTestProj
             string controlBll = ReadRepoFile(@"YYT.BLL\EF\B_UserControl.cs");
             string indexSql = ReadRepoFile(@"Docs\sql\性能索引.sql");
 
-            StringAssert.Contains(playersScript, "立即渲染基础卡片，不等待控制状态");
+            // 2026-11-04 起在线页控制状态随列表一次返回、卡片与角标同刻渲染；旧服务端仍走异步补齐
+            StringAssert.Contains(playersScript, "人数、卡片（连同控制角标，playerCardHTML 读 p.ActiveControls）与上面的头部同一刻渲染");
             StringAssert.Contains(playersScript, "attachActiveControls");
             // 玩家列表卡片不再展示冻结状态（冻结账号只在冻结明细/冻结账号页查看）
             Assert.IsFalse(playersScript.Contains("冻结中"));
@@ -835,7 +836,8 @@ namespace UnitTestProj
             // 手机端控制指令也改为直发：只入发件箱排队要等定时重试（间隔 60s）才生效
             Assert.IsFalse(controlBll.Contains("QueueTotalUcCommand"));
             StringAssert.Contains(controlBll, "SendTotalUcCommand(mode, strength, cardAction, cardValue, cardNumber, cardTotal, loginUser, target);");
-            StringAssert.Contains(controlScript, "r.text || '操作成功'");
+            // 2026-11-04 起成功统一只弹“操作成功”，不再展示服务端过程文案
+            StringAssert.Contains(controlScript, "M.alert(r.ok ? '操作成功' : r.text");
             Assert.IsFalse(controlScript.Contains("已受理"));
             Assert.IsFalse(controlBll.Contains("已受理"));
             StringAssert.Contains(rechargeScript, "成功！已向");
@@ -1100,7 +1102,7 @@ namespace UnitTestProj
             StringAssert.Contains(quotes, "\"Name\": \"小四梅(50倍)\"");
             StringAssert.Contains(quotes, "\"Name\": \"小四梅连庄X10(500倍)\"");
             StringAssert.Contains(ReadRepoFile(@"TTY.Web\Models\RabbitConfig.cs"), "smallFourMultiplier\"\":50");
-            StringAssert.Contains(ReadRepoFile(@"TTY.Web\Areas\Game\Views\GameConfig\_RabbitConfig.cshtml"), "num('#rbSmallFour',50)");
+            StringAssert.Contains(ReadRepoFile(@"TTY.Web\Areas\Game\Views\GameConfig\_RabbitConfig.cshtml"), "rbSmallFour");
 
             // 服务端校验同步放开：cardAction 20 合法、牌型值 13-26，另含连庄 27-35
             StringAssert.Contains(userControl, "cardAction != 20");
@@ -1295,7 +1297,8 @@ namespace UnitTestProj
             // 独立页面外壳：日期筛选 + 表格 + 分页，数据仍走电脑端同款接口
             StringAssert.Contains(controller, "public ActionResult GameRecord()");
             StringAssert.Contains(controller, "ViewBag.Today = DateTime.Now.ToString(\"yyyy-MM-dd\")");
-            StringAssert.Contains(recordView, "id=\"recordDate\"");
+            StringAssert.Contains(recordView, "id=\"recordStart\"");
+            StringAssert.Contains(recordView, "id=\"recordEnd\"");
             StringAssert.Contains(recordView, "id=\"recordTableBody\"");
             StringAssert.Contains(recordView, "id=\"prevBtn\"");
             StringAssert.Contains(recordView, "id=\"nextBtn\"");
@@ -1368,7 +1371,7 @@ namespace UnitTestProj
             StringAssert.Contains(controller, "ViewBag.MPage = \"agents\";");
             StringAssert.Contains(controller, "ViewBag.MPage = \"huiyuan\";");
             StringAssert.Contains(controller, "ViewBag.MPage = \"recharge\";");
-            StringAssert.Contains(phoneCore, "var PLAYERS_STALE_PAGES = { agents: true, huiyuan: true, recharge: true };");
+            StringAssert.Contains(phoneCore, "var PLAYERS_STALE_PAGES = { agents: true, huiyuan: true, recharge: true, control: true, blacklist: true };");
 
             // 我的代理/我的会员/充值管理会改余额与输赢，进入这些页面时就给玩家列表留标记：
             // 返回多为 bfcache 恢复，页面不重新加载，页面内变量传不过去，只能用存储传递
@@ -1382,14 +1385,17 @@ namespace UnitTestProj
             // 玩家列表页消费标记：缓存恢复时重拉在线数据；整页新加载时数据本来就是新的，只清标记
             StringAssert.Contains(playersScript, "$(window).on('pageshow', function () {");
             StringAssert.Contains(playersScript, "if (!M.consumePlayersStale()) return;");
-            StringAssert.Contains(playersScript, "runRefresh(reloadOnline);");
-            StringAssert.Contains(playersScript, "M.consumePlayersStale(); // 整页新加载");
+            // 返回本页（bfcache 恢复）自动刷新一次在线玩家，并显示“刷新数据...”
+            StringAssert.Contains(playersScript, "runRefresh(function () { return $.when(reloadOnline(), refreshOfflineControls()); }, true);");
+            // 整页新加载时消费标记；离线列表若从缓存还原，标记为真时重查控制角标（2026-11-04）
+            // 返回本页但整页重新加载时同样按“返回刷新”处理
+            StringAssert.Contains(playersScript, "runRefresh(function () { return $.when(reloadOnline(), restored ? refreshOfflineControls() : null); }, true);");
             // 抽屉只有列表页有，bfcache 恢复会原样保留展开状态：从抽屉点进子页面再返回时，
             // 菜单会一直盖在列表上（遮罩还吃掉列表点击），所以 pageshow 里统一收起
             StringAssert.Contains(phoneCore, "$backBtn.removeClass('navigating');\r\n            M.closeDrawer();");
             // 返回时只补在线数据：离线列表可能已翻到第 N 页，整体重拉会把列表打回第一页
             StringAssert.Contains(playersScript, "function reloadOnline() {");
-            StringAssert.Contains(playersScript, "return $.when(loadTotalWinLoss(), loadOnline());");
+            StringAssert.Contains(playersScript, "return $.when(loadTotalWinLoss(true), loadOnline()).always(function () {");
             // 在线人数角标在空列表时也要归零（原写法在 return 之后，人数会停在上一次的值）
             StringAssert.Contains(playersScript, "$('#onlinePlayerCount').text(onlinePlayers.length);");
         }
@@ -1415,9 +1421,9 @@ namespace UnitTestProj
             // 在线页失败分支对 abort/隐藏直接返回，不然同一个幽灵提示换"游戏服暂无响应"还会冒出来
             StringAssert.Contains(playersScript, "aborted = (status === 'abort');");
             StringAssert.Contains(playersScript, "if (aborted || document.hidden) return;");
-            // 各页裸轮询与在线页同一口径：页面隐藏时暂停，在途请求交给 M.post 的中断
-            StringAssert.Contains(controlScript, "if (!document.hidden) { refreshCtrlStatus(true);");
-            StringAssert.Contains(detailScript, "if (!account || document.hidden) return;");
+            // 2026-11-04 起各页不再定时轮询（对齐参考站），没有轮询也就没有“隐藏时暂停”的分支
+            Assert.IsFalse(controlScript.Contains("setInterval("));
+            Assert.IsFalse(detailScript.Contains("setInterval("));
         }
 
         [TestMethod]
@@ -1558,7 +1564,9 @@ namespace UnitTestProj
 
             // 1/2 在线按所在游戏预选“送奖+游戏”，离线/不支持送奖的游戏默认吃分
             StringAssert.Contains(control, "presetMode(row, r.datas.CurrentGameId);");
-            StringAssert.Contains(control, "playable && hasMode(6) ? 6 : (hasMode(4) ? 4 :");
+            // 2026-11-04：在线在控牌游戏→送奖+该游戏；在线不在控牌游戏→放水；离线→送奖（不识别游戏）
+            StringAssert.Contains(control, "var want = !online ? 6 : (playable ? 6 : 5);");
+            StringAssert.Contains(control, "if (mode == 6 && online && playable) {");
             // 3 不再要求玩家已在所选游戏押注；4 不再做后台游戏能力预拦截
             Assert.IsFalse(pool.Contains("请让玩家进入所选游戏并完成押注后再送奖"));
             Assert.IsFalse(userControl.Contains("ValidateCurrentGameCapability("));
@@ -1587,7 +1595,8 @@ namespace UnitTestProj
             StringAssert.Contains(flowView, "@if (canPool && !poolOnly)");
             StringAssert.Contains(pool, "(user.UserPriv ?? -1) > AgencyRules.TopAgentPriv");
             // 13/14 默认当天、备注列、余额列固定
-            StringAssert.Contains(flow, "$('#startDate').val(dateValue(today));$('#endDate').val(dateValue(today));");
+            // 2026-11-04 起改为日期+时分字段，默认当天 00:00 ~ 23:59
+            StringAssert.Contains(flow, "$('#startDate').val(M.todayValue() + ' 00:00').trigger('change'); $('#endDate').val(M.todayValue() + ' 23:59').trigger('change');");
             StringAssert.Contains(flow, "if (kind === 3) return '控牌支出'");
             StringAssert.Contains(flowView, ".flow-table.pool-mode th:first-child, .flow-table.pool-mode td:first-child { position:sticky; left:0;");
             // 15 奖池明细保留 35 天
@@ -1640,7 +1649,7 @@ namespace UnitTestProj
             // 有吃分进度时会显示负数，与电脑端显示相反）
             Assert.IsFalse(control.Contains(": -r.ConsumedCoins"), "控制页已吃分进度不能取反");
             Assert.IsFalse(detail.Contains(": -Number(r.ConsumedCoins || 0)"), "玩家详情页已吃分进度不能取反");
-            StringAssert.Contains(control, "diamonds(Number(r.ControlMode) == 5 ? r.GrantedCoins : r.ConsumedCoins)");
+            StringAssert.Contains(control, "diamonds(m == 5 ? r.GrantedCoins : r.ConsumedCoins)");
             StringAssert.Contains(detail, "Number(r.ConsumedCoins || 0)");
         }
 
@@ -1735,7 +1744,7 @@ namespace UnitTestProj
             // 只有玩过游戏才有盈亏，没玩过就是 0，与在线/离线卡片、会员盈亏、电脑端"总盈亏"一致。
             Assert.IsFalse(detailScript.Contains("Number(d.COINS_BUY || 0) - Number(d.COINS_BACK || 0)"),
                 "总盈亏不得再用充退差额，必须取服务端下发的 TotalWinLoss");
-            StringAssert.Contains(detailScript, "setSigned('#dTotalWinLoss', d.TotalWinLoss);");
+            StringAssert.Contains(detailScript, "setSigned('#dTotalWinLoss', M.truncInt(d.TotalWinLoss));");
 
             // 服务端要真的算出来：GetUserPhoneDetail 的 SQL 补 SUM(user_daily_winloss) 子查询，
             // 实体带字段，控制器下发（缺任一段前端都只会拿到 undefined、显示 0）
@@ -1784,7 +1793,7 @@ namespace UnitTestProj
 
             // 前端：超时与后端同口径收短；请求失败（网络失败或 code!=1）时保留上次列表，
             // 不能清空成"暂无在线玩家"
-            StringAssert.Contains(playersScript, "{ timeoutMs: 6000 }");
+            StringAssert.Contains(playersScript, "{ timeoutMs: 6000, silent: true }");
             Assert.IsFalse(playersScript.Contains("{ timeoutMs: 12000 }"),
                 "在线玩家请求超时应与后端短超时对齐，不再等 12 秒");
             StringAssert.Contains(playersScript, "if (res && Number(res.code) === 1 && res.datas) {");
@@ -2422,23 +2431,33 @@ namespace UnitTestProj
                 "rbStreakOn", "rbBurn", "rbContribution", "rbInitPool", "rbStreakTable",
                 "rbStartN", "rbContinueN", "rbExpiredN", "rbSecondJokerN", "rbJokerFirstN",
                 "rbGuaranteeLast", "rbBlockHigher",
-                "rbPassOn", "rbPassTarget", "rbExplodeOn", "rbExplodeTarget",
-                "rbKeepMax", "rbKeepMinHands",
-                "rbRaceOn", "rbRaceId", "rbRaceStart", "rbRaceEnd", "rbRaceTotal", "rbRaceMag"
+                "rbPassOn", "rbPassTarget", "rbExplodeOn", "rbExplodeTarget"
             })
                 StringAssert.Contains(view, "id=\"" + id + "\"");
 
             // 概率字段一律「分子/分母」两个输入，而不是让运营写小数
             StringAssert.Contains(view, "分子 / 分母");
-            // 留机最少手数已不参与判定，文案须提示仅为兼容字段
-            StringAssert.Contains(view, "兼容字段");
-            // 原始 JSON 仍可核对：折叠只读预览，保存仍走同一 configJson 合同
-            StringAssert.Contains(view, "id=\"rabbitConfigJson\" readonly");
-            StringAssert.Contains(view, "configJson:JSON.stringify(cfg)");
-            StringAssert.Contains(view, "window.rabbitConfigLoad");
+            // 留机区块不展示，隐藏参数由载入的配置原样保留。
+            Assert.IsFalse(view.Contains("rbKeepMax"));
+            Assert.IsFalse(view.Contains("rbKeepMinHands"));
+            StringAssert.Contains(view, "仅当前桌台");
+            Assert.IsFalse(view.Contains("<textarea"));
+            string script = ReadRepoFile(@"TTY.Web\Scripts\app\game.rabbitconfig.js");
+            StringAssert.Contains(script, "RabbitConfigJson:JSON.stringify(collect())");
+            Assert.IsFalse(view.Contains("rabbitConfigSave"));
+            Assert.IsFalse(view.Contains("rabbitConfigLoad"));
+            Assert.IsFalse(view.Contains("rbRaceOn"));
+            StringAssert.Contains(script, "tableIndex:");
+            StringAssert.Contains(script, "result.race.enabled=false");
             // schemaVersion/默认值与 RabbitConfig.DefaultJson 同源，不能靠手填
-            StringAssert.Contains(view, "\"schemaVersion\":3");
+            StringAssert.Contains(view, "RabbitConfig.DefaultJson");
+            Assert.IsFalse(ReadRepoFile(@"TTY.Web\Areas\Game\Views\ActivityConfig\Index.cshtml").Contains("@Html.Partial(\"_RabbitConfig\")"));
+            StringAssert.Contains(ReadRepoFile(@"TTY.Web\Areas\Game\Views\GameConfig\ConfigEditor.cshtml"), "@Html.Partial(\"_RabbitConfig\")");
             StringAssert.Contains(ReadRepoFile(@"TTY.Web\Models\RabbitConfig.cs"), "specialRules");
+            StringAssert.Contains(ReadRepoFile(@"TTY.Web\Areas\Game\Views\GameConfig\ConfigEditor.cshtml"), "@Html.Partial(\"_RabbitPayout\")");
+            string preview = ReadRepoFile(@"TTY.Web\Areas\Game\Views\GameConfig\_RabbitPayout.cshtml");
+            StringAssert.Contains(preview, "不含连庄与赛跑");
+            Assert.IsFalse(preview.Contains("<input"));
         }
 
         [TestMethod]
@@ -2448,23 +2467,207 @@ namespace UnitTestProj
 
             // 火凤凰独立规则只有正宗大四梅一块：启用开关 + X1~X14 倍数档权重表，
             // 字段与 PhenixConfig.Parse 及服务端 ReadPhenixRules 的校验口径一一对应。
-            foreach (string id in new[] { "pxAuthOn", "pxAuthTable", "pxAuthAdd", "phenixConfigJson", "phenixConfigLoad", "phenixConfigSave" })
+            foreach (string id in new[] { "pxAuthOn", "pxAuthTable", "pxAuthAdd", "pxRtpSummary", "pxRtpTotal", "pxRtpExtra", "phenixConfigLoad" })
                 StringAssert.Contains(view, "id=\"" + id + "\"");
 
-            // 原始 JSON 仍可核对：折叠只读预览，保存仍走同一 configJson 合同
-            StringAssert.Contains(view, "id=\"phenixConfigJson\" readonly");
-            StringAssert.Contains(view, "configJson:JSON.stringify(cfg)");
-            StringAssert.Contains(view, "window.phenixConfigLoad");
+            Assert.IsFalse(view.Contains("<textarea"));
+            Assert.IsFalse(view.Contains("phenixConfigSave"));
+            string script = ReadRepoFile(@"TTY.Web\Scripts\app\game.phenixconfig.js");
+            StringAssert.Contains(script, "PhenixConfigJson:JSON.stringify(collect().config)");
+            StringAssert.Contains(script, "root.phenixConfigLoad");
             // 只在火凤凰(GameId=5)机台下出现，schemaVersion/默认值与 PhenixConfig.DefaultJson 同源
-            StringAssert.Contains(view, "!==5");
-            StringAssert.Contains(view, "\"schemaVersion\":1");
+            StringAssert.Contains(script, "$('#gcGameId').val() === '5'");
+            StringAssert.Contains(view, "PhenixConfig.DefaultJson");
             StringAssert.Contains(view, "GetPhenixConfig");
-            StringAssert.Contains(view, "SavePhenixConfig");
+            StringAssert.Contains(view, "game.phenixconfig.js");
             StringAssert.Contains(ReadRepoFile(@"TTY.Web\Models\PhenixConfig.cs"), "specialRules");
             StringAssert.Contains(ReadRepoFile(@"TTY.Web\Models\PhenixConfig.cs"), "Weighted(root, a + \".multipliers\", 14)");
             string editor = ReadRepoFile(@"TTY.Web\Areas\Game\Views\GameConfig\ConfigEditor.cshtml");
             StringAssert.Contains(editor, "@Html.Partial(\"_PhenixConfig\")");
             StringAssert.Contains(editor, "window.phenixConfigLoad");
+        }
+
+        [TestMethod]
+        public void MobileOperationPagesFollow20261104Adjustments()
+        {
+            string core = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.core.js");
+            string control = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.control.js");
+            string controlView = ReadRepoFile(@"TTY.Web\Areas\Mobile\Views\Home\Control.cshtml");
+            // 1-3：下拉不提供“关闭控制”（按文案过滤，牌机 10=五梅不能误删）；ATT满花版/水浒传牌型文案统一“牌型（N倍）”
+            StringAssert.Contains(core, "return full ? rows : $.grep(rows, function (r) { return r.text !== CLOSE_CONTROL_TEXT; });");
+            StringAssert.Contains(core, "if (action == 8) return tidyRows(cardTypeDataForPaiji(action));");
+            StringAssert.Contains(core, "if (action == 15) return tidyRows(");
+            // 14：控制状态不再展示“1次/5把”
+            Assert.IsFalse(core.Contains("'（1次/5把）'"));
+            Assert.IsFalse(ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.playerdetail.js").Contains("1次/5把"));
+            // 4：送奖、放水权限都没有时不渲染奖池余额/我的钻石/送奖明细
+            StringAssert.Contains(controlView, "bool showPool = canCard || canRelease;");
+            StringAssert.Contains(controlView, "@if (showPool) {<div class=\"pool-balances\">");
+            StringAssert.Contains(control, "var hasPool = $('#controlRows').length > 0;");
+            // 17：按钮文字“确定/移除”，宽度随文字收窄并居中
+            StringAssert.Contains(controlView, "disabled>确定</button>");
+            StringAssert.Contains(controlView, "disabled>移除</button>");
+            StringAssert.Contains(controlView, ".control-actions button { flex: 0 0 auto; min-width: 112px;");
+            // 5：应用控制不再弹“操作确认”
+            Assert.IsFalse(control.Contains("'操作确认'"));
+            Assert.IsFalse(control.Contains("confirmApply"));
+            // 9：充值奖池弹窗只有居中的“确认充值”
+            StringAssert.Contains(control, "buttons: [{label:'确认充值',type:'confirm',value:true}],");
+            StringAssert.Contains(controlView, ".pool-modal .modal-title { text-align: center; }");
+            // 6/7：在线/离线顶部文案
+            StringAssert.Contains(ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.players.js"), "$('#totalWinLossLabel').text('今日玩家总盈亏');");
+            StringAssert.Contains(ReadRepoFile(@"TTY.Web\Areas\Mobile\Controllers\HomeController.cs"), "<div id=\\\"totalWinLossLabel\\\">今日玩家总盈亏</div>");
+            // 12/13：总盈亏舍去小数
+            StringAssert.Contains(core, "M.truncInt = function (value)");
+            StringAssert.Contains(ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.huiyuan.js"), "M.truncInt(res.datas.TotalWinLoss)");
+            StringAssert.Contains(ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.playerdetail.js"), "M.truncInt(d.TotalWinLoss)");
+            // 8/10/11/15：日期+时分字段，开始 00:00 / 结束 23:59；三页开始框+结束框+查询一行
+            StringAssert.Contains(core, "M.dateTimeField = function ($input, defTime)");
+            StringAssert.Contains(control, "M.dateTimeField($('#controlEnd'), '23:59');");
+            // 18：在线状态跟在“送奖账号”后（送奖账号 在线，不带冒号），不再单独一行
+            StringAssert.Contains(controlView, "<label for=\"ctrlAccount\">送奖账号<span class=\"account-status\" id=\"piOnline\"></span></label>");
+            Assert.IsFalse(controlView.Contains("<span>在线状态</span>"));
+            StringAssert.Contains(control, "$('#piOnline').text(online ? '在线' : '离线')");
+            Assert.IsFalse(control.Contains("'：' + (online"));
+            // 19：操作类型 1/3、游戏类型 2/3 一行；吃分/放水时操作类型框也保持 1/3 不变
+            StringAssert.Contains(controlView, ".control-pair { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,2fr); gap: 10px; }");
+            Assert.IsFalse(controlView.Contains(".control-pair.single"));
+            Assert.IsFalse(control.Contains("toggleClass('single'"));
+            // 20/21：送奖明细“移除”与上方“移除”按钮都直接移除（无确认框），成功统一弹“移除成功”
+            StringAssert.Contains(control, "M.alert(r.ok ? '移除成功' : (r.text || '移除失败'), r.ok, r.ok ? '移除成功' : '移除失败');");
+            Assert.IsFalse(control.Contains("'移除控制').then"));
+            // 37：送奖明细每行“移除”对齐参考站，先确认再移除（上方“移除”按钮仍直接移除）
+            StringAssert.Contains(control, "M.confirm('确定要移除玩家 ' + target + ' 的送奖记录吗？', '移除送奖').then(function (ok) {");
+            // 38：吃分拆到黑名单管理页；弹窗“操作”=送奖/放水任一权限，“拉黑”=吃分权限，排在“操作”下方
+            string homeCtl = ReadRepoFile(@"TTY.Web\Areas\Mobile\Controllers\HomeController.cs");
+            // 账号走参数绑定：?id= 与 RedirectToAction 生成的 /Blacklist/{id} 都能预填
+            StringAssert.Contains(homeCtl, "public ActionResult Blacklist(string id)");
+            StringAssert.Contains(homeCtl, "ViewBag.PresetAccount = id ?? string.Empty;");
+            StringAssert.Contains(homeCtl, "|| (user != null && (user.IsProbability == 1 || user.IsRelease == 1));");
+            StringAssert.Contains(homeCtl, "ViewBag.CanBlacklist = IsSuper(user) || (user != null && user.IsKill == 1);");
+            string indexView = ReadRepoFile(@"TTY.Web\Areas\Mobile\Views\Home\Index.cshtml");
+            Assert.IsTrue(indexView.IndexOf("id=\"modalControlBtn\"") < indexView.IndexOf("id=\"modalBlacklistBtn\">拉黑</button>"));
+            StringAssert.Contains(ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.players.js"), "'/Mobile/Home/Blacklist?id=' + encodeURIComponent(current.ID)");
+            string bl = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.blacklist.js");
+            StringAssert.Contains(bl, "{ ID: acc, Mode: 4, MobileRequest: 1, Strength: 3, GoldThreshold: parseInt(gold, 10) }");
+            StringAssert.Contains(bl, "M.post('/Game/UserInfo/CloseTotalControl', { ID: acc, Mode: 4, MobileRequest: 1 })");
+            StringAssert.Contains(ReadRepoFile(@"TTY.Web\Areas\Mobile\Views\Home\Blacklist.cshtml"), ">移除黑名单</button>");
+            // 39：黑名单页显示当前控制，有放水时提示会被替换；没有执行中的吃分时“移除黑名单”置灰
+            StringAssert.Contains(ReadRepoFile(@"TTY.Web\Areas\Mobile\Views\Home\Blacklist.cshtml"), "id=\"blStatus\"");
+            StringAssert.Contains(bl, "M.post('/Game/UserInfo/GetTotalControlStatus', { ID: acc }, { silent: true })");
+            StringAssert.Contains(bl, "$('#blHint').text('确定后会替换该玩家执行中的放水');");
+            // 44：“移除黑名单”始终可点；确定/移除不显示“下发中/处理中”，成功直接提示（操作管理同口径）
+            StringAssert.Contains(bl, "$('#blApplyBtn, #blRemoveBtn').prop('disabled', busy);");
+            Assert.IsFalse(bl.Contains("M.loading("));
+            StringAssert.Contains(bl, "M.alert(r.ok ? '操作成功' : r.text, r.ok, r.ok ? '操作成功' : '操作失败');");
+            Assert.IsFalse(control.Contains("M.loading('下发中...')"));
+            Assert.IsFalse(control.Contains("M.loading('核算送奖金额...')"));
+            StringAssert.Contains(control, "M.alert(r.ok ? '操作成功' : r.text, r.ok, r.ok ? '操作成功' : '操作失败').then(function () {");
+            // 40：操作管理“当前控制”里的吃分只标类型，不再提示去黑名单管理
+            StringAssert.Contains(control, "if (m == 4) text = '吃分 ' + text;");
+            Assert.IsFalse(control.Contains("请到黑名单管理移除"));
+            // 41：黑名单吃分金额单位为钻（与原“目标（钻）”一致）
+            StringAssert.Contains(ReadRepoFile(@"TTY.Web\Areas\Mobile\Views\Home\Blacklist.cshtml"), "<label for=\"blGold\">吃分金额（钻）</label>");
+            StringAssert.Contains(ReadRepoFile(@"TTY.Web\YYT.Web.csproj"), @"Scripts\app\phone\phone.blacklist.js");
+            StringAssert.Contains(ReadRepoFile(@"TTY.Web\YYT.Web.csproj"), @"Areas\Mobile\Views\Home\Blacklist.cshtml");
+            // 22：送奖明细合计文字“已送出”
+            StringAssert.Contains(controlView, "<span>已送出：<strong id=\"sentDiamonds\">");
+            Assert.IsFalse(controlView.Contains("已送出的钻石"));
+            // 23/24：玩家列表顶部今日总盈亏取整；卡片“输赢”改“盈亏”
+            string players = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.players.js");
+            StringAssert.Contains(players, "var shown = M.roundInt(total);");
+            StringAssert.Contains(players, "<span class=\"info-label\">今日盈亏(钻)</span>");
+            StringAssert.Contains(players, "<span class=\"info-label\">总盈亏(钻)</span>");
+            Assert.IsFalse(players.Contains("今日输赢(钻)"));
+            // 25：浏览器语言收敛到路由支持的语言，繁体/英式英文手机不再 404
+            StringAssert.Contains(ReadRepoFile(@"TTY.Web\Filters\LocalizationAttribute.cs"), "langHeader = NormalizeLang(filterContext.HttpContext.Request.UserLanguages[0]);");
+            StringAssert.Contains(ReadRepoFile(@"TTY.Web\Filters\LocalizationAttribute.cs"), "langHeader = NormalizeLang(cookie.Value);");
+            StringAssert.Contains(ReadRepoFile(@"TTY.Web\Filters\LocalizationAttribute.cs"), "string value = (lang ?? string.Empty).Split(';')[0].Trim();");
+            // 26：玩家详情剩余分数不带“分”，今日盈亏四舍五入取整
+            string detail = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.playerdetail.js");
+            StringAssert.Contains(detail, "$('#dScore').text(M.num(d.GAME_SCORE));");
+            StringAssert.Contains(detail, "setSigned('#dTodayWinLoss', M.roundInt(d.TodayWinLoss));");
+            // 27：弹窗底部取消/确定之间留间隙（充值确认等所有双按钮弹窗）
+            StringAssert.Contains(ReadRepoFile(@"TTY.Web\Content\css\phone.css"), "两个按钮（取消/确定）之间留 12px");
+            // 28：充值管理页头“当前余额”
+            StringAssert.Contains(ReadRepoFile(@"TTY.Web\Areas\Mobile\Controllers\HomeController.cs"), "ViewBag.MSubtitleHtml = \"当前余额: <span");
+            Assert.IsFalse(ReadRepoFile(@"TTY.Web\Areas\Mobile\Controllers\HomeController.cs").Contains("\"当前钻余额: "));
+            // 29：会员盈亏详情“赢的最多/输的最多”一行靠右
+            StringAssert.Contains(ReadRepoFile(@"TTY.Web\Areas\Mobile\Views\Home\Huiyuan.cshtml"), "“赢的最多/输的最多”同一行靠右");
+            // 30：会员盈亏详情今日盈亏（统计卡与列表列）四舍五入取整
+            StringAssert.Contains(ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.huiyuan.js"), "setStat('#todayProfit', M.roundInt(res.datas.TodayWinLoss), true, false);");
+            StringAssert.Contains(ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.huiyuan.js"), "var today = M.roundInt(u.TodayWinLoss);");
+            // 31：玩家操作弹窗按钮“控制”改“操作”
+            StringAssert.Contains(ReadRepoFile(@"TTY.Web\Areas\Mobile\Views\Home\Index.cshtml"), "id=\"modalControlBtn\">操作</button>");
+            // 32：在线玩家每次刷新按今日盈亏从高到低（赢最多在前）
+            StringAssert.Contains(players, "onlinePlayers = sortOnlineByWin(res.datas);");
+            StringAssert.Contains(players, ".sort(function (a, b) { return (b.v - a.v) || (a.i - b.i); })");
+            // 33：偶发“网络异常”——轮询请求静默；跳页（beforeunload/pagehide）时不弹；status=0 延迟 1 秒确认页面还在才弹
+            StringAssert.Contains(core, "window.addEventListener('beforeunload', function () { pageLeaving = true; });");
+            StringAssert.Contains(core, "if (!(opts && opts.silent) && shouldToastNetError(status)) {");
+            StringAssert.Contains(players, "{ timeoutMs: 6000, silent: true }");
+            StringAssert.Contains(players, "M.post('/Game/UserInfo/GetTodayWinLoss', {}, { silent: true })");
+            // 35：对齐参考站，手机端各页不再定时轮询（玩家列表/玩家详情/操作管理/充值），只在进页、点刷新、操作后拉取
+            foreach (string page in new[] { "players", "playerdetail", "control", "recharge" })
+                Assert.IsFalse(ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone." + page + ".js").Contains("setInterval("), page + " 不应再定时轮询");
+            StringAssert.Contains(control, "$('#controlRefresh').on('click', function () { loadHistory(true); refreshWallet(); refreshCtrlStatus(true); });");
+            // 36：“移除”只移除当前执行中的控制（不看操作类型下拉），没有执行中的控制时置灰
+            StringAssert.Contains(control, "$(\"#closeCtrlBtn\").prop(\"disabled\", !current || submitting || !activeModes.length);");
+            StringAssert.Contains(control, "var target = current.ID, modes = activeModes.slice();");
+            Assert.IsFalse(control.Contains("{ ID: target, Mode: mode, MobileRequest: 1 }).always(M.hideLoading)"));
+            StringAssert.Contains(ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.recharge.js"), "M.post('/Mobile/Home/GetOwnCoinsJson', {}, { silent: true })");
+            // 34：只读轮询接口不排会话锁（按 Action 判断只读会话），写 Session 的注册接口不标
+            StringAssert.Contains(ReadRepoFile(@"TTY.Web\Global.asax.cs"), "ControllerBuilder.Current.SetControllerFactory(new ReadOnlySessionControllerFactory());");
+            StringAssert.Contains(ReadRepoFile(@"TTY.Web\App_Start\ReadOnlySessionControllerFactory.cs"), "return SessionStateBehavior.ReadOnly;");
+            StringAssert.Contains(ReadRepoFile(@"TTY.Web\YYT.Web.csproj"), @"App_Start\ReadOnlySessionControllerFactory.cs");
+            string userInfoCtl = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\UserInfoController.cs");
+            foreach (string a in new[] { "GetOnlineUsers()", "GetTodayWinLoss()", "GetActiveTotalControls(", "GetTotalControlStatus(" })
+                StringAssert.Contains(userInfoCtl, "[ReadOnlySession] // 只读会话：不排会话锁（2026-11-04）\r\n        public ActionResult " + a);
+            Assert.IsFalse(userInfoCtl.Contains("[ReadOnlySession] // 只读会话：不排会话锁（2026-11-04）\r\n        public ActionResult Register("));
+            // 45：在线页刷新一次请求整块更新（对齐参考站）：控制状态随在线列表返回，卡片与角标同一刻渲染
+            StringAssert.Contains(players, "M.post('/Game/UserInfo/GetOnlineUsers', { IncludeControls: 1 }, { timeoutMs: 6000, silent: true })");
+            StringAssert.Contains(players, "if (withControls) seedActiveControls(onlinePlayers, res.controls);");
+            StringAssert.Contains(ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\UserInfoController.cs"), "if (Request.Form[\"IncludeControls\"] == \"1\")");
+            // 离线页同口径：控制状态随离线列表返回
+            StringAssert.Contains(ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\UserInfoController.cs"), "if (form.Q<int>(\"IncludeControls\") == 1 && list != null && list.rows != null)");
+            StringAssert.Contains(players, "if (withControls) seedActiveControls(rows, list.controls);");
+            // 46：玩家列表右上角刷新只显示一个“刷新数据...”文字框（对齐参考站），不弹“已刷新”与重复提示
+            StringAssert.Contains(players, "runRefresh($('.tab[data-tab=\"offline\"]').hasClass('active') ? reloadOffline : reloadOnline, true);");
+            StringAssert.Contains(players, "} else if (!manualRefreshing) {");
+            // 47：手动刷新先清空当前页签卡片区，新数据整块出现；失败还原上次列表
+            StringAssert.Contains(players, "if (manual) { $sec.empty(); M.loading('刷新数据...'); }");
+            StringAssert.Contains(players, "else if (onlineLoaded) renderOnlineCards($sec);");
+            // 48：顶部统计与卡片同步：在线=在线玩家盈亏合计（loadOnline 内渲染），离线=今日所有玩家总盈亏（两请求都回来后渲染）
+            StringAssert.Contains(players, "return $.when(loadTotalWinLoss(true), loadOffline(1, false)).always(function () {");
+            StringAssert.Contains(players, "if (!noRender) renderTotalWinLoss($('.tab[data-tab=\"online\"]').hasClass('active'));");
+            // 49：登录超时只提示一次，之后其它提示不再弹
+            StringAssert.Contains(core, "if (!loginTimedOut) {");
+            StringAssert.Contains(core, "if (loginTimedOut && msg !== '登录超时，请重新登录') return;");
+            // 50：在线页签刷新只发一个 GetOnlineUsers（对齐参考站）；切到离线页签再补拉今日所有玩家总盈亏
+            StringAssert.Contains(players, "if (!$('.tab[data-tab=\"offline\"]').hasClass('active')) return loadOnline();");
+            StringAssert.Contains(players, "if (tab === 'offline') loadTotalWinLoss();");
+            // 51：正式环境提速——关闭调试编译但保持不合并压缩脚本样式；放宽请求时长；开启 IIS 压缩
+            string webConfig = ReadRepoFile(@"TTY.Web\Web.config");
+            StringAssert.Contains(webConfig, "<compilation debug=\"false\" targetFramework=\"4.8\"/>");
+            StringAssert.Contains(webConfig, "executionTimeout=\"3600\"");
+            StringAssert.Contains(webConfig, "<urlCompression doStaticCompression=\"true\" doDynamicCompression=\"true\" />");
+            StringAssert.Contains(ReadRepoFile(@"TTY.Web\App_Start\BundleConfig.cs"), "BundleTable.EnableOptimizations = false;");
+            // 送奖明细默认当天 00:00 ~ 23:59
+            StringAssert.Contains(control, "$('#controlStart').val(M.todayValue() + ' 00:00').trigger('change');");
+            foreach (string view in new[] { "AgentFlow", "PrizeHistory", "GameRecord" })
+            {
+                string html = ReadRepoFile(@"TTY.Web\Areas\Mobile\Views\Home\" + view + ".cshtml");
+                StringAssert.Contains(html, "m-dt-range");
+                StringAssert.Contains(html, "class=\"m-dt-btn\"");
+                Assert.IsFalse(html.Contains(">开始日期<"), view);
+            }
+            // 服务端：带时分按分钟精确 [开始, 结束+1分钟)，只有日期仍按整天
+            string records = ReadRepoFile(@"YYT.BLL\EF\B_Records_MySQL.cs");
+            StringAssert.Contains(records, "endExclusive = HasClock(endText) ? TrimToMinute(e).AddMinutes(1) : e.Date.AddDays(1);");
+            StringAssert.Contains(ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\PrizePoolController.cs"), "B_Records_MySQL.TryParseQueryRange(form[\"StartTime\"], form[\"EndTime\"], out start, out end)");
+            // 送奖明细：已移除/结束但未开（牌型未开、放水送出 0）的记录不展示，执行中的保留
+            // 只隐藏送奖/放水；吃分不写开奖时间，已结束的吃分记录必须保留
+            StringAssert.Contains(ReadRepoFile(@"YYT.BLL\EF\B_PrizePool.cs"), "AND NOT (c.Status<>0 AND c.ControlMode IN (5,6) AND (p.AwardTime IS NULL OR (c.ControlMode=5 AND IFNULL(p.BookedDiamonds,0)=0)))");
         }
 
     }

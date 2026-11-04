@@ -69,6 +69,7 @@
         if (!account) { M.toast('缺少玩家账号参数', 'error'); return; }
         var start = $('#historyStart').val();
         var end = $('#historyEnd').val();
+        if (start > end) { M.toast('开始时间不能晚于结束时间', 'error'); return; }
         M.loading('查询中...');
         return fetchPage(1, start, end).then(function (first) {
             var data = {
@@ -82,6 +83,9 @@
     }
 
     function init() {
+        // 日期+时分字段（2026-11-04）：默认当天 00:00 ~ 23:59
+        M.dateTimeField($('#historyStart'), '00:00');
+        M.dateTimeField($('#historyEnd'), '23:59');
         $('#historyQueryBtn').on('click', load);
         M.onRefresh(function () { M.runRefresh(load); });
         load();

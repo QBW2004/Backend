@@ -888,6 +888,9 @@ namespace YYT.Web.Areas.Game.Controllers
                     msg.content = "桌台不属于当前游戏，请刷新页面后重试！";
                     return Json(msg);
                 }
+                if (form["RabbitConfigJson"] != null &&
+                    (gameType != 1 || gameId != RabbitRaceActivity.GameId || string.IsNullOrWhiteSpace(form["RabbitConfigJson"])))
+                    throw new ArgumentException("大白兔玩法规则内容无效或不属于当前游戏。");
                 if (tableId < 0 && !string.IsNullOrEmpty((form.Q<string>("LINE") ?? string.Empty).Trim()))
                 {
                     msg.content = "专属桌台请在“代理”下拉选中该线后点「从公共桌台复制一套」生成，不能直接新建！";
@@ -1376,10 +1379,26 @@ namespace YYT.Web.Areas.Game.Controllers
                         return Json(msg);
                     }
 
+                    string phenixJson = form.Q<string>("PhenixConfigJson");
+                    if (string.IsNullOrWhiteSpace(phenixJson)) phenixJson = null;
+                    if (gameId == PhenixGameId && !string.IsNullOrWhiteSpace(phenixJson))
+                        phenixJson = PhenixConfig.Parse(phenixJson, betMax).ToString(Newtonsoft.Json.Formatting.None);
+                    string rabbitJson = form["RabbitConfigJson"];
+                    if (rabbitJson != null) rabbitJson = RabbitConfig.NormalizeTable(rabbitJson, betMax);
                     using (var ef = new GameDbContext())
+                    using (var txCard = gameId == PhenixGameId || gameId == RabbitRaceActivity.GameId ? ef.Database.BeginTransaction() : null)
                     {
+                        if (gameId == RabbitRaceActivity.GameId) {
+                            RabbitConfig.SaveTable(ef, tIdx, rabbitJson, betMax, isNew);
+                        }
+                        if (gameId == PhenixGameId) {
+                            string existing = ef.Database.SqlQuery<string>("SELECT CfgJson FROM cardgamecfg WHERE GAME_ID=5 AND TableIndex={0} FOR UPDATE", tIdx).FirstOrDefault();
+                            PhenixConfig.Parse(phenixJson ?? existing ?? PhenixConfig.DefaultJson, betMax);
+                            if (phenixJson != null)
+                                ef.Database.ExecuteSqlCommand("INSERT INTO cardgamecfg(GAME_ID,TableIndex,CfgJson) VALUES(5,{0},{1}) ON DUPLICATE KEY UPDATE CfgJson=VALUES(CfgJson)", tIdx, phenixJson);
+                        }
                         // 牌型概率/启用(按桌)：cardpayoutprofile；PayoutMultiplier 使用数据库默认值 0，后台不写倍率。
-                        using (var txP = ef.Database.BeginTransaction())
+                        using (var txP = txCard == null ? ef.Database.BeginTransaction() : null)
                         {
                             try
                             {
@@ -1411,11 +1430,11 @@ namespace YYT.Web.Areas.Game.Controllers
                                         "INSERT INTO cardpayoutprofile (GAME_ID, TableId, HandType, ProbabilityBasis, StockLimit, StockRemain, Enabled) VALUES ({0},{1},{2},{3},0,0,{4})",
                                         gameId, tIdx, AllRoyalHandType, allRoyalProb, allRoyalOn);
                                 }
-                                txP.Commit();
+                                if (txP != null) txP.Commit();
                             }
                             catch
                             {
-                                txP.Rollback();
+                                if (txP != null) txP.Rollback();
                                 throw;
                             }
                         }
@@ -1459,6 +1478,7 @@ namespace YYT.Web.Areas.Game.Controllers
                         }
                         // 同步 pararoom base 行 num=桌总数 + paragame.ROOM_MAX=1(一房N桌)
                         SyncCardTableNum(ef, gameId);
+                        if (txCard != null) txCard.Commit();
                     }
                     // 热更：RP(重载) + TC(桌台配置) + PA(机台难度)
                     var srv = new SConnect();
@@ -1486,6 +1506,14 @@ namespace YYT.Web.Areas.Game.Controllers
                     // 写库成功即标记已落库：即使 RP/TC/PA 热更管道失败也刷新前端列表，
                     // 避免"DB 已写、Web 列表不刷新"（对齐 B_SuperPara.PushHotUpdate 的 datas=true 约定）。
                     msg.datas = true;
+                    if (gameId == PhenixGameId) {
+                        Msg pxHot = SendMjhlHotReload(PhenixGameId);
+                        msg.content = (msg.content ?? "") + (pxHot != null && pxHot.code == 1 ? "；正宗权重已保存并发送热更" : "；正宗权重已保存，热更未成功，请重新保存重发");
+                    }
+                    if (gameId == RabbitRaceActivity.GameId) {
+                        Msg rabbitHot = SendMjhlHotReload(RabbitRaceActivity.GameId);
+                        msg.content = (msg.content ?? "") + (rabbitHot != null && rabbitHot.code == 1 ? "；本桌玩法规则已保存并发送热更" : "；本桌规则已保存，热更未成功，请重新保存重发");
+                    }
                     if (jpVals != null)
                     {
                         // 彩金奖池覆盖值落 JackpotSet.txt（合并保留其它桌的待生效行），游戏服重启时应用

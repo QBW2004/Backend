@@ -8,8 +8,6 @@
 <style>
     .container { padding: 12px; max-width: 720px; margin: 0 auto; }
     .history-filter { margin-bottom:12px; }
-    .history-filter-actions { display:flex; justify-content:flex-end; margin-top:8px; }
-    .history-filter button { height:40px; border:0; border-radius:8px; background:#007aff; color:#fff; padding:0 16px; font-size:14px; }
     .game-card { background:#fff; border-radius:12px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,.08); overflow:hidden; }
     .game-card-header { display:flex; align-items:center; justify-content:space-between; padding:14px 16px; font-weight:600; border-bottom:1px solid #eee; }
     .game-count { color:#8e8e93; font-size:13px; font-weight:400; }
@@ -27,15 +25,11 @@
 }
 
 <div class="container">
-    <div class="history-filter">
-        <div class="m-date-range">
-            <input type="date" id="historyStart" value="@ViewBag.Today" />
-            <span class="m-date-range-sep">至</span>
-            <input type="date" id="historyEnd" value="@ViewBag.Today" />
-        </div>
-        <div class="history-filter-actions">
-            <button type="button" id="historyQueryBtn">查询</button>
-        </div>
+    @* 2026-11-04：开始框 / 结束框 / 查询一行，框内日期+时分居中（与代理流水同一布局） *@
+    <div class="history-filter m-dt-range">
+        <input type="date" id="historyStart" value="@ViewBag.Today" aria-label="开始时间" />
+        <input type="date" id="historyEnd" value="@ViewBag.Today" aria-label="结束时间" />
+        <button type="button" class="m-dt-btn" id="historyQueryBtn">查询</button>
     </div>
     <div class="history-summary" id="historySummary">--</div>
     <div id="prizeHistoryList"></div>

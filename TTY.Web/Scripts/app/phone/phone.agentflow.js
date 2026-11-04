@@ -38,7 +38,7 @@
             AgentID:agentId, Kind:$('#poolQueryType').val(), PlayerID:$('#poolQueryType').val() === 'player' ? $.trim($('#poolPlayer').val()) : '',
             StartTime:params.TIME, EndTime:params.END, page:currentPage, rows:pageSize
         });
-        // 日期参数必须是 "yyyy-MM-dd" 字符串（TIME=开始日, END=结束日），
+        // 时间参数必须是 "yyyy-MM-dd HH:mm" 字符串（TIME=开始, END=结束，服务端按分钟精确过滤），
         // 传 Date 对象会被 jQuery 序列化成无法解析的英文日期导致服务端日期过滤失效。
         // MONEY_ONLY=1：本页是「流水」，登录/退出(2/3)与封禁审计(24-27)这类没有金额的记录整条不展示。
         // 过滤放服务端才能让 total 与分页对得上（前端过滤会出现整页空行、页码虚高）。
@@ -198,15 +198,16 @@
             M.loading('加载数据中...');
         }
 
-        var startDate = $('#startDate').val();
-        var endDate = $('#endDate').val();
-        if (!startDate) {
-            var d = new Date();
-            startDate = d.getFullYear() + '-' + M.pad2(d.getMonth() + 1) + '-' + M.pad2(d.getDate());
+        // 开始/结束为“yyyy-MM-dd HH:mm”（M.dateTimeField），服务端按分钟精确过滤
+        var startDate = $('#startDate').val() || (M.todayValue() + ' 00:00');
+        var endDate = $('#endDate').val() || (M.todayValue() + ' 23:59');
+        if (startDate > endDate) {
+            if (showLoading !== false) M.hideLoading();
+            M.toast('开始时间不能晚于结束时间', 'error');
+            return $.Deferred().resolve().promise();
         }
-        if (!endDate) endDate = startDate;
 
-        // 服务端按 TIME(开始日) ~ END(结束日) 过滤；不传 Date 对象，
+        // 服务端按 TIME(开始) ~ END(结束，含该分钟) 过滤；不传 Date 对象，
         // 避免 jQuery 序列化成不可解析的日期字符串。日期筛选/分页全在服务端完成。
         var seq = ++flowSeq;
         fetchAgentFlow({
@@ -254,10 +255,11 @@
             return;
         }
 
-        // 默认展示当天的记录
-        var today = new Date();
-        function dateValue(d) { return d.getFullYear()+'-'+M.pad2(d.getMonth()+1)+'-'+M.pad2(d.getDate()); }
-        $('#startDate').val(dateValue(today));$('#endDate').val(dateValue(today));
+        // 默认展示当天的记录：开始 00:00、结束 23:59
+        // 先升级字段再赋值：原生 date 框会把带时分的值当非法值清空
+        M.dateTimeField($('#startDate'), '00:00');
+        M.dateTimeField($('#endDate'), '23:59');
+        $('#startDate').val(M.todayValue() + ' 00:00').trigger('change'); $('#endDate').val(M.todayValue() + ' 23:59').trigger('change');
         function applyTypeLayout() {
             var pool = isPool();
             $('#poolFlowSummary, #poolQueryField').toggle(pool);

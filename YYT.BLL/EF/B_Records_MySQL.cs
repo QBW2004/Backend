@@ -15,6 +15,35 @@ namespace YYT.BLL.EF
             return DateTime.Now.AddDays(-7);
         }
 
+        /// <summary>
+        /// 解析查询时间区间（手机端日期+时分筛选，2026-11-04）。
+        /// 值带“HH:mm”时按分钟精确：[开始分钟, 结束分钟 + 1 分钟)，所以“23:59”包含 23:59 那一分钟；
+        /// 只有日期（桌面端、旧页面）时沿用整天口径：[开始日 00:00, 结束日次日 00:00)。
+        /// 结束不晚于开始、无法解析时返回 false。
+        /// </summary>
+        public static bool TryParseQueryRange(string startText, string endText, out DateTime start, out DateTime endExclusive)
+        {
+            start = DateTime.MinValue;
+            endExclusive = DateTime.MinValue;
+            DateTime s, e;
+            if (!DateTime.TryParse(startText, out s) || !DateTime.TryParse(endText, out e) || e.Date == DateTime.MaxValue.Date)
+                return false;
+            start = HasClock(startText) ? TrimToMinute(s) : s.Date;
+            endExclusive = HasClock(endText) ? TrimToMinute(e).AddMinutes(1) : e.Date.AddDays(1);
+            return endExclusive > start;
+        }
+
+        /// <summary>查询值是否带时分（如“2026-11-04 23:59”）</summary>
+        public static bool HasClock(string text)
+        {
+            return !string.IsNullOrEmpty(text) && text.IndexOf(':') >= 0;
+        }
+
+        private static DateTime TrimToMinute(DateTime t)
+        {
+            return new DateTime(t.Year, t.Month, t.Day, t.Hour, t.Minute, 0, t.Kind);
+        }
+
         public static void CleanupExpiredRecords(GameDbContext ef)
         {
             DateTime cutoff = GetRetentionCutoff();
@@ -121,20 +150,22 @@ namespace YYT.BLL.EF
                 rst = rst.Where(c => c.REC_TIME >= cutoff && c.REC_TIME <= now);
                 if (queryPara.S_TIME > DateTime.MinValue)
                 {
-                    DateTime begin = queryPara.S_TIME.Date;
+                    DateTime begin = queryPara.EXACT_TIME ? queryPara.S_TIME : queryPara.S_TIME.Date;
                     if (begin < cutoff)
                     {
                         begin = cutoff;
                         retentionAdjusted = true;
                     }
-                    // E_TIME > S_TIME 时按 [S_TIME, E_TIME] 区间过滤（手机流水页跨天查询）
+                    // EXACT_TIME：手机端日期+时分，E_TIME 已是开区间上界；
+                    // 否则 E_TIME > S_TIME 时按 [S_TIME, E_TIME] 整天区间过滤（手机流水页跨天查询）
                     bool dateRange = queryPara.E_TIME > queryPara.S_TIME;
-                    DateTime end = dateRange
-                        ? queryPara.E_TIME.Date.AddDays(1)
-                        : queryPara.S_TIME.Date.AddDays(1);
+                    DateTime requestedEnd = queryPara.EXACT_TIME
+                        ? queryPara.E_TIME
+                        : (dateRange ? queryPara.E_TIME.Date.AddDays(1) : queryPara.S_TIME.Date.AddDays(1));
+                    DateTime end = requestedEnd;
                     if (end > now)
                         end = now;
-                    if ((dateRange ? queryPara.E_TIME.Date.AddDays(1) : queryPara.S_TIME.Date.AddDays(1)) < cutoff)
+                    if (requestedEnd < cutoff)
                         retentionAdjusted = true;
                     if (end <= begin)
                     {
@@ -235,16 +266,18 @@ namespace YYT.BLL.EF
                 rst = rst.Where(c => c.REC_TIME >= cutoff && c.REC_TIME <= now);
                 if (queryPara.S_TIME > DateTime.MinValue)
                 {
-                    DateTime begin = queryPara.S_TIME.Date;
+                    DateTime begin = queryPara.EXACT_TIME ? queryPara.S_TIME : queryPara.S_TIME.Date;
                     if (begin < cutoff)
                     {
                         begin = cutoff;
                         retentionAdjusted = true;
                     }
-                    DateTime end = queryPara.S_TIME.Date.AddDays(1);
+                    // EXACT_TIME：手机游戏记录页的开始/结束时分区间（E_TIME 为开区间上界）；否则按单日
+                    DateTime requestedEnd = queryPara.EXACT_TIME ? queryPara.E_TIME : queryPara.S_TIME.Date.AddDays(1);
+                    DateTime end = requestedEnd;
                     if (end > now)
                         end = now;
-                    if (queryPara.S_TIME.Date.AddDays(1) < cutoff)
+                    if (requestedEnd < cutoff)
                         retentionAdjusted = true;
                     if (end <= begin)
                     {

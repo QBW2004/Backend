@@ -49,9 +49,9 @@ namespace UnitTestProj
         [TestMethod]
         public void TotalControlCapabilityMatchesOpenGameProtocols()
         {
-            int[] openGames = { 2, 3, 5, 10, 13, 15, 16, 25, 37, 40, 44, 53, 54 };
-            int[] killGames = { 2, 3, 5, 10, 13, 15, 16, 25, 37, 40, 44, 53, 54 };
-            int[] releaseGames = { 2, 3, 5, 10, 13, 15, 16, 25, 37, 40, 44, 53, 54 };
+            int[] openGames = { 2, 3, 5, 10, 13, 15, 16, 25, 37, 40, 44, 53, 54, 55 };
+            int[] killGames = { 2, 3, 5, 10, 13, 15, 16, 25, 37, 40, 44, 53, 54, 55 };
+            int[] releaseGames = { 2, 3, 5, 10, 13, 15, 16, 25, 37, 40, 44, 53, 54, 55 };
 
             foreach (int gameId in openGames)
             {

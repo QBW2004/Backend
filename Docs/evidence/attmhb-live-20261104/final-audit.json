@@ -1,0 +1,1135 @@
+{
+  "Time": "2026-11-04 14:28:08",
+  "Player": [
+    {
+      "ID": "test02",
+      "COINS": 106081,
+      "GAME_SCORE": 64,
+      "INHALL": 0,
+      "FROZEN": 0
+    }
+  ],
+  "Wallet": [
+    {
+      "ID": "atmadmin",
+      "COINS": 888883316,
+      "Balance": 0.0
+    }
+  ],
+  "ControlStatus": [
+    {
+      "Status": 2,
+      "N": 37
+    }
+  ],
+  "Active": [],
+  "Values": [
+    {
+      "CONTROL_TYPE": 8,
+      "NUMBER": 0,
+      "TOTAL_NUMBER": 5
+    }
+  ],
+  "Ledger": [
+    {
+      "ControlId": 59,
+      "Entries": 1,
+      "Deducted": 6.0,
+      "MinBalance": 8994.0
+    },
+    {
+      "ControlId": 60,
+      "Entries": 1,
+      "Deducted": 8.0,
+      "MinBalance": 8986.0
+    },
+    {
+      "ControlId": 61,
+      "Entries": 1,
+      "Deducted": 24.0,
+      "MinBalance": 8962.0
+    },
+    {
+      "ControlId": 62,
+      "Entries": 1,
+      "Deducted": 122.35,
+      "MinBalance": 8839.65
+    },
+    {
+      "ControlId": 63,
+      "Entries": 1,
+      "Deducted": 835.48,
+      "MinBalance": 8004.17
+    },
+    {
+      "ControlId": 64,
+      "Entries": 1,
+      "Deducted": 325.47,
+      "MinBalance": 7678.7
+    },
+    {
+      "ControlId": 65,
+      "Entries": 1,
+      "Deducted": 18.58,
+      "MinBalance": 7660.12
+    },
+    {
+      "ControlId": 66,
+      "Entries": 1,
+      "Deducted": 20.32,
+      "MinBalance": 7639.8
+    },
+    {
+      "ControlId": 67,
+      "Entries": 1,
+      "Deducted": 40.19,
+      "MinBalance": 7599.61
+    },
+    {
+      "ControlId": 68,
+      "Entries": 1,
+      "Deducted": 131.28,
+      "MinBalance": 7468.33
+    },
+    {
+      "ControlId": 69,
+      "Entries": 1,
+      "Deducted": 9.57,
+      "MinBalance": 7458.76
+    },
+    {
+      "ControlId": 70,
+      "Entries": 1,
+      "Deducted": 157.09,
+      "MinBalance": 7301.67
+    },
+    {
+      "ControlId": 71,
+      "Entries": 1,
+      "Deducted": 225.0,
+      "MinBalance": 7076.67
+    },
+    {
+      "ControlId": 72,
+      "Entries": 1,
+      "Deducted": 20.0,
+      "MinBalance": 7056.67
+    },
+    {
+      "ControlId": 73,
+      "Entries": 1,
+      "Deducted": 50.0,
+      "MinBalance": 7006.67
+    },
+    {
+      "ControlId": 74,
+      "Entries": 1,
+      "Deducted": 100.0,
+      "MinBalance": 6906.67
+    },
+    {
+      "ControlId": 75,
+      "Entries": 1,
+      "Deducted": 200.0,
+      "MinBalance": 6706.67
+    },
+    {
+      "ControlId": 76,
+      "Entries": 1,
+      "Deducted": 400.0,
+      "MinBalance": 6306.67
+    },
+    {
+      "ControlId": 77,
+      "Entries": 1,
+      "Deducted": 6.0,
+      "MinBalance": 6300.67
+    },
+    {
+      "ControlId": 78,
+      "Entries": 1,
+      "Deducted": 10.0,
+      "MinBalance": 6290.67
+    },
+    {
+      "ControlId": 79,
+      "Entries": 1,
+      "Deducted": 24.0,
+      "MinBalance": 6266.67
+    },
+    {
+      "ControlId": 80,
+      "Entries": 1,
+      "Deducted": 101.9,
+      "MinBalance": 6164.77
+    },
+    {
+      "ControlId": 81,
+      "Entries": 1,
+      "Deducted": 1031.94,
+      "MinBalance": 5132.83
+    },
+    {
+      "ControlId": 82,
+      "Entries": 1,
+      "Deducted": 320.63,
+      "MinBalance": 4812.2
+    },
+    {
+      "ControlId": 83,
+      "Entries": 1,
+      "Deducted": 14.25,
+      "MinBalance": 4797.95
+    },
+    {
+      "ControlId": 84,
+      "Entries": 1,
+      "Deducted": 16.43,
+      "MinBalance": 4781.52
+    },
+    {
+      "ControlId": 85,
+      "Entries": 1,
+      "Deducted": 42.68,
+      "MinBalance": 4738.84
+    },
+    {
+      "ControlId": 86,
+      "Entries": 1,
+      "Deducted": 127.73,
+      "MinBalance": 4611.11
+    },
+    {
+      "ControlId": 87,
+      "Entries": 1,
+      "Deducted": 7.87,
+      "MinBalance": 4603.24
+    },
+    {
+      "ControlId": 88,
+      "Entries": 1,
+      "Deducted": 134.99,
+      "MinBalance": 4468.25
+    },
+    {
+      "ControlId": 89,
+      "Entries": 1,
+      "Deducted": 270.09,
+      "MinBalance": 4198.16
+    },
+    {
+      "ControlId": 90,
+      "Entries": 1,
+      "Deducted": 20.0,
+      "MinBalance": 4178.16
+    },
+    {
+      "ControlId": 91,
+      "Entries": 1,
+      "Deducted": 50.0,
+      "MinBalance": 4128.16
+    },
+    {
+      "ControlId": 92,
+      "Entries": 1,
+      "Deducted": 100.0,
+      "MinBalance": 4028.16
+    },
+    {
+      "ControlId": 93,
+      "Entries": 1,
+      "Deducted": 200.0,
+      "MinBalance": 3828.16
+    },
+    {
+      "ControlId": 94,
+      "Entries": 1,
+      "Deducted": 400.0,
+      "MinBalance": 3428.16
+    },
+    {
+      "ControlId": 95,
+      "Entries": 1,
+      "Deducted": 0.16,
+      "MinBalance": 0.0
+    }
+  ],
+  "Awards": [
+    {
+      "ControlId": 59,
+      "AwardDiamonds": 6.0,
+      "BookedDiamonds": 6.0,
+      "ActualGameId": 25,
+      "ActualTableId": 2,
+      "ActualCardType": "满花三条",
+      "AwardTime": "2026-11-04 14:13:46"
+    },
+    {
+      "ControlId": 60,
+      "AwardDiamonds": 8.0,
+      "BookedDiamonds": 8.0,
+      "ActualGameId": 25,
+      "ActualTableId": 2,
+      "ActualCardType": "满花杂顺",
+      "AwardTime": "2026-11-04 14:16:15"
+    },
+    {
+      "ControlId": 61,
+      "AwardDiamonds": 24.0,
+      "BookedDiamonds": 24.0,
+      "ActualGameId": 25,
+      "ActualTableId": 2,
+      "ActualCardType": "满花葫芦",
+      "AwardTime": "2026-11-04 14:16:20"
+    },
+    {
+      "ControlId": 62,
+      "AwardDiamonds": 122.35,
+      "BookedDiamonds": 122.35,
+      "ActualGameId": 25,
+      "ActualTableId": 2,
+      "ActualCardType": "满花大四梅",
+      "AwardTime": "2026-11-04 14:16:26"
+    },
+    {
+      "ControlId": 63,
+      "AwardDiamonds": 835.48,
+      "BookedDiamonds": 835.48,
+      "ActualGameId": 25,
+      "ActualTableId": 2,
+      "ActualCardType": "满花五梅",
+      "AwardTime": "2026-11-04 14:16:32"
+    },
+    {
+      "ControlId": 64,
+      "AwardDiamonds": 325.47,
+      "BookedDiamonds": 325.47,
+      "ActualGameId": 25,
+      "ActualTableId": 2,
+      "ActualCardType": "满花同花大顺",
+      "AwardTime": "2026-11-04 14:16:37"
+    },
+    {
+      "ControlId": 65,
+      "AwardDiamonds": 18.58,
+      "BookedDiamonds": 18.58,
+      "ActualGameId": 25,
+      "ActualTableId": 2,
+      "ActualCardType": "满花两对",
+      "AwardTime": "2026-11-04 14:17:28"
+    },
+    {
+      "ControlId": 66,
+      "AwardDiamonds": 20.32,
+      "BookedDiamonds": 20.32,
+      "ActualGameId": 25,
+      "ActualTableId": 2,
+      "ActualCardType": "满花三条",
+      "AwardTime": "2026-11-04 14:17:34"
+    },
+    {
+      "ControlId": 67,
+      "AwardDiamonds": 40.19,
+      "BookedDiamonds": 40.19,
+      "ActualGameId": 25,
+      "ActualTableId": 2,
+      "ActualCardType": "满花葫芦",
+      "AwardTime": "2026-11-04 14:17:41"
+    },
+    {
+      "ControlId": 68,
+      "AwardDiamonds": 131.28,
+      "BookedDiamonds": 131.28,
+      "ActualGameId": 25,
+      "ActualTableId": 2,
+      "ActualCardType": "满花大四梅",
+      "AwardTime": "2026-11-04 14:17:46"
+    },
+    {
+      "ControlId": 69,
+      "AwardDiamonds": 9.57,
+      "BookedDiamonds": 9.57,
+      "ActualGameId": 25,
+      "ActualTableId": 2,
+      "ActualCardType": "同花",
+      "AwardTime": "2026-11-04 14:17:53"
+    },
+    {
+      "ControlId": 70,
+      "AwardDiamonds": 157.09,
+      "BookedDiamonds": 157.09,
+      "ActualGameId": 25,
+      "ActualTableId": 2,
+      "ActualCardType": "同花顺",
+      "AwardTime": "2026-11-04 14:17:58"
+    },
+    {
+      "ControlId": 71,
+      "AwardDiamonds": 225.0,
+      "BookedDiamonds": 225.0,
+      "ActualGameId": 25,
+      "ActualTableId": 2,
+      "ActualCardType": "同花大顺",
+      "AwardTime": "2026-11-04 14:18:04"
+    },
+    {
+      "ControlId": 72,
+      "AwardDiamonds": 20.0,
+      "BookedDiamonds": 20.0,
+      "ActualGameId": 25,
+      "ActualTableId": 2,
+      "ActualCardType": "金拇指",
+      "AwardTime": "2026-11-04 14:18:36"
+    },
+    {
+      "ControlId": 73,
+      "AwardDiamonds": 50.0,
+      "BookedDiamonds": 50.0,
+      "ActualGameId": 25,
+      "ActualTableId": 2,
+      "ActualCardType": "金拇指",
+      "AwardTime": "2026-11-04 14:18:42"
+    },
+    {
+      "ControlId": 74,
+      "AwardDiamonds": 100.0,
+      "BookedDiamonds": 100.0,
+      "ActualGameId": 25,
+      "ActualTableId": 2,
+      "ActualCardType": "金拇指",
+      "AwardTime": "2026-11-04 14:18:47"
+    },
+    {
+      "ControlId": 75,
+      "AwardDiamonds": 200.0,
+      "BookedDiamonds": 200.0,
+      "ActualGameId": 25,
+      "ActualTableId": 2,
+      "ActualCardType": "金拇指",
+      "AwardTime": "2026-11-04 14:18:54"
+    },
+    {
+      "ControlId": 76,
+      "AwardDiamonds": 400.0,
+      "BookedDiamonds": 400.0,
+      "ActualGameId": 25,
+      "ActualTableId": 2,
+      "ActualCardType": "金拇指",
+      "AwardTime": "2026-11-04 14:19:00"
+    },
+    {
+      "ControlId": 77,
+      "AwardDiamonds": 6.0,
+      "BookedDiamonds": 6.0,
+      "ActualGameId": 25,
+      "ActualTableId": 2,
+      "ActualCardType": "满花三条",
+      "AwardTime": "2026-11-04 14:19:39"
+    },
+    {
+      "ControlId": 78,
+      "AwardDiamonds": 10.0,
+      "BookedDiamonds": 10.0,
+      "ActualGameId": 25,
+      "ActualTableId": 2,
+      "ActualCardType": "满花杂顺",
+      "AwardTime": "2026-11-04 14:19:45"
+    },
+    {
+      "ControlId": 79,
+      "AwardDiamonds": 24.0,
+      "BookedDiamonds": 24.0,
+      "ActualGameId": 25,
+      "ActualTableId": 2,
+      "ActualCardType": "满花葫芦",
+      "AwardTime": "2026-11-04 14:19:51"
+    },
+    {
+      "ControlId": 80,
+      "AwardDiamonds": 101.9,
+      "BookedDiamonds": 101.9,
+      "ActualGameId": 25,
+      "ActualTableId": 2,
+      "ActualCardType": "满花大四梅",
+      "AwardTime": "2026-11-04 14:19:57"
+    },
+    {
+      "ControlId": 81,
+      "AwardDiamonds": 1031.94,
+      "BookedDiamonds": 1031.94,
+      "ActualGameId": 25,
+      "ActualTableId": 2,
+      "ActualCardType": "满花五梅",
+      "AwardTime": "2026-11-04 14:20:03"
+    },
+    {
+      "ControlId": 82,
+      "AwardDiamonds": 320.63,
+      "BookedDiamonds": 320.63,
+      "ActualGameId": 25,
+      "ActualTableId": 2,
+      "ActualCardType": "满花同花大顺",
+      "AwardTime": "2026-11-04 14:20:08"
+    },
+    {
+      "ControlId": 83,
+      "AwardDiamonds": 14.25,
+      "BookedDiamonds": 14.25,
+      "ActualGameId": 25,
+      "ActualTableId": 2,
+      "ActualCardType": "满花两对",
+      "AwardTime": "2026-11-04 14:20:14"
+    },
+    {
+      "ControlId": 84,
+      "AwardDiamonds": 16.43,
+      "BookedDiamonds": 16.43,
+      "ActualGameId": 25,
+      "ActualTableId": 2,
+      "ActualCardType": "满花三条",
+      "AwardTime": "2026-11-04 14:20:19"
+    },
+    {
+      "ControlId": 85,
+      "AwardDiamonds": 42.68,
+      "BookedDiamonds": 42.68,
+      "ActualGameId": 25,
+      "ActualTableId": 2,
+      "ActualCardType": "满花葫芦",
+      "AwardTime": "2026-11-04 14:20:24"
+    },
+    {
+      "ControlId": 86,
+      "AwardDiamonds": 127.73,
+      "BookedDiamonds": 127.73,
+      "ActualGameId": 25,
+      "ActualTableId": 2,
+      "ActualCardType": "满花大四梅",
+      "AwardTime": "2026-11-04 14:20:42"
+    },
+    {
+      "ControlId": 87,
+      "AwardDiamonds": 7.87,
+      "BookedDiamonds": 7.87,
+      "ActualGameId": 25,
+      "ActualTableId": 2,
+      "ActualCardType": "同花",
+      "AwardTime": "2026-11-04 14:20:48"
+    },
+    {
+      "ControlId": 88,
+      "AwardDiamonds": 134.99,
+      "BookedDiamonds": 134.99,
+      "ActualGameId": 25,
+      "ActualTableId": 2,
+      "ActualCardType": "同花顺",
+      "AwardTime": "2026-11-04 14:20:54"
+    },
+    {
+      "ControlId": 89,
+      "AwardDiamonds": 270.09,
+      "BookedDiamonds": 270.09,
+      "ActualGameId": 25,
+      "ActualTableId": 2,
+      "ActualCardType": "同花大顺",
+      "AwardTime": "2026-11-04 14:21:00"
+    },
+    {
+      "ControlId": 90,
+      "AwardDiamonds": 20.0,
+      "BookedDiamonds": 20.0,
+      "ActualGameId": 25,
+      "ActualTableId": 2,
+      "ActualCardType": "金拇指",
+      "AwardTime": "2026-11-04 14:21:06"
+    },
+    {
+      "ControlId": 91,
+      "AwardDiamonds": 50.0,
+      "BookedDiamonds": 50.0,
+      "ActualGameId": 25,
+      "ActualTableId": 2,
+      "ActualCardType": "金拇指",
+      "AwardTime": "2026-11-04 14:21:11"
+    },
+    {
+      "ControlId": 92,
+      "AwardDiamonds": 100.0,
+      "BookedDiamonds": 100.0,
+      "ActualGameId": 25,
+      "ActualTableId": 2,
+      "ActualCardType": "金拇指",
+      "AwardTime": "2026-11-04 14:21:18"
+    },
+    {
+      "ControlId": 93,
+      "AwardDiamonds": 200.0,
+      "BookedDiamonds": 200.0,
+      "ActualGameId": 25,
+      "ActualTableId": 2,
+      "ActualCardType": "金拇指",
+      "AwardTime": "2026-11-04 14:21:23"
+    },
+    {
+      "ControlId": 94,
+      "AwardDiamonds": 400.0,
+      "BookedDiamonds": 400.0,
+      "ActualGameId": 25,
+      "ActualTableId": 2,
+      "ActualCardType": "金拇指",
+      "AwardTime": "2026-11-04 14:21:28"
+    },
+    {
+      "ControlId": 95,
+      "AwardDiamonds": 20.0,
+      "BookedDiamonds": 0.16,
+      "ActualGameId": 25,
+      "ActualTableId": 2,
+      "ActualCardType": "金拇指",
+      "AwardTime": "2026-11-04 14:22:10"
+    }
+  ],
+  "Pilot": [
+    {
+      "ControlId": 58,
+      "AwardDiamonds": 0.0,
+      "BookedDiamonds": 0.0,
+      "AwardTime": null
+    }
+  ],
+  "PrizeRecords": [
+    {
+      "ControlId": 59,
+      "EventId": "25-2-1793772826422-1",
+      "CardType": "满花三条",
+      "Multiplier": 6.0,
+      "Score": 600,
+      "IsManualControl": 1,
+      "GameId": 25,
+      "TableId": 2
+    },
+    {
+      "ControlId": 60,
+      "EventId": "25-2-1793772975387-2",
+      "CardType": "满花杂顺",
+      "Multiplier": 8.0,
+      "Score": 800,
+      "IsManualControl": 1,
+      "GameId": 25,
+      "TableId": 2
+    },
+    {
+      "ControlId": 61,
+      "EventId": "25-2-1793772980732-3",
+      "CardType": "满花葫芦",
+      "Multiplier": 24.0,
+      "Score": 2400,
+      "IsManualControl": 1,
+      "GameId": 25,
+      "TableId": 2
+    },
+    {
+      "ControlId": 62,
+      "EventId": "25-2-1793772986031-4",
+      "CardType": "满花大四梅",
+      "Multiplier": 122.35,
+      "Score": 12235,
+      "IsManualControl": 1,
+      "GameId": 25,
+      "TableId": 2
+    },
+    {
+      "ControlId": 63,
+      "EventId": "25-2-1793772992350-5",
+      "CardType": "满花五梅",
+      "Multiplier": 835.48,
+      "Score": 83548,
+      "IsManualControl": 1,
+      "GameId": 25,
+      "TableId": 2
+    },
+    {
+      "ControlId": 64,
+      "EventId": "25-2-1793772997648-6",
+      "CardType": "满花同花大顺",
+      "Multiplier": 325.47,
+      "Score": 32547,
+      "IsManualControl": 1,
+      "GameId": 25,
+      "TableId": 2
+    },
+    {
+      "ControlId": 65,
+      "EventId": "25-2-1793773048102-7",
+      "CardType": "满花两对",
+      "Multiplier": 18.58,
+      "Score": 1858,
+      "IsManualControl": 1,
+      "GameId": 25,
+      "TableId": 2
+    },
+    {
+      "ControlId": 66,
+      "EventId": "25-2-1793773054722-8",
+      "CardType": "满花三条",
+      "Multiplier": 20.32,
+      "Score": 2032,
+      "IsManualControl": 1,
+      "GameId": 25,
+      "TableId": 2
+    },
+    {
+      "ControlId": 67,
+      "EventId": "25-2-1793773061436-9",
+      "CardType": "满花葫芦",
+      "Multiplier": 40.19,
+      "Score": 4019,
+      "IsManualControl": 1,
+      "GameId": 25,
+      "TableId": 2
+    },
+    {
+      "ControlId": 68,
+      "EventId": "25-2-1793773066816-10",
+      "CardType": "满花大四梅",
+      "Multiplier": 131.28,
+      "Score": 13128,
+      "IsManualControl": 1,
+      "GameId": 25,
+      "TableId": 2
+    },
+    {
+      "ControlId": 69,
+      "EventId": "25-2-1793773073056-11",
+      "CardType": "同花",
+      "Multiplier": 9.57,
+      "Score": 957,
+      "IsManualControl": 1,
+      "GameId": 25,
+      "TableId": 2
+    },
+    {
+      "ControlId": 70,
+      "EventId": "25-2-1793773078370-12",
+      "CardType": "同花顺",
+      "Multiplier": 157.09,
+      "Score": 15709,
+      "IsManualControl": 1,
+      "GameId": 25,
+      "TableId": 2
+    },
+    {
+      "ControlId": 71,
+      "EventId": "25-2-1793773084145-13",
+      "CardType": "同花大顺",
+      "Multiplier": 225.0,
+      "Score": 22500,
+      "IsManualControl": 1,
+      "GameId": 25,
+      "TableId": 2
+    },
+    {
+      "ControlId": 72,
+      "EventId": "25-2-1793773116429-14",
+      "CardType": "金拇指",
+      "Multiplier": 20.0,
+      "Score": 2000,
+      "IsManualControl": 1,
+      "GameId": 25,
+      "TableId": 2
+    },
+    {
+      "ControlId": 73,
+      "EventId": "25-2-1793773122153-15",
+      "CardType": "金拇指",
+      "Multiplier": 50.0,
+      "Score": 5000,
+      "IsManualControl": 1,
+      "GameId": 25,
+      "TableId": 2
+    },
+    {
+      "ControlId": 74,
+      "EventId": "25-2-1793773127750-16",
+      "CardType": "金拇指",
+      "Multiplier": 100.0,
+      "Score": 10000,
+      "IsManualControl": 1,
+      "GameId": 25,
+      "TableId": 2
+    },
+    {
+      "ControlId": 75,
+      "EventId": "25-2-1793773134149-17",
+      "CardType": "金拇指",
+      "Multiplier": 200.0,
+      "Score": 20000,
+      "IsManualControl": 1,
+      "GameId": 25,
+      "TableId": 2
+    },
+    {
+      "ControlId": 76,
+      "EventId": "25-2-1793773140047-18",
+      "CardType": "金拇指",
+      "Multiplier": 400.0,
+      "Score": 40000,
+      "IsManualControl": 1,
+      "GameId": 25,
+      "TableId": 2
+    },
+    {
+      "ControlId": 77,
+      "EventId": "25-2-1793773179817-19",
+      "CardType": "满花三条",
+      "Multiplier": 6.0,
+      "Score": 600,
+      "IsManualControl": 1,
+      "GameId": 25,
+      "TableId": 2
+    },
+    {
+      "ControlId": 78,
+      "EventId": "25-2-1793773185422-20",
+      "CardType": "满花杂顺",
+      "Multiplier": 10.0,
+      "Score": 1000,
+      "IsManualControl": 1,
+      "GameId": 25,
+      "TableId": 2
+    },
+    {
+      "ControlId": 79,
+      "EventId": "25-2-1793773191112-21",
+      "CardType": "满花葫芦",
+      "Multiplier": 24.0,
+      "Score": 2400,
+      "IsManualControl": 1,
+      "GameId": 25,
+      "TableId": 2
+    },
+    {
+      "ControlId": 80,
+      "EventId": "25-2-1793773197182-22",
+      "CardType": "满花大四梅",
+      "Multiplier": 101.9,
+      "Score": 10190,
+      "IsManualControl": 1,
+      "GameId": 25,
+      "TableId": 2
+    },
+    {
+      "ControlId": 81,
+      "EventId": "25-2-1793773203155-23",
+      "CardType": "满花五梅",
+      "Multiplier": 1031.94,
+      "Score": 103194,
+      "IsManualControl": 1,
+      "GameId": 25,
+      "TableId": 2
+    },
+    {
+      "ControlId": 82,
+      "EventId": "25-2-1793773208218-24",
+      "CardType": "满花同花大顺",
+      "Multiplier": 320.63,
+      "Score": 32063,
+      "IsManualControl": 1,
+      "GameId": 25,
+      "TableId": 2
+    },
+    {
+      "ControlId": 83,
+      "EventId": "25-2-1793773214380-25",
+      "CardType": "满花两对",
+      "Multiplier": 14.25,
+      "Score": 1425,
+      "IsManualControl": 1,
+      "GameId": 25,
+      "TableId": 2
+    },
+    {
+      "ControlId": 84,
+      "EventId": "25-2-1793773219427-26",
+      "CardType": "满花三条",
+      "Multiplier": 16.43,
+      "Score": 1643,
+      "IsManualControl": 1,
+      "GameId": 25,
+      "TableId": 2
+    },
+    {
+      "ControlId": 85,
+      "EventId": "25-2-1793773224662-27",
+      "CardType": "满花葫芦",
+      "Multiplier": 42.68,
+      "Score": 4268,
+      "IsManualControl": 1,
+      "GameId": 25,
+      "TableId": 2
+    },
+    {
+      "ControlId": 86,
+      "EventId": "25-2-1793773242140-28",
+      "CardType": "满花大四梅",
+      "Multiplier": 127.73,
+      "Score": 12773,
+      "IsManualControl": 1,
+      "GameId": 25,
+      "TableId": 2
+    },
+    {
+      "ControlId": 87,
+      "EventId": "25-2-1793773248900-29",
+      "CardType": "同花",
+      "Multiplier": 7.87,
+      "Score": 787,
+      "IsManualControl": 1,
+      "GameId": 25,
+      "TableId": 2
+    },
+    {
+      "ControlId": 88,
+      "EventId": "25-2-1793773254852-30",
+      "CardType": "同花顺",
+      "Multiplier": 134.99,
+      "Score": 13499,
+      "IsManualControl": 1,
+      "GameId": 25,
+      "TableId": 2
+    },
+    {
+      "ControlId": 89,
+      "EventId": "25-2-1793773260149-31",
+      "CardType": "同花大顺",
+      "Multiplier": 270.09,
+      "Score": 27009,
+      "IsManualControl": 1,
+      "GameId": 25,
+      "TableId": 2
+    },
+    {
+      "ControlId": 90,
+      "EventId": "25-2-1793773266154-32",
+      "CardType": "金拇指",
+      "Multiplier": 20.0,
+      "Score": 2000,
+      "IsManualControl": 1,
+      "GameId": 25,
+      "TableId": 2
+    },
+    {
+      "ControlId": 91,
+      "EventId": "25-2-1793773271677-33",
+      "CardType": "金拇指",
+      "Multiplier": 50.0,
+      "Score": 5000,
+      "IsManualControl": 1,
+      "GameId": 25,
+      "TableId": 2
+    },
+    {
+      "ControlId": 92,
+      "EventId": "25-2-1793773278063-34",
+      "CardType": "金拇指",
+      "Multiplier": 100.0,
+      "Score": 10000,
+      "IsManualControl": 1,
+      "GameId": 25,
+      "TableId": 2
+    },
+    {
+      "ControlId": 93,
+      "EventId": "25-2-1793773283222-35",
+      "CardType": "金拇指",
+      "Multiplier": 200.0,
+      "Score": 20000,
+      "IsManualControl": 1,
+      "GameId": 25,
+      "TableId": 2
+    },
+    {
+      "ControlId": 94,
+      "EventId": "25-2-1793773288534-36",
+      "CardType": "金拇指",
+      "Multiplier": 400.0,
+      "Score": 40000,
+      "IsManualControl": 1,
+      "GameId": 25,
+      "TableId": 2
+    },
+    {
+      "ControlId": 95,
+      "EventId": "25-2-1793773330087-37",
+      "CardType": "金拇指",
+      "Multiplier": 20.0,
+      "Score": 2000,
+      "IsManualControl": 1,
+      "GameId": 25,
+      "TableId": 2
+    }
+  ],
+  "Commands": [
+    {
+      "Status": 2,
+      "N": 39
+    }
+  ],
+  "Processes": [
+    {
+      "Name": "ServerBetAnimal.exe",
+      "ProcessId": 11288
+    },
+    {
+      "Name": "ServerBetDT.exe",
+      "ProcessId": 8052
+    },
+    {
+      "Name": "ServerCardAttMhb.exe",
+      "ProcessId": 8612
+    },
+    {
+      "Name": "ServerCardDaBaiTu.exe",
+      "ProcessId": 9888
+    },
+    {
+      "Name": "ServerCardDazhi.exe",
+      "ProcessId": 10764
+    },
+    {
+      "Name": "ServerCardDscj.exe",
+      "ProcessId": 3096
+    },
+    {
+      "Name": "ServerCardMjhl.exe",
+      "ProcessId": 12544
+    },
+    {
+      "Name": "ServerCardNBA.exe",
+      "ProcessId": 11512
+    },
+    {
+      "Name": "ServerCardPhenix.exe",
+      "ProcessId": 8164
+    },
+    {
+      "Name": "ServerCenterNew.exe",
+      "ProcessId": 9492
+    },
+    {
+      "Name": "ServerFishJC.exe",
+      "ProcessId": 11396
+    },
+    {
+      "Name": "ServerFishLikui.exe",
+      "ProcessId": 9076
+    },
+    {
+      "Name": "ServerLabaFruit.exe",
+      "ProcessId": 11392
+    },
+    {
+      "Name": "ServerLabaMx97.exe",
+      "ProcessId": 3436
+    },
+    {
+      "Name": "ServerLabaShz.exe",
+      "ProcessId": 11628
+    },
+    {
+      "Name": "ServerRobot.exe",
+      "ProcessId": 11312
+    }
+  ],
+  "Ports": [
+    {
+      "LocalPort": 9000,
+      "OwningProcess": 9492
+    },
+    {
+      "LocalPort": 9102,
+      "OwningProcess": 8052
+    },
+    {
+      "LocalPort": 9103,
+      "OwningProcess": 11288
+    },
+    {
+      "LocalPort": 9200,
+      "OwningProcess": 8164
+    },
+    {
+      "LocalPort": 9204,
+      "OwningProcess": 10764
+    },
+    {
+      "LocalPort": 9206,
+      "OwningProcess": 8612
+    },
+    {
+      "LocalPort": 9208,
+      "OwningProcess": 3096
+    },
+    {
+      "LocalPort": 9209,
+      "OwningProcess": 11512
+    },
+    {
+      "LocalPort": 9212,
+      "OwningProcess": 9888
+    },
+    {
+      "LocalPort": 9300,
+      "OwningProcess": 11396
+    },
+    {
+      "LocalPort": 9305,
+      "OwningProcess": 9076
+    },
+    {
+      "LocalPort": 9400,
+      "OwningProcess": 11392
+    },
+    {
+      "LocalPort": 9402,
+      "OwningProcess": 11628
+    },
+    {
+      "LocalPort": 9403,
+      "OwningProcess": 3436
+    },
+    {
+      "LocalPort": 9404,
+      "OwningProcess": 12544
+    }
+  ],
+  "Hashes": [
+    {
+      "Path": "C:\\Server\\ServerCenterNew\\x64\\Release\\ServerCenterNew.exe",
+      "Hash": "23E2E6202564A58E71C96AE084F9C36D8CE42BBC865EC67FE7A913FB339666D9"
+    },
+    {
+      "Path": "C:\\Server\\ServerCardAttMhb\\x64\\Release\\ServerCardAttMhb.exe",
+      "Hash": "B49B5B66E09FF67E0C86644581BB6E68733EBA820A9619B62A0E0BE9D396CCD8"
+    }
+  ],
+  "WebVer": "1.0.101",
+  "Http": [
+    {
+      "Url": "http://127.0.0.1/",
+      "Status": 200
+    },
+    {
+      "Url": "http://127.0.0.1/Api/Games",
+      "Status": 200
+    },
+    {
+      "Url": "http://127.0.0.1:8081/",
+      "Status": 200
+    },
+    {
+      "Url": "https://abc.12.sqrdwj.top/Api/Games",
+      "Status": 200
+    }
+  ]
+}

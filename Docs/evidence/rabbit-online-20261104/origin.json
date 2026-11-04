@@ -1,0 +1,93 @@
+{
+  "Time": "2026-11-04 14:52:38",
+  "Version": "1.0.101",
+  "Rules": [
+    {
+      "CfgJson": "{\"schemaVersion\":3,\"smallFourMultiplier\":50,\"specialRules\":{\"authentic\":{\"enabled\":true,\"baseMultiplier\":80,\"revealTimeoutSeconds\":20,\"multipliers\":{\"values\":[1,2,3,4,5,6],\"weights\":[60,30,10,0,0,0]}},\"five\":{\"enabled\":true,\"baseMultiplier\":250,\"successMultiplier\":2,\"missMultiplier\":1,\"revealTimeoutSeconds\":20,\"successChance\":{\"numerator\":1,\"denominator\":3},\"forcedSuccessChance\":{\"numerator\":1,\"denominator\":4}},\"streak\":{\"enabled\":true,\"burnRounds\":20,\"poolContributionBasisPoints\":200,\"initialPool\":0,\"awardCounts\":{\"values\":[2,3,4,5,6],\"weights\":[30,20,10,0,0]},\"startChance\":{\"numerator\":1,\"denominator\":100},\"continueChance\":{\"numerator\":1,\"denominator\":18},\"expiredChance\":{\"numerator\":1,\"denominator\":20},\"secondJokerChance\":{\"numerator\":1,\"denominator\":10},\"jokerFirstChance\":{\"numerator\":9,\"denominator\":10},\"guaranteeLastRound\":true,\"blockHigherPrizes\":true},\"settlement\":{\"passEnabled\":true,\"explodeEnabled\":true}},\"passTarget\":30000,\"passBonus\":3000,\"explodeTarget\":100000,\"explodeBonus\":10000,\"keepMax\":3,\"keepMinHands\":10,\"race\":{\"enabled\":false,\"id\":0,\"start\":0,\"end\":0,\"total\":0,\"multiplier\":1}}",
+      "TablesCount": 1
+    }
+  ],
+  "Controls": [
+    {
+      "KillRatio": 7,
+      "Status": 1,
+      "N": 4,
+      "Awarded": 0
+    },
+    {
+      "KillRatio": 7,
+      "Status": 2,
+      "N": 1,
+      "Awarded": 1
+    },
+    {
+      "KillRatio": 9,
+      "Status": 2,
+      "N": 1,
+      "Awarded": 1
+    },
+    {
+      "KillRatio": 24,
+      "Status": 2,
+      "N": 1,
+      "Awarded": 1
+    },
+    {
+      "KillRatio": 27,
+      "Status": 1,
+      "N": 4,
+      "Awarded": 0
+    }
+  ],
+  "Commands": [],
+  "Files": [
+    {
+      "Path": "Scripts\\app\\phone\\phone.core.js",
+      "Hash": "9E3AA80F2FD3BB34ED86F3FF3D332C0AAD456D25DE6A5A2C385E81ED321B5851"
+    },
+    {
+      "Path": "Scripts\\app\\phone\\phone.control.js",
+      "Hash": "0AD71623E98AF6A3BEE6B283593675521952D22AC1B8266BFF63D3336A5CA9AA"
+    },
+    {
+      "Path": "Areas\\Game\\Views\\UserInfo\\Index.cshtml",
+      "Hash": "67359294F808DC53842565594D4020F2F249C1187A967DC2DB4B24BA0737906B"
+    },
+    {
+      "Path": "Areas\\Game\\Views\\UserInfo\\OnlineUsers.cshtml",
+      "Hash": "BE58281EFA16ADE6290D3D6CE7227E894427BFDF94B783A888A203E784FB1FBD"
+    },
+    {
+      "Path": "Config\\card-prize-quotes.json",
+      "Hash": "D086C0AE0467359F9008CC4E1E0734BBAE38419284AB85B68FFA5F150C6E0234"
+    },
+    {
+      "Path": "Views\\Shared\\Layout\\_ContentLayout.cshtml",
+      "Hash": "D09997DA7C9D0E4C191A7B84340A1D422585E0DCCCEBC712BDBB11BEE9611DA1"
+    },
+    {
+      "Path": "bin\\YYT.BLL.dll",
+      "Hash": "B234BD66AF78A293EEAFDAFEB83A5DEE3C73BFE5D04A7B123D57B300F6187437"
+    },
+    {
+      "Path": "bin\\YYT.Web.dll",
+      "Hash": "C8B7855E6BB7CC8958FC127F9AC00E9891CA8B09F752A43326EB70C200A16B63"
+    }
+  ],
+  "Processes": [
+    {
+      "Name": "ServerCenterNew.exe",
+      "Pid": 9492,
+      "Path": "C:\\Server\\ServerCenterNew\\x64\\Release\\ServerCenterNew.exe",
+      "Started": "2026-11-04T14:01:38.0687160+08:00",
+      "Hash": "23E2E6202564A58E71C96AE084F9C36D8CE42BBC865EC67FE7A913FB339666D9"
+    },
+    {
+      "Name": "ServerCardDaBaiTu.exe",
+      "Pid": 9888,
+      "Path": "C:\\Server\\ServerCardDaBaiTu\\x64\\Release\\ServerCardDaBaiTu.exe",
+      "Started": "2026-11-04T14:01:48.2892620+08:00",
+      "Hash": "137A99BDC90C477A9873F4649A57B26ADBAEB92A94B5B31D11E80E04FB8FC294"
+    }
+  ]
+}

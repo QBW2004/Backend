@@ -1219,9 +1219,9 @@
     "Action": 20,
     "GameId": 55,
     "Value": 10,
-    "Multiplier": 250,
-    "Estimated": false,
-    "Name": "五梅(250倍)"
+    "Multiplier": 500,
+    "Estimated": true,
+    "Name": "五梅（250/500倍，含中赠）"
   },
   {
     "Action": 20,

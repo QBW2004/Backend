@@ -33,7 +33,8 @@
             var mode = Number(r.ControlMode);
             if (mode == 6) {
                 // 与控制页/玩家列表同一份牌型命名，不显示裸控牌值
-                return '控牌（' + M.cardControlParams(r.GameId, r.LimitCoins) + '，1次/5把）';
+                // 2026-11-04 需求：不再展示次数/把数规则
+                return '控牌（' + M.cardControlParams(r.GameId, r.LimitCoins) + '）';
             }
             var isRelease = (mode == 5);
             // 进度原样展示（与电脑端一致）：ConsumedCoins 是净口径、可能回退为负，不能取反
@@ -66,16 +67,19 @@
             $copy.hide();
         }
 
-        $('#dScore').text(M.num(d.GAME_SCORE) + '分');
+        // 2026-11-04 需求：剩余分数只显示数值，不带“分”字
+        $('#dScore').text(M.num(d.GAME_SCORE));
         setMoney('#dCoins', d.COINS);
         setMoney('#dTodayBuy', d.TodayBuy);
         setMoney('#dTodayBack', d.TodayBack);
-        setSigned('#dTodayWinLoss', d.TodayWinLoss);
+        // 2026-11-04 需求：今日盈亏四舍五入取整（与玩家列表卡片同口径）
+        setSigned('#dTodayWinLoss', M.roundInt(d.TodayWinLoss));
         setMoney('#dTotalBuy', d.COINS_BUY);
         setMoney('#dTotalBack', d.COINS_BACK);
         // 总盈亏 = 实际游戏输赢（服务端 SUM user_daily_winloss），与在线/离线卡片、会员盈亏同口径；
         // 不能用「总充值 - 总退分」代替：那是资金差额，没玩过游戏的玩家也会显示成盈亏
-        setSigned('#dTotalWinLoss', d.TotalWinLoss);
+        // 2026-11-04 需求：总盈亏舍去小数，整数展示（向零截断）
+        setSigned('#dTotalWinLoss', M.truncInt(d.TotalWinLoss));
 
         renderCtrlStatus(d.Controls);
 
@@ -182,17 +186,7 @@
             M.runRefresh(function () { return load(); });
         });
 
-        // 控制状态轮询：详情页长看时每 5s 重拉一次（已吃分/剩余次数靠游戏服回写库表，
-        // 不轮询就停在打开时的快照）。页面隐藏时暂停（与在线页同一口径）；
-        // 独立页面离开即销毁，在途请求由 M.post 在 pagehide 统一中断，无需手动清定时器。
-        setInterval(function () {
-            if (!account || document.hidden) return;
-            M.post('/Game/UserInfo/GetTotalControlStatus', { ID: account })
-                .then(function (res) {
-                    var r = M.result(res);
-                    if (r.ok) renderCtrlStatus(r.datas);
-                }, function () { });
-        }, 5000);
+        // 2026-11-04：去掉每 5 秒控制状态轮询（对齐参考站），进页与头部刷新按钮时重拉。
 
         load();
     }

@@ -18,6 +18,10 @@
     var submitting = false;
     var querySeq = 0, historySeq = 0, historyPage = 1, walletSeq = 0;
     var historyBusy = false, wallet = null;
+    // 当前玩家执行中的控制类型（4 吃分 / 5 放水 / 6 送奖），来自“当前控制”状态；“移除”按钮据此移除
+    var activeModes = [];
+    // 奖池余额/我的钻石/送奖明细只在有送奖或放水权限时渲染（Control.cshtml 的 showPool）
+    var hasPool = $('#controlRows').length > 0;
 
     function diamonds(value) {
         var n = Number(value);
@@ -27,7 +31,8 @@
     function updateButtons() {
         var canApply = !!current && !submitting && (currentMode() == 4 || !!wallet);
         $("#applyBtn").prop("disabled", !canApply);
-        $("#closeCtrlBtn").prop("disabled", !current || submitting);
+        // 没有执行中的控制时“移除”置灰：移除只针对当前控制里实际在跑的那几种，不看操作类型下拉
+        $("#closeCtrlBtn").prop("disabled", !current || submitting || !activeModes.length);
         $('.record-remove-btn').prop('disabled', submitting);
     }
 
@@ -57,17 +62,21 @@
     }
 
     /**
-     * 查到玩家后按状态预选操作类型（2026-11-03）：
-     * 在线且正在可送奖的游戏里 → 送奖 + 该游戏；其余（离线/大厅/鱼机押注等不支持送奖的游戏）→ 吃分；
+     * 查到玩家后按状态预选操作类型（2026-11-04 调整，吃分已拆到黑名单管理页）：
+     * - 在线且正在可送奖（控牌）的游戏里 → 送奖 + 该游戏；
+     * - 在线但不在控牌游戏（大厅/鱼机/押注等）→ 放水；
+     * - 离线 → 送奖（控牌），不识别所在游戏，游戏类型保持下拉默认项。
      * 没有对应权限时退回下拉第一项（只有一个权限时就只有那一项）。预选后仍可手动修改。
      */
     function presetMode(row, gameId) {
-        var action = row && row.INHALL === true ? M.cardActionOfGame(gameId) : 0;
+        var online = !!row && row.INHALL === true;
+        var action = online ? M.cardActionOfGame(gameId) : 0;
         var playable = action > 0 && $.grep(M.playableCardActions(M.CARD_ACTIONS), function (a) { return a.id == action; }).length > 0;
-        var mode = playable && hasMode(6) ? 6 : (hasMode(4) ? 4 : parseInt($('#ctrlMode option:first').val() || '0', 10));
+        var want = !online ? 6 : (playable ? 6 : 5);
+        var mode = hasMode(want) ? want : parseInt($('#ctrlMode option:first').val() || '0', 10);
         $('#ctrlMode').val(String(mode));
         bindMode();
-        if (mode == 6) {
+        if (mode == 6 && online && playable) {
             $('#ctrlCardAction').val(String(action));
             fillSelect($('#ctrlCardValue'), M.cardTypeData(action), false);
         }
@@ -130,6 +139,7 @@
         current = null;
         $('#stBet, #stToday, #stTotal').text('--').removeClass('positive negative');
         $('#playerMeta').removeClass('show');
+        $('#piOnline').empty();
         updateButtons();
 
         M.loading('查询中...');
@@ -168,7 +178,8 @@
         var total = M.roundInt(row.Profit);
         $('#stTotal').text((total > 0 ? '+' : '') + total)
             .toggleClass('positive', total > 0).toggleClass('negative', total < 0);
-        $('#piOnline').text(online ? '在线' : '离线').attr('class', 'info-value ' + (online ? 'status-online' : 'status-offline'));
+        // 在线状态显示在“送奖账号”标签后面：送奖账号 在线（不带冒号，靠左间距隔开；原“在线状态”一行已去掉）
+        $('#piOnline').text(online ? '在线' : '离线').attr('class', 'account-status ' + (online ? 'status-online' : 'status-offline'));
         $('#statCards, #playerMeta').addClass('show');
         $('#ctrlParams').addClass('show');
     }
@@ -177,13 +188,24 @@
 
     function renderCtrlStatus(rows) {
         var $el = $('#piControl');
+        activeModes = [];
+        $.each(rows || [], function (i, r) {
+            var m = Number(r.ControlMode);
+            // 只收本页能操作的类型（送奖/放水）；吃分 2026-11-04 起在“黑名单管理”页移除
+            if (hasMode(m) && activeModes.indexOf(m) < 0) activeModes.push(m);
+        });
+        updateButtons();
         if (!rows || !rows.length) {
             $el.attr('class', 'info-value').empty();
             return;
         }
         var items = rows.map(function (r) {
-            return ctrlParamText(r.ControlMode, r.GameId, r.LimitCoins, r.TargetCoins, r.CardNumber, r.CardTotal) +
-                (Number(r.ControlMode) == 6 ? '' : ' 已' + (Number(r.ControlMode) == 5 ? '放' : '吃') + '钻 ' + diamonds(Number(r.ControlMode) == 5 ? r.GrantedCoins : r.ConsumedCoins));
+            var m = Number(r.ControlMode);
+            var text = ctrlParamText(r.ControlMode, r.GameId, r.LimitCoins, r.TargetCoins, r.CardNumber, r.CardTotal) +
+                (m == 6 ? '' : ' 已' + (m == 5 ? '放' : '吃') + '钻 ' + diamonds(m == 5 ? r.GrantedCoins : r.ConsumedCoins));
+            // 吃分已拆到黑名单管理（2026-11-04）：本页只标明类型，不再提示去黑名单管理（按需求去掉该提示文字）
+            if (m == 4) text = '吃分 ' + text;
+            return text;
         });
         $el.attr('class', 'info-value ctrl-status-list')
             .html(items.map(function (t) { return '<span class="ctrl-status-item">' + M.esc(t) + '</span>'; }).join(''));
@@ -203,7 +225,8 @@
         if (!current) return;
         var seq = querySeq, account = current.ID;
         if (!quiet) renderCtrlStatus(null);
-        M.post('/Game/UserInfo/GetTotalControlStatus', { ID: current.ID })
+        // quiet（静默刷新）失败静默，不弹通用“网络异常”（2026-11-04）
+        M.post('/Game/UserInfo/GetTotalControlStatus', { ID: current.ID }, { silent: !!quiet })
             .then(function (res) {
                 var r = M.result(res);
                 if (r.ok && seq === querySeq && current && current.ID === account) renderCtrlStatus(r.datas);
@@ -254,46 +277,35 @@
             para.GoldThreshold = parseInt(gold, 10);
         }
 
-        if (mode == 6 && (para.CardValue == 99 || (para.CardAction >= 15 && para.CardAction <= 17 && para.CardValue == 10))) { closeControl(); return; }
+        // 2026-11-04 需求：点“应用控制”直接下发，不再弹“操作确认”。
+        // 送奖仍先核算报价（带上 ExpectedBetDiamonds 供服务端校验押注未变），奖池余额为 0 才拦。
+        if (submitting) return;
+        submitting = true;
+        updateButtons();
+        var ready;
         if (mode == 6) {
-            if (submitting) return;
-            submitting = true; updateButtons(); M.loading('核算送奖金额...');
-            M.post('/Game/PrizePool/CardQuote', {ID:para.ID,CardAction:para.CardAction,CardValue:para.CardValue}).always(M.hideLoading)
+            // 2026-11-04：不再显示“核算送奖金额/下发中”等过程提示，按钮置灰防连点，结果直接弹“操作成功”
+            ready = M.post('/Game/PrizePool/CardQuote', { ID: para.ID, CardAction: para.CardAction, CardValue: para.CardValue })
                 .then(function (res) {
                     var r = M.result(res);
-                    if (!r.ok) { M.alert(r.text, false); return; }
+                    if (!r.ok) { M.alert(r.text, false); return false; }
                     wallet = r.datas.Wallet;
                     $('#poolBalance').text(diamonds(wallet.Balance)); $('#myDiamonds').text(diamonds(wallet.Diamonds));
                     // 不再要求“送出得分 ≤ 奖池余额”：得分超过余额时开奖扣到 0 为止，奖池不出现负数；余额为 0 才拦
-                    if (!(Number(wallet.Balance) > 0)) { M.alert('奖池余额不足，请充值奖池', false); return; }
-                    confirmApply(para, r.datas.Quote);
-                }, function () { M.toast('送奖金额读取失败，请重试', 'error'); })
-                .always(function () { submitting = false; updateButtons(); });
-            return;
+                    if (!(Number(wallet.Balance) > 0)) { M.alert('奖池余额不足，请充值奖池', false); return false; }
+                    var quote = r.datas.Quote;
+                    if (quote && !quote.NoBet) para.ExpectedBetDiamonds = quote.BetDiamonds;
+                    return true;
+                }, function () { M.toast('送奖金额读取失败，请重试', 'error'); });
+        } else {
+            ready = $.Deferred().resolve(true).promise();
         }
-        confirmApply(para, null);
-    }
-
-    function confirmApply(para, quote) {
-        var mode = para.Mode;
-        if (quote && !quote.NoBet) para.ExpectedBetDiamonds = quote.BetDiamonds;
-        var desc = mode == 6
-            ? '对玩家 ' + para.ID + ' 执行 送奖（' + M.cardActionName(para.CardAction) +
-              ' ' + M.cardTypeName(para.CardAction, para.CardValue) + '，1 次（5 把之内））？'
-            : '对玩家 ' + para.ID + ' 执行 ' + modeName(mode) + '（目标 ' + diamonds(para.GoldThreshold) + '钻）？';
-
-        if (quote && quote.NoBet) desc += '\n玩家当前未在该游戏押注，开奖时按实际押注 × ' + quote.Multiplier + '倍从奖池扣除';
-        else if (quote) desc += '\n' + (quote.Estimated ? '预计送出 ' : '本次送出 ') + diamonds(quote.RequiredDiamonds) + '钻（押注 ' + diamonds(quote.BetDiamonds) + '钻 × ' + quote.Multiplier + '倍）';
-        if (quote) desc += '\n奖池余额不足时扣至 0 为止';
-        M.confirm(desc, '操作确认').then(function (ok) {
-            if (!ok || !current || current.ID !== para.ID) return;
-            if (submitting) return;
-            submitting = true;
-            $('#applyBtn, #closeCtrlBtn').prop('disabled', true);
-            M.loading('下发中...');
-            M.post('/Game/UserInfo/ApplyTotalControl', para).always(M.hideLoading).then(function (res) {
+        ready.then(function (go) {
+            if (!go || !current || current.ID !== para.ID) return;
+            return M.post('/Game/UserInfo/ApplyTotalControl', para).then(function (res) {
                 var r = M.result(res);
-                M.alert(r.ok ? (r.text || '操作成功') : r.text, r.ok, r.ok ? '操作成功' : '操作失败').then(function () {
+                // 成功统一只提示“操作成功”（服务端“已保存，等待游戏同步”等过程文案不展示）；失败仍显示原因
+                M.alert(r.ok ? '操作成功' : r.text, r.ok, r.ok ? '操作成功' : '操作失败').then(function () {
                     if (r.ok) {
                         refreshCtrlStatus();
                         refreshWallet();
@@ -302,52 +314,66 @@
                 });
             }, function () {
                 M.toast('操作失败，请稍后重试', 'error');
-            }).always(function () {
-                submitting = false;
-                updateButtons();
             });
+        }).always(function () {
+            submitting = false;
+            updateButtons();
         });
     }
 
+    /**
+     * 移除当前控制（2026-11-04）：点“移除”直接移除，不弹确认框，结果弹窗与送奖明细的“移除”一致。
+     * 移除的是“当前控制”里实际执行中的控制（可能同时有吃分和送奖，逐个移除），不再按“操作类型”下拉的选中项——
+     * 下拉被预选成别的类型时，原写法会移掉代理并不想移的那种控制，或者提示失败而真正在跑的仍在跑。
+     */
     function closeControl() {
         if (!current) { M.toast('请先查询玩家信息', 'error'); return; }
-        var mode = currentMode();
-        var target = current.ID;
-        M.confirm('确认移除该玩家的' + modeName(mode) + '？', '移除控制').then(function (ok) {
-            if (!ok || !current || current.ID !== target) return;
-            if (submitting) return;
-            submitting = true;
-            $('#applyBtn, #closeCtrlBtn').prop('disabled', true);
-            M.loading('处理中...');
-            M.post('/Game/UserInfo/CloseTotalControl', { ID: target, Mode: mode, MobileRequest: 1 }).always(M.hideLoading).then(function (res) {
-                var r = M.result(res);
-                M.alert(r.ok ? (r.text || '移除成功') : r.text, r.ok, r.ok ? '移除成功' : '操作失败').then(function () {
-                    if (r.ok) {
-                        refreshCtrlStatus();
-                        refreshWallet();
-                        loadHistory(true);
-                    }
+        if (!activeModes.length) { M.toast('该玩家当前没有执行中的控制', 'error'); return; }
+        var target = current.ID, modes = activeModes.slice();
+        if (submitting) return;
+        submitting = true;
+        $('#applyBtn, #closeCtrlBtn').prop('disabled', true);
+        M.loading('处理中...');
+        var failText = null, anyOk = false;
+        var chain = $.Deferred().resolve().promise();
+        $.each(modes, function (i, mode) {
+            chain = chain.then(function () {
+                return M.post('/Game/UserInfo/CloseTotalControl', { ID: target, Mode: mode, MobileRequest: 1 }).then(function (res) {
+                    var r = M.result(res);
+                    if (r.ok) anyOk = true; else if (!failText) failText = r.text || '移除失败';
+                }, function () {
+                    if (!failText) failText = '操作失败，请稍后重试';
+                    return $.Deferred().resolve().promise(); // 一种失败不影响移除下一种
                 });
-            }, function () {
-                M.toast('操作失败，请稍后重试', 'error');
-            }).always(function () {
-                submitting = false;
-                updateButtons();
             });
+        });
+        chain.always(function () {
+            M.hideLoading();
+            if (failText) M.alert(failText, false, '移除失败');
+            else M.alert('移除成功', true, '移除成功');
+            if (anyOk) {
+                refreshCtrlStatus();
+                refreshWallet();
+                loadHistory(true);
+            }
+            submitting = false;
+            updateButtons();
         });
     }
 
     /* ---------------- 奖池与送奖记录（服务端分页、真实钻口径） ---------------- */
-    function refreshWallet() {
+    /** quiet=true：静默刷新（失败不提示，并保留上次余额，不把“确定”按钮置灰） */
+    function refreshWallet(quiet) {
+        if (!hasPool) { wallet = null; return $.Deferred().resolve().promise(); }
         var seq = ++walletSeq;
-        return M.post('/Game/PrizePool/Wallet', {}).then(function (res) {
+        return M.post('/Game/PrizePool/Wallet', {}, { silent: !!quiet }).then(function (res) {
             var r = M.result(res);
             if (seq !== walletSeq) return;
             wallet = r.ok ? r.datas : null;
             $('#poolBalance').text(wallet ? diamonds(wallet.Balance) : '--');
             $('#myDiamonds').text(wallet ? diamonds(wallet.Diamonds) : '--');
             updateButtons();
-        }, function () { if (seq === walletSeq) { wallet = null; updateButtons(); } });
+        }, function () { if (seq === walletSeq && !quiet) { wallet = null; updateButtons(); } });
     }
 
     function recordHtml(row) {
@@ -371,13 +397,15 @@
         if (submitting) return;
         var $button = $(this), target = $button.attr('data-account');
         var controlId = Number($button.attr('data-control-id')), mode = Number($button.attr('data-mode'));
-        M.confirm('确认移除玩家 ' + target + ' 的这条未开奖送奖？', '移除送奖').then(function (ok) {
+        // 2026-11-04 对齐参考站：先确认“确定要移除玩家 X 的送奖记录吗？”，确定后移除并弹“移除成功”
+        //（服务端回“关闭成功！”等文案不直接展示）
+        M.confirm('确定要移除玩家 ' + target + ' 的送奖记录吗？', '移除送奖').then(function (ok) {
             if (!ok || submitting) return;
             submitting = true; updateButtons(); M.loading('处理中...');
             M.post('/Game/PrizePool/RemoveRecord', { ID: target, Mode: mode, ControlId: controlId }).always(M.hideLoading)
                 .then(function (res) {
                     var r = M.result(res);
-                    M.alert(r.text || (r.ok ? '移除成功' : '移除失败'), r.ok);
+                    M.alert(r.ok ? '移除成功' : (r.text || '移除失败'), r.ok, r.ok ? '移除成功' : '移除失败');
                     if (r.ok) {
                         if (current && current.ID === target) refreshCtrlStatus();
                         refreshWallet();
@@ -396,11 +424,12 @@
     /**
      * 送奖明细：本代理在所选游戏、所选日期内的全部记录（不按查询的玩家过滤）。
      * 原先按账号框过滤，账号框里残留内容时选日期点刷新看起来“没反应”。
-     * quiet=true 为 10 秒轮询，不改加载提示，避免数字闪烁。
+     * quiet=true 为静默刷新，不改加载提示，避免数字闪烁。
      */
     function loadHistory(reset, quiet) {
+        if (!hasPool) return;
         var start = $('#controlStart').val(), end = $('#controlEnd').val();
-        if (!start || !end || start > end) { M.toast('请选择有效的日期范围', 'error'); return; }
+        if (!start || !end || start > end) { M.toast('请选择有效的时间范围', 'error'); return; }
         if (!reset && historyBusy) return;
         if (reset) historyPage = 1;
         var seq = ++historySeq, page = historyPage;
@@ -411,10 +440,11 @@
             $('#controlCount').text('共 -- 条');
             $('#controlRows').html('<tr><td class="empty-row" colspan="8">加载中...</td></tr>');
         }
-        M.post('/Game/PrizePool/Records', { CardAction: historyCardAction(), StartTime: start, EndTime: end, page: page, rows: 20 })
+        // quiet（静默刷新）失败静默并保留现有明细，不弹“网络异常/读取失败”（2026-11-04）
+        M.post('/Game/PrizePool/Records', { CardAction: historyCardAction(), StartTime: start, EndTime: end, page: page, rows: 20 }, { silent: !!quiet })
             .then(function (res) {
                 if (seq !== historySeq) return;
-                if (!res || res.rows == null) { $('#sentDiamonds').text('--'); M.toast(M.result(res).text || '送奖明细读取失败', 'error'); return; }
+                if (!res || res.rows == null) { if (quiet) return; $('#sentDiamonds').text('--'); M.toast(M.result(res).text || '送奖明细读取失败', 'error'); return; }
                 var html = res.rows.map(recordHtml).join('');
                 if (reset) $('#controlRows').html(html || '<tr><td class="empty-row" colspan="8">暂无送奖记录</td></tr>');
                 else $('#controlRows').append(html);
@@ -423,7 +453,7 @@
                 $('#controlCount').text('共 ' + res.total + ' 条');
                 $('#controlMore').toggle(page * 20 < res.total);
                 historyPage = page + 1;
-            }, function () { if (seq === historySeq) { $('#sentDiamonds').text('--'); M.toast('送奖明细读取失败，请重试', 'error'); } })
+            }, function () { if (seq === historySeq && !quiet) { $('#sentDiamonds').text('--'); M.toast('送奖明细读取失败，请重试', 'error'); } })
             .always(function () { if (seq === historySeq) { historyBusy = false; $('#controlMore').prop('disabled', false); } });
     }
 
@@ -440,8 +470,10 @@
         if (submitting) return;
         if (!wallet) { refreshWallet(); M.toast('请等待奖池余额读取完成', 'error'); return; }
         var amount = 0, withdraw = false, token = requestId();
+        // 2026-11-04 需求：标题左右居中、不展示取消按钮、“确认充值”居中（不充值时点遮罩关闭）
         M.modal({ title: '充值奖池', bodyHTML: '<label class="pool-modal-field">充值金额 (钻石)<input id="poolAmount" class="input-field" type="text" inputmode="numeric" autocomplete="off" placeholder="正数充值，负数扣减奖池"></label><div class="pool-modal-error" id="poolAmountError"></div>',
-            buttons: [{label:'取消',value:false},{label:'确认充值',type:'confirm',value:true}],
+            buttons: [{label:'确认充值',type:'confirm',value:true}],
+            onRender: function ($modal) { $modal.addClass('pool-modal'); },
             beforeClose: function (value, $modal) {
                 if (!value) return true;
                 var text = $.trim($modal.find('#poolAmount').val());
@@ -465,11 +497,13 @@
     /* ---------------- 初始化 ---------------- */
 
     function initPage() {
-        var today = new Date(), first = new Date();
-        first.setDate(today.getDate() - 6);
-        function dateValue(d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
-        $('#controlStart').val(dateValue(first)); $('#controlEnd').val(dateValue(today));
-        $('#controlRefresh').on('click', function () { loadHistory(true); refreshWallet(); });
+        // 默认当天：开始今天 00:00、结束今天 23:59（日期+时分字段，2026-11-04）
+        // 先升级字段再赋值：原生 date 框会把带时分的值当非法值清空
+        M.dateTimeField($('#controlStart'), '00:00');
+        M.dateTimeField($('#controlEnd'), '23:59');
+        $('#controlStart').val(M.todayValue() + ' 00:00').trigger('change');
+        $('#controlEnd').val(M.todayValue() + ' 23:59').trigger('change');
+        $('#controlRefresh').on('click', function () { loadHistory(true); refreshWallet(); refreshCtrlStatus(true); });
         $('#controlMore').on('click', function () { loadHistory(false); });
         $('#controlRows').on('click', '.record-remove-btn', removeRecord);
         $('#poolRechargeBtn').on('click', rechargePool);
@@ -492,6 +526,7 @@
             ++querySeq; current = null; updateButtons();
             $('#stBet, #stToday, #stTotal').text('--').removeClass('positive negative');
             $('#playerMeta').removeClass('show');
+            $('#piOnline').empty();
             var kw = $.trim($(this).val());
             if (acTimer) { clearTimeout(acTimer); acTimer = null; }
             if (!kw) { acHide(); return; }
@@ -519,10 +554,8 @@
         //（牌机 11 项、水浒传 35 项都要能点到；原生 select 仍作为取值来源）
         M.upwardSelect($('#ctrlCardValue'));
 
-        // 控制状态轮询：查询到玩家后每 10s 重拉一次进度（已吃分/剩余次数靠游戏服回写库表，
-        // 不轮询就停在下发时的快照）。页面隐藏时暂停（与在线页同一口径）；
-        // 独立页面离开即销毁，在途请求由 M.post 在 pagehide 统一中断，无需手动清定时器。
-        setInterval(function () { if (!document.hidden) { refreshCtrlStatus(true); refreshWallet(); if (historyPage <= 2 && !historyBusy) loadHistory(true, true); } }, 10000);
+        // 2026-11-04：去掉每 10 秒自动轮询（对齐参考站）。进度/余额/明细在进页、查询、下发、移除后刷新，
+        // 送奖明细的“刷新”按钮同时重拉当前控制状态，需要看最新进度时点一下即可。
 
         bindMode();
         if (!preset.account) loadHistory(true);

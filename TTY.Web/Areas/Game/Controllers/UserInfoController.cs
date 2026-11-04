@@ -48,6 +48,7 @@ namespace YYT.Web.Areas.Game.Controllers
         [MemberAuthorize]
         [AjaxOnly]
         [HttpPost]
+        [ReadOnlySession] // 只读会话：不排会话锁（2026-11-04）
         public ActionResult GetOnlineUsers()
         {
             Msg msg = new Msg(0, "查询失败！");
@@ -100,6 +101,24 @@ namespace YYT.Web.Areas.Game.Controllers
                 msg.code = 1;
                 msg.content = "查询成功！";
                 msg.datas = players;
+
+                // 手机端在线页签（2026-11-04）：IncludeControls=1 时把这些玩家的执行中控制随包返回，
+                // 一次请求即可整块更新卡片与控牌/吃分角标（原来要再发 GetActiveTotalControls，角标晚一拍才出现）。
+                // 不带该参数（电脑端）返回结构不变；控制查询失败只影响 controls 为 null，不影响在线列表。
+                if (Request.Form["IncludeControls"] == "1")
+                {
+                    object controls = null;
+                    try
+                    {
+                        Msg ctrl = new B_UserControl().GetActiveTotalControls(loginUser, players.Select(c => c.ID).Distinct().ToList());
+                        if (ctrl != null && ctrl.code == 1) controls = ctrl.datas;
+                    }
+                    catch (Exception ex)
+                    {
+                        LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.UserInfoController), ex);
+                    }
+                    return Json(new { code = msg.code, content = msg.content, datas = players, controls = controls });
+                }
             }
             catch (Exception ex)
             {
@@ -110,6 +129,7 @@ namespace YYT.Web.Areas.Game.Controllers
         [MemberAuthorize]
         [AjaxOnly]
         [HttpPost]
+        [ReadOnlySession] // 只读会话：不排会话锁（2026-11-04）
         public ActionResult GetUsers(FormCollection form)
         {
             M_EasyuiGridData<M_Users_DTO> list = new M_EasyuiGridData<M_Users_DTO>();
@@ -184,6 +204,7 @@ namespace YYT.Web.Areas.Game.Controllers
         [MemberAuthorize]
         [AjaxOnly]
         [HttpPost]
+        [ReadOnlySession] // 只读会话：不排会话锁（2026-11-04）
         public ActionResult GetVisibleUserRows(FormCollection form)
         {
             Msg msg = new Msg(0, "刷新失败！");
@@ -255,6 +276,7 @@ namespace YYT.Web.Areas.Game.Controllers
         [MemberAuthorize]
         [AjaxOnly]
         [HttpPost]
+        [ReadOnlySession] // 只读会话：不排会话锁（2026-11-04）
         public ActionResult GetTodayWinLoss()
         {
             Msg msg = new Msg(0, "查询失败！");
@@ -282,6 +304,7 @@ namespace YYT.Web.Areas.Game.Controllers
         [MemberAuthorize]
         [AjaxOnly]
         [HttpPost]
+        [ReadOnlySession] // 只读会话：不排会话锁（2026-11-04）
         public ActionResult GetOfflineUsers(FormCollection form)
         {
             M_EasyuiGridData<M_Users_DTO> list = new M_EasyuiGridData<M_Users_DTO>();
@@ -303,6 +326,24 @@ namespace YYT.Web.Areas.Game.Controllers
                 // 与在线列表/会员盈亏详情/电脑端"总盈亏"同口径。这里不能再按充退差额（COINS_BUY-COINS_BACK）覆盖：
                 // 那是资金口径，会让同一个玩家的"总输赢"在线与离线显示成两个不同的数（离线也变成充值-退钻）。
                 list = new B_Users().GetOfflineUsersList(mPage, mUsers, loginUser, sort);
+
+                // 手机端离线页签（2026-11-04）：IncludeControls=1 时本页玩家的执行中控制随包返回，
+                // 卡片与控牌/吃分角标一次渲染；电脑端不带参数，返回结构不变
+                if (form.Q<int>("IncludeControls") == 1 && list != null && list.rows != null)
+                {
+                    object controls = null;
+                    try
+                    {
+                        List<string> pageIds = list.rows.Where(r => r != null && !string.IsNullOrWhiteSpace(r.ID)).Select(r => r.ID).Distinct().ToList();
+                        Msg ctrl = new B_UserControl().GetActiveTotalControls(loginUser, pageIds);
+                        if (ctrl != null && ctrl.code == 1) controls = ctrl.datas;
+                    }
+                    catch (Exception ex)
+                    {
+                        LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.UserInfoController), ex);
+                    }
+                    return Json(new { total = list.total, rows = list.rows, footer = list.footer, notice = list.notice, controls = controls });
+                }
             }
             catch (Exception ex)
             {
@@ -343,6 +384,7 @@ namespace YYT.Web.Areas.Game.Controllers
         [MemberAuthorize]
         [AjaxOnly]
         [HttpPost]
+        [ReadOnlySession] // 只读会话：不排会话锁（2026-11-04）
         public ActionResult GetMemberWinLoss(FormCollection form)
         {
             M_EasyuiGridData<M_Users_DTO> list = new M_EasyuiGridData<M_Users_DTO>();
@@ -378,6 +420,7 @@ namespace YYT.Web.Areas.Game.Controllers
         [MemberAuthorize]
         [AjaxOnly]
         [HttpPost]
+        [ReadOnlySession] // 只读会话：不排会话锁（2026-11-04）
         public ActionResult GetMemberWinLossStats(FormCollection form)
         {
             Msg msg = new Msg(0, "查询失败！");
@@ -461,6 +504,7 @@ namespace YYT.Web.Areas.Game.Controllers
         [MemberAuthorize]
         [AjaxOnly]
         [HttpPost]
+        [ReadOnlySession] // 只读会话：不排会话锁（2026-11-04）
         public ActionResult GetUserDetail(FormCollection form)
         {
             Msg msg = new Msg(0, "查询失败！");
@@ -1349,6 +1393,7 @@ namespace YYT.Web.Areas.Game.Controllers
         [MemberAuthorize]
         [AjaxOnly]
         [HttpPost]
+        [ReadOnlySession] // 只读会话：不排会话锁（2026-11-04）
         public ActionResult GetTotalControlStatus(FormCollection form)
         {
             Msg msg;
@@ -1372,6 +1417,7 @@ namespace YYT.Web.Areas.Game.Controllers
         [MemberAuthorize]
         [AjaxOnly]
         [HttpPost]
+        [ReadOnlySession] // 只读会话：不排会话锁（2026-11-04）
         public ActionResult GetActiveTotalControls(FormCollection form)
         {
             Msg msg;

@@ -29,6 +29,7 @@ namespace YYT.Web.Areas.Game.Controllers
         }
 
         [AjaxOnly, HttpPost]
+        [ReadOnlySession] // 只读会话：不排会话锁（2026-11-04）
         public ActionResult Wallet() { return Execute(user => new B_PrizePool().GetWallet(user)); }
 
         [AjaxOnly, HttpPost, JsonAntiForgery]
@@ -40,13 +41,15 @@ namespace YYT.Web.Areas.Game.Controllers
         }
 
         [AjaxOnly, HttpPost]
+        [ReadOnlySession] // 只读会话：不排会话锁（2026-11-04）
         public ActionResult Records(FormCollection form)
         {
+            // 手机端送奖明细带时分（yyyy-MM-dd HH:mm，按分钟精确）；只传日期时仍按整天
             DateTime start, end;
-            if (!DateTime.TryParse(form["StartTime"], out start) || !DateTime.TryParse(form["EndTime"], out end) || start.Date > end.Date || end.Date == DateTime.MaxValue.Date)
-                return Json(new Msg(0, "请选择有效的日期范围！"));
+            if (!B_Records_MySQL.TryParseQueryRange(form["StartTime"], form["EndTime"], out start, out end))
+                return Json(new Msg(0, "请选择有效的时间范围！"));
             var page = new M_Page(Math.Max(1, Math.Min(1000000, form.Q<int>("page", 1))), Math.Max(1, Math.Min(100, form.Q<int>("rows", 20))));
-            return Execute(user => new B_PrizePool().GetControlRecords(user, page, (form["ID"] ?? "").Trim(), start.Date, end.Date.AddDays(1), form.Q<int>("CardAction", 0)));
+            return Execute(user => new B_PrizePool().GetControlRecords(user, page, (form["ID"] ?? "").Trim(), start, end, form.Q<int>("CardAction", 0)));
         }
 
         [AjaxOnly, HttpPost, JsonAntiForgery]
@@ -61,6 +64,7 @@ namespace YYT.Web.Areas.Game.Controllers
         }
 
         [AjaxOnly, HttpPost]
+        [ReadOnlySession] // 只读会话：不排会话锁（2026-11-04）
         public ActionResult CardQuote(FormCollection form)
         {
             return Execute(user =>
@@ -77,6 +81,7 @@ namespace YYT.Web.Areas.Game.Controllers
         }
 
         [AjaxOnly, HttpPost]
+        [ReadOnlySession] // 只读会话：不排会话锁（2026-11-04）
         public ActionResult Player(FormCollection form)
         {
             return Execute(user =>
@@ -101,13 +106,15 @@ namespace YYT.Web.Areas.Game.Controllers
         }
 
         [AjaxOnly, HttpPost]
+        [ReadOnlySession] // 只读会话：不排会话锁（2026-11-04）
         public ActionResult Ledger(FormCollection form)
         {
+            // 手机端奖池明细带时分（按分钟精确）；只传日期时仍按整天
             DateTime start, end;
-            if (!DateTime.TryParse(form["StartTime"], out start) || !DateTime.TryParse(form["EndTime"], out end) || start.Date > end.Date || end.Date == DateTime.MaxValue.Date)
-                return Json(new Msg(0, "请选择有效的日期范围！"));
+            if (!B_Records_MySQL.TryParseQueryRange(form["StartTime"], form["EndTime"], out start, out end))
+                return Json(new Msg(0, "请选择有效的时间范围！"));
             var page = new M_Page(Math.Max(1, Math.Min(1000000, form.Q<int>("page", 1))), Math.Max(1, Math.Min(100, form.Q<int>("rows", 20))));
-            return Execute(user => new B_PrizePool().GetLedger(user, form["AgentID"], form["Kind"], (form["PlayerID"] ?? "").Trim(), page, start.Date, end.Date.AddDays(1)));
+            return Execute(user => new B_PrizePool().GetLedger(user, form["AgentID"], form["Kind"], (form["PlayerID"] ?? "").Trim(), page, start, end));
         }
     }
 }

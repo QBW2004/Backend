@@ -2,12 +2,49 @@
 using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using YYT.BLL.EF;
+using YYT.Entity;
 
 namespace YYT.Web.Models
 {
-    /// <summary>大白兔规则独立存储；完整校验后才替换，活动编号单调递增避免恢复旧额度。</summary>
+    /// <summary>大白兔玩法规则按桌台保存，与本桌参数同事务下发。</summary>
     public static class RabbitConfig
     {
+        public const string SharedKey = "rabbit_rules"; // 仅作为旧桌缺失独立配置时的只读兼容值。
+
+        public static string NormalizeTable(string json, int maxBet)
+        {
+            var config = Parse(json, maxBet);
+            config["race"]["enabled"] = false;
+            return config.ToString(Formatting.None);
+        }
+
+        public static string ReadTable(GameDbContext ef, int tableIndex, out string source, bool forUpdate = false)
+        {
+            if (tableIndex < -1 || tableIndex > 255) throw new ArgumentException("机台无效");
+            if (tableIndex >= 0)
+            {
+                string json = ef.Database.SqlQuery<string>(
+                    "SELECT CfgJson FROM cardgamecfg WHERE GAME_ID=55 AND TableIndex={0}" + (forUpdate ? " FOR UPDATE" : ""), tableIndex).FirstOrDefault();
+                if (json != null) { source = "table"; return json; }
+                var legacy = ActivityConfigs.TableExists(ef) ? ActivityConfigs.Load(ef, SharedKey) : null;
+                if (legacy != null) { source = "legacy"; return legacy.CfgJson; }
+            }
+            source = "default";
+            return DefaultJson;
+        }
+
+        // 调用方负责事务；只校验和更新当前桌台，不写入旧共用规则或其他桌台。
+        public static void SaveTable(GameDbContext ef, int tableIndex, string json, int maxBet, bool isNew = false)
+        {
+            if (tableIndex < 0 || tableIndex > 255) throw new ArgumentException("机台无效");
+            string source;
+            json = NormalizeTable(json ?? (isNew ? DefaultJson : ReadTable(ef, tableIndex, out source, true)), maxBet);
+            ef.Database.ExecuteSqlCommand(
+                "INSERT INTO cardgamecfg(GAME_ID,TableIndex,CfgJson) VALUES(55,{0},{1}) ON DUPLICATE KEY UPDATE CfgJson=VALUES(CfgJson)",
+                tableIndex, json);
+        }
+
         public const string DefaultJson = @"{""schemaVersion"":3,""smallFourMultiplier"":50,""specialRules"":{""authentic"":{""enabled"":true,""baseMultiplier"":80,""revealTimeoutSeconds"":20,""multipliers"":{""values"":[1,2,3,4,5,6,7,8,9,10,11,12,13,14],""weights"":[60,30,10,0,0,0,0,0,0,0,0,0,0,0]}},""five"":{""enabled"":true,""baseMultiplier"":250,""successMultiplier"":2,""missMultiplier"":1,""revealTimeoutSeconds"":20,""successChance"":{""numerator"":1,""denominator"":3},""forcedSuccessChance"":{""numerator"":1,""denominator"":4}},""streak"":{""enabled"":true,""burnRounds"":20,""poolContributionBasisPoints"":200,""initialPool"":0,""awardCounts"":{""values"":[2,3,4,5,6,7,8,9,10,11,12,13],""weights"":[8,32,22,22,20,20,12,12,7,7,3,3]},""startChance"":{""numerator"":1,""denominator"":100},""continueChance"":{""numerator"":1,""denominator"":18},""expiredChance"":{""numerator"":1,""denominator"":20},""secondJokerChance"":{""numerator"":1,""denominator"":10},""jokerFirstChance"":{""numerator"":9,""denominator"":10},""guaranteeLastRound"":true,""blockHigherPrizes"":true},""settlement"":{""passEnabled"":true,""explodeEnabled"":true}},""passTarget"":30000,""passBonus"":3000,""explodeTarget"":100000,""explodeBonus"":10000,""keepMax"":3,""keepMinHands"":10,""race"":{""enabled"":false,""id"":0,""start"":0,""end"":0,""total"":0,""multiplier"":1}}";
         private static long Number(JObject root, string path, long min, long max)
         {

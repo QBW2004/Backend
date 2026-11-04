@@ -21,6 +21,8 @@ namespace YYT.Web
         {
            
             AreaRegistration.RegisterAllAreas();
+            // 标了 [ReadOnlySession] 的只读接口不再按会话排队（手机端轮询并发被会话锁拖慢，2026-11-04）
+            ControllerBuilder.Current.SetControllerFactory(new ReadOnlySessionControllerFactory());
             ViewEngines.Engines.Clear();
             ViewEngines.Engines.Add(new CustomRazorViewEngine());
             GlobalConfiguration.Configure(WebApiConfig.Register);

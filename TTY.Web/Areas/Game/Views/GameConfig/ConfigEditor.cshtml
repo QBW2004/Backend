@@ -49,6 +49,11 @@
         .gc-toolbar #gcLineSel { width: 200px; }
         .gc-line-tip { font-size: 12px; color: #d97a00; }
         .gc-hint { font-size: 12px; color: #9aa4b1; margin-top: 4px; line-height: 1.6; }
+        .gc-jp-current { padding:6px 8px; border:1px solid #e5e9f0; background:#f7f9fc; text-align:right; color:#52637b; font-variant-numeric:tabular-nums; }
+        .gc-jp-current output { display:block; font-size:13px; white-space:nowrap; }
+        .gc-jp-setting { padding:4px 8px; border:1px solid #e5e9f0; }
+        #gcJpTable .gc-jp-setting { width:140px; }
+        #gcJpTable .gc-input { height:28px; line-height:28px; padding:0 7px; font-size:12px; text-align:right; }
         .gc-guide { margin: 0 0 14px; padding: 10px 12px; border: 1px solid #dce8ff; border-radius: 6px; background: #f7faff; color: #526173; font-size: 12px; line-height: 1.7; }
         .gc-refresh { width: 30px; height: 30px; line-height: 30px; text-align: center; border-radius: 6px; color: #5a6573; cursor: pointer; transition: background .15s, color .15s; }
         .gc-refresh:hover { background: #ecf2ff; color: #2f6fed; }
@@ -435,12 +440,16 @@
                                     <th style="padding:8px;border:1px solid #e5e9f0;">出现机会（每 10000 次的相对单位）</th>
                                     <th style="padding:8px;border:1px solid #e5e9f0;">倍数（客户端写死 · 不可调；点石成金/ATT满花版 为小 / 中 / 大）</th>
                                     <th style="padding:8px;border:1px solid #e5e9f0;width:64px;">启用</th>
+                                    <th class="gc-px-only">理论 RTP 贡献</th>
                                 </tr>
                             </thead>
                             <tbody></tbody>
                         </table>
                         <div class="gc-hint" id="gcPayoutSum">倍数由程序固定，页面只展示不能调整；出现机会填 100，表示使用相对权重 100，并不等于固定 1%。</div>
 
+                        @Html.Partial("_PhenixConfig")
+                        @Html.Partial("_RabbitPayout")
+                        @Html.Partial("_AttMhbConfig")
                         <div class="gc-section-title" style="margin-top:16px;">机台设定（鬼牌数量出现机会）</div>
                         <input type="hidden" id="gcJokerOnVal" name="JokerOn" value="0" />
                         <div class="gc-form-row">
@@ -507,50 +516,21 @@
                         </div>
 
                         <div id="gcJpBox" style="display:none;">
-                            <div class="gc-section-title" style="margin-top:16px;">彩金奖池（程序固定规则，仅供查看）</div>
+                            <div class="gc-section-title" style="margin-top:16px;">彩金奖池 · 当前值与设置</div>
                             <div class="gc-hint" id="gcJpRule" style="margin-bottom:8px;"></div>
                             <table style="width:100%;border-collapse:collapse;margin-bottom:14px;" id="gcJpTable">
                                 <thead>
                                     <tr style="background:#f5f8ff;color:#5a6573;font-size:13px;">
                                         <th style="padding:8px;border:1px solid #e5e9f0;text-align:left;">独立奖池牌型</th>
+                                        <th style="padding:8px;border:1px solid #e5e9f0;" id="gcJpCurrentTh">当前奖池分（只读）</th>
                                         <th style="padding:8px;border:1px solid #e5e9f0;">保底分（领奖后重置下限）</th>
                                         <th style="padding:8px;border:1px solid #e5e9f0;" id="gcJpTh3">奖池累计上限</th>
                                         <th style="padding:8px;border:1px solid #e5e9f0;" id="gcJpTh4" class="gc-jp-nba">三王额外奖（固定倍数×押分）</th>
+                                        <th class="gc-jp-setting">设置奖池分<br /><small>保存后重启生效</small></th>
                                     </tr>
                                 </thead>
                                 <tbody></tbody>
                             </table>
-                            <div class="gc-section-title" style="margin-top:6px;">本机台奖池分数（可设置，游戏服重启后生效）</div>
-                            <div class="gc-form-row">
-                                <div class="gc-field">
-                                    <label>五梅 5.K. 奖池分</label>
-                                    <input type="number" id="gcJp5K" name="JP_5K" class="gc-input gc-jp-v" min="0" max="2000000000" step="1" />
-                                </div>
-                                <div class="gc-field">
-                                    <label>同花大顺 R.S. 奖池分</label>
-                                    <input type="number" id="gcJpRS" name="JP_RS" class="gc-input gc-jp-v" min="0" max="2000000000" step="1" />
-                                </div>
-                            </div>
-                            <div class="gc-form-row">
-                                <div class="gc-field">
-                                    <label>同花顺 S.F. 奖池分</label>
-                                    <input type="number" id="gcJpSF" name="JP_SF" class="gc-input gc-jp-v" min="0" max="2000000000" step="1" />
-                                </div>
-                                <div class="gc-field">
-                                    <label>四梅 4.K. 奖池分</label>
-                                    <input type="number" id="gcJp4K" name="JP_4K" class="gc-input gc-jp-v" min="0" max="2000000000" step="1" />
-                                </div>
-                            </div>
-                            <div class="gc-form-row" id="gcJpMhbRow" style="display:none;">
-                                <div class="gc-field">
-                                    <label>方块彩金 F.L. 奖池分</label>
-                                    <input type="number" id="gcJpDIA" name="JP_DIA" class="gc-input gc-jp-v" min="0" max="2000000000" step="1" />
-                                </div>
-                                <div class="gc-field">
-                                    <label>满花彩金 BONI 奖池分</label>
-                                    <input type="number" id="gcJpAR" name="JP_AR" class="gc-input gc-jp-v" min="0" max="2000000000" step="1" />
-                                </div>
-                            </div>
                             <div class="gc-hint" id="gcJpInfo"></div>
                         </div>
                         <div class="gc-section-title" style="margin-top:16px;display:none;">高级（旧版兼容）</div>
@@ -598,8 +578,6 @@
 
                     @Html.Partial("_LabaWeights")
                     @Html.Partial("_MjhlWeights")
-                    @Html.Partial("_RabbitConfig")
-                    @Html.Partial("_PhenixConfig")
                     <div class="gc-common">
                     <div class="gc-section-title">玩法与闲置处理</div>
                     <div class="gc-form-row">
@@ -611,6 +589,7 @@
                         </div>
                     </div>
                     </div>
+                    @Html.Partial("_RabbitConfig")
                 </form>
             </div>
             <div class="gc-foot" id="gcParaFoot">
@@ -837,6 +816,7 @@
             $('#gcParaEmpty').show();
             $('#gcForm').hide();
             $('#gcParaFoot').hide();
+            if (window.rabbitConfigClear) window.rabbitConfigClear();
             $('#gcCurTableName').text('');
         }
     }
@@ -1241,6 +1221,10 @@
     function gcApplyType() {
         if (window.labaWeightsClear) window.labaWeightsClear();
         if (window.mjhlWeightsClear) window.mjhlWeightsClear();
+        if (window.phenixConfigClear) window.phenixConfigClear();
+        if (window.rabbitPayoutClear) window.rabbitPayoutClear();
+        if (window.rabbitConfigClear) window.rabbitConfigClear();
+        if (window.attMhbClear) window.attMhbClear();
         var type = gcGetType();
         $('#gcForm').toggleClass('gc-laba-mode', gcLabaSubType() > 0);
         $('.gc-only-0,.gc-only-1,.gc-only-2,.gc-only-3').hide();
@@ -1286,7 +1270,8 @@
 
     function gcUpdateSaveBtn() {
         var isNew = parseInt($('#gcId').val(), 10) < 0;
-        $('#gcSave').text(gcLabaSubType() > 0 ? '保存并热更新' : (isNew ? '新建桌台' : '更新桌台'));
+        if ($('#gcGameId').val() === '55') { $('#gcSave').text(isNew ? '新建当前桌台' : '保存并热更新'); return; }
+        $('#gcSave').text((gcLabaSubType() > 0 || $('#gcGameId').val() === '5' || $('#gcGameId').val() === '25') ? '保存并热更新' : (isNew ? '新建桌台' : '更新桌台'));
     }
 
     function gcLoadTables(afterLoad) {
@@ -1388,8 +1373,10 @@
         }
         if (window.labaWeightsLoad) window.labaWeightsLoad();
         if (window.mjhlWeightsLoad) window.mjhlWeightsLoad();
-        if (window.rabbitConfigLoad) window.rabbitConfigLoad();
         if (window.phenixConfigLoad) window.phenixConfigLoad();
+        if (window.rabbitPayoutLoad) window.rabbitPayoutLoad();
+        if (window.rabbitConfigLoad) window.rabbitConfigLoad();
+        if (window.attMhbLoad) window.attMhbLoad();
         $('#gcCurTableName').text('当前编辑：' + t.tableName);
         gcSyncSwitch();
         gcUpdateSaveBtn();
@@ -1415,7 +1402,7 @@
     }
 
     function gcZeroForm() {
-        $('#gcForm input[type=number]').not('#labaWeights input').val(0);
+        $('#gcForm input[type=number]').not('#labaWeights input,#rabbitConfig input').val(0);
         $('#gcForm input[type=text]').val('');
         $('.gc-laba-ws, .gc-laba-ws-cat').val('');  // 水果每日次数（类别+隐藏面板位）：留空=不限（0=当天禁出，不能误存为 0）
         $('#gcCardDif').val('');
@@ -1443,6 +1430,11 @@
     // 恢复基础桌台默认值，保留已编辑的中奖权重，统一由底部保存按钮提交。
     function gcResetForm() {
         gcZeroForm();
+        if ($('#gcGameId').val() === '55') {
+            gcApplyCardDefaults();
+            if (window.rabbitConfigReset) window.rabbitConfigReset();
+            return;
+        }
         if (gcGetType() !== 3) return;          // 非拉霸维持原"清空=默认"
         if (gcIsMjhl()) {
             // 麻将胡了默认 0.4～20 分、每次增加 0.1 分，与新建桌台保持一致。
@@ -1509,6 +1501,10 @@
             ? '新建' + GC_NEW_TABLE_COUNT + '张桌台（已套用最近桌台基础参数，填写桌名并核对权重后保存）'
             : '新建' + GC_NEW_TABLE_COUNT + '张桌台（基础参数与权重一并保存）');
         if (window.labaWeightsLoad) window.labaWeightsLoad();
+        if (window.phenixConfigLoad) window.phenixConfigLoad();
+        if (window.rabbitPayoutLoad) window.rabbitPayoutLoad();
+        if (window.rabbitConfigLoad) window.rabbitConfigLoad();
+        if (window.attMhbLoad) window.attMhbLoad();
         gcSyncSwitch();
         gcUpdateSaveBtn();
     }
@@ -2036,7 +2032,7 @@
                 '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="number" name="hp' + r.ht + '" id="gcHp' + r.ht + '" class="gc-input gc-payout-p" min="0" max="10000" step="1" value="' + r.p + '" /></td>' +
                 '<td style="padding:6px 8px;border:1px solid #e5e9f0;background:#f7f9fc;color:#5a6573;text-align:center;">' +
                     '<span id="gcHm' + r.ht + '" data-rtp-m="' + mag.rtp + '" title="客户端 Blueeboard.cs 写死，后台不可修改">' + mag.text + '</span></td>' +
-                enCell +
+                enCell + '<td class="gc-px-only px-main-rtp" data-px-ht="' + r.ht + '">—</td>' +
                 '</tr>');
         });
         $tb.find('.gc-payout-p').on('input', gcUpdatePayoutSum);
@@ -2056,14 +2052,41 @@
         var rtpReal = 0;  // 机台实际预计返奖率：Σ(出现率×倍数×交付系数)
         var key = gcGetMagKey();
         var effTab = GC_DELIVERY_FACTOR[key] || GC_DELIVERY_FACTOR.phenix;
+        var px = window.phenixConfigRtp ? window.phenixConfigRtp() : null, pxBase = 0, pxFrequency = 0;
+        var rb = window.rabbitPayoutRtp ? window.rabbitPayoutRtp() : null, rbBase = 0, rbAuthFrequency = 0, rbFiveFrequency = 0;
         $.each(GC_PAYOUT_ROWS, function (i, r) {
+            $('.px-main-rtp[data-px-ht="' + r.ht + '"]').text('0.00%');
             if (r.ht !== 0 && !$('#gcHeChk' + r.ht).is(':checked')) return; // 停用行不计入
             var p = parseFloat($('#gcHp' + r.ht).val()) || 0;
             var m = parseFloat($('#gcHm' + r.ht).attr('data-rtp-m')) || 0;
+            if (rb && rb.valid) {
+                var rm = rb.model;
+                if (r.ht === 7) m = rm.small;
+                if (r.ht === 8) m = rm.authBase;
+                if (r.ht === 10) m = rm.fiveBase;
+                rbBase += p / 10000 * m;
+                if (r.ht === 8) { rbAuthFrequency = p / 10000; m = rm.authentic; }
+                if (r.ht === 10) { rbFiveFrequency = p / 10000; m = rm.five; }
+                if (r.ht === 7 || r.ht === 8 || r.ht === 10) {
+                    $('#gcHm' + r.ht).text(m.toFixed(2) + ((r.ht === 8 || r.ht === 10) ? '（规则加权）' : '（规则值）')).closest('tr').addClass('rb-special');
+                }
+            }
+            pxBase += p / 10000 * m;
+            if (r.ht === 8 && px) {
+                pxFrequency = p / 10000;
+                if (px.valid && px.enabled) m *= px.average;
+                $('#gcHm8').text(px.valid ? (px.enabled ? m.toFixed(2) + '（正宗加权）' : '80（普通）') : '等待有效规则');
+                $('#gcHm8').closest('tr').addClass('px-four');
+            }
+            $('.px-main-rtp[data-px-ht="' + r.ht + '"]').text((p / 10000 * m * 100).toFixed(2) + '%');
             if (r.ht !== 0) winSum += p;
             rtp += p / 10000 * m;
             rtpReal += p / 10000 * m * (effTab[r.ht] !== undefined ? effTab[r.ht] : 1);
         });
+        if (px || rb) {
+            $('#gcHp0').val(Math.max(0, 10000 - winSum)).prop('readonly', true).attr('title', '杂牌自动取未中奖余量');
+            if (px && winSum > 10000) { px.valid = false; px.error = '中奖牌型出现机会合计超过 10000，请调低后保存。'; }
+        }
         // ATT满花版金拇指：杂牌局(余量)按万分比触发，五档倍数等概率，期望 GC_GOLD_FINGER_AVG_MAG 倍
         var gfRtp = 0;
         if (gcIsAttMhb() && $('#gcGfOn').is(':checked')) {
@@ -2072,6 +2095,10 @@
             rtp += gfRtp;
             rtpReal += gfRtp;
         }
+        if (px && window.phenixConfigDisplayRtp) window.phenixConfigDisplayRtp(pxBase, rtp, pxFrequency);
+        if (rb && window.rabbitPayoutDisplay) window.rabbitPayoutDisplay(rbBase, rtp, rbAuthFrequency, rbFiveFrequency, winSum > 10000 ? '中奖牌型出现机会合计超过 10000。' : '');
+        if (rb && !rb.valid) { $('#gcHm7,#gcHm8,#gcHm10').text('等待有效规则'); $('.px-main-rtp').text('—'); }
+        if (gcIsAttMhb() && window.attMhbDisplayRtp) window.attMhbDisplayRtp(rtp - gfRtp, gfRtp, winSum);
         var gfTag = gfRtp > 0 ? '；以上含金拇指 ≈ ' + (gfRtp * 100).toFixed(2) + '%' : '';
         var $el = $('#gcPayoutSum');
         var estTag = (key === 'dscj') ? '（点石成金按火凤凰近似，待实测校准）' : '';
@@ -2129,7 +2156,8 @@
     }
 
     // ATT满花版(gameId=25)：金拇指与方块彩金/满花彩金为该游戏独有；金拇指五档 ×20/×50/×100/×200/×400 平均 154 倍
-    var GC_GOLD_FINGER_AVG_MAG = 154;
+    var GC_GOLD_FINGER_MAGS = [20, 50, 100, 200, 400];
+    var GC_GOLD_FINGER_AVG_MAG = GC_GOLD_FINGER_MAGS.reduce(function (sum, v) { return sum + v; }, 0) / GC_GOLD_FINGER_MAGS.length;
     function gcIsAttMhb() {
         return parseInt($('#gcGameSel').val(), 10) === 25;
     }
@@ -2153,7 +2181,7 @@
         $pw.css('color', (dp > 10000 || ar > 10000) ? '#d33b3b' : '#9aa4b1');
     }
 
-    // 彩金奖池：仅 点石成金/NBA（按游戏名匹配），上半段为程序固定规则只读展示，下半段为本机台四池分数（可设置）。
+    // 彩金奖池：当前快照只读，设置值与固定规则逐行展示，保留原保存字段。
     // t 为当前选中桌台行数据（gcFillPayout 传入）；gcApplyType 无参调用时仅刷新规则并清空数值输入。
     function gcUpdateJpBox(t) {
         var name = ($('#gcGameSel').find('option:selected').text() || '');
@@ -2190,13 +2218,16 @@
             ];
         }
         var $tb = $('#gcJpTable tbody');
+        var jpFields = [['gcJp5K', 'JP_5K'], ['gcJpRS', 'JP_RS'], ['gcJpSF', 'JP_SF'], ['gcJp4K', 'JP_4K'], ['gcJpDIA', 'JP_DIA'], ['gcJpAR', 'JP_AR']];
         $tb.empty();
         $.each(rows, function (i, r) {
             var html = '<tr>' +
                 '<td style="padding:6px 8px;border:1px solid #e5e9f0;font-size:13px;color:#36404a;">' + r[0] + '</td>' +
+                '<td class="gc-jp-current"><output class="gc-jp-current-value" data-pool-index="' + i + '">未获取</output></td>' +
                 '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="text" class="gc-input" value="' + r[1] + '" disabled /></td>' +
                 '<td style="padding:4px;border:1px solid #e5e9f0;"><input type="text" class="gc-input" value="' + r[2] + '" disabled /></td>';
             if (r[3] !== null) html += '<td style="padding:4px;border:1px solid #e5e9f0;" class="gc-jp-nba"><input type="text" class="gc-input" value="' + r[3] + '" disabled /></td>';
+            html += '<td class="gc-jp-setting"><input type="number" id="' + jpFields[i][0] + '" name="' + jpFields[i][1] + '" class="gc-input gc-jp-v" min="0" max="2000000000" step="1" aria-label="' + r[0] + '设置奖池分" /></td>';
             html += '</tr>';
             $tb.append(html);
         });
@@ -2204,26 +2235,19 @@
         // 原值记入 jpOrig，保存时未改动则不带 JP_* 字段（避免无关保存把运行中的奖池钉死在重启后）。
         // ATT满花版多两池(方块/满花)：JP_DIA/JP_AR 仅该游戏显示，未提交时服务端不覆盖该池。
         var jpCur = t ? [t.jp5K, t.jpRS, t.jpSF, t.jp4K, t.jpDia, t.jpAR] : [null, null, null, null, null, null];
+        $('#gcJpTable .gc-jp-current-value').each(function (i) { $(this).text(jpCur[i] != null ? String(jpCur[i]) : '未获取'); });
+        $('#gcJpCurrentTh').attr('title', t && t.jpStateTime ? '游戏服快照：' + t.jpStateTime : '游戏服导出的奖池快照');
         var jpSet = t ? [t.jpSet5K, t.jpSetRS, t.jpSetSF, t.jpSet4K, t.jpSetDia, t.jpSetAR] : [null, null, null, null, null, null];
         var jpUse = (jpSet[0] != null) ? jpSet : jpCur;
-        var jpIds = ['#gcJp5K', '#gcJpRS', '#gcJpSF', '#gcJp4K', '#gcJpDIA', '#gcJpAR'];
         var jpOrig = [];
         for (var ji = 0; ji < 6; ji++) {
             var jv = (ji >= 4 && !isMhb) ? '' : (jpUse[ji] != null ? jpUse[ji] : '');
-            $(jpIds[ji]).val(jv);
+            $('#' + jpFields[ji][0]).val(jv);
             jpOrig.push(jv);
         }
         $('#gcJpBox').data('jpOrig', jpOrig.join(','));
-        $('#gcJpMhbRow').toggle(isMhb);
-        var jpInfo = [];
-        var jpShow = function (arr) { return (isMhb ? arr : arr.slice(0, 4)).map(function (v) { return v == null ? '-' : v; }).join(' / '); };
-        jpInfo.push(jpCur[0] != null ? '当前 ' + jpShow(jpCur) : '当前值暂无（待游戏服导出快照）');
-        if (t && t.jpStateTime) jpInfo[0] += '（快照 ' + t.jpStateTime + '）';
-        if (jpSet[0] != null) jpInfo.push('待生效 ' + jpShow(jpSet));
-        jpInfo.push(isMhb
-            ? '六个独立奖池：五梅/同花大顺/同花顺/四梅/方块彩金/满花彩金；改后保存，游戏服重启时一次性应用'
-            : '四个独立奖池：五梅/同花大顺/同花顺/四梅；改后保存，游戏服重启时一次性应用');
-        $('#gcJpInfo').text(jpInfo.join('；'));
+        $('#gcJpInfo').text('当前奖池分来自游戏服快照，仅供查看；设置分保存后，游戏服重启时一次性应用。' +
+            (jpSet[0] != null ? '已有待生效的奖池设置。' : ''));
         $('#gcJpBox').show();
     }
 
@@ -2252,6 +2276,11 @@
 
     function gcRequestTableSave(para, callback) {
         if (para.LabaWeightsJson) { window.labaWeightsSubmit(GC_URL.save, para, callback); return; }
+        if (para.PhenixConfigJson || para.RabbitConfigJson) {
+            $.ajax({ url: GC_URL.save, type: 'POST', data: para, dataType: 'json' })
+                .done(callback).fail(function () { callback({code:0,content:'保存请求失败，请重新载入确认后重试。'}); });
+            return;
+        }
         request(GC_URL.save, para, callback);
     }
 
@@ -2262,15 +2291,20 @@
         var batchGame = parseInt($('#gcGameId').val(), 10), batchLine = gcCurLine(), batchId = parseInt($('#gcId').val(), 10);
         GC_BATCH_SAVING = true;
         if (basePara.LabaWeightsJson && window.labaWeightsSetSaving) window.labaWeightsSetSaving(true);
+        if (basePara.PhenixConfigJson && window.phenixConfigSetSaving) window.phenixConfigSetSaving(true);
+        if (basePara.RabbitConfigJson && window.rabbitConfigSetSaving) window.rabbitConfigSetSaving(true);
         $('#gcSave').prop('disabled', true).text('正在新建 0/' + count + ' 张');
 
         function finish(data) {
             GC_BATCH_SAVING = false;
             if (basePara.LabaWeightsJson && window.labaWeightsSetSaving) window.labaWeightsSetSaving(false);
+            if (basePara.PhenixConfigJson && window.phenixConfigSetSaving) window.phenixConfigSetSaving(false);
+            if (basePara.RabbitConfigJson && window.rabbitConfigSetSaving) window.rabbitConfigSetSaving(false);
+            if (basePara.RabbitConfigJson && completed > 0 && window.rabbitConfigSaved) window.rabbitConfigSaved(basePara.RabbitConfigJson, batchId);
             $('#gcSave').prop('disabled', false);
             gcUpdateSaveBtn();
             gcMsg(data || { code: 0, content: '批量新建失败！' });
-            if (basePara.LabaWeightsJson && (batchGame !== parseInt($('#gcGameId').val(), 10) || batchLine !== gcCurLine() || batchId !== parseInt($('#gcId').val(), 10))) return;
+            if ((basePara.LabaWeightsJson || basePara.PhenixConfigJson || basePara.RabbitConfigJson) && (batchGame !== parseInt($('#gcGameId').val(), 10) || batchLine !== gcCurLine() || batchId !== parseInt($('#gcId').val(), 10))) return;
             gcReloadAfterNewTables();
         }
 
@@ -2380,20 +2414,35 @@
             try { $.extend(para, window.labaWeightsCollect()); }
             catch (labaError) { showToast(labaError.message, 'warning'); return; }
         }
+        if (parseInt($('#gcGameId').val(), 10) === 5) {
+            if (!window.phenixConfigCollect) { showToast('火凤凰规则组件尚未载入，请刷新后重试。', 'warning'); return; }
+            try { $.extend(para, window.phenixConfigCollect()); }
+            catch (pxError) { showToast(pxError.message, 'warning'); return; }
+        }
+        if (parseInt($('#gcGameId').val(), 10) === 55) {
+            if (!window.rabbitConfigCollect) { showToast('大白兔规则组件尚未载入，请刷新后重试。', 'warning'); return; }
+            try { $.extend(para, window.rabbitConfigCollect()); }
+            catch (rabbitError) { showToast(rabbitError.message, 'warning'); return; }
+        }
         if (wasNew && GC_NEW_TABLE_COUNT > 1) {
             gcSaveNewTables(para, GC_NEW_TABLE_COUNT);
             return;
         }
-        var savingLaba = !!para.LabaWeightsJson, saveGame = parseInt($('#gcGameId').val(), 10), saveLine = gcCurLine();
+        var savingLaba = !!(para.LabaWeightsJson || para.PhenixConfigJson || para.RabbitConfigJson), saveGame = parseInt($('#gcGameId').val(), 10), saveLine = gcCurLine();
         if (savingLaba) {
             GC_LABA_SAVING = true; $('#gcSave').prop('disabled', true);
             if (window.labaWeightsSetSaving) window.labaWeightsSetSaving(true);
+            if (para.PhenixConfigJson && window.phenixConfigSetSaving) window.phenixConfigSetSaving(true);
+            if (para.RabbitConfigJson && window.rabbitConfigSetSaving) window.rabbitConfigSetSaving(true);
         }
         gcRequestTableSave(para, function (data) {
             if (savingLaba) {
                 GC_LABA_SAVING = false; $('#gcSave').prop('disabled', false);
                 if (window.labaWeightsSetSaving) window.labaWeightsSetSaving(false);
+                if (para.PhenixConfigJson && window.phenixConfigSetSaving) window.phenixConfigSetSaving(false);
+                if (para.RabbitConfigJson && window.rabbitConfigSetSaving) window.rabbitConfigSetSaving(false);
             }
+            if (para.RabbitConfigJson && data && (data.code == 1 || data.datas === true) && window.rabbitConfigSaved) window.rabbitConfigSaved(para.RabbitConfigJson, savedId);
             gcMsg(data);
             if (data && (data.code == 1 || data.datas === true)) {
                 if (savingLaba && (saveGame !== parseInt($('#gcGameId').val(), 10) || saveLine !== gcCurLine() || savedId !== parseInt($('#gcId').val(), 10))) return;
@@ -2444,11 +2493,29 @@
         $('#gcLineSel').on('change', function () { gcMjhlCancelRtp(); GC_MJHL_LOAD_SEQ++; gcApplyLineUi(); gcLoadTables(); });
         $('#gcLineCopy').on('click', gcLineCopy);
         $('#gcLineRecall').on('click', gcLineRecall);
-        $('#gcRefresh').on('click', function () { gcReloadLinesAndTables(); });
+        $('#gcRefresh').on('click', function () {
+            if ($('#gcGameId').val() === '55' && window.rabbitConfigReload) {
+                var refreshGame = $('#gcGameSel').val(), refreshLine = gcCurLine();
+                window.rabbitConfigReload();
+                gcLoadLines(function () {
+                    if ($('#gcGameSel').val() !== refreshGame || gcCurLine() !== refreshLine) return;
+                    gcLoadTables(function () {
+                        var currentId = parseInt($('#gcId').val(), 10);
+                        if (currentId >= 0) gcSelectTableById(currentId); else gcPrepareNewTableForm(1);
+                    });
+                });
+                return;
+            }
+            gcReloadLinesAndTables();
+        });
         $('#gcDelete').on('click', gcDelete);
         $('#gcReset').on('click', function () {
             // 恢复默认会把当前表单所有参数改为出厂默认（保存后即覆盖当前桌台配置），二次确认防止误触
             var isEditing = parseInt($('#gcId').val(), 10) >= 0;
+            if ($('#gcGameId').val() === '55') {
+                confirm('确定恢复默认吗？当前桌台参数和玩法规则都会回填默认值，保存后仅对本桌生效。', function () { gcResetForm(); });
+                return;
+            }
             confirm(isEditing
                 ? '确定将该桌台基础参数恢复为默认值吗？\n点击确认后表单将回填默认值，保存即覆盖当前桌台的基础参数；中奖权重保持不变。'
                 : '确定将表单恢复为默认值吗？', function () { gcResetForm(); });
@@ -2471,8 +2538,8 @@
         $('.gc-joker-p').on('input', gcSyncJoker);
         $('#gcGfOn').on('change', function () { gcSyncGoldFinger(); gcUpdatePayoutSum(); });
         $('#gcGf').on('input', function () { gcSyncGoldFinger(); gcUpdatePayoutSum(); });
-        $('#gcDpOn,#gcArOn').on('change', gcSyncGoldFinger);
-        $('#gcDp,#gcAr').on('input', gcSyncGoldFinger);
+        $('#gcDpOn,#gcArOn').on('change', function () { gcSyncGoldFinger(); gcUpdatePayoutSum(); });
+        $('#gcDp,#gcAr').on('input', function () { gcSyncGoldFinger(); gcUpdatePayoutSum(); });
         $('#gcTableList').on('click', 'li', function () {
             $('#gcTableList li').removeClass('active');
             $(this).addClass('active');

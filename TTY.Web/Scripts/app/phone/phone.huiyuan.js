@@ -47,9 +47,9 @@
 
             var $body = $('#memberList');
             var html = rows.map(function (u) {
-                var profit = Number(u.Profit || 0);
+                var profit = M.truncInt(u.Profit); // 总盈亏舍去小数（2026-11-04）
                 var back = Number(u.COINS_BACK || 0);
-                var today = Number(u.TodayWinLoss || 0);
+                var today = M.roundInt(u.TodayWinLoss); // 今日盈亏四舍五入取整（2026-11-04）
                 var todayBack = Number(u.TodayBack || 0);
                 return '<tr>' +
                     '<td class="account"><a href="/Mobile/Home/PlayerDetail?id=' + encodeURIComponent(u.ID) + '">' + M.esc(u.ID) + '</a></td>' +
@@ -82,10 +82,12 @@
         })
             .then(function (res) {
                 if (!res || res.code !== 1 || !res.datas) return;
-                setStat('#totalProfit', res.datas.TotalWinLoss, true, false);
+                // 2026-11-04 需求：总盈亏舍去小数，整数展示（向零截断）
+                setStat('#totalProfit', M.truncInt(res.datas.TotalWinLoss), true, false);
                 setStat('#totalBuy', res.datas.TotalBuy, false, false);
                 setStat('#totalBack', res.datas.TotalBack, false, true);
-                setStat('#todayProfit', res.datas.TodayWinLoss, true, false);
+                // 2026-11-04 需求：今日盈亏四舍五入取整（与玩家列表/玩家详情的今日盈亏同口径）
+                setStat('#todayProfit', M.roundInt(res.datas.TodayWinLoss), true, false);
                 setStat('#todayBuy', res.datas.TodayBuy, false, false);
                 setStat('#todayBack', res.datas.TodayBack, false, true);
             });

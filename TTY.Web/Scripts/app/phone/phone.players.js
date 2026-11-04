@@ -30,18 +30,27 @@
 
     function renderTotalWinLoss(isOnline) {
         var total = isOnline ? onlineTotalWinLoss : offlineTotalWinLoss;
-        $('#totalWinLossLabel').text(isOnline ? '今日在线玩家总输赢（钻）' : '今日所有玩家总输赢（钻）');
+        // 2026-11-04 需求：在线/离线页顶部文案统一为“今日玩家总盈亏”（口径不变：在线页仍只算在线玩家）
+        $('#totalWinLossLabel').text('今日玩家总盈亏');
+        // 与卡片今日/总盈亏同口径只显示整数（四舍五入），颜色按取整后的值判断，避免 +0 / -0 带色
         var $el = $('#totalWinLoss');
-        $el.text(M.gold(total));
+        var shown = M.roundInt(total);
+        $el.text(shown);
         $el.removeClass('positive negative');
-        if (total > 0) $el.addClass('positive');
-        else if (total < 0) $el.addClass('negative');
+        if (shown > 0) $el.addClass('positive');
+        else if (shown < 0) $el.addClass('negative');
     }
 
-    function loadTotalWinLoss() {
-        return M.post('/Game/UserInfo/GetTodayWinLoss', {}).then(function (res) {
+    /**
+     * 今日所有玩家总盈亏（离线页签顶部口径）。noRender=true 时只记数值不改头部：
+     * 刷新时由调用方在卡片上屏的同一刻统一渲染头部，避免头部先变、卡片后到（2026-11-04 对齐参考站）。
+     * 在线页签顶部是“在线玩家盈亏合计”，由 loadOnline 随卡片一起算出并渲染。
+     */
+    function loadTotalWinLoss(noRender) {
+        // silent：失败时头部保留上次数值，不弹通用“网络异常”（2026-11-04）
+        return M.post('/Game/UserInfo/GetTodayWinLoss', {}, { silent: true }).then(function (res) {
             offlineTotalWinLoss = res && res.datas ? Number(res.datas.total || 0) : 0;
-            renderTotalWinLoss($('.tab[data-tab="online"]').hasClass('active'));
+            if (!noRender) renderTotalWinLoss($('.tab[data-tab="online"]').hasClass('active'));
         });
     }
 
@@ -51,7 +60,7 @@
      * 控制状态文案：前缀标明控制正在执行（吃分中/放水中/控牌中），
      * 明细部分与控制管理页（phone.control.js）保持同一口径——
      * 吃分/放水为「目标 N 已吃分/已放分 N」，
-     * 控牌为「大字版 同花顺(150倍)（1次/5把）」
+     * 控牌为「大字版 同花顺(150倍)」（2026-11-04 起不再展示“1次/5把”）
      * （牌型表见 phone.core.js 的 M.cardControlText，与控制页共用）。
      * 进度值原样展示（与电脑端在线用户/用户管理页一致）：ConsumedCoins 是净口径进度，
      * 可能回退为负数，不能取反——取反会把"已吃分 2608"显示成"已吃分 -2608"。
@@ -151,8 +160,8 @@
                         '<div class="info-item"><span class="info-label">押注</span><span class="info-value money-value">' + M.esc(betText) + '</span></div>' +
                     '</div>' +
                     '<div class="info-row money-row">' +
-                        '<div class="info-item"><span class="info-label">今日输赢(钻)</span><span class="info-value money-value ' + twColor + '">' + (today > 0 ? '+' : '') + today + '</span></div>' +
-                        '<div class="info-item"><span class="info-label">总输赢(钻)</span><span class="info-value money-value ' + ttColor + '">' + (total > 0 ? '+' : '') + total + '</span></div>' +
+                        '<div class="info-item"><span class="info-label">今日盈亏(钻)</span><span class="info-value money-value ' + twColor + '">' + (today > 0 ? '+' : '') + today + '</span></div>' +
+                        '<div class="info-item"><span class="info-label">总盈亏(钻)</span><span class="info-value money-value ' + ttColor + '">' + (total > 0 ? '+' : '') + total + '</span></div>' +
                     '</div>' +
                     controlRow +
                     loginRow +
@@ -194,6 +203,16 @@
         });
     }
 
+    /** 用 GetOnlineUsers 同包返回的控制行填充 p.ActiveControls，并写入 30 秒缓存（与 attachActiveControls 同口径） */
+    function seedActiveControls(players, controls) {
+        var map = groupActiveControls(controls);
+        var now = Date.now();
+        players.forEach(function (p) {
+            p.ActiveControls = map[p.ID] || [];
+            if (p.ID) controlStatusCache[p.ID] = { controls: p.ActiveControls, timestamp: now };
+        });
+    }
+
     function attachActiveControls(players) {
         players = players || [];
         var ids = players.map(function (p) { return p.ID; }).filter(function (id, index, list) {
@@ -225,9 +244,10 @@
             return $.Deferred().resolve([]).promise();
         }
 
+        // 控制状态是卡片上的次要信息、随 5 秒轮询拉取，失败静默（2026-11-04）
         return M.post('/Game/UserInfo/GetActiveTotalControls', {
             UserIDs: JSON.stringify(uncachedIds)
-        }).then(function (res) {
+        }, { silent: true }).then(function (res) {
             var controls = res && res.code === 1 ? (res.datas || []) : [];
             var controlMap = groupActiveControls(controls);
 
@@ -252,16 +272,32 @@
         });
     }
 
+    /**
+     * 在线玩家排序（2026-11-04 需求）：每次拉取（进页/点刷新/返回本页）都把今日赢得最多的玩家排最前（今日盈亏从高到低），
+     * 同分保持服务端原顺序（手写稳定排序，不依赖老 WebView 的 Array.sort 稳定性）。
+     */
+    function sortOnlineByWin(list) {
+        return list.map(function (p, i) { return { p: p, i: i, v: Number(p.TodayWinLoss || 0) }; })
+            .sort(function (a, b) { return (b.v - a.v) || (a.i - b.i); })
+            .map(function (x) { return x.p; });
+    }
+
     function loadOnline() {
         var ok = false;
         var aborted = false; // 请求被页面离开中断（M.post 在 pagehide 统一 abort）
         // 【性能优化】超时 12s → 6s：服务端 QA（查询在线玩家）已加短超时（连接 1s + 读 3s），
         // 游戏服不可达时最坏约 4s 就有确定答案，不必再让转圈空等 12 秒。
-        return M.post('/Game/UserInfo/GetOnlineUsers', {}, { timeoutMs: 6000 })
+        // silent：失败/超时由下方自己的提示处理（游戏服暂无响应…），不再叠加通用“网络异常”（2026-11-04）
+        // IncludeControls=1：控制状态随在线列表一次返回（对齐参考站“一次请求整块更新”），
+        // 卡片、人数、总盈亏、控牌/吃分角标同一刻上屏，不再先出卡片、过一会儿再补角标
+        var withControls = false;
+        return M.post('/Game/UserInfo/GetOnlineUsers', { IncludeControls: 1 }, { timeoutMs: 6000, silent: true })
             .then(function (res) {
                 // code!=1 = 游戏服不可达（服务端 QA 失败/熔断），不能当成空列表
                 if (res && Number(res.code) === 1 && res.datas) {
-                    onlinePlayers = res.datas;
+                    onlinePlayers = sortOnlineByWin(res.datas);
+                    withControls = $.isArray(res.controls);
+                    if (withControls) seedActiveControls(onlinePlayers, res.controls);
                     ok = true;
                 } else {
                     ok = false;
@@ -281,7 +317,7 @@
                     if (!onlineLoaded) {
                         $sec.html('<div class="no-more-data" style="display: block;">游戏服暂无响应，请稍后重试</div>');
                         $('#onlinePlayerCount').text('--');
-                    } else {
+                    } else if (!manualRefreshing) {
                         M.toast('游戏服暂无响应，列表为上次结果', 'warning', 2000);
                     }
                     return;
@@ -291,19 +327,11 @@
                     return sum + Number(p.TodayWinLoss || 0);
                 }, 0);
                 if ($('.tab[data-tab="online"]').hasClass('active')) renderTotalWinLoss(true);
-                // 角标先更新：空列表时原写法提前 return，会把上一次的人数留在页面上
-                $('#onlinePlayerCount').text(onlinePlayers.length);
-                if (!onlinePlayers.length) {
-                    $sec.html('<div class="no-more-data" style="display: block;">暂无在线玩家</div>');
-                    return;
-                }
+                // 人数、卡片（连同控制角标，playerCardHTML 读 p.ActiveControls）与上面的头部同一刻渲染
+                renderOnlineCards($sec);
+                if (withControls || !onlinePlayers.length) return;
 
-                // 【性能优化】立即渲染基础卡片，不等待控制状态
-                var html = onlinePlayers.map(function (p) { return playerCardHTML(p, true); }).join('');
-                $sec.html(html);
-
-                // 【性能优化】异步加载控制状态，不阻塞首屏
-                // 使用 setTimeout 确保首屏渲染完全完成后再请求次要数据
+                // 兼容旧服务端（未返回 controls）：异步补控制状态
                 setTimeout(function () {
                     attachActiveControls(onlinePlayers).then(function () {
                         if (!onlinePlayers.length) return;
@@ -311,6 +339,16 @@
                     });
                 }, 100);
             });
+    }
+
+    /** 按当前 onlinePlayers 渲染人数与卡片（刷新成功，或刷新失败时还原上次列表） */
+    function renderOnlineCards($sec) {
+        $('#onlinePlayerCount').text(onlinePlayers.length);
+        if (!onlinePlayers.length) {
+            $sec.html('<div class="no-more-data" style="display: block;">暂无在线玩家</div>');
+            return;
+        }
+        $sec.html(onlinePlayers.map(function (p) { return playerCardHTML(p, true); }).join(''));
     }
 
     /* ---------------- 离线玩家 ---------------- */
@@ -383,12 +421,16 @@
     }
 
     function loadOffline(page, append) {
+        // IncludeControls=1：本页玩家的控制状态随列表一次返回，卡片与角标同刻上屏（2026-11-04，同在线页）
         return M.post('/Game/UserInfo/GetOfflineUsers', {
             srch_ID: '', srch_NAME: '', srch_Agency: '',
             sort: offlineSort,
-            page: page, rows: PAGE_SIZE
+            page: page, rows: PAGE_SIZE,
+            IncludeControls: 1
         }).then(function (list) {
             var rows = (list && list.rows) ? list.rows : [];
+            var withControls = !!list && $.isArray(list.controls);
+            if (withControls) seedActiveControls(rows, list.controls);
             offlineTotal = list ? Number(list.total || 0) : 0;
             offlinePage = page;
             offlineLoaded = true;
@@ -411,10 +453,10 @@
             $('#offlinePlayerCount').text(offlineTotal);
             updateOfflinePager();
 
-            // 【性能优化】先渲染基础卡片，控制状态随后异步补齐——
+            // 控制状态已随列表返回时卡片已带角标，回写缓存即可；旧服务端没返回 controls 才异步补齐——
             // 总控（吃分/放水/控牌）记录存在 usercontrolstatus，与玩家是否在线无关，
             // 离线玩家同样可能有正在执行的控，不能整页跳过查询。
-            // 每页仅补一次当前页（≤PAGE_SIZE 个 ID）的查询，开销可控，不阻塞首屏。
+            if (withControls) { saveOfflineCache(); return; }
             if (rows.length) {
                 setTimeout(function () {
                     attachActiveControls(rows).then(function () {
@@ -423,6 +465,20 @@
                     });
                 }, 50);
             }
+        });
+    }
+
+    /**
+     * 子页面改过控制后返回本页（2026-11-04）：重拉离线卡片上的控制状态。
+     * 离线列表不整体重拉（可能已翻到第 N 页），只按已加载的卡片重查一次控制并替换角标。
+     */
+    function refreshOfflineControls() {
+        if (!offlineLoaded || !offlineRows.length) return $.Deferred().resolve().promise();
+        var $sec = $('#offlinePlayersSection');
+        return attachActiveControls(offlineRows).then(function () {
+            $sec.find('.active-control-status').remove();
+            applyActiveControls($sec, offlineRows);
+            saveOfflineCache();
         });
     }
 
@@ -512,38 +568,57 @@
 
     /** 在线玩家数据（头部总输赢 + 在线卡片） */
     function reloadOnline() {
-        return $.when(loadTotalWinLoss(), loadOnline());
+        // 在线页签：只发一个 GetOnlineUsers（对齐参考站一次请求），顶部=在线玩家今日盈亏合计，随卡片在 loadOnline 内同刻渲染。
+        // 今日所有玩家总盈亏只在离线页签显示：停在离线页签时（如从子页面返回）才一并拉取并更新；
+        // 在线页签不再并发多发这一请求，切到离线页签时再补拉（见页签切换）。
+        if (!$('.tab[data-tab="offline"]').hasClass('active')) return loadOnline();
+        return $.when(loadTotalWinLoss(true), loadOnline()).always(function () {
+            if ($('.tab[data-tab="offline"]').hasClass('active')) renderTotalWinLoss(false);
+        });
     }
 
     /** 离线玩家数据（头部总输赢 + 离线列表回到第一页） */
     function reloadOffline() {
-        return $.when(loadTotalWinLoss(), loadOffline(1, false));
+        // 离线页签顶部=今日所有玩家总盈亏：两个请求都回来后与卡片一起更新
+        return $.when(loadTotalWinLoss(true), loadOffline(1, false)).always(function () {
+            if ($('.tab[data-tab="offline"]').hasClass('active')) renderTotalWinLoss(false);
+        });
     }
 
-    /** 带转圈与防并发的一次刷新；刷新未完成时再点直接忽略（不弹提示） */
-    function runRefresh(loader) {
+    /**
+     * 带转圈与防并发的一次刷新；刷新未完成时再点直接忽略（不弹提示）。
+     * manual=true（点右上角刷新，2026-11-04 对齐参考站）：整个过程只显示一个居中“刷新数据...”文字框，
+     * 数据到达即消失；不再弹“已刷新”，失败也不叠加“游戏服暂无响应，列表为上次结果”（保留上次列表）。
+     */
+    var manualRefreshing = false;
+    function runRefresh(loader, manual) {
         if (refreshing) return;
         refreshing = true;
+        manualRefreshing = !!manual;
         // 手动刷新/从控制页返回触发的刷新必须绕过控制状态 30s 缓存，
         // 否则刚下的控制或刚跑完的进度要等缓存过期才看得见
         controlStatusCache = {};
-        M.runRefresh(loader, true).always(function () { refreshing = false; });
+        // 手动刷新对齐参考站：先清空当前页签的卡片区，新数据到达后整块重新出现（页签与上部不动）
+        var offlineTab = $('.tab[data-tab="offline"]').hasClass('active');
+        var $sec = offlineTab ? $('#offlinePlayersSection') : $('#onlinePlayersSection');
+        if (manual) { $sec.empty(); M.loading('刷新数据...'); }
+        M.runRefresh(loader, true).always(function () {
+            if (manual) {
+                M.hideLoading();
+                // 请求失败时卡片区还空着：还原上次的列表，避免整块空白
+                if (!$.trim($sec.html())) {
+                    if (offlineTab) renderOfflineList();
+                    else if (onlineLoaded) renderOnlineCards($sec);
+                }
+            }
+            refreshing = false;
+            manualRefreshing = false;
+        });
     }
 
-    /* 机台分/余额由游戏服实时上报中心服，在线页签激活且页面可见时每 5s 重拉一次；
-       离开页面（pagehide）停轮询，bfcache 恢复（pageshow）再启动 */
-    var autoTimer = null;
-    function startAutoRefresh() {
-        if (autoTimer) return;
-        autoTimer = setInterval(function () {
-            if (document.hidden) return;
-            if (!$('.tab[data-tab="online"]').hasClass('active')) return;
-            runRefresh(reloadOnline);
-        }, 5000);
-    }
-    function stopAutoRefresh() {
-        if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
-    }
+    /* 2026-11-04：去掉在线页签每 5 秒自动轮询（对齐参考站：只在进页、点刷新、从子页面返回时拉取）。
+       轮询会让卡片每 5 秒按盈亏重排，代理正要点某张卡时位置变了，容易点到别的玩家；
+       并发轮询也是偶发“网络异常”和请求排队的来源。 */
 
     /* ---------------- 初始化 ---------------- */
 
@@ -558,6 +633,8 @@
             $('.tab-pane').removeClass('active');
             $('#' + tab + 'Tab').addClass('active');
             renderTotalWinLoss(tab === 'online');
+            // 切到离线页签时补拉一次今日所有玩家总盈亏（在线页签刷新不再顺带拉取），先显示缓存值、回来即更新
+            if (tab === 'offline') loadTotalWinLoss();
             if (tab === 'offline' && !offlineLoaded) {
                 if (!restoreOfflineFromCache()) loadOffline(1, false);
             }
@@ -605,6 +682,12 @@
             closePlayerModal();
             window.location.href = '/Mobile/Home/Control?id=' + encodeURIComponent(current.ID);
         });
+        // 拉黑：跳转黑名单管理（吃分）页，预填玩家账号（2026-11-04 对齐参考站）
+        $('#modalBlacklistBtn').on('click', function () {
+            if (!current) return;
+            closePlayerModal();
+            window.location.href = '/Mobile/Home/Blacklist?id=' + encodeURIComponent(current.ID);
+        });
         // 玩家详细：独立页面展示
         $('#modalDetailsBtn').on('click', function () {
             if (!current) return;
@@ -631,7 +714,7 @@
 
         // 头部刷新 / 搜索：只刷当前页签的数据（在线页签只刷在线，离线页签只刷离线）
         M.onRefresh(function () {
-            runRefresh($('.tab[data-tab="offline"]').hasClass('active') ? reloadOffline : reloadOnline);
+            runRefresh($('.tab[data-tab="offline"]').hasClass('active') ? reloadOffline : reloadOnline, true);
         });
         M.onSearch(function () {
             $('#searchInput').val('');
@@ -650,19 +733,26 @@
         $(window).on('pageshow', function () {
             closePlayerModal();
             $('#searchModal').removeClass('show');
-            startAutoRefresh();
             if (!M.consumePlayersStale()) return;
-            runRefresh(reloadOnline);
+            // 在线整页重拉；离线只刷新卡片控制状态（操作管理/黑名单管理改过控制后返回也要看得到）。
+            // 2026-11-04：从我的代理/会员盈亏详情/充值管理等页点左上角返回，自动刷新一次在线玩家，
+            // 与手动点刷新同样显示一个“刷新数据...”文字框（第二个参数 true）
+            runRefresh(function () { return $.when(reloadOnline(), refreshOfflineControls()); }, true);
         });
-        $(window).on('pagehide', stopAutoRefresh);
 
         // 初始加载：在线数据实时拉取；离线列表不自动刷新——还原上次手动刷新留下的
         // 本地缓存（徽标即缓存里的总数），没有可用缓存才拉一次保证首访有数据。
-        loadTotalWinLoss();
-        loadOnline();
-        startAutoRefresh();
-        if (!restoreOfflineFromCache()) loadOffline(1, false);
-        M.consumePlayersStale(); // 整页新加载：数据已是新的，丢弃上一页留下的标记
+        // 从子页面返回但浏览器没走 bfcache（整页重新加载）时同样算“返回刷新”：
+        // 在线数据照常拉取并显示“刷新数据...”；离线列表从本地缓存还原的，控制角标可能已过期，一并重查（2026-11-04）
+        var stale = M.consumePlayersStale();
+        var restored = restoreOfflineFromCache();
+        if (!restored) loadOffline(1, false);
+        if (stale) {
+            runRefresh(function () { return $.when(reloadOnline(), restored ? refreshOfflineControls() : null); }, true);
+        } else {
+            loadTotalWinLoss();
+            loadOnline();
+        }
     }
 
     // 脚本在 body 末尾加载，DOM 已就绪；不依赖 jQuery ready

@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="@Url.Content("~/Content/css/game.attmhb-config.css?v=" + YYT.Common.ConfigHelper.Get("WebVer"))" />
+<section id="attMhbConfig" style="display:none;">
+    <div class="am-stats" id="amRtpStats" aria-live="polite">
+        <div><span>基础 + 金拇指理论 RTP</span><strong id="amTotalRtp">—</strong><small>已计入部分，非完整游戏 RTP</small></div>
+        <div><span>基础牌型 RTP</span><strong id="amBaseRtp">—</strong><small>小 / 中 / 大按 60% / 25% / 15% 加权</small></div>
+        <div><span>金拇指 RTP 增量</span><strong id="amGfRtp">—</strong><small id="amGfFrequency">按杂牌余量 × 触发机会计算</small></div>
+        <div><span>满花升级与彩金</span><strong class="am-pending">未计入</strong><small>牌面条件与奖池状态影响实际返奖</small></div>
+    </div>
+    <div class="am-note" id="amRtpNote">当前模型不含普通满花 ×2、正宗满花 ×3 及六个彩金池，完整 RTP 需结合实际发牌、换牌和奖池状态测算。这里显示的数值不能作为完整返奖率。</div>
+    <div id="amFeatureHolder">
+        <table id="amFeatureTable" class="am-table"><thead><tr><th>额外玩法</th><th>触发条件</th><th>条件内出现机会<br /><small>每 10000 次</small></th><th>条件内概率</th><th>启用</th></tr></thead><tbody>
+            <tr><td>金拇指</td><td>杂牌局五选一翻牌；五档均匀随机</td><td id="amGfInput"></td><td id="amGfChance">—</td><td id="amGfOn"></td></tr>
+            <tr><td>方块彩金升级</td><td>同花 / 同花顺 / 同花大顺，且无鬼</td><td id="amDpInput"></td><td id="amDpChance">—</td><td id="amDpOn"></td></tr>
+            <tr><td>正宗满花升级</td><td>两对 / 三条 / 葫芦 / 大四梅，且无鬼</td><td id="amArInput"></td><td id="amArChance">—</td><td id="amArOn"></td></tr>
+        </tbody></table>
+    </div>
+    <div class="am-panel" id="amGfAwards"><div class="gc-section-title">金拇指 · 五选一奖励分布</div><div class="am-awards" id="amGfAwardRows"></div><p class="am-copy">五个位置随机分配全部五档，每档抽中概率 20%，平均奖励 <b id="amGfAverage">—</b> 倍。玩家翻中一档按押分赔付；关闭或触发机会为 0 时不触发。</p></div>
+    <details class="am-rules"><summary>满花与彩金的赔付说明</summary><p>普通满花：五张由 J / Q / K 与鬼组成，必须含鬼、非全鬼，牌型赔付 ×2。正宗满花：五张全为 J / Q / K、无鬼，牌型赔付 ×3 并领取满花池。方块彩金要求五张全方块、无鬼，且为同花系牌型。</p><p>方块与正宗满花的触发机会是满足条件后的升级概率，不是全局开奖概率；控牌、点杀及吃分场景不触发这些额外权重。停用升级权重后，仍可能自然开出对应牌面。</p></details>
+</section>
+<script src="@Url.Content("~/Scripts/app/game.attmhb-config.js?v=" + YYT.Common.ConfigHelper.Get("WebVer"))"></script>
