@@ -915,12 +915,25 @@ namespace YYT.Web.Areas.Game.Controllers
                 int lineNewTableId = -1;
                 if (tableId < 0 && !string.IsNullOrEmpty(saveLine))
                 {
-                    Msg reserve = LineTables.ReserveNewLineTable(gameId, saveLine);
+                    Msg reserve = LineTables.ReserveNewLineTable(gameId, gameType, saveLine);
                     if (reserve.code != 1)
                         return Json(reserve);
                     lineReservedIdx = Convert.ToInt32(reserve.datas);
                     lineReservedGame = gameId;
                     lineNewTableId = gameId * 1000 + lineReservedIdx;
+                }
+                // 公共视图新建：桌号接在最大桌号后，按类型限制（牌机/拉霸 1000，押注/鱼机 256），超出时游戏服无法承载
+                if (tableId < 0 && string.IsNullOrEmpty(saveLine))
+                {
+                    int maxTables = LineTables.MaxTablesFor(gameType);
+                    int nextIndex;
+                    using (var efCap = new GameDbContext())
+                        nextIndex = (efCap.Database.SqlQuery<int?>("SELECT MAX(TableIndex) FROM roomtableconfig WHERE GAME_ID={0}", gameId).FirstOrDefault() ?? -1) + 1;
+                    if (nextIndex >= maxTables)
+                    {
+                        msg.content = "本游戏桌台已达上限 " + maxTables + " 张（桌号 0～" + (maxTables - 1) + "），无法再新建！";
+                        return Json(msg);
+                    }
                 }
 
                 if (gameType == 3)

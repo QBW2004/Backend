@@ -208,42 +208,57 @@ class LineTablesValidation
                     using (var ef = new GameDbContext()) LineTables.OnTableDeleted(ef, g, 1);
                     Check(Owner(g, 2) == "lineC" && Owner(g, 5) == "lineB" && Owner(g, 13) == "lineD" && Owner(g, 14) == null, "owners shifted left after delete");
 
-                    // 上限：MaxTables=256，公共 3 桌放不下时拒绝且不写
+                    // 上限按类型：押注/鱼机 256，牌机/拉霸 1000；放不下时拒绝且不写
                     int g2 = 7;
-                    SeedPublic(g2, 1, 3);
+                    SeedPublic(g2, 0, 3);
                     Sql("INSERT INTO roomtableconfig(GAME_ID,RoomIndex,TableIndex,TableName,Enabled) VALUES(7,0,254,'x',1)");
                     Sql("INSERT INTO roomtableowner(GAME_ID,RoomIndex,TableIndex,LineAgent) VALUES(7,0,254,'lineB')");
-                    Check(LineTables.CopyPublicToLine(g2, 1, "lineA").code == 0, "over MaxTables rejected");
-                    Check(Scalar("SELECT COUNT(*) FROM roomtableowner WHERE GAME_ID=7") == 1, "over-limit wrote nothing");
+                    Check(LineTables.CopyPublicToLine(g2, 0, "lineA").code == 0, "bet over 256 rejected");
+                    Check(Scalar("SELECT COUNT(*) FROM roomtableowner WHERE GAME_ID=7") == 1, "bet over-limit wrote nothing");
+                    int g4 = 11;
+                    SeedPublic(g4, 1, 3);
+                    Sql("INSERT INTO roomtableconfig(GAME_ID,RoomIndex,TableIndex,TableName,Enabled) VALUES(11,0,254,'x',1)");
+                    Sql("INSERT INTO roomtableowner(GAME_ID,RoomIndex,TableIndex,LineAgent) VALUES(11,0,254,'lineB')");
+                    Check(LineTables.CopyPublicToLine(g4, 1, "lineA").code == 1 && Owner(g4, 255) == "lineA" && Owner(g4, 257) == "lineA", "card copy past 256 allowed");
+                    CheckPerTableRows(g4, 1, 257, "card past 256");
+                    Sql("INSERT INTO roomtableconfig(GAME_ID,RoomIndex,TableIndex,TableName,Enabled) VALUES(11,0,997,'x',1)");
+                    Sql("INSERT INTO roomtableowner(GAME_ID,RoomIndex,TableIndex,LineAgent) VALUES(11,0,997,'lineB')");
+                    Check(LineTables.CopyPublicToLine(g4, 1, "lineC").code == 0 && Scalar("SELECT COUNT(*) FROM roomtableowner WHERE GAME_ID=11 AND LineAgent='lineC'") == 0, "card over 1000 rejected, nothing written");
 
                     // ===== 专属视图新建桌台：预登记归属 / 撤销 =====
                     int g3 = 9;
                     SeedPublic(g3, 1, 2);
-                    Check(LineTables.ReserveNewLineTable(g3, "lineA").code == 0, "reserve refused before line has exclusive tables");
+                    Check(LineTables.ReserveNewLineTable(g3, 1, "lineA").code == 0, "reserve refused before line has exclusive tables");
                     Check(LineTables.CopyPublicToLine(g3, 1, "lineA").code == 1, "g3 copy lineA");
-                    Msg rv = LineTables.ReserveNewLineTable(g3, "LINEA");
+                    Msg rv = LineTables.ReserveNewLineTable(g3, 1, "LINEA");
                     Check(rv.code == 1 && Convert.ToInt32(rv.datas) == 4, "reserve next index after max: " + rv.content);
                     Check(Owner(g3, 4) == "lineA", "reserved owner stored with existing spelling");
                     using (var ef = new GameDbContext())
                         Check(LineScopeRules.TableBelongsTo(LineTables.GetOwners(ef, g3), 4, "lineA") && !LineScopeRules.TableBelongsTo(LineTables.GetOwners(ef, g3), 4, ""), "reserved table never public");
                     LineTables.ReleaseUnusedReservation(g3, 4);
                     Check(Owner(g3, 4) == null, "unused reservation released");
-                    rv = LineTables.ReserveNewLineTable(g3, "lineA");
+                    rv = LineTables.ReserveNewLineTable(g3, 1, "lineA");
                     Check(Convert.ToInt32(rv.datas) == 4, "reserve again same index");
                     Sql("INSERT INTO roomtableconfig(GAME_ID,RoomIndex,TableIndex,TableName,Enabled) VALUES(9,0,4,'新桌',1)"); // 模拟保存成功
                     LineTables.ReleaseUnusedReservation(g3, 4);
                     Check(Owner(g3, 4) == "lineA", "saved table keeps owner");
-                    rv = LineTables.ReserveNewLineTable(g3, "lineA");
+                    rv = LineTables.ReserveNewLineTable(g3, 1, "lineA");
                     Check(Convert.ToInt32(rv.datas) == 5, "second add goes to 5");
                     LineTables.ReleaseUnusedReservation(g3, 5);
                     Check(LineTables.RecallLine(g3, "lineA").code == 1 && Owner(g3, 4) == "#", "recall covers added table");
-                    Check(LineTables.ReserveNewLineTable(g3, "lineA").code == 0, "reserve refused after recall");
-                    Check(LineTables.ReserveNewLineTable(g3, "sub1").code == 0, "reserve refused for non-line");
-                    Check(LineTables.ReserveNewLineTable(g3, "#").code == 0 && LineTables.ReserveNewLineTable(g3, "").code == 0, "reserve refused for #/empty");
-                    Check(LineTables.ReserveNewLineTable(54, "lineA").code == 0, "reserve refused for mjhl");
+                    Check(LineTables.ReserveNewLineTable(g3, 1, "lineA").code == 0, "reserve refused after recall");
+                    Check(LineTables.ReserveNewLineTable(g3, 1, "sub1").code == 0, "reserve refused for non-line");
+                    Check(LineTables.ReserveNewLineTable(g3, 1, "#").code == 0 && LineTables.ReserveNewLineTable(g3, 1, "").code == 0, "reserve refused for #/empty");
+                    Check(LineTables.ReserveNewLineTable(54, 3, "lineA").code == 0, "reserve refused for mjhl");
                     Sql("INSERT INTO roomtableconfig(GAME_ID,RoomIndex,TableIndex,TableName,Enabled) VALUES(9,0,255,'x',1)");
                     Sql("INSERT INTO roomtableowner(GAME_ID,RoomIndex,TableIndex,LineAgent) VALUES(9,0,255,'lineB')");
-                    Check(LineTables.ReserveNewLineTable(g3, "lineB").code == 0 && Owner(g3, 256) == null, "reserve refused at MaxTables");
+                    Check(LineTables.ReserveNewLineTable(g3, 0, "lineB").code == 0 && Owner(g3, 256) == null, "bet reserve refused at 256");
+                    rv = LineTables.ReserveNewLineTable(g3, 1, "lineB");
+                    Check(rv.code == 1 && Convert.ToInt32(rv.datas) == 256, "card reserve allowed past 256");
+                    LineTables.ReleaseUnusedReservation(g3, 256);
+                    Sql("INSERT INTO roomtableconfig(GAME_ID,RoomIndex,TableIndex,TableName,Enabled) VALUES(9,0,999,'x',1)");
+                    Sql("INSERT INTO roomtableowner(GAME_ID,RoomIndex,TableIndex,LineAgent) VALUES(9,0,999,'lineB')");
+                    Check(LineTables.ReserveNewLineTable(g3, 1, "lineB").code == 0 && Owner(g3, 1000) == null, "card reserve refused at 1000");
 
                     // ===== 押注 / 鱼机 / 拉霸 各一轮复制+收回+复用 =====
                     foreach (int[] p in new[] { new[] { 0, 30 }, new[] { 2, 3 }, new[] { 3, 40 } })

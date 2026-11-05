@@ -14,8 +14,20 @@ namespace YYT.BLL.EF
     /// </summary>
     public static class LineTables
     {
-        /// <summary>每款游戏桌台上限（MTH-Server Common/CommST.h MAX_TABLES）。</summary>
+        /// <summary>押注/鱼机每款游戏桌台上限（MTH-Server Common/CommST.h MAX_TABLES，未定义 MTH_TABLES_EXTENDED；11 款鱼机内部桌号为 UInt8）。</summary>
         public const int MaxTables = 256;
+
+        /// <summary>
+        /// 牌机/拉霸每款游戏桌台上限（2026-11-05）：服务端这两类工程定义 MTH_TABLES_EXTENDED，MAX_TABLES=1000，
+        /// 超长扩展参数由中心服分片下发；后台桌台主键按 gameId*1000+桌号 编码（桌号 0～999），客户端牌机选桌数组也是 1000。
+        /// </summary>
+        public const int ExtendedMaxTables = 1000;
+
+        /// <summary>按参数口径（0 押注 / 1 牌机 / 2 鱼机 / 3 拉霸）取桌台上限。</summary>
+        public static int MaxTablesFor(int paraType)
+        {
+            return paraType == 1 || paraType == 3 ? ExtendedMaxTables : MaxTables;
+        }
 
         /// <summary>按桌复制时一张表的定位方式：GameCol=游戏列；IndexCol=桌号列；IdCol=按 gameId*1000+桌号 编码的主键列。</summary>
         public class CloneSpec
@@ -87,7 +99,7 @@ namespace YYT.BLL.EF
         /// <summary>
         /// 纯函数：本次给某线分配的目标桌号。先按升序复用已收回(#)的桌号，不够再从 maxIndex+1 往后接；超过上限返回 null。
         /// </summary>
-        public static List<int> PlanTargetIndexes(int count, IEnumerable<int> recycled, int maxIndex)
+        public static List<int> PlanTargetIndexes(int count, IEnumerable<int> recycled, int maxIndex, int maxTables = MaxTables)
         {
             List<int> result = new List<int>();
             foreach (int idx in (recycled ?? new int[0]).Distinct().OrderBy(i => i))
@@ -98,7 +110,7 @@ namespace YYT.BLL.EF
             int next = maxIndex + 1;
             while (result.Count < count)
             {
-                if (next >= MaxTables) return null;
+                if (next >= maxTables) return null;
                 result.Add(next++);
             }
             return result;
@@ -188,10 +200,11 @@ namespace YYT.BLL.EF
                 }
                 List<int> recycled = owners.Where(kv => kv.Value == LineScopeRules.RecycledLine).Select(kv => kv.Key).ToList();
                 int maxIndex = allIndexes.Count == 0 ? -1 : allIndexes.Max();
-                List<int> targets = PlanTargetIndexes(publicIndexes.Count, recycled, maxIndex);
+                int maxTables = MaxTablesFor(paraType);
+                List<int> targets = PlanTargetIndexes(publicIndexes.Count, recycled, maxIndex, maxTables);
                 if (targets == null)
                 {
-                    msg.content = "桌台数量将超过上限 " + MaxTables + "，无法复制！";
+                    msg.content = "桌台数量将超过本游戏上限 " + maxTables + " 张（当前最大桌号 " + maxIndex + "，需新增 " + publicIndexes.Count + " 张），无法复制！";
                     return msg;
                 }
 
@@ -235,7 +248,7 @@ namespace YYT.BLL.EF
         /// 保证保存后的 RP/PC 热更下发时这张桌已是该线专属，不会有一瞬间作为公共桌台被其他线看到。
         /// 保存失败时调用方须 <see cref="ReleaseUnusedReservation"/> 撤掉登记。成功时 datas 为桌号（0 起）。
         /// </summary>
-        public static Msg ReserveNewLineTable(int gameId, string line)
+        public static Msg ReserveNewLineTable(int gameId, int paraType, string line)
         {
             Msg msg = new Msg(0, "新建专属桌台失败！");
             if (string.IsNullOrEmpty(line) || line == LineScopeRules.RecycledLine)
@@ -270,9 +283,10 @@ namespace YYT.BLL.EF
                 int maxIndex = ef.Database.SqlQuery<int?>(
                     "SELECT MAX(TableIndex) FROM roomtableconfig WHERE GAME_ID={0}", gameId).FirstOrDefault() ?? -1;
                 int idx = maxIndex + 1;
-                if (idx >= MaxTables)
+                int maxTables = MaxTablesFor(paraType);
+                if (idx >= maxTables)
                 {
-                    msg.content = "桌台数量已达上限 " + MaxTables + "，无法新建！";
+                    msg.content = "本游戏桌台已达上限 " + maxTables + " 张，无法新建！";
                     return msg;
                 }
                 // 与复制一致写成 admin.ID 原样写法（游戏服逐字节比对归属）

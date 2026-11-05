@@ -36,7 +36,7 @@ namespace YYT.BLL.EF
             var owners = LineTables.GetOwners(ef, gameId);
             return ef.Database.SqlQuery<int>(
                 "SELECT TableIndex FROM roomtableconfig WHERE GAME_ID={0} AND RoomIndex=0 AND Enabled=1 ORDER BY TableIndex", gameId)
-                .Where(i => i >= 0 && i < LineTables.MaxTables && LineScopeRules.TableBelongsTo(owners, i, line)).ToList();
+                .Where(i => i >= 0 && i < LineTables.ExtendedMaxTables && LineScopeRules.TableBelongsTo(owners, i, line)).ToList();
         }
 
         public static List<M_Robot> GetCardRobots(GameDbContext ef, int gameId, string line)

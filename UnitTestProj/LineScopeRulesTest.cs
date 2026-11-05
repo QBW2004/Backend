@@ -96,6 +96,14 @@ namespace UnitTestProj
             CollectionAssert.AreEqual(new List<int> { 4 }, LineTables.PlanTargetIndexes(1, new[] { 9, 4 }, 12));
             Assert.IsNull(LineTables.PlanTargetIndexes(3, null, 253), "不能超过 256 桌");
             Assert.IsNotNull(LineTables.PlanTargetIndexes(2, null, 253));
+            // 牌机/拉霸放宽到 1000（桌号 0～999），押注/鱼机仍 256
+            Assert.AreEqual(1000, LineTables.MaxTablesFor(1));
+            Assert.AreEqual(1000, LineTables.MaxTablesFor(3));
+            Assert.AreEqual(256, LineTables.MaxTablesFor(0));
+            Assert.AreEqual(256, LineTables.MaxTablesFor(2));
+            CollectionAssert.AreEqual(new List<int> { 254, 255, 256 }, LineTables.PlanTargetIndexes(3, null, 253, LineTables.MaxTablesFor(1)));
+            CollectionAssert.AreEqual(new List<int> { 997, 998, 999 }, LineTables.PlanTargetIndexes(3, null, 996, LineTables.MaxTablesFor(3)));
+            Assert.IsNull(LineTables.PlanTargetIndexes(3, null, 997, LineTables.MaxTablesFor(3)), "牌机/拉霸不能超过 1000 桌");
         }
 
         [TestMethod]
