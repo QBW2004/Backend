@@ -124,6 +124,73 @@ class RabbitRemainingValidation
             Check(ActivityConfigs.CountUsed(ef, cfg, Utc(day.AddHours(23))) == 0, "empty records return zero used");
         }
     }
+    static void SetLedgerPath(string path)
+    {
+        var config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+        config.AppSettings.Settings.Remove("RabbitRaceLedgerPath");
+        if (path != null) config.AppSettings.Settings.Add("RabbitRaceLedgerPath", path);
+        config.Save(ConfigurationSaveMode.Modified);
+        ConfigurationManager.RefreshSection("appSettings");
+    }
+    static void ExpectLedgerFailure(RabbitRaceActivity cfg, DateTime utc, string label)
+    {
+        bool failed = false;
+        try { ActivityConfigs.CountUsed(null, cfg, utc); }
+        catch (InvalidOperationException) { failed = true; }
+        Check(failed, label);
+    }
+    static void RunLedger()
+    {
+        string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "RabbitActivity-test.dat");
+        var day = RabbitRaceActivity.BeijingNow(DateTime.UtcNow).Date;
+        long dayId = (long)(day - new DateTime(1970, 1, 1)).TotalDays;
+        var cfg = RabbitRaceActivity.Default(); cfg.Enabled = true; cfg.StartMinute = 0;
+        SetLedgerPath(path);
+        try
+        {
+            Sql("DELETE FROM gameprizerecord");
+            File.WriteAllText(path, dayId + " 50\r\n"); Save(cfg);
+            Check(ActivityConfigs.CountUsed(null, cfg, Utc(day.AddHours(13))) == 50, "ledger survives cleared prize records without SQL access");
+            var admin = Admin(); var client = Client();
+            Check((int)admin["usedToday"] == 50 && (int)admin["remainingToday"] == 0 && (int)client["remaining"] == 0, "actual MVC and client use exhausted ledger with empty SQL records");
+            cfg.DailyQuota = 100; Save(cfg);
+            Check((int)Admin()["remainingToday"] == 50 && (int)Client()["remaining"] == 50, "raising total retains ledger usage");
+            cfg.DailyQuota = 49; Save(cfg);
+            Check((int)Admin()["remainingToday"] == 0 && (int)Client()["remaining"] == 0, "lowering total clamps ledger remaining");
+            cfg.Enabled = false; Save(cfg);
+            Check((int)Admin()["usedToday"] == 50 && !(bool)Client()["show"], "disabled activity retains ledger usage");
+            cfg.Enabled = true; cfg.StartMinute = 720;
+            Check(ActivityConfigs.CountUsed(null, cfg, Utc(day.AddHours(13))) == 50, "same-day opening change retains ledger usage");
+            Check(ActivityConfigs.CountUsed(null, cfg, Utc(day.AddDays(1).AddHours(12).AddTicks(-1))) == 50, "next opening boundary preserves usage until reached");
+            Check(ActivityConfigs.CountUsed(null, cfg, Utc(day.AddDays(1).AddHours(12))) == 0, "old file does not consume new-day quota");
+            cfg.StartMinute = 1320; cfg.EndMinute = 120;
+            Check(ActivityConfigs.CountUsed(null, cfg, Utc(day.AddDays(1).AddHours(1))) == 50, "cross-midnight early hours retain prior day ledger");
+            Check(ActivityConfigs.CountUsed(null, cfg, Utc(day.AddDays(1).AddHours(22))) == 0, "cross-midnight next opening restores quota");
+            cfg.StartMinute = 0; cfg.EndMinute = 1439; cfg.DailyQuota = 100; Save(cfg);
+            for (int i = 0; i < 10; i++) Award(day.AddHours(1));
+            File.WriteAllText(path, dayId + " 2");
+            Check((int)Admin()["usedToday"] == 2 && (int)Client()["remaining"] == 98, "ledger is authoritative even when SQL count is higher");
+            string replacement = path + ".tmp"; File.WriteAllText(replacement, dayId + " 3");
+            File.Delete(path); File.Move(replacement, path);
+            Check(ActivityConfigs.CountUsed(null, cfg, Utc(day.AddHours(13))) == 3, "replacement file observed without cached usage");
+            using (var held = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+                ExpectLedgerFailure(cfg, Utc(day.AddHours(13)), "locked ledger fails without SQL fallback");
+            Check(ActivityConfigs.CountUsed(null, cfg, Utc(day.AddHours(13))) == 3, "read recovers after file unlock");
+            foreach (string invalid in new[] { "", "x 50", "-1 50", dayId + " -1", dayId + " 2147483648", dayId + " 2 extra", new string('1', 129) })
+            {
+                File.WriteAllText(path, invalid);
+                ExpectLedgerFailure(cfg, Utc(day.AddHours(13)), "invalid ledger fails: " + invalid.Length);
+            }
+            File.Delete(path);
+            ExpectLedgerFailure(cfg, Utc(day.AddHours(13)), "missing ledger fails without SQL fallback");
+            var context = new Context();
+            new ActivityConfigController().GetRabbitRace().ExecuteResult(new ControllerContext { HttpContext = context });
+            Check((int)JObject.Parse(context.Output.Body.ToString())["code"] == 0 && !(bool)Client()["show"], "missing ledger returns admin error and no misleading client quota");
+            SetLedgerPath(null);
+            using (var ef = new GameDbContext()) Check(ActivityConfigs.CountUsed(ef, cfg, Utc(day.AddHours(13))) == 10, "unconfigured environments retain record-based statistics");
+        }
+        finally { SetLedgerPath(null); if (File.Exists(path)) File.Delete(path); }
+    }
     static void Main()
     {
         try { MainChecked(); }
@@ -147,6 +214,7 @@ class RabbitRemainingValidation
                 Sql("CREATE TABLE games(GameId INT PRIMARY KEY,Enable INT)"); Sql("INSERT INTO games VALUES(55,1)");
                 Sql("CREATE TABLE users(ID VARCHAR(50) PRIMARY KEY,AGENCY VARCHAR(50))"); Sql("INSERT INTO users VALUES('quota_test','')");
                 Run();
+                RunLedger();
                 Console.WriteLine("PASS " + checks + " actual BLL/MySQL/MVC/WebAPI checks in " + timer.Elapsed.TotalSeconds.ToString("F3") + "s");
             }
             finally { Sql("DROP DATABASE `" + schema + "`"); }

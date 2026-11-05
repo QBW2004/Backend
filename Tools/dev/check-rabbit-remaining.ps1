@@ -1,18 +1,18 @@
-param([string]$BinPath, [string]$Variant = 'fixed')
+param([string]$BinPath, [string]$Variant = 'fixed', [string]$OutputPath)
 $ErrorActionPreference = 'Stop'
 $root = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..'))
 if (!$BinPath) { $BinPath = Join-Path $root 'TTY.Web\bin' }
-$out = Join-Path $root '.build\rabbit-remaining-validation'
+$out = if ($OutputPath) { [IO.Path]::GetFullPath($OutputPath) } else { Join-Path $root '.build\rabbit-remaining-validation' }
 $runtime = Join-Path $out $Variant
 $data = Join-Path $out 'mysql-data'
 $mysql = 'E:\MTH\mysql57\mysql-5.7.44-winx64\bin\mysqld.exe'
 New-Item -ItemType Directory -Path $runtime,$data -Force | Out-Null
 if (Get-NetTCPConnection -LocalPort 33416 -State Listen -ErrorAction SilentlyContinue) { throw 'Test port 33416 is already in use.' }
 if (!(Test-Path (Join-Path $data 'mysql'))) {
-    & $mysql --no-defaults --initialize-insecure "--datadir=$data" "--log-error=$out\mysql-init.log"
+    & $mysql --no-defaults --initialize-insecure --lower_case_table_names=1 "--datadir=$data" "--log-error=$out\mysql-init.log"
     if ($LASTEXITCODE -ne 0) { throw 'MySQL initialization failed.' }
 }
-$proc = Start-Process -FilePath $mysql -ArgumentList @('--no-defaults',"--datadir=$data",'--port=33416','--bind-address=127.0.0.1',"--log-error=$out\mysql.log") -WindowStyle Hidden -PassThru
+$proc = Start-Process -FilePath $mysql -ArgumentList @('--no-defaults',"--datadir=$data",'--lower_case_table_names=1','--port=33416','--bind-address=127.0.0.1',"--log-error=$out\mysql.log") -WindowStyle Hidden -PassThru
 try {
     for($i=0;$i -lt 50;$i++) { if (Get-NetTCPConnection -LocalPort 33416 -State Listen -ErrorAction SilentlyContinue) { break }; Start-Sleep -Milliseconds 100 }
     Copy-Item -Path (Join-Path $BinPath '*.dll') -Destination $runtime

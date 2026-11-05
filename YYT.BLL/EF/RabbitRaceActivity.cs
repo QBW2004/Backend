@@ -1,6 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Configuration;
+using System.Globalization;
+using System.IO;
 using System.Linq;
+using System.Threading;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -168,17 +172,55 @@ namespace YYT.BLL.EF
         }
 
         /// <summary>
-        /// 当前活动日已派发次数：按游戏服上报的「全民赛跑」中奖记录计数（gameprizerecord 7 天滚动，当日足够）。
-        /// RecTime 为服务器本地时间，统计区间由北京时间换算；游戏服名额台账才是派发权威，此处仅供公示与后台查看。
+        /// 配置 RabbitRaceLedgerPath 时，直接读取游戏服权威台账，避免清库或记录漏报后虚增剩余名额。
+        /// 未配置台账路径的环境沿用中奖记录统计；已配置但读取失败必须报错，不能退回不完整记录。
         /// </summary>
         public static int CountUsed(GameDbContext ef, RabbitRaceActivity activity, DateTime utcNow)
         {
+            string ledgerPath = ConfigurationManager.AppSettings["RabbitRaceLedgerPath"];
+            if (!string.IsNullOrWhiteSpace(ledgerPath)) return ReadLedgerUsed(ledgerPath, activity, utcNow);
+
             DateTime startBj = activity.QuotaDayStart(RabbitRaceActivity.BeijingNow(utcNow));
             DateTime startLocal = DateTime.SpecifyKind(startBj - RabbitRaceActivity.BeijingOffset, DateTimeKind.Utc).ToLocalTime();
             DateTime endLocal = startLocal.AddDays(1);
             return ef.Database.SqlQuery<int>(
                 "SELECT COUNT(*) FROM gameprizerecord WHERE GameId={0} AND CardType={1} AND RecTime>={2} AND RecTime<{3}",
                 RabbitRaceActivity.GameId, RabbitRaceActivity.PrizeName, startLocal, endLocal).FirstOrDefault();
+        }
+
+        /// <summary>游戏服文件格式为“北京活动日编号 已用次数”；旧日台账在新一轮首次中奖前仍可存在。</summary>
+        private static int ReadLedgerUsed(string path, RabbitRaceActivity activity, DateTime utcNow)
+        {
+            const string message = "全民赛跑名额台账暂不可读，请稍后重试或检查台账路径和读取权限。";
+            if (!Path.IsPathRooted(path)) throw new InvalidOperationException(message);
+            long expectedDay = (long)(activity.ActivityDayStart(RabbitRaceActivity.BeijingNow(utcNow)).Date
+                - new DateTime(1970, 1, 1)).TotalDays;
+            Exception lastError = null;
+            for (int attempt = 0; attempt < 3; attempt++)
+            {
+                try
+                {
+                    using (var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete))
+                    using (var reader = new StreamReader(file))
+                    {
+                        if (file.Length < 1 || file.Length > 128) throw new InvalidDataException("Invalid activity ledger size.");
+                        string[] parts = reader.ReadToEnd().Split((char[])null, StringSplitOptions.RemoveEmptyEntries);
+                        long day;
+                        int used;
+                        if (parts.Length != 2
+                            || !long.TryParse(parts[0], NumberStyles.None, CultureInfo.InvariantCulture, out day)
+                            || !int.TryParse(parts[1], NumberStyles.None, CultureInfo.InvariantCulture, out used))
+                            throw new InvalidDataException("Invalid activity ledger counters.");
+                        return day == expectedDay ? used : 0;
+                    }
+                }
+                catch (IOException ex) { lastError = ex; }
+                catch (InvalidDataException ex) { lastError = ex; }
+                catch (UnauthorizedAccessException ex) { throw new InvalidOperationException(message, ex); }
+                // 游戏服以删除旧文件、重命名临时文件替换台账，容忍该短暂间隙。
+                if (attempt < 2) Thread.Sleep(10);
+            }
+            throw new InvalidOperationException(message, lastError);
         }
     }
 }

@@ -55,6 +55,7 @@ SQL 按本次迁移清单及实际缺项执行，先备份。历史补丁已移�
 | `build.bat` | Clean + Release MSBuild（`build.bat Debug` / `noclean` 可变参）。缺 .NET48 引用程序集或 Web targets 时自动经 NuGet 补齐，无需 VS 全家桶。 |
 | `start.ps1` / `start.bat` | IIS Express 起本地站点（默认 8080；`-Stop` 停止）。仓库根缺 `apphost.config` 时用直连路径模式。 |
 | `nuget.exe` | 供 build.bat 自动补引用程序集用。 |
+| `check-rabbit-remaining.ps1` | 全民赛跑隔离 MySQL + 实际 BLL/MVC/WebAPI 回归，涵盖记录统计与权威文件台账。`-BinPath` 指定已构建 DLL，`-OutputPath` 可把临时库/证据放在有空间的磁盘，`-Variant` 区分测试产物；仅绑定 `127.0.0.1:33416`，使用 `lower_case_table_names=1`，结束删测试库并停止本次测试实例。 |
 
 ## db/ — 本地数据库
 
