@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Configuration;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -24,17 +25,19 @@ class BackendValidation
     static void Run()
     {
         var start = DateTime.UtcNow;
-        using (var db = new MySqlConnection("Server=localhost;Port=3306;Uid=root;Pwd=123456;Allow User Variables=True;"))
+        var connection = new MySqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["DbConnString"].ConnectionString);
+        if (connection.Server != "127.0.0.1" || connection.Port != 33308 || connection.Database != "mth_rankhistory_validation")
+            throw new Exception("Requires isolated loopback MySQL on port 33308");
+        connection.Database = "";
+        using (var db = new MySqlConnection(connection.ConnectionString))
         {
             db.Open();
             Action<string> sql = q => { using (var cmd = new MySqlCommand(q, db)) cmd.ExecuteNonQuery(); };
-            sql("CREATE DATABASE mth_rankhistory_validation CHARACTER SET utf8mb4");
+            sql("CREATE DATABASE mth_rankhistory_validation CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
             sql("USE mth_rankhistory_validation");
-            foreach (string t in new[] { "games", "users", "userrobot", "admin" }) sql("CREATE TABLE IF NOT EXISTS `" + t + "` LIKE mth.`" + t + "`");
-            string schema = File.ReadAllText(Path.Combine(backendRoot, "Docs/sql/手机端后台权限与记录保留-20260902.sql"));
-            int from = schema.IndexOf("CREATE TABLE");
-            sql(schema.Substring(from, schema.IndexOf(";", from) - from + 1));
-            sql("DELETE FROM gameprizerecord; DELETE FROM games; DELETE FROM users; DELETE FROM userrobot;");
+            string schemaDump = SqlSnapshot.Read(backendRoot);
+            foreach (string table in new[] { "games", "users", "userrobot", "admin", "gameprizerecord", "gamerankhistory", "prizebroadcastoutbox" })
+                sql(SqlSnapshot.Table(schemaDump, table));
             sql("INSERT INTO games(GameId,Name,Enable,Num,GameType) VALUES(5,'火凤凰',1,0,1),(40,'水果拉霸',1,0,3),(3,'金蟾捕鱼',1,0,2),(2,'彩金单挑',1,0,4),(54,'麻将胡了',1,0,1),(901,'未知类别',1,0,0),(99,'关闭牌机',0,0,1)");
             sql("INSERT INTO users(ID,NAME,PWD,AGENCY) VALUES('rankplayer','真人昵称','x','')");
             sql("INSERT INTO userrobot(UserName,UserNick,PassW,Ico,Lev,Sex,Gold,IsRobot) VALUES('rankbot','机器人昵称','x',1,1,0,0,2)");
@@ -43,25 +46,16 @@ class BackendValidation
             sql("INSERT INTO gameprizerecord(EventId,UserID,GameId,GameType,CardType,Score,RecTime) VALUES('closed','rankbot',99,0,'关闭游戏中奖',999999,'2026-10-27 13:00:00')");
             for (int i = 0; i < 35; i++)
                 sql("INSERT INTO gameprizerecord(EventId,UserID,GameId,GameType,CardType,Score,RecTime) VALUES('hidden" + i + "','rankbot'," + new[] { 3, 2, 54, 901, 99 }[i % 5] + ",0,'隐藏游戏中奖',999999,'2026-10-27 14:00:00')");
-            string migration = File.ReadAllText(Path.Combine(backendRoot, "Docs/sql/大厅排行榜最新30条-20261027.sql"));
-            Action<string> migrateSql = migrationText => {
-                int a = migrationText.IndexOf("DELIMITER $$"), b = migrationText.IndexOf("DELIMITER ;");
-                sql(migrationText.Substring(0, a));
-                sql(migrationText.Substring(a + 12, b - a - 12).Trim().TrimEnd('$'));
-                sql(migrationText.Substring(b + 11));
-            };
-            migrateSql(migration);
-            migrateSql(migration);
-            Check(true, "migration and repeated migration");
-            sql("ALTER TABLE gamerankhistory ADD COLUMN LineAgent VARCHAR(50) NOT NULL DEFAULT ''; ALTER TABLE gameprizerecord ADD COLUMN LineAgent VARCHAR(50) NOT NULL DEFAULT ''");
-            sql("ALTER TABLE gamerankhistory DROP KEY uq_rank_game_slot, ADD UNIQUE KEY uq_rank_line_game_slot(LineAgent,GameId,Slot)");
-            sql("UPDATE gameprizerecord SET IsBroadcast=1 WHERE EventId LIKE 'event%'");
+            // Current ring-schema fixture: the 35 qualifying events retain the latest 30 slots.
+            for (int i = 1; i <= 35; i++)
+                sql("INSERT INTO gamerankhistory(GameId,Slot,EventId,UserID,CardType,Score,RecTime,IsBigWin) VALUES(5," + ((i-1)%30) + ",'event" + i + "','" + (i%2==0 ? "rankbot" : "rankplayer") + "','大奖'," + i + ",'2026-10-27 12:00:00',1) ON DUPLICATE KEY UPDATE ID=VALUES(ID),EventId=VALUES(EventId),UserID=VALUES(UserID),Score=VALUES(Score),RecTime=VALUES(RecTime),IsBigWin=VALUES(IsBigWin)");
+            Check(Convert.ToInt32(new MySqlCommand("SELECT COUNT(*) FROM gamerankhistory WHERE GameId=5", db).ExecuteScalar()) == 30, "current ring schema retains 30 slots");
+            sql(SqlSnapshot.Table(schemaDump, "gamerankhistory", true));
+            Check(Convert.ToInt32(new MySqlCommand("SELECT COUNT(*) FROM gamerankhistory WHERE GameId=5", db).ExecuteScalar()) == 30, "existing-table initialization preserves rank history");
+            sql("UPDATE gameprizerecord SET IsBroadcast=1,Multiplier=50 WHERE EventId LIKE 'event%'");
             sql("INSERT INTO gameprizerecord(EventId,UserID,GameId,GameType,Score,IsBroadcast,RecTime) VALUES('old-small','rankbot',40,3,99999,0,'2026-10-28 00:00:00')");
-            sql("INSERT INTO gamerankhistory(GameId,Slot,EventId,UserID,Score,RecTime) VALUES(40,0,'old-small','rankbot',99999,'2026-10-28 00:00:00')");
-            string bigWinMigration = File.ReadAllText(Path.Combine(backendRoot, "Docs/sql/大奖榜与播报统一事件-20261031.sql"));
-            migrateSql(bigWinMigration);
-            migrateSql(bigWinMigration);
-            Check(Convert.ToInt32(new MySqlCommand("SELECT COUNT(*) FROM gamerankhistory WHERE EventId='old-small'", db).ExecuteScalar()) == 0, "migration removes ordinary wins and is repeatable");
+            sql("INSERT INTO gamerankhistory(GameId,Slot,EventId,UserID,Score,RecTime) VALUES(40,29,'old-small','rankbot',99999,'2026-10-28 00:00:00')");
+            Check(Convert.ToInt32(new MySqlCommand("SELECT IsBigWin FROM gamerankhistory WHERE EventId='old-small'", db).ExecuteScalar()) == 0, "ordinary win defaults to unqualified and is filtered by the API");
             using (var config = new HttpConfiguration())
             {
                 config.MapHttpAttributeRoutes();
@@ -134,22 +128,31 @@ class BackendValidation
                         && RankingListController.DisplayMachine(3, null, null) == "--", "machine bases without rooms and unavailable metadata");
                 }
             }
-            string storeTest = Path.Combine(serverRoot, "tests/_out/rank_history_store_test.exe");
+            string storeTest = StoreTestExecutable();
             if (File.Exists(storeTest))
             {
                 RunStoreTest("");
             }
+            else if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MTH_RANK_STORE_TEST_EXE")))
+                throw new FileNotFoundException("Configured rank store test executable is missing.", storeTest);
             if (serveFixture) ServeFixture(db);
             sql("DROP DATABASE mth_rankhistory_validation");
         }
         Console.WriteLine("PASSED " + checks + " checks in " + (DateTime.UtcNow - start).TotalSeconds.ToString("F2") + " seconds");
     }
 
+    static string StoreTestExecutable()
+    {
+        string configured = Environment.GetEnvironmentVariable("MTH_RANK_STORE_TEST_EXE");
+        return string.IsNullOrEmpty(configured) ? Path.Combine(serverRoot, "tests/_out/rank_history_store_test.exe") : Path.GetFullPath(configured);
+    }
+
     static void RunStoreTest(string arguments)
     {
-        string exe = Path.Combine(serverRoot, "tests/_out/rank_history_store_test.exe");
+        string exe = StoreTestExecutable();
         var info = new System.Diagnostics.ProcessStartInfo(exe, arguments) { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true };
-        info.EnvironmentVariables["MTH_RANK_TEST_CONNECTION"] = "host=127.0.0.1;port=3306;user=root;password=123456;db=mth_rankhistory_validation;";
+        var connection = new MySqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["DbConnString"].ConnectionString);
+        info.EnvironmentVariables["MTH_RANK_TEST_CONNECTION"] = "host=" + connection.Server + ";port=" + connection.Port + ";user=" + connection.UserID + ";password=" + connection.Password + ";db=" + connection.Database + ";";
         info.EnvironmentVariables["PATH"] = Path.Combine(serverRoot, "bat/Wei-Release/ServerCenterNew/x64/Release") + ";" + Path.Combine(serverRoot, "third_party/pocolink/bin") + ";" + Environment.GetEnvironmentVariable("PATH");
         using (var process = System.Diagnostics.Process.Start(info))
         {

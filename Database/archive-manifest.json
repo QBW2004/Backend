@@ -1,0 +1,101 @@
+﻿{
+    "archivedAtUtc":  "2026-11-05T12:01:19.5947948Z",
+    "archiveRoot":  "E:\\MTH\\MHT-Backend-db-archives\\20261105-consolidation",
+    "files":  [
+                  {
+                      "path":  "mth.sql",
+                      "bytes":  2584275,
+                      "sha256":  "165FBBBD2BAEEF9E13B56839F1AA7EDA666BB68D4AEACF7020ABE8826FDC98D4"
+                  },
+                  {
+                      "path":  "mth_20260804_152207.sql",
+                      "bytes":  3648600,
+                      "sha256":  "E7BB9129DAC884D41F96C660238D3FD39771ED9B26AAD7CD88F516E2210F5902"
+                  },
+                  {
+                      "path":  "mth_5.7_restore.sql",
+                      "bytes":  3649038,
+                      "sha256":  "555EB2A4F3D6BC32B781B9987998A453A3FA09358295AA5398A843C59DED644E"
+                  },
+                  {
+                      "path":  "mth_8.0_backup_20260804.sql",
+                      "bytes":  3649038,
+                      "sha256":  "CD80CB42532C1FEBDB53583F48DBD6A8809CDE6E4194EEED34EFB25A8C1B9CA0"
+                  },
+                  {
+                      "path":  "mth_havedata.sql",
+                      "bytes":  8526602,
+                      "sha256":  "C08E4820D43AA1F99D55581A1BF17B119ACDB4C6EDE8D103E3783516549AB154"
+                  },
+                  {
+                      "path":  "Docs/sql/mth.sql",
+                      "bytes":  36970788,
+                      "sha256":  "49187650757FACB041B43013B48591C4C722A92F430708F43AB58105BB497B2E"
+                  },
+                  {
+                      "path":  "Docs/sql/mth716yu.sql",
+                      "bytes":  897256,
+                      "sha256":  "786FAE7378B3CD2345523B954C9352D97AB4AD7D26772B45F0B3DD9B0AE42B23"
+                  },
+                  {
+                      "path":  "Docs/sql/mth717.sql",
+                      "bytes":  2463267,
+                      "sha256":  "51B1355C190B547900945AAA8322B8D2405C06FDBB760C98C4613964BED089EF"
+                  },
+                  {
+                      "path":  "Docs/sql/mth7201.sql",
+                      "bytes":  2476007,
+                      "sha256":  "40F36BECDB5B4E8D9D205154D4C7B087BB115B830FF714427D520A922872BEE7"
+                  },
+                  {
+                      "path":  "Docs/sql/mth721.sql",
+                      "bytes":  2851322,
+                      "sha256":  "789ACCA5EFDCBBD744CBD3027E01DFB89BCACE93F5957BAA08858A67B2D50766"
+                  },
+                  {
+                      "path":  "docker/mysql/init/00_mth.sql",
+                      "bytes":  2591864,
+                      "sha256":  "28FF83022F5587164DCC08C4A62DEF53A1D4D7BC89174E44C5F11638AE46AD72"
+                  },
+                  {
+                      "path":  "deploy-template/_raw_mth_full_20261018.sql",
+                      "bytes":  421062,
+                      "sha256":  "750F8B9B99F6DE25EF672A580A228F70EEBE6CCDE7A98911BE176D4498A89C59"
+                  },
+                  {
+                      "path":  ".devin/skills/mth-server-deploy/assets/mth_template.sql",
+                      "bytes":  306291,
+                      "sha256":  "9913BEDB46FC17093EEA31C1D499CD152A91652E08B9810D534B15DA2748CAF3"
+                  },
+                  {
+                      "path":  "docker/mysql/init/10_动态桌台字段扩展.sql",
+                      "bytes":  3218,
+                      "sha256":  "0829A58FCD173D8A9A2537863C816D1EA7FDD88E6A2A4990EFDE4C8A9DBC5892"
+                  },
+                  {
+                      "path":  "docker/mysql/init/20_fix_scoreswitch_decimal.sql",
+                      "bytes":  945,
+                      "sha256":  "B47378F266F14146F4DC9A7B3DD8FAEE4A219EC51E8AF07CDA731B68DEC63247"
+                  },
+                  {
+                      "path":  "docker/mysql/init/30_房间桌台配置表坐席扩列.sql",
+                      "bytes":  1563,
+                      "sha256":  "FA00AA568194B1B048CB3EE4F4B8D5EAC15DD4688D42C26B0A91476259F9B0D8"
+                  },
+                  {
+                      "path":  "docker/mysql/init/40_性能索引.sql",
+                      "bytes":  4017,
+                      "sha256":  "7B0BA229414011B1FC4EC44C8384C6031C535F48AF85356227DD07A0031AAA5F"
+                  },
+                  {
+                      "path":  "docker/mysql/init/41_玩家登录时间.sql",
+                      "bytes":  3427,
+                      "sha256":  "C69295CE43E62C5672E3ED228B79D94B62F547719D0D98B29256C96E6EE8C469"
+                  },
+                  {
+                      "path":  "docker/mysql/init/50_公告唯一化与字号.sql",
+                      "bytes":  2358,
+                      "sha256":  "6262BC179DCF9D6DD3D787118ED3D304C46D6DCF509B1BBCE25AF8A77138D5CE"
+                  }
+              ]
+}

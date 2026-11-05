@@ -1,0 +1,21 @@
+{
+  "preserve": [
+    "activity", "agent_permission_template", "betgamecfg", "cardgamecfg",
+    "cardpayoutprofile", "clientpackage", "gameconfiglaba", "gamemo", "gamepara",
+    "notice", "parabet", "parabetroom", "paracard", "parafish", "paragame",
+    "paralaba", "pararoom", "plattype", "roomtableconfig", "roomtableconfig_bet",
+    "roomtableconfig_card", "updateaddrnew"
+  ],
+  "reset": ["activityconfig", "admin", "gameacclaba", "games", "mjhl_agent_config", "roomtableowner", "userrobotnum"],
+  "empty": [
+    "accountlog", "agencyoptlog", "agentprizecontrol", "agentprizeledger", "agentprizepool",
+    "agent_hierarchy", "cardpayoutprofile_att3_bak_0907", "cashierinfo", "clientexchangerecord",
+    "ex_change", "gamecommandoutbox", "gameprizerecord", "gamerankhistory", "games_money_spent",
+    "invite_codes", "loginmissrecord", "manageropt", "mgrpermission", "mjhl_agent_config_history",
+    "mjhl_recovery_operation", "mjhl_recovery_state", "parabetroom_bak_20260815", "prizebroadcastoutbox",
+    "rank", "rechargerecords", "robot_seat", "safe_coins_log", "sharebonus", "tablecoinrecord",
+    "totalkill_table_backup", "transferlog", "uploadsimage", "usercontrolstatus", "usercontrolvalue",
+    "userlockrecord", "userloginrecord", "useroptlog", "userrelations", "userrobot", "users",
+    "userscoresnapshotledger", "user_daily_winloss", "user_winloss_ledger", "videogamecoinrecord"
+  ]
+}

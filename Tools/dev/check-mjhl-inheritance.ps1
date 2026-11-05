@@ -33,7 +33,7 @@ try {
     $refs=@('System.dll','System.Core.dll','System.Configuration.dll','System.Data.dll','System.Web.dll','System.Xml.dll','System.Web.Extensions.dll')
     $refs+=@('EntityFramework.dll','MySql.Data.dll','Newtonsoft.Json.dll','System.Web.Mvc.dll','YYT.BLL.dll','YYT.Common.dll','YYT.Entity.dll','YYT.Web.dll') | ForEach-Object {Join-Path $runtime $_}
     $exe=Join-Path $runtime 'MjhlInheritanceValidation.exe'
-    & 'C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe' /nologo /langversion:5 /target:exe "/out:$exe" @($refs | ForEach-Object {"/r:$_"}) (Join-Path $PSScriptRoot 'MjhlInheritanceValidation.cs')
+    & 'C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe' /nologo /langversion:5 /target:exe "/out:$exe" @($refs | ForEach-Object {"/r:$_"}) (Join-Path $PSScriptRoot 'MjhlInheritanceValidation.cs') (Join-Path $PSScriptRoot 'SqlSnapshot.cs')
     if($LASTEXITCODE -ne 0){throw 'Validation compilation failed.'}
     & $exe
     if($LASTEXITCODE -ne 0){throw 'Validation failed.'}

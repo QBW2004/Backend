@@ -1,236 +1,128 @@
 ---
 name: mth-server-deploy
-description: >
-  MTH 游戏平台服务端整站部署：在一台全新的 Windows Server 上从零搭起「MySQL 5.7 (mth 库)
-  + 运营后台 TTY.Web/YYT.Web (IIS, ASP.NET MVC5/.NET 4.8) + 游戏服集群
-  (ServerCenterNew 中心服 + 14 款子游戏 + ServerManager Daemon/Admin + ServerRobot)」。
-  使用现成产物：游戏服二进制 zip（线上在跑版本）、Web 部署 zip、清档版数据库模板
-  mth_template.sql（表结构+全部游戏配置，玩家/代理/流水已清空，仅留 atmadmin/123456）。
-  触发词："部署服务端"、"搭建游戏服"、"装服务器"、"部署 MTH"、"server deploy"、
-  "新机器部署"、"整站部署"、"把游戏部署到服务器"、"服务端安装"、"部署包"、"上线部署"。
-  只要是把这套游戏平台装到一台新 Windows 服务器上，就用本 skill。
+description: >-
+  部署和维护 MTH 运营后台及配套游戏服务端：新 Windows 服务器安装、已有站点发布、
+  数据库初始化或恢复、部署相关备份维护。用于部署后台、上线服务端、制作部署包、
+  新机器安装或检查发布与备份流程；先区分新装、升级、恢复和只读巡检。
 ---
 
-# MTH 服务端整站部署（DB + 后台 + 游戏服）
+# MTH 后台与服务端部署
 
-> 目标：把一台**全新 Windows Server**（2016/2019/2022，4C8G 起步，生产建议 8C/16G）
-> 变成可运营的 MTH 整套服务端。全程约 30~60 分钟，取决于网络与下载速度。
-> 所有步骤在**目标服务器上、管理员 PowerShell** 里执行（SSH 远程也行，注意第 8 节的坑）。
+2026-11-05 更新。当前数据库入口为仓库 `Database/`；每日异机 SQL 备份已部署。版本、开放游戏、进程、端口和线上文件以本次实查及对应发布记录为准，历史压缩包不能代表当前运行版本。
 
-## 0. 产物清单（先确认这些文件在手）
+## 1. 先确定任务路径
 
-| 产物 | 位置 | 内容 |
-|---|---|---|
-| 数据库模板 | `assets/mth_template.sql`（本 skill 目录，~300KB） | mth 库：59 表 + 触发器 + 视图 + 存储过程；**保留**全部游戏/桌台/牌型/机器人配置与 games 开关；**已清空**玩家/代理/流水/日志；唯一账号 `atmadmin`/`123456` |
-| 游戏服二进制 | `deploy-template/MTH-Server-Binaries_20261018.zip`（仓库根，~161MB） | 28 个 `Server*` 目录的 `x64\Release\`（exe + 15 个运行 DLL + 状态文件 + 中心服 pdb），含 `servers.ini` / `mth_pipe.ps1` / `pipe_cmd.ps1`。线上在跑版本 |
-| 后台站点包 | `deploy-template/TTY.Web_1.0.61.zip`（~31MB） | 编译好的运营后台站点（含 Web.config 模板） |
-| 部署脚本 | `scripts/`（本 skill 目录） | env-check / import-db / deploy-web / open-ports / install-autostart / verify-deploy / mth_pipe / pipe_cmd |
-
-⚠️ `deploy-template/` 下的 zip 体积大**不入 git**，随 skill 目录一起拷贝分发。
-源码侧参考：后台仓库 `MHT-Backend`（本仓）、游戏服仓库 `MTH-Server`（HTM77）——
-本 skill 用二进制部署，**不需要**编译环境；如需自行编译见第 9 节。
-
-## 1. 架构与端口（先看清再动手）
-
-```
-玩家 App ──裸 TCP──► :9000 中心服 + :91xx/92xx/93xx/94xx 各子游戏端口
-玩家 App ──HTTP───► :8081 后台 /api/*（充值回调/客服/兑换码等）
-运营/代理 ──HTTP──► :80   后台管理界面（可套 CDN/前置反代）
-                 :8080 （可选）留给反向代理中转的受限端口
-本机内部：MySQL :3306（仅本机！）· 命名管道 mynamedpipe（后台→中心服指令）
-         · \\.\pipe\MTH_ServerPipe（Daemon 控制）· \\.\pipe\MTH_RobotPipe（机器人热更）
-         · :9600 ServerRobot 监听 · :80xx/81xx 中心服↔子游戏 COM 回连（仅 127.0.0.1）
-```
-
-三件套**必须同机**：游戏服连 `127.0.0.1` MySQL 与本地管道是写死的。
-目录约定（与线上一致，脚本默认值都是这套）：
-
-| 用途 | 路径 |
+| 用户目标 | 执行路径 |
 |---|---|
-| 游戏服 | `C:\Server\<Server*> \x64\Release\` + `C:\Server\servers.ini` |
-| 后台站点 | `C:\Backend` |
-| MySQL 5.7 | `C:\mysql`，服务名 `MySQL57` |
-| 日志 | `C:\Server\Logs\*.log`（游戏服）、`C:\Backend\Logs`（站点） |
+| 新机器从零安装 | 第 3 节：环境、clean 初始化、匹配程序/配置与状态文件、启动和验收 |
+| 已有后台/服务端升级 | 第 4 节：核对线上基线、隔离包、发布前备份、按范围替换和验收；不运行 clean 初始化 |
+| 数据库恢复或替换 | 先读数据库说明及本次恢复清单，明确快照时间、资金数据和状态文件边界；不把普通程序回滚当作数据库回滚 |
+| 每日备份配置/排查 | 第 5 节及备份专题；不重跑新装、停服或数据库导入 |
+| 只读巡检 | 只读配置/日志/任务状态/HTTP；环境和部署脚本仅在核实后使用 `-CheckOnly` |
 
-## 2. 部署步骤（按顺序）
+先读仓库 [AGENTS.md](../../../AGENTS.md)、[功能影响图](../../../../MTH-Server/docs/architecture/feature-impact-map.md) 和当前任务相关专题；跨仓改动同时读对应 AGENTS。使用 [影响模板](../../../../MTH-Server/docs/architecture/change-impact-template.md) 记录范围、排除依据、验证与发布依赖。
 
-### Step 0 — 上传产物
+开始查看 `git status --short`、分支和相关 diff，保留已有未提交工作。工作区、提交、隔离包、线上版本分别核对。线上操作沿用用户已授权的具体范围，文档和旧发布记录本身不扩大授权。
 
-把整个 skill 目录 + `deploy-template/*.zip` 拷到服务器，例如 `C:\MTH-Deploy\`。
-下文命令假设产物在 `C:\MTH-Deploy\`，实际路径相应替换。
+## 2. 产物与工具入口
 
-### Step 1 — 系统环境（env-check.ps1）
+以下相对路径均以后台仓库根目录为基准。需要运行环境检查等仓库工具时携带其完整依赖目录；只复制本 skill 文件夹不能保证可执行。
 
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\env-check.ps1
-# 自动检测+安装：.NET 4.8 / VC++ 2015-2022 x64 / IIS+ASP.NET 4.5 / MySQL 5.7（装到 C:\mysql，
-# 服务 MySQL57，root 密码默认 123456）/ 防火墙 Web 端口。幂等，可重跑。
-# 仅巡检不改动机子：加 -CheckOnly；MySQL 要换 root 密码：-MySqlRootPassword <pwd>（但见第 7 节警告）
-```
-
-Windows Server 2012 R2 缺 UCRT 时改用 `Tools/server-env/fix-legacy-ucrt.ps1`（KB 补丁链，需重启）。
-
-### Step 2 — 数据库（import-db.ps1）
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\import-db.ps1 `
-    -SqlFile C:\MTH-Deploy\mth_template.sql -Password 123456
-```
-
-- 模板文件自带 `CREATE DATABASE IF NOT EXISTS mth` + `USE`，直接灌。
-- ⚠️ **它会把已有同名库整库覆盖**（脚本对非空 mth 会先拒绝，`-Force` 才放行）。
-- 导入后应看到 `tables>=59 / games=14 / admin=1 / triggers>=1`。
-- ⚠️ **千万别在已有生产数据的机器上跑这条**——就是全新部署用的。
-
-### Step 3 — 游戏服（解压二进制 → 守护任务 → Start-All）
-
-```powershell
-# 3.1 解压到 C:\Server（zip 里第一层就是各 Server* 目录 + servers.ini + mth_pipe.ps1）
-Expand-Archive C:\MTH-Deploy\MTH-Server-Binaries_20261018.zip C:\Server -Force
-
-# 3.2 确认 servers.ini 里的 ServerRoot 与实际路径一致（默认 C:\Server，一般不用改）
-#     [Flags] 段控制哪些子游戏参与一键启停；当前按线上开放清单=14 款，已配好。
-
-# 3.3 装守护进程开机任务并立即拉起 Daemon（不自动拉起游戏——见下条）
-powershell -ExecutionPolicy Bypass -File scripts\install-autostart.ps1 -StartAllOnBoot
-#   -StartAllOnBoot 额外注册 MTH_StartAll：开机延时后经管道发 Start-All
-#   （Daemon 自身开机不会拉起游戏，这是已知缺口，此任务补齐）
-
-# 3.4 发“启动全部”：Daemon 先起中心服，等 10 秒再拉各子游戏
-powershell -ExecutionPolicy Bypass -File C:\Server\mth_pipe.ps1 -Cmd Start
-
-# 3.5 等 ~60 秒后验证：应有 15 个 Server* 进程、9000+14 个游戏端口在监听
-powershell -ExecutionPolicy Bypass -File scripts\verify-deploy.ps1
-```
-
-要点：
-- 每个 `x64\Release\` 里 exe 之外必须齐 **14 个 Poco*.dll + libmysql.dll**（zip 已带齐）；缺 DLL 表现为进程秒退或日志 `LocalCommu Break!!!` 死循环。
-- `ServerCardDscj/DscjSave.bin`、`ServerCardDazhi/DaZiBan.bin`、`ServerCardNBA/NBASave.bin` 是**必需状态文件**（zip 已带），缺了会崩溃重启循环（Daemon 日志 `异常退出 3221226505`）。`ServerCardDscj\Dscj\CardDscj_Alg_Log-*.txt` 空占位文件同理。
-- 启动顺序是 Daemon 内部保证的：中心服先起并等 10s；若手工启进程也必须中心服先行，否则子游戏一直 `re-request table para`。
-- 机器人 `ServerRobot` 默认**不随 Start-All 拉起**（按需在后台「机器人监听进程」或管道 `-Cmd Start -Name` 单独启；多开会塞满牌桌，见第 8 节）。
-
-### Step 4 — 运营后台（deploy-web.ps1）
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\deploy-web.ps1 `
-    -SourcePath C:\MTH-Deploy\TTY.Web_1.0.61.zip -Port 8081 -Yes
-#   自动：备份旧 C:\Backend → robocopy 新内容 → 应用池 v4.0/64位 →
-#   Default Web Site 指向 C:\Backend → 补 8081 绑定 + 防火墙 → 回收池 → HTTP 探测。
-```
-
-- 应用池必须 **v4.0 / Integrated / 64 位**（不开 32 位兼容）——脚本已处理。
-- 站点的 **80 端口**绑定 IIS 默认自带就有；客户端 API 走 8081；如需反代入口另加 8080（第 5 步用 `-TransitIp` 限源）。
-- 部署完检查 `C:\Backend\Web.config` 的 `DbConnString`：默认 `Uid=root;Pwd=123456` 即可用；
-  若 MySQL root 密码不是 123456，改这里（游戏服侧见第 7 节硬编码说明）。
-
-### Step 5 — 防火墙（open-ports.ps1）+ 云安全组
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\open-ports.ps1
-#   开：80、8081（后台）；9000 + 20 个子游戏端口（玩家 TCP）。
-#   有 nginx 中转再跑：-TransitIp <中转IP>  （8080 只放行该 IP）
-```
-
-- ⚠️ 云主机是**双层防护**：Windows 防火墙之外还有**云安全组**，两边都放行才通。
-- **3306（MySQL）不对外开放**；9600（机器人监听）不对外开放。
-- 玩家连游戏是**裸 TCP 直连游戏端口**，不能只开 80/443——CDN/443 拦不住也转不了游戏流量。
-
-### Step 6 — 总验证（verify-deploy.ps1）
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\verify-deploy.ps1
-```
-
-全绿后手工确认三件事：
-1. `http://<服务器IP>/` 或 `:8081` 返回后台登录页（GET `/` 跳 `/Login/Index` 正常）。
-2. 后台登录 `atmadmin / 123456` 成功 → **立刻改密**（后台「修改密码」或直接改 `admin.PWD`）。
-3. `C:\Server\Logs\中心服务器日志.log` 滚动正常、无 DB 连接报错；各子游戏日志无 `connect 中心服失败`。
-
-## 3. 部署后必改配置（上线清单）
-
-`C:\Backend\Web.config` 里这些值随包带来，**按新环境改掉**：
-
-| 键 | 说明 |
+| 产物/工具 | 使用依据 |
 |---|---|
-| `DbConnString` | MySQL 连接串（默认 root/123456 可用，生产建议换强密码——但要同步给游戏服，见第 7 节） |
-| `WebHost` | 对外主域名 |
-| `Andriod_Url` / `PC_Url` / `IOS_Url` | 客户端下载地址（配合 `C:\Backend\Upload\` 里的安装包） |
-| `PayOrderNotify` / `DPayOrderNotify` | 支付回调，**必须指向本机**:8081（如 `http://<本机IP>:8081/api/PayOrderNotify`），且到支付商户后台同步登记 |
-| `payUrl`/`shop_id`/`shop_key`、`X2*`、`api_*`/`secretKey`/`api_token`/`notify_token` | 三方支付/额度接口密钥，换成自己的商户参数 |
-| `jiaxincloudURL` | 客服链接 |
-| `UploadPath` | 上传目录，默认 `D:\Uploads`，单盘机器改 `C:\Backend\Upload`（deploy-web 保留该目录） |
-| `JackpotDir_*`（Dscj/NBA/AttMhb） | 牌机奖池落盘目录，保持 `C:\Server\<对应>\x64\Release` |
-| `WebVer` | 版本号自增即可 |
-| `serverName`/`pipeName`/`robotPipeName` | 管道名 `.`/`mynamedpipe`/`MTH_RobotPipe`，不用动 |
+| `Database/mth_clean.sql` | 新环境初始化，完整结构与必要配置；清理范围、管理员和校验见 [数据库说明](../../../Database/README.md) |
+| `Database/mth_full.sql` 或本次已核验的完整备份 | 指定快照恢复/排查，含敏感数据；旧 full 不自动等于当前线上数据 |
+| 后台站点包 | 根据实际线上基线准备隔离完整站点，核对 Web/BLL/依赖 DLL、Razor、脚本和配置 |
+| 游戏服包 | 与后台、中心服、子游戏、Robot、协议和存档格式相匹配的实际发布产物 |
+| `Tools/server-env/env-check.ps1` | 当前环境检查/安装入口；默认会安装组件，纯巡检用 `-CheckOnly` |
+| `Tools/deploy/pack.ps1` / `deploy.ps1` | 后台打包和部署；`-SourcePath` 可使用隔离站点。当前 deploy 的收尾会输出完整连接串，实际执行前必须修正并同步副本，或改用已核验的专项发布流程 |
+| `Tools/db/export-db.ps1` | 单次完整 SQL 导出，默认保存仓库外；不覆盖既有备份 |
+| 本 skill 的 `scripts/` / `assets/` | 按需核对的兼容或历史资源，不能把默认端口、游戏清单和状态当作当前事实 |
 
-客户端侧：游戏 APK 的服务器地址在 Unity 客户端 `Network.cs`/`DefaultServerIp`（MTH-git 仓）里，
-换服务器要么改域名 A 记录（若客户端走域名）要么改 IP 重打包——**裸 TCP，不能套 CDN**。
+`deploy-template/` 说明见 [产物目录说明](../../../deploy-template/README.md)。旧包名、旧版本号和旧 `servers.ini` 不得作为新发布的默认输入。SQL 与大包通过受控渠道取得，不把凭据写进 skill 或交付物。
 
-## 4. 日常运维速查
+历史常见目录为 `C:\Backend`、`C:\Server`、`C:\mysql`；实际站点、服务、身份和路径先只读确认。MySQL/管道依赖本机，拆分部署前必须核对当前实现是否支持。
+
+当前中转为 **`185.180.17.57`**；`94.103.6.39`、`140.235.96.132` 已弃用。域名、HTTPS/CDN 回源、中转与源站、后台/API/游戏 TCP 端口分别核对，详见 [中转拓扑](../../../../MTH-Server/docs/游戏TCP域名中转部署.md)。不按旧示例直接开放 80/8080/8081 或停用游戏端口；MySQL 和内部 COM/Robot 管理端口不作为公网入口。
+
+## 3. 新环境安装
+
+### 环境与数据库
+
+先以 `Tools/server-env/env-check.ps1 -CheckOnly` 核对环境，再在安装范围内执行所需安装。skill 内 `scripts/env-check.ps1` 是指向该入口的包装器，需要后台仓库目录结构。Windows Server 2012 R2 的 UCRT 补丁与重启单独核对 [工具说明](../../../Tools/README.md)。
+
+数据库使用 MySQL 5.7 配套版本、`lower_case_table_names=1`、`utf8mb4` 和 **`utf8mb4_unicode_ci`**。后者影响存储过程参数排序规则，不能换成 general_ci。凭据从必要的本地配置/安全输入读取，不放在命令历史中。
 
 ```powershell
-# 守护管道（在服务器本机跑；Daemon 必须活着）
-powershell -File C:\Server\mth_pipe.ps1 -Cmd Status      # 全部进程状态
-powershell -File C:\Server\mth_pipe.ps1 -Cmd Stop        # 停全部（⚠️ 不含 ServerRobot）
-powershell -File C:\Server\mth_pipe.ps1 -Cmd Start       # 起全部（中心服先起+10s；⚠️ 不含 ServerRobot）
-powershell -File C:\Server\mth_pipe.ps1 -Cmd Stop  -Name CardPhenix   # 停单个（-Name 用 servers.ini 键名）
-powershell -File C:\Server\mth_pipe.ps1 -Cmd Start -Category Fish     # 按类起（Fish/Card/Bet/Laba）
-powershell -File C:\Server\mth_pipe.ps1 -Cmd Start -Name Robot        # 机器人（Robot/ServerRobot 均可，映射 Target=3）
-# 原始版（等价）：pipe_cmd.ps1 -Cmd <0Ping|1Start|2Stop|3Status> -Target <0All|1Category|2Single|3Robot>
+# 在后台仓库根运行；仅用于已确认的新环境。
+.\.devin\skills\mth-server-deploy\scripts\import-db.ps1 -SqlFile .\Database\mth_clean.sql
 ```
 
-- 「指令已下发」只是 Daemon **已受理**的异步应答，不代表执行完——每次 Start/Stop 后用 `-Cmd Status` + `Get-Process Server*` 复核实际存活数（防双开/假停止）。
-- **全停（含机器人）顺序**：`-Cmd Stop -Name ServerRobot` → `-Cmd Stop` → `Get-Process | ? ProcessName -like 'Server*'` 应为空，有残余按 PID `Stop-Process -Force` 清场；恢复时 `-Cmd Start`（等 ~60s）→ 确认无双开 → 需要机器人再 `-Name Robot` 单起。
-- **重启中心服 = 连锁重启全部游戏**：子游戏 COM 断链超时自行退出，Daemon 不会拉「正常退出」的进程；标准流程=停中心服→换件→起中心服→等15s→Start-All→等60s→确认无双开。
-- **Daemon 重启会丢托管状态**：重启 Daemon 前先 Stop-All 清场（`KillProcessByExactPath` 按路径清孤儿），否则再 Start 必双开——**且 Stop-All 不含 ServerRobot**，重启 Daemon 前若它在跑要单独 `-Name ServerRobot` 停掉，否则之后 StartRobot 必双开塞满牌桌（线上实案）。
-- **Admin.exe 只能在 RDP 桌面交互运行**——经 SSH/脚本拉起会在 stdin EOF 后狂建进程吃满 CPU（已修过，仍别试）。杀 Admin 前先确认它不是 Daemon 父进程（同会话 Job 会连带杀 Daemon+全部游戏）。
-- 日志：`C:\Server\Logs\<中文名>日志.log`（UTF-8）、Daemon 日志 `C:\Server\ServerManager\x64\Release\MTH_Daemon.log`（GBK）、站点 `C:\Backend\Logs` + `C:\inetpub\logs\LogFiles`。
-- 后台定时任务（60s）：指令发件箱重试 / 登录失败解封 / 6 张日志表 7 天滚动清理，IIS 回收后会随首个请求重新挂上。
+- 该脚本固定连接本机默认 MySQL 端口并导入 `mth`，非空库默认拒绝；`-Force` 仅允许本次明确授权的替换。
+- 它不先 DROP DATABASE，也不清除快照未包含的旧对象；`CREATE DATABASE IF NOT EXISTS` 不会修正既有库的排序规则。已有库不套用新装命令。
+- 快照不含 CREATE DATABASE/USE，由入口明确选择目标库。不叠加历史迁移；临时隔离库优先使用 `Tools/db/reset-db.ps1` 的显式库名/端口。
+- 按当前数据库说明核对结构、数据、视图、触发器、存储过程和管理员。当前 clean 保留 `admina`，站点 `appSettings/admin` 必须与数据库真实总管理员一致；账号/密码来源仍以所用快照为准。
+- SQL 不包含游戏服文件存档、文件奖池、`RabbitActivity.dat` 或遗留 SQLite。新环境按匹配版本准备运行目录；已有环境的原运行状态不得被 clean 初始化顺带覆盖。
 
-## 5. 下线/上线某款游戏
+### 程序、启动和网络
 
-- 下线：后台「游戏管理」关 `games.Enable=0` → `servers.ini` `[Flags]` 对应项改 false → 重启 Daemon（`Stop-Process Daemon` → `schtasks /run /tn MTH_Daemon`）。
-- 上线（含已下线的拉霸/鱼机老游戏）：后台开 `games.Enable=1`（**缺行/Enable=0 的游戏永远连不上中心服**，AA01 会挂死）→ `servers.ini` 补条目+开 Flag → 防火墙确认该端口已放行 → 重启 Daemon → Start-All。
-- 二进制包已含全部 28 款服务的文件；当前 servers.ini 只启 14 款（与 `games` 表一致）。
+部署经核验的服务端产物与后台站点；不要从本 skill 的旧文件名推断版本。游戏 `x64\Release` 必须包含实际依赖 DLL 和所需状态文件，历史缺项包括 `DscjSave.bin`、`DaZiBan.bin`、`NBASave.bin`；依赖数量以对应产物清单为准。
 
-## 6. 数据库说明
+核对当前 `servers.ini`、`games.Enable`、开放范围及监听端口后，按发布清单安装守护/自启动任务并启动。需要使用 `scripts/install-autostart.ps1`、`mth_pipe.ps1` 或 `open-ports.ps1` 时先检查实际代码和参数：它们会启动进程、连接管道或改防火墙，历史默认值不能直接套用新主机。自启动安装脚本会覆盖同名任务并立即启动 Daemon；防火墙脚本发现已有允许规则会跳过，`-TransitIp` 不会收紧已有的 Any 规则，不能据此宣称已限制来源。
 
-- 模板是**清档版**：可开局的全部配置都在（games/para*/roomtableconfig*/cardpayoutprofile/betgamecfg/notice/机器人表…），玩家/代理/流水/日志为空，唯一账号 atmadmin/123456。
-- 含 `trg_users_login_record` 触发器（玩家登录时间统计依赖它）与 `idx_*` 性能索引，直接灌即可，无需再跑补丁。
-- 已有数据的新部署想保留数据：先 `mysqldump --routines --triggers mth > backup.sql` 再决定是否套模板。
-- Windows MySQL 默认 `lower_case_table_names=1`，代码大写表名映射依赖它——若用 Linux/Docker MySQL 必须显式加 `--lower-case-table-names=1`。
+后台使用 64 位 v4.0 Integrated IIS 应用池。核对当前 `Tools/deploy/deploy.ps1` 的包、站点、路径、端口与输出；当前版本在部署收尾打印完整连接串，先修正该输出并同步实际执行副本，或采用已核验的专项发布流程。该脚本会写站点、调整防火墙并回收应用池，不是只读检查；`-CheckOnly` 提前返回，不经过收尾输出。保护 `App_Data/Logs/Upload`，检查单盘机器的上传目录及奖池目录是否有效。
 
-## 7. ⚠️ 硬编码与安全红线
+按新环境配置数据库连接、总管理员标识、域名/证书、下载地址、支付/客服入口、回调及管道。客户端域名/IP、TCP 端点和 APK 兼容性分别验证，不假设回调必须是旧的 `:8081` 地址。
 
-- **游戏服二进制把 DB 连接写死在编译期**（`Common/Config.h` → `host=127.0.0.1;user=root;password=123456;db=mth`）。
-  新机器要么 MySQL root 密码就是 `123456`，要么改源码重新编译——运维上就是"root/123456 是这个二进制包的要求"。
-  至少做到：3306 不对公网开放（Windows 防火墙 + 云安全组双确认）、后台 Web.config 的 Pwd 与 MySQL 实际密码一致。
-- atmadmin 默认密码 123456，**首登必改**；admin 表密码是**明文**存储，谁拿到库谁看到全部代理密码。
-- 8080 在生产是「只放行 nginx 中转 IP」的受限端口，别对公网放开。
-- 模板来自线上快照，Web.config 里残留的三方密钥（shop_key/api_token 等）上线前必须替换或清除。
+## 4. 已有站点/服务端发布
 
-## 8. 远程执行注意（SSH 部署时）
+1. **核对基线和范围**：读取实际 WebVer、文件/程序集哈希、站点/服务配置、当前发布记录；按影响面确定是否包含 BLL、SQL、中心服、子游戏、Robot 或 APK。后台源码入口见 [功能指南](../../../Docs/architecture/backend-features.md)。
+2. **准备隔离包**：用已确认的线上基线合入本次改动，再以 `Tools/deploy/pack.ps1 -Version $ReleaseVersion -SourcePath $IsolatedSite` 打包。不要把混有其它任务改动的工作区整包上线；只发 Web DLL 前须确认没有新增 BLL 依赖。
+3. **备份与回退**：在线 DDL/DML、导库和发布前按本次清单保存数据库及所需站点/程序/状态文件。每天 04:00 的备份不能替代发布前的新备份。程序回滚通常保留上线后资金数据，不自动恢复旧 SQL。
+4. **必要验证**：按变更选择构建和专项测试并记录耗时；Razor 用隔离站点预编译，不能以登录页 200 代替业务视图；JS 交互变更验证真实浏览器。未涉及业务代码的 skill/文档改动无需全量构建。
+5. **执行发布**：在已有授权范围执行明确的文件替换/迁移/启停。后台发布不自动重启中心服；中心服重启会中断玩家。涉及长任务使用目标服务器计划任务，保持可查的日志和退出码。
+6. **发布后验收**：核对实际 WebVer、脚本 URL/CDN 内容、文件哈希、HTTP、进程/端口和相关业务。脚本变更核对线上实际执行副本。记录已发布/未发布组件、失败、耗时与未验证范围。
 
-- 远程跑 ps1：**文件必须纯 ASCII**（PS5.1 把无 BOM UTF-8 当 GBK 读，中文注释会炸）；
-  或用 `-EncodedCommand`（UTF-16 base64，命令行有 ~8KB 上限）/ scp 上传后 `-File`。
-- SSH 里 `Start-Process` 拉起的进程随会话结束被回收——常驻进程一律走计划任务（MTH_Daemon 已是）。
-- Admin.exe 严禁非交互启动（见第 4 节）。
+只在确有版本化发布时递增 WebVer；文档同步不改版本。历史表行数、开放游戏数和进程数量不作为固定验收值。
 
-## 9. 自行编译（可选路径）
+## 5. 每日异机 SQL 备份
 
-- 后台：`MHT-Backend` 仓 `Tools\dev\build.bat` → `Tools\deploy\pack.ps1 -Version x.y.z` 出 zip。
-- 游戏服：`MTH-Server` 仓 `bat\Manage-BNXX.bat build all`（需 VS2022+v143、git-lfs、third_party pocolink/protobuf/thrift、
-  `mklink /J PocoLink third_party\pocolink`；细节见该仓 AGENTS.md/README）。
-  编译前在 `Common/Config.h` 选品牌宏/改 DB 串，端口常量也在那里。
+完整操作、路径、权限、保留规则及实测证据见 [每日异机备份](../../../Docs/数据库每日异机备份-20261105.md)。维护前读取该专题和源端实际任务配置，避免重复注册。当前部署参数仅适用于这套现网，不自动复制到其它环境：
 
-## 10. 排障速查
+- 源：`8.218.67.82` 本机 `mth`，任务 `MTH_DatabaseBackup_Daily`，SYSTEM，每天北京时间 **04:00**。
+- 目标：`185.180.17.57:/var/backups/mth`；保留北京时间当天与前两天，属于 **3 个日期**，不是最后 3 个文件。
+- 实现：`Tools/db/backup-to-remote.ps1`、`register-remote-backup.ps1`、`remote-backup-receiver.py`，复用 `export-db.ps1`；源端安装在 `C:\MTH-DatabaseBackupJob`，备份/日志在 `C:\MTH-DatabaseBackups`。
+- 完整 SQL 包含 `--single-transaction --hex-blob --routines --triggers --events`。先上传 `.partial`，远端 SHA-256 校验并原子转正式文件；仅成功后按日期清理本任务文件，失败保留已有备份。
+- 源端专用 SSH 私钥仅 SYSTEM 可读；固定主机公钥并严格验证。接收程序 root 所有、备份目录仅专用账号可访问；不复制交互管理员私钥给任务凑权限。
+- 注册脚本只注册源端任务并设置已存在私钥的 SYSTEM 权限，不负责生成密钥、创建接收账号/目录、部署接收程序或验证全链路；已存在同名任务会拒绝覆盖。完整准备过程以专题为准。
+- 注册任务要求 64 位 PowerShell 和 China/Taipei UTC+8 时区；先核对目标环境，不为安装任务擅自修改服务器时区。
+- 新装或修改链路后以真实 SYSTEM 任务完成导出、上传、哈希检查和隔离恢复，再检查下次执行时间。不能只凭任务已注册或文件非空宣称备份有效。
+- 此任务不备份游戏服运行文件，不提供 binlog 时间点恢复，也没有外部消息告警。详细失败重试与日志入口见专题。
 
-| 现象 | 先看 |
-|---|---|
-| 子游戏秒退/反复重启 | Release 目录 15 个 DLL 是否齐；状态文件（DscjSave.bin 等）是否在；`MTH_Daemon.log` |
-| 子游戏起来了但玩家登录无回包 | `mth.games` 里该 gameID 是否 Enable=1；COM 口 80xx 是否监听 |
-| 后台打开报表白/500 | 应用池是否 v4.0/64 位；`C:\Backend\Logs`；DbConnString 密码 |
-| 后台改配置游戏不生效 | `mynamedpipe` 是否通（后台→中心服管道）；中心服日志 |
-| 某端口外网不通 | 先分清 Windows 防火墙还是云安全组（开 `pfirewall.log` 看有没有 DROP 记录） |
-| 重启后游戏全没起 | MTH_Daemon 只拉 Daemon 不拉游戏——装 `-StartAllOnBoot` 或手工 Start |
-| 牌桌全是机器人 | ServerRobot 双开了（两实例座位计划取并集→全桌机器人）：`Get-Process ServerRobot` 确认实例数 → `-Cmd Stop -Name Robot` 清场（KillServer 按路径杀孤儿）→ 复核 0 存活 → `-Cmd Start -Name Robot` 起一个 |
+```powershell
+# 在源服务器只读检查；不连接游戏管道。
+Get-ScheduledTaskInfo -TaskName MTH_DatabaseBackup_Daily
+Get-Content C:\MTH-DatabaseBackups\last-result.json
+```
+
+需要补跑时，在该次备份范围内执行 `Start-ScheduledTask -TaskName MTH_DatabaseBackup_Daily`，随后检查新的任务结果与远端文件。不要为检查定时任务而重新导入数据库、启停游戏服或修改保留范围。
+
+## 6. 启停与排障约束
+
+- 常规通信排查先看近期命令回执、outbox `Status=2` 和日志；不主动连接生产管道试探，也不为验证而重启中心服。
+- 只有任务确实需要且范围已授权时才调用启停管道。指令受理不代表完成，按实际路径、进程、端口和日志复核，不能仅信 `Start-All` 回执。
+- 核对当前 Daemon/Robot 启停契约：历史版本的 Stop-All/Start-All 不含 Robot，Daemon 重启会丢托管状态；重启前确认当前实例，避免双开。不要给“后台升级”附加整组游戏重启。
+- `Admin.exe` 需要交互桌面，不通过 SSH/无人值守任务拉起；终止前核对父子进程关系，防止连带结束服务。
+- 开关游戏先联查当前后台、`games.Enable`、代理范围、中心/游戏服能力和守护配置；不能套用旧“固定 14 款/28 个目录”的开关清单。
+- 日志保留以当前实现为准，不沿用“6 张表统一 7 天”的历史说明。
+- 本 skill 的历史 `scripts/verify-deploy.ps1` 含默认数据库凭据、失败时输出凭据、固定旧端口及主动管道查询；**不作为当前生产巡检入口**。按实际发布清单使用分项只读检查，不执行它来获取“全绿”。
+- 历史 `scripts/deploy-web.ps1` 会在结尾打印完整连接串，不作为发布入口；需要复用其逻辑时先处理凭据输出及当前目标配置。文档更新不代表这些历史脚本已经修复。
+- 登录页返回 200 只证明入口可访问；HTTP 错误状态、受保护视图、API、数据库/游戏回执分别判断，不能把“端口可达”记成业务成功。
+
+## 7. 远程执行和交付
+
+- PS5.1 脚本使用纯 ASCII 或 **UTF-8 BOM**；长脚本上传后 `-File` 执行，短命令可用 UTF-16LE `-EncodedCommand`。不把“无 BOM UTF-8 有风险”写成“所有脚本必须 ASCII”。
+- SSH 可能进入 32 位宿主；IIS/进程查询异常时先确认 WOW64，必要时使用 Sysnative 的 64 位 PowerShell。
+- 常驻服务及长发布步骤用计划任务保持独立生命周期；`Start-Process` 创建后台辅助进程使用隐藏窗口。
+- 输出实际目标、版本/产物、检查结果、耗时、未验证项、回退边界及证据链接，不输出密码、私钥或连接串秘密。
+- 本地配置/skill 更新与生产部署分开记录；改本文不等于发布后台、变更备份任务或执行数据库操作。

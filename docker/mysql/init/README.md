@@ -1,17 +1,7 @@
-# 本地 MySQL 初始化材料
+# 历史初始化目录
 
-该目录由容器在**新数据卷首次启动**时按文件名顺序执行；已有卷不会因改文件自动升级。适用隔离开发库，重建卷会删除库内容。当前环境与操作边界见 [Docker说明](../../../Docs/docker-mysql.md) 和 [开发指南](../../../Docs/architecture/backend-development.md)。
+2026-11-05 起，Docker 不再挂载本目录，也不再维护 `00_mth.sql` 和历史补丁副本。
 
-| 初始化副本 | 来源（相对仓库根） |
-|---|---|
-| `00_mth.sql` | `mth.sql` 历史基础结构 |
-| `10_动态桌台字段扩展.sql` | `Docs/sql/动态桌台字段扩展.sql` |
-| `20_fix_scoreswitch_decimal.sql` | `Docs/sql/fix_scoreswitch_decimal.sql`；副本使用小写表名 |
-| `30_房间桌台配置表坐席扩列.sql` | `Docs/sql/房间桌台配置表坐席扩列.sql` |
-| `40_性能索引.sql` | `Docs/sql/性能索引.sql` |
-| `41_玩家登录时间.sql` | `Docs/sql/玩家登录时间-20260918.sql`；含玩家登录时间触发器 |
-| `50_公告唯一化与字号.sql` | `Docs/sql/公告唯一化与字号-20260923.sql` |
+当前唯一来源是仓库 [Database/mth_clean.sql](../../../Database/mth_clean.sql)，由 `docker-compose.yml` 直接只读挂载。全量恢复文件为 [Database/mth_full.sql](../../../Database/mth_full.sql)；说明与清理边界见 [Database/README.md](../../../Database/README.md)。
 
-这些是历史初始化集合，不能视为包含所有后续功能迁移。`Tools/db/reset-db.ps1` 有独立补丁列表，目前与本目录并不完全相同；改环境时分别核对两条路径、当前 `Docs/sql` 所需增量和实际表/列/过程/触发器。不能只比较文件数量就宣称结构一致。
-
-需要同步初始化副本时，先核对来源与大小写/字符集差异，并在独立临时库验证。不要机械复制覆盖或为了验证配置执行 `reinit`/删除现有卷。本轮仅修正文档，未改任何初始化 SQL。
+历史迁移仍在 `Docs/sql/` 留存作证据，不叠加到当前完整快照。已有 Docker 数据卷不会因替换 SQL 自动升级；重建卷会删除数据，操作边界见 [Docker说明](../../../Docs/docker-mysql.md)。

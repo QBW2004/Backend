@@ -103,11 +103,12 @@ class MjhlInheritanceValidation
             db.Open();
             Action<string> sql=q=>{using(var cmd=new MySqlCommand(q,db))cmd.ExecuteNonQuery();};
             Func<string,string> scalar=q=>{using(var cmd=new MySqlCommand(q,db))return Convert.ToString(cmd.ExecuteScalar());};
-            sql("CREATE DATABASE `"+schema+"` CHARACTER SET utf8mb4");
+            sql("CREATE DATABASE `"+schema+"` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
             try
             {
                 sql("USE `"+schema+"`");
-                sql(File.ReadAllText(Path.Combine(ConfigurationManager.AppSettings["repoRoot"],"Docs/sql/麻将胡了代理线配置-20261101.sql")));
+                string snapshot=SqlSnapshot.Read(ConfigurationManager.AppSettings["repoRoot"]);
+                foreach(string table in new[]{"mjhl_agent_config","mjhl_agent_config_history"}) sql(SqlSnapshot.Table(snapshot,table));
                 sql("CREATE TABLE admin(ID varchar(64) PRIMARY KEY,PRIV int,AGENCY varchar(64),PlayableGames varchar(100)); INSERT INTO admin VALUES ('fixture',0,'',NULL),('agentA',1,'fixture','54'),('agentB',1,'fixture','54'),('denied',1,'fixture','5'),('child',2,'agentA','54')");
                 sql("CREATE TABLE roomtableowner(GameId int,LineAgent varchar(64)); INSERT INTO roomtableowner VALUES(54,'untouched'); CREATE TABLE robot_seat(GameId int,Note varchar(64)); INSERT INTO robot_seat VALUES(54,'untouched')");
                 var controller=new GameConfigController();
@@ -155,7 +156,7 @@ class MjhlInheritanceValidation
                 Check((int)Json(controller.RecallMjhlAgentConfig("*","2","2"))["code"]==0,"default cannot be recalled");
                 Check((decimal)Json(controller.GetMjhlAgentConfig("agentB"))["config"]["goldChance"]==3,"other line unchanged");
                 var lines=Json(controller.GetMjhlAgentLines());
-                Check((int)lines["code"]==1 && lines["datas"]["Lines"].Any(l=>(string)l["id"]=="agentA" && (string)l["text"]=="agentA（独立配置）"),"line status shown");
+                Check((int)lines["code"]==1 && lines["datas"]["Lines"].Any(l=>(string)l["id"]=="agentA" && (string)l["text"]=="agentA（独立参数配置）"),"line status shown");
                 Check(!lines["datas"]["Lines"].Any(l=>(string)l["id"]=="denied"),"unavailable game hidden");
                 Login("agentA",1);
                 Check((int)Json(controller.GetMjhlAgentConfig("agentB"))["code"]==0,"read isolated from other line");

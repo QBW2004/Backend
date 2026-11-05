@@ -1,5 +1,5 @@
 ﻿// 专属桌台「从公共桌台复制一套 / 收回专属桌台」真实 MySQL 往返验收（2026-11-05）。
-// 连接串必须指向本机临时实例上的 mth_line_tables_validation_* 库；表结构取自 Docs/sql/mth.sql 及两份补丁，跑完删库。
+// 连接串必须指向本机临时实例上的 mth_line_tables_validation_* 库；表结构取自 Database/mth_clean.sql，跑完删库。
 using System;
 using System.Collections.Generic;
 using System.Configuration;
@@ -25,20 +25,6 @@ class LineTablesValidation
     static void Sql(string q) { using (var cmd = new MySqlCommand(q, db)) cmd.ExecuteNonQuery(); }
     static long Scalar(string q) { using (var cmd = new MySqlCommand(q, db)) return Convert.ToInt64(cmd.ExecuteScalar()); }
     static string Str(string q) { using (var cmd = new MySqlCommand(q, db)) { object o = cmd.ExecuteScalar(); return o == null || o is DBNull ? null : o.ToString(); } }
-
-    static string Ddl(string dump, string table)
-    {
-        Match m = Regex.Match(dump, "CREATE TABLE `" + table + "`\\s*\\(.*?\\)\\s*ENGINE[^;]*;", RegexOptions.Singleline | RegexOptions.IgnoreCase);
-        if (!m.Success) throw new Exception("DDL not found: " + table);
-        return m.Value;
-    }
-
-    static string Ddl2(string file, string table)
-    {
-        Match m = Regex.Match(File.ReadAllText(file), "CREATE TABLE IF NOT EXISTS `?" + table + "`?\\s*\\(.*?\\)\\s*(ENGINE[^;]*)?;", RegexOptions.Singleline | RegexOptions.IgnoreCase);
-        if (!m.Success) throw new Exception("DDL not found: " + table);
-        return m.Value;
-    }
 
     static string Owner(int g, int t) { return Str("SELECT LineAgent FROM roomtableowner WHERE GAME_ID=" + g + " AND TableIndex=" + t); }
 
@@ -100,20 +86,20 @@ class LineTablesValidation
                 throw new Exception("Requires an isolated local validation database");
             string schema = cs.Database;
             string repo = ConfigurationManager.AppSettings["repoRoot"];
-            string dump = File.ReadAllText(Path.Combine(repo, "Docs/sql/mth.sql"));
+            string dump = SqlSnapshot.Read(repo);
             cs.Database = "";
             using (db = new MySqlConnection(cs.ConnectionString))
             {
                 db.Open();
-                Sql("CREATE DATABASE `" + schema + "` CHARACTER SET utf8mb4");
+                Sql("CREATE DATABASE `" + schema + "` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
                 try
                 {
                     Sql("USE `" + schema + "`");
                     Sql("SET SESSION sql_mode=''");
                     foreach (string t in new[] { "admin", "roomtableconfig", "robot_seat", "roomtableconfig_bet", "parabet", "cardpayoutprofile", "betgamecfg", "roomtableconfig_card", "paracard", "parafish", "paralaba", "gameconfiglaba", "pararoom" })
-                        Sql(Ddl(dump, t));
-                    Sql(Ddl2(Path.Combine(repo, "Docs/sql/新增大白兔-gameid55-20261101.sql"), "cardgamecfg"));
-                    Sql(Ddl2(Path.Combine(repo, "Docs/sql/多客户端包与代理线-20261030.sql"), "roomtableowner"));
+                        Sql(SqlSnapshot.Table(dump, t));
+                    Sql(SqlSnapshot.Table(dump, "cardgamecfg"));
+                    Sql(SqlSnapshot.Table(dump, "roomtableowner"));
                     Database.SetInitializer<GameDbContext>(null);
 
                     // admin 实体列可能多于旧 dump：按 EF 报错补齐，最多补 30 列

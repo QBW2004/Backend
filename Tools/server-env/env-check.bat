@@ -17,7 +17,7 @@ rem    env-check.bat -y             Same as no args (-y is accepted for backward
 rem                                 compatibility, auto-fix is already the default)
 rem    env-check.bat -y -initschema
 rem                                 Auto-fix, and import mth base schema from
-rem                                 ..\docker\mysql\init\*.sql on fresh MySQL install
+rem                                 ..\..\Database\mth_clean.sql on fresh MySQL install
 rem
 rem  Must be run as Administrator (right-click -> "Run as administrator").
 rem ============================================================

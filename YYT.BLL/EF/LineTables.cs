@@ -172,7 +172,7 @@ namespace YYT.BLL.EF
             {
                 if (!OwnerTableExists(ef))
                 {
-                    msg.content = "数据库缺少 roomtableowner 表，请先执行 SQL 补丁「多客户端包与代理线-20261030.sql」！";
+                    msg.content = "数据库缺少 roomtableowner 表，请参照 Database/README.md 核对所需增量升级；运营库不可直接重导初始化库。";
                     return msg;
                 }
                 // MySQL 比较不分大小写，但中心服按 admin.ID 原样下发玩家所属线、游戏服逐字节比对归属：
@@ -265,7 +265,7 @@ namespace YYT.BLL.EF
             {
                 if (!OwnerTableExists(ef))
                 {
-                    msg.content = "数据库缺少 roomtableowner 表，请先执行 SQL 补丁「多客户端包与代理线-20261030.sql」！";
+                    msg.content = "数据库缺少 roomtableowner 表，请参照 Database/README.md 核对所需增量升级；运营库不可直接重导初始化库。";
                     return msg;
                 }
                 string agent = ef.Admins.Where(a => a.ID == line && a.PRIV == 1).Select(a => a.ID).FirstOrDefault();

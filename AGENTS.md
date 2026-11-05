@@ -41,6 +41,8 @@
 
 ## 3. 最短有效验证
 
+数据库唯一入口为 `Database/mth_full.sql`（线上完整快照）与 `Database/mth_clean.sql`（新环境初始化），范围、归档、校验与更新流程见 [数据库说明](Database/README.md)。两份含敏感数据/凭据，保留在本地但忽略 Git；Docker/新装/reset 与当前验证器只引用 clean，不叠加旧迁移。历史增量/修复/种子 SQL 已移到仓库外，原文见 [归档索引](Database/legacy-sql-archive.md)；`Tools/db/check-line-ownership.sql` 是保留的只读归属诊断，不是初始化库。
+
 ```powershell
 # 在仓库根运行；已有有效构建时可跳过 Clean。
 .\Tools\dev\build.bat noclean

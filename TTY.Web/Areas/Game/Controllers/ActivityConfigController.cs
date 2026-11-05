@@ -48,7 +48,7 @@ namespace YYT.Web.Areas.Game.Controllers
                 using (var ef = new GameDbContext())
                 {
                     if (!ActivityConfigs.TableExists(ef))
-                        return Json(new { code = 0, ready = false, content = "数据库缺少 activityconfig 表，请先执行 SQL 补丁「全民赛跑活动配置-20261103.sql」！" });
+                        return Json(new { code = 0, ready = false, content = "数据库缺少 activityconfig 表，请参照 Database/README.md 核对所需增量升级；运营库不可直接重导初始化库。" });
                     ActivityConfigs.Row row = ActivityConfigs.Load(ef, RabbitRaceActivity.Key);
                     RabbitRaceActivity cfg = (row == null ? null : RabbitRaceActivity.Parse(row.CfgJson)) ?? RabbitRaceActivity.Default();
                     int used = ActivityConfigs.CountUsed(ef, cfg, DateTime.UtcNow);
@@ -110,7 +110,7 @@ namespace YYT.Web.Areas.Game.Controllers
                 using (var ef = new GameDbContext())
                 {
                     if (!ActivityConfigs.TableExists(ef))
-                        return Json(new Msg(0, "数据库缺少 activityconfig 表，请先执行 SQL 补丁「全民赛跑活动配置-20261103.sql」！"));
+                        return Json(new Msg(0, "数据库缺少 activityconfig 表，请参照 Database/README.md 核对所需增量升级；运营库不可直接重导初始化库。"));
                     ActivityConfigs.Save(ef, RabbitRaceActivity.Key, RabbitRaceActivity.GameId, cfg.Enabled, json, operatorName);
                 }
                 LogHelper.WriteLog(typeof(ActivityConfigController), "[RabbitRace] operator=" + operatorName + " config=" + json);

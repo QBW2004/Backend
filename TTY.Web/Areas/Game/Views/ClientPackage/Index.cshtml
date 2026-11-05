@@ -117,7 +117,7 @@
             CP_ROWS = (data && data.rows) || [];
             var $body = $('#cpBody').empty();
             if (!data || !data.ready) {
-                $('#cpEmpty').show().text((data && data.error) || '数据库还没有执行补丁「多客户端包与代理线-20261030.sql」，暂不能管理客户端包。');
+                $('#cpEmpty').show().text((data && data.error) || '数据库结构尚未就绪，暂不能管理客户端包。请参照 Database/README.md 核对所需增量升级；运营库不可直接重导初始化库。');
                 return;
             }
             if (CP_ROWS.length < 1) {

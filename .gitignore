@@ -67,3 +67,9 @@ dump_err.txt
 # Local credential probes are retained on disk only
 /Tools/one-off/_probe_dbpwd*.ps1
 /Tools/one-off/_probe_pwdcheck.ps1
+
+# Authoritative local database snapshots contain production/bootstrap credentials.
+# Keep these two files locally; metadata/policy/scripts are versioned.
+/Database/mth_full.sql
+/Database/mth_clean.sql
+/Database/*.pending

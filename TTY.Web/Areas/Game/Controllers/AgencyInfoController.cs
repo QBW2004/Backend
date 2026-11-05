@@ -814,7 +814,7 @@ namespace YYT.Web.Areas.Game.Controllers
             catch (Exception ex)
             {
                 LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.AgencyInfoController), ex);
-                msg.content = "保存失败：请确认已执行数据库补丁「多客户端包与代理线-20261030.sql」";
+                msg.content = "保存失败：请参照 Database/README.md 核对数据库所需增量升级；运营库不可直接重导初始化库。";
             }
             return Json(msg);
         }

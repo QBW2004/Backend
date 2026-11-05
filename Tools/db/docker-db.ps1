@@ -1,10 +1,10 @@
-# ============================================================
+﻿# ============================================================
 #  MTH-Backend Docker MySQL 一键管理脚本
 #
 #  用法:
 #    .\docker-db.ps1 [start|stop|status|reinit] [-Force]
 #
-#    start   启动 MySQL 容器(首次会自动导入 docker/mysql/init 下的 SQL)
+#    start   启动 MySQL 容器(首次只导入 Database/mth_clean.sql)
 #    stop    停止容器(数据保留, 下次 start 秒启)
 #    status  查看容器状态与 MySQL 版本
 #    reinit  删除数据卷并重新初始化数据库(危险, 会清空所有数据)
@@ -13,7 +13,6 @@
 #    - Docker Desktop 已安装但 docker/docker-compose 可能不在 PATH,
 #      脚本内置完整路径, 无需手动添加 PATH。
 #    - 端口/账号/密码与 TTY.Web\Web.config 的 DbConnString 一致:
-#      localhost:3306, root / 123456, database mth
 # ============================================================
 
 param(
@@ -65,7 +64,7 @@ function Start-DockerDesktop {
         return $false
     }
     Write-Host "Starting Docker Desktop ..." -ForegroundColor Green
-    Start-Process $desktopExe
+    Start-Process $desktopExe -WindowStyle Hidden
     return Wait-DockerEngine
 }
 
@@ -75,20 +74,18 @@ function Invoke-Compose {
     return $LASTEXITCODE
 }
 
+# Check before starting Docker or deleting an existing volume.
+if ($Action -in @('start', 'reinit')) {
+    $cleanSql = Join-Path $root 'Database\mth_clean.sql'
+    if (-not (Test-Path -LiteralPath $cleanSql -PathType Leaf)) {
+        throw "Missing canonical database: $cleanSql"
+    }
+}
+
 # ------------------------------------------------------------
 switch ($Action) {
     "start" {
         if (-not (Start-DockerDesktop)) { exit 1 }
-
-        # 首次启动前确认初始化 SQL 存在
-        $initDir = Join-Path $root "docker\mysql\init"
-        $initFiles = @("00_mth.sql", "10_动态桌台字段扩展.sql", "20_fix_scoreswitch_decimal.sql", "30_房间桌台配置表坐席扩列.sql")
-        foreach ($f in $initFiles) {
-            if (-not (Test-Path (Join-Path $initDir $f))) {
-                Write-Host "[WARN] Missing init file: $f" -ForegroundColor Yellow
-                Write-Host "       参考 $initDir\README.md 重新生成后重试。" -ForegroundColor Yellow
-            }
-        }
 
         Write-Host "Starting MySQL container ..." -ForegroundColor Green
         $code = Invoke-Compose @("up", "-d")
@@ -115,7 +112,6 @@ switch ($Action) {
         Write-Host "  Host   : localhost" -ForegroundColor DarkGray
         Write-Host "  Port   : 3306" -ForegroundColor DarkGray
         Write-Host "  User   : root" -ForegroundColor DarkGray
-        Write-Host "  Pass   : 123456" -ForegroundColor DarkGray
         Write-Host "  Schema : mth" -ForegroundColor DarkGray
         Write-Host ""
         Write-Host "Web 端连接串(Web.config)无需修改, 启动 VS 即可使用。" -ForegroundColor Green
@@ -141,7 +137,7 @@ switch ($Action) {
         Write-Host "== MySQL version ==" -ForegroundColor Cyan
         $running = & $dockerBin inspect --format "{{.State.Running}}" mth-mysql 2>$null
         if ($running -eq "true") {
-            & $dockerBin exec mth-mysql mysql -uroot -p123456 -N -e "SELECT VERSION();" 2>$null
+            & $dockerBin exec mth-mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" exec mysql -uroot -N -e "SELECT VERSION();"' 2>$null
         } else {
             Write-Host "  (container not running)" -ForegroundColor Yellow
         }

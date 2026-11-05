@@ -28,7 +28,7 @@ Tools/
 - `-Yes` 已废弃（自动修复现为默认行为，传不传效果相同）
 - `-WebPort <n>` 防火墙放行的站点端口，默认 80
 - `-MySqlRootPassword <pwd>` 全新装 MySQL 时设置的 root 密码（默认与 Web.config 一致；已有服务不会覆盖）
-- `-InitSchema` MySQL 全新初始化时顺便从仓库 `docker\mysql\init\*.sql` 导入表结构（需随完整仓库拷到服务器）
+- `-InitSchema` MySQL 全新初始化时顺便从仓库 `Database/mth_clean.sql` 导入完整结构和干净配置（需随完整仓库拷到服务器）
 
 `fix-legacy-ucrt.ps1` 参数：`-CheckOnly` / `-Yes`（跳过逐项询问，但**绕不过** CONTINUE 风险确认）/ `-AutoReboot` / `-PatchDir`。
 
@@ -46,7 +46,7 @@ Tools/
 | `pack.ps1` | 本地把 `TTY.Web` 打成部署 zip（排除 Logs/obj/.vs 并校验关键文件齐全）。用法：`powershell -File Tools\deploy\pack.ps1 -Version 1.0.16`。可选 `-SourcePath <完整站点目录>` 支持按线上基线隔离打包，避免夹带其它待上线改动；不传时仍使用本仓库 `TTY.Web`。（原名 `_pack.ps1`，归入长期脚本后去掉下划线前缀。） |
 
 发布链路以确认的线上基线准备隔离完整站点，再用 `pack.ps1 -Version <版本> -SourcePath <隔离站点>` 打包并核对依赖。实际上传/部署只在用户已授权范围执行；不能默认把整个工作区作为发布源。
-SQL按本次迁移清单及实际缺项执行，先备份；`Docs/sql/性能索引.sql` 是历史补丁，不是每次部署的前置命令。
+SQL 按本次迁移清单及实际缺项执行，先备份。历史补丁已移到仓库外，见 [归档索引](../Database/legacy-sql-archive.md)，不是每次部署的前置命令。
 
 ## dev/ — 本地开发 / 构建
 
@@ -58,12 +58,16 @@ SQL按本次迁移清单及实际缺项执行，先备份；`Docs/sql/性能索�
 
 ## db/ — 本地数据库
 
+当前两套数据库、清洗范围和验证结果以 [Database/README.md](../Database/README.md) 为准。`make-clean-db.py` 从已恢复的完整快照生成并验证 clean，只允许专用本地 MySQL 5.7 实例；源库和目标库必须为 `utf8mb4_unicode_ci`，脚本会检查存储过程参数的排序规则。
+
 | 脚本 | 用途 |
 |---|---|
-| `docker-db.bat` / `docker-db.ps1` | Docker MySQL 5.7 容器管理（start/stop/status/reinit；首启自动导入 `docker/mysql/init` SQL，reinit 危险会清库）。容器必须带 `--lower-case-table-names=1`，compose 已配置。 |
+| `docker-db.bat` / `docker-db.ps1` | Docker MySQL 5.7 容器管理（start/stop/status/reinit；新卷首启只导入 `Database/mth_clean.sql`，reinit 危险会清库）。容器必须带 `--lower-case-table-names=1`，compose 已配置。 |
 | `start-db.bat` / `start-db.ps1` | 本机（非 Docker）MySQL 服务启停/状态。 |
-| `export-db.bat` / `export-db.ps1` | mysqldump 导出库（默认输出到本目录）。 |
-| `reset-db.bat` / `reset-db.ps1` | 重建/重置隔离库（先读 `-Force`/`-DryRun` 与输入库路径）。补丁以脚本 `$patches` 列表为准，当前列5份；不保证与Docker初始化目录的全部文件一致，也不等于包含后续所有业务迁移。 |
+| `export-db.bat` / `export-db.ps1` | mysqldump 单事务导出，带 hex-blob/routines/triggers/events；默认输出到仓库外相邻的 `MHT-Backend-db-archives/`，不覆盖已有备份，也不在仓库新建第三份库。密码取 `MYSQL_PWD` 或交互输入。 |
+| `backup-to-remote.ps1` / `register-remote-backup.ps1` / `remote-backup-receiver.py` | 已部署的每日 04:00 完整 SQL 异机备份，SYSTEM 执行、SSH 专用密钥、SHA-256 核验，成功后保留最近 3 个北京时间日期。源/目标、权限、日志和恢复证据见 [每日备份记录](../Docs/数据库每日异机备份-20261105.md)。注册脚本拒绝覆盖已有同名任务。 |
+| `reset-db.bat` / `reset-db.ps1` | 重建本地隔离库，必须显式传 `-DbName`；默认导入 `Database/mth_clean.sql`，可用 `-SqlFile` 指定单库快照，不再叠加旧补丁。仅允许 loopback，保留确认及 `-Force`；`-DryRun` 不连接数据库。 |
+| `check-line-ownership.sql` | 只读检查直属代理 ID 拼写、孤儿归属及大小写混用，三段 SELECT 的返回行需人工核对；不是初始化库，也不自动修复数据。 |
 
 ## one-off/ — 一次性脚本（`_` 前缀，仅留档，勿复用）
 
@@ -75,7 +79,7 @@ SQL按本次迁移清单及实际缺项执行，先备份；`Docs/sql/性能索�
 | `_prod_precheck.ps1` / `_prod_apply.ps1` / `_prod_verify.ps1` | 线上灌手机端测试数据的前置检查 / 应用 / 验证（口令仅内存中取自 Web.config，不打印）。 |
 | `_prod_run_sql.ps1` | 线上通用一次性 SQL 执行器。 |
 | `_prod_gamescheck.ps1` / `_prod_postcheck.ps1` | 线上 games 表名称乱码排查 / 收尾检查。 |
-| `_seed_phone_testdata.py` | 生成手机端联调种子数据 `Docs/sql/手机端测试数据.sql`（在仓库根运行）。 |
+| 旧手机联调种子生成器及一次性 SQL | 已与历史种子 SQL 一起移至仓库外，原路径、用途和哈希见 [归档索引](../Database/legacy-sql-archive.md)，不再向仓库生成第三份数据脚本。 |
 | `_check_db.ps1` / `_check_login.ps1` / `_check_session.ps1` / `_debug_curl.ps1` | 登录/会话/数据库排查（带 Sysnative 逃离）。 |
 | `_repro2.ps1` / `_repro3.ps1` / `_repro4.ps1` | 历次问题复现脚本。 |
 | `_add_csproj.py` | 把手机端新增文件登记进 `YYT.Web.csproj`（在仓库根运行）。 |

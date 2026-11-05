@@ -1,38 +1,44 @@
-# import-db.ps1 — import the mth template SQL on the target server.
-# Usage: powershell -ExecutionPolicy Bypass -File import-db.ps1 -SqlFile .\mth_template.sql
-# Safe-guard: refuses to overwrite a non-empty existing mth db unless -Force.
+# Import the canonical clean database on a new target server.
+# Usage: powershell -File import-db.ps1 -SqlFile C:\MTH-Deploy\Database\mth_clean.sql
+# Refuses an existing non-empty mth database unless -Force is explicitly supplied.
 param(
-  [Parameter(Mandatory=$true)][string]$SqlFile,
+  [string]$SqlFile = '',
   [string]$MySqlExe = 'C:\mysql\bin\mysql.exe',
   [string]$User = 'root',
-  [string]$Password = '123456',
+  [string]$Password = $env:MYSQL_PWD,
   [switch]$Force
 )
 $ErrorActionPreference = 'Stop'
-if (-not (Test-Path $MySqlExe)) { Write-Output "ERR mysql.exe not found at $MySqlExe"; exit 2 }
-if (-not (Test-Path $SqlFile)) { Write-Output "ERR sql file missing: $SqlFile"; exit 2 }
-$env:MYSQL_PWD = $Password
-
-& $MySqlExe -u $User -N -B -e "SELECT 1" 2>&1 | Out-Null
-if ($LASTEXITCODE -ne 0) { Write-Output "ERR cannot login mysql as $User (check -Password / service MySQL57 running)"; exit 2 }
-
-$tbl = & $MySqlExe -u $User -N -B -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='mth'" 2>$null
-$users = 0
-if ([int]$tbl -gt 0) {
-  $users = [int](& $MySqlExe -u $User -N -B -e "SELECT COUNT(*) FROM mth.users" 2>$null)
+if (-not $SqlFile) { $SqlFile = Join-Path $PSScriptRoot '..\..\..\..\Database\mth_clean.sql' }
+if (-not (Test-Path -LiteralPath $MySqlExe -PathType Leaf)) { throw 'mysql.exe not found.' }
+$SqlFile = (Resolve-Path -LiteralPath $SqlFile).Path
+if (-not (Test-Path -LiteralPath $SqlFile -PathType Leaf)) { throw 'SQL file missing.' }
+if (Select-String -LiteralPath $SqlFile -Pattern '^\s*(USE\s|(?:CREATE|DROP)\s+DATABASE\s)' -Quiet) {
+  throw 'Use the canonical single-schema dump without CREATE/DROP DATABASE or USE.'
 }
-if ([int]$tbl -gt 0 -and -not $Force) {
-  Write-Output "ABORT: database 'mth' already exists ($tbl tables, users=$users)."
-  Write-Output "       The template import DROPS and recreates every table -> existing data would be lost."
-  Write-Output "       Re-run with -Force to overwrite, or drop the db yourself first."
-  exit 3
+if (-not $PSBoundParameters.ContainsKey('Password') -and -not $Password) {
+  $securePassword = Read-Host 'MySQL password' -AsSecureString
+  $Password = (New-Object System.Net.NetworkCredential('', $securePassword)).Password
 }
-if ([int]$tbl -gt 0) { Write-Output "WARN: overwriting existing mth db ($tbl tables, users=$users) because -Force." }
-
-Write-Output "Importing $SqlFile ..."
-& $MySqlExe -u $User --default-character-set=utf8mb4 -e "SOURCE $($SqlFile -replace '\\','/')" 2>&1 | Select-Object -Last 10
-if ($LASTEXITCODE -ne 0) { Write-Output "ERR import failed (exit=$LASTEXITCODE)"; exit 2 }
-
-Write-Output "== post-import check =="
-& $MySqlExe -u $User -N -B -e "SELECT CONCAT('tables=',COUNT(*)) FROM information_schema.tables WHERE table_schema='mth'; SELECT CONCAT('games=',COUNT(*)) FROM mth.games; SELECT CONCAT('admin=',COUNT(*)) FROM mth.admin; SELECT CONCAT('cardpayoutprofile=',COUNT(*)) FROM mth.cardpayoutprofile; SELECT CONCAT('triggers=',COUNT(*)) FROM information_schema.triggers WHERE trigger_schema='mth';"
-Write-Output "Expected: tables>=59, games=14, admin=1 (atmadmin/123456), cardpayoutprofile>2000, triggers>=1"
+$previousPassword = $env:MYSQL_PWD
+try {
+  $env:MYSQL_PWD = $Password
+  $mysqlArgs = @('--protocol=TCP', '--host=127.0.0.1', "--user=$User", '--default-character-set=utf8mb4')
+  $caseMode = & $MySqlExe @mysqlArgs -N -B -e 'SELECT @@lower_case_table_names;'
+  if ($LASTEXITCODE -ne 0) { throw 'MySQL connection failed.' }
+  if (($caseMode -join '').Trim() -ne '1') { throw 'Requires lower_case_table_names=1.' }
+  $tableCount = & $MySqlExe @mysqlArgs -N -B -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='mth';"
+  if ($LASTEXITCODE -ne 0) { throw 'Schema preflight failed.' }
+  if ([int]$tableCount -gt 0 -and -not $Force) {
+    throw "Database mth already contains $tableCount tables/views. Import refused; -Force is only for an explicitly authorized replacement."
+  }
+  & $MySqlExe @mysqlArgs -e 'CREATE DATABASE IF NOT EXISTS mth CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;'
+  if ($LASTEXITCODE -ne 0) { throw 'Database creation failed.' }
+  $source = $SqlFile.Replace('\', '/')
+  & $MySqlExe @mysqlArgs --database=mth -e "source $source"
+  if ($LASTEXITCODE -ne 0) { throw 'Clean database import failed.' }
+  & $MySqlExe @mysqlArgs -N -B -e "SELECT CONCAT('tables/views=',COUNT(*)) FROM information_schema.tables WHERE table_schema='mth'; SELECT CONCAT('games=',COUNT(*)) FROM mth.games; SELECT CONCAT('admin=',COUNT(*)) FROM mth.admin; SELECT CONCAT('players=',COUNT(*)) FROM mth.users; SELECT CONCAT('triggers=',COUNT(*)) FROM information_schema.triggers WHERE trigger_schema='mth';"
+  if ($LASTEXITCODE -ne 0) { throw 'Post-import verification failed.' }
+  Write-Output 'Compare these counts with Database/README.md and the current validation evidence; program/configuration/state-file checks are still required.'
+}
+finally { $env:MYSQL_PWD = $previousPassword }

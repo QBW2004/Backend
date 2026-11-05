@@ -74,7 +74,7 @@ namespace YYT.BLL.EF
             {
                 if (!TableExists(ef))
                 {
-                    msg.content = "数据库缺少 clientpackage 表，请先执行 SQL 补丁「多客户端包与代理线-20261030.sql」！";
+                    msg.content = "数据库缺少 clientpackage 表，请参照 Database/README.md 核对所需增量升级；运营库不可直接重导初始化库。";
                     return msg;
                 }
                 int dup = ef.Database.SqlQuery<int>("SELECT COUNT(*) FROM clientpackage WHERE AppKey={0} AND ID<>{1}", appKey, id).FirstOrDefault();

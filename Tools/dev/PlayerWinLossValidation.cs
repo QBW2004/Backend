@@ -21,13 +21,6 @@ class PlayerWinLossValidation
         Console.WriteLine("PASS " + message);
     }
 
-    static string Table(string source, string name)
-    {
-        var match = Regex.Match(source, @"CREATE TABLE(?: IF NOT EXISTS)? `" + name + @"`\s*\([\s\S]*?\)\s*ENGINE[^;]*;", RegexOptions.IgnoreCase);
-        if (!match.Success) throw new Exception("Missing fixture schema: " + name);
-        return match.Value;
-    }
-
     static int Main(string[] args)
     {
         try { Run(args[0]); return 0; }
@@ -51,14 +44,11 @@ class PlayerWinLossValidation
             try
             {
                 sql("USE `" + schema + "`");
-                string dump = File.ReadAllText(Path.Combine(repo, "mth.sql"));
+                string dump = SqlSnapshot.Read(repo);
                 foreach (string name in new[] { "users", "userrelations", "user_daily_winloss", "games", "useroptlog", "rechargerecords", "admin", "invite_codes" })
-                    sql(Table(dump, name));
-                sql(Table(File.ReadAllText(Path.Combine(repo, "Docs/sql/玩家登录时间-20260918.sql")), "userloginrecord"));
-                string migration = File.ReadAllText(Path.Combine(repo, "Docs/sql/玩家盈亏统一币口径-20261102.sql"));
-                sql(migration);
-                sql(migration);
-                Check((string)scalar("SELECT DATA_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='user_daily_winloss' AND COLUMN_NAME='WINLOSS'") == "decimal", "migration preserves coin fractions and is repeatable");
+                    sql(SqlSnapshot.Table(dump, name));
+                sql(SqlSnapshot.Table(dump, "userloginrecord"));
+                Check((string)scalar("SELECT DATA_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='user_daily_winloss' AND COLUMN_NAME='WINLOSS'") == "decimal", "canonical schema preserves coin fractions");
                 sql("INSERT INTO users(ID,NAME,PWD,AGENCY,INHALL,COINS,COINS_BUY,COINS_BACK,GAME_SCORE,SAFE_COINS,GRADE,FROZEN) VALUES('profit1','profit1','fixture','top',b'0',100,999999,0,0,0,1,0),('loss1','loss1','fixture','top',b'0',100,888888,0,0,0,1,0),('empty1','empty1','fixture','top',b'0',100,777777,0,0,0,1,0)");
                 sql("INSERT INTO userrelations(UserID,ID) VALUES(1,'profit1'),(2,'loss1'),(3,'empty1')");
                 sql("INSERT INTO user_daily_winloss(UserID,DAY,WINLOSS) VALUES('profit1',CURDATE(),4689),('profit1',DATE_SUB(CURDATE(),INTERVAL 1 DAY),-0.25),('loss1',CURDATE(),-0.4)");

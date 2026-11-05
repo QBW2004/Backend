@@ -40,13 +40,12 @@
     需要在 Windows 防火墙放行的 IIS 站点入站端口, 默认 80。
 
 .PARAMETER MySqlRootPassword
-    全新安装 MySQL 时设置的 root 密码, 默认 123456 (与 TTY.Web\Web.config 一致)。
+    全新安装 MySQL 时设置的 root 密码；从必要的本地配置/凭据渠道读取。
     注意: 如果服务器已存在 MySQL57 服务, 脚本不会覆盖已有密码/数据。
 
 .PARAMETER InitSchema
     若修复 MySQL 项时触发的是全新初始化(而不是已有服务), 额外从
-    ..\docker\mysql\init\*.sql 导入基础表结构(需要脚本随完整仓库一起放到
-    服务器上才能找到这些文件)。
+    ..\..\Database\mth_clean.sql 导入完整结构与干净配置(需随仓库携带)。
 
 .EXAMPLE
     powershell -ExecutionPolicy Bypass -File env-check.ps1
@@ -435,22 +434,21 @@ default-character-set=utf8mb4
 
 function Invoke-SchemaImport {
     param([string]$RootPassword)
-    $initDir = Join-Path $PSScriptRoot '..\..\docker\mysql\init'
+    $sqlFile = Join-Path $PSScriptRoot '..\..\Database\mth_clean.sql'
     $mysqlExe = 'C:\mysql\bin\mysql.exe'
-    if (-not (Test-Path $initDir)) {
-        Write-Host '    未找到 docker\mysql\init 目录 (脚本未随完整仓库拷贝), 跳过表结构导入。' -ForegroundColor Yellow
-        return
+    if (-not (Test-Path -LiteralPath $sqlFile -PathType Leaf)) {
+        throw 'Missing Database/mth_clean.sql; clean initialization cannot continue.'
     }
-    if (-not (Test-Path $mysqlExe)) {
-        Write-Host "    找不到 $mysqlExe, 跳过表结构导入。" -ForegroundColor Yellow
-        return
+    if (-not (Test-Path -LiteralPath $mysqlExe -PathType Leaf)) { throw "Missing $mysqlExe" }
+    $previousPassword = $env:MYSQL_PWD
+    try {
+        $env:MYSQL_PWD = $RootPassword
+        $source = $sqlFile.Replace('\', '/')
+        & $mysqlExe --protocol=TCP --host=127.0.0.1 --user=root --default-character-set=utf8mb4 --database=mth -e "source $source"
+        if ($LASTEXITCODE -ne 0) { throw 'Database/mth_clean.sql import failed.' }
     }
-    $files = Get-ChildItem $initDir -Filter '*.sql' | Sort-Object Name
-    foreach ($f in $files) {
-        Write-Host "    导入 $($f.Name) ..." -ForegroundColor DarkGray
-        cmd /c "`"$mysqlExe`" -u root --password=$RootPassword --default-character-set=utf8mb4 mth < `"$($f.FullName)`"" 2>&1 | Out-Null
-    }
-    Write-Host "    表结构导入完成 ($($files.Count) 个文件)。" -ForegroundColor Green
+    finally { $env:MYSQL_PWD = $previousPassword }
+    Write-Host '    已导入 Database/mth_clean.sql；不再追加旧迁移。' -ForegroundColor Green
 }
 
 function Test-FirewallPort {

@@ -19,7 +19,7 @@ $exe = Join-Path $out 'PrizePoolValidation.exe'
 $config.Save($exe + '.config')
 $compiler = 'C:/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin/Roslyn/csc.exe'
 $references = Get-ChildItem (Join-Path $out '*.dll') | Where-Object Name -In 'YYT.BLL.dll','YYT.Entity.dll','YYT.Common.dll','MySql.Data.dll','EntityFramework.dll','Newtonsoft.Json.dll' | ForEach-Object { '/r:' + $_.FullName }
-& $compiler /nologo /t:exe ('/out:' + $exe) /r:System.Configuration.dll /r:System.Data.dll @references (Join-Path $PSScriptRoot 'PrizePoolValidation.cs')
+& $compiler /nologo /t:exe ('/out:' + $exe) /r:System.Configuration.dll /r:System.Data.dll @references (Join-Path $PSScriptRoot 'PrizePoolValidation.cs') (Join-Path $PSScriptRoot 'SqlSnapshot.cs')
 if ($LASTEXITCODE -ne 0) { throw 'Prize-pool validation compile failed' }
 python (Join-Path $PSScriptRoot 'prepare-prize-pool-cpp.py') $out
 if ($LASTEXITCODE -ne 0) { throw 'Prize-pool C++ preparation failed' }

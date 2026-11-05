@@ -1,0 +1,3388 @@
+{
+  "recordedAtUtc": "2026-11-05T12:59:36.463322+00:00",
+  "source": {
+    "host": "mth-server",
+    "database": "mth",
+    "backendVersion": "1.0.107",
+    "mysqlVersion": "5.7.44",
+    "defaultCollation": "utf8mb4_unicode_ci",
+    "snapshotRole": "Final full backup after writers stopped, immediately before production clean import",
+    "dumpCompletedAtUtc": "2026-11-05T12:47:15.1537615Z",
+    "writersStopped": true,
+    "exportOptions": [
+      "single-transaction",
+      "quick",
+      "hex-blob",
+      "routines",
+      "triggers",
+      "events",
+      "set-gtid-purged=OFF",
+      "skip-lock-tables"
+    ],
+    "backupDirectory": "E:\\MTH\\releases\\clean-db-admina-20261105\\production-backup\\backup",
+    "productionDatabaseReplacedAfterSnapshot": true
+  },
+  "artifacts": {
+    "mth_full.sql": {
+      "bytes": 15704248,
+      "sha256": "efb4d701f63b11053c79da5625e02d5b36895fef9691431a9a749623b8f210df",
+      "capturedAtUtc": "2026-11-05T12:47:15.1537615Z",
+      "role": "final-pre-cutover-full"
+    },
+    "mth_clean.sql": {
+      "bytes": 396748,
+      "sha256": "86bd1bbb5082dbd9f31c7e5a42d9a3556b232cfff60cbabcb0e72060b6c894ec",
+      "adminAccount": "admina"
+    }
+  },
+  "activeSnapshots": [
+    "Database/mth_full.sql",
+    "Database/mth_clean.sql"
+  ],
+  "tableCount": 73,
+  "viewCount": 1,
+  "triggerCount": 1,
+  "procedureCount": 5,
+  "eventCount": 0,
+  "verification": {
+    "capturedAtUtc": "2026-11-05T12:30:25.442095+00:00",
+    "sourceSnapshot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-admina\\mth_clean_before_admina.sql",
+    "sourceRole": "explicit-snapshot",
+    "sourceSha256": "dba81c1752e4eab412d8c8db8b36c42bd85708dc2460dead4d62eb2182aae0ba",
+    "requestedAdminAccount": "admina",
+    "policy": {
+      "preserve": [
+        "activity",
+        "agent_permission_template",
+        "betgamecfg",
+        "cardgamecfg",
+        "cardpayoutprofile",
+        "clientpackage",
+        "gameconfiglaba",
+        "gamemo",
+        "gamepara",
+        "notice",
+        "parabet",
+        "parabetroom",
+        "paracard",
+        "parafish",
+        "paragame",
+        "paralaba",
+        "pararoom",
+        "plattype",
+        "roomtableconfig",
+        "roomtableconfig_bet",
+        "roomtableconfig_card",
+        "updateaddrnew"
+      ],
+      "reset": [
+        "activityconfig",
+        "admin",
+        "gameacclaba",
+        "games",
+        "mjhl_agent_config",
+        "roomtableowner",
+        "userrobotnum"
+      ],
+      "empty": [
+        "accountlog",
+        "agencyoptlog",
+        "agentprizecontrol",
+        "agentprizeledger",
+        "agentprizepool",
+        "agent_hierarchy",
+        "cardpayoutprofile_att3_bak_0907",
+        "cashierinfo",
+        "clientexchangerecord",
+        "ex_change",
+        "gamecommandoutbox",
+        "gameprizerecord",
+        "gamerankhistory",
+        "games_money_spent",
+        "invite_codes",
+        "loginmissrecord",
+        "manageropt",
+        "mgrpermission",
+        "mjhl_agent_config_history",
+        "mjhl_recovery_operation",
+        "mjhl_recovery_state",
+        "parabetroom_bak_20260815",
+        "prizebroadcastoutbox",
+        "rank",
+        "rechargerecords",
+        "robot_seat",
+        "safe_coins_log",
+        "sharebonus",
+        "tablecoinrecord",
+        "totalkill_table_backup",
+        "transferlog",
+        "uploadsimage",
+        "usercontrolstatus",
+        "usercontrolvalue",
+        "userlockrecord",
+        "userloginrecord",
+        "useroptlog",
+        "userrelations",
+        "userrobot",
+        "users",
+        "userscoresnapshotledger",
+        "user_daily_winloss",
+        "user_winloss_ledger",
+        "videogamecoinrecord"
+      ]
+    },
+    "timings": {
+      "sourceImportSeconds": 2.065,
+      "cleanExportSeconds": 0.401,
+      "cleanImportSeconds": 2.048,
+      "totalSeconds": 5.639
+    },
+    "schema": {
+      "columns": {
+        "count": 744,
+        "sha256": "502340ab77201373267e85db2a291b832036fd9bbe4d03d80d6e365fcc045a27"
+      },
+      "indexes": {
+        "count": 173,
+        "sha256": "0f9477c13f58b317317e54d3a153d3b3f1171c6c27d11de2c81ed1d0e03e6210"
+      },
+      "triggers": {
+        "count": 1,
+        "sha256": "5fb694403e902e2f71e35c6190425668ec523c65ea656eac691cc924a8d85dae"
+      },
+      "routines": {
+        "count": 5,
+        "sha256": "4655ae65dc045db657d6650bfec26d5ec549f44ae65119f13f3cbc7387775d5a"
+      },
+      "routineParameters": {
+        "count": 22,
+        "sha256": "f855eecac1c5f5ef26185775875517d6253c5c3b3d4d28dc2ae8daee0416402a"
+      },
+      "events": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "views": {
+        "count": 1,
+        "sha256": "9fc450f298344258e38ad64f6116a4ca29d50d0175c3db136ccb415336609f80"
+      }
+    },
+    "administratorRenamed": true,
+    "administratorPasswordPreserved": true,
+    "normalizedLegacyCommentLines": 0,
+    "rows": {
+      "source": {
+        "accountlog": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "activity": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "activityconfig": {
+          "rows": 1,
+          "checksum": 4255766454
+        },
+        "admin": {
+          "rows": 1,
+          "checksum": 1803836625
+        },
+        "agencyoptlog": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "agentprizecontrol": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "agentprizeledger": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "agentprizepool": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "agent_hierarchy": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "agent_permission_template": {
+          "rows": 8,
+          "checksum": 2543963451
+        },
+        "betgamecfg": {
+          "rows": 14,
+          "checksum": 2402101606
+        },
+        "cardgamecfg": {
+          "rows": 7,
+          "checksum": 3751939507
+        },
+        "cardpayoutprofile": {
+          "rows": 4759,
+          "checksum": 1519673246
+        },
+        "cardpayoutprofile_att3_bak_0907": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "cashierinfo": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "clientexchangerecord": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "clientpackage": {
+          "rows": 1,
+          "checksum": 986832499
+        },
+        "ex_change": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "gameacclaba": {
+          "rows": 5,
+          "checksum": 2095164287
+        },
+        "gamecommandoutbox": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "gameconfiglaba": {
+          "rows": 1541,
+          "checksum": 977189476
+        },
+        "gamemo": {
+          "rows": 1,
+          "checksum": 1481996991
+        },
+        "gamepara": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "gameprizerecord": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "gamerankhistory": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "games": {
+          "rows": 19,
+          "checksum": 3065668331
+        },
+        "games_money_spent": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "invite_codes": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "loginmissrecord": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "manageropt": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "mgrpermission": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "mjhl_agent_config": {
+          "rows": 1,
+          "checksum": 1111075985
+        },
+        "mjhl_agent_config_history": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "mjhl_recovery_operation": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "mjhl_recovery_state": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "notice": {
+          "rows": 1,
+          "checksum": 2259921197
+        },
+        "parabet": {
+          "rows": 18,
+          "checksum": 2977357961
+        },
+        "parabetroom": {
+          "rows": 8,
+          "checksum": 252946923
+        },
+        "parabetroom_bak_20260815": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "paracard": {
+          "rows": 229,
+          "checksum": 1145550423
+        },
+        "parafish": {
+          "rows": 51,
+          "checksum": 570371582
+        },
+        "paragame": {
+          "rows": 27,
+          "checksum": 1881324383
+        },
+        "paralaba": {
+          "rows": 37,
+          "checksum": 1521044665
+        },
+        "pararoom": {
+          "rows": 23,
+          "checksum": 2005710034
+        },
+        "plattype": {
+          "rows": 2,
+          "checksum": 761768349
+        },
+        "prizebroadcastoutbox": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "rank": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "rechargerecords": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "robot_seat": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "roomtableconfig": {
+          "rows": 326,
+          "checksum": 726956049
+        },
+        "roomtableconfig_bet": {
+          "rows": 51,
+          "checksum": 2615678301
+        },
+        "roomtableconfig_card": {
+          "rows": 224,
+          "checksum": 2477880047
+        },
+        "roomtableowner": {
+          "rows": 81,
+          "checksum": 4231106189
+        },
+        "safe_coins_log": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "sharebonus": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "tablecoinrecord": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "totalkill_table_backup": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "transferlog": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "updateaddrnew": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "uploadsimage": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "usercontrolstatus": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "usercontrolvalue": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "userlockrecord": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "userloginrecord": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "useroptlog": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "userrelations": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "userrobot": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "userrobotnum": {
+          "rows": 51,
+          "checksum": 1975946069
+        },
+        "users": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "userscoresnapshotledger": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "user_daily_winloss": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "user_winloss_ledger": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "videogamecoinrecord": {
+          "rows": 0,
+          "checksum": 0
+        }
+      },
+      "clean": {
+        "accountlog": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "activity": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "activityconfig": {
+          "rows": 1,
+          "checksum": 2345569260
+        },
+        "admin": {
+          "rows": 1,
+          "checksum": 3842691052
+        },
+        "agencyoptlog": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "agentprizecontrol": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "agentprizeledger": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "agentprizepool": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "agent_hierarchy": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "agent_permission_template": {
+          "rows": 8,
+          "checksum": 2543963451
+        },
+        "betgamecfg": {
+          "rows": 14,
+          "checksum": 2402101606
+        },
+        "cardgamecfg": {
+          "rows": 7,
+          "checksum": 3751939507
+        },
+        "cardpayoutprofile": {
+          "rows": 4759,
+          "checksum": 1519673246
+        },
+        "cardpayoutprofile_att3_bak_0907": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "cashierinfo": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "clientexchangerecord": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "clientpackage": {
+          "rows": 1,
+          "checksum": 986832499
+        },
+        "ex_change": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "gameacclaba": {
+          "rows": 5,
+          "checksum": 2095164287
+        },
+        "gamecommandoutbox": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "gameconfiglaba": {
+          "rows": 1541,
+          "checksum": 977189476
+        },
+        "gamemo": {
+          "rows": 1,
+          "checksum": 1481996991
+        },
+        "gamepara": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "gameprizerecord": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "gamerankhistory": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "games": {
+          "rows": 19,
+          "checksum": 3065668331
+        },
+        "games_money_spent": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "invite_codes": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "loginmissrecord": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "manageropt": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "mgrpermission": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "mjhl_agent_config": {
+          "rows": 1,
+          "checksum": 2007134182
+        },
+        "mjhl_agent_config_history": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "mjhl_recovery_operation": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "mjhl_recovery_state": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "notice": {
+          "rows": 1,
+          "checksum": 2259921197
+        },
+        "parabet": {
+          "rows": 18,
+          "checksum": 2977357961
+        },
+        "parabetroom": {
+          "rows": 8,
+          "checksum": 252946923
+        },
+        "parabetroom_bak_20260815": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "paracard": {
+          "rows": 229,
+          "checksum": 1145550423
+        },
+        "parafish": {
+          "rows": 51,
+          "checksum": 570371582
+        },
+        "paragame": {
+          "rows": 27,
+          "checksum": 1881324383
+        },
+        "paralaba": {
+          "rows": 37,
+          "checksum": 1521044665
+        },
+        "pararoom": {
+          "rows": 23,
+          "checksum": 2005710034
+        },
+        "plattype": {
+          "rows": 2,
+          "checksum": 761768349
+        },
+        "prizebroadcastoutbox": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "rank": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "rechargerecords": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "robot_seat": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "roomtableconfig": {
+          "rows": 326,
+          "checksum": 726956049
+        },
+        "roomtableconfig_bet": {
+          "rows": 51,
+          "checksum": 2615678301
+        },
+        "roomtableconfig_card": {
+          "rows": 224,
+          "checksum": 2477880047
+        },
+        "roomtableowner": {
+          "rows": 81,
+          "checksum": 4231106189
+        },
+        "safe_coins_log": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "sharebonus": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "tablecoinrecord": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "totalkill_table_backup": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "transferlog": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "updateaddrnew": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "uploadsimage": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "usercontrolstatus": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "usercontrolvalue": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "userlockrecord": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "userloginrecord": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "useroptlog": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "userrelations": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "userrobot": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "userrobotnum": {
+          "rows": 51,
+          "checksum": 1975946069
+        },
+        "users": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "userscoresnapshotledger": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "user_daily_winloss": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "user_winloss_ledger": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "videogamecoinrecord": {
+          "rows": 0,
+          "checksum": 0
+        }
+      }
+    },
+    "verifiedSchemas": [
+      "mth_clean_build_20261105_123025_442065",
+      "mth_clean_verify_20261105_123025_442065"
+    ],
+    "cleanSha256": "86bd1bbb5082dbd9f31c7e5a42d9a3556b232cfff60cbabcb0e72060b6c894ec",
+    "result": "PASS"
+  },
+  "applicationChecks": {
+    "configuration": {
+      "schema": "mth_clean_verify_20261105_123025_442065",
+      "cleanSqlSha256": "86bd1bbb5082dbd9f31c7e5a42d9a3556b232cfff60cbabcb0e72060b6c894ec",
+      "unchangedTables": 73,
+      "rabbitSavedRules": 2,
+      "rabbitFallbackRules": 10,
+      "phenixRules": 26,
+      "result": "PASS",
+      "checks": 185,
+      "games": [
+        {
+          "gameId": 2,
+          "gameType": 0,
+          "parameterType": 0,
+          "publicTables": 4,
+          "enabledPublicTables": 4
+        },
+        {
+          "gameId": 3,
+          "gameType": 2,
+          "parameterType": 2,
+          "publicTables": 7,
+          "enabledPublicTables": 7
+        },
+        {
+          "gameId": 5,
+          "gameType": 1,
+          "parameterType": 1,
+          "publicTables": 26,
+          "enabledPublicTables": 26
+        },
+        {
+          "gameId": 10,
+          "gameType": 0,
+          "parameterType": 0,
+          "publicTables": 4,
+          "enabledPublicTables": 4
+        },
+        {
+          "gameId": 13,
+          "gameType": 2,
+          "parameterType": 2,
+          "publicTables": 6,
+          "enabledPublicTables": 6
+        },
+        {
+          "gameId": 15,
+          "gameType": 1,
+          "parameterType": 1,
+          "publicTables": 24,
+          "enabledPublicTables": 24
+        },
+        {
+          "gameId": 16,
+          "gameType": 3,
+          "parameterType": 3,
+          "publicTables": 12,
+          "enabledPublicTables": 12
+        },
+        {
+          "gameId": 25,
+          "gameType": 1,
+          "parameterType": 1,
+          "publicTables": 24,
+          "enabledPublicTables": 24
+        },
+        {
+          "gameId": 37,
+          "gameType": 1,
+          "parameterType": 1,
+          "publicTables": 24,
+          "enabledPublicTables": 24
+        },
+        {
+          "gameId": 40,
+          "gameType": 3,
+          "parameterType": 3,
+          "publicTables": 12,
+          "enabledPublicTables": 12
+        },
+        {
+          "gameId": 44,
+          "gameType": 1,
+          "parameterType": 1,
+          "publicTables": 24,
+          "enabledPublicTables": 24
+        },
+        {
+          "gameId": 53,
+          "gameType": 3,
+          "parameterType": 3,
+          "publicTables": 12,
+          "enabledPublicTables": 12
+        },
+        {
+          "gameId": 54,
+          "gameType": 1,
+          "parameterType": 3,
+          "publicTables": 1,
+          "enabledPublicTables": 1
+        },
+        {
+          "gameId": 55,
+          "gameType": 1,
+          "parameterType": 1,
+          "publicTables": 12,
+          "enabledPublicTables": 12
+        }
+      ],
+      "elapsedSeconds": 5.1224247,
+      "scope": "Released 1.0.107 assemblies, isolated MySQL, actual controller + JsonResult.ExecuteResult; no HTTP/Razor/gameplay or production pipe validation"
+    },
+    "configurationAssemblies": {
+      "sourceSite": "E:\\MTH\\releases\\hotfix-1.0.107-newtable-20261105\\site",
+      "schema": "mth_clean_verify_20261105_123025_442065",
+      "cleanSqlSha256": "86bd1bbb5082dbd9f31c7e5a42d9a3556b232cfff60cbabcb0e72060b6c894ec",
+      "totalSeconds": 5.828,
+      "exitCode": 0,
+      "assemblies": [
+        {
+          "name": "YYT.Web.dll",
+          "sha256": "C94AE321542B385FD81CC03402627C315BACA4F0D87D30E97333F922EC76EF36"
+        },
+        {
+          "name": "YYT.BLL.dll",
+          "sha256": "5F8808F6D2FCE71B5EE2FE6F85A4108848112AADEB77AF91BA07FE5E3574D210"
+        },
+        {
+          "name": "YYT.Entity.dll",
+          "sha256": "C3D8509EAE440C9437497CD56C1666CF404EFAEE44A9A2DB3D8C79CB7A1486EA"
+        },
+        {
+          "name": "YYT.Common.dll",
+          "sha256": "FCE2E95F4D97F4E67B64A698B25ED28AFA93D27261FC02E9E918649EDD4044E4"
+        }
+      ]
+    },
+    "business": {
+      "success": true,
+      "seconds": 4.1408475,
+      "checks": [
+        "isolated endpoint guard",
+        "administrator account is admina",
+        "one enabled super administrator",
+        "no initial players",
+        "real BLL super administrator login",
+        "legacy administrator setting matches new account",
+        "actual total-control formatter retains administrator flag without sending a command",
+        "wrong password rejected",
+        "14 enabled games loaded through BLL",
+        "game 2 has enabled public tables",
+        "game 2 table ownership clean",
+        "game 3 has enabled public tables",
+        "game 3 table ownership clean",
+        "game 5 has enabled public tables",
+        "game 5 table ownership clean",
+        "game 5 robot target table query",
+        "game 10 has enabled public tables",
+        "game 10 table ownership clean",
+        "game 13 has enabled public tables",
+        "game 13 table ownership clean",
+        "game 15 has enabled public tables",
+        "game 15 table ownership clean",
+        "game 15 robot target table query",
+        "game 16 has enabled public tables",
+        "game 16 table ownership clean",
+        "game 16 robot target table query",
+        "game 25 has enabled public tables",
+        "game 25 table ownership clean",
+        "game 25 robot target table query",
+        "game 37 has enabled public tables",
+        "game 37 table ownership clean",
+        "game 37 robot target table query",
+        "game 40 has enabled public tables",
+        "game 40 table ownership clean",
+        "game 40 robot target table query",
+        "game 44 has enabled public tables",
+        "game 44 table ownership clean",
+        "game 44 robot target table query",
+        "game 53 has enabled public tables",
+        "game 53 table ownership clean",
+        "game 53 robot target table query",
+        "game 54 has enabled public tables",
+        "game 54 table ownership clean",
+        "game 55 has enabled public tables",
+        "game 55 table ownership clean",
+        "game 55 robot target table query",
+        "enabled client package loads",
+        "mahjong public config loads",
+        "mahjong public config validates and hash matches",
+        "rabbit activity config validates",
+        "rabbit activity has no used quota",
+        "prize wallet query succeeds without pool row",
+        "prize wallet and administrator balances are zero",
+        "prize ledger empty query succeeds",
+        "robot empty list query succeeds",
+        "create agency through real BLL",
+        "created agency can log in",
+        "create player through real BLL",
+        "created player appears in paginated list",
+        "created player resolves agency invitation",
+        "hierarchy stored procedure resolves created agency",
+        "new player winloss queries return zero",
+        "real MVC JsonResult emits total/rows object",
+        "users INHALL trigger creates login record"
+      ],
+      "games": [
+        {
+          "gameId": 2,
+          "paraType": 0,
+          "publicTables": 4
+        },
+        {
+          "gameId": 3,
+          "paraType": 2,
+          "publicTables": 7
+        },
+        {
+          "gameId": 5,
+          "paraType": 1,
+          "publicTables": 26
+        },
+        {
+          "gameId": 10,
+          "paraType": 0,
+          "publicTables": 4
+        },
+        {
+          "gameId": 13,
+          "paraType": 2,
+          "publicTables": 6
+        },
+        {
+          "gameId": 15,
+          "paraType": 1,
+          "publicTables": 24
+        },
+        {
+          "gameId": 16,
+          "paraType": 3,
+          "publicTables": 12
+        },
+        {
+          "gameId": 25,
+          "paraType": 1,
+          "publicTables": 24
+        },
+        {
+          "gameId": 37,
+          "paraType": 1,
+          "publicTables": 24
+        },
+        {
+          "gameId": 40,
+          "paraType": 3,
+          "publicTables": 12
+        },
+        {
+          "gameId": 44,
+          "paraType": 1,
+          "publicTables": 24
+        },
+        {
+          "gameId": 53,
+          "paraType": 3,
+          "publicTables": 12
+        },
+        {
+          "gameId": 54,
+          "paraType": 3,
+          "publicTables": 1
+        },
+        {
+          "gameId": 55,
+          "paraType": 1,
+          "publicTables": 12
+        }
+      ]
+    },
+    "businessImport": {
+      "source": "Database/mth_clean.sql",
+      "sha256": "86bd1bbb5082dbd9f31c7e5a42d9a3556b232cfff60cbabcb0e72060b6c894ec",
+      "importSeconds": 2.088,
+      "exitCode": 0
+    },
+    "businessAssemblies": {
+      "source": "E:\\MTH\\releases\\hotfix-1.0.107-newtable-20261105\\site",
+      "compileSeconds": 1.3583824,
+      "assemblies": [
+        {
+          "name": "YYT.BLL.dll",
+          "sha256": "5F8808F6D2FCE71B5EE2FE6F85A4108848112AADEB77AF91BA07FE5E3574D210"
+        },
+        {
+          "name": "YYT.Entity.dll",
+          "sha256": "C3D8509EAE440C9437497CD56C1666CF404EFAEE44A9A2DB3D8C79CB7A1486EA"
+        },
+        {
+          "name": "YYT.Web.dll",
+          "sha256": "C94AE321542B385FD81CC03402627C315BACA4F0D87D30E97333F922EC76EF36"
+        }
+      ]
+    },
+    "summary": {
+      "result": "PASS",
+      "checks": 249,
+      "configurationChecks": 185,
+      "businessChecks": 64,
+      "enabledGames": 14,
+      "backendVersion": "1.0.107",
+      "cleanSha256": "86bd1bbb5082dbd9f31c7e5a42d9a3556b232cfff60cbabcb0e72060b6c894ec",
+      "scope": "Local isolated MySQL and released assemblies; actual MVC JSON execution, no production or HTTP validation."
+    }
+  },
+  "entrypointChecks": {
+    "status": "Historical checks retained without rerunning",
+    "verifiedCleanSha256": "dba81c1752e4eab412d8c8db8b36c42bd85708dc2460dead4d62eb2182aae0ba",
+    "report": "historicalVerification[0].entrypointChecks"
+  },
+  "archived": {
+    "snapshots": 13,
+    "obsoleteDockerPatchCopies": 6,
+    "manifest": "archive-manifest.json"
+  },
+  "unverified": [
+    "Real game entry, gameplay, bets, settlement and financial recharge/exchange",
+    "Payment callbacks",
+    "Control-card outcome execution",
+    "APK/physical device and interactive browser flows"
+  ],
+  "notes": [
+    "Current fish configuration controller explicitly handles historical pararoom.Game_Mo NULL; obsolete full-entity EF loading is not the active configuration path.",
+    "Legacy AppUpdate menu is disabled; the absent updateaddr table was not fabricated.",
+    "Initial isolated general_ci restore caused hierarchy procedure collation mismatch; final restores use verified production utf8mb4_unicode_ci and include routine parameter signatures.",
+    "PlayerWinLoss test required SslMode=None in its isolated validation copy; repository logic unchanged.",
+    "Current clean was derived only from the archived prior clean. Only admin.ID, activityconfig.Operator and mjhl_agent_config.UpdatedBy changed; the original administrator password, permissions, balances and timestamp were preserved.",
+    "Canonical full now contains the final pre-cutover backup. Current clean remains derived from the archived earlier source. Production HTTP/Razor tests are recorded separately from 249 isolated checks; no gameplay/settlement regression was performed."
+  ],
+  "historicalVerification": [
+    {
+      "label": "Original clean before administrator rename",
+      "recordedAtUtc": "2026-11-05T12:09:18.128304+00:00",
+      "cleanArtifact": {
+        "bytes": 396754,
+        "sha256": "dba81c1752e4eab412d8c8db8b36c42bd85708dc2460dead4d62eb2182aae0ba"
+      },
+      "archivePath": "E:\\MTH\\MHT-Backend-db-archives\\20261105-admina\\mth_clean_before_admina.sql",
+      "supersededByCleanSha256": "86bd1bbb5082dbd9f31c7e5a42d9a3556b232cfff60cbabcb0e72060b6c894ec",
+      "verification": {
+        "capturedAtUtc": "2026-11-05T12:06:53.558675+00:00",
+        "sourceSha256": "27f9735e614473a4014a01d48abb838baa1f5a07f30f8dac6806bb0e14807469",
+        "policy": {
+          "preserve": [
+            "activity",
+            "agent_permission_template",
+            "betgamecfg",
+            "cardgamecfg",
+            "cardpayoutprofile",
+            "clientpackage",
+            "gameconfiglaba",
+            "gamemo",
+            "gamepara",
+            "notice",
+            "parabet",
+            "parabetroom",
+            "paracard",
+            "parafish",
+            "paragame",
+            "paralaba",
+            "pararoom",
+            "plattype",
+            "roomtableconfig",
+            "roomtableconfig_bet",
+            "roomtableconfig_card",
+            "updateaddrnew"
+          ],
+          "reset": [
+            "activityconfig",
+            "admin",
+            "gameacclaba",
+            "games",
+            "mjhl_agent_config",
+            "roomtableowner",
+            "userrobotnum"
+          ],
+          "empty": [
+            "accountlog",
+            "agencyoptlog",
+            "agentprizecontrol",
+            "agentprizeledger",
+            "agentprizepool",
+            "agent_hierarchy",
+            "cardpayoutprofile_att3_bak_0907",
+            "cashierinfo",
+            "clientexchangerecord",
+            "ex_change",
+            "gamecommandoutbox",
+            "gameprizerecord",
+            "gamerankhistory",
+            "games_money_spent",
+            "invite_codes",
+            "loginmissrecord",
+            "manageropt",
+            "mgrpermission",
+            "mjhl_agent_config_history",
+            "mjhl_recovery_operation",
+            "mjhl_recovery_state",
+            "parabetroom_bak_20260815",
+            "prizebroadcastoutbox",
+            "rank",
+            "rechargerecords",
+            "robot_seat",
+            "safe_coins_log",
+            "sharebonus",
+            "tablecoinrecord",
+            "totalkill_table_backup",
+            "transferlog",
+            "uploadsimage",
+            "usercontrolstatus",
+            "usercontrolvalue",
+            "userlockrecord",
+            "userloginrecord",
+            "useroptlog",
+            "userrelations",
+            "userrobot",
+            "users",
+            "userscoresnapshotledger",
+            "user_daily_winloss",
+            "user_winloss_ledger",
+            "videogamecoinrecord"
+          ]
+        },
+        "timings": {
+          "fullImportSeconds": 5.095,
+          "cleanExportSeconds": 0.381,
+          "cleanImportSeconds": 1.965,
+          "totalSeconds": 8.687
+        },
+        "schema": {
+          "columns": {
+            "count": 744,
+            "sha256": "502340ab77201373267e85db2a291b832036fd9bbe4d03d80d6e365fcc045a27"
+          },
+          "indexes": {
+            "count": 173,
+            "sha256": "0f9477c13f58b317317e54d3a153d3b3f1171c6c27d11de2c81ed1d0e03e6210"
+          },
+          "triggers": {
+            "count": 1,
+            "sha256": "5fb694403e902e2f71e35c6190425668ec523c65ea656eac691cc924a8d85dae"
+          },
+          "routines": {
+            "count": 5,
+            "sha256": "4655ae65dc045db657d6650bfec26d5ec549f44ae65119f13f3cbc7387775d5a"
+          },
+          "routineParameters": {
+            "count": 22,
+            "sha256": "f855eecac1c5f5ef26185775875517d6253c5c3b3d4d28dc2ae8daee0416402a"
+          },
+          "events": {
+            "count": 0,
+            "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          "views": {
+            "count": 1,
+            "sha256": "9fc450f298344258e38ad64f6116a4ca29d50d0175c3db136ccb415336609f80"
+          }
+        },
+        "normalizedLegacyCommentLines": 408,
+        "rows": {
+          "full": {
+            "accountlog": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "activity": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "activityconfig": {
+              "rows": 1,
+              "checksum": 4255766454
+            },
+            "admin": {
+              "rows": 18,
+              "checksum": 1109793083
+            },
+            "agencyoptlog": {
+              "rows": 301,
+              "checksum": 3936127348
+            },
+            "agentprizecontrol": {
+              "rows": 165,
+              "checksum": 1818244383
+            },
+            "agentprizeledger": {
+              "rows": 1976,
+              "checksum": 3627102523
+            },
+            "agentprizepool": {
+              "rows": 2,
+              "checksum": 2256144843
+            },
+            "agent_hierarchy": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "agent_permission_template": {
+              "rows": 8,
+              "checksum": 2543963451
+            },
+            "betgamecfg": {
+              "rows": 14,
+              "checksum": 2402101606
+            },
+            "cardgamecfg": {
+              "rows": 7,
+              "checksum": 3751939507
+            },
+            "cardpayoutprofile": {
+              "rows": 4759,
+              "checksum": 1519673246
+            },
+            "cardpayoutprofile_att3_bak_0907": {
+              "rows": 204,
+              "checksum": 2492557974
+            },
+            "cashierinfo": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "clientexchangerecord": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "clientpackage": {
+              "rows": 1,
+              "checksum": 986832499
+            },
+            "ex_change": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "gameacclaba": {
+              "rows": 5,
+              "checksum": 1874966248
+            },
+            "gamecommandoutbox": {
+              "rows": 421,
+              "checksum": 1610859907
+            },
+            "gameconfiglaba": {
+              "rows": 1541,
+              "checksum": 977189476
+            },
+            "gamemo": {
+              "rows": 1,
+              "checksum": 1481996991
+            },
+            "gamepara": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "gameprizerecord": {
+              "rows": 88073,
+              "checksum": 3409748107
+            },
+            "gamerankhistory": {
+              "rows": 324,
+              "checksum": 3897306600
+            },
+            "games": {
+              "rows": 19,
+              "checksum": 3065668331
+            },
+            "games_money_spent": {
+              "rows": 3,
+              "checksum": 2803343392
+            },
+            "invite_codes": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "loginmissrecord": {
+              "rows": 129,
+              "checksum": 2859365131
+            },
+            "manageropt": {
+              "rows": 177,
+              "checksum": 798283923
+            },
+            "mgrpermission": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "mjhl_agent_config": {
+              "rows": 3,
+              "checksum": 1532159041
+            },
+            "mjhl_agent_config_history": {
+              "rows": 12,
+              "checksum": 2769511478
+            },
+            "mjhl_recovery_operation": {
+              "rows": 300,
+              "checksum": 2633363114
+            },
+            "mjhl_recovery_state": {
+              "rows": 4,
+              "checksum": 79929698
+            },
+            "notice": {
+              "rows": 1,
+              "checksum": 2259921197
+            },
+            "parabet": {
+              "rows": 18,
+              "checksum": 2977357961
+            },
+            "parabetroom": {
+              "rows": 8,
+              "checksum": 252946923
+            },
+            "parabetroom_bak_20260815": {
+              "rows": 7,
+              "checksum": 419639903
+            },
+            "paracard": {
+              "rows": 229,
+              "checksum": 1145550423
+            },
+            "parafish": {
+              "rows": 51,
+              "checksum": 570371582
+            },
+            "paragame": {
+              "rows": 27,
+              "checksum": 1881324383
+            },
+            "paralaba": {
+              "rows": 37,
+              "checksum": 1521044665
+            },
+            "pararoom": {
+              "rows": 23,
+              "checksum": 2005710034
+            },
+            "plattype": {
+              "rows": 2,
+              "checksum": 761768349
+            },
+            "prizebroadcastoutbox": {
+              "rows": 3457,
+              "checksum": 456830186
+            },
+            "rank": {
+              "rows": 121,
+              "checksum": 1572878224
+            },
+            "rechargerecords": {
+              "rows": 68,
+              "checksum": 2587089103
+            },
+            "robot_seat": {
+              "rows": 111,
+              "checksum": 2819030326
+            },
+            "roomtableconfig": {
+              "rows": 326,
+              "checksum": 726956049
+            },
+            "roomtableconfig_bet": {
+              "rows": 51,
+              "checksum": 2615678301
+            },
+            "roomtableconfig_card": {
+              "rows": 224,
+              "checksum": 2477880047
+            },
+            "roomtableowner": {
+              "rows": 81,
+              "checksum": 3043138291
+            },
+            "safe_coins_log": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "sharebonus": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "tablecoinrecord": {
+              "rows": 73,
+              "checksum": 4251966462
+            },
+            "totalkill_table_backup": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "transferlog": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "updateaddrnew": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "uploadsimage": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "usercontrolstatus": {
+              "rows": 187,
+              "checksum": 356305138
+            },
+            "usercontrolvalue": {
+              "rows": 28,
+              "checksum": 1444135450
+            },
+            "userlockrecord": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "userloginrecord": {
+              "rows": 7689,
+              "checksum": 3791337403
+            },
+            "useroptlog": {
+              "rows": 4250,
+              "checksum": 4071510196
+            },
+            "userrelations": {
+              "rows": 41,
+              "checksum": 3596362210
+            },
+            "userrobot": {
+              "rows": 400,
+              "checksum": 2205647976
+            },
+            "userrobotnum": {
+              "rows": 51,
+              "checksum": 2766449585
+            },
+            "users": {
+              "rows": 37,
+              "checksum": 2652675624
+            },
+            "userscoresnapshotledger": {
+              "rows": 37625,
+              "checksum": 3215763983
+            },
+            "user_daily_winloss": {
+              "rows": 93,
+              "checksum": 2319286289
+            },
+            "user_winloss_ledger": {
+              "rows": 6764,
+              "checksum": 917595943
+            },
+            "videogamecoinrecord": {
+              "rows": 0,
+              "checksum": 0
+            }
+          },
+          "clean": {
+            "accountlog": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "activity": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "activityconfig": {
+              "rows": 1,
+              "checksum": 4255766454
+            },
+            "admin": {
+              "rows": 1,
+              "checksum": 1803836625
+            },
+            "agencyoptlog": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "agentprizecontrol": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "agentprizeledger": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "agentprizepool": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "agent_hierarchy": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "agent_permission_template": {
+              "rows": 8,
+              "checksum": 2543963451
+            },
+            "betgamecfg": {
+              "rows": 14,
+              "checksum": 2402101606
+            },
+            "cardgamecfg": {
+              "rows": 7,
+              "checksum": 3751939507
+            },
+            "cardpayoutprofile": {
+              "rows": 4759,
+              "checksum": 1519673246
+            },
+            "cardpayoutprofile_att3_bak_0907": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "cashierinfo": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "clientexchangerecord": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "clientpackage": {
+              "rows": 1,
+              "checksum": 986832499
+            },
+            "ex_change": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "gameacclaba": {
+              "rows": 5,
+              "checksum": 2095164287
+            },
+            "gamecommandoutbox": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "gameconfiglaba": {
+              "rows": 1541,
+              "checksum": 977189476
+            },
+            "gamemo": {
+              "rows": 1,
+              "checksum": 1481996991
+            },
+            "gamepara": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "gameprizerecord": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "gamerankhistory": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "games": {
+              "rows": 19,
+              "checksum": 3065668331
+            },
+            "games_money_spent": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "invite_codes": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "loginmissrecord": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "manageropt": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "mgrpermission": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "mjhl_agent_config": {
+              "rows": 1,
+              "checksum": 1111075985
+            },
+            "mjhl_agent_config_history": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "mjhl_recovery_operation": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "mjhl_recovery_state": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "notice": {
+              "rows": 1,
+              "checksum": 2259921197
+            },
+            "parabet": {
+              "rows": 18,
+              "checksum": 2977357961
+            },
+            "parabetroom": {
+              "rows": 8,
+              "checksum": 252946923
+            },
+            "parabetroom_bak_20260815": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "paracard": {
+              "rows": 229,
+              "checksum": 1145550423
+            },
+            "parafish": {
+              "rows": 51,
+              "checksum": 570371582
+            },
+            "paragame": {
+              "rows": 27,
+              "checksum": 1881324383
+            },
+            "paralaba": {
+              "rows": 37,
+              "checksum": 1521044665
+            },
+            "pararoom": {
+              "rows": 23,
+              "checksum": 2005710034
+            },
+            "plattype": {
+              "rows": 2,
+              "checksum": 761768349
+            },
+            "prizebroadcastoutbox": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "rank": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "rechargerecords": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "robot_seat": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "roomtableconfig": {
+              "rows": 326,
+              "checksum": 726956049
+            },
+            "roomtableconfig_bet": {
+              "rows": 51,
+              "checksum": 2615678301
+            },
+            "roomtableconfig_card": {
+              "rows": 224,
+              "checksum": 2477880047
+            },
+            "roomtableowner": {
+              "rows": 81,
+              "checksum": 4231106189
+            },
+            "safe_coins_log": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "sharebonus": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "tablecoinrecord": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "totalkill_table_backup": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "transferlog": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "updateaddrnew": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "uploadsimage": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "usercontrolstatus": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "usercontrolvalue": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "userlockrecord": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "userloginrecord": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "useroptlog": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "userrelations": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "userrobot": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "userrobotnum": {
+              "rows": 51,
+              "checksum": 1975946069
+            },
+            "users": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "userscoresnapshotledger": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "user_daily_winloss": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "user_winloss_ledger": {
+              "rows": 0,
+              "checksum": 0
+            },
+            "videogamecoinrecord": {
+              "rows": 0,
+              "checksum": 0
+            }
+          }
+        },
+        "verifiedSchemas": [
+          "mth_clean_build_20261105_120653_558651",
+          "mth_clean_verify_20261105_120653_558651"
+        ],
+        "cleanSha256": "dba81c1752e4eab412d8c8db8b36c42bd85708dc2460dead4d62eb2182aae0ba",
+        "result": "PASS"
+      },
+      "applicationChecks": {
+        "configuration": {
+          "schema": "mth_clean_verify_20261105_120653_558651",
+          "cleanSqlSha256": "dba81c1752e4eab412d8c8db8b36c42bd85708dc2460dead4d62eb2182aae0ba",
+          "unchangedTables": 73,
+          "rabbitSavedRules": 2,
+          "rabbitFallbackRules": 10,
+          "phenixRules": 26,
+          "result": "PASS",
+          "checks": 185,
+          "games": [
+            {
+              "gameId": 2,
+              "gameType": 0,
+              "parameterType": 0,
+              "publicTables": 4,
+              "enabledPublicTables": 4
+            },
+            {
+              "gameId": 3,
+              "gameType": 2,
+              "parameterType": 2,
+              "publicTables": 7,
+              "enabledPublicTables": 7
+            },
+            {
+              "gameId": 5,
+              "gameType": 1,
+              "parameterType": 1,
+              "publicTables": 26,
+              "enabledPublicTables": 26
+            },
+            {
+              "gameId": 10,
+              "gameType": 0,
+              "parameterType": 0,
+              "publicTables": 4,
+              "enabledPublicTables": 4
+            },
+            {
+              "gameId": 13,
+              "gameType": 2,
+              "parameterType": 2,
+              "publicTables": 6,
+              "enabledPublicTables": 6
+            },
+            {
+              "gameId": 15,
+              "gameType": 1,
+              "parameterType": 1,
+              "publicTables": 24,
+              "enabledPublicTables": 24
+            },
+            {
+              "gameId": 16,
+              "gameType": 3,
+              "parameterType": 3,
+              "publicTables": 12,
+              "enabledPublicTables": 12
+            },
+            {
+              "gameId": 25,
+              "gameType": 1,
+              "parameterType": 1,
+              "publicTables": 24,
+              "enabledPublicTables": 24
+            },
+            {
+              "gameId": 37,
+              "gameType": 1,
+              "parameterType": 1,
+              "publicTables": 24,
+              "enabledPublicTables": 24
+            },
+            {
+              "gameId": 40,
+              "gameType": 3,
+              "parameterType": 3,
+              "publicTables": 12,
+              "enabledPublicTables": 12
+            },
+            {
+              "gameId": 44,
+              "gameType": 1,
+              "parameterType": 1,
+              "publicTables": 24,
+              "enabledPublicTables": 24
+            },
+            {
+              "gameId": 53,
+              "gameType": 3,
+              "parameterType": 3,
+              "publicTables": 12,
+              "enabledPublicTables": 12
+            },
+            {
+              "gameId": 54,
+              "gameType": 1,
+              "parameterType": 3,
+              "publicTables": 1,
+              "enabledPublicTables": 1
+            },
+            {
+              "gameId": 55,
+              "gameType": 1,
+              "parameterType": 1,
+              "publicTables": 12,
+              "enabledPublicTables": 12
+            }
+          ],
+          "elapsedSeconds": 4.9079651,
+          "scope": "Released 1.0.107 assemblies, isolated MySQL, actual controller + JsonResult.ExecuteResult; no HTTP/Razor/gameplay or production pipe validation"
+        },
+        "configurationAssemblies": {
+          "sourceSite": "E:\\MTH\\releases\\hotfix-1.0.107-newtable-20261105\\site",
+          "schema": "mth_clean_verify_20261105_120653_558651",
+          "cleanSqlSha256": "dba81c1752e4eab412d8c8db8b36c42bd85708dc2460dead4d62eb2182aae0ba",
+          "totalSeconds": 5.597,
+          "exitCode": 0,
+          "assemblies": [
+            {
+              "name": "YYT.Web.dll",
+              "sha256": "C94AE321542B385FD81CC03402627C315BACA4F0D87D30E97333F922EC76EF36"
+            },
+            {
+              "name": "YYT.BLL.dll",
+              "sha256": "5F8808F6D2FCE71B5EE2FE6F85A4108848112AADEB77AF91BA07FE5E3574D210"
+            },
+            {
+              "name": "YYT.Entity.dll",
+              "sha256": "C3D8509EAE440C9437497CD56C1666CF404EFAEE44A9A2DB3D8C79CB7A1486EA"
+            },
+            {
+              "name": "YYT.Common.dll",
+              "sha256": "FCE2E95F4D97F4E67B64A698B25ED28AFA93D27261FC02E9E918649EDD4044E4"
+            }
+          ]
+        },
+        "business": {
+          "success": true,
+          "seconds": 4.0612229,
+          "checks": [
+            "isolated endpoint guard",
+            "one enabled super administrator",
+            "no initial players",
+            "real BLL super administrator login",
+            "wrong password rejected",
+            "14 enabled games loaded through BLL",
+            "game 2 has enabled public tables",
+            "game 2 table ownership clean",
+            "game 3 has enabled public tables",
+            "game 3 table ownership clean",
+            "game 5 has enabled public tables",
+            "game 5 table ownership clean",
+            "game 5 robot target table query",
+            "game 10 has enabled public tables",
+            "game 10 table ownership clean",
+            "game 13 has enabled public tables",
+            "game 13 table ownership clean",
+            "game 15 has enabled public tables",
+            "game 15 table ownership clean",
+            "game 15 robot target table query",
+            "game 16 has enabled public tables",
+            "game 16 table ownership clean",
+            "game 16 robot target table query",
+            "game 25 has enabled public tables",
+            "game 25 table ownership clean",
+            "game 25 robot target table query",
+            "game 37 has enabled public tables",
+            "game 37 table ownership clean",
+            "game 37 robot target table query",
+            "game 40 has enabled public tables",
+            "game 40 table ownership clean",
+            "game 40 robot target table query",
+            "game 44 has enabled public tables",
+            "game 44 table ownership clean",
+            "game 44 robot target table query",
+            "game 53 has enabled public tables",
+            "game 53 table ownership clean",
+            "game 53 robot target table query",
+            "game 54 has enabled public tables",
+            "game 54 table ownership clean",
+            "game 55 has enabled public tables",
+            "game 55 table ownership clean",
+            "game 55 robot target table query",
+            "enabled client package loads",
+            "mahjong public config loads",
+            "mahjong public config validates and hash matches",
+            "rabbit activity config validates",
+            "rabbit activity has no used quota",
+            "prize wallet query succeeds without pool row",
+            "prize wallet and administrator balances are zero",
+            "prize ledger empty query succeeds",
+            "robot empty list query succeeds",
+            "create agency through real BLL",
+            "created agency can log in",
+            "create player through real BLL",
+            "created player appears in paginated list",
+            "created player resolves agency invitation",
+            "hierarchy stored procedure resolves created agency",
+            "new player winloss queries return zero",
+            "real MVC JsonResult emits total/rows object",
+            "users INHALL trigger creates login record"
+          ],
+          "games": [
+            {
+              "gameId": 2,
+              "paraType": 0,
+              "publicTables": 4
+            },
+            {
+              "gameId": 3,
+              "paraType": 2,
+              "publicTables": 7
+            },
+            {
+              "gameId": 5,
+              "paraType": 1,
+              "publicTables": 26
+            },
+            {
+              "gameId": 10,
+              "paraType": 0,
+              "publicTables": 4
+            },
+            {
+              "gameId": 13,
+              "paraType": 2,
+              "publicTables": 6
+            },
+            {
+              "gameId": 15,
+              "paraType": 1,
+              "publicTables": 24
+            },
+            {
+              "gameId": 16,
+              "paraType": 3,
+              "publicTables": 12
+            },
+            {
+              "gameId": 25,
+              "paraType": 1,
+              "publicTables": 24
+            },
+            {
+              "gameId": 37,
+              "paraType": 1,
+              "publicTables": 24
+            },
+            {
+              "gameId": 40,
+              "paraType": 3,
+              "publicTables": 12
+            },
+            {
+              "gameId": 44,
+              "paraType": 1,
+              "publicTables": 24
+            },
+            {
+              "gameId": 53,
+              "paraType": 3,
+              "publicTables": 12
+            },
+            {
+              "gameId": 54,
+              "paraType": 3,
+              "publicTables": 1
+            },
+            {
+              "gameId": 55,
+              "paraType": 1,
+              "publicTables": 12
+            }
+          ]
+        },
+        "businessImport": {
+          "source": "Database/mth_clean.sql",
+          "sha256": "dba81c1752e4eab412d8c8db8b36c42bd85708dc2460dead4d62eb2182aae0ba",
+          "importSeconds": 2.042,
+          "exitCode": 0
+        },
+        "businessAssemblies": {
+          "source": "E:\\MTH\\releases\\hotfix-1.0.107-newtable-20261105\\site",
+          "compileSeconds": 0.3719479,
+          "assemblies": [
+            {
+              "name": "YYT.BLL.dll",
+              "sha256": "5F8808F6D2FCE71B5EE2FE6F85A4108848112AADEB77AF91BA07FE5E3574D210"
+            },
+            {
+              "name": "YYT.Entity.dll",
+              "sha256": "C3D8509EAE440C9437497CD56C1666CF404EFAEE44A9A2DB3D8C79CB7A1486EA"
+            },
+            {
+              "name": "YYT.Web.dll",
+              "sha256": "C94AE321542B385FD81CC03402627C315BACA4F0D87D30E97333F922EC76EF36"
+            }
+          ]
+        }
+      },
+      "entrypointChecks": {
+        "powershell51ParseSeconds": 0.04,
+        "dockerComposeValidationSeconds": 0.15,
+        "binaryRoutineTriggerViewRoundtripSeconds": 1.08,
+        "defaultCleanDryRunSeconds": 0.3,
+        "batDryRunSeconds": 0.49,
+        "lineTablesChecks": 203,
+        "lineTablesSeconds": 5.61,
+        "playerWinLossChecks": 17,
+        "playerWinLossSeconds": 4.61,
+        "result": "PASS",
+        "evidenceDirectory": ".build/database-tools-smoke-20261105"
+      },
+      "scope": "These original reports remain tied to the original clean hash; they are not new-hash test results."
+    }
+  ],
+  "cleanDerivation": {
+    "capturedAtUtc": "2026-11-05T12:30:31.115960+00:00",
+    "sourceRole": "previous-clean-snapshot",
+    "sourceArchive": "E:\\MTH\\MHT-Backend-db-archives\\20261105-admina\\mth_clean_before_admina.sql",
+    "sourceSha256": "dba81c1752e4eab412d8c8db8b36c42bd85708dc2460dead4d62eb2182aae0ba",
+    "sourceSchema": "mth_snapshot_admina_source_20261105_123022",
+    "sourceImportSeconds": 2.08,
+    "cleanPath": "E:\\MTH\\MHT-Backend\\Database\\mth_clean.sql",
+    "cleanSha256": "86bd1bbb5082dbd9f31c7e5a42d9a3556b232cfff60cbabcb0e72060b6c894ec",
+    "cleanBytes": 396748,
+    "fullSha256Unchanged": "27f9735e614473a4014a01d48abb838baa1f5a07f30f8dac6806bb0e14807469",
+    "adminAccount": "admina",
+    "passwordAndOtherAdminFieldsPreserved": true,
+    "changedTables": [
+      "activityconfig",
+      "admin",
+      "mjhl_agent_config"
+    ],
+    "generatorVerification": "E:\\MTH\\MHT-Backend\\.build\\database-consolidation-20261105\\admina\\generator\\verification.json",
+    "verifiedSchemas": [
+      "mth_clean_build_20261105_123025_442065",
+      "mth_clean_verify_20261105_123025_442065"
+    ],
+    "result": "PASS",
+    "bllValidation": {
+      "checks": 64,
+      "seconds": 4.1408475,
+      "importSeconds": 2.088
+    },
+    "controllerValidation": {
+      "checks": 185,
+      "games": 14,
+      "seconds": 5.1224247
+    },
+    "generatorTimings": {
+      "sourceImportSeconds": 2.065,
+      "cleanExportSeconds": 0.401,
+      "cleanImportSeconds": 2.048,
+      "totalSeconds": 5.639
+    },
+    "generatorSha256": "2d3aec6f1469f4cd10205724e2118ac66057369ba69ac990fe7139852f03f53b"
+  },
+  "localPreparation": {
+    "status": "PASS",
+    "adminAccount": "admina",
+    "webConfigAdminSetting": "admina",
+    "productionDeploymentIncluded": false,
+    "evidenceDirectory": ".build/database-consolidation-20261105/admina",
+    "generatorCommandRequires": "--admin-account admina",
+    "generatorDefault": "If --admin-account is omitted, preserve the selected source snapshot account. The unchanged full snapshot still contains the original account."
+  },
+  "originalFullSnapshot": {
+    "source": {
+      "host": "mth-server",
+      "database": "mth",
+      "backendVersion": "1.0.107",
+      "mysqlVersion": "5.7.44",
+      "defaultCollation": "utf8mb4_unicode_ci",
+      "dumpCompletedAtUtc": "2026-11-05T11:53:12.9613511Z",
+      "dumpSeconds": 0.3899514,
+      "exportOptions": [
+        "single-transaction",
+        "quick",
+        "hex-blob",
+        "routines",
+        "triggers",
+        "events",
+        "set-gtid-purged=OFF",
+        "skip-lock-tables"
+      ],
+      "onlineDatabaseModified": false
+    },
+    "artifact": {
+      "bytes": 15364722,
+      "sha256": "27f9735e614473a4014a01d48abb838baa1f5a07f30f8dac6806bb0e14807469"
+    },
+    "archive": {
+      "archivedAtUtc": "2026-11-05T12:56:41.796778+00:00",
+      "path": "E:\\MTH\\MHT-Backend-db-archives\\20261105-admina\\mth_full_before_final_cutover.sql",
+      "sha256": "27f9735e614473a4014a01d48abb838baa1f5a07f30f8dac6806bb0e14807469",
+      "bytes": 15364722,
+      "role": "Original online full snapshot from 2026-11-05T11:53:12.9613511Z; original ancestor of current clean",
+      "supersededByFullSha256": "efb4d701f63b11053c79da5625e02d5b36895fef9691431a9a749623b8f210df"
+    },
+    "role": "Historical source ancestor of current clean; no longer the canonical full artifact."
+  },
+  "fullVerification": {
+    "result": "PASS",
+    "capturedAtUtc": "2026-11-05T12:56:48.323499+00:00",
+    "backupCapturedAtUtc": "2026-11-05T12:47:15.1537615Z",
+    "writersStopped": true,
+    "sourceBackupDirectory": "E:\\MTH\\releases\\clean-db-admina-20261105\\production-backup\\backup",
+    "payloadFilesVerified": 136,
+    "runtimeFilesVerified": 134,
+    "runtimeBytes": 77611,
+    "downloadVerificationSeconds": 0.147,
+    "verifiedPayloads": [
+      {
+        "path": "database.sql",
+        "bytes": 15704248,
+        "sha256": "efb4d701f63b11053c79da5625e02d5b36895fef9691431a9a749623b8f210df"
+      },
+      {
+        "path": "Web.config",
+        "bytes": 16983,
+        "sha256": "4c63261cbcb5f87e397a36fdead8b5afe4177e70131b7bf4915d05ee454e2724"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhbSave.bin",
+        "bytes": 9024,
+        "sha256": "ba61f93e45c30cab72780835b01f7f427111a12e0fe0673f009829541c234e7e"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/JackpotSet.txt.applied",
+        "bytes": 945,
+        "sha256": "0845183c111db0f5be0922a8fcacbb3936f3f8e840e6bb301c5a1430ef1fc3bf"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/JackpotState.txt",
+        "bytes": 954,
+        "sha256": "43be6822a62cff28df5a77d0459c4a544001235b955ea172d0c6a1b28abaea22"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/CardAttMhb_Alg_Log-1.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/CardAttMhb_Alg_Log-10.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/CardAttMhb_Alg_Log-11.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/CardAttMhb_Alg_Log-12.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/CardAttMhb_Alg_Log-13.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/CardAttMhb_Alg_Log-14.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/CardAttMhb_Alg_Log-15.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/CardAttMhb_Alg_Log-16.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/CardAttMhb_Alg_Log-17.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/CardAttMhb_Alg_Log-18.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/CardAttMhb_Alg_Log-19.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/CardAttMhb_Alg_Log-2.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/CardAttMhb_Alg_Log-20.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/CardAttMhb_Alg_Log-21.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/CardAttMhb_Alg_Log-22.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/CardAttMhb_Alg_Log-23.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/CardAttMhb_Alg_Log-24.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/CardAttMhb_Alg_Log-3.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/CardAttMhb_Alg_Log-4.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/CardAttMhb_Alg_Log-5.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/CardAttMhb_Alg_Log-6.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/CardAttMhb_Alg_Log-7.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/CardAttMhb_Alg_Log-8.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/CardAttMhb_Alg_Log-9.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/Log/CardAttMhb20261011155318.txt",
+        "bytes": 745,
+        "sha256": "792f078b2645c6cbbf1805b0fb4fbc21c05c283f85a75e397703b8e799b655f3"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/Log/CardAttMhb2026101204726.txt",
+        "bytes": 590,
+        "sha256": "e2621c40282b806ff98da4e360c5973a1b9483ecef83e490412936f6fcaf0eca"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/Log/CardAttMhb20261013182518.txt",
+        "bytes": 3295,
+        "sha256": "b0ae904795d822d73ebd2b8b419ed341d6a64eb2677868c0686ca3dfaecff132"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/Log/CardAttMhb20261014163552.txt",
+        "bytes": 40,
+        "sha256": "35960d2121def0bd8da6e89604a6a29b2859f47a24375b5afe955705219d5352"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/Log/CardAttMhb20261014164339.txt",
+        "bytes": 40,
+        "sha256": "35960d2121def0bd8da6e89604a6a29b2859f47a24375b5afe955705219d5352"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/Log/CardAttMhb20261014164421.txt",
+        "bytes": 20,
+        "sha256": "fcdc3e0a3d9c06848e67d0ec85919f4c657c5c017439ecb71ed7e75917af23e7"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/Log/CardAttMhb20261014191637.txt",
+        "bytes": 20,
+        "sha256": "fcdc3e0a3d9c06848e67d0ec85919f4c657c5c017439ecb71ed7e75917af23e7"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/Log/CardAttMhb20261014193157.txt",
+        "bytes": 20,
+        "sha256": "fcdc3e0a3d9c06848e67d0ec85919f4c657c5c017439ecb71ed7e75917af23e7"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/Log/CardAttMhb20261014213949.txt",
+        "bytes": 1180,
+        "sha256": "7fe38b8d49792728374f4db4044cf662793d30e4ca21b57d459c3d64b404ff1f"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/Log/CardAttMhb20261014222037.txt",
+        "bytes": 140,
+        "sha256": "1880aee87870b23b42cbcf23795da4521434818bdd7012e5cfea70c07c79f54a"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/Log/CardAttMhb2026101442632.txt",
+        "bytes": 2832,
+        "sha256": "dcec3058063638cc04af968486d6acb26e2dcf0206c20aa51471ae72e2b04d3b"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/Log/CardAttMhb2026101521431.txt",
+        "bytes": 40,
+        "sha256": "35960d2121def0bd8da6e89604a6a29b2859f47a24375b5afe955705219d5352"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/Log/CardAttMhb20261015222447.txt",
+        "bytes": 140,
+        "sha256": "13d8b4f1594cbd68385c7b2102b16f1b69844e399e8fad39d6315ef48fe77e1c"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/Log/CardAttMhb2026101714425.txt",
+        "bytes": 2007,
+        "sha256": "c663a11baaf427f10c653ec839a2bc264665d95cc02a1ecfeb4d2c58a27573bc"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/Log/CardAttMhb20261023143254.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/Log/CardAttMhb20261023145558.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/Log/CardAttMhb20261023151811.txt",
+        "bytes": 40,
+        "sha256": "35960d2121def0bd8da6e89604a6a29b2859f47a24375b5afe955705219d5352"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/Log/CardAttMhb20261023175742.txt",
+        "bytes": 40,
+        "sha256": "35960d2121def0bd8da6e89604a6a29b2859f47a24375b5afe955705219d5352"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/Log/CardAttMhb2026102412846.txt",
+        "bytes": 40,
+        "sha256": "35960d2121def0bd8da6e89604a6a29b2859f47a24375b5afe955705219d5352"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/Log/CardAttMhb20261025172136.txt",
+        "bytes": 6180,
+        "sha256": "4e30e502e0525f96c0b32b17d145bae57ada701bcfe846e2bedae5aee9e4f3dc"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/Log/CardAttMhb20261028232452.txt",
+        "bytes": 60,
+        "sha256": "b4001b1bce4e895a9a0ec664d531b41f17f666e6bee34ba4a4dff473f33abbd1"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/Log/CardAttMhb202610291315.txt",
+        "bytes": 60,
+        "sha256": "b4001b1bce4e895a9a0ec664d531b41f17f666e6bee34ba4a4dff473f33abbd1"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/Log/CardAttMhb20261030165926.txt",
+        "bytes": 60,
+        "sha256": "b4001b1bce4e895a9a0ec664d531b41f17f666e6bee34ba4a4dff473f33abbd1"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/Log/CardAttMhb2026103019826.txt",
+        "bytes": 60,
+        "sha256": "b4001b1bce4e895a9a0ec664d531b41f17f666e6bee34ba4a4dff473f33abbd1"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/Log/CardAttMhb20261030203726.txt",
+        "bytes": 60,
+        "sha256": "b4001b1bce4e895a9a0ec664d531b41f17f666e6bee34ba4a4dff473f33abbd1"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/Log/CardAttMhb20261030215057.txt",
+        "bytes": 85,
+        "sha256": "2e238cfcb8d1883b95f05a7c555bdc8f7995360544b57edf717de269eed7b18d"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/Log/CardAttMhb20261031163943.txt",
+        "bytes": 60,
+        "sha256": "b4001b1bce4e895a9a0ec664d531b41f17f666e6bee34ba4a4dff473f33abbd1"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/Log/CardAttMhb20261031173722.txt",
+        "bytes": 85,
+        "sha256": "2e238cfcb8d1883b95f05a7c555bdc8f7995360544b57edf717de269eed7b18d"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/Log/CardAttMhb202611214316.txt",
+        "bytes": 60,
+        "sha256": "b4001b1bce4e895a9a0ec664d531b41f17f666e6bee34ba4a4dff473f33abbd1"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/Log/CardAttMhb2026112215249.txt",
+        "bytes": 60,
+        "sha256": "b4001b1bce4e895a9a0ec664d531b41f17f666e6bee34ba4a4dff473f33abbd1"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/Log/CardAttMhb202611251053.txt",
+        "bytes": 60,
+        "sha256": "b4001b1bce4e895a9a0ec664d531b41f17f666e6bee34ba4a4dff473f33abbd1"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/Log/CardAttMhb202611302023.txt",
+        "bytes": 60,
+        "sha256": "b4001b1bce4e895a9a0ec664d531b41f17f666e6bee34ba4a4dff473f33abbd1"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/Log/CardAttMhb2026113211535.txt",
+        "bytes": 60,
+        "sha256": "b4001b1bce4e895a9a0ec664d531b41f17f666e6bee34ba4a4dff473f33abbd1"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/Log/CardAttMhb2026113231435.txt",
+        "bytes": 60,
+        "sha256": "b4001b1bce4e895a9a0ec664d531b41f17f666e6bee34ba4a4dff473f33abbd1"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/Log/CardAttMhb20261134201.txt",
+        "bytes": 85,
+        "sha256": "153c8346524926afb3fda1825554c41311d83490a8cbb0e8edce87cca550d67a"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/Log/CardAttMhb2026114141257.txt",
+        "bytes": 242,
+        "sha256": "71a7e4ec248eb15d1d516cac03a1a174cc542d914eb491f25ba792c51c015433"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/Log/CardAttMhb202611414148.txt",
+        "bytes": 60,
+        "sha256": "b4001b1bce4e895a9a0ec664d531b41f17f666e6bee34ba4a4dff473f33abbd1"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/Log/CardAttMhb2026114151731.txt",
+        "bytes": 60,
+        "sha256": "b4001b1bce4e895a9a0ec664d531b41f17f666e6bee34ba4a4dff473f33abbd1"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/Log/CardAttMhb2026114222727.txt",
+        "bytes": 180,
+        "sha256": "1b3b4a72a9195873167824927add63de0bb9282b54874d724c7f04a6a3ca44d4"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/Log/CardAttMhb202611501340.txt",
+        "bytes": 60,
+        "sha256": "b4001b1bce4e895a9a0ec664d531b41f17f666e6bee34ba4a4dff473f33abbd1"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/Log/CardAttMhb202611503310.txt",
+        "bytes": 60,
+        "sha256": "b4001b1bce4e895a9a0ec664d531b41f17f666e6bee34ba4a4dff473f33abbd1"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/Log/CardAttMhb20261150426.txt",
+        "bytes": 138,
+        "sha256": "0a2b5b3db76d5c1d7fadb1bb413801ac5defc280c4209197bbe7151fd6c57ff9"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/Log/CardAttMhb2026115068.txt",
+        "bytes": 60,
+        "sha256": "b4001b1bce4e895a9a0ec664d531b41f17f666e6bee34ba4a4dff473f33abbd1"
+      },
+      {
+        "path": "runtime/ServerCardAttMhb/x64/Release/AttMhb/Log/CardAttMhb202611517143.txt",
+        "bytes": 60,
+        "sha256": "b4001b1bce4e895a9a0ec664d531b41f17f666e6bee34ba4a4dff473f33abbd1"
+      },
+      {
+        "path": "runtime/ServerCardDaBaiTu/x64/Release/log/DaBaiTu/RabbitActivity.dat",
+        "bytes": 10,
+        "sha256": "aa29a2f12b7cd786f4964f5163b73f60ceacb654bb1b1e0a817b69db39a221ef"
+      },
+      {
+        "path": "runtime/ServerCardDaBaiTu/x64/Release/log/DaBaiTu/RabbitState-1.dat",
+        "bytes": 61,
+        "sha256": "24bc5d11276721cc1e8a6d8c20e87dc2d002d504a512899d00b0aba8e8ecc5be"
+      },
+      {
+        "path": "runtime/ServerCardDaBaiTu/x64/Release/log/DaBaiTu/RabbitState-10.dat",
+        "bytes": 61,
+        "sha256": "a8ea512d23bdc727e20b641f6178867fe46d1144d9714d3a1f879fb39feca2fa"
+      },
+      {
+        "path": "runtime/ServerCardDaBaiTu/x64/Release/log/DaBaiTu/RabbitState-11.dat",
+        "bytes": 61,
+        "sha256": "5d8d3fd0d22712972df08197b088903b8b19c9153fa580ffa668b78eb538adf9"
+      },
+      {
+        "path": "runtime/ServerCardDaBaiTu/x64/Release/log/DaBaiTu/RabbitState-2.dat",
+        "bytes": 61,
+        "sha256": "8cb9b152572c4ed02d6a90895d38f70575032d08dad26cfdc7d9e718cf69e74b"
+      },
+      {
+        "path": "runtime/ServerCardDaBaiTu/x64/Release/log/DaBaiTu/RabbitState-3.dat",
+        "bytes": 61,
+        "sha256": "6b12b941219e0d596697e0898d0c4a97b382e4c027f4406c2fcc8138a49587d7"
+      },
+      {
+        "path": "runtime/ServerCardDaBaiTu/x64/Release/log/DaBaiTu/RabbitState-4.dat",
+        "bytes": 61,
+        "sha256": "771789af92629a369c4f9ca64994e08f107bfccf3dd2a321e701d51a3d3fc1a3"
+      },
+      {
+        "path": "runtime/ServerCardDaBaiTu/x64/Release/log/DaBaiTu/RabbitState-5.dat",
+        "bytes": 61,
+        "sha256": "15bc04ea7ff287e9ff9dc13e5504390a94ce4348a86912f1dfe43f628523260a"
+      },
+      {
+        "path": "runtime/ServerCardDaBaiTu/x64/Release/log/DaBaiTu/RabbitState-6.dat",
+        "bytes": 61,
+        "sha256": "0a9f05dd997e70ac31f9fde5b2688d46284c626047e5970907e6fe5f43e02ac8"
+      },
+      {
+        "path": "runtime/ServerCardDaBaiTu/x64/Release/log/DaBaiTu/RabbitState-8.dat",
+        "bytes": 61,
+        "sha256": "7733dfe0f6bedf86127bacda5bd0a7acb2594be40584eb6e6ee870e3005c4ed4"
+      },
+      {
+        "path": "runtime/ServerCardDaBaiTu/x64/Release/log/DaBaiTu/RabbitState-9.dat",
+        "bytes": 61,
+        "sha256": "866dce9410d1ff83e9a70a9fb0800b8254fa3893872e600fe190a76978007def"
+      },
+      {
+        "path": "runtime/ServerCardDazhi/x64/Release/DaZiBan.bin",
+        "bytes": 16467,
+        "sha256": "3b43583081a92f6e0dd212a1da5baaa04e16db07fdb3b01705ef6e9c13a2d74b"
+      },
+      {
+        "path": "runtime/ServerCardDscj/x64/Release/Att3Save.bin",
+        "bytes": 8832,
+        "sha256": "83e46b55d8cc01ec34f03f562b95e095364586247f4f52b5dd7a934c2eb52222"
+      },
+      {
+        "path": "runtime/ServerCardDscj/x64/Release/DscjSave.bin",
+        "bytes": 8832,
+        "sha256": "f92b6c5a0bbe71ae7d6365cdb8ac68b41a8e8abc3a219858a92a9a36fb39349a"
+      },
+      {
+        "path": "runtime/ServerCardDscj/x64/Release/JackpotSet.txt.applied",
+        "bytes": 325,
+        "sha256": "61239099ace1ecea9c5f122c2278964dd703b2285bfc5f03245082f0cba86155"
+      },
+      {
+        "path": "runtime/ServerCardDscj/x64/Release/JackpotState.txt",
+        "bytes": 674,
+        "sha256": "589d5f5554efc7a312e25479f0a7dd454759f77c8ba74e5fa602f60bc1c57a43"
+      },
+      {
+        "path": "runtime/ServerCardDscj/x64/Release/Dscj/CardDscj_Alg_Log-1.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardDscj/x64/Release/Dscj/CardDscj_Alg_Log-10.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardDscj/x64/Release/Dscj/CardDscj_Alg_Log-11.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardDscj/x64/Release/Dscj/CardDscj_Alg_Log-12.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardDscj/x64/Release/Dscj/CardDscj_Alg_Log-13.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardDscj/x64/Release/Dscj/CardDscj_Alg_Log-14.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardDscj/x64/Release/Dscj/CardDscj_Alg_Log-15.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardDscj/x64/Release/Dscj/CardDscj_Alg_Log-16.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardDscj/x64/Release/Dscj/CardDscj_Alg_Log-17.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardDscj/x64/Release/Dscj/CardDscj_Alg_Log-18.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardDscj/x64/Release/Dscj/CardDscj_Alg_Log-19.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardDscj/x64/Release/Dscj/CardDscj_Alg_Log-2.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardDscj/x64/Release/Dscj/CardDscj_Alg_Log-20.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardDscj/x64/Release/Dscj/CardDscj_Alg_Log-21.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardDscj/x64/Release/Dscj/CardDscj_Alg_Log-22.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardDscj/x64/Release/Dscj/CardDscj_Alg_Log-23.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardDscj/x64/Release/Dscj/CardDscj_Alg_Log-24.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardDscj/x64/Release/Dscj/CardDscj_Alg_Log-3.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardDscj/x64/Release/Dscj/CardDscj_Alg_Log-4.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardDscj/x64/Release/Dscj/CardDscj_Alg_Log-5.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardDscj/x64/Release/Dscj/CardDscj_Alg_Log-6.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardDscj/x64/Release/Dscj/CardDscj_Alg_Log-7.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardDscj/x64/Release/Dscj/CardDscj_Alg_Log-8.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardDscj/x64/Release/Dscj/CardDscj_Alg_Log-9.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "runtime/ServerCardDscj/x64/Release/Dscj/Log/CardDscj20261031173814.txt",
+        "bytes": 40,
+        "sha256": "35960d2121def0bd8da6e89604a6a29b2859f47a24375b5afe955705219d5352"
+      },
+      {
+        "path": "runtime/ServerCardDscj/x64/Release/Dscj/Log/CardDscj20261031173951.txt",
+        "bytes": 65,
+        "sha256": "44952f337e275933d90a06dcb49e66a4add193973fc3428c53b27b21bf7591d7"
+      },
+      {
+        "path": "runtime/ServerCardDscj/x64/Release/Dscj/Log/CardDscj202611214316.txt",
+        "bytes": 40,
+        "sha256": "35960d2121def0bd8da6e89604a6a29b2859f47a24375b5afe955705219d5352"
+      },
+      {
+        "path": "runtime/ServerCardDscj/x64/Release/Dscj/Log/CardDscj2026112215249.txt",
+        "bytes": 40,
+        "sha256": "35960d2121def0bd8da6e89604a6a29b2859f47a24375b5afe955705219d5352"
+      },
+      {
+        "path": "runtime/ServerCardDscj/x64/Release/Dscj/Log/CardDscj202611251053.txt",
+        "bytes": 40,
+        "sha256": "35960d2121def0bd8da6e89604a6a29b2859f47a24375b5afe955705219d5352"
+      },
+      {
+        "path": "runtime/ServerCardDscj/x64/Release/Dscj/Log/CardDscj202611302023.txt",
+        "bytes": 40,
+        "sha256": "35960d2121def0bd8da6e89604a6a29b2859f47a24375b5afe955705219d5352"
+      },
+      {
+        "path": "runtime/ServerCardDscj/x64/Release/Dscj/Log/CardDscj2026113211535.txt",
+        "bytes": 40,
+        "sha256": "35960d2121def0bd8da6e89604a6a29b2859f47a24375b5afe955705219d5352"
+      },
+      {
+        "path": "runtime/ServerCardDscj/x64/Release/Dscj/Log/CardDscj2026113231435.txt",
+        "bytes": 40,
+        "sha256": "35960d2121def0bd8da6e89604a6a29b2859f47a24375b5afe955705219d5352"
+      },
+      {
+        "path": "runtime/ServerCardDscj/x64/Release/Dscj/Log/CardDscj20261134201.txt",
+        "bytes": 40,
+        "sha256": "35960d2121def0bd8da6e89604a6a29b2859f47a24375b5afe955705219d5352"
+      },
+      {
+        "path": "runtime/ServerCardDscj/x64/Release/Dscj/Log/CardDscj202611414148.txt",
+        "bytes": 40,
+        "sha256": "35960d2121def0bd8da6e89604a6a29b2859f47a24375b5afe955705219d5352"
+      },
+      {
+        "path": "runtime/ServerCardDscj/x64/Release/Dscj/Log/CardDscj2026114151731.txt",
+        "bytes": 190,
+        "sha256": "bc3a1c48b173f4bfb02de18bc4506e50e1c93dc1940478bf6583d0b21cd02672"
+      },
+      {
+        "path": "runtime/ServerCardDscj/x64/Release/Dscj/Log/CardDscj2026114222727.txt",
+        "bytes": 40,
+        "sha256": "35960d2121def0bd8da6e89604a6a29b2859f47a24375b5afe955705219d5352"
+      },
+      {
+        "path": "runtime/ServerCardDscj/x64/Release/Dscj/Log/CardDscj202611501340.txt",
+        "bytes": 80,
+        "sha256": "32fd045fd8f73ed443e60760dee13ccc10e604a4e6e8016f63cdabdf0637d2f7"
+      },
+      {
+        "path": "runtime/ServerCardDscj/x64/Release/Dscj/Log/CardDscj202611503310.txt",
+        "bytes": 40,
+        "sha256": "35960d2121def0bd8da6e89604a6a29b2859f47a24375b5afe955705219d5352"
+      },
+      {
+        "path": "runtime/ServerCardDscj/x64/Release/Dscj/Log/CardDscj20261150426.txt",
+        "bytes": 831,
+        "sha256": "699ba21d6b47c5d2b250bb9e0ffafbd77f04ff5c5e72ebfbb31453526ed9d8ec"
+      },
+      {
+        "path": "runtime/ServerCardDscj/x64/Release/Dscj/Log/CardDscj2026115068.txt",
+        "bytes": 40,
+        "sha256": "35960d2121def0bd8da6e89604a6a29b2859f47a24375b5afe955705219d5352"
+      },
+      {
+        "path": "runtime/ServerCardDscj/x64/Release/Dscj/Log/CardDscj202611517143.txt",
+        "bytes": 40,
+        "sha256": "35960d2121def0bd8da6e89604a6a29b2859f47a24375b5afe955705219d5352"
+      },
+      {
+        "path": "runtime/ServerCardNBA/x64/Release/JackpotSet.txt.applied",
+        "bytes": 327,
+        "sha256": "4b4c137b4665a69ecb1466917c9049e457ec25a3be8ce6f97b20b83819cc779e"
+      },
+      {
+        "path": "runtime/ServerCardNBA/x64/Release/JackpotState.txt",
+        "bytes": 675,
+        "sha256": "d409e121d80319b266be105e2df87156f2b88d6bc6d94361c3c22cdbe182ff0d"
+      },
+      {
+        "path": "runtime/ServerCardNBA/x64/Release/NBASave.bin",
+        "bytes": 8832,
+        "sha256": "38e98508cf255675e955e0ce132c5b39c1f588f5d2268c091419e008bf5216f7"
+      },
+      {
+        "path": "runtime/ServerLabaMx97/x64/Release/source_star_9_746573743031.state",
+        "bytes": 5,
+        "sha256": "6b41156b05c37763a38475f3438bc3aa533e1d406948c4b1f18a733c2bc6f618"
+      },
+      {
+        "path": "runtime/ServerRobot/x64/Release/robot.ini",
+        "bytes": 70,
+        "sha256": "fd7d67d4eea8d170d4bffe3aaff08b7c9c587bb9c3f877c3d35fb077133dc448"
+      },
+      {
+        "path": "runtime/ServerRobot/x64/Release/robotError.txt",
+        "bytes": 39,
+        "sha256": "569d289ac02583c960f1b6dc780e4bfec53dc1f34476cd367a8440d4815ac483"
+      }
+    ],
+    "downloadMetadataHashes": [
+      {
+        "path": "ready.json",
+        "bytes": 367,
+        "sha256": "2fa12fc3a37349f260bbb631c07a90b0333161fb71686e1838603224ce7ec121"
+      },
+      {
+        "path": "runtime-manifest.json",
+        "bytes": 28823,
+        "sha256": "7fdb57e3e622410fd196dc6a7e28dd7cf96217f88e51eedf48bafcfff55596ff"
+      }
+    ],
+    "metadataVerificationScope": "All 136 payload hashes match ready/runtime manifests; ready.json and runtime-manifest.json are byte-identical across two independently downloaded copies.",
+    "archivedPriorFull": {
+      "archivedAtUtc": "2026-11-05T12:56:41.796778+00:00",
+      "path": "E:\\MTH\\MHT-Backend-db-archives\\20261105-admina\\mth_full_before_final_cutover.sql",
+      "sha256": "27f9735e614473a4014a01d48abb838baa1f5a07f30f8dac6806bb0e14807469",
+      "bytes": 15364722,
+      "role": "Original online full snapshot from 2026-11-05T11:53:12.9613511Z; original ancestor of current clean",
+      "supersededByFullSha256": "efb4d701f63b11053c79da5625e02d5b36895fef9691431a9a749623b8f210df"
+    },
+    "canonicalFull": {
+      "path": "Database/mth_full.sql",
+      "sha256": "efb4d701f63b11053c79da5625e02d5b36895fef9691431a9a749623b8f210df",
+      "bytes": 15704248
+    },
+    "isolatedRestore": {
+      "schema": "mth_snapshot_final_full_20261105_125641_954883",
+      "host": "127.0.0.1",
+      "port": 33319,
+      "mysqlVersion": "5.7.44",
+      "lowerCaseTableNames": 1,
+      "defaultCollation": "utf8mb4_unicode_ci",
+      "seconds": 5.511,
+      "baseTables": 73,
+      "views": 1,
+      "triggers": 1,
+      "procedures": 5,
+      "events": 0,
+      "adminRows": 18,
+      "userRows": 37,
+      "enabledGames": 14,
+      "tableIntegrityChecksPassed": 73,
+      "schemaMatchesCurrentClean": true,
+      "schemaSignature": {
+        "columns": {
+          "count": 744,
+          "sha256": "502340ab77201373267e85db2a291b832036fd9bbe4d03d80d6e365fcc045a27"
+        },
+        "indexes": {
+          "count": 173,
+          "sha256": "0f9477c13f58b317317e54d3a153d3b3f1171c6c27d11de2c81ed1d0e03e6210"
+        },
+        "triggers": {
+          "count": 1,
+          "sha256": "5fb694403e902e2f71e35c6190425668ec523c65ea656eac691cc924a8d85dae"
+        },
+        "routines": {
+          "count": 5,
+          "sha256": "4655ae65dc045db657d6650bfec26d5ec549f44ae65119f13f3cbc7387775d5a"
+        },
+        "routineParameters": {
+          "count": 22,
+          "sha256": "f855eecac1c5f5ef26185775875517d6253c5c3b3d4d28dc2ae8daee0416402a"
+        },
+        "events": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "views": {
+          "count": 1,
+          "sha256": "9fc450f298344258e38ad64f6116a4ca29d50d0175c3db136ccb415336609f80"
+        }
+      },
+      "tableFingerprints": {
+        "accountlog": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "activity": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "activityconfig": {
+          "rows": 1,
+          "checksum": 4255766454
+        },
+        "admin": {
+          "rows": 18,
+          "checksum": 1109793083
+        },
+        "agencyoptlog": {
+          "rows": 298,
+          "checksum": 3528621554
+        },
+        "agentprizecontrol": {
+          "rows": 165,
+          "checksum": 1818244383
+        },
+        "agentprizeledger": {
+          "rows": 1976,
+          "checksum": 3627102523
+        },
+        "agentprizepool": {
+          "rows": 2,
+          "checksum": 2256144843
+        },
+        "agent_hierarchy": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "agent_permission_template": {
+          "rows": 8,
+          "checksum": 2543963451
+        },
+        "betgamecfg": {
+          "rows": 14,
+          "checksum": 2402101606
+        },
+        "cardgamecfg": {
+          "rows": 7,
+          "checksum": 3751939507
+        },
+        "cardpayoutprofile": {
+          "rows": 4759,
+          "checksum": 1519673246
+        },
+        "cardpayoutprofile_att3_bak_0907": {
+          "rows": 204,
+          "checksum": 2492557974
+        },
+        "cashierinfo": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "clientexchangerecord": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "clientpackage": {
+          "rows": 1,
+          "checksum": 986832499
+        },
+        "ex_change": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "gameacclaba": {
+          "rows": 5,
+          "checksum": 1874966248
+        },
+        "gamecommandoutbox": {
+          "rows": 421,
+          "checksum": 1610859907
+        },
+        "gameconfiglaba": {
+          "rows": 1541,
+          "checksum": 977189476
+        },
+        "gamemo": {
+          "rows": 1,
+          "checksum": 1481996991
+        },
+        "gamepara": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "gameprizerecord": {
+          "rows": 91271,
+          "checksum": 3010655550
+        },
+        "gamerankhistory": {
+          "rows": 324,
+          "checksum": 4211062336
+        },
+        "games": {
+          "rows": 19,
+          "checksum": 3065668331
+        },
+        "games_money_spent": {
+          "rows": 3,
+          "checksum": 2803343392
+        },
+        "invite_codes": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "loginmissrecord": {
+          "rows": 129,
+          "checksum": 121415453
+        },
+        "manageropt": {
+          "rows": 177,
+          "checksum": 798283923
+        },
+        "mgrpermission": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "mjhl_agent_config": {
+          "rows": 3,
+          "checksum": 1532159041
+        },
+        "mjhl_agent_config_history": {
+          "rows": 12,
+          "checksum": 2769511478
+        },
+        "mjhl_recovery_operation": {
+          "rows": 300,
+          "checksum": 2633363114
+        },
+        "mjhl_recovery_state": {
+          "rows": 4,
+          "checksum": 79929698
+        },
+        "notice": {
+          "rows": 1,
+          "checksum": 2259921197
+        },
+        "parabet": {
+          "rows": 18,
+          "checksum": 2977357961
+        },
+        "parabetroom": {
+          "rows": 8,
+          "checksum": 252946923
+        },
+        "parabetroom_bak_20260815": {
+          "rows": 7,
+          "checksum": 419639903
+        },
+        "paracard": {
+          "rows": 229,
+          "checksum": 1145550423
+        },
+        "parafish": {
+          "rows": 51,
+          "checksum": 570371582
+        },
+        "paragame": {
+          "rows": 27,
+          "checksum": 1881324383
+        },
+        "paralaba": {
+          "rows": 37,
+          "checksum": 1521044665
+        },
+        "pararoom": {
+          "rows": 23,
+          "checksum": 2005710034
+        },
+        "plattype": {
+          "rows": 2,
+          "checksum": 761768349
+        },
+        "prizebroadcastoutbox": {
+          "rows": 3469,
+          "checksum": 1699646333
+        },
+        "rank": {
+          "rows": 121,
+          "checksum": 1572878224
+        },
+        "rechargerecords": {
+          "rows": 68,
+          "checksum": 2587089103
+        },
+        "robot_seat": {
+          "rows": 111,
+          "checksum": 2819030326
+        },
+        "roomtableconfig": {
+          "rows": 326,
+          "checksum": 726956049
+        },
+        "roomtableconfig_bet": {
+          "rows": 51,
+          "checksum": 2615678301
+        },
+        "roomtableconfig_card": {
+          "rows": 224,
+          "checksum": 2477880047
+        },
+        "roomtableowner": {
+          "rows": 81,
+          "checksum": 3043138291
+        },
+        "safe_coins_log": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "sharebonus": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "tablecoinrecord": {
+          "rows": 73,
+          "checksum": 4251966462
+        },
+        "totalkill_table_backup": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "transferlog": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "updateaddrnew": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "uploadsimage": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "usercontrolstatus": {
+          "rows": 187,
+          "checksum": 356305138
+        },
+        "usercontrolvalue": {
+          "rows": 28,
+          "checksum": 1444135450
+        },
+        "userlockrecord": {
+          "rows": 0,
+          "checksum": 0
+        },
+        "userloginrecord": {
+          "rows": 7697,
+          "checksum": 2837206427
+        },
+        "useroptlog": {
+          "rows": 4236,
+          "checksum": 2100692093
+        },
+        "userrelations": {
+          "rows": 41,
+          "checksum": 3596362210
+        },
+        "userrobot": {
+          "rows": 400,
+          "checksum": 2205647976
+        },
+        "userrobotnum": {
+          "rows": 51,
+          "checksum": 2766449585
+        },
+        "users": {
+          "rows": 37,
+          "checksum": 2652675624
+        },
+        "userscoresnapshotledger": {
+          "rows": 37632,
+          "checksum": 3338494553
+        },
+        "user_daily_winloss": {
+          "rows": 93,
+          "checksum": 2319286289
+        },
+        "user_winloss_ledger": {
+          "rows": 6764,
+          "checksum": 917595943
+        },
+        "videogamecoinrecord": {
+          "rows": 0,
+          "checksum": 0
+        }
+      }
+    },
+    "cleanSha256Unchanged": "86bd1bbb5082dbd9f31c7e5a42d9a3556b232cfff60cbabcb0e72060b6c894ec",
+    "cleanDerivationUnchanged": true,
+    "productionActionPerformed": false,
+    "totalSeconds": 6.724,
+    "independentMetadataDownloadsIdentical": [
+      "ready.json",
+      "runtime-manifest.json"
+    ]
+  },
+  "cleanSourceLineage": {
+    "originalFullSha256": "27f9735e614473a4014a01d48abb838baa1f5a07f30f8dac6806bb0e14807469",
+    "originalFullCapturedAtUtc": "2026-11-05T11:53:12.9613511Z",
+    "originalFullArchive": "E:\\MTH\\MHT-Backend-db-archives\\20261105-admina\\mth_full_before_final_cutover.sql",
+    "originalCleanSha256": "dba81c1752e4eab412d8c8db8b36c42bd85708dc2460dead4d62eb2182aae0ba",
+    "originalCleanArchive": "E:\\MTH\\MHT-Backend-db-archives\\20261105-admina\\mth_clean_before_admina.sql",
+    "currentCleanSha256": "86bd1bbb5082dbd9f31c7e5a42d9a3556b232cfff60cbabcb0e72060b6c894ec",
+    "derivedFromCurrentFull": false,
+    "note": "The current full was captured later. The already verified/deployed clean was not regenerated from it; existing clean derivation and original verification reports remain unchanged."
+  },
+  "productionDeployment": {
+    "result": "DEPLOYED",
+    "completedAtUtc": "2026-11-05T12:47:29.5569047Z",
+    "maintenanceSeconds": 19.306,
+    "adminAccount": "admina",
+    "cleanSha256": "86bd1bbb5082dbd9f31c7e5a42d9a3556b232cfff60cbabcb0e72060b6c894ec",
+    "passwordPreserved": true,
+    "runtimeFilesPreservedBeforeStart": 134,
+    "runtimeFilesUnchangedBeforeStart": true,
+    "webConfigSha256": "5c933d9a5a4b0139b1c9d74d85d1347f3448e8ff9a8bc99680d3748354802c38",
+    "backendVersion": "1.0.107",
+    "http": {
+      "result": "PASS",
+      "checks": {
+        "passed": 290,
+        "failed": 0,
+        "failedNames": []
+      },
+      "failures": 0,
+      "seconds": 6.892,
+      "scope": "Real HTTP login, Razor, configuration reads and zero-balance test account lifecycle; no gameplay, payment, recharge, state reset or direct pipe probe."
+    },
+    "https": {
+      "result": "PASS",
+      "endpoints": 3,
+      "seconds": 13.951,
+      "client": "Windows curl / Schannel; certificate verification enabled"
+    },
+    "deploymentTaskRemoved": true,
+    "backupRetained": true,
+    "releaseRecord": "../Docs/干净库上线与admina验收-20261105.md",
+    "evidenceDirectory": "E:\\MTH\\releases\\clean-db-admina-20261105\\production-evidence",
+    "evidenceSha256": {
+      "result.json": "f8a27eac6fbe014865d5fbe96c117cf714ee8fb4733877a26902fac18c32f9d5",
+      "http-result.json": "a6c448848d8de76afd9995f8c989267234d7c466d10f33afaf619113ffed6121",
+      "https-check.json": "6ab235f8d13aac0664bd3483b6e76ca330cbb556a860397553f3811bf2d48259",
+      "ready.json": "2fa12fc3a37349f260bbb631c07a90b0333161fb71686e1838603224ce7ec121",
+      "runtime-manifest.json": "7fdb57e3e622410fd196dc6a7e28dd7cf96217f88e51eedf48bafcfff55596ff",
+      "completion.json": "4fe0b8d305026f69ef902b8e0e57219b8d9e5ca005e5a1fdce9dcff6f498902a"
+    },
+    "postDeploymentReview": {
+      "result": "PASS_WITH_NOTES",
+      "evidence": "E:/MTH/releases/clean-db-admina-20261105/production-evidence/postcheck.json",
+      "configurationChecksumsMatched": 26,
+      "emptyTablesVerified": 42,
+      "testReferenceTablesScanned": 65,
+      "stableServerProcesses": 16,
+      "verifiedPlayerPorts": 15,
+      "notes": [
+        "Stop/start socket errors confined to maintenance/startup windows; all 14 enabled games reconnected.",
+        "One malformed client packet was rejected at 21:00:04; no database error or process restart."
+      ],
+      "logEvidence": "E:/MTH/releases/clean-db-admina-20261105/production-evidence/log-classification.json"
+    }
+  },
+  "historicalSqlArchive": {
+    "date": "2026-11-05",
+    "backendSqlArchived": 66,
+    "serverSqlArchived": 14,
+    "backendSeedGeneratorArchived": 1,
+    "retainedReadOnlyDiagnostic": "Tools/db/check-line-ownership.sql",
+    "manifest": "legacy-sql-archive-manifest.json",
+    "index": "legacy-sql-archive.md",
+    "canonicalSqlHashesUnchanged": true,
+    "sqlExecuted": false,
+    "purpose": "Historical upgrade/repair/seed/one-off SQL moved outside repositories after updating active verification consumers; historical value retained, not declared universally unused."
+  }
+}

@@ -1,0 +1,269 @@
+{
+  "result": "PASS",
+  "recordedAtUtc": "2026-11-05T14:07:47.541405+00:00",
+  "scope": "Local archive, dependency migration and isolated verification; no production SQL or deployment.",
+  "archivedSql": {
+    "backend": 66,
+    "server": 14
+  },
+  "archivedSeedGenerator": 1,
+  "activeSql": {
+    "backend": [
+      "Database/mth_full.sql",
+      "Database/mth_clean.sql",
+      "Tools/db/check-line-ownership.sql"
+    ],
+    "server": []
+  },
+  "canonicalSnapshotsUnchanged": {
+    "mth_full.sql": "efb4d701f63b11053c79da5625e02d5b36895fef9691431a9a749623b8f210df",
+    "mth_clean.sql": "86bd1bbb5082dbd9f31c7e5a42d9a3556b232cfff60cbabcb0e72060b6c894ec"
+  },
+  "archiveHashVerification": {
+    "archiveAndRelocationFilesVerified": 82,
+    "canonicalSnapshotsUnchanged": true,
+    "seconds": 0.03,
+    "result": "PASS"
+  },
+  "archiveLinkVerification": {
+    "result": "PASS",
+    "linksChecked": 42,
+    "issues": [],
+    "seconds": 0.037
+  },
+  "backendVerification": {
+    "capturedAtUtc": "2026-11-05T14:06:55.228540+00:00",
+    "result": "PASS",
+    "scope": "Backend SQL-file dependency migration and missing-schema guidance only. All database execution used new local F-drive isolated instances; no production or gameplay execution.",
+    "dependencyAudit": ".build/sql-prune-20261105/dependency-audit.json",
+    "canonicalClean": {
+      "path": "Database/mth_clean.sql",
+      "sha256": "86bd1bbb5082dbd9f31c7e5a42d9a3556b232cfff60cbabcb0e72060b6c894ec"
+    },
+    "canonicalFull": {
+      "path": "Database/mth_full.sql",
+      "sha256": "efb4d701f63b11053c79da5625e02d5b36895fef9691431a9a749623b8f210df"
+    },
+    "sourceProjectBuilds": {
+      "result": "PASS",
+      "outputRoot": "F:\\MTH-validation\\sql-prune-20261105\\backend\\bin",
+      "BLLSeconds": 2.107,
+      "WebSeconds": 1.722,
+      "UnitTestInitialBuildSeconds": 0.994,
+      "UnitTestFinalBuild": "PASS; final rebuild duration was not separately captured; build-tests.log retained",
+      "scope": "Current changed business source compiled into F output; these are compilation results, not production deployment or the runtime dependency set below.",
+      "existingWarnings": "Five warnings in unchanged Web source for unused variables/field; no warnings introduced by changed messages."
+    },
+    "integrationRuntime": {
+      "backendVersion": "1.0.107",
+      "origin": "E:\\MTH\\MHT-Backend\\.build\\database-consolidation-20261105\\admina\\validation",
+      "runtime": "F:\\MTH-validation\\sql-prune-20261105\\backend\\runtime",
+      "purpose": "Published assembly/provider set validated during prior admina isolation; exercise changed validation-source DDL readers and current production business contract.",
+      "assemblies": {
+        "YYT.Web.dll": "c94ae321542b385fd81cc03402627c315baca4f0d87d30e97333f922ec76ef36",
+        "YYT.BLL.dll": "5f8808f6d2fce71b5ee2fe6f85a4108848112aadeb77af91ba07fe5e3574d210",
+        "YYT.Entity.dll": "c3d8509eae440c9437497cd56c1666cf404efaee44a9a2db3d8c79cb7a1486ea",
+        "YYT.Common.dll": "fce2e95f4d97f4e67b64a698b25ed28afa93d27261fc02e9e918649edd4044e4",
+        "MySql.Data.dll": "abcc40f7b19866c4b18c28bf7947c34a9a73da5974d6f98fb910e7ece3202705"
+      }
+    },
+    "affectedViewContractTests": {
+      "result": "PASS",
+      "tests": 5,
+      "runnerSeconds": 1.259,
+      "testRunSeconds": 0.5532,
+      "trx": "F:\\MTH-validation\\sql-prune-20261105\\backend\\test-results\\affected-view-contracts.trx"
+    },
+    "databaseValidation": {
+      "LineTablesValidation": {
+        "exitCode": 0,
+        "seconds": 4.777,
+        "result": "PASS",
+        "checks": 203,
+        "log": "F:\\MTH-validation\\sql-prune-20261105\\backend\\attempt-fixture-before-fix\\run-LineTablesValidation.log"
+      },
+      "PlayerWinLossValidation": {
+        "exitCode": 0,
+        "seconds": 3.543,
+        "result": "PASS",
+        "checks": 17,
+        "log": "F:\\MTH-validation\\sql-prune-20261105\\backend\\attempt-fixture-before-fix\\run-PlayerWinLossValidation.log"
+      },
+      "NicknameSetupValidation": {
+        "exitCode": 0,
+        "seconds": 3.829,
+        "result": "PASS",
+        "checks": 75,
+        "log": "F:\\MTH-validation\\sql-prune-20261105\\backend\\attempt-fixture-before-fix\\run-NicknameSetupValidation.log"
+      },
+      "MjhlInheritanceValidation": {
+        "exitCode": 0,
+        "seconds": 4.294,
+        "result": "PASS",
+        "checks": 93,
+        "log": "F:\\MTH-validation\\sql-prune-20261105\\backend\\attempt-fixture3-before-fix\\run-MjhlInheritanceValidation.log"
+      },
+      "PrizePoolValidation": {
+        "exitCode": 0,
+        "seconds": 3.866,
+        "result": "PASS",
+        "checks": 37,
+        "log": "F:\\MTH-validation\\sql-prune-20261105\\backend\\logs\\run-PrizePoolValidation.log"
+      },
+      "RankHistoryValidation": {
+        "exitCode": 0,
+        "seconds": 4.259,
+        "result": "PASS",
+        "checks": 51,
+        "log": "F:\\MTH-validation\\sql-prune-20261105\\backend\\logs\\run-RankHistoryValidation.log",
+        "nativeChecks": 28,
+        "nativeExecutable": "F:\\MTH-validation\\sql-prune-20261105\\rank-native-current\\rank_history_store_test.exe"
+      }
+    },
+    "databaseValidationChecks": 476,
+    "databaseValidationSeconds": 24.568,
+    "powershellWrapper": {
+      "Result": "PASS",
+      "Checks": 9,
+      "Forwarding": true,
+      "DefaultsPreserved": true,
+      "MissingCanonicalRejected": true,
+      "ParsedScripts": 6,
+      "Seconds": 1.965,
+      "RealInstallerExecuted": false
+    },
+    "razorCompilation": {
+      "result": "PASS",
+      "scope": "Single actual cshtml Razor code generation and C# compilation; no HTTP or layout execution",
+      "source": "E:\\MTH\\MHT-Backend\\TTY.Web\\Areas\\Game\\Views\\ClientPackage\\Index.cshtml",
+      "sourceSha256": "0842a2b1218c094a02f069e605985c933232a079a0665e976b1cca17dca1ad41",
+      "utf8Bom": true,
+      "razorParseErrors": 0,
+      "compileExitCode": 0,
+      "seconds": 0.815
+    },
+    "testContractAdaptations": [
+      "Old migration file contracts now inspect canonical schema with INSERT data stripped from assertion text; default columns, indexes, trigger and prize procedures remain asserted.",
+      "Prize old five-argument CheckFunding/negative-debt expectations were obsolete. Tests now use existing four-argument positive-balance award rule, zero pool floor, exact current paging IDs [6,5] and [6,5,4,2,1]. No business rule changed.",
+      "Rank and Nickname initialize current tables and explicit fixtures instead of replaying archived historical backfills; current missing-column fail-closed, ring slots, visibility, ownership, nickname defaults and existing-row preservation remain covered.",
+      "Rank optional native store test remains enabled. Its explicit MTH_RANK_STORE_TEST_EXE override permits F output without overwriting protected old tests/_out artifacts; the process uses the same guarded local connection."
+    ],
+    "environmentAdjustments": [
+      "E drive insufficient space; only F test outputs/datadirs created, existing .build/tests/_out artifacts not deleted.",
+      "Framework reference assemblies and web targets reused from existing .build packages for F source compilation.",
+      "Temporary XML namespace serializer error and temporary MySql 8 vs 6.8 provider-set mismatch were fixed only in validation configuration; original failure logs retained.",
+      "Test configurations use guarded ports 33308/33307/33396 and unique local pipe names; no real environment installer was executed.",
+      "Rank native Poco client exposed SSL protocol mismatch. Only the final F-drive local MySQL instance used --skip-ssl; production and repository connection settings were untouched. Native test main gained exception capture and unbuffered output without changing fixture inputs or assertions."
+    ],
+    "shutdown": {
+      "allSuccessful": true,
+      "scope": "Only new F-drive mysqld processes created by the validation runner; previous 33319 was not restarted.",
+      "listeningPortCheck": {
+        "ports": [
+          33307,
+          33308,
+          33396
+        ],
+        "listeners": 0
+      }
+    },
+    "impact": [
+      {
+        "features": "F17/F18",
+        "change": "Canonical SQL dependency and legacy installer forwarding",
+        "invariant": "Only current clean DDL initializes test fixtures; production snapshots and source data unchanged."
+      },
+      {
+        "features": "F02/F03/F04/F06/F09/F10/F13",
+        "change": "Validation fixture adaptation and schema-missing guidance",
+        "invariant": "No business SQL, permission, money, game/protocol or settlement rules changed; operator errors refer to Database/README.md for incremental upgrade planning."
+      },
+      {
+        "features": "Client/center/game/Robot",
+        "change": "No runtime source changes from this backend subtask",
+        "invariant": "No package release, production pipe use, restart or actual play."
+      }
+    ],
+    "sourceSha256": {
+      "Tools/dev/SqlSnapshot.cs": "38c10ab44eeb9229c8338c0ac02bd19ec12fea06cfc2a8e4daff1c1afb393c71",
+      "Tools/dev/LineTablesValidation.cs": "5588a9602cda8ca6288e1a1e09bc5ea5c0731da5bf3ec19d6d9bcb9122808448",
+      "Tools/dev/PlayerWinLossValidation.cs": "dfd8501d7312945ba1cacb2dc5231f558c06f4074bb34421df21dafc804f9335",
+      "Tools/dev/MjhlInheritanceValidation.cs": "1992c294b8fdd59d7cea83d6d09fbfc3f556fed297236eb5752ff70a40ecf912",
+      "Tools/dev/PrizePoolValidation.cs": "40979f199cb7c5bafe0446265369f488007a3df91445d6dd347a287e0540db87",
+      "Tools/dev/NicknameSetupValidation.cs": "1411ecd1b318295847e3b27814563964a8c06b4dede905299b76968d861a2295",
+      "Tools/dev/RankHistoryValidation.cs": "4c5e3fbce7b077c4d5f1c447555eddd1e6c3f618722ea0165929b689dbf3b067",
+      "Tools/dev/check-line-tables.ps1": "4238d7bebc70d0bcb2662be8494d6855ec0370cc5e292d720a36e1829335eeae",
+      "Tools/dev/check-player-winloss.ps1": "eba72d306ade418abc960b1e5e996294c5d5e898c6e2ab7e9e48561afcfcf312",
+      "Tools/dev/check-mjhl-inheritance.ps1": "542d12b90d199e25aac4443e5bffd9ac4277ebd313dff655071442856be981ec",
+      "Tools/dev/check-prize-pool.ps1": "a8a63e4f1e3fe5b065de274e2af2efba7f34d51cbae42c899d5457dedf29da66",
+      "Tools/dev/check-rank-history.ps1": "9fae5e90dbc1c7b5a21a3a926a54b5f1567365e33027547d993eaf4e06cce812",
+      "UnitTestProj/ViewContractTest.cs": "f81a6ac480fd01e995641d754d2aff771c58a40653564fa77555365ee55b4cb1",
+      "YYT.BLL/EF/LineTables.cs": "3e98f9ac82381037e25516eb45b3ce4e6f5d33e9b387b55337a50fdb49b9891f",
+      "YYT.BLL/EF/ClientPackages.cs": "8ba877a064bfaaa9f3ddd07eea5f58336de9d74945b2c254a2369e73dd9d3027",
+      "TTY.Web/Areas/Game/Controllers/AgencyInfoController.cs": "30bfd50e637d2535532c59dde3ad0bf02f12e52ca1f9ed62d5de5b417a2a4aeb",
+      "TTY.Web/Areas/Game/Controllers/ActivityConfigController.cs": "6a057b940e8ac6f92b800b60d3d04f4103c6bd6b6dc2b3e430435e85f3da70d6",
+      "TTY.Web/Areas/Game/Views/ClientPackage/Index.cshtml": "0842a2b1218c094a02f069e605985c933232a079a0665e976b1cca17dca1ad41",
+      ".devin/skills/mth-server-deploy/scripts/env-check.ps1": "ec60ea0c7553a8952db467806dcf124d761e5a2b663fc0a2bf266572d0b099af"
+    },
+    "rawEvidenceRoot": "F:\\MTH-validation\\sql-prune-20261105\\backend",
+    "remainingScope": [
+      "No new backend deployment",
+      "No actual browser interaction, gameplay, settlement or payment"
+    ],
+    "databaseValidationIncludingNestedNativeChecks": 504,
+    "diffCheck": "PASS; only existing Git line-ending normalization notices"
+  },
+  "serverVerification": {
+    "result": "PASS",
+    "tests": [
+      {
+        "test": "check_player_winloss_mysql",
+        "exitCode": 0,
+        "seconds": 3.096,
+        "log": "F:\\MTH-validation\\sql-prune-20261105\\validation-214328\\check_player_winloss_mysql\\validation.log",
+        "summary": [
+          "player_winloss_mysql.cpp",
+          "[PASS] all 20 checks passed",
+          "Build 2.570s; actual MySQL persistence 0.343s"
+        ]
+      },
+      {
+        "test": "check_card_prize_records_mysql",
+        "exitCode": 0,
+        "seconds": 9.636,
+        "log": "F:\\MTH-validation\\sql-prune-20261105\\card-routine-214507\\validation.log",
+        "summary": [
+          "PASS 723 actual MySQL/center replay checks; 238 prize frames delivered twice, 21 charges, 14 visible completed gifts",
+          " ",
+          "Isolated MySQL setup/build/replay 7.891s"
+        ]
+      },
+      {
+        "test": "check_robot_rabbit_activity_mysql",
+        "exitCode": 0,
+        "seconds": 12.442,
+        "log": "F:\\MTH-validation\\sql-prune-20261105\\validation-214328\\check_robot_rabbit_activity_mysql\\validation.log",
+        "summary": [
+          "PASS 927 isolated MySQL checks; 231 real frames each delivered twice; public quota used=32",
+          "",
+          "Isolated MySQL setup/build/replay: 10.736s"
+        ]
+      }
+    ],
+    "elapsedSeconds": 33.365,
+    "scope": "Local loopback isolated MySQL only; production C++ methods/frame replay and original assertions; no production access.",
+    "cleanSha256": "86bd1bbb5082dbd9f31c7e5a42d9a3556b232cfff60cbabcb0e72060b6c894ec",
+    "previousAttempt": "validation-attempt-disk-full.json",
+    "outputRoot": "F:\\MTH-validation\\sql-prune-20261105\\validation-214328",
+    "priorAttempts": [
+      "validation-attempt-disk-full.json",
+      "validation-attempt-missing-routine.json"
+    ],
+    "routineFixture": "Current agentprize_record_award and agentprize_release_delta DDL plus creation metadata extracted from shared clean snapshot; no old migrations replayed."
+  },
+  "limitations": [
+    "Historical migration transformations were archived, not re-executed against current production.",
+    "Old unique-index proposals and configuration overwrites were not added to the current clean schema.",
+    "This task performed no new production HTTP/gameplay/payment verification."
+  ]
+}

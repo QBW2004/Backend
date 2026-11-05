@@ -1,4 +1,4 @@
-// 独立本机库验证真实 WebAPI 路由、鉴权、原子保存及迁移；不连接线上。
+// 独立本机库验证真实 WebAPI 路由、鉴权、原子保存及当前初始化结构；不连接线上。
 using System;
 using System.Collections.Generic;
 using System.Configuration;
@@ -39,24 +39,29 @@ class NicknameSetupValidation
             db.Open();
             Action<string> sql = text => { using (var cmd = new MySqlCommand(text, db)) cmd.ExecuteNonQuery(); };
             Func<string, object> scalar = text => { using (var cmd = new MySqlCommand(text, db)) return cmd.ExecuteScalar(); };
-            sql("CREATE DATABASE `" + schema + "` CHARACTER SET utf8mb4");
+            sql("CREATE DATABASE `" + schema + "` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
             try
             {
-                sql("USE `" + schema + "`; CREATE TABLE users LIKE mth.users");
-                Check(Convert.ToInt32(scalar("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='users' AND COLUMN_NAME='NICKNAME_SET'")) == 0,
-                    "fixture starts with pre-migration schema");
+                sql("USE `" + schema + "`");
+                string snapshot = SqlSnapshot.Read(repo);
+                sql(SqlSnapshot.Table(snapshot, "users"));
+                Check(Convert.ToInt32(scalar("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='users' AND COLUMN_NAME='NICKNAME_SET'")) == 1,
+                    "canonical users schema includes nickname state");
+                // Simulate a legacy missing column solely to keep the fail-closed API check.
+                sql("ALTER TABLE users DROP COLUMN NICKNAME_SET");
                 sql("INSERT INTO users(ID,NAME,PWD,AGENCY) VALUES('new001','new001','Test123',''),('old001','老玩家','Test123',''),('empty1','   ','Test123',''),('other1','other1','Test123','')");
                 var controller = new UpdateUsersController();
                 Check(controller.NicknameStatus(new UpdateUsersController.UsersModel { playerId = "new001", pwd = "Test123" }).code != 10000,
-                    "missing migration returns failure instead of completed");
-                string migration = File.ReadAllText(Path.Combine(repo, "Docs/sql/玩家昵称设置标记-20261101.sql"));
-                sql(migration);
+                    "missing nickname column returns failure instead of completed");
+                sql("ALTER TABLE users ADD COLUMN " + SqlSnapshot.Column(snapshot, "users", "NICKNAME_SET"));
+                // Explicit completed-user fixture; archived backfill is not an initialization step.
+                sql("UPDATE users SET NICKNAME_SET=1 WHERE ID='old001'");
                 Check(Convert.ToInt32(scalar("SELECT NICKNAME_SET FROM users WHERE ID='new001'")) == 0, "default account stays unset");
-                Check(Convert.ToInt32(scalar("SELECT NICKNAME_SET FROM users WHERE ID='old001'")) == 1, "legacy custom nickname preserved");
-                Check(Convert.ToInt32(scalar("SELECT NICKNAME_SET FROM users WHERE ID='empty1'")) == 0, "legacy whitespace stays unset");
+                Check(Convert.ToInt32(scalar("SELECT NICKNAME_SET FROM users WHERE ID='old001'")) == 1, "completed custom nickname preserved");
+                Check(Convert.ToInt32(scalar("SELECT NICKNAME_SET FROM users WHERE ID='empty1'")) == 0, "whitespace fixture stays unset");
                 sql("INSERT INTO users(ID,NAME,PWD,AGENCY) VALUES('later1','预置名字','Test123','')");
-                sql(migration);
-                Check(Convert.ToInt32(scalar("SELECT NICKNAME_SET FROM users WHERE ID='later1'")) == 0, "new registrations default to unset and repeated migration does not backfill them");
+                sql(SqlSnapshot.Table(snapshot, "users", true));
+                Check(Convert.ToInt32(scalar("SELECT NICKNAME_SET FROM users WHERE ID='later1'")) == 0, "new registrations default to unset and existing-table initialization does not backfill them");
                 using (var config = new HttpConfiguration())
                 {
                     config.MapHttpAttributeRoutes();

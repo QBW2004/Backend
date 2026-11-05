@@ -1,104 +1,86 @@
 param(
-    [string]$DbName = "mth",
-    [string]$User = "root",
-    [string]$Password = "123456",
+    [Parameter(Mandatory = $true)]
+    [ValidatePattern('^[A-Za-z0-9_]+$')][string]$DbName,
+    [ValidateSet('127.0.0.1', 'localhost', '::1')][string]$Server = '127.0.0.1',
+    [ValidateRange(1, 65535)][int]$Port = 3306,
+    [ValidatePattern('^[A-Za-z0-9_.-]+$')][string]$User = 'root',
+    [string]$Password = $env:MYSQL_PWD,
+    [string]$SqlFile = '',
+    [string]$MySqlExe = '',
     [switch]$Force,
     [switch]$DryRun
 )
 
-$mysql = "C:\mysql\bin\mysql.exe"
-
-if (-not (Test-Path $mysql)) {
-    # fallback
-    $mysql = "C:\Program Files\MySQL\MySQL Server 8.4\bin\mysql.exe"
-    if (-not (Test-Path $mysql)) {
-        Write-Error "mysql.exe not found"
-        exit 1
-    }
+$ErrorActionPreference = 'Stop'
+if (-not $SqlFile) { $SqlFile = Join-Path $PSScriptRoot '..\..\Database\mth_clean.sql' }
+if ($DbName -in @('mysql', 'sys', 'information_schema', 'performance_schema')) {
+    throw 'System databases cannot be reset.'
 }
-
-# 弹窗选择 SQL 文件
-Add-Type -AssemblyName System.Windows.Forms
-$dialog = New-Object System.Windows.Forms.OpenFileDialog
-$dialog.Title = "选择要导入的 SQL 文件"
-$dialog.InitialDirectory = $PSScriptRoot
-$dialog.Filter = "SQL files (*.sql)|*.sql|All files (*.*)|*.*"
-$dialog.CheckFileExists = $true
-$dialog.Multiselect = $false
-
-if ($dialog.ShowDialog() -eq "OK") {
-    $SqlFile = $dialog.FileName
-} else {
-    Write-Host "Cancelled." -ForegroundColor Yellow
+$SqlFile = (Resolve-Path -LiteralPath $SqlFile).Path
+if (-not (Test-Path -LiteralPath $SqlFile -PathType Leaf)) { throw 'SQL input must be a file.' }
+# A dump must use the explicitly selected database, never switch to a second schema.
+if (Select-String -LiteralPath $SqlFile -Pattern '^\s*(USE\s|(?:CREATE|DROP)\s+DATABASE\s)' -Quiet) {
+    throw 'Use a single-schema dump without CREATE/DROP DATABASE or USE statements.'
+}
+Write-Host "Target: ${Server}:$Port / $DbName"
+Write-Host "Input : $SqlFile"
+if ($DryRun) {
+    Write-Host "[DRY-RUN] Drop/recreate '$DbName', import this file once, then count tables. No migration patches. No connection made."
     exit 0
 }
 
-Write-Host "Selected: $SqlFile"
-
-$patches = @(
-    "Docs/sql/动态桌台字段扩展.sql",
-    "Docs/sql/fix_scoreswitch_decimal.sql",
-    "Docs/sql/房间桌台配置表坐席扩列.sql",
-    "Docs/sql/性能索引.sql",
-    "Docs/sql/玩家登录时间-20260918.sql"
-)
-
-Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "  MTH Database Reset Script" -ForegroundColor Cyan
-Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "  MySQL : $mysql"
-Write-Host "  DB    : $DbName"
-Write-Host "  User  : $User"
-Write-Host "  Base  : $SqlFile"
-Write-Host "  Size  : $((Get-Item $SqlFile).Length / 1KB) KB"
-Write-Host ""
-
+if (-not $MySqlExe) {
+    $MySqlExe = @('C:\mysql\bin\mysql.exe',
+        'C:\Program Files\MySQL\MySQL Server 5.7\bin\mysql.exe',
+        'C:\Program Files\MySQL\MySQL Server 8.4\bin\mysql.exe',
+        'C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe') |
+        Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } | Select-Object -First 1
+}
+if (-not $MySqlExe -or -not (Test-Path -LiteralPath $MySqlExe -PathType Leaf)) { throw 'mysql.exe not found; pass -MySqlExe.' }
 if (-not $Force) {
-    Write-Host "WARNING: This will DROP database '$DbName' and recreate it!" -ForegroundColor Red
-    $confirm = Read-Host "Type YES to continue"
-    if ($confirm -ne "YES") { Write-Host "Cancelled."; exit 0 }
+    Write-Host "WARNING: All data in local database '$DbName' will be deleted." -ForegroundColor Red
+    if ((Read-Host 'Type YES to continue') -cne 'YES') { Write-Host 'Cancelled.'; exit 0 }
 }
-
-# Step 1: Drop & Create
-Write-Host "[1/4] Dropping old database ..." -ForegroundColor Green
-if ($DryRun) {
-    Write-Host "  [DRY-RUN] DROP DATABASE IF EXISTS $DbName; CREATE DATABASE $DbName ..."
-} else {
-    $sql = "DROP DATABASE IF EXISTS $DbName; CREATE DATABASE $DbName DEFAULT CHARACTER SET utf8mb4;"
-    & $mysql -u $User --password=$Password -e $sql 2>&1 | Where-Object { $_ -notmatch "Warning" }
-    if ($LASTEXITCODE -ne 0) { Write-Host "  Failed!" -ForegroundColor Red; exit 1 }
-    Write-Host "  OK" -ForegroundColor DarkGray
+if (-not $PSBoundParameters.ContainsKey('Password') -and -not $Password) {
+    $securePassword = Read-Host 'MySQL password' -AsSecureString
+    $Password = (New-Object System.Net.NetworkCredential('', $securePassword)).Password
 }
+$previousPassword = $env:MYSQL_PWD
+$timer = [Diagnostics.Stopwatch]::StartNew()
+try {
+    $env:MYSQL_PWD = $Password
+    $mysqlArgs = @('--protocol=TCP', "--host=$Server", "--port=$Port", "--user=$User", '--default-character-set=utf8mb4')
+    $caseMode = & $MySqlExe @mysqlArgs -N -B -e 'SELECT @@lower_case_table_names;'
+    if ($LASTEXITCODE -ne 0) { throw 'MySQL connection failed.' }
+    if (($caseMode -join '').Trim() -ne '1') { throw 'Requires lower_case_table_names=1.' }
+    & $MySqlExe @mysqlArgs -e "DROP DATABASE IF EXISTS ``$DbName``; CREATE DATABASE ``$DbName`` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+    if ($LASTEXITCODE -ne 0) { throw 'Database recreation failed.' }
 
-# Step 2: Import base SQL
-Write-Host "[2/4] Importing $((Get-Item $SqlFile).Name) ..." -ForegroundColor Green
-if (-not $DryRun) {
-    Write-Host "  Running (may take a while) ..." -ForegroundColor DarkGray
-    cmd /c "`"$mysql`" -u $User --password=$Password --default-character-set=utf8mb4 $DbName < `"$SqlFile`"" 2>&1 | Where-Object { $_ -notmatch "Warning" }
-    if ($LASTEXITCODE -ne 0) { Write-Host "  Failed!" -ForegroundColor Red; exit 1 }
-    Write-Host "  OK" -ForegroundColor DarkGray
-}
-
-# Step 3: Apply patches
-Write-Host "[3/4] Applying migration patches ..." -ForegroundColor Green
-foreach ($patch in $patches) {
-    $pp = Join-Path $PSScriptRoot "..\..\$patch"
-    if (Test-Path $pp) {
-        Write-Host "  -> $patch" -ForegroundColor DarkGray
-        if (-not $DryRun) {
-            cmd /c "`"$mysql`" -u $User --password=$Password --default-character-set=utf8mb4 $DbName < `"$pp`"" 2>&1 | Where-Object { $_ -notmatch "Warning" }
-        }
+    $start = New-Object Diagnostics.ProcessStartInfo
+    $start.FileName = $MySqlExe
+    $start.Arguments = ($mysqlArgs + @("--database=$DbName", '--binary-mode=1')) -join ' '
+    $start.UseShellExecute = $false
+    $start.CreateNoWindow = $true
+    $start.RedirectStandardInput = $true
+    $start.RedirectStandardOutput = $true
+    $start.RedirectStandardError = $true
+    $process = New-Object Diagnostics.Process
+    $process.StartInfo = $start
+    try {
+        [void]$process.Start()
+        $outputTask = $process.StandardOutput.ReadToEndAsync()
+        $errorTask = $process.StandardError.ReadToEndAsync()
+        $inputFile = [IO.File]::OpenRead($SqlFile)
+        try { $inputFile.CopyTo($process.StandardInput.BaseStream) }
+        finally { $inputFile.Dispose(); $process.StandardInput.Close() }
+        $process.WaitForExit()
+        [void]$outputTask.GetAwaiter().GetResult()
+        $importError = $errorTask.GetAwaiter().GetResult()
+        if ($process.ExitCode -ne 0) { throw "Import failed (exit $($process.ExitCode)): $importError" }
     }
+    finally { $process.Dispose() }
+    $count = & $MySqlExe @mysqlArgs -N -B -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='$DbName';"
+    if ($LASTEXITCODE -ne 0 -or [int]$count -eq 0) { throw 'Imported schema verification failed.' }
+    Write-Host "Imported $count tables/views in $([math]::Round($timer.Elapsed.TotalSeconds, 2)) seconds."
 }
-Write-Host "  Done" -ForegroundColor DarkGray
-
-# Step 4: Verify
-Write-Host "[4/4] Verifying ..." -ForegroundColor Green
-if (-not $DryRun) {
-    $result = & $mysql -u $User --password=$Password --default-character-set=utf8 $DbName -e "SHOW TABLES;" 2>&1 | Where-Object { $_ -notmatch "Warning" }
-    $count = ($result | Measure-Object -Line).Lines - 1
-    Write-Host "  $count tables created" -ForegroundColor DarkGray
-}
-
-Write-Host ""
-Write-Host "Done!" -ForegroundColor Cyan
+finally { $env:MYSQL_PWD = $previousPassword }

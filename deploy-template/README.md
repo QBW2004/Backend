@@ -6,8 +6,7 @@
 |---|---|
 | `MTH-Server-Binaries_20261018.zip` | 当时的游戏服二进制/依赖/运行配置快照；使用前核对中心、子服、Robot、协议和状态文件兼容，不能覆盖后续热修 |
 | `TTY.Web_1.0.62.zip` | 历史后台站点包，不代表当前线上版本；重新发布须依据实际线上基线形成隔离包 |
-| `_raw_mth_full_20261018.sql` | 含真实业务数据的历史数据库备份；仅作受控恢复证据，不分发、不导入生产作验证 |
 
-这些二进制/SQL未在本轮文档整理中改动或删除。部署技能仍在 `.devin/skills/mth-server-deploy/SKILL.md`；本轮未改技能，使用前核对其中环境和产物假设，用户当前授权范围优先。
+2026-11-05 数据库整合后，本目录不再提供 SQL 快照。当前只使用 [Database/mth_full.sql](../Database/mth_full.sql) 与 [Database/mth_clean.sql](../Database/mth_clean.sql)，清理与验证边界见 [数据库说明](../Database/README.md)。旧快照按整合记录归档到仓库外。二进制包仍是历史材料；完整功能依赖匹配程序、配置与状态文件。部署技能入口仍在 `.devin/skills/mth-server-deploy/SKILL.md`，用户当前授权范围优先。
 
 重新生成后台包使用现行 `Tools/deploy/pack.ps1` 的 `-SourcePath` 隔离站点能力，版本与实际文件清单对应。数据库清档模板、历史一次性打包脚本和旧压缩包都不能当作普通升级指令；先确定恢复/新装/升级目标，再选择对应流程与必要迁移。

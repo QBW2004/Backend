@@ -1,0 +1,1428 @@
+{
+  "date": "2026-11-05",
+  "scope": "Local repository archive only; no SQL execution or production action",
+  "archivedSqlCount": 66,
+  "archivedAuxiliaryCount": 1,
+  "entries": [
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/sql/create_roomtableconfig_card.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\sql\\create_roomtableconfig_card.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Docs\\sql\\create_roomtableconfig_card.sql",
+      "mode": "archive",
+      "bytes": 568,
+      "sha256": "fbd7b005df1ca7cda552313ae1b764ea32a34a12629c228d3cf96ff0eb8e04cc",
+      "purpose": "建立按桌牌机参数表",
+      "classification": "historical_migration_or_data_repair",
+      "coverageBoundary": "clean已包含已识别的目标表/字段/索引（逐项见schemaEvidence）；历史回填/修改配置未重放，不因结构已存在而声称历史DML逐值等价。",
+      "auditEvidence": {
+        "createdTablesPresent": {
+          "roomtableconfig_card": true
+        },
+        "columnsPresent": {},
+        "namedIndexesPresent": {}
+      },
+      "anchor": "sql-001"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/sql/fix_fish_room_base_bet.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\sql\\fix_fish_room_base_bet.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Docs\\sql\\fix_fish_room_base_bet.sql",
+      "mode": "archive",
+      "bytes": 2602,
+      "sha256": "b90475fd8ec4499d0a338fc62141ab3d6824969acb3e2cdf61017a3133279081",
+      "purpose": "修复旧鱼机房间base行底注与兑换参数",
+      "classification": "historical_migration_or_data_repair",
+      "coverageBoundary": "clean保留当前配置；此文件是旧模型/旧现场的一次性配置修复，不作为新装补丁，不假定历史UPDATE与现行配置逐值等价。",
+      "auditEvidence": {
+        "createdTablesPresent": {},
+        "columnsPresent": {},
+        "namedIndexesPresent": {}
+      },
+      "anchor": "sql-002"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/sql/fix_scoreswitch_decimal.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\sql\\fix_scoreswitch_decimal.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Docs\\sql\\fix_scoreswitch_decimal.sql",
+      "mode": "archive",
+      "bytes": 857,
+      "sha256": "f178b21faac9e9f7b545d5f0b5e23c7aa19ec0eb867b0adf99782b9aa3f14ff9",
+      "purpose": "将鱼机炮值增量scoreSwitch扩展小数",
+      "classification": "historical_migration_or_data_repair",
+      "coverageBoundary": "clean pararoom.scoreSwitch已为decimal(10,2)。",
+      "auditEvidence": {
+        "createdTablesPresent": {},
+        "columnsPresent": {
+          "ParaRoom.scoreSwitch": true
+        },
+        "namedIndexesPresent": {}
+      },
+      "anchor": "sql-003"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/sql/fix_usercontrolvalue_unique.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\sql\\fix_usercontrolvalue_unique.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Docs\\sql\\fix_usercontrolvalue_unique.sql",
+      "mode": "archive",
+      "bytes": 1249,
+      "sha256": "8f0811f4a92c7f8906858d3b7f8e0dfc61ae365e4336f9b50999912f0be2b789",
+      "purpose": "清理控牌重复行并拟加玩家/控制类型唯一索引",
+      "classification": "historical_migration_or_data_repair",
+      "coverageBoundary": "clean中usercontrolvalue为空，但uk_userid_ctrltype唯一索引不存在；旧方案未并入当前结构，不借清理补DDL。",
+      "auditEvidence": {
+        "createdTablesPresent": {},
+        "columnsPresent": {},
+        "namedIndexesPresent": {
+          "usercontrolvalue.uk_userid_ctrltype": false
+        }
+      },
+      "anchor": "sql-004"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/sql/games拉霸数据清洗.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\sql\\games拉霸数据清洗.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Docs\\sql\\games拉霸数据清洗.sql",
+      "mode": "archive",
+      "bytes": 4850,
+      "sha256": "da6efc3e133b83b296771e31df8a7bab7963e342a5753cb1749ff5197f0f449a",
+      "purpose": "修复历史拉霸游戏名称乱码、重复行及脏配置",
+      "classification": "historical_migration_or_data_repair",
+      "coverageBoundary": "clean保留当前配置；此文件是旧模型/旧现场的一次性配置修复，不作为新装补丁，不假定历史UPDATE与现行配置逐值等价。",
+      "auditEvidence": {
+        "createdTablesPresent": {},
+        "columnsPresent": {},
+        "namedIndexesPresent": {}
+      },
+      "anchor": "sql-005"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/sql/mth_clean_cardpayout_residual.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\sql\\mth_clean_cardpayout_residual.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Docs\\sql\\mth_clean_cardpayout_residual.sql",
+      "mode": "archive",
+      "bytes": 4611,
+      "sha256": "b85d0bb0dafa1f78dc0eb73aa29ddfb2dd567e1d9414c7cb7bd6bb907c34c7a9",
+      "purpose": "按未污染桌众数修复历史吃分概率残留",
+      "classification": "historical_migration_or_data_repair",
+      "coverageBoundary": "clean保留当前权重；不能重新以众数推测/覆盖概率，归档历史现场修复。",
+      "auditEvidence": {
+        "createdTablesPresent": {},
+        "columnsPresent": {},
+        "namedIndexesPresent": {}
+      },
+      "anchor": "sql-006"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/sql/mth_update_totalkill_backup.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\sql\\mth_update_totalkill_backup.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Docs\\sql\\mth_update_totalkill_backup.sql",
+      "mode": "archive",
+      "bytes": 4823,
+      "sha256": "ed9510f282b36ad6454f4523856837640c4eecc3b9b75fdd6c4ec25ed7282d37",
+      "purpose": "建立总控桌台参数备份表并恢复历史残留概率",
+      "classification": "historical_migration_or_data_repair",
+      "coverageBoundary": "clean已有totalkill_table_backup且为空；历史概率残留修复不是新装步骤。",
+      "auditEvidence": {
+        "createdTablesPresent": {
+          "totalkill_table_backup": true
+        },
+        "columnsPresent": {},
+        "namedIndexesPresent": {}
+      },
+      "anchor": "sql-007"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/sql/roomtableconfig历史桌台同步.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\sql\\roomtableconfig历史桌台同步.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Docs\\sql\\roomtableconfig历史桌台同步.sql",
+      "mode": "archive",
+      "bytes": 8451,
+      "sha256": "1b0318afc8ab797722b6ac2af02cac54467298b4857d3364fddf4d329b091a47",
+      "purpose": "roomtableconfig历史桌台同步",
+      "classification": "historical_migration_or_data_repair",
+      "coverageBoundary": "clean保留当前配置；此文件是旧模型/旧现场的一次性配置修复，不作为新装补丁，不假定历史UPDATE与现行配置逐值等价。",
+      "auditEvidence": {
+        "createdTablesPresent": {},
+        "columnsPresent": {},
+        "namedIndexesPresent": {}
+      },
+      "anchor": "sql-008"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/sql/sync_bet_tableconfig.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\sql\\sync_bet_tableconfig.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Docs\\sql\\sync_bet_tableconfig.sql",
+      "mode": "archive",
+      "bytes": 2209,
+      "sha256": "d2a2cb89fce25a355b0511c7a6ac5236cab04736deabb53a74e4205abc7aa6b9",
+      "purpose": "同步旧押注模型桌数和按桌配置",
+      "classification": "historical_migration_or_data_repair",
+      "coverageBoundary": "旧按行计桌同步已被后一房N桌方案取代，不对当前参数重跑。",
+      "auditEvidence": {
+        "createdTablesPresent": {},
+        "columnsPresent": {},
+        "namedIndexesPresent": {}
+      },
+      "anchor": "sql-009"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/sql/sync_pararoom_num_to_roomtableconfig.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\sql\\sync_pararoom_num_to_roomtableconfig.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Docs\\sql\\sync_pararoom_num_to_roomtableconfig.sql",
+      "mode": "archive",
+      "bytes": 1782,
+      "sha256": "9fce8796e39d21fbec9b022fb105688b152b19ef35c3306b31e4e198f6a59eec",
+      "purpose": "同步旧房间NUM和桌台数及单房间模式",
+      "classification": "historical_migration_or_data_repair",
+      "coverageBoundary": "clean保留当前配置；此文件是旧模型/旧现场的一次性配置修复，不作为新装补丁，不假定历史UPDATE与现行配置逐值等价。",
+      "auditEvidence": {
+        "createdTablesPresent": {},
+        "columnsPresent": {},
+        "namedIndexesPresent": {}
+      },
+      "anchor": "sql-010"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/sql/上线清档-清空玩家与代理数据-20261017.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\sql\\上线清档-清空玩家与代理数据-20261017.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Docs\\sql\\上线清档-清空玩家与代理数据-20261017.sql",
+      "mode": "archive",
+      "bytes": 11097,
+      "sha256": "83522b0bf316ff3a1ee23aa79ad171f94204c280e42659d4596c52ee25038a1e",
+      "purpose": "上线清档-清空玩家与代理数据",
+      "classification": "historical_migration_or_data_repair",
+      "coverageBoundary": "已由make-clean-db.py闭合表清洗和admina clean取代；旧脚本保护的超管账号不同，不再执行。",
+      "auditEvidence": {
+        "createdTablesPresent": {},
+        "columnsPresent": {},
+        "namedIndexesPresent": {}
+      },
+      "anchor": "sql-011"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/sql/代理送奖奖池-20261102.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\sql\\代理送奖奖池-20261102.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Docs\\sql\\代理送奖奖池-20261102.sql",
+      "mode": "archive",
+      "bytes": 7140,
+      "sha256": "5fc5672722da1842b878687eb614f3c2b001400a45a9a0c4096a9a6e9a57fa6b",
+      "purpose": "代理送奖奖池",
+      "classification": "historical_migration_with_test_dependency",
+      "coverageBoundary": "clean有三张奖池表与后续精准扣款例程，初版过程已被20261103版本取代；仍有隔离迁移行为测试引用。",
+      "auditEvidence": {
+        "createdTablesPresent": {
+          "agentprizepool": true,
+          "agentprizecontrol": true,
+          "agentprizeledger": true
+        },
+        "columnsPresent": {},
+        "namedIndexesPresent": {}
+      },
+      "anchor": "sql-012"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/sql/全民赛跑活动配置-20261103.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\sql\\全民赛跑活动配置-20261103.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Docs\\sql\\全民赛跑活动配置-20261103.sql",
+      "mode": "archive",
+      "bytes": 1039,
+      "sha256": "fa3d3cbe03c92b8faa1bdeb33ce7b4b22e649217441b7b3d9afe013b73d3e06c",
+      "purpose": "全民赛跑活动配置",
+      "classification": "historical_migration_or_data_repair",
+      "coverageBoundary": "clean已有activityconfig和初始化配置；业务缺表错误提示还引用此文件，需改为数据库说明入口。",
+      "auditEvidence": {
+        "createdTablesPresent": {
+          "activityconfig": true
+        },
+        "columnsPresent": {},
+        "namedIndexesPresent": {}
+      },
+      "anchor": "sql-013"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/sql/公告唯一化与字号-20260923.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\sql\\公告唯一化与字号-20260923.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Docs\\sql\\公告唯一化与字号-20260923.sql",
+      "mode": "archive",
+      "bytes": 2987,
+      "sha256": "2574b2573b0ef385d156631ec655e251a3c2db9bb7bdc7985f894459bef3fcd6",
+      "purpose": "公告唯一化与字号",
+      "classification": "historical_migration_with_test_dependency",
+      "coverageBoundary": "clean已含notice.FONTSIZE并保留当前公告；无需再执行历史合并。契约测试改核对clean结构。",
+      "auditEvidence": {
+        "createdTablesPresent": {},
+        "columnsPresent": {
+          "notice.FONTSIZE": true
+        },
+        "namedIndexesPresent": {}
+      },
+      "anchor": "sql-014"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/sql/删除玩家残留数据清理-20261002.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\sql\\删除玩家残留数据清理-20261002.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Docs\\sql\\删除玩家残留数据清理-20261002.sql",
+      "mode": "archive",
+      "bytes": 7629,
+      "sha256": "0e527d03b3376c7a043bcf06b2a80b919d5cbf8c858c5f44e111dc253f11c8d5",
+      "purpose": "删除玩家残留数据清理",
+      "classification": "historical_migration_or_data_repair",
+      "coverageBoundary": "clean中相关业务表为空，但uk_userrelations_id唯一索引不存在；当前RelationsDedupSql兼容重复关系，不借清理补DDL。",
+      "auditEvidence": {
+        "createdTablesPresent": {},
+        "columnsPresent": {},
+        "namedIndexesPresent": {
+          "userrelations.uk_userrelations_id": false
+        }
+      },
+      "anchor": "sql-015"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/sql/动态桌台字段扩展.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\sql\\动态桌台字段扩展.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Docs\\sql\\动态桌台字段扩展.sql",
+      "mode": "archive",
+      "bytes": 3218,
+      "sha256": "0829a58fcd173d8a9a2537863c816d1ea7fdd88e6a2a4990efde4c8a9dbc5892",
+      "purpose": "动态桌台字段扩展",
+      "classification": "historical_migration_or_data_repair",
+      "coverageBoundary": "clean逐项包含12个新增字段，初装无需叠加。",
+      "auditEvidence": {
+        "createdTablesPresent": {},
+        "columnsPresent": {
+          "pararoom.TableName": true,
+          "pararoom.MaxSeats": true,
+          "pararoom.IdleFireTimeoutSec": true,
+          "pararoom.IdleFireKickEnabled": true,
+          "pararoom.Enabled": true,
+          "pararoom.MinBetUnits": true,
+          "pararoom.MaxBetUnits": true,
+          "parabetroom.TableName": true,
+          "parabetroom.MaxSeats": true,
+          "parabetroom.IdleFireTimeoutSec": true,
+          "parabetroom.IdleFireKickEnabled": true,
+          "parabetroom.Enabled": true
+        },
+        "namedIndexesPresent": {}
+      },
+      "anchor": "sql-016"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/sql/多客户端包与代理线-20261030.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\sql\\多客户端包与代理线-20261030.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Docs\\sql\\多客户端包与代理线-20261030.sql",
+      "mode": "archive",
+      "bytes": 6560,
+      "sha256": "59486f22179e07b07d1fa23eb6b10a974a23c4a6068d99de4035fb69d01f6d30",
+      "purpose": "多客户端包与代理线",
+      "classification": "historical_migration_with_test_dependency",
+      "coverageBoundary": "clean有clientpackage/roomtableowner/PlayableGames/LineAgent及当前代理线榜单索引；保留实际包登记，不重放旧种子。",
+      "auditEvidence": {
+        "createdTablesPresent": {
+          "clientpackage": true,
+          "roomtableowner": true
+        },
+        "columnsPresent": {
+          "admin.PlayableGames": true,
+          "gameprizerecord.LineAgent": true,
+          "gamerankhistory.LineAgent": true
+        },
+        "namedIndexesPresent": {}
+      },
+      "anchor": "sql-017"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/sql/大厅排行榜最新30条-20261027.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\sql\\大厅排行榜最新30条-20261027.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Docs\\sql\\大厅排行榜最新30条-20261027.sql",
+      "mode": "archive",
+      "bytes": 2026,
+      "sha256": "d5a2d7644bc648f53158ca1a2901f56c32e04d38cc0b1fc38d63976364434b84",
+      "purpose": "大厅排行榜最新30条",
+      "classification": "historical_migration_with_test_dependency",
+      "coverageBoundary": "clean已有gamerankhistory且历史为空；一次性回填不适用于初始化，专项迁移测试仍有引用。",
+      "auditEvidence": {
+        "createdTablesPresent": {
+          "gamerankhistory": true
+        },
+        "columnsPresent": {},
+        "namedIndexesPresent": {}
+      },
+      "anchor": "sql-018"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/sql/大奖榜与播报统一事件-20261031.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\sql\\大奖榜与播报统一事件-20261031.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Docs\\sql\\大奖榜与播报统一事件-20261031.sql",
+      "mode": "archive",
+      "bytes": 1416,
+      "sha256": "d3f705cd871d5aa4b34faba77263f1d360ce1cb59aacb9a1affc87760512599c",
+      "purpose": "大奖榜与播报统一事件",
+      "classification": "historical_migration_with_test_dependency",
+      "coverageBoundary": "clean已有IsBigWin/prizebroadcastoutbox且相关历史为空；迁移回填行为测试需保留明确目的或退役。",
+      "auditEvidence": {
+        "createdTablesPresent": {
+          "prizebroadcastoutbox": true
+        },
+        "columnsPresent": {
+          "gamerankhistory.IsBigWin": true
+        },
+        "namedIndexesPresent": {}
+      },
+      "anchor": "sql-019"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/sql/大白兔小四梅50倍-20261103.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\sql\\大白兔小四梅50倍-20261103.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Docs\\sql\\大白兔小四梅50倍-20261103.sql",
+      "mode": "archive",
+      "bytes": 723,
+      "sha256": "a19360b14506855dcfdad7afcece176ae2670360223c69632d9bf385c8ade53e",
+      "purpose": "大白兔小四梅50倍",
+      "classification": "historical_migration_or_data_repair",
+      "coverageBoundary": "当次升级已有上线证据；clean保留当前逐桌规则，不能重置运营自定义值。",
+      "auditEvidence": {
+        "createdTablesPresent": {},
+        "columnsPresent": {},
+        "namedIndexesPresent": {}
+      },
+      "anchor": "sql-020"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/sql/奖池精准扣除与明细保留-20261103.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\sql\\奖池精准扣除与明细保留-20261103.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Docs\\sql\\奖池精准扣除与明细保留-20261103.sql",
+      "mode": "archive",
+      "bytes": 6943,
+      "sha256": "66a0c5866fd1135cdb4796a0444b3d86823df05c2bc80508db7894d0b6016330",
+      "purpose": "奖池精准扣除与明细保留",
+      "classification": "historical_migration_with_test_dependency",
+      "coverageBoundary": "clean已有agentprize_release_delta和agentprize_record_award；契约测试应改核对实际clean例程。",
+      "auditEvidence": {
+        "createdTablesPresent": {},
+        "columnsPresent": {},
+        "namedIndexesPresent": {}
+      },
+      "anchor": "sql-021"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/sql/幸运六狮庄闲和最小押分-20260925.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\sql\\幸运六狮庄闲和最小押分-20260925.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Docs\\sql\\幸运六狮庄闲和最小押分-20260925.sql",
+      "mode": "archive",
+      "bytes": 2425,
+      "sha256": "027a6870ec9920742e4a869f8555044dd4dc83c1fc2050b4e004a61913ccb357",
+      "purpose": "幸运六狮庄闲和最小押分",
+      "classification": "historical_migration_or_data_repair",
+      "coverageBoundary": "clean保留当前配置；此文件是旧模型/旧现场的一次性配置修复，不作为新装补丁，不假定历史UPDATE与现行配置逐值等价。",
+      "auditEvidence": {
+        "createdTablesPresent": {},
+        "columnsPresent": {},
+        "namedIndexesPresent": {}
+      },
+      "anchor": "sql-022"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/sql/性能索引.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\sql\\性能索引.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Docs\\sql\\性能索引.sql",
+      "mode": "archive",
+      "bytes": 4087,
+      "sha256": "1dc1085cbd9d95e24b42e41ba2f9f9cdcdf756916b1013855b6c4c11f67136b8",
+      "purpose": "性能索引",
+      "classification": "historical_migration_with_test_dependency",
+      "coverageBoundary": "脚本列出的12个索引全部存在于clean；契约测试可改读clean。",
+      "auditEvidence": {
+        "createdTablesPresent": {},
+        "columnsPresent": {
+          "user_daily_winloss.UserID": true
+        },
+        "namedIndexesPresent": {
+          "users.idx_users_agency": true,
+          "users.idx_users_inhall": true,
+          "userrelations.idx_userrelations_id": true,
+          "useroptlog.idx_useroptlog_userid_lid": true,
+          "useroptlog.idx_useroptlog_rectime": true,
+          "rechargerecords.idx_rechargerecords_createtime": true,
+          "rechargerecords.idx_rechargerecords_gameid": true,
+          "rechargerecords.idx_rechargerecords_agency": true,
+          "rechargerecords.idx_rechargerecords_processed_time_game": true,
+          "agencyoptlog.idx_agencyoptlog_rectime": true,
+          "loginmissrecord.idx_loginmissrecord_id": true,
+          "user_daily_winloss.idx_udw_day": true
+        }
+      },
+      "anchor": "sql-023"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/sql/房间桌台配置表坐席扩列.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\sql\\房间桌台配置表坐席扩列.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Docs\\sql\\房间桌台配置表坐席扩列.sql",
+      "mode": "archive",
+      "bytes": 1563,
+      "sha256": "fa00aa568194b1b048cb3ee4f4b8d5eac15dd4688d42c26b0a91476259f9b0d8",
+      "purpose": "房间桌台配置表坐席扩列",
+      "classification": "historical_migration_or_data_repair",
+      "coverageBoundary": "clean已包含已识别的目标表/字段/索引（逐项见schemaEvidence）；历史回填/修改配置未重放，不因结构已存在而声称历史DML逐值等价。",
+      "auditEvidence": {
+        "createdTablesPresent": {},
+        "columnsPresent": {
+          "roomtableconfig.MaxSeats": true
+        },
+        "namedIndexesPresent": {}
+      },
+      "anchor": "sql-024"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/sql/手机端代理默认权限-20260901.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\sql\\手机端代理默认权限-20260901.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Docs\\sql\\手机端代理默认权限-20260901.sql",
+      "mode": "archive",
+      "bytes": 2525,
+      "sha256": "e6748a6818c8b1abc769d89d42c8b6022cb90720cd348ecd79fc240f3a87509b",
+      "purpose": "手机端代理默认权限",
+      "classification": "historical_migration_or_data_repair",
+      "coverageBoundary": "clean保留当前agent_permission_template与唯一超管权限；历史批量授权不可当当前权限规则执行。",
+      "auditEvidence": {
+        "createdTablesPresent": {
+          "gameprizerecord": true
+        },
+        "columnsPresent": {},
+        "namedIndexesPresent": {}
+      },
+      "anchor": "sql-025"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/sql/手机端后台权限与记录保留-20260902.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\sql\\手机端后台权限与记录保留-20260902.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Docs\\sql\\手机端后台权限与记录保留-20260902.sql",
+      "mode": "archive",
+      "bytes": 3488,
+      "sha256": "3ad54d0ace8701f1d7b78ba996690c247320f4e5fa47cee7af0c918f0d2fa645",
+      "purpose": "手机端后台权限与记录保留",
+      "classification": "historical_migration_with_test_dependency",
+      "coverageBoundary": "clean有gameprizerecord与列出的11个索引；RankHistory隔离验证仍取此文件DDL。",
+      "auditEvidence": {
+        "createdTablesPresent": {
+          "gameprizerecord": true
+        },
+        "columnsPresent": {},
+        "namedIndexesPresent": {
+          "agencyoptlog.idx_agencyoptlog_rectime": true,
+          "agencyoptlog.idx_agencyoptlog_target_opt_time": true,
+          "useroptlog.idx_useroptlog_rectime": true,
+          "rechargerecords.idx_rechargerecords_createtime": true,
+          "rechargerecords.idx_rechargerecords_processed_time_game": true,
+          "manageropt.idx_manageropt_time": true,
+          "tablecoinrecord.idx_tablecoinrecord_createtime": true,
+          "clientexchangerecord.idx_clientexchangerecord_createtime": true,
+          "gameprizerecord.ix_gameprizerecord_user_time": true,
+          "gameprizerecord.ix_gameprizerecord_game_time": true,
+          "gameprizerecord.ix_gameprizerecord_broadcast_game": true
+        }
+      },
+      "anchor": "sql-026"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/sql/手机端测试数据.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\sql\\手机端测试数据.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Docs\\sql\\手机端测试数据.sql",
+      "mode": "archive",
+      "bytes": 105654,
+      "sha256": "2f3aee00c464c8c951b532556d93a26cd70bba0f2b4c4c3b628ff5be1bd1a76d",
+      "purpose": "手机端测试数据",
+      "classification": "historical_test_seed",
+      "coverageBoundary": "clean有意排除此测试种子；非线上运行依赖。Tools/one-off生成器及Tools说明需同步外部归档位置。",
+      "auditEvidence": {
+        "createdTablesPresent": {},
+        "columnsPresent": {},
+        "namedIndexesPresent": {}
+      },
+      "anchor": "sql-027"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/sql/拉霸三台新版默认权重-20261031.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\sql\\拉霸三台新版默认权重-20261031.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Docs\\sql\\拉霸三台新版默认权重-20261031.sql",
+      "mode": "archive",
+      "bytes": 10196,
+      "sha256": "a5e00758a3b4695ff339ec424bbd8933bf0ee08dc52b1c6d5383292c087a825e",
+      "purpose": "拉霸三台新版默认权重",
+      "classification": "historical_migration_or_data_repair",
+      "coverageBoundary": "clean保留当前权重；旧授权重置只针对当次部署，不是每次初始化的默认重置。",
+      "auditEvidence": {
+        "createdTablesPresent": {},
+        "columnsPresent": {},
+        "namedIndexesPresent": {}
+      },
+      "anchor": "sql-028"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/sql/拉霸清空按桌筹码-20261029.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\sql\\拉霸清空按桌筹码-20261029.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Docs\\sql\\拉霸清空按桌筹码-20261029.sql",
+      "mode": "archive",
+      "bytes": 1308,
+      "sha256": "ba9444340075b20c6392208dda37f955aa0ba9a7ef6b66cf3df3a2b1b740d31c",
+      "purpose": "拉霸清空按桌筹码",
+      "classification": "historical_migration_or_data_repair",
+      "coverageBoundary": "历史新版筹码方案的一次性清理；当前后台保存逻辑负责维持，不再作为新装步骤。",
+      "auditEvidence": {
+        "createdTablesPresent": {},
+        "columnsPresent": {},
+        "namedIndexesPresent": {}
+      },
+      "anchor": "sql-029"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/sql/新增ATT满花版-gameid25-20261011.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\sql\\新增ATT满花版-gameid25-20261011.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Docs\\sql\\新增ATT满花版-gameid25-20261011.sql",
+      "mode": "archive",
+      "bytes": 7164,
+      "sha256": "4cc538dfbab2cf6a38ab1579870835036efd846d485c9fe68653b813c4033a26",
+      "purpose": "新增ATT满花版-gameid25",
+      "classification": "historical_migration_or_data_repair",
+      "coverageBoundary": "clean已有游戏目录、桌台及当前配置；无需再运行首次登记种子。",
+      "auditEvidence": {
+        "createdTablesPresent": {},
+        "columnsPresent": {},
+        "namedIndexesPresent": {}
+      },
+      "anchor": "sql-030"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/sql/新增大白兔-gameid55-20261101.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\sql\\新增大白兔-gameid55-20261101.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Docs\\sql\\新增大白兔-gameid55-20261101.sql",
+      "mode": "archive",
+      "bytes": 4678,
+      "sha256": "c1b7b14ead5820438f188c734df0f56edec8f637218fb19b3bad7ed9254b0d4e",
+      "purpose": "新增大白兔-gameid55",
+      "classification": "historical_migration_with_test_dependency",
+      "coverageBoundary": "clean有cardgamecfg与game55当前配置；LineTables验证改从clean取表定义。",
+      "auditEvidence": {
+        "createdTablesPresent": {
+          "cardgamecfg": true
+        },
+        "columnsPresent": {},
+        "namedIndexesPresent": {}
+      },
+      "anchor": "sql-031"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/sql/最大坐席数固定配置.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\sql\\最大坐席数固定配置.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Docs\\sql\\最大坐席数固定配置.sql",
+      "mode": "archive",
+      "bytes": 907,
+      "sha256": "17769c90a021efa7aca5fdc2befaaa057bb8c857045d3e6102930e3711338e92",
+      "purpose": "最大坐席数固定配置",
+      "classification": "historical_migration_or_data_repair",
+      "coverageBoundary": "clean保留当前配置；此文件是旧模型/旧现场的一次性配置修复，不作为新装补丁，不假定历史UPDATE与现行配置逐值等价。",
+      "auditEvidence": {
+        "createdTablesPresent": {},
+        "columnsPresent": {},
+        "namedIndexesPresent": {}
+      },
+      "anchor": "sql-032"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/sql/清理拉霸旧开奖配置.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\sql\\清理拉霸旧开奖配置.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Docs\\sql\\清理拉霸旧开奖配置.sql",
+      "mode": "archive",
+      "bytes": 1978,
+      "sha256": "9e9b8d1375b23d9c8cc752f36d3b063d335e4af305b76ce471d18dd3b1f47eee",
+      "purpose": "清理拉霸旧开奖配置",
+      "classification": "historical_migration_or_data_repair",
+      "coverageBoundary": "clean保留当前配置；此文件是旧模型/旧现场的一次性配置修复，不作为新装补丁，不假定历史UPDATE与现行配置逐值等价。",
+      "auditEvidence": {
+        "createdTablesPresent": {},
+        "columnsPresent": {},
+        "namedIndexesPresent": {}
+      },
+      "anchor": "sql-033"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/sql/游戏设置禁用游戏清理-20261006.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\sql\\游戏设置禁用游戏清理-20261006.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Docs\\sql\\游戏设置禁用游戏清理-20261006.sql",
+      "mode": "archive",
+      "bytes": 1323,
+      "sha256": "1fb7dbfb9746e420b781bef4b4efe87889201494db3b41541d00f3d390f96a2a",
+      "purpose": "游戏设置禁用游戏清理",
+      "classification": "historical_migration_or_data_repair",
+      "coverageBoundary": "当前clean保留19目录/14启用及历史回显所需禁用项，和旧删除策略不等价，不回放。",
+      "auditEvidence": {
+        "createdTablesPresent": {},
+        "columnsPresent": {},
+        "namedIndexesPresent": {}
+      },
+      "anchor": "sql-034"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/sql/游戏设置禁用游戏清理-20261010.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\sql\\游戏设置禁用游戏清理-20261010.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Docs\\sql\\游戏设置禁用游戏清理-20261010.sql",
+      "mode": "archive",
+      "bytes": 1472,
+      "sha256": "6fad551f5305e52ec6a75f128ce9e61cd94b0fedb408590ac1c861a2c49092f5",
+      "purpose": "游戏设置禁用游戏清理",
+      "classification": "historical_migration_or_data_repair",
+      "coverageBoundary": "当前游戏开放状态已变化；旧回滚快照现场清理被当前配置取代，不回放。",
+      "auditEvidence": {
+        "createdTablesPresent": {},
+        "columnsPresent": {},
+        "namedIndexesPresent": {}
+      },
+      "anchor": "sql-035"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/sql/点石成金名称同步-20261029.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\sql\\点石成金名称同步-20261029.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Docs\\sql\\点石成金名称同步-20261029.sql",
+      "mode": "archive",
+      "bytes": 494,
+      "sha256": "d1bd82cd93fd383079f177c9486ee194083746bbb3345d7bfe02e8a44f246470",
+      "purpose": "点石成金名称同步",
+      "classification": "historical_migration_or_data_repair",
+      "coverageBoundary": "clean保留当前配置；此文件是旧模型/旧现场的一次性配置修复，不作为新装补丁，不假定历史UPDATE与现行配置逐值等价。",
+      "auditEvidence": {
+        "createdTablesPresent": {},
+        "columnsPresent": {},
+        "namedIndexesPresent": {}
+      },
+      "anchor": "sql-036"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/sql/玩家昵称设置标记-20261101.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\sql\\玩家昵称设置标记-20261101.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Docs\\sql\\玩家昵称设置标记-20261101.sql",
+      "mode": "archive",
+      "bytes": 999,
+      "sha256": "91ec40c36a7c67db5d91dbca1a96720dea9dc4db5f66adcd33d2941b48129c5b",
+      "purpose": "玩家昵称设置标记",
+      "classification": "historical_migration_with_test_dependency",
+      "coverageBoundary": "clean已有users.NICKNAME_SET且玩家为空；历史昵称回填行为测试需明确迁移测试夹具或退役。",
+      "auditEvidence": {
+        "createdTablesPresent": {},
+        "columnsPresent": {
+          "users.NICKNAME_SET": true
+        },
+        "namedIndexesPresent": {}
+      },
+      "anchor": "sql-037"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/sql/玩家登录时间-20260918.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\sql\\玩家登录时间-20260918.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Docs\\sql\\玩家登录时间-20260918.sql",
+      "mode": "archive",
+      "bytes": 3427,
+      "sha256": "c69295ce43e62c5672e3ed228b79d94b62f547719d0d98b29256c96e6ee8c469",
+      "purpose": "玩家登录时间",
+      "classification": "historical_migration_with_test_dependency",
+      "coverageBoundary": "clean已有userloginrecord及trg_users_login_record触发器；验证DDL/契约可改读clean，源码历史注释可保留归档入口。",
+      "auditEvidence": {
+        "createdTablesPresent": {
+          "userloginrecord": true
+        },
+        "columnsPresent": {},
+        "namedIndexesPresent": {}
+      },
+      "anchor": "sql-038"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/sql/玩家盈亏统一币口径-20261102.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\sql\\玩家盈亏统一币口径-20261102.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Docs\\sql\\玩家盈亏统一币口径-20261102.sql",
+      "mode": "archive",
+      "bytes": 805,
+      "sha256": "db62a2b22cde930a0ef127801f9780b7076bc0826a3b0820277405af7c596691",
+      "purpose": "玩家盈亏统一币口径",
+      "classification": "historical_migration_with_test_dependency",
+      "coverageBoundary": "clean WINLOSS为decimal(28,8)并有user_winloss_ledger；不做历史金额换算，专项验证迁现行结构。",
+      "auditEvidence": {
+        "createdTablesPresent": {
+          "user_winloss_ledger": true
+        },
+        "columnsPresent": {
+          "user_daily_winloss.WINLOSS": true
+        },
+        "namedIndexesPresent": {}
+      },
+      "anchor": "sql-039"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/sql/线上games名称修正.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\sql\\线上games名称修正.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Docs\\sql\\线上games名称修正.sql",
+      "mode": "archive",
+      "bytes": 1447,
+      "sha256": "5b796ce2777328f14d8fa80c256418805b0f680cd6d5d8cfd249199578593e40",
+      "purpose": "线上games名称修正",
+      "classification": "historical_migration_or_data_repair",
+      "coverageBoundary": "针对旧编码/标识的修复，后续名称又有变更；当前clean目录为准，旧字节值不可回放。",
+      "auditEvidence": {
+        "createdTablesPresent": {},
+        "columnsPresent": {},
+        "namedIndexesPresent": {}
+      },
+      "anchor": "sql-040"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/sql/鱼机桌台脏数据清理.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\sql\\鱼机桌台脏数据清理.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Docs\\sql\\鱼机桌台脏数据清理.sql",
+      "mode": "archive",
+      "bytes": 9638,
+      "sha256": "b88dbf95d7c1fefeda16174de21749dc082af21722c76778314cb810c4d6b130",
+      "purpose": "鱼机桌台脏数据清理",
+      "classification": "historical_migration_or_data_repair",
+      "coverageBoundary": "旧现场行数/阈值不再代表现状，不根据历史预期数量清理当前配置。",
+      "auditEvidence": {
+        "createdTablesPresent": {},
+        "columnsPresent": {},
+        "namedIndexesPresent": {}
+      },
+      "anchor": "sql-041"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/sql/麻将胡了代理线配置-20261101.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\sql\\麻将胡了代理线配置-20261101.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Docs\\sql\\麻将胡了代理线配置-20261101.sql",
+      "mode": "archive",
+      "bytes": 1000,
+      "sha256": "79721ff364253a8689abd9e8f4e82f9e542925136c88660371c7cc9eb6811ce2",
+      "purpose": "麻将胡了代理线配置",
+      "classification": "historical_migration_with_test_dependency",
+      "coverageBoundary": "clean已有两表与公共回退配置；MjhlInheritance隔离验证应提取clean DDL。",
+      "auditEvidence": {
+        "createdTablesPresent": {
+          "mjhl_agent_config": true,
+          "mjhl_agent_config_history": true
+        },
+        "columnsPresent": {},
+        "namedIndexesPresent": {}
+      },
+      "anchor": "sql-042"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/sql/麻将胡了免费恢复-20261102.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\sql\\麻将胡了免费恢复-20261102.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Docs\\sql\\麻将胡了免费恢复-20261102.sql",
+      "mode": "archive",
+      "bytes": 2201,
+      "sha256": "f23e0be8696a9a6200d3ad053b244274626046107c3ecc1131002fd9f8dd3aa2",
+      "purpose": "麻将胡了免费恢复",
+      "classification": "historical_migration_or_data_repair",
+      "coverageBoundary": "clean有恢复状态/操作表及钱包版本；持久性/max_packet仍属环境依赖。",
+      "auditEvidence": {
+        "createdTablesPresent": {
+          "mjhl_recovery_state": true,
+          "mjhl_recovery_operation": true
+        },
+        "columnsPresent": {
+          "Users.MJHL_WALLET_REV": true
+        },
+        "namedIndexesPresent": {}
+      },
+      "anchor": "sql-043"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/sql/麻将胡了控制金币进度-20261102.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\sql\\麻将胡了控制金币进度-20261102.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Docs\\sql\\麻将胡了控制金币进度-20261102.sql",
+      "mode": "archive",
+      "bytes": 1675,
+      "sha256": "d7e6275369ea89776114294ce1a67e6c60a55b64d393c58e183972c0aff76cec",
+      "purpose": "麻将胡了控制金币进度",
+      "classification": "historical_migration_or_data_repair",
+      "coverageBoundary": "clean已含ControlProgressID/ControlRemainderTicks；不可重算历史控制。",
+      "auditEvidence": {
+        "createdTablesPresent": {},
+        "columnsPresent": {
+          "mjhl_recovery_state.ControlProgressID": true,
+          "mjhl_recovery_state.ControlRemainderTicks": true
+        },
+        "namedIndexesPresent": {}
+      },
+      "anchor": "sql-044"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/sql/麻将胡了配套中奖结构-20261102.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\sql\\麻将胡了配套中奖结构-20261102.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Docs\\sql\\麻将胡了配套中奖结构-20261102.sql",
+      "mode": "archive",
+      "bytes": 3944,
+      "sha256": "d054dc1443d3ef62dce42a5f1dd7a96d3e47ff71ab393ef4e724246ae8b29627",
+      "purpose": "麻将胡了配套中奖结构",
+      "classification": "historical_migration_or_data_repair",
+      "coverageBoundary": "clean有三张表、LineAgent/IsBigWin及uq_rank_line_game_slot当前索引。",
+      "auditEvidence": {
+        "createdTablesPresent": {
+          "gameprizerecord": true,
+          "gamerankhistory": true,
+          "prizebroadcastoutbox": true
+        },
+        "columnsPresent": {
+          "gameprizerecord.LineAgent": true,
+          "gamerankhistory.LineAgent": true,
+          "gamerankhistory.IsBigWin": true
+        },
+        "namedIndexesPresent": {}
+      },
+      "anchor": "sql-045"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/sql/麻将胡了配套基础结构-20261102.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\sql\\麻将胡了配套基础结构-20261102.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Docs\\sql\\麻将胡了配套基础结构-20261102.sql",
+      "mode": "archive",
+      "bytes": 3082,
+      "sha256": "a2eb20aa18a8a2135d8dbea5e550731a35a440daebd765684a194a4e0054b6d4",
+      "purpose": "麻将胡了配套基础结构",
+      "classification": "historical_migration_or_data_repair",
+      "coverageBoundary": "clean有clientpackage/betgamecfg/totalkill_table_backup及四个玩家在线位置字段。",
+      "auditEvidence": {
+        "createdTablesPresent": {
+          "clientpackage": true,
+          "betgamecfg": true,
+          "totalkill_table_backup": true
+        },
+        "columnsPresent": {
+          "users.CURRENT_GAME": true,
+          "users.CURRENT_ROOM": true,
+          "users.CURRENT_TABLE": true,
+          "users.IS_PLAYING": true
+        },
+        "namedIndexesPresent": {}
+      },
+      "anchor": "sql-046"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/押注类一房N桌迁移.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\押注类一房N桌迁移.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Docs\\押注类一房N桌迁移.sql",
+      "mode": "archive",
+      "bytes": 6812,
+      "sha256": "a0d3d7b3919451c02d89c920b485c8854fcd302d94f31c3e4af18986f1944681",
+      "purpose": "押注类一房N桌迁移",
+      "classification": "historical_migration_or_data_repair",
+      "coverageBoundary": "clean保留当前配置；此文件是旧模型/旧现场的一次性配置修复，不作为新装补丁，不假定历史UPDATE与现行配置逐值等价。",
+      "auditEvidence": {
+        "createdTablesPresent": {},
+        "columnsPresent": {},
+        "namedIndexesPresent": {}
+      },
+      "anchor": "sql-047"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/押注类数据修复.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\押注类数据修复.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Docs\\押注类数据修复.sql",
+      "mode": "archive",
+      "bytes": 6800,
+      "sha256": "8fe18b9d045761c5e04fe7f8913835628ebd53a307aa7aeef61456147b9644cc",
+      "purpose": "押注类数据修复",
+      "classification": "historical_migration_or_data_repair",
+      "coverageBoundary": "clean保留当前配置；此文件是旧模型/旧现场的一次性配置修复，不作为新装补丁，不假定历史UPDATE与现行配置逐值等价。",
+      "auditEvidence": {
+        "createdTablesPresent": {},
+        "columnsPresent": {},
+        "namedIndexesPresent": {}
+      },
+      "anchor": "sql-048"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "mth_update_agent_permissions.sql",
+      "source": "E:\\MTH\\MHT-Backend\\mth_update_agent_permissions.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\mth_update_agent_permissions.sql",
+      "mode": "archive",
+      "bytes": 654,
+      "sha256": "f2e83740eb6e794f37e9400461b56f530c12c0b7f684c6bcb58cfd645afdd002",
+      "purpose": "新增代理删除/查看密码/修改密码权限字段",
+      "classification": "historical_migration_with_test_dependency",
+      "coverageBoundary": "clean已包含已识别的目标表/字段/索引（逐项见schemaEvidence）；历史回填/修改配置未重放，不因结构已存在而声称历史DML逐值等价。",
+      "auditEvidence": {
+        "createdTablesPresent": {},
+        "columnsPresent": {
+          "admin.IsDeleteAgent": true,
+          "admin.IsViewAgentPwd": true,
+          "admin.IsModifyAgentPwd": true
+        },
+        "namedIndexesPresent": {}
+      },
+      "anchor": "sql-049"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "mth_update_bet_vicedraw.sql",
+      "source": "E:\\MTH\\MHT-Backend\\mth_update_bet_vicedraw.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\mth_update_bet_vicedraw.sql",
+      "mode": "archive",
+      "bytes": 2875,
+      "sha256": "ea5c2ecdd0b7dbaa4e07555f00cfc0a5369d9be6c0f13cabdbff1d6fef3560fb",
+      "purpose": "设置旧版六狮与单挑房间/按桌限红",
+      "classification": "historical_migration_or_data_repair",
+      "coverageBoundary": "历史固定限红被后续最小押分跟随桌台等规则演进；保留当前配置，不回放。",
+      "auditEvidence": {
+        "createdTablesPresent": {},
+        "columnsPresent": {},
+        "namedIndexesPresent": {}
+      },
+      "anchor": "sql-050"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "mth_update_laba_betscores.sql",
+      "source": "E:\\MTH\\MHT-Backend\\mth_update_laba_betscores.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\mth_update_laba_betscores.sql",
+      "mode": "archive",
+      "bytes": 1957,
+      "sha256": "8cead8ca7b8fc09d202f4dfb846a2f554f89ee68ecd9a2b565082717e48219f2",
+      "purpose": "旧版拉霸按桌筹码初始化",
+      "classification": "historical_migration_or_data_repair",
+      "coverageBoundary": "已被20261029清除按桌筹码、回退房间默认方案取代；不可叠加到clean。",
+      "auditEvidence": {
+        "createdTablesPresent": {},
+        "columnsPresent": {},
+        "namedIndexesPresent": {}
+      },
+      "anchor": "sql-051"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Tools/one-off/_check_winloss.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Tools\\one-off\\_check_winloss.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Tools\\one-off\\_check_winloss.sql",
+      "mode": "archive",
+      "bytes": 1210,
+      "sha256": "2f0c6be38d2a7eea4df092b808c8cbb4185e195f1695f01001a2009173ac0112",
+      "purpose": "历史一次性检查/校准脚本",
+      "classification": "historical_one_off",
+      "coverageBoundary": "归档保留历史用途；没有将脚本重新执行，也不将历史账户/参数当作当前初始化要求。",
+      "auditEvidence": {},
+      "anchor": "sql-052"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Tools/one-off/_probe_accountlog.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Tools\\one-off\\_probe_accountlog.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Tools\\one-off\\_probe_accountlog.sql",
+      "mode": "archive",
+      "bytes": 244,
+      "sha256": "3b3e1f4514232e86ee3da3ed6039fbd1cf0a98b22ade970e389c536a172b171a",
+      "purpose": "历史一次性检查/校准脚本",
+      "classification": "historical_one_off",
+      "coverageBoundary": "归档保留历史用途；没有将脚本重新执行，也不将历史账户/参数当作当前初始化要求。",
+      "auditEvidence": {},
+      "anchor": "sql-053"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Tools/one-off/_probe_agencylog.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Tools\\one-off\\_probe_agencylog.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Tools\\one-off\\_probe_agencylog.sql",
+      "mode": "archive",
+      "bytes": 853,
+      "sha256": "50487093098ac59b931e8c7cb2a621443f8ed5657700a1033ea1fbe976ac509c",
+      "purpose": "历史一次性检查/校准脚本",
+      "classification": "historical_one_off",
+      "coverageBoundary": "归档保留历史用途；没有将脚本重新执行，也不将历史账户/参数当作当前初始化要求。",
+      "auditEvidence": {},
+      "anchor": "sql-054"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Tools/one-off/_probe_lastlogin.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Tools\\one-off\\_probe_lastlogin.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Tools\\one-off\\_probe_lastlogin.sql",
+      "mode": "archive",
+      "bytes": 326,
+      "sha256": "43ff123ab69fdfac8a5f956c6c54234939fcc66d1ec84697a3aabe33f5157b2b",
+      "purpose": "历史一次性检查/校准脚本",
+      "classification": "historical_one_off",
+      "coverageBoundary": "归档保留历史用途；没有将脚本重新执行，也不将历史账户/参数当作当前初始化要求。",
+      "auditEvidence": {},
+      "anchor": "sql-055"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Tools/one-off/_probe_ledger.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Tools\\one-off\\_probe_ledger.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Tools\\one-off\\_probe_ledger.sql",
+      "mode": "archive",
+      "bytes": 493,
+      "sha256": "96613fa21311379a3387e584614f49d52635d55fd993d416f7bdad09a63d1e92",
+      "purpose": "历史一次性检查/校准脚本",
+      "classification": "historical_one_off",
+      "coverageBoundary": "归档保留历史用途；没有将脚本重新执行，也不将历史账户/参数当作当前初始化要求。",
+      "auditEvidence": {},
+      "anchor": "sql-056"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Tools/one-off/_probe_login_tmp.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Tools\\one-off\\_probe_login_tmp.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Tools\\one-off\\_probe_login_tmp.sql",
+      "mode": "archive",
+      "bytes": 655,
+      "sha256": "ae9a915484bc9d81185dadce2db1363fa1c4b3300eab3e0cc985be00b7ccc608",
+      "purpose": "历史一次性检查/校准脚本",
+      "classification": "historical_one_off",
+      "coverageBoundary": "归档保留历史用途；没有将脚本重新执行，也不将历史账户/参数当作当前初始化要求。",
+      "auditEvidence": {},
+      "anchor": "sql-057"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Tools/one-off/_probe_login_trigger.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Tools\\one-off\\_probe_login_trigger.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Tools\\one-off\\_probe_login_trigger.sql",
+      "mode": "archive",
+      "bytes": 1107,
+      "sha256": "8234127ed893eda7ba346e22f82b561067404e4fe46a06029b01ecb29d0b4482",
+      "purpose": "历史一次性检查/校准脚本",
+      "classification": "historical_one_off",
+      "coverageBoundary": "归档保留历史用途；没有将脚本重新执行，也不将历史账户/参数当作当前初始化要求。",
+      "auditEvidence": {},
+      "anchor": "sql-058"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Tools/one-off/_probe_online_perf.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Tools\\one-off\\_probe_online_perf.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Tools\\one-off\\_probe_online_perf.sql",
+      "mode": "archive",
+      "bytes": 794,
+      "sha256": "44eb1dbe9926ccc45ff25122a1d140317f84e831eda1d458527a273c804a8817",
+      "purpose": "历史一次性检查/校准脚本",
+      "classification": "historical_one_off",
+      "coverageBoundary": "归档保留历史用途；没有将脚本重新执行，也不将历史账户/参数当作当前初始化要求。",
+      "auditEvidence": {},
+      "anchor": "sql-059"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Tools/one-off/_probe_opt_semantics.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Tools\\one-off\\_probe_opt_semantics.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Tools\\one-off\\_probe_opt_semantics.sql",
+      "mode": "archive",
+      "bytes": 943,
+      "sha256": "b00621a18b16ba69051636ff93669f9b8b22d5b79e07635dc6ddd1fb271913e7",
+      "purpose": "历史一次性检查/校准脚本",
+      "classification": "historical_one_off",
+      "coverageBoundary": "归档保留历史用途；没有将脚本重新执行，也不将历史账户/参数当作当前初始化要求。",
+      "auditEvidence": {},
+      "anchor": "sql-060"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Tools/one-off/_probe_session.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Tools\\one-off\\_probe_session.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Tools\\one-off\\_probe_session.sql",
+      "mode": "archive",
+      "bytes": 359,
+      "sha256": "8e1d8b14565f99d471d91818ff99ee468d1d62ed5a39767dab2317369706282c",
+      "purpose": "历史一次性检查/校准脚本",
+      "classification": "historical_one_off",
+      "coverageBoundary": "归档保留历史用途；没有将脚本重新执行，也不将历史账户/参数当作当前初始化要求。",
+      "auditEvidence": {},
+      "anchor": "sql-061"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Tools/one-off/_probe_users.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Tools\\one-off\\_probe_users.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Tools\\one-off\\_probe_users.sql",
+      "mode": "archive",
+      "bytes": 279,
+      "sha256": "1ec359153b45585ff30214a88a3e59d682fe4900da72c57e06309e7c44095b65",
+      "purpose": "历史一次性检查/校准脚本",
+      "classification": "historical_one_off",
+      "coverageBoundary": "归档保留历史用途；没有将脚本重新执行，也不将历史账户/参数当作当前初始化要求。",
+      "auditEvidence": {},
+      "anchor": "sql-062"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Tools/one-off/_prod_games_del_probe.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Tools\\one-off\\_prod_games_del_probe.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Tools\\one-off\\_prod_games_del_probe.sql",
+      "mode": "archive",
+      "bytes": 784,
+      "sha256": "62bd2edd8f73c9a21ee8a6be92e8d62905a36224985ffdf854b51f7736848b40",
+      "purpose": "历史一次性检查/校准脚本",
+      "classification": "historical_one_off",
+      "coverageBoundary": "归档保留历史用途；没有将脚本重新执行，也不将历史账户/参数当作当前初始化要求。",
+      "auditEvidence": {},
+      "anchor": "sql-063"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Tools/one-off/_prod_games_enabled.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Tools\\one-off\\_prod_games_enabled.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Tools\\one-off\\_prod_games_enabled.sql",
+      "mode": "archive",
+      "bytes": 92,
+      "sha256": "a2b464979bf102aac0e97ffeba404a5345aef5b336fe2b887fef7b573f11baea",
+      "purpose": "历史一次性检查/校准脚本",
+      "classification": "historical_one_off",
+      "coverageBoundary": "归档保留历史用途；没有将脚本重新执行，也不将历史账户/参数当作当前初始化要求。",
+      "auditEvidence": {},
+      "anchor": "sql-064"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Tools/one-off/_prod_laba_activity_probe.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Tools\\one-off\\_prod_laba_activity_probe.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Tools\\one-off\\_prod_laba_activity_probe.sql",
+      "mode": "archive",
+      "bytes": 570,
+      "sha256": "24855d07483d232bb8560aa67c7c496a0fab79a2f3c2c12b1b622813fdac0917",
+      "purpose": "历史一次性检查/校准脚本",
+      "classification": "historical_one_off",
+      "coverageBoundary": "归档保留历史用途；没有将脚本重新执行，也不将历史账户/参数当作当前初始化要求。",
+      "auditEvidence": {},
+      "anchor": "sql-065"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Tools/one-off/mjhl-calibrate/apply.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Tools\\one-off\\mjhl-calibrate\\apply.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Tools\\one-off\\mjhl-calibrate\\apply.sql",
+      "mode": "archive",
+      "bytes": 7669,
+      "sha256": "aed9dd344e8a8002378162fedece63a652913426a4625008a5227ee1731dec07",
+      "purpose": "历史一次性检查/校准脚本",
+      "classification": "historical_one_off",
+      "coverageBoundary": "归档保留历史用途；没有将脚本重新执行，也不将历史账户/参数当作当前初始化要求。",
+      "auditEvidence": {},
+      "anchor": "sql-066"
+    },
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Tools/one-off/_seed_phone_testdata.py",
+      "source": "E:\\MTH\\MHT-Backend\\Tools\\one-off\\_seed_phone_testdata.py",
+      "targetRoot": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune",
+      "target": "E:\\MTH\\MHT-Backend-db-archives\\20261105-sql-prune\\Tools\\one-off\\_seed_phone_testdata.py",
+      "mode": "archive",
+      "bytes": 25945,
+      "sha256": "3be7fa920e8b350c8754a244ea95bcbf45bfaf7fc97f2f49987eca7390a56164",
+      "purpose": "历史手机联调数据生成器",
+      "classification": "historical_one_off",
+      "coverageBoundary": "归档保留历史用途；没有将脚本重新执行，也不将历史账户/参数当作当前初始化要求。",
+      "auditEvidence": {},
+      "anchor": "sql-067"
+    }
+  ],
+  "retainedDiagnostics": [
+    {
+      "repo": "backend",
+      "repoRoot": "E:\\MTH\\MHT-Backend",
+      "relative": "Docs/sql/专属桌台归属一致性检查-20261105.sql",
+      "source": "E:\\MTH\\MHT-Backend\\Docs\\sql\\专属桌台归属一致性检查-20261105.sql",
+      "targetRoot": "E:\\MTH\\MHT-Backend\\Tools\\db",
+      "target": "E:\\MTH\\MHT-Backend\\Tools\\db\\check-line-ownership.sql",
+      "mode": "relocate",
+      "bytes": 1325,
+      "sha256": "6142561d45aeb1b265754c3ce8e53652731bfa53d6cb7a732c2d9cc0938e30e2",
+      "purpose": "专属桌台归属一致性检查",
+      "classification": "active_readonly_diagnostic",
+      "coverageBoundary": "现行只读诊断仍有用途，检查归属字节不一致/孤儿归属/大小写分裂；不能用clean代替。",
+      "auditEvidence": {
+        "createdTablesPresent": {},
+        "columnsPresent": {},
+        "namedIndexesPresent": {}
+      }
+    }
+  ],
+  "canonicalHashesUnchanged": {
+    "mth_full.sql": "efb4d701f63b11053c79da5625e02d5b36895fef9691431a9a749623b8f210df",
+    "mth_clean.sql": "86bd1bbb5082dbd9f31c7e5a42d9a3556b232cfff60cbabcb0e72060b6c894ec"
+  }
+}

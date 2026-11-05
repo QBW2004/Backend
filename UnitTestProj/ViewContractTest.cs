@@ -24,6 +24,12 @@ namespace UnitTestProj
 
         private static DirectoryInfo FindRepoRoot()
         {
+            string configuredRoot = Environment.GetEnvironmentVariable("MTH_BACKEND_REPO_ROOT");
+            if (!string.IsNullOrWhiteSpace(configuredRoot))
+            {
+                Assert.IsTrue(File.Exists(Path.Combine(configuredRoot, "MTH_Mgr_MySQL.sln")), "Invalid MTH_BACKEND_REPO_ROOT.");
+                return new DirectoryInfo(configuredRoot);
+            }
             DirectoryInfo dir = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory);
             while (dir != null && !File.Exists(Path.Combine(dir.FullName, "MTH_Mgr_MySQL.sln")))
                 dir = dir.Parent;
@@ -36,6 +42,13 @@ namespace UnitTestProj
         {
             DirectoryInfo dir = FindRepoRoot();
             return File.ReadAllText(Path.Combine(dir.FullName, relativePath));
+        }
+
+        private static string ReadCleanSchema()
+        {
+            // Assertions must not echo administrator credentials or seeded configuration on failure.
+            return System.Text.RegularExpressions.Regex.Replace(ReadRepoFile(@"Database\mth_clean.sql"),
+                @"^INSERT INTO[^\r\n]*", "", System.Text.RegularExpressions.RegexOptions.Multiline);
         }
 
         [TestMethod]
@@ -249,7 +262,7 @@ namespace UnitTestProj
             string agencyController = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\AgencyInfoController.cs");
             string adminEntity = ReadRepoFile(@"YYT.Entity\EF\M_Admin.cs");
             string loginUserEntity = ReadRepoFile(@"YYT.Entity\Sys\M_LoginUser.cs");
-            string sqlUpdate = ReadRepoFile(@"mth_update_agent_permissions.sql");
+            string sqlUpdate = ReadCleanSchema();
 
             StringAssert.Contains(adminEntity, "public long? IsDeleteAgent { get; set; }");
             StringAssert.Contains(adminEntity, "public long? IsViewAgentPwd { get; set; }");
@@ -817,7 +830,7 @@ namespace UnitTestProj
             string rechargeBase = ReadRepoFile(@"YYT.BLL\EF\B_Recharge.cs");
             string userController = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\UserInfoController.cs");
             string controlBll = ReadRepoFile(@"YYT.BLL\EF\B_UserControl.cs");
-            string indexSql = ReadRepoFile(@"Docs\sql\性能索引.sql");
+            string indexSql = ReadCleanSchema();
 
             // 2026-11-04 起在线页控制状态随列表一次返回、卡片与角标同刻渲染；旧服务端仍走异步补齐
             StringAssert.Contains(playersScript, "人数、卡片（连同控制角标，playerCardHTML 读 p.ActiveControls）与上面的头部同一刻渲染");
@@ -1560,7 +1573,7 @@ namespace UnitTestProj
             string pool = ReadRepoFile(@"YYT.BLL\EF\B_PrizePool.cs");
             string userControl = ReadRepoFile(@"YYT.BLL\EF\B_UserControl.cs");
             string players = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.players.js");
-            string sql = ReadRepoFile(@"Docs\sql\奖池精准扣除与明细保留-20261103.sql");
+            string sql = ReadCleanSchema();
 
             // 1/2 在线按所在游戏预选“送奖+游戏”，离线/不支持送奖的游戏默认吃分
             StringAssert.Contains(control, "presetMode(row, r.datas.CurrentGameId);");
@@ -1812,7 +1825,7 @@ namespace UnitTestProj
         [TestMethod]
         public void PlayerLastLoginComesFromLoginRecordWithUserOptLogFallback()
         {
-            string sqlPatch = ReadRepoFile(@"Docs\sql\玩家登录时间-20260918.sql");
+            string sqlPatch = ReadCleanSchema();
             string controller = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\UserInfoController.cs");
             string usersBll = ReadRepoFile(@"YYT.BLL\EF\B_Users.cs");
             string playersScript = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.players.js");
@@ -1824,7 +1837,7 @@ namespace UnitTestProj
             // 「最后一次进桌台的时间」，大厅挂机/新号则显示上局旧时间或兜底 2000-01-01。
             // 修法：玩家上线（users.INHALL 0→1）由库内触发器记进 userloginrecord，
             // 后台优先读它，没有记录的账号回退 useroptlog 旧口径。
-            StringAssert.Contains(sqlPatch, "CREATE TABLE IF NOT EXISTS `userloginrecord`");
+            StringAssert.Contains(sqlPatch, "CREATE TABLE `userloginrecord`");
             StringAssert.Contains(sqlPatch, "AFTER UPDATE ON `users`");
             StringAssert.Contains(sqlPatch, "IF NEW.INHALL = b'1' AND (OLD.INHALL IS NULL OR OLD.INHALL = b'0') THEN");
             // users 是游戏服热表（余额/分数都写它），触发器必须自带兜底：
@@ -1891,7 +1904,7 @@ namespace UnitTestProj
             string controller = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\NoticeController.cs");
             string bll = ReadRepoFile(@"YYT.BLL\EF\B_Notice.cs");
             string entity = ReadRepoFile(@"YYT.Entity\EF\M_Notice.cs");
-            string sqlPatch = ReadRepoFile(@"Docs\sql\公告唯一化与字号-20260923.sql");
+            string sqlPatch = ReadCleanSchema();
             string csproj = ReadRepoFile(@"TTY.Web\YYT.Web.csproj");
 
             // 客户端只展示一条公告，后台「全屏公告」页也就没有列表/新增/删除可做了：
@@ -1947,10 +1960,10 @@ namespace UnitTestProj
             Assert.IsTrue(File.Exists(Path.Combine(FindRepoRoot().FullName, @"TTY.Web\Content\fonts\NowarSans-CN-Bold.otf")),
                 "公告预览用的客户端字体没有随站点一起提交");
 
-            // SQL 补丁：加字号列（列不存在时后台读取会报 Unknown column）+ 清掉历史多余公告行
-            StringAssert.Contains(sqlPatch, "ADD COLUMN `FONTSIZE` int(11) NOT NULL DEFAULT 41");
-            StringAssert.Contains(sqlPatch, "DELETE n1 FROM `notice` n1");
-            StringAssert.Contains(sqlPatch, "JOIN `notice` n2 ON n1.ID < n2.ID");
+            // 当前初始化结构：字号默认值；历史重复公告由上述 SaveSingleNotice 合同继续保证。
+            StringAssert.Contains(sqlPatch, "`FONTSIZE` int(11) NOT NULL DEFAULT '41'");
+            StringAssert.Contains(sqlPatch, "CREATE TABLE `notice`");
+            StringAssert.Contains(bll, "ef.Notices.Remove(rows[i])");
         }
 
         [TestMethod]
