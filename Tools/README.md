@@ -1,7 +1,7 @@
 # Tools 目录脚本说明
 
-> 整理时间：2026-08-30。按用途分 5 个子目录；带 `_` 前缀的是历次排查/迁移的一次性脚本，仅留档勿复用。
-> 已移动进子目录的脚本，其内部相对路径（`..\..` 到仓库根）均已同步修正。
+> 2026-11-05 复核。先读 [工作边界](../AGENTS.md)、[当前开发与交付指南](../Docs/architecture/backend-development.md)。本页说明脚本用途；参数、部署副本与目标环境每次核对，目录中的历史脚本不是自动执行清单。
+> 带 `_` 前缀的是历次一次性排查/迁移脚本；需使用时先复核参数、路径、数据范围和副作用。
 
 ```
 Tools/
@@ -17,10 +17,10 @@ Tools/
 
 | 脚本 | 用途 |
 |---|---|
-| `env-check.ps1` / `env-check.bat` | **部署环境检测 + 一键补装**。检测并自动安装缺失必需项（无任何交互确认，直接下载静默安装）：.NET Framework 4.8、VC++ Redist 2015-2022 x64（含 UCRT 检测）、IIS + ASP.NET 4.5、MySQL 5.7（全新装到 `C:\mysql` 并注册 MySQL57 服务、建 mth 库）、防火墙 Web 端口。可安全反复重跑。 |
+| `env-check.ps1` / `env-check.bat` | **部署环境检测 + 一键补装**。默认检测并自动安装缺失组件、注册服务或修改防火墙；只读检查必须用 `-CheckOnly`。安装范围包括 .NET Framework 4.8、VC++ Redist、IIS/ASP.NET、MySQL5.7；先核对目标机器与参数。 |
 | `fix-legacy-ucrt.ps1` / `fix-legacy-ucrt.bat` | **Server 2012 R2 专用** UCRT 补丁链修复（KB2919442 → clearcompressionflag → KB2919355 → … → KB2999226）。一次性系统级变更、装完必重启；KB2919355 有少量存储控制器重启循环的已知问题，故需手动输入 `CONTINUE` 确认。KB2999226 无稳定直链，需手动下载放到本目录 `ucrt-patches\` 下。 |
 | `server_deploy_check.ps1` | 只读采集服务器现状（IIS 站点/应用池、进程、Web 目录 bin 时间戳与 Web.config 关键项、中心服、命名管道、监听端口、日志），结果存桌面 `server_info.txt`。远程排查先跑这个。 |
-| `Start-MTH-Backend.bat` | **服务器重启后桌面双击一键拉起全部服务**（2026-10-21 已放服务器 `C:\Users\Administrator\Desktop\`）。顺序：MySQL57 → W3SVC → Daemon 计划任务 → 等 `MTH_ServerPipe` → 管道 Start-All → Start-Robot → 等 75s 打印 Status + 登录页探测。检测到 `ServerCenterNew.exe` 已在跑会跳过 Start-All 防双开（Daemon 无托管状态时重发会双开）。纯 ASCII，不要改回中文提示。 |
+| `Start-MTH-Backend.bat` | 启动 MySQL/IIS、Daemon 托管游戏与独立 Robot。先核对实际服务器脚本、Daemon列表和既有进程，防止无托管旧进程重复启动；旧桌面副本的日期不能证明它与仓库相同。纯 ASCII 包装保持原编码。 |
 
 `env-check.ps1` 参数：
 - 默认行为：管理员权限下检测到缺失必需项直接下载安装，全程无需确认
@@ -45,8 +45,8 @@ Tools/
 | `deploy.ps1` / `deploy.bat` | 把 TTY.Web zip 或解压目录部署为 IIS 站点：备份旧版到 `C:\Backend_backup_<时间戳>` → robocopy /MIR 到 `C:\Backend`（保留 `App_Data`/`Logs`/`Upload`）→ 校验应用池 v4.0/64 位 → 绑定 8081 → 放行防火墙 → 回收应用池 → HTTP 探测。`-CheckOnly` 只看状态；`-Yes` 免确认；`-NoBackup` 跳过备份；`-Port` 默认 8081。旧备份不会自动清理，需手动删。 |
 | `pack.ps1` | 本地把 `TTY.Web` 打成部署 zip（排除 Logs/obj/.vs 并校验关键文件齐全）。用法：`powershell -File Tools\deploy\pack.ps1 -Version 1.0.16`。可选 `-SourcePath <完整站点目录>` 支持按线上基线隔离打包，避免夹带其它待上线改动；不传时仍使用本仓库 `TTY.Web`。（原名 `_pack.ps1`，归入长期脚本后去掉下划线前缀。） |
 
-典型发布链路：`Tools\dev\build.bat` → `Tools\deploy\pack.ps1 -Version x.x.x` → 上传 zip → 服务器管理员运行 `deploy.bat "C:\...\TTY.Web_x.x.x.zip" [-y]`。
-部署前记得先在 MySQL57 的 mth 库执行 `Docs/sql/性能索引.sql`（幂等）。
+发布链路以确认的线上基线准备隔离完整站点，再用 `pack.ps1 -Version <版本> -SourcePath <隔离站点>` 打包并核对依赖。实际上传/部署只在用户已授权范围执行；不能默认把整个工作区作为发布源。
+SQL按本次迁移清单及实际缺项执行，先备份；`Docs/sql/性能索引.sql` 是历史补丁，不是每次部署的前置命令。
 
 ## dev/ — 本地开发 / 构建
 
@@ -63,7 +63,7 @@ Tools/
 | `docker-db.bat` / `docker-db.ps1` | Docker MySQL 5.7 容器管理（start/stop/status/reinit；首启自动导入 `docker/mysql/init` SQL，reinit 危险会清库）。容器必须带 `--lower-case-table-names=1`，compose 已配置。 |
 | `start-db.bat` / `start-db.ps1` | 本机（非 Docker）MySQL 服务启停/状态。 |
 | `export-db.bat` / `export-db.ps1` | mysqldump 导出库（默认输出到本目录）。 |
-| `reset-db.bat` / `reset-db.ps1` | 重建/重置 mth 库（`-Force` 实际执行，`-DryRun` 预览）。第 3 步会依次应用 `Docs/sql/` 下的 4 个迁移补丁（2026-08-30 修正：此前补丁路径指向 `Tools\Docs` 不存在，第 3 步实际从未执行过）。 |
+| `reset-db.bat` / `reset-db.ps1` | 重建/重置隔离库（先读 `-Force`/`-DryRun` 与输入库路径）。补丁以脚本 `$patches` 列表为准，当前列5份；不保证与Docker初始化目录的全部文件一致，也不等于包含后续所有业务迁移。 |
 
 ## one-off/ — 一次性脚本（`_` 前缀，仅留档，勿复用）
 

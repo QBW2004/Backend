@@ -1,0 +1,828 @@
+[
+  {
+    "path": "Docs/01-改造总览与需求审查.md",
+    "bytes_before": 13092,
+    "source_sha256": "7069be792ffc9f0c5aaf0c7d2a8983a951d901c835b2636b0b8dedfdc2ec09c0",
+    "disposition": "删除：已合并或重复",
+    "basis": "Docs/architecture/backend-features.md"
+  },
+  {
+    "path": "Docs/02-动态桌台机台配置-实现进度.md",
+    "bytes_before": 14994,
+    "source_sha256": "a45e2f0a3af38b5812e246dbc0543907315737ea5d4f055d4ae5783dc5d50efa",
+    "disposition": "删除：已合并或重复",
+    "basis": "Docs/architecture/backend-features.md"
+  },
+  {
+    "path": "Docs/03-数据库脏数据清洗-幽灵桌台归档.md",
+    "bytes_before": 5359,
+    "source_sha256": "552ebed7a8eaba9ae0c90ce7427ac14c909ee8c5abc0aabfcf53bd44cc3635e5",
+    "disposition": "保留：数据/环境/验收参考",
+    "basis": "不机械重跑历史操作"
+  },
+  {
+    "path": "Docs/04-需求完成度审计与下一步实施规划.md",
+    "bytes_before": 13195,
+    "source_sha256": "8c12ede5037b82f9f3060e2585c11e3c1c752b5df4b17fb7502573a60684a631",
+    "disposition": "删除：已合并或重复",
+    "basis": "Docs/architecture/backend-features.md"
+  },
+  {
+    "path": "Docs/05-在线用户监管与代理客服-实现进度.md",
+    "bytes_before": 3260,
+    "source_sha256": "d554d0b2b88df3cfd3027be893d5768280f8a5770ee3c212482d4256719028d2",
+    "disposition": "删除：已合并或重复",
+    "basis": "Docs/architecture/backend-features.md"
+  },
+  {
+    "path": "Docs/06-05-文档审计与修复规划.md",
+    "bytes_before": 7794,
+    "source_sha256": "ea987869f2adccade187e254a124abd0c712bab622e5ddc1679254346b11cb9f",
+    "disposition": "删除：已合并或重复",
+    "basis": "Docs/architecture/backend-features.md"
+  },
+  {
+    "path": "Docs/07-拉霸游戏配置页面统一化-修改方案.md",
+    "bytes_before": 20681,
+    "source_sha256": "495c777c630f2c875fb31d2494f950785e98fa4dc6a56a9e92a6fe843c519c5c",
+    "disposition": "删除：已合并或重复",
+    "basis": "Docs/architecture/backend-features.md"
+  },
+  {
+    "path": "Docs/12005解冻后登录失败热修-20261103.md",
+    "bytes_before": 2794,
+    "source_sha256": "54eba575948d272e5019b170a9fd1f6175a71afa9cb463b56552bb2641f8a1a8",
+    "disposition": "保留：发布/事故证据",
+    "basis": "时间、产物、迁移与验证证据"
+  },
+  {
+    "path": "Docs/ATT满花版18项双端实测与热修-20261104.md",
+    "bytes_before": 9003,
+    "source_sha256": "dde8b0ed11333cfad3618ffab96b2cecdcf2373b8c3ccdbee34375f6ce178189",
+    "disposition": "保留：发布/事故证据",
+    "basis": "时间、产物、迁移与验证证据"
+  },
+  {
+    "path": "Docs/ATT满花版控牌牌型补全-20261103.md",
+    "bytes_before": 6108,
+    "source_sha256": "0dc6f075d600d93e63d5f7a3befb813460fba91629b99d72a45e72aba224ce13",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/ATT满花版控牌线上核对-20261104.md",
+    "bytes_before": 5232,
+    "source_sha256": "aab2b614b0b09945e2100ffad677b392ae82ab21ebc4e733163d519c46346ade",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/ATT满花版配置重排与大白兔新增档位-20261103.md",
+    "bytes_before": 4440,
+    "source_sha256": "ee82de751a0f2f9c9fd52b0b5711bf377fd2832fc7e923d7b4a241588e07cdcc",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/bet_payout_disable_guide_20260811.md",
+    "bytes_before": 5296,
+    "source_sha256": "2300a9c97bd042251359d0b6a7e8ba3197231eee22d13a968702e4fb9740d276",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/docker-mysql.md",
+    "bytes_before": 6602,
+    "source_sha256": "5ab194a903991b33363d4b1276414c6a160851cffd91a1a552f166e82783152a",
+    "disposition": "保留：数据/环境/验收参考",
+    "basis": "不机械重跑历史操作"
+  },
+  {
+    "path": "Docs/Shz桌台改名失效与拉霸配置链路诊断.md",
+    "bytes_before": 17014,
+    "source_sha256": "44c053c7ed5fec77719adee7fbfe9b7c4cad959b9ee647c5c137e081ec1cdb6e",
+    "disposition": "删除：已合并或重复",
+    "basis": "Docs/architecture/backend-features.md"
+  },
+  {
+    "path": "Docs/Shz桌台改名失效修复方案.md",
+    "bytes_before": 14754,
+    "source_sha256": "70b5c31cfa841f4acb0485c4853ad098ed6bc566e9ba9d33f16b769534bd429f",
+    "disposition": "删除：已合并或重复",
+    "basis": "Docs/architecture/backend-features.md"
+  },
+  {
+    "path": "Docs/专属桌台复制收回无响应修复-20261104.md",
+    "bytes_before": 3699,
+    "source_sha256": "9ea726864e93742ee7924f9356ad70710ef845e13fe85af257cf23a1ef58feb5",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/专属桌台新建与按钮显隐修复-20261105.md",
+    "bytes_before": 7864,
+    "source_sha256": "646d635f45aaf9649b67cafaf6725a046fe3ff33022e8895dfb14cd3b6ee54e6",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/中奖历史50倍过滤-20261102.md",
+    "bytes_before": 2888,
+    "source_sha256": "6335e57f0a92da7f0946633a5cac003c80925cae86cf629718a4c78ce094e725",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/中奖播报与后台发布-20261031.md",
+    "bytes_before": 6088,
+    "source_sha256": "7e423da4d0f01c9492ff9633345e62de24dfa132379743fd78d2979dee32d667",
+    "disposition": "保留：发布/事故证据",
+    "basis": "时间、产物、迁移与验证证据"
+  },
+  {
+    "path": "Docs/代理送奖奖池与手机控制页-20261102.md",
+    "bytes_before": 8689,
+    "source_sha256": "e1e16636c4871c5029b181bea654e432f913314cc528df641577422390a3bef4",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/优化完成总结.md",
+    "bytes_before": 6831,
+    "source_sha256": "12e73ef6f71d7d236286d0f292acca288f2bec164c519d16ed3b3e6e0b3e7da8",
+    "disposition": "删除：已合并或重复",
+    "basis": "Docs/architecture/backend-development.md"
+  },
+  {
+    "path": "Docs/全民赛跑剩余数量显示修复-20261105.md",
+    "bytes_before": 6941,
+    "source_sha256": "c8cb008ac88719a515d14f64dfb12b4d48af6ae1f240d5edced9823641aed534",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/全民赛跑活动配置-20261103.md",
+    "bytes_before": 9214,
+    "source_sha256": "2a078d3c59befeebcc1d31da761a1a7ee25e25a34182efeb7d08c45725a16b1b",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/公告单条化与字号-20260923.md",
+    "bytes_before": 12028,
+    "source_sha256": "fe838fec32f56d99a4803f8d6e9ed024a1d765563f97765fd8be6a5f25cb3e20",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/吃分控制全开放游戏审查-20261103.md",
+    "bytes_before": 10739,
+    "source_sha256": "eeea25f4853ef0e5d1638d817eeabace11f03ba5a3effba91753070ad141343c",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/吃分提前完成与并发误关闭修复-20261104.md",
+    "bytes_before": 7814,
+    "source_sha256": "cb9b652f014fef29481cc17f30943288fc1625d7267bdc610e30b987b3483a96",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/吃分放水全开放游戏复核-20261104.md",
+    "bytes_before": 13741,
+    "source_sha256": "0a8ba6e9575fd8c4750578d9fdd9b790c5b34982a82e4add6ff33ace1260c7e5",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/后台1.0.101与批量发布-20261103.md",
+    "bytes_before": 3966,
+    "source_sha256": "fdc9d7cbb4f1ae5bc0bd0ef4f86a26c8e81bc7ef7d58f528a6e1be61a38f2c0f",
+    "disposition": "保留：发布/事故证据",
+    "basis": "时间、产物、迁移与验证证据"
+  },
+  {
+    "path": "Docs/后台1.0.104与批量发布-20261104.md",
+    "bytes_before": 4674,
+    "source_sha256": "262c412cb9c801118c26c0c252d1831db486b45f2979097c69b3baf675d608a7",
+    "disposition": "保留：发布/事故证据",
+    "basis": "时间、产物、迁移与验证证据"
+  },
+  {
+    "path": "Docs/后台1.0.105与服务端发布-20261105.md",
+    "bytes_before": 6636,
+    "source_sha256": "8bbb9169191952e22f022a08ef790689b7167e9ff01b60898c419e4035ac1428",
+    "disposition": "保留：发布/事故证据",
+    "basis": "时间、产物、迁移与验证证据"
+  },
+  {
+    "path": "Docs/后台1.0.106与服务端发布-20261105.md",
+    "bytes_before": 6323,
+    "source_sha256": "f7d02127efea84f832d70babaa9afd8ad61046039c8d9e67a81cc5a40612dd68",
+    "disposition": "保留：发布/事故证据",
+    "basis": "时间、产物、迁移与验证证据"
+  },
+  {
+    "path": "Docs/后台1.0.107热修-新建桌台-20261105.md",
+    "bytes_before": 3763,
+    "source_sha256": "82a1e904e1b7e959084720f97f427cd693e348a9a252682f5f06501c5df331c9",
+    "disposition": "保留：发布/事故证据",
+    "basis": "时间、产物、迁移与验证证据"
+  },
+  {
+    "path": "Docs/后台1.0.79与火凤凰发布-20261031.md",
+    "bytes_before": 4503,
+    "source_sha256": "af64da4e8cb9439605b3368447dd6a8d77c94f08bdc51f7c36bbc8da3848bce4",
+    "disposition": "保留：发布/事故证据",
+    "basis": "时间、产物、迁移与验证证据"
+  },
+  {
+    "path": "Docs/后台与服务端发布-20261030.md",
+    "bytes_before": 6128,
+    "source_sha256": "8196c3dd7bde4184d08b25b32f8294fa2be5c17370697003b54ed50d00304335",
+    "disposition": "保留：发布/事故证据",
+    "basis": "时间、产物、迁移与验证证据"
+  },
+  {
+    "path": "Docs/多客户端包与代理线隔离-20261030.md",
+    "bytes_before": 11463,
+    "source_sha256": "c0900dfafc95ed417ceebf861bfd75db8569b648077dc85c17529dcc862f010f",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/大厅排行榜-三端联调.md",
+    "bytes_before": 7810,
+    "source_sha256": "72392f6eb1ec30419e92d2b6a7d91cb4b4a2f6960a5e03c93b600a95358c3073",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/大奖榜与播报统一事件-20261031.md",
+    "bytes_before": 1968,
+    "source_sha256": "6e8055234ffb022d4137acdef00b4632b057c08db07ea83d62b45cda4eea4860",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/大白兔剩余牌型48项双端实测-20261104.md",
+    "bytes_before": 6507,
+    "source_sha256": "82c491ce4aed6f9133512c430376e0d1b115727265e7b39179b1502fe8967f1e",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/大白兔剩余牌型双端预算-20261104.md",
+    "bytes_before": 2026,
+    "source_sha256": "4fb21ee3b088b707bb778952821e8ea8bf2b6c43bad51c390d2cef3de0fa2090",
+    "disposition": "保留：待发或授权预算证据",
+    "basis": "独立交付/资金边界证据"
+  },
+  {
+    "path": "Docs/大白兔小四梅50倍与连庄控牌-20261103.md",
+    "bytes_before": 6484,
+    "source_sha256": "42aad14348872b0ef4c3ddf9f3702d26564652fd989fa8e59758d961136df3d5",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/大白兔控牌修复与双端实测-20261104.md",
+    "bytes_before": 9792,
+    "source_sha256": "9df5c0795d32bcaed37e382ed6a1fcb2b2c932e6bfa2c40dbfc4d3fd30479ab6",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/大白兔控牌牌型-20261102.md",
+    "bytes_before": 5015,
+    "source_sha256": "1fc9b934437d7d1e022a445713f75c5ab7d35502408437c7a3eb8e843f407700",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/大白兔控牌线上检查-20261104.md",
+    "bytes_before": 7993,
+    "source_sha256": "bdbbd70ea4d2ebb30cef377511676b8f8d9a1acae5ae59bee4f15d2d6e86ed01",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/大白兔玩法规则全面检查-20261105.md",
+    "bytes_before": 9150,
+    "source_sha256": "9c3bad17dcbcd1461ffa351fcc5c7d16759fb90879ca2a43a5f72de1fdf8e30a",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/大白兔规则读取与JSON回包修复-20261104.md",
+    "bytes_before": 4047,
+    "source_sha256": "ecd2e25d13f4aabc8514a1ef53de32cc5bf17e3918c0ea4bb5c6be3ed49276d7",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/大白兔规则配置表单化-20261103.md",
+    "bytes_before": 2979,
+    "source_sha256": "2ab1edceb9136e06d73e7a4131ebb884a26d73a4f4eb5f416df438b5d600ec2e",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/大白兔进桌赛跑配置误校验修复-20261105.md",
+    "bytes_before": 1171,
+    "source_sha256": "77db46ef4964f61de785cc69726b37715cac72427f16eb9d41214b9091cbfee4",
+    "disposition": "删除：已合并或重复",
+    "basis": "../MTH-Server/docs/大白兔进桌赛跑配置误校验修复-20261105.md"
+  },
+  {
+    "path": "Docs/大白兔连庄缓存与过关门槛修复-20261105.md",
+    "bytes_before": 6338,
+    "source_sha256": "78556c3daf722d05d922130e905f7f88c85ae513c56a3979d30e59fd13d0ad28",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/大白兔配置重排与牌型RTP-20261103.md",
+    "bytes_before": 7082,
+    "source_sha256": "73c4fc872d6dd9bcec63359622ccae1968036098ec1c9a32ac81fa4010958085",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/大白兔随时退出与自动收分-20261105.md",
+    "bytes_before": 724,
+    "source_sha256": "ec125aba5d08294ef6deac4c65f68ff017e960c7814bdd3241ac15892178fb92",
+    "disposition": "删除：已合并或重复",
+    "basis": "../MTH-git/Docs/大白兔随时退出与自动收分-20261105.md"
+  },
+  {
+    "path": "Docs/客户端-客服链接空值处理-对接说明.md",
+    "bytes_before": 3730,
+    "source_sha256": "937919857b07ca390b3017cacfe4e6784a9d8ef6f7858c5cb23b1765f2ec3202",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/性能优化验收测试.md",
+    "bytes_before": 7555,
+    "source_sha256": "bde62e1d608ffc6ba83d272bf8fd451e0c24323ec461232e87ce16b43099c988",
+    "disposition": "删除：已合并或重复",
+    "basis": "Docs/architecture/backend-development.md"
+  },
+  {
+    "path": "Docs/总控目标按钻累计-20261102.md",
+    "bytes_before": 3842,
+    "source_sha256": "b37f2f4dab55bc82e4daf0942e5cba58b81a44af046a11d78242eb93dbca2240",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/手机端中奖历史数据契约-20260901.md",
+    "bytes_before": 1780,
+    "source_sha256": "a4e95a3c57846b2b01f6e5bc3e05fd1615ba6846aceaa324d48a4f86b7526c8a",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/手机端性能优化-20260829.md",
+    "bytes_before": 6435,
+    "source_sha256": "fe28716091d4cb91910284a515a609cabb84eed81364407eefbba9a70f498935",
+    "disposition": "保留：数据/环境/验收参考",
+    "basis": "不机械重跑历史操作"
+  },
+  {
+    "path": "Docs/手机端操作管理与奖池记录-20261103.md",
+    "bytes_before": 4837,
+    "source_sha256": "6a1a3846fd8932ed807ba23cfaee0532b77f6ef13e90e78fc26a5b89fc421dfd",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/手机端操作管理与时间筛选调整-20261104.md",
+    "bytes_before": 19143,
+    "source_sha256": "6214298b30fb48635db5e9a436237b4ca92672b618810cdbf82689e94c53959a",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/拉霸三款-相对权重与理论RTP.md",
+    "bytes_before": 8908,
+    "source_sha256": "758dc6fee52a524eb746f5e3f79c02b23f683379dabd6f0b6d15c9d8f1258c79",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/拉霸总押分口径-20261029.md",
+    "bytes_before": 4015,
+    "source_sha256": "27f9c8eea3070a7a23a953d81b7593f39005ac3cddee138c829019d7c1533953",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/拉霸机器人按总数设置-20261031.md",
+    "bytes_before": 4438,
+    "source_sha256": "2d60e4aa294cb53118b7748c7e12d554bf3fa7be8335f0db857a4d017d08be64",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/拉霸桌台配置排版与统一保存-20261103.md",
+    "bytes_before": 4135,
+    "source_sha256": "90ca194f5dde1d175aaedf01d31caea18e5fcbb0302aa9564b46a6e3c380c339",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/拉霸类后台游戏配置分类型改造方案.md",
+    "bytes_before": 25397,
+    "source_sha256": "3715a1d5639ea8d533651b0a797fba18f9165b93f281373183ea11ff37a90d22",
+    "disposition": "删除：已合并或重复",
+    "basis": "Docs/architecture/backend-features.md"
+  },
+  {
+    "path": "Docs/控牌收益计入放水-20261101.md",
+    "bytes_before": 4426,
+    "source_sha256": "bdf3e54c47719155f1f0c63fe779db57cb1b673d00637235ab29f9d40ffe30bf",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/播报与排行榜仅显示机台号-20261031.md",
+    "bytes_before": 2541,
+    "source_sha256": "d56894ec0401b549537a92e10dd16da73b70fa78e462c49b7b7e27ab7a951c8a",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/文案金币改钻-20261102.md",
+    "bytes_before": 3527,
+    "source_sha256": "61735e7878fc0d6091fd5ab67eb2a0999a15a0e5516a3735a838eab76364b8cf",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/明星97水浒传桌台玩法说明-20261102.md",
+    "bytes_before": 3391,
+    "source_sha256": "a009030da413e3f204952c88b31a892145e166965236bdcd2f18f08505bfed0f",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/机器人全局打乱名额修复与人数恢复-20261104.md",
+    "bytes_before": 6655,
+    "source_sha256": "83c2e7962b82e029c75341bf6f19eb97407a341037701b3b9a42f83793135484",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/机器人座位管理与每日打乱-20261031.md",
+    "bytes_before": 12003,
+    "source_sha256": "6230be564f32ad873b96d1073d1178afde0db2671450ae9024f1649b784f71d5",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/机器人播报扣减全民赛跑名额-20261105.md",
+    "bytes_before": 7251,
+    "source_sha256": "cea9af66e152b26e20375dbbc56f9670dd6d785c456619a0df5702ee808b9370",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/机器人最大游玩时间与超时换人-20261103.md",
+    "bytes_before": 8004,
+    "source_sha256": "eb4a0f043de5ce14fe51befc142718c332e4ff1f3da7cbd99a400a291edb642d",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/机器人管理页面整理-20261101.md",
+    "bytes_before": 8733,
+    "source_sha256": "de0e17372aa8b56a6aa1aa52fd88de5da4c1b8cb4b15bcf4e19a9a089ccb1f05",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/机器人账户批量创建与删除发布-20261101.md",
+    "bytes_before": 1465,
+    "source_sha256": "dcab44fb509ee62c8416cbac5f3dfa3450860532172e7ba19d10cce2ce0903ff",
+    "disposition": "保留：发布/事故证据",
+    "basis": "时间、产物、迁移与验证证据"
+  },
+  {
+    "path": "Docs/机器人账户批量删除缺失依赖修复-20261101.md",
+    "bytes_before": 3816,
+    "source_sha256": "c5b79d2338822a9e216edbbfbc4c532288b841b17cbde953b670e6c1f0eac0e6",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/游戏配置新建桌台自动命名与批量-20261105.md",
+    "bytes_before": 3139,
+    "source_sha256": "e1de54f0baea87456f33cdffd073574ba1cb1a5ebcd863c197e772ae5c47243a",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/火凤凰桌台配置重排与正宗RTP-20261103.md",
+    "bytes_before": 2864,
+    "source_sha256": "c014762a3cec3bcb873625317cd2091e1d29eb43aa9979538b6ea1405f7b9975",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/火凤凰正宗大四梅权重配置-20261103.md",
+    "bytes_before": 3084,
+    "source_sha256": "a314de1fec35febe746f5a708e2962522727aeb0df2b25eb1fe214758d6643b6",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/点石成金名称发布-20261029.md",
+    "bytes_before": 4725,
+    "source_sha256": "ac0de2525885ed2336e14129a3d3594a3e4ebcbd8f194032c7b8119b5d503649",
+    "disposition": "保留：发布/事故证据",
+    "basis": "时间、产物、迁移与验证证据"
+  },
+  {
+    "path": "Docs/牌机机器人发布-20261030.md",
+    "bytes_before": 4977,
+    "source_sha256": "b259253f4970583397f416bd609740ef589f190241a5c06ec54ee77ec26b81ef",
+    "disposition": "保留：发布/事故证据",
+    "basis": "时间、产物、迁移与验证证据"
+  },
+  {
+    "path": "Docs/牌机机器人按数量随机入座-20261030.md",
+    "bytes_before": 4743,
+    "source_sha256": "f3901b4eee17b8c748939f4b92af23352a91c4729f00a5fe7b88032c8610794c",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/牌机机器人数量框禁用修复-20261030.md",
+    "bytes_before": 2970,
+    "source_sha256": "35c52098420f7fcdc4d48f6c1fdccb1398f090f730689567a0559ba9151e9ace",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/牌机热更新服务端验证清单.docx",
+    "bytes_before": 16987,
+    "source_sha256": "b547e4405392b90c665db43dacbda36036a0003e70ca78230d494bb878fb208a",
+    "disposition": "保留：数据/环境/验收参考",
+    "basis": "不机械重跑历史操作"
+  },
+  {
+    "path": "Docs/牌机送牌换牌命中与离场记账修复-20261104.md",
+    "bytes_before": 6630,
+    "source_sha256": "dca55828b8dc1788fe37e7ceced8ba2a3344e0ac8e843a22b75d0be01c8aa48a",
+    "disposition": "删除：已合并或重复",
+    "basis": "../MTH-Server/docs/牌机送牌换牌命中与离场记账修复-20261104.md"
+  },
+  {
+    "path": "Docs/玩家中奖历史共用大奖规则-20261031.md",
+    "bytes_before": 3079,
+    "source_sha256": "3205596f294fe989d0a659170433a420aa71562ccbed07da867c9a21c4a6c2f9",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/玩家列表性能优化-20260906.md",
+    "bytes_before": 10992,
+    "source_sha256": "e731a59e13ccda1d5e38a41bf0981a18684379d2b04b8ec58701398c8c97b211",
+    "disposition": "删除：已合并或重复",
+    "basis": "Docs/architecture/backend-development.md"
+  },
+  {
+    "path": "Docs/玩家昵称设置状态-20261101.md",
+    "bytes_before": 2782,
+    "source_sha256": "c3c2a438115d22b962042b188d151d4e470244f6d8b45265ba76d2df58413216",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/玩家盈亏统一币口径修复-20261102.md",
+    "bytes_before": 7128,
+    "source_sha256": "4172e8c0fb39480e3afa48077827e5d11ede6cff0f3fe9699de15e4539c79889",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/真实分数播报与后台发布-20261030.md",
+    "bytes_before": 5313,
+    "source_sha256": "309061396dc8d2ff72707e15c02b123efdeec11260d885bbcb95fa2ce34c00d2",
+    "disposition": "保留：发布/事故证据",
+    "basis": "时间、产物、迁移与验证证据"
+  },
+  {
+    "path": "Docs/线上玩家盈亏数据核查-20261102.md",
+    "bytes_before": 7905,
+    "source_sha256": "e81478be35dac775d6d938c9af7da57d4dcfa7cfe09a60593fd655359547c6cc",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/线上部署指南.md",
+    "bytes_before": 8447,
+    "source_sha256": "8fb0c647c045b04e4453a26c87f88a3d6b9f46be836d4026bbf5d0f035027c96",
+    "disposition": "删除：已合并或重复",
+    "basis": "Docs/architecture/backend-development.md"
+  },
+  {
+    "path": "Docs/超管客服链接清除-20261104.md",
+    "bytes_before": 1909,
+    "source_sha256": "34e2e145c02931944691fa7befbba34778687d8d7b02cd53e717b51c422732df",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/送奖管理参考样式-20261102.md",
+    "bytes_before": 2898,
+    "source_sha256": "db1f05c2a51c1f49bfacb8c5aad4350b95529ca0a770349774b78545acd9afa2",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/送奖记录回写与重复扣奖池修复-20261104.md",
+    "bytes_before": 6508,
+    "source_sha256": "2c50f3ab6b5b1c5b847b306b2baebdca973fe447b9ea997a3b2fc15d098cfaf2",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/送奖记录行内移除-20261103.md",
+    "bytes_before": 2748,
+    "source_sha256": "24cc0c8d800af4d384f8092e2375436e92f0a82e2d3f19cc6d85c1bfa5c24687",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/配套后台1.0.77发布-20261031.md",
+    "bytes_before": 6508,
+    "source_sha256": "4bb07e46434e6553ed3682554033f8ac4c9bcedc9fb98759f97f946d452314de",
+    "disposition": "保留：发布/事故证据",
+    "basis": "时间、产物、迁移与验证证据"
+  },
+  {
+    "path": "Docs/鱼机小放中倍率19.5调整-20261104.md",
+    "bytes_before": 2908,
+    "source_sha256": "631d12a06166626a42911467a3710126cb75f0178c90a9624046b7ecefc89e7d",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/麻将胡了0.4分押注-20261030.md",
+    "bytes_before": 6179,
+    "source_sha256": "76fcaab56dbd90a56fa4018674aefe754268a3ab55407524331addf180416c20",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/麻将胡了R7三端合入-20261102.md",
+    "bytes_before": 8747,
+    "source_sha256": "4134b2fd4bb55cf699dbe4741f5dbadb28b2620d109de402fedbfae440a97ce7",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/麻将胡了RTP三秒估算-20261104.md",
+    "bytes_before": 4871,
+    "source_sha256": "4bd360d60af2d9379b8aefa2a29d8bdc18c0b170936d45504a6157cc189818f4",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/麻将胡了RTP正式复核加速-20261105.md",
+    "bytes_before": 10548,
+    "source_sha256": "8b73ea0bf7fc35d87c43c06277bf44eb3c6c43e8d9519fb1b046e62ea8f753ea",
+    "disposition": "保留：待发或授权预算证据",
+    "basis": "独立交付/资金边界证据"
+  },
+  {
+    "path": "Docs/麻将胡了修正发布-20261030.md",
+    "bytes_before": 6011,
+    "source_sha256": "0b6694e196ed07bca874a08e5eb8f92d0d8df58281cc2fb11ef7afb5610731fd",
+    "disposition": "保留：发布/事故证据",
+    "basis": "时间、产物、迁移与验证证据"
+  },
+  {
+    "path": "Docs/麻将胡了出货率与押注-20261029.md",
+    "bytes_before": 10170,
+    "source_sha256": "221ef47477a15ca7138f98f2faed55b1447d078c640072efdbb6a2b0e6b02592",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/麻将胡了原规则修正-20261030.md",
+    "bytes_before": 7546,
+    "source_sha256": "8fb15e710a4ba7af6c2cba628f3c5ffe2e9ece90922d9b8d5465d7a4b69edcb3",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/麻将胡了复制默认与恢复默认配置-20261104.md",
+    "bytes_before": 5780,
+    "source_sha256": "9a57203387680af95d2c10bd8cb40b042e022a0760fe13b7662b0c39d8ea82f9",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/麻将胡了多人独立游玩-20261105.md",
+    "bytes_before": 1447,
+    "source_sha256": "123ae9a6a1106810a453d8cfd0ae86c9ae0bd4ec2eefe9738fb65985bbc0b018",
+    "disposition": "删除：已合并或重复",
+    "basis": "../MTH-Server/docs/麻将胡了多人独立游玩-20261105.md"
+  },
+  {
+    "path": "Docs/麻将胡了小额押注与离场取整-20261030.md",
+    "bytes_before": 7387,
+    "source_sha256": "c6732467803b35456bfb77143f6f9544afbcc1f4a9b5ee83b84ae3c500dccd1a",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/麻将胡了控牌-20261027.md",
+    "bytes_before": 7825,
+    "source_sha256": "c83c00142b1a72990d9a2301fd636e0755338db85bef27cf93df47d3edbf3eab",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/麻将胡了金币显示口径-20261031.md",
+    "bytes_before": 3882,
+    "source_sha256": "872c8afa818fa6b858b5afcb07257d701e10b66de317047f32ac3f4fbe1872d3",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/麻将胡了金币比例发布-20261031.md",
+    "bytes_before": 4294,
+    "source_sha256": "22e6c4d07bd366ebe357b610313275f0483f3001e172076a5b90371947ac8850",
+    "disposition": "保留：发布/事故证据",
+    "basis": "时间、产物、迁移与验证证据"
+  },
+  {
+    "path": "Docs/麻将胡了默认代理线与桌台参数-20261103.md",
+    "bytes_before": 5006,
+    "source_sha256": "cbe78e7c8a3a4f1d63978081b5ce6557d2723cd338cac3d8068d822a8d29399c",
+    "disposition": "保留：专题实施与验证证据",
+    "basis": "独立领域信息；不因日期或无链接删除"
+  },
+  {
+    "path": "Docs/agents/AGENTS-history-20261105.md",
+    "bytes_before": 169520,
+    "source_sha256": "8c4c4d2ee789141211719a989c3c67db355a128f174cefbc55231841e9b5677b",
+    "disposition": "删除：已合并或重复",
+    "basis": "AGENTS.md; Docs/maintenance/README.md"
+  },
+  {
+    "path": "Docs/agents/README.md",
+    "bytes_before": 6238,
+    "source_sha256": "3474036a68ef33767f7e2d1f00fa257fd2f6507b04af130c2b1ffcf150c3e305",
+    "disposition": "删除：已合并或重复",
+    "basis": "Docs/README.md"
+  },
+  {
+    "path": "Docs/手机端后台需求规划-20260902/design.md",
+    "bytes_before": 11809,
+    "source_sha256": "9fd842a99ffbb19d5c45f59f028468e14c90bdd42786514e30b1c54eb92e2a4f",
+    "disposition": "保留：历史业务需求与验收",
+    "basis": "历史状态按现行源码与后续证据解释"
+  },
+  {
+    "path": "Docs/手机端后台需求规划-20260902/requirements.md",
+    "bytes_before": 9743,
+    "source_sha256": "95ca8f4d9b129fad0d47b3f2b3cad88bbeff8fbc6d14a1aa97862eb4c27faab0",
+    "disposition": "保留：历史业务需求与验收",
+    "basis": "历史状态按现行源码与后续证据解释"
+  },
+  {
+    "path": "Docs/手机端后台需求规划-20260902/tasks.md",
+    "bytes_before": 63634,
+    "source_sha256": "78ddf37f8e148c61661524893311da6d205882a46de5dfeec8447e9b2ddf9b32",
+    "disposition": "保留：历史业务需求与验收",
+    "basis": "历史状态按现行源码与后续证据解释"
+  },
+  {
+    "path": "Docs/superpowers/plans/2026-08-30-mobile-online-player-control-status.md",
+    "bytes_before": 7226,
+    "source_sha256": "38ea336e5b132324be15a61983a86298408b1adb8cd4847220922f33e9d0306d",
+    "disposition": "删除：已合并或重复",
+    "basis": "Docs/architecture/backend-features.md"
+  },
+  {
+    "path": "Docs/superpowers/specs/2026-08-30-mobile-online-player-control-status-design.md",
+    "bytes_before": 2638,
+    "source_sha256": "3c4fcfa733a1111c4fe6d48aa7c2820e1ddf3bd0f50fe55be628eb906be259c2",
+    "disposition": "删除：已合并或重复",
+    "basis": "Docs/architecture/backend-features.md"
+  },
+  {
+    "path": "AGENTS.md",
+    "bytes_before": 17495,
+    "source_sha256": "60536ca73a1ecd42f01995d3d453668d18c8469fbd7eb2c9b78e65185ac9254b",
+    "disposition": "保留并更新：现行约束",
+    "basis": "Docs/README.md"
+  }
+]

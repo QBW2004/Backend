@@ -1,0 +1,128 @@
+[
+  {
+    "path": "Docs/01-改造总览与需求审查.md",
+    "reason": "旧方案/过程稿含已被实现替代的候选设计、完成度或单位；必要约束与真实入口已合并现行功能/接入指南。",
+    "replacement": "Docs/architecture/backend-features.md",
+    "source_sha256": "7069be792ffc9f0c5aaf0c7d2a8983a951d901c835b2636b0b8dedfdc2ec09c0"
+  },
+  {
+    "path": "Docs/02-动态桌台机台配置-实现进度.md",
+    "reason": "旧方案/过程稿含已被实现替代的候选设计、完成度或单位；必要约束与真实入口已合并现行功能/接入指南。",
+    "replacement": "Docs/architecture/backend-features.md",
+    "source_sha256": "a45e2f0a3af38b5812e246dbc0543907315737ea5d4f055d4ae5783dc5d50efa"
+  },
+  {
+    "path": "Docs/04-需求完成度审计与下一步实施规划.md",
+    "reason": "旧方案/过程稿含已被实现替代的候选设计、完成度或单位；必要约束与真实入口已合并现行功能/接入指南。",
+    "replacement": "Docs/architecture/backend-features.md",
+    "source_sha256": "8c12ede5037b82f9f3060e2585c11e3c1c752b5df4b17fb7502573a60684a631"
+  },
+  {
+    "path": "Docs/05-在线用户监管与代理客服-实现进度.md",
+    "reason": "旧方案/过程稿含已被实现替代的候选设计、完成度或单位；必要约束与真实入口已合并现行功能/接入指南。",
+    "replacement": "Docs/architecture/backend-features.md",
+    "source_sha256": "d554d0b2b88df3cfd3027be893d5768280f8a5770ee3c212482d4256719028d2"
+  },
+  {
+    "path": "Docs/06-05-文档审计与修复规划.md",
+    "reason": "旧方案/过程稿含已被实现替代的候选设计、完成度或单位；必要约束与真实入口已合并现行功能/接入指南。",
+    "replacement": "Docs/architecture/backend-features.md",
+    "source_sha256": "ea987869f2adccade187e254a124abd0c712bab622e5ddc1679254346b11cb9f"
+  },
+  {
+    "path": "Docs/07-拉霸游戏配置页面统一化-修改方案.md",
+    "reason": "旧方案/过程稿含已被实现替代的候选设计、完成度或单位；必要约束与真实入口已合并现行功能/接入指南。",
+    "replacement": "Docs/architecture/backend-features.md",
+    "source_sha256": "495c777c630f2c875fb31d2494f950785e98fa4dc6a56a9e92a6fe843c519c5c"
+  },
+  {
+    "path": "Docs/拉霸类后台游戏配置分类型改造方案.md",
+    "reason": "旧方案/过程稿含已被实现替代的候选设计、完成度或单位；必要约束与真实入口已合并现行功能/接入指南。",
+    "replacement": "Docs/architecture/backend-features.md",
+    "source_sha256": "3715a1d5639ea8d533651b0a797fba18f9165b93f281373183ea11ff37a90d22"
+  },
+  {
+    "path": "Docs/Shz桌台改名失效与拉霸配置链路诊断.md",
+    "reason": "同一桌名热更问题的重复诊断/方案；已修复的TC门控、完整保存链路与事故教训已收口现行源码指南。",
+    "replacement": "Docs/architecture/backend-features.md",
+    "source_sha256": "44c053c7ed5fec77719adee7fbfe9b7c4cad959b9ee647c5c137e081ec1cdb6e"
+  },
+  {
+    "path": "Docs/Shz桌台改名失效修复方案.md",
+    "reason": "同一桌名热更问题的重复诊断/方案；已修复的TC门控、完整保存链路与事故教训已收口现行源码指南。",
+    "replacement": "Docs/architecture/backend-features.md",
+    "source_sha256": "70b5c31cfa841f4acb0485c4853ad098ed6bc566e9ba9d33f16b769534bd429f"
+  },
+  {
+    "path": "Docs/优化完成总结.md",
+    "reason": "旧性能/部署稿无独立实际测量，离线控制等假设或通用部署步骤已过时；现行验证和Windows/IIS隔离交付流程已合并。",
+    "replacement": "Docs/architecture/backend-development.md",
+    "source_sha256": "12e73ef6f71d7d236286d0f292acca288f2bec164c519d16ed3b3e6e0b3e7da8"
+  },
+  {
+    "path": "Docs/性能优化验收测试.md",
+    "reason": "旧性能/部署稿无独立实际测量，离线控制等假设或通用部署步骤已过时；现行验证和Windows/IIS隔离交付流程已合并。",
+    "replacement": "Docs/architecture/backend-development.md",
+    "source_sha256": "bde62e1d608ffc6ba83d272bf8fd451e0c24323ec461232e87ce16b43099c988"
+  },
+  {
+    "path": "Docs/线上部署指南.md",
+    "reason": "旧性能/部署稿无独立实际测量，离线控制等假设或通用部署步骤已过时；现行验证和Windows/IIS隔离交付流程已合并。",
+    "replacement": "Docs/architecture/backend-development.md",
+    "source_sha256": "8fb0c647c045b04e4453a26c87f88a3d6b9f46be836d4026bbf5d0f035027c96"
+  },
+  {
+    "path": "Docs/玩家列表性能优化-20260906.md",
+    "reason": "旧性能/部署稿无独立实际测量，离线控制等假设或通用部署步骤已过时；现行验证和Windows/IIS隔离交付流程已合并。",
+    "replacement": "Docs/architecture/backend-development.md",
+    "source_sha256": "e731a59e13ccda1d5e38a41bf0981a18684379d2b04b8ec58701398c8c97b211"
+  },
+  {
+    "path": "Docs/superpowers/specs/2026-08-30-mobile-online-player-control-status-design.md",
+    "reason": "旧多控制同时展示设计/任务已被每人一条且控牌优先规则替代；现行权限、缓存和双端入口已提炼。",
+    "replacement": "Docs/architecture/backend-features.md",
+    "source_sha256": "3c4fcfa733a1111c4fe6d48aa7c2820e1ddf3bd0f50fe55be628eb906be259c2"
+  },
+  {
+    "path": "Docs/superpowers/plans/2026-08-30-mobile-online-player-control-status.md",
+    "reason": "旧多控制同时展示设计/任务已被每人一条且控牌优先规则替代；现行权限、缓存和双端入口已提炼。",
+    "replacement": "Docs/architecture/backend-features.md",
+    "source_sha256": "38ea336e5b132324be15a61983a86298408b1adb8cd4847220922f33e9d0306d"
+  },
+  {
+    "path": "Docs/agents/README.md",
+    "reason": "旧AGENTS整理索引已并入统一文档导航及维护记录。",
+    "replacement": "Docs/README.md",
+    "source_sha256": "3474036a68ef33767f7e2d1f00fa257fd2f6507b04af130c2b1ffcf150c3e305"
+  },
+  {
+    "path": "Docs/agents/AGENTS-history-20261105.md",
+    "reason": "稳定规则已提炼；完整原文由仓库外逐字节备份保全，按本轮明确授权移除仓库内重复历史快照。",
+    "replacement": "AGENTS.md; Docs/maintenance/README.md",
+    "source_sha256": "8c4c4d2ee789141211719a989c3c67db355a128f174cefbc55231841e9b5677b"
+  },
+  {
+    "path": "Docs/大白兔随时退出与自动收分-20261105.md",
+    "reason": "仅转述客户端完整实施与验证证据，导航改为直链权威原文。",
+    "replacement": "../MTH-git/Docs/大白兔随时退出与自动收分-20261105.md",
+    "source_sha256": "ec125aba5d08294ef6deac4c65f68ff017e960c7814bdd3241ac15892178fb92"
+  },
+  {
+    "path": "Docs/大白兔进桌赛跑配置误校验修复-20261105.md",
+    "reason": "仅转述服务端完整热修证据，导航改为直链权威原文。",
+    "replacement": "../MTH-Server/docs/大白兔进桌赛跑配置误校验修复-20261105.md",
+    "source_sha256": "77db46ef4964f61de785cc69726b37715cac72427f16eb9d41214b9091cbfee4"
+  },
+  {
+    "path": "Docs/麻将胡了多人独立游玩-20261105.md",
+    "reason": "仅转述服务端完整实现与验证证据，导航改为直链权威原文。",
+    "replacement": "../MTH-Server/docs/麻将胡了多人独立游玩-20261105.md",
+    "source_sha256": "123ae9a6a1106810a453d8cfd0ae86c9ae0bd4ec2eefe9738fb65985bbc0b018"
+  },
+  {
+    "path": "Docs/牌机送牌换牌命中与离场记账修复-20261104.md",
+    "reason": "与服务端完整正文逐字节相同；跨仓明确分工由服务端保留，后台直接引用。",
+    "replacement": "../MTH-Server/docs/牌机送牌换牌命中与离场记账修复-20261104.md",
+    "source_sha256": "dca55828b8dc1788fe37e7ceced8ba2a3344e0ac8e843a22b75d0be01c8aa48a"
+  }
+]

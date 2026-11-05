@@ -1,0 +1,30 @@
+[
+  {
+    "path": "Tools/README.md",
+    "bytes_before": 7588,
+    "source_sha256": "AADB801C51078DCDCE04686D5E056771E05C402470ED12A266076240327C5600",
+    "disposition": "保留并更新：补查Docs外自写入口",
+    "backup": "E:\\MTH\\doc-cleanup-backup-20261105-192213\\MHT-Backend"
+  },
+  {
+    "path": "deploy-template/README.md",
+    "bytes_before": 2038,
+    "source_sha256": "E0D3A271658072D6E1DE7EEDC2AD743971411596ECA62B160920ECB3D676A1FF",
+    "disposition": "保留并更新：补查Docs外自写入口",
+    "backup": "E:\\MTH\\doc-cleanup-backup-20261105-192213\\MHT-Backend"
+  },
+  {
+    "path": "docker/mysql/init/README.md",
+    "bytes_before": 2298,
+    "source_sha256": "27164E5309EB411ACFD0D4542F976C0AB16C1869DB4287182C422CF5677707BD",
+    "disposition": "保留并更新：补查Docs外自写入口",
+    "backup": "E:\\MTH\\doc-cleanup-backup-20261105-192213\\MHT-Backend"
+  },
+  {
+    "path": "Tools/one-off/_pipetimeout/README.md",
+    "bytes_before": 2668,
+    "source_sha256": "9508179F52403F39FED61476B7930EB2EF39DF35685792D98E84AB5B860D4FDB",
+    "disposition": "保留并更新：补查Docs外自写入口",
+    "backup": "E:\\MTH\\doc-cleanup-backup-20261105-192213\\MHT-Backend"
+  }
+]
