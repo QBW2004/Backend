@@ -610,7 +610,7 @@
             <input id="gcNewTableCount" class="easyui-numberbox" value="1" data-options="min:1,max:1000,precision:0" />
             <span>张桌台</span>
         </div>
-        <div class="gc-batch-create-tip">确认后会沿用当前页面的基础参数；点击“保存并热更新”后一次创建指定数量的桌台。</div>
+        <div class="gc-batch-create-tip">按当前页面参数一次新建所填张数，各桌参数相同；桌名从当前桌名起按顺序自动编号。</div>
         <div class="gc-batch-create-foot">
             <button type="button" id="gcNewTableCancel" class="gc-btn gc-btn-default">取消</button>
             <button type="button" id="gcNewTableConfirm" class="gc-btn gc-btn-primary">确定</button>
@@ -828,6 +828,31 @@
             if (window.rabbitConfigClear) window.rabbitConfigClear();
             $('#gcCurTableName').text('');
         }
+    }
+
+    // 桌名拆成「前缀 + 末尾数字 + 后缀」，如 “火凤凰12” / “3号机”；无数字返回 null
+    function gcSplitTableName(name) {
+        var m = /^(.*?)(\d+)(\D*)$/.exec($.trim(name || ''));
+        return m ? { prefix: m[1], num: parseInt(m[2], 10), suffix: m[3] } : null;
+    }
+    // 新桌默认名：沿用最近一张桌的命名方式，编号取同前缀/后缀桌名中的最大号 +1；没有可识别编号时按 张数+1 号机
+    function gcNextTableName() {
+        var tables = GC_TABLES || [];
+        var latest = gcLatestTable();
+        var pattern = latest ? gcSplitTableName(latest.tableName) : null;
+        if (!pattern) return (tables.length + 1) + '号机';
+        var max = 0;
+        $.each(tables, function (i, t) {
+            var p = gcSplitTableName(t.tableName);
+            if (p && p.prefix === pattern.prefix && p.suffix === pattern.suffix && p.num > max) max = p.num;
+        });
+        return pattern.prefix + (max + 1) + pattern.suffix;
+    }
+    // 一次多建时第 i 张（0 起）的桌名：从首张桌名的编号起顺延；首张桌名没有编号时第 2 张起追加序号
+    function gcSequenceTableName(first, i) {
+        if (i === 0) return first;
+        var p = gcSplitTableName(first);
+        return p ? p.prefix + (p.num + i) + p.suffix : first + (i + 1);
     }
 
     function gcLatestTable() {
@@ -1333,8 +1358,10 @@
 
     function gcUpdateSaveBtn() {
         var isNew = parseInt($('#gcId').val(), 10) < 0;
-        if ($('#gcGameId').val() === '55') { $('#gcSave').text(isNew ? '新建当前桌台' : '保存并热更新'); return; }
-        $('#gcSave').text((gcLabaSubType() > 0 || $('#gcGameId').val() === '5' || $('#gcGameId').val() === '25') ? '保存并热更新' : (isNew ? '新建桌台' : '更新桌台'));
+        // 新建桌台时按钮统一为「保存」：点击后才询问新建张数；编辑已有桌台直接保存，不弹数量
+        if (isNew) { $('#gcSave').text('保存'); return; }
+        if ($('#gcGameId').val() === '55') { $('#gcSave').text('保存并热更新'); return; }
+        $('#gcSave').text((gcLabaSubType() > 0 || $('#gcGameId').val() === '5' || $('#gcGameId').val() === '25') ? '保存并热更新' : '更新桌台');
     }
 
     function gcLoadTables(afterLoad) {
@@ -1512,7 +1539,10 @@
         $('#gcScoreSwitch').val(1);
     }
 
-    function gcOpenNewTableDialog() {
+    // 数量弹窗确认后的回调（只在“保存新桌台”时设置）
+    var GC_NEW_COUNT_CALLBACK = null;
+    function gcOpenNewTableDialog(onConfirm) {
+        GC_NEW_COUNT_CALLBACK = typeof onConfirm === 'function' ? onConfirm : null;
         openWin({
             winId: '#gcNewTableWin',
             title: '【新建桌台】',
@@ -1522,14 +1552,20 @@
             callBack: function () {
                 var $count = $('#gcNewTableCount');
                 if (!$count.data('numberbox')) $count.numberbox({ min: 1, max: GC_NEW_TABLE_MAX, precision: 0 });
-                $count.numberbox('setValue', GC_NEW_TABLE_COUNT > 0 ? GC_NEW_TABLE_COUNT : 1);
+                // 页面加载时输入框在隐藏的弹窗里被初始化，宽度只算出几个像素，看不见也点不中（“无法输入数量”）：每次打开按可见宽度重排
+                $count.numberbox('resize', 90); // 与样式 .gc-batch-create-row .textbox 的 90px 一致
+                $count.numberbox('setValue', 1);
+                var $text = $count.numberbox('textbox');
+                $text.off('keydown.gcCount').on('keydown.gcCount', function (e) { if (e.keyCode === 13) { e.preventDefault(); gcConfirmNewTable(); } });
+                setTimeout(function () { $text.focus().select(); }, 0);
             }
         });
     }
 
     function gcReadNewTableCount() {
         var $count = $('#gcNewTableCount');
-        var value = $count.data('numberbox') ? Number($count.numberbox('getValue')) : Number($count.val());
+        var typed = $count.data('numberbox') ? $.trim($count.numberbox('textbox').val()) : '';
+        var value = $count.data('numberbox') ? Number(typed !== '' ? typed : $count.numberbox('getValue')) : Number($count.val());
         if (!isFinite(value) || Math.floor(value) !== value || value < 1 || value > GC_NEW_TABLE_MAX) return 0;
         return value;
     }
@@ -1558,12 +1594,13 @@
         $('#gcId').val(-1);
         $('#gcGameId').val(isNaN(gameId) ? -1 : gameId);
         $('#gcGameType').val(type);
-        $('#gcTableName').val('');
+        // 桌名按当前视图（公共/该线专属）已有桌名顺序自动编号，可直接修改
+        $('#gcTableName').val(gcNextTableName());
         gcApplyType();
-        var newKind = gcCurLine() ? '张【' + gcCurLine() + '】专属桌台' : '张桌台';
+        var newKind = gcCurLine() ? '【' + gcCurLine() + '】专属桌台' : '桌台';
         $('#gcCurTableName').text(src
-            ? '新建' + GC_NEW_TABLE_COUNT + newKind + '（已套用最近桌台基础参数，填写桌名并核对权重后保存）'
-            : '新建' + GC_NEW_TABLE_COUNT + newKind + '（基础参数与权重一并保存）');
+            ? '新建' + newKind + '（已套用最近桌台参数、桌名已自动编号可修改；点「保存」后选择新建张数）'
+            : '新建' + newKind + '（桌名已自动编号可修改；点「保存」后选择新建张数）');
         if (window.labaWeightsLoad) window.labaWeightsLoad();
         if (window.phenixConfigLoad) window.phenixConfigLoad();
         if (window.rabbitPayoutLoad) window.rabbitPayoutLoad();
@@ -1583,7 +1620,8 @@
             showToast('请先选择游戏类型与游戏！', 'warning');
             return;
         }
-        gcOpenNewTableDialog();
+        // 直接进入新建表单（桌名自动编号）；新建张数在点「保存」时再选
+        gcPrepareNewTableForm(1);
     }
 
     function gcConfirmNewTable() {
@@ -1593,7 +1631,9 @@
             return;
         }
         $('#gcNewTableWin').dialog('close');
-        gcPrepareNewTableForm(count);
+        var cb = GC_NEW_COUNT_CALLBACK;
+        GC_NEW_COUNT_CALLBACK = null;
+        if (cb) cb(count);
     }
 
     // 牌机/拉霸新桌台默认值（715Web 文档：下注与兑换）；拉霸最小/最大押分只能整数，默认 1
@@ -2380,7 +2420,7 @@
         }
 
         function saveNext() {
-            var para = $.extend({}, basePara, { ID: -1 });
+            var para = $.extend({}, basePara, { ID: -1, TableName: gcSequenceTableName(basePara.TableName, completed) });
             gcRequestTableSave(para, function (data) {
                 if (!data || !(data.code == 1 || data.datas === true)) {
                     var reason = data && (data.msg || data.content) ? (data.msg || data.content) : '服务器未返回成功结果';
@@ -2400,7 +2440,9 @@
         saveNext();
     }
 
-    function gcSave() {
+    // opts 只在内部重入时传入：{ internal:true, count:新建张数, appendConfirmed:已确认排在专属桌之后 }；按钮点击传入的是事件对象，视为全新一次保存
+    function gcSave(opts) {
+        opts = (opts && opts.internal) ? opts : {};
         if (GC_BATCH_SAVING || GC_LABA_SAVING) return;
         var type = gcGetType();
         if (type != 0 && type != 1 && type != 2 && type != 3) {
@@ -2462,14 +2504,8 @@
         }
         var savedId = parseInt($('#gcId').val(), 10);
         var wasNew = isNaN(savedId) || savedId < 0;
-        // 已分配专属桌台后再新建公共桌台：新桌号排在专属桌台之后，旧版客户端按连续位置取配置，进不了这张桌，先确认
-        if (wasNew && !gcCurLine() && GC_LINE_INFO && (GC_LINE_INFO.Owned > 0 || GC_LINE_INFO.Recycled > 0) && !gcSave.confirmedAppend) {
-            confirm('本游戏已经分配过专属桌台，新建的公共桌台会排在专属桌台之后，旧版客户端进不了这张桌。\n确定继续新建 ' + GC_NEW_TABLE_COUNT + ' 张吗？', function () {
-                gcSave.confirmedAppend = true;
-                try { gcSave(); } finally { gcSave.confirmedAppend = false; }
-            });
-            return;
-        }
+        // 新桌桌名留空时按顺序补上（保存前写回表单，随表单一起提交）
+        if (wasNew && !$.trim($('#gcTableName').val())) $('#gcTableName').val(gcNextTableName());
         var para = $('#gcForm').serializeObject();
         // 彩金奖池：区块不可见、四个值与回填一致(未改动)、或全部留空时不带 JP_* 字段，
         // 后端跳过奖池登记；部分留空保留字段交后端校验报错。
@@ -2494,6 +2530,19 @@
             if (!window.rabbitConfigCollect) { showToast('大白兔规则组件尚未载入，请刷新后重试。', 'warning'); return; }
             try { $.extend(para, window.rabbitConfigCollect()); }
             catch (rabbitError) { showToast(rabbitError.message, 'warning'); return; }
+        }
+        // 全部校验（含开奖权重/规则组件）通过后：新建桌台才询问新建张数，按当前参数一次建好；编辑已选中的桌台直接保存，不弹数量
+        if (wasNew && !opts.count) {
+            gcOpenNewTableDialog(function (n) { gcSave({ internal: true, count: n }); });
+            return;
+        }
+        GC_NEW_TABLE_COUNT = wasNew ? opts.count : 1;
+        // 已分配专属桌台后再新建公共桌台：新桌号排在专属桌台之后，旧版客户端按连续位置取配置，进不了这张桌，先确认
+        if (wasNew && !gcCurLine() && GC_LINE_INFO && (GC_LINE_INFO.Owned > 0 || GC_LINE_INFO.Recycled > 0) && !opts.appendConfirmed) {
+            confirm('本游戏已经分配过专属桌台，新建的公共桌台会排在专属桌台之后，旧版客户端进不了这张桌。\n确定继续新建 ' + GC_NEW_TABLE_COUNT + ' 张吗？', function () {
+                gcSave({ internal: true, count: opts.count, appendConfirmed: true });
+            });
+            return;
         }
         if (wasNew && GC_NEW_TABLE_COUNT > 1) {
             gcSaveNewTables(para, GC_NEW_TABLE_COUNT);

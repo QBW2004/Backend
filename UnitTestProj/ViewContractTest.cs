@@ -2405,14 +2405,19 @@ namespace UnitTestProj
         {
             string view = ReadRepoFile(@"TTY.Web\Areas\Game\Views\GameConfig\ConfigEditor.cshtml");
 
-            // 新建入口先询问数量；确认后保留参数编辑流程，保存时按顺序创建多张桌台。
+            // 2026-11-05：新建直接进表单、桌名自动编号；点「保存」才询问张数，按当前参数一次多建且桌名顺延；编辑已有桌台不弹数量。
             StringAssert.Contains(view, "id=\"gcNewTableWin\"");
             StringAssert.Contains(view, "id=\"gcNewTableCount\"");
             StringAssert.Contains(view, "function gcConfirmNewTable()");
             StringAssert.Contains(view, "GC_NEW_TABLE_MAX = 1000");
             StringAssert.Contains(view, "GC_NEW_TABLE_COUNT > 1");
             StringAssert.Contains(view, "function gcSaveNewTables(basePara, count)");
-            StringAssert.Contains(view, "$.extend({}, basePara, { ID: -1 })");
+            StringAssert.Contains(view, "$.extend({}, basePara, { ID: -1, TableName: gcSequenceTableName(basePara.TableName, completed) })");
+            StringAssert.Contains(view, "function gcNextTableName()");
+            StringAssert.Contains(view, "if (wasNew && !opts.count)");
+            StringAssert.Contains(view, "gcOpenNewTableDialog(function (n) { gcSave({ internal: true, count: n }); });");
+            StringAssert.Contains(view, "$count.numberbox('resize', 90);");
+            StringAssert.Contains(view, "if (isNew) { $('#gcSave').text('保存'); return; }");
             StringAssert.Contains(view, "$('#gcNewTableConfirm').on('click', gcConfirmNewTable)");
         }
 

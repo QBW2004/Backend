@@ -20,7 +20,8 @@ const posts = [], checks = [], errors = [];
 let lineOptionReads = 0;
 const check = (value, name) => { assert.ok(value, name); checks.push(name); };
 const owned = line => Object.values(tables).filter(o => o === line).length;
-const row = idx => ({ id: GAME * 1000 + idx, GAME_ID: GAME, TableName: (tables[idx] ? tables[idx] + '-' : '公共') + idx, Enabled: 1, BetMin: 1, BetMax: 10, COIN_NEED: 1, EX_COIN: 1, COIN_SC: 1, Game_Mo: 1, scoreSwitch: 1 });
+const names = {};
+const row = idx => ({ id: GAME * 1000 + idx, GAME_ID: GAME, tableName: names[idx] || ((tables[idx] ? tables[idx] + '-' : '公共') + idx), Enabled: 1, BetMin: 1, BetMax: 10, COIN_NEED: 1, EX_COIN: 1, COIN_SC: 1, Game_Mo: 1, scoreSwitch: 1 });
 
 const server = http.createServer(async (req, res) => {
     const route = new URL(req.url, 'http://localhost').pathname;
@@ -54,7 +55,9 @@ const server = http.createServer(async (req, res) => {
         }
         if (route.endsWith('/SaveTableConfig')) {
             const next = Math.max(...Object.keys(tables).map(Number)) + 1;
+            if (p.ID && p.ID !== '-1') { names[Number(p.ID) % 1000] = p.TableName; return json({ code: 1, content: '保存成功' }); }
             tables[next] = p.LINE || '';
+            names[next] = p.TableName;
             return json({ code: 1, content: '保存成功' });
         }
         res.writeHead(404).end(); return;
@@ -96,27 +99,56 @@ const server = http.createServer(async (req, res) => {
         check(await page.locator('#gcTableList li').count() === 3, 'after copy: 3 exclusive tables listed');
         check((await page.locator('#gcLineTip').textContent()).includes('新建桌台'), 'tip mentions adding exclusive tables');
 
-        // 专属视图新建 2 张
-        await page.click('#gcNewTable'); await page.waitForSelector('#gcNewTableWin', { state: 'visible' });
-        await page.evaluate(() => $('#gcNewTableCount').numberbox('setValue', 2));
-        await page.click('#gcNewTableConfirm'); await page.waitForTimeout(100);
+        // 专属视图新建：点「新建桌台」直接进表单、桌名自动编号；点「保存」才弹张数，真实键盘输入 2 后回车，一次建 2 张且桌名顺延
+        await page.click('#gcNewTable'); await page.waitForTimeout(150);
+        check(!(await page.locator('#gcNewTableWin').isVisible()), 'new table opens form directly without count dialog');
         check((await page.locator('#gcCurTableName').textContent()).includes('【lineA】专属桌台'), 'new form titled as lineA exclusive');
-        await page.fill('#gcTableName', '加桌');
+        check(await page.inputValue('#gcTableName') === 'lineA-6', 'table name auto numbered after lineA-5: ' + await page.inputValue('#gcTableName'));
+        check((await page.locator('#gcSave').textContent()).trim() === '保存', 'save button labelled 保存 for new table');
         for (const [sel, v] of [['#gcMinBet', '1'], ['#gcMaxBet', '10'], ['#gcScoreSwitch', '1']]) await page.fill(sel, v);
         const readsBefore = lineOptionReads, postsBefore = posts.length;
-        await page.click('#gcSave'); await page.waitForFunction(n => !GC_BATCH_SAVING, null); await settle();
+        await page.click('#gcSave'); await page.waitForSelector('#gcNewTableWin', { state: 'visible' });
+        check(posts.length === postsBefore, 'nothing saved before count chosen');
+        const countBox = page.locator('#gcNewTableWin .textbox-text:visible').first();
+        const box = await countBox.boundingBox();
+        check(box && box.width >= 60, 'count input visibly wide (bug was 8px): ' + (box && box.width));
+        await countBox.click(); await page.keyboard.press('Control+A'); await page.keyboard.type('2'); await page.keyboard.press('Enter');
+        await page.waitForFunction(() => !GC_BATCH_SAVING, null); await settle();
         const saves = posts.slice(postsBefore).filter(x => x.route.endsWith('/SaveTableConfig'));
-        if (process.env.LINE_UI_DEBUG) console.log(JSON.stringify(posts.slice(postsBefore).map(x => [x.route, x.params.LINE, x.params.ID, x.params.GAME_ID])), await page.evaluate(() => window.__toasts));
+        if (process.env.LINE_UI_DEBUG) console.log(JSON.stringify(posts.slice(postsBefore).map(x => [x.route, x.params.LINE, x.params.ID, x.params.TableName])), await page.evaluate(() => window.__toasts));
         check(saves.length === 2 && saves.every(x => x.params.LINE === 'lineA' && x.params.ID === '-1' && x.params.GAME_ID === String(GAME)), 'two new saves carry LINE=lineA and ID=-1');
+        check(saves.map(x => x.params.TableName).join(',') === 'lineA-6,lineA-7', 'batch names sequential: ' + saves.map(x => x.params.TableName).join(','));
+        check(saves[0].params.MinBet === saves[1].params.MinBet && saves[0].params.MaxBet === saves[1].params.MaxBet, 'batch tables share current parameters');
         check(owned('lineA') === 5 && await page.locator('#gcTableList li').count() === 5, 'lineA now has 5 exclusive tables');
         check(lineOptionReads > readsBefore && (await page.locator('#gcLineSel option[value="lineA"]').textContent()).includes('5'), 'line dropdown count refreshed');
         b = await buttons(); check(b.recall && b.add && !b.copy, 'buttons stable after add');
+
+        // 选中已有桌台改参数保存：不弹张数，只更新这一张
+        await page.locator('#gcTableList li').first().click(); await page.waitForTimeout(150);
+        const editId = await page.inputValue('#gcId');
+        check(Number(editId) >= 0 && (await page.locator('#gcSave').textContent()).trim() !== '保存', 'existing table selected, save not in new mode');
+        await page.fill('#gcTableName', '改名桌'); for (const [sel, v] of [['#gcMinBet', '2'], ['#gcMaxBet', '20'], ['#gcScoreSwitch', '1']]) await page.fill(sel, v);
+        const postsEdit = posts.length;
+        await page.click('#gcSave'); await page.waitForTimeout(400); await settle();
+        check(!(await page.locator('#gcNewTableWin').isVisible()), 'editing existing table does not show count dialog');
+        const edits = posts.slice(postsEdit).filter(x => x.route.endsWith('/SaveTableConfig'));
+        check(edits.length === 1 && edits[0].params.ID === editId && edits[0].params.TableName === '改名桌', 'single update for the selected table only');
+
+        // 取消张数弹窗：不保存
+        await page.click('#gcNewTable'); await page.waitForTimeout(150);
+        for (const [sel, v] of [['#gcMinBet', '1'], ['#gcMaxBet', '10'], ['#gcScoreSwitch', '1']]) await page.fill(sel, v);
+        const postsCancel = posts.length;
+        await page.click('#gcSave'); await page.waitForSelector('#gcNewTableWin', { state: 'visible' });
+        await page.click('#gcNewTableCancel'); await page.waitForTimeout(200);
+        check(posts.length === postsCancel, 'cancel count dialog saves nothing');
 
         // 另一条线仍是公共
         await page.selectOption('#gcLineSel', 'lineB'); await settle();
         b = await buttons(); check(b.copy && !b.recall && !b.add, 'other line still uses public tables');
         await page.selectOption('#gcLineSel', ''); await settle();
         check(await page.locator('#gcTableList li').count() === 3, 'public view still lists only 3 public tables');
+        await page.click('#gcNewTable'); await page.waitForTimeout(150);
+        check(await page.inputValue('#gcTableName') === '公共3', 'public table name auto numbered: ' + await page.inputValue('#gcTableName'));
 
         // 收回
         await page.selectOption('#gcLineSel', 'lineA'); await settle();

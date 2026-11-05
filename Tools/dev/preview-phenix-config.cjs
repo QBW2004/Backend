@@ -56,6 +56,9 @@ async function test(){
  const check=(name,value)=>{assert.ok(value,name);checks.push(name);};
  try{
   const page=await browser.newPage({viewport:{width:1440,height:1100}});page.setDefaultTimeout(7000);page.on('pageerror',e=>errors.push(e.message));
+
+  // 2026-11-05 新建流程：新桌点「保存」后弹张数（编辑已有桌不弹）；弹出时输入张数回车
+  const clickSave=async(n=1)=>{const isNew=Number(await page.locator('#gcId').inputValue())<0;await page.locator('#gcSave').click();if(!isNew)return;const win=page.locator('#gcNewTableWin');const shown=await win.waitFor({state:'visible',timeout:400}).then(()=>true).catch(()=>false);if(shown){const t=page.locator('#gcNewTableWin .textbox-text:visible').first();await t.fill(String(n));await page.keyboard.press('Enter');}};
   await page.goto(`http://127.0.0.1:${server.address().port}/`);
   await page.selectOption('#gcTypeSel','1');await page.selectOption('#gcGameSel','5');
   await page.waitForFunction(()=>document.querySelector('#pxAvgPayout').textContent==='120.00 倍');
@@ -80,26 +83,26 @@ async function test(){
   check('自动补入未使用档位',await page.locator('.px-wv').last().inputValue()==='4');
   await page.locator('.px-wv').last().fill('14');await page.locator('.px-ww').last().fill('10');
   check('X14 正确显示奖励',await page.locator('.px-payout').last().textContent()==='1120 倍');
-  const before=captures.length;await page.locator('#gcSave').click();await page.waitForFunction(()=>!GC_LABA_SAVING);
+  const before=captures.length;await clickSave(1);await page.waitForFunction(()=>!GC_LABA_SAVING);
   check('统一保存一次提交完整规则',captures.length===before+1&&JSON.parse(captures.at(-1).PhenixConfigJson).specialRules.authentic.multipliers.values.at(-1)===14);
   check('防伪令牌保留',captures.at(-1).__RequestVerificationToken==='preview-token');
   await page.waitForFunction(()=>document.querySelectorAll('.px-wv').length===4&&!document.querySelector('.px-wv').disabled);
-  await page.locator('.px-wv').last().fill('1');const duplicate=captures.length;await page.locator('#gcSave').click();
+  await page.locator('.px-wv').last().fill('1');const duplicate=captures.length;await clickSave(1);
   check('重复档位阻止提交',captures.length===duplicate&&await page.locator('#pxRtpTotal').textContent()==='—');
-  await page.locator('.px-wv').last().fill('14');await page.locator('.px-ww').last().fill('0.5');await page.locator('#gcSave').click();
+  await page.locator('.px-wv').last().fill('14');await page.locator('.px-ww').last().fill('0.5');await clickSave(1);
   check('小数权重拒绝',captures.length===duplicate);
   await page.locator('.px-delete').last().click();await page.locator('#phenixConfigLoad').click();
   await page.waitForFunction(()=>document.querySelectorAll('.px-wv').length===4);
-  failSave=true;const badCount=captures.length;await page.locator('#gcSave').click();await page.waitForFunction(()=>!GC_LABA_SAVING);
+  failSave=true;const badCount=captures.length;await clickSave(1);await page.waitForFunction(()=>!GC_LABA_SAVING);
   check('HTTP 失败后可重试',captures.length===badCount+1&&!(await page.locator('#gcSave').isDisabled()));
   failGet=true;await page.locator('#phenixConfigLoad').click();await page.waitForFunction(()=>document.querySelector('#phenixConfigStatus').textContent.includes('模拟载入失败'));
-  const loadFailCount=captures.length;await page.locator('#gcSave').click();check('载入失败阻止覆盖',captures.length===loadFailCount);
+  const loadFailCount=captures.length;await clickSave(1);check('载入失败阻止覆盖',captures.length===loadFailCount);
   await page.locator('#phenixConfigLoad').click();await page.waitForFunction(()=>document.querySelectorAll('.px-wv').length===4&&document.querySelector('#pxRtpTotal').textContent!=='—');
   delayGet=150;await page.evaluate(()=>{gcSelectTableById(5000);gcSelectTableById(5001);});await page.waitForTimeout(220);delayGet=0;
   check('迟到规则不能覆盖另一桌',await page.locator('#gcId').inputValue()==='5001'&&await page.locator('.px-wv').count()===3);
   await page.evaluate(()=>gcPrepareNewTableForm(2));
   check('批量新建载入缺省规则',await page.locator('#gcId').inputValue()==='-1'&&await page.locator('.px-wv').count()===3);
-  await page.locator('#gcTableName').fill('预览新桌');const batch=captures.length;await page.locator('#gcSave').click();await page.waitForFunction(()=>!GC_BATCH_SAVING);
+  await page.locator('#gcTableName').fill('预览新桌');const batch=captures.length;await clickSave(2);await page.waitForFunction(()=>!GC_BATCH_SAVING);
   check('批量各桌携带正宗权重',captures.length===batch+2&&captures.slice(-2).every(p=>p.PhenixConfigJson));
   await page.selectOption('#gcGameSel','55');
   check('切换其他游戏恢复布局',!(await page.locator('#pxRtpSummary').isVisible())&&!(await page.locator('#gcForm').getAttribute('class')).includes('gc-phenix-mode'));

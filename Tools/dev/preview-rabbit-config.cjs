@@ -59,10 +59,13 @@ async function test(){
  const check=(n,v)=>{assert.ok(v,n);checks.push(n);};
  try{
   const page=await browser.newPage({viewport:{width:1440,height:1100}});page.setDefaultTimeout(7000);page.on('pageerror',e=>errors.push(e.message));
+
+  // 2026-11-05 新建流程：新桌点「保存」后弹张数（编辑已有桌不弹）；弹出时输入张数回车
+  const clickSave=async(n=1)=>{const isNew=Number(await page.locator('#gcId').inputValue())<0;await page.locator('#gcSave').click();if(!isNew)return;const win=page.locator('#gcNewTableWin');const shown=await win.waitFor({state:'visible',timeout:400}).then(()=>true).catch(()=>false);if(shown){const t=page.locator('#gcNewTableWin .textbox-text:visible').first();await t.fill(String(n));await page.keyboard.press('Enter');}};
   const base=`http://127.0.0.1:${server.address().port}`;
   const ready=async(id)=>page.waitForFunction(id=>document.querySelector('#gcGameId').value==='55'&&document.querySelector('#gcId').value===String(id)&&!document.querySelector('#gcSave').disabled&&window.rabbitConfigIsReady(),id);
   const select=async(id)=>{await page.evaluate(id=>gcSelectTableById(id),id);await ready(id);};
-  const save=async(id)=>{const refreshed=page.waitForResponse(r=>r.url().endsWith('/GetTableConfig'));await page.click('#gcSave');await refreshed;await ready(id);};
+  const save=async(id)=>{const refreshed=page.waitForResponse(r=>r.url().endsWith('/GetTableConfig'));await clickSave(1);await refreshed;await ready(id);};
   await page.goto(base+'/tables');await page.selectOption('#gcTypeSel','1');await page.selectOption('#gcGameSel','55');await ready(-1);await select(55000);
   check('本桌规则与桌台参数合并在同一表单',await page.locator('#rabbitConfig').evaluate(e=>!!e.closest('#gcForm')));
   check('只保留底部两个按钮',await page.locator('#gcParaFoot button:visible').count()===2&&await page.locator('#rabbitConfigSave,#rabbitConfigLoad').count()===0);
@@ -95,7 +98,7 @@ async function test(){
   check('防伪令牌和旧赛跑关闭保留',captures.at(-1).p.__RequestVerificationToken==='rabbit-preview-token'&&ruleRows.get(0).race.enabled===false);
   await page.goto(base+'/tables');await page.selectOption('#gcTypeSel','1');await page.selectOption('#gcGameSel','55');await ready(-1);await select(55000);
   check('刷新页面回读本桌已保存档位',await page.locator('#rbSmallFour').inputValue()==='60'&&await page.locator('#rbAuthTable .rb-wv').last().inputValue()==='4');
-  await page.selectOption('#rbAuthMode','probability');await page.locator('#rbAuthTable .rb-ap').first().fill('50');const invalid=captures.length;await page.click('#gcSave');
+  await page.selectOption('#rbAuthMode','probability');await page.locator('#rbAuthTable .rb-ap').first().fill('50');const invalid=captures.length;await clickSave(1);
   check('概率合计非100阻止整个表单保存',captures.length===invalid&&await page.locator('#rbTableRtp').textContent()==='—');
   await select(55001);check('无效草稿不会污染另一桌RTP',await page.locator('#rbSmallFour').inputValue()==='85'&&await page.locator('#rbTableRtp').textContent()!=='—');await select(55000);
   check('切回仍保留原桌无效概率编辑',await page.locator('#rbAuthMode').inputValue()==='probability'&&await page.locator('#rbAuthTable .rb-ap').first().inputValue()==='50'&&await page.locator('#rbTableRtp').textContent()==='—');
@@ -104,13 +107,13 @@ async function test(){
   await save(55000);check('概率精确映射到原协议整数',JSON.stringify(ruleRows.get(0).specialRules.authentic.multipliers.weights)==='[10,6,3,1]'&&ruleRows.get(0).specialRules.five.successChance.numerator===1&&ruleRows.get(0).specialRules.five.successChance.denominator===4);
   readDelays[0]=120;await page.evaluate(()=>rabbitConfigReload());await select(55001);await page.waitForTimeout(160);delete readDelays[0];
   check('迟到的另一桌规则响应不覆盖当前桌',await page.locator('#gcId').inputValue()==='55001'&&await page.locator('#rbSmallFour').inputValue()==='85');
-  await select(55000);await page.fill('#rbSmallFour','65');delay=100;const saveResponse=page.waitForResponse(r=>r.url().endsWith('/SaveTableConfig'));await page.click('#gcSave');check('保存时锁定规则和恢复按钮',await page.locator('#rbSmallFour').isDisabled()&&await page.locator('#gcReset').isDisabled());await select(55001);await saveResponse;await ready(55001);delay=0;
+  await select(55000);await page.fill('#rbSmallFour','65');delay=100;const saveResponse=page.waitForResponse(r=>r.url().endsWith('/SaveTableConfig'));await clickSave(1);check('保存时锁定规则和恢复按钮',await page.locator('#rbSmallFour').isDisabled()&&await page.locator('#gcReset').isDisabled());await select(55001);await saveResponse;await ready(55001);delay=0;
   check('跨桌保存完成不把源桌参数写入当前桌编辑器',await page.locator('#rbSmallFour').inputValue()==='85'&&ruleRows.get(0).smallFourMultiplier===65&&JSON.stringify(ruleRows.get(1))===bSaved);
   await select(55000);failGet=true;await page.click('#gcRefresh');await page.waitForFunction(()=>document.querySelector('#rabbitConfigStatus').textContent.includes('模拟'));
   check('规则载入失败禁止保存且清空RTP',await page.locator('#gcSave').isDisabled()&&await page.locator('#rbTableRtp').textContent()==='—');
   await page.selectOption('#gcGameSel','5');await page.waitForFunction(()=>document.querySelector('#gcGameId').value==='5');check('失败不锁住其他游戏操作',await page.locator('#gcSave').isEnabled()&&await page.locator('#gcReset').isEnabled());
   failGet=false;await page.selectOption('#gcGameSel','55');await ready(-1);await select(55000);await page.fill('#rbSmallFour','66');failSave=true;
-  const failedResponse=page.waitForResponse(r=>r.url().endsWith('/SaveTableConfig'));await page.click('#gcSave');await failedResponse;await ready(55000);
+  const failedResponse=page.waitForResponse(r=>r.url().endsWith('/SaveTableConfig'));await clickSave(1);await failedResponse;await ready(55000);
   check('请求失败保留本桌草稿并可重试',await page.locator('#rbSmallFour').inputValue()==='66'&&ruleRows.get(0).smallFourMultiplier===65);await save(55000);
   check('重试后只更新原桌',ruleRows.get(0).smallFourMultiplier===66&&JSON.stringify(ruleRows.get(1))===bSaved);
   const resetBefore=captures.length;await page.evaluate(()=>gcResetForm());
@@ -118,7 +121,7 @@ async function test(){
   check('恢复默认仍保留隐藏留机参数',await page.evaluate(()=>JSON.parse(rabbitConfigCollect().RabbitConfigJson).keepMax===9&&JSON.parse(rabbitConfigCollect().RabbitConfigJson).keepMinHands===888));
   await save(55000);check('恢复默认保存不影响其他桌',ruleRows.get(0).smallFourMultiplier===50&&JSON.stringify(ruleRows.get(1))===bSaved);
   await page.evaluate(()=>gcPrepareNewTableForm(2));await ready(-1);check('新建桌台采用独立默认玩法',await page.locator('#rbSmallFour').inputValue()==='50');await page.fill('#rbSmallFour','77');await page.fill('#gcTableName','独立批量');
-  const batchBefore=captures.length;await page.click('#gcSave');await page.waitForFunction(()=>!window.GC_BATCH_SAVING&&document.querySelector('#gcId').value==='55003');await ready(55003);
+  const batchBefore=captures.length;await clickSave(2);await page.waitForFunction(()=>!window.GC_BATCH_SAVING&&document.querySelector('#gcId').value==='55003');await ready(55003);
   check('批量新建各存一份规则行',captures.length===batchBefore+2&&ruleRows.get(2).smallFourMultiplier===77&&ruleRows.get(3).smallFourMultiplier===77);
   await select(55002);await page.fill('#rbSmallFour','78');await save(55002);check('批量创建后修改一桌不影响同批另一桌',ruleRows.get(2).smallFourMultiplier===78&&ruleRows.get(3).smallFourMultiplier===77&&JSON.stringify(ruleRows.get(1))===bSaved);
   for(const width of[1280]){await page.setViewportSize({width,height:900});check('规则表格没有页面横向溢出 '+width,await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));}await page.setViewportSize({width:1440,height:1100});
@@ -153,7 +156,7 @@ async function test(){
   check('点石成金四池缺快照显示未获取',JSON.stringify(await page.locator('#gcJpTable .gc-jp-current-value').allTextContents())===JSON.stringify(['未获取','未获取','未获取','未获取']));
   check('点石成金四个设置框均在表内',await page.locator('#gcJpTable input.gc-jp-v').count()===4&&await page.locator('#gcJpBox input.gc-jp-v').count()===4);
   for(const[id,v]of[['gcJp5K','5001'],['gcJpRS','2002'],['gcJpSF','503'],['gcJp4K','204']])await page.fill('#'+id,v);
-  await page.click('#gcSave');await page.waitForTimeout(100);check('点石成金四池沿用原字段提交',captures.at(-1).p.JP_5K==='5001'&&captures.at(-1).p.JP_RS==='2002'&&captures.at(-1).p.JP_SF==='503'&&captures.at(-1).p.JP_4K==='204'&&!('JP_DIA'in captures.at(-1).p));
+  await clickSave(1);await page.waitForTimeout(100);check('点石成金四池沿用原字段提交',captures.at(-1).p.JP_5K==='5001'&&captures.at(-1).p.JP_RS==='2002'&&captures.at(-1).p.JP_SF==='503'&&captures.at(-1).p.JP_4K==='204'&&!('JP_DIA'in captures.at(-1).p));
   await page.selectOption('#gcGameSel','44');await page.waitForFunction(()=>GC_TABLES[0]&&GC_TABLES[0].id===44000);await page.evaluate(()=>gcSelectTableById(44000));
   check('NBA四池显示当前值且零有效',JSON.stringify(await page.locator('#gcJpTable .gc-jp-current-value').allTextContents())===JSON.stringify(['0','2080','530','240']));
   check('NBA三王额外奖仍在表内',await page.locator('#gcJpTable tbody .gc-jp-nba').count()===4);
