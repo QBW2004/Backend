@@ -169,8 +169,8 @@
         <select id="gcLineSel" class="gc-select"><option value="">公共桌台</option></select>
         <a href="javascript:;" id="gcLineCopy" class="gc-newbtn" style="display:none;" title="把本游戏全部公共桌台的参数复制一套，作为该线的专属桌台">从公共桌台复制一套</a>
         <a href="javascript:;" id="gcLineRecall" class="gc-newbtn" style="display:none;" title="收回该线的专属桌台，该线玩家回到公共桌台">收回专属桌台</a>
-        <button type="button" id="mjhlAgentCopy" class="gc-newbtn" style="display:none;" title="复制当前已保存的默认参数和权重，作为该代理线的独立配置">复制默认配置</button>
-        <button type="button" id="mjhlAgentRecall" class="gc-newbtn" style="display:none;" title="收回独立配置，后续跟随默认参数和权重更新">恢复使用默认配置</button>
+        <button type="button" id="mjhlAgentCopy" class="gc-newbtn" style="display:none;" title="复制当前已保存的公共桌台参数和权重，作为该代理线的独立参数配置">复制公共参数配置</button>
+        <button type="button" id="mjhlAgentRecall" class="gc-newbtn" style="display:none;" title="收回该代理线的独立参数配置，改用公共桌台参数并跟随其后续更新">收回独立参数配置</button>
         <span id="gcLineTip" class="gc-line-tip"></span>
     </div>
 
@@ -704,13 +704,16 @@
         var owned = line ? gcLineCount(line) : 0;
         var ready = !GC_LINE_INFO || GC_LINE_INFO.Ready !== false;
         $('#gcLine').val(line);
-        $('#gcLineCopy').toggle(ready && hasGame && !!line && owned === 0);
-        $('#gcLineRecall').toggle(ready && hasGame && !!line && owned > 0);
-        $('#gcNewTable').toggle(!line);
+        var mjhlMode = $('#gcForm').hasClass('gc-mjhl-mode');
+        $('#gcLineCopy').toggle(!mjhlMode && ready && hasGame && !!line && owned === 0);
+        $('#gcLineRecall').toggle(!mjhlMode && ready && hasGame && !!line && owned > 0);
+        // 公共视图照常新建；专属视图在该线已有专属桌台后可再新增（桌号接在最大桌号后，归属该线）
+        $('#gcNewTable').toggle(!mjhlMode && (!line || (ready && hasGame && owned > 0)));
+        $('#gcDelete,#gcRefresh').toggle(!mjhlMode);
         var tip = '';
         if (!ready) tip = '数据库还没有执行代理线补丁，暂不能分配专属桌台';
         else if (hasGame && line && owned === 0) tip = '该线目前使用公共桌台';
-        else if (hasGame && line) tip = '以下为该线专属桌台，参数只对该线玩家生效（需新版客户端）';
+        else if (hasGame && line) tip = '以下为该线专属桌台，参数只对该线玩家生效（需新版客户端）；可点「新建桌台」继续新增专属桌台';
         $('#gcLineTip').text(tip);
         gcMjhlInheritanceUi();
         if (gameId === 54) { $('#gcLineCopy,#gcLineRecall,#gcNewTable,#gcDelete,#gcRefresh').hide(); }
@@ -905,10 +908,10 @@
         $('.gc-wrap').toggleClass('gc-mjhl-desktop', !!on);
         $grid.toggleClass('gc-mjhl-grid', !!on);
         $('#gcParaFoot').toggle(!on);
-        $('#gcNewTable,#gcDelete,#gcRefresh,#gcLineCopy,#gcLineRecall').toggle(!on && !gcCurLine());
-        gcMjhlInheritanceUi();
+        // 选中代理线时复制/收回/新建的显隐由 gcApplyLineUi 统一决定；这里只负责麻将模式整体隐藏/恢复
+        gcApplyLineUi();
         if (on) {
-            $('#gcCurTableName').text('麻将胡了 · ' + (gcCurLine() === '*' ? '默认' : (gcCurLine() || '请选择代理线')));
+            $('#gcCurTableName').text('麻将胡了 · ' + (gcCurLine() === '*' ? '公共桌台参数' : (gcCurLine() || '请选择代理线')));
             $('#gcMjhlAgentPanel .gc-weight-body').each(function () {
                 var body = $(this).empty(), mode = body.attr('data-mode'), modeName = mode === 'f' ? '免费局' : '普通局';
                 $.each(GC_MJHL_NAMES, function (i, name) {
@@ -993,11 +996,11 @@
         var canChange = current && line !== '*' && GC_MJHL_AGENT_CAN_EDIT;
         $('#mjhlAgentCopy').toggle(!!canChange && !meta.configured).prop('disabled', GC_MJHL_WRITING || !current || !meta.defaultAvailable);
         $('#mjhlAgentRecall').toggle(!!canChange && !!meta.configured).prop('disabled', GC_MJHL_WRITING || !current || !meta.defaultAvailable);
-        if (gcIsMjhl()) $('#gcLineTip').text(line === '*' ? '默认参数：未单独配置的代理线玩家按此生效'
+        if (gcIsMjhl()) $('#gcLineTip').text(line === '*' ? '公共桌台参数：麻将胡了没有桌台，未设独立参数的代理线玩家按此生效'
             : !line ? '请选择代理线' : !current ? '正在读取代理线参数…'
-            : !meta.defaultAvailable ? (meta.configured ? '该代理线使用独立配置；默认配置尚未保存，暂不能恢复使用默认配置' : '默认配置尚未保存，请先配置默认参数')
-            : meta.configured ? '该代理线使用独立配置，默认配置的后续修改不会影响本线'
-            : meta.inherited ? '该代理线使用默认配置；复制后可独立调参' : '默认配置尚未保存，请先配置默认参数');
+            : !meta.defaultAvailable ? (meta.configured ? '该代理线使用独立参数配置；公共桌台参数尚未保存，暂不能收回独立参数配置' : '公共桌台参数尚未保存，请先配置公共桌台参数')
+            : meta.configured ? '该代理线使用独立参数配置，可直接修改保存；公共桌台参数的后续修改不会影响本线'
+            : meta.inherited ? '该代理线使用公共桌台参数；点「复制公共参数配置」后可独立设置' : '公共桌台参数尚未保存，请先配置公共桌台参数');
     }
     function gcMjhlCancelRtp() {
         GC_MJHL_RTP_SEQ++;
@@ -1199,7 +1202,7 @@
         $('#mjhlBetMin').val(b.min); $('#mjhlBetMax').val(b.max); $('#mjhlBetEntry').val(b.entry);
         $('#mjhlBetChips').val((b.chips || []).join(',')); $('#mjhlScorePerCoin').val(b.scorePerCoin);
         gcMjhlRenderWeights(); gcMjhlSavedRtp(meta); gcMjhlActualRtp();
-        $('#mjhlAgentStatus').text(meta ? ((meta.inherited ? '使用默认配置 · 默认版本 ' : '版本 ') + (meta.sourceRevision || meta.revision || '0') + (meta.updatedAt ? ' · ' + meta.updatedAt : '')) : '').data('revision', meta && meta.revision ? String(meta.revision) : '0');
+        $('#mjhlAgentStatus').text(meta ? ((meta.inherited ? '使用公共桌台参数 · 公共版本 ' : '版本 ') + (meta.sourceRevision || meta.revision || '0') + (meta.updatedAt ? ' · ' + meta.updatedAt : '')) : '').data('revision', meta && meta.revision ? String(meta.revision) : '0');
         var canEdit = !!(meta && meta.canEdit); GC_MJHL_AGENT_CAN_EDIT = canEdit; $('#mjhlAgentReadonly').text(canEdit ? '' : '当前账号只读'); gcMjhlControls();
     }
     function gcMjhlReadWeights() {
@@ -1261,10 +1264,10 @@
     function gcMjhlChangeInheritance(copy) {
         var line = gcCurLine(), meta = GC_MJHL_META, seq = GC_MJHL_LOAD_SEQ;
         if (!gcIsMjhl() || !line || line === '*' || !GC_MJHL_AGENT_CAN_EDIT || GC_MJHL_LOADED_LINE !== line || !meta || meta.lineAgent !== line || GC_MJHL_WRITING) return;
-        if (!meta.defaultAvailable) { showToast('请先保存默认配置。', 'warning'); return; }
+        if (!meta.defaultAvailable) { showToast('请先保存公共桌台参数。', 'warning'); return; }
         if (copy === !!meta.configured) return;
-        var question = copy ? '确定把当前已保存的默认参数和权重复制给【' + line + '】吗？复制后本线可独立调参，不再跟随默认配置。'
-            : '确定收回【' + line + '】的独立配置吗？本线将改用默认参数和权重，并跟随后续默认配置更新。';
+        var question = copy ? '确定把当前已保存的公共桌台参数和权重复制给【' + line + '】吗？复制后本线使用独立参数配置，可单独设置，不再跟随公共桌台参数。'
+            : '确定收回【' + line + '】的独立参数配置吗？本线将改用公共桌台参数和权重，并跟随其后续更新。';
         confirm(question + '\n本页未保存的修改将放弃。', function () {
             if (GC_MJHL_WRITING || seq !== GC_MJHL_LOAD_SEQ || line !== gcCurLine() || !gcIsMjhl()) return;
             gcMjhlCancelRtp();
@@ -1322,7 +1325,6 @@
             $('#gcMinBet,#gcMaxBet').attr('min', '0');
         }
         gcApplyViceDraw();
-        $('#gcNewTable').toggle(!gcCurLine());
         gcMjhlApplyMode(gcIsMjhl());
     }
 
@@ -1531,8 +1533,8 @@
 
     function gcPrepareNewTableForm(count) {
         var type = gcGetType();
-        if (gcCurLine()) {
-            showToast('专属桌台请用「从公共桌台复制一套」生成，不能直接新建！', 'warning');
+        if (gcCurLine() && gcLineCount(gcCurLine()) < 1) {
+            showToast('该线还没有专属桌台，请先点「从公共桌台复制一套」，之后可在此继续新增专属桌台！', 'warning');
             return;
         }
         if (type != 0 && type != 1 && type != 2 && type != 3) {
@@ -1555,9 +1557,10 @@
         $('#gcGameType').val(type);
         $('#gcTableName').val('');
         gcApplyType();
+        var newKind = gcCurLine() ? '张【' + gcCurLine() + '】专属桌台' : '张桌台';
         $('#gcCurTableName').text(src
-            ? '新建' + GC_NEW_TABLE_COUNT + '张桌台（已套用最近桌台基础参数，填写桌名并核对权重后保存）'
-            : '新建' + GC_NEW_TABLE_COUNT + '张桌台（基础参数与权重一并保存）');
+            ? '新建' + GC_NEW_TABLE_COUNT + newKind + '（已套用最近桌台基础参数，填写桌名并核对权重后保存）'
+            : '新建' + GC_NEW_TABLE_COUNT + newKind + '（基础参数与权重一并保存）');
         if (window.labaWeightsLoad) window.labaWeightsLoad();
         if (window.phenixConfigLoad) window.phenixConfigLoad();
         if (window.rabbitPayoutLoad) window.rabbitPayoutLoad();
@@ -1569,8 +1572,8 @@
 
     function gcNewTable() {
         var type = gcGetType();
-        if (gcCurLine()) {
-            showToast('专属桌台请用「从公共桌台复制一套」生成，不能直接新建！', 'warning');
+        if (gcCurLine() && gcLineCount(gcCurLine()) < 1) {
+            showToast('该线还没有专属桌台，请先点「从公共桌台复制一套」，之后可在此继续新增专属桌台！', 'warning');
             return;
         }
         if (type != 0 && type != 1 && type != 2 && type != 3) {
@@ -2326,10 +2329,17 @@
     }
 
     function gcReloadAfterNewTables() {
-        gcLoadTables(function () {
-            if (GC_TABLES.length > 0) gcSelectTableById(gcLatestTable().id);
-            else gcPrepareNewTableForm(1);
+        gcReloadLinesThen(function () {
+            gcLoadTables(function () {
+                if (GC_TABLES.length > 0) gcSelectTableById(gcLatestTable().id);
+                else gcPrepareNewTableForm(1);
+            });
         });
+    }
+    // 专属视图里桌数变化后先刷新「代理」下拉的专属桌数（复制/收回/新建按钮显隐依赖它），公共视图直接继续
+    function gcReloadLinesThen(next) {
+        if (gcCurLine()) gcLoadLines(next);
+        else next();
     }
 
     function gcRequestTableSave(para, callback) {
@@ -2504,13 +2514,17 @@
             gcMsg(data);
             if (data && (data.code == 1 || data.datas === true)) {
                 if (savingLaba && (saveGame !== parseInt($('#gcGameId').val(), 10) || saveLine !== gcCurLine() || savedId !== parseInt($('#gcId').val(), 10))) return;
-                gcLoadTables(function () {
-                    if (wasNew) {
-                        if (GC_TABLES.length > 0) gcSelectTableById(gcLatestTable().id);
-                        else gcPrepareNewTableForm(1);
-                    }
-                    else gcSelectTableById(savedId);
-                });
+                var reloadTables = function () {
+                    gcLoadTables(function () {
+                        if (wasNew) {
+                            if (GC_TABLES.length > 0) gcSelectTableById(gcLatestTable().id);
+                            else gcPrepareNewTableForm(1);
+                        }
+                        else gcSelectTableById(savedId);
+                    });
+                };
+                if (wasNew) gcReloadLinesThen(reloadTables);
+                else reloadTables();
             }
         });
     }
@@ -2533,8 +2547,8 @@
                     // 先本地移除已删除桌台并立即重渲染，保证 UI 即时响应，且不被任何提示异常阻断；
                     GC_TABLES = $.grep(GC_TABLES, function (t) { return parseInt(t.id, 10) !== savedId; });
                     gcRenderTableList();
-                    // 再向服务端拉取最新列表做一次权威校正同步。
-                    gcLoadTables();
+                    // 再向服务端拉取最新列表做一次权威校正同步（专属视图同时刷新该线专属桌数）。
+                    gcReloadLinesThen(function () { gcLoadTables(); });
                 }
                 gcMsg(data);
             });

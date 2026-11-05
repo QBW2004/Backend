@@ -24,7 +24,7 @@ const server=http.createServer(async(req,res)=>{
         if(route.endsWith('/GetGameList'))return json([{id:54,text:'麻将胡了',gameType:3,paraType:3},{id:5,text:'火凤凰',gameType:1,paraType:1}]);
         if(route.endsWith('/GetLineOptions'))return json({code:1,datas:{Ready:true,Lines:[{id:'',count:2,text:'公共桌台'}]}});
         if(route.endsWith('/GetTableConfig'))return json({code:1,datas:[]});
-        if(route.endsWith('/GetMjhlAgentLines'))return json({code:1,datas:{Lines:[{id:'*',text:'默认'},{id:'agentA',text:'agentA'+(state.configured?'（独立配置）':'（使用默认配置）')},{id:'agentB',text:'agentB（独立配置）'}],CanEdit:canEdit}});
+        if(route.endsWith('/GetMjhlAgentLines'))return json({code:1,datas:{Lines:[{id:'*',text:'公共桌台参数'},{id:'agentA',text:'agentA'+(state.configured?'（独立参数配置）':'（使用公共桌台参数）')},{id:'agentB',text:'agentB（独立参数配置）'}],CanEdit:canEdit}});
         if(route.endsWith('/GetMjhlAgentConfig')){
             let data=clone(p.lineAgent==='agentA'?state:fixture.copied);data.lineAgent=p.lineAgent;data.canEdit=canEdit;data.defaultAvailable=defaultAvailable;
             if(p.lineAgent==='*'){data.sourceLine='*';data.inherited=false;data.configured=true;}
@@ -52,7 +52,7 @@ const server=http.createServer(async(req,res)=>{
         await page.selectOption('#gcLineSel','agentA');await loaded('agentA');
         check(await page.locator('#mjhlAgentCopy').isVisible()&&!await page.locator('#mjhlAgentRecall').isVisible(),'inherited line offers copy only');
         check(await page.locator('#mjhlGoldChance').inputValue()===String(fixture.inherited.config.goldChance),'inherited fields match real Controller response');
-        check((await page.locator('#gcLineTip').textContent()).includes('使用默认配置'),'inherited status explained');
+        check((await page.locator('#gcLineTip').textContent()).includes('使用公共桌台参数'),'inherited status explained');
         check(!await page.locator('#gcLineCopy').isVisible()&&!await page.locator('#gcLineRecall').isVisible(),'ordinary table operations stay hidden');
         check(await page.evaluate(()=>GC_MJHL_CALIBRATING)&&await page.locator('#mjhlAgentCopy').isEnabled(),'copy works while RTP verification runs');
         await page.click('#mjhlAgentCopy');check(posts.length===0,'copy cancel sends nothing');
@@ -69,7 +69,7 @@ const server=http.createServer(async(req,res)=>{
         accept=true;await page.click('#mjhlAgentRecall');await page.waitForFunction(()=>GC_MJHL_META&&GC_MJHL_META.inherited&&GC_MJHL_META.revision==='2'&&!GC_MJHL_WRITING);
         check(posts.length===2&&posts[1].route.endsWith('RecallMjhlAgentConfig'),'recall sends dedicated config action');
         check(await page.locator('#mjhlGoldChance').inputValue()===String(fixture.recalled.config.goldChance),'recall displays current default response');
-        check((await page.locator('#mjhlAgentStatus').textContent()).includes('使用默认配置'),'recall source status shown');
+        check((await page.locator('#mjhlAgentStatus').textContent()).includes('使用公共桌台参数'),'recall source status shown');
         await page.screenshot({path:path.join(out,'inheritance-ui.png')});
         // Late response cannot switch the currently selected line or replace its fields.
         delay=250;await page.click('#mjhlAgentCopy');await page.selectOption('#gcLineSel','agentB');await loaded('agentB');

@@ -596,6 +596,21 @@ namespace YYT.Web.Areas.Game.Controllers
                     msg.content = "请选择游戏！";
                     return Json(msg);
                 }
+                // 复制哪些按桌表由参数口径决定：以库里 games.GameType 换算为准，页面传来的类型对不上（页面过期/选错）直接拒绝
+                using (var efType = new GameDbContext())
+                {
+                    var game = efType.Games.Where(g => g.GameId == gameId).Select(g => new { g.GameType }).FirstOrDefault();
+                    if (game == null)
+                    {
+                        msg.content = "游戏不存在，请刷新页面后重试！";
+                        return Json(msg);
+                    }
+                    if (GetParaGameType(gameId, game.GameType) != gameType)
+                    {
+                        msg.content = "游戏类型与所选游戏不匹配，请刷新页面后重试！";
+                        return Json(msg);
+                    }
+                }
                 msg = LineTables.CopyPublicToLine(gameId, gameType, line);
                 if (msg.code == 1)
                 {
@@ -860,6 +875,9 @@ namespace YYT.Web.Areas.Game.Controllers
         public ActionResult SaveTableConfig(FormCollection form)
         {
             Msg msg = new Msg(0, "保存失败！");
+            // 专属视图新建桌台时预登记的桌号与游戏；保存没写成桌台（任何提前返回或异常）时在 finally 里撤掉登记
+            int lineReservedIdx = -1;
+            int lineReservedGame = -1;
             try
             {
                 M_LoginUser loginUser = WebHelper.GetLoginInfo();
@@ -891,15 +909,23 @@ namespace YYT.Web.Areas.Game.Controllers
                 if (form["RabbitConfigJson"] != null &&
                     (gameType != 1 || gameId != RabbitRaceActivity.GameId || string.IsNullOrWhiteSpace(form["RabbitConfigJson"])))
                     throw new ArgumentException("大白兔玩法规则内容无效或不属于当前游戏。");
-                if (tableId < 0 && !string.IsNullOrEmpty((form.Q<string>("LINE") ?? string.Empty).Trim()))
+                // 专属视图新建桌台（2026-11-05）：该线须已有专属桌台；桌号接在最大桌号后，并在写参数前先登记归属，
+                // 保存后的 RP/PC 热更下发时这张桌已是该线专属。
+                string saveLine = (form.Q<string>("LINE") ?? string.Empty).Trim();
+                int lineNewTableId = -1;
+                if (tableId < 0 && !string.IsNullOrEmpty(saveLine))
                 {
-                    msg.content = "专属桌台请在“代理”下拉选中该线后点「从公共桌台复制一套」生成，不能直接新建！";
-                    return Json(msg);
+                    Msg reserve = LineTables.ReserveNewLineTable(gameId, saveLine);
+                    if (reserve.code != 1)
+                        return Json(reserve);
+                    lineReservedIdx = Convert.ToInt32(reserve.datas);
+                    lineReservedGame = gameId;
+                    lineNewTableId = gameId * 1000 + lineReservedIdx;
                 }
 
                 if (gameType == 3)
                 {
-                    if (tableId < 0) tableId = AllocTableId(3, gameId);
+                    if (tableId < 0) tableId = lineNewTableId >= 0 ? lineNewTableId : AllocTableId(3, gameId);
                     int subType = GetLabaSubType(gameId);
                     string labaTableName = (form.Q<string>("TableName", string.Empty) ?? string.Empty).Trim();
                     int labaEnabled = form.Q<int>("Enabled", 1);
@@ -1063,7 +1089,7 @@ namespace YYT.Web.Areas.Game.Controllers
                 }
                 bool isNew = tableId < 0;
                 if (isNew)
-                    tableId = AllocTableId(gameType, gameId);
+                    tableId = lineNewTableId >= 0 ? lineNewTableId : AllocTableId(gameType, gameId);
 
                 int maxSeats = gameType == 2 ? 6 : (gameType == 1 ? 0 : 8);
 
@@ -1650,6 +1676,14 @@ namespace YYT.Web.Areas.Game.Controllers
                 LogHelper.WriteLog(typeof(GameConfigController), ex);
                 msg.code = 0;
                 msg.content = "保存失败：" + ex.Message;
+            }
+            finally
+            {
+                if (lineReservedIdx >= 0)
+                {
+                    try { LineTables.ReleaseUnusedReservation(lineReservedGame, lineReservedIdx); }
+                    catch (Exception exRelease) { LogHelper.WriteLog(typeof(GameConfigController), exRelease); }
+                }
             }
             return Json(msg);
         }

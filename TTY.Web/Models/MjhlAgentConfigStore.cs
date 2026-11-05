@@ -76,17 +76,17 @@ namespace YYT.Web.Models
 
         public static Row ChangeInheritance(GameDbContext ef, string line, long expected, long expectedDefault, bool copy, string actor)
         {
-            if (string.IsNullOrEmpty(line) || line == MjhlAgentConfig.DefaultLine) throw new ArgumentException("请选择要操作的代理线，默认配置不能复制给自身或收回。");
+            if (string.IsNullOrEmpty(line) || line == MjhlAgentConfig.DefaultLine) throw new ArgumentException("请选择要操作的代理线，公共桌台参数不能复制给自身或收回。");
             using (var tx = ef.Database.BeginTransaction())
             {
                 Row defaults = Read(ef, MjhlAgentConfig.DefaultLine, true);
-                if (defaults == null) throw new ArgumentException("请先保存默认配置，再复制或恢复使用默认配置。");
-                if (defaults.Revision != expectedDefault) throw new ArgumentException("默认配置已更新，请重新载入后再操作。");
+                if (defaults == null) throw new ArgumentException("请先保存公共桌台参数，再复制公共参数配置或收回独立参数配置。");
+                if (defaults.Revision != expectedDefault) throw new ArgumentException("公共桌台参数已更新，请重新载入后再操作。");
                 var config = MjhlAgentConfig.Parse(defaults.ConfigJson);
                 Row previous = Read(ef, line, true);
                 long revision = NextRevision(ef, line, previous, expected);
                 if (copy && previous != null) throw new ArgumentException("该代理线已有独立配置，无需重复复制。");
-                if (!copy && previous == null) throw new ArgumentException("该代理线已在使用默认配置。");
+                if (!copy && previous == null) throw new ArgumentException("该代理线已在使用公共桌台参数。");
                 Row row;
                 if (copy)
                     row = Write(ef, line, null, revision, config, actor, defaults.SimulationSummary);
@@ -95,7 +95,7 @@ namespace YYT.Web.Models
                     int changed = ef.Database.ExecuteSqlCommand("DELETE FROM mjhl_agent_config WHERE GameId=54 AND LineAgent={0} AND Revision={1}", line, previous.Revision);
                     if (changed != 1) throw new ArgumentException("配置已被其他页面更新，请重新载入后再操作。");
                     row = new Row { GameId = 54, LineAgent = line, Revision = revision, ConfigJson = previous.ConfigJson, ConfigHash = previous.ConfigHash, UpdatedBy = actor, UpdatedAt = DateTime.UtcNow };
-                    History(ef, row, "恢复使用默认配置；收回独立版本 " + previous.Revision + "，默认版本 " + defaults.Revision + "；本条保留收回前参数。");
+                    History(ef, row, "收回独立参数配置，改用公共桌台参数；收回独立版本 " + previous.Revision + "，公共版本 " + defaults.Revision + "；本条保留收回前参数。");
                 }
                 tx.Commit();
                 return row;

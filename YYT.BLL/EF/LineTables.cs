@@ -163,12 +163,15 @@ namespace YYT.BLL.EF
                     msg.content = "数据库缺少 roomtableowner 表，请先执行 SQL 补丁「多客户端包与代理线-20261030.sql」！";
                     return msg;
                 }
-                bool isLine = ef.Admins.Any(a => a.ID == line && a.PRIV == 1);
-                if (!isLine)
+                // MySQL 比较不分大小写，但中心服按 admin.ID 原样下发玩家所属线、游戏服逐字节比对归属：
+                // 归属一律写成库里 admin.ID 的原样写法，否则后台看得到专属桌、该线玩家却看不到（只会落回公共桌）。
+                string agent = ef.Admins.Where(a => a.ID == line && a.PRIV == 1).Select(a => a.ID).FirstOrDefault();
+                if (agent == null)
                 {
                     msg.content = "该账号不是超管的直属代理！";
                     return msg;
                 }
+                line = agent;
                 Dictionary<int, string> owners = GetOwners(ef, gameId);
                 if (owners.Values.Any(v => string.Equals(v, line, StringComparison.OrdinalIgnoreCase)))
                 {
@@ -224,6 +227,74 @@ namespace YYT.BLL.EF
                 msg.datas = publicIndexes.Count;
             }
             return msg;
+        }
+
+        /// <summary>
+        /// 专属视图里「新建桌台」（2026-11-05）：给已有专属桌台的线再加一张。桌号接在现有最大桌号之后（不复用已收回桌号——
+        /// 那些桌的按桌行还在，走普通新建流程会和旧行冲突），并在写桌台参数**之前**先登记归属，
+        /// 保证保存后的 RP/PC 热更下发时这张桌已是该线专属，不会有一瞬间作为公共桌台被其他线看到。
+        /// 保存失败时调用方须 <see cref="ReleaseUnusedReservation"/> 撤掉登记。成功时 datas 为桌号（0 起）。
+        /// </summary>
+        public static Msg ReserveNewLineTable(int gameId, string line)
+        {
+            Msg msg = new Msg(0, "新建专属桌台失败！");
+            if (string.IsNullOrEmpty(line) || line == LineScopeRules.RecycledLine)
+            {
+                msg.content = "请选择直属代理！";
+                return msg;
+            }
+            if (gameId == 54)
+            {
+                msg.content = "麻将胡了按代理线配置，不支持专属桌台！";
+                return msg;
+            }
+            using (var ef = new GameDbContext())
+            {
+                if (!OwnerTableExists(ef))
+                {
+                    msg.content = "数据库缺少 roomtableowner 表，请先执行 SQL 补丁「多客户端包与代理线-20261030.sql」！";
+                    return msg;
+                }
+                string agent = ef.Admins.Where(a => a.ID == line && a.PRIV == 1).Select(a => a.ID).FirstOrDefault();
+                if (agent == null)
+                {
+                    msg.content = "该账号不是超管的直属代理！";
+                    return msg;
+                }
+                Dictionary<int, string> owners = GetOwners(ef, gameId);
+                if (!owners.Values.Any(v => string.Equals(v, agent, StringComparison.OrdinalIgnoreCase)))
+                {
+                    msg.content = "该线在本游戏还没有专属桌台，请先点「从公共桌台复制一套」！";
+                    return msg;
+                }
+                int maxIndex = ef.Database.SqlQuery<int?>(
+                    "SELECT MAX(TableIndex) FROM roomtableconfig WHERE GAME_ID={0}", gameId).FirstOrDefault() ?? -1;
+                int idx = maxIndex + 1;
+                if (idx >= MaxTables)
+                {
+                    msg.content = "桌台数量已达上限 " + MaxTables + "，无法新建！";
+                    return msg;
+                }
+                // 与复制一致写成 admin.ID 原样写法（游戏服逐字节比对归属）
+                AssignOwner(ef, gameId, idx, agent);
+                msg.code = 1;
+                msg.content = "ok";
+                msg.datas = idx;
+            }
+            return msg;
+        }
+
+        /// <summary>撤掉 <see cref="ReserveNewLineTable"/> 的预登记：只在该桌号确实没有写成桌台时删除，已保存成功的不动。</summary>
+        public static void ReleaseUnusedReservation(int gameId, int tableIndex)
+        {
+            if (tableIndex < 0) return;
+            using (var ef = new GameDbContext())
+            {
+                if (!OwnerTableExists(ef)) return;
+                ef.Database.ExecuteSqlCommand(
+                    "DELETE FROM roomtableowner WHERE GAME_ID={0} AND TableIndex={1} AND NOT EXISTS (SELECT 1 FROM roomtableconfig WHERE GAME_ID={0} AND TableIndex={1})",
+                    gameId, tableIndex);
+            }
         }
 
         /// <summary>收回某线在某游戏的专属桌台：桌号不删除，归属改为 #（谁都看不到），下次分配优先复用。调用方随后发 RP。</summary>

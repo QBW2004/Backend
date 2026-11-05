@@ -39,10 +39,10 @@ namespace YYT.Web.Areas.Game.Controllers
                     var configured = ef.Database.SqlQuery<string>("SELECT LineAgent FROM mjhl_agent_config WHERE GameId=54").ToList();
                     var lines = new System.Collections.Generic.List<object>();
                     if (viewer.UserPriv == 0)
-                        lines.Add(new { id = MjhlAgentConfig.DefaultLine, text = "默认（未单独配置的代理线使用）", count = 1 });
+                        lines.Add(new { id = MjhlAgentConfig.DefaultLine, text = "公共桌台参数（未设独立参数的代理线使用）", count = 1 });
                     lines.AddRange((viewer.UserPriv == 0 ? LineScopeRules.GetLineAgents(ef) : new System.Collections.Generic.List<string> { own })
                         .Where(line => !string.IsNullOrEmpty(line) && LineScopeRules.IsGameAllowed(LineScopeRules.GetLinePlayableGames(ef, line), 54))
-                        .Select(line => (object)new { id = line, text = line + (configured.Contains(line, StringComparer.OrdinalIgnoreCase) ? "（独立配置）" : "（使用默认配置）"), count = configured.Contains(line, StringComparer.OrdinalIgnoreCase) ? 1 : 0 }));
+                        .Select(line => (object)new { id = line, text = line + (configured.Contains(line, StringComparer.OrdinalIgnoreCase) ? "（独立参数配置）" : "（使用公共桌台参数）"), count = configured.Contains(line, StringComparer.OrdinalIgnoreCase) ? 1 : 0 }));
                     return Json(new { code = 1, datas = new { Ready = true, Lines = lines, Owned = 0, Recycled = 0, CanEdit = viewer.UserPriv.GetValueOrDefault(-1) == 0 } });
                 }
             }
@@ -100,7 +100,7 @@ namespace YYT.Web.Areas.Game.Controllers
                 }
                 var hot = SendMjhlHotReload(54);
                 bool sent = hot != null && hot.code == 1;
-                string action = copy ? "已复制默认配置，该代理线现使用独立配置" : "已收回独立配置，该代理线现跟随默认配置";
+                string action = copy ? "已复制公共参数配置，该代理线现使用独立参数配置" : "已收回独立参数配置，该代理线现跟随公共桌台参数";
                 LogHelper.WriteLog(typeof(GameConfigController), "[MjhlAgentConfig] action=" + (copy ? "copy-default" : "recall") + " line=" + row.LineAgent + " revision=" + row.Revision + " defaultRevision=" + expectedDefault + " operator=" + row.UpdatedBy + " hotReload=" + sent);
                 return Json(new { code = 1, revision = row.Revision.ToString(CultureInfo.InvariantCulture), hotReload = sent,
                     content = action + (sent ? "，更新指令已发送。" : "；更新指令未成功，游戏服可能仍使用旧版本。") });
