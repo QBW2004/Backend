@@ -108,13 +108,21 @@ namespace YYT.BLL.EF
             return StartMinute < EndMinute ? minute >= StartMinute && minute < EndMinute : minute >= StartMinute || minute < EndMinute;
         }
 
-        /// <summary>当前活动日的开放起点（北京时间）；跨零点窗口凌晨段归前一天，与游戏服 ActivityDay 同口径。</summary>
+        /// <summary>最近一次到达的活动开放起点（北京时间）；下一次开始前仍属于上一轮，与游戏服 ActivityDay 同口径。</summary>
         public DateTime ActivityDayStart(DateTime beijingNow)
         {
             DateTime day = beijingNow.Date;
             int minute = beijingNow.Hour * 60 + beijingNow.Minute;
-            if (StartMinute > EndMinute && minute < EndMinute) day = day.AddDays(-1);
+            if (minute < StartMinute) day = day.AddDays(-1);
             return day.AddMinutes(StartMinute);
+        }
+
+        /// <summary>最近已开始的一轮所用名额的记录起点；下一轮开始前保留上一轮计数。
+        /// 统计完整活动日，避免修改开始时间后漏掉当天较早已扣的名额。</summary>
+        public DateTime QuotaDayStart(DateTime beijingNow)
+        {
+            DateTime day = ActivityDayStart(beijingNow).Date;
+            return StartMinute > EndMinute ? day.AddMinutes(EndMinute) : day;
         }
     }
 
@@ -165,7 +173,7 @@ namespace YYT.BLL.EF
         /// </summary>
         public static int CountUsed(GameDbContext ef, RabbitRaceActivity activity, DateTime utcNow)
         {
-            DateTime startBj = activity.ActivityDayStart(RabbitRaceActivity.BeijingNow(utcNow));
+            DateTime startBj = activity.QuotaDayStart(RabbitRaceActivity.BeijingNow(utcNow));
             DateTime startLocal = DateTime.SpecifyKind(startBj - RabbitRaceActivity.BeijingOffset, DateTimeKind.Utc).ToLocalTime();
             DateTime endLocal = startLocal.AddDays(1);
             return ef.Database.SqlQuery<int>(

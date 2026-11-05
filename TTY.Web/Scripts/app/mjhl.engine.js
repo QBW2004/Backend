@@ -719,7 +719,7 @@
             var available = Math.min(validationCount,sampleBudget.limit-sampleBudget.used);
             if (available < 100) { budgetExceeded(); return; }
             var currentWords=words || validationSeed128, currentRound=validationAttempts.length+1;
-            verifyRtp(chosen.profile, { validationCount:available, tolerancePercent:tolerancePercent, targetPercent:percent,
+            (opts.verifier || verifyRtp)(chosen.profile, { validationCount:available, tolerancePercent:tolerancePercent, targetPercent:percent,
                 validationSeed128:currentWords, seed:validationSeed, cancelled:cancelled, confidenceCheckCount:confidenceCheckCount,
                 sampleRunner:opts.sampleRunner, quickCheckpoints:opts.quickCheckpoints,
                 allowTargetCorrection:!!opts.quickCheckpoints && !!maxCorrections && validationAttempts.length === 0,

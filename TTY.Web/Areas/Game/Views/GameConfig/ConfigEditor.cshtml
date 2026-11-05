@@ -1052,22 +1052,24 @@
     function gcMjhlDistributionText(stats, exact) {
         if (stats && (exact || stats.exact)) return '固定无奖权重：自然开奖无返奖，也不会触发免费。';
         var d = stats && stats.distribution, keys = ['zero','small','medium','big','mega','super'];
+        var distributionCount = stats && (stats.distributionCount || stats.count);
         var labels = ['无返奖','小奖（不足5倍）','中奖（5～不足20倍）','大奖（20～不足35倍）','巨奖（35～不足50倍）','超级巨奖（50倍及以上）'], sum = 0, lines = [];
-        if (!d || !stats.count) return '此结果未记录奖型分布，请点击“计算当前权重 RTP”。';
+        if (!d || !distributionCount) return '此结果未记录奖型分布，请点击“计算当前权重 RTP”。';
+        if (stats.distributionCount) lines.push('以下分布为 ' + distributionCount.toLocaleString() + ' 个完整付费回合的独立估算。');
         for (var i = 0; i < keys.length; i++) {
             var n = d[keys[i]];
             if (typeof n !== 'number' || !isFinite(n) || n < 0 || Math.floor(n) !== n) return '奖型分布数据无效，请重新计算。';
             sum += n;
-            lines.push(labels[i] + '：' + (n * 100 / stats.count).toFixed(3) + '%（' + n.toLocaleString() + '次）');
+            lines.push(labels[i] + '：' + (n * 100 / distributionCount).toFixed(3) + '%（' + n.toLocaleString() + '次）');
         }
-        if (sum !== stats.count) return '奖型分布样本数不一致，请重新计算。';
+        if (sum !== distributionCount) return '奖型分布样本数不一致，请重新计算。';
         return lines.join('\n');
     }
     function gcMjhlPreviewRtp(stats, beforeCalibration, calibrating) {
         if (!gcMjhlRtpValid(stats, false)) return;
         var label = beforeCalibration ? '调整前权重估算 RTP' : calibrating ? '候选权重估算 RTP' : '当前权重估算 RTP';
         var note = stats.unobservedReturn || stats.half95 === 0 ? '本次样本未能确定误差' : '待精确复核';
-        $('#mjhlActualRtp').text(label + '：' + (stats.total * 100).toFixed(2) + '%（' + stats.count.toLocaleString() + '回合，' + note + '）');
+        $('#mjhlActualRtp').text(label + '：' + (stats.total * 100).toFixed(2) + '%（' + stats.count.toLocaleString() + (stats.method ? '个独立旋转样本，' : '回合，') + note + '）');
         $('#mjhlRtpDistribution').text('估算分布，仅供参考。\n' + gcMjhlDistributionText(stats, false));
     }
     function gcMjhlSavedRtp(meta) {
@@ -1109,7 +1111,7 @@
         $('#mjhlActualRtp').text('正在快速估算当前权重 RTP…');
         $('#mjhlRtpProgress').text(type === 'calibrate' ? '随后调权重并精确复核' : '随后精确复核');
         var worker;
-        try { worker = new Worker('@Url.Content("~/Scripts/app/mjhl.agent.rtp.worker.js")?v=mjhl-agent-20261104-preview1'); }
+        try { worker = new Worker('@Url.Content("~/Scripts/app/mjhl.agent.rtp.worker.js")?v=mjhl-verify-20261105-v1'); }
         catch (error) { GC_MJHL_CALIBRATING = false; GC_MJHL_RTP_JOB = ''; gcMjhlControls(); $('#mjhlRtpProgress').text(''); $('#mjhlActualRtp').text('计算未启动：' + error.message); return; }
         GC_MJHL_RTP_WORKER = worker;
         function current() { return seq === GC_MJHL_RTP_SEQ && line === gcCurLine() && gcIsMjhl(); }
@@ -1150,6 +1152,7 @@
             } else $('#mjhlActualRtp').text(gcMjhlRtpText(stats, !!result.exact));
             $('#mjhlRtpDistribution').text(gcMjhlDistributionText(stats, !!result.exact));
             GC_MJHL_RTP_RESULT = { total:stats.total, half95:stats.half95, count:stats.count, distribution:stats.distribution, precisionReached:type === 'verify' ? !!result.precisionReached : type === 'calibrate' && !!result.success, intervalReliable:stats.intervalReliable, unobservedReturn:stats.unobservedReturn, exact:!!result.exact, normalOnly:true };
+            if (stats.method) { GC_MJHL_RTP_RESULT.method=stats.method; GC_MJHL_RTP_RESULT.components=stats.components; GC_MJHL_RTP_RESULT.distributionCount=stats.distributionCount; }
             GC_MJHL_RTP_KEY = gcMjhlRtpMathKey(gcMjhlEngineProfile());
             GC_MJHL_RTP_RESULT.mathFingerprint = gcMjhlRtpFingerprint(GC_MJHL_RTP_KEY);
             // 保存后重新载入相同快照，保留本页已完成的大样本结果；任何权重或开关变化都需重算。

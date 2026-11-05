@@ -19,8 +19,9 @@ class BrowserWorker {
             global.importScripts=function(){
                 for(const url of arguments){
                     const file=path.resolve(path.dirname(workerData.file),String(url).split('?')[0]);
-                    if(path.basename(file)!=='mjhl.engine.js') throw new Error('测试适配器只允许加载同目录麻将引擎');
-                    global.MjhlEngine=require(file);
+                    const names={'mjhl.engine.js':'MjhlEngine','mjhl.rtp.native.js':'MjhlRtpNative','mjhl.rtp.wasm.js':'MjhlRtpWasm'};
+                    if(!names[path.basename(file)]) throw new Error('测试适配器只允许加载麻将计算文件');
+                    global[names[path.basename(file)]]=require(file);
                 }
             };
             require(workerData.file);

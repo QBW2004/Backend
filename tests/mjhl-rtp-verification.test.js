@@ -240,7 +240,7 @@ function checkDistribution(stats) {
     const workerSource=fs.readFileSync(path.join(__dirname,'../TTY.Web/Scripts/app/mjhl.agent.rtp.worker.js'),'utf8');
     const calls=[],messages=[];
     const poolSample=function(){},disposed=[];
-    const scope={importScripts:(...urls)=>urls.forEach(url=>assert(/mjhl\.(engine|rtp\.pool)\.js\?v=mjhl-agent-\d{8}-v\d+$/.test(url))),MjhlRtpPool:{create:()=>({sample:poolSample,dispose:()=>disposed.push(true)})},Date,setTimeout:fn=>fn(),self:{postMessage:value=>messages.push(value)},MjhlEngine:{
+    const scope={importScripts:(...urls)=>urls.forEach(url=>assert(/mjhl\.(engine|rtp\.(pool|native|wasm|verify))\.js\?v=mjhl-verify-\d{8}-v\d+$/.test(url))),MjhlRtpPool:{create:()=>({sample:poolSample,dispose:()=>disposed.push(true)})},Date,setTimeout:fn=>fn(),self:{postMessage:value=>messages.push(value)},MjhlEngine:{
         proveZeroReturn:()=>false,xoshiro128ss:()=>()=>0.5,sample:(p,count,seed,opts,done)=>done(null,direct),
         freshSeed:()=>123456,freshSeed128:()=>words.slice(),
         verifyRtp:(p,opts,done)=>{calls.push({kind:'verify',p,opts});done(null,{stats:direct,precisionReached:false,exact:false});},

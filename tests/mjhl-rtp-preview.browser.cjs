@@ -5,7 +5,7 @@ const playwright=process.env.PLAYWRIGHT_MODULE || 'C:/Users/Administrator/.cache
 const {chromium}=require(playwright);
 const root=path.resolve(__dirname,'..'),out=path.join(root,'.build/mjhl-rtp-preview');
 const read=file=>fs.readFileSync(path.join(root,file),'utf8').replace(/^\uFEFF/,'');
-const view=read('TTY.Web/Areas/Game/Views/GameConfig/ConfigEditor.cshtml');
+const view=process.env.MJHL_VIEW_PATH?fs.readFileSync(process.env.MJHL_VIEW_PATH,'utf8').replace(/^\uFEFF/,''):read('TTY.Web/Areas/Game/Views/GameConfig/ConfigEditor.cshtml');
 const panel=view.slice(view.indexOf('<div id="gcMjhlAgentPanel"'),view.indexOf('<div class="gc-common gc-base-info">'));
 const functions=view.slice(view.indexOf('    function gcMjhlApplyMode('),view.indexOf('\n    function gcApplyType()'))
     .replace(/@Url.Content\("~([^"\n]+)"\)/g,'$1');
@@ -13,8 +13,9 @@ const events=view.split(/\r?\n/).filter(line=>/\$\('#gcMjhlAgentPanel \.gc-weigh
 const html=`<!doctype html><meta charset="utf-8"><style>${view.match(/<style>([\s\S]*?)<\/style>/)[1].replaceAll('@@media','@media')}</style><div class="gc-wrap"><div id="gcForm">${panel}</div></div>
 <script src="/Scripts/jquery-2.1.4.min.js"></script><script src="/Scripts/app/mjhl.engine.js"></script><script>
 var GC_MJHL_AGENT=null,GC_MJHL_AGENT_SAVED=null,GC_MJHL_AGENT_CAN_EDIT=true,line='fixture',saves=0,toasts=[],GC_MJHL_NAMES=MjhlEngine.NAMES;
-function gcCurLine(){return line;}function gcIsMjhl(){return true;}function gcSetParaVisible(){}function gcMsg(){}function gcLineToken(){return 'fixture';}
+function gcCurLine(){return line;}function gcIsMjhl(){return true;}function gcSetParaVisible(){}function gcMsg(){}function gcLineToken(){return 'fixture';}function gcApplyLineUi(){}
 function showToast(text){toasts.push(text);}function request(){saves++;}var GC_URL={mjhlAgentSave:'fixture'};
+$.ajax=function(){saves++;var response={done:function(){return response;},fail:function(){return response;},always:function(){return response;}};return response;};
 ${functions}
 ${events}
 $('#mjhlRtpVerify').on('click',gcMjhlVerify);$('#mjhlRtpCalibrate').on('click',gcMjhlCalibrate);
@@ -29,10 +30,11 @@ if(type==='calibrate'){gcMjhlCancelRtp();gcMjhlRunRtp('calibrate');}}
 const server=http.createServer((req,res)=>{
     const url=new URL(req.url,'http://localhost');res.setHeader('Cache-Control','no-store');
     if(url.pathname==='/'){res.setHeader('Content-Type','text/html; charset=utf-8');res.end(html);return;}
-    if(!/^\/Scripts\/(jquery-2\.1\.4\.min\.js|app\/mjhl\.(engine|rtp\.pool|rtp\.sample\.worker|agent\.rtp\.worker)\.js)$/.test(url.pathname)){res.writeHead(404).end();return;}
+    if(!/^\/Scripts\/(jquery-2\.1\.4\.min\.js|app\/mjhl\.(engine|rtp\.pool|rtp\.native|rtp\.verify|rtp\.wasm|rtp\.sample\.worker|agent\.rtp\.worker)\.js)$/.test(url.pathname)){res.writeHead(404).end();return;}
     res.setHeader('Content-Type','text/javascript; charset=utf-8');res.end(read('TTY.Web'+url.pathname));
 });
-(async()=>{
+module.exports={server,html};
+if(require.main===module)(async()=>{
     fs.mkdirSync(out,{recursive:true});await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
     const browser=await chromium.launch({headless:true,executablePath:process.env.CHROME_PATH || 'C:/Program Files/Google/Chrome/Application/chrome.exe'});
     const report=[],errors=[];

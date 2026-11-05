@@ -1,5 +1,5 @@
 /* 固定分片的 RTP 计算池。分片顺序、种子与统计合并顺序固定，线程数只影响速度。
- * 每个样本仍是同一引擎完整的付费局与全部免费链；不得按哪个线程先结束选择样本。 */
+ * 默认采完整付费回合；component 分组采完整旋转并由独立验证器合并。不得按线程完成先后选择样本。 */
 (function (root, factory) {
     var api = factory(root);
     if (typeof module === 'object' && module.exports) module.exports = api;
@@ -25,7 +25,7 @@
         var engine = options.engine || root.MjhlEngine;
         if (!engine) throw error('未加载麻将胡了计算引擎。');
         var hardware = Number(options.hardwareConcurrency || (root.navigator && root.navigator.hardwareConcurrency)) || 2;
-        var workerCount = Math.max(1, Math.min(4, Math.floor(Number(options.maxWorkers || options.workers) || 4), Math.floor(hardware)));
+        var workerCount = Math.max(1, Math.min(8, Math.floor(Number(options.maxWorkers || options.workers) || 4), Math.floor(hardware)));
         var workerUrl = options.workerUrl || 'mjhl.rtp.sample.worker.js';
         var factory = options.workerFactory || (typeof root.Worker === 'function' ? function (url) { return new root.Worker(url); } : null);
         var slots = [], training = {}, validations = {}, seedRegistry = {}, active = null, serialOnly = !factory, disposed = false, jobNumber = 0;
@@ -124,7 +124,7 @@
             // 按逻辑片号合并，浮点加法次序也不受线程完成先后影响。
             for (var i = 0; i < job.tasks.length; i++) {
                 var result = job.results[i], t = job.tasks[i];
-                merged = engine.mergeSampleStats(merged, result.stats); totalDraws += result.draws;
+                merged = (job.opts.mergeStats || engine.mergeSampleStats)(merged, result.stats); totalDraws += result.draws;
                 batches.push({ seed128: t.seed128.slice(0), offset: t.offset, count: t.count, draws: result.draws });
             }
             merged.half95 = merged.count > 1 ? 1.96 * Math.sqrt(merged.m2 / (merged.count - 1) / merged.count) : 0;
@@ -136,6 +136,17 @@
             if (stopRequested(job)) return;
             if (job.next >= job.tasks.length) return;
             var index = job.next++, task = job.tasks[index], random;
+            if (options.nativeSampler) {
+                options.nativeSampler.sample(job.profile,task.count,task.seed128,{
+                    component:job.opts.component,cancelled:function(){return active!==job||!!(job.opts.cancelled&&job.opts.cancelled());},
+                    onProgress:function(n){progress(job,index,n);}
+                },function(e,stats){
+                    if(active!==job||job.finished)return;if(e){finish(job,e);return;}
+                    var draws=stats.nativeDraws;delete stats.nativeDraws;accept(job,index,stats,draws);
+                    if(active===job)setTimeout(function(){runSerial(job);},0);
+                });return;
+            }
+            if (typeof job.opts.component === 'number') { finish(job,error('当前浏览器无法使用快速复核。','MJHL_NATIVE_UNAVAILABLE')); return; }
             try { random = engine.xoshiro128ss(task.seed128); }
             catch (e) { finish(job, e); return; }
             try {
@@ -162,7 +173,7 @@
             var job = active;
             if (!job || !slot.ready || slot.busy || stopRequested(job) || job.next >= job.tasks.length) return;
             var index = job.next++, task = job.tasks[index]; slot.busy = { job: job.id, index: index };
-            try { slot.worker.postMessage({ type: 'sample', jobId: job.id, partId: index, profile: job.profile, count: task.count, seed128: task.seed128, offset: task.offset }); }
+            try { slot.worker.postMessage({ type: 'sample', jobId: job.id, partId: index, profile: job.profile, count: task.count, seed128: task.seed128, offset: task.offset, component:job.opts.component }); }
             catch (e) { finish(job, e); }
         }
         function startWorkers(job) {

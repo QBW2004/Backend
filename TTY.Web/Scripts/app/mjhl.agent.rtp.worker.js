@@ -1,12 +1,24 @@
 /* 在独立线程完整计算付费局及其免费链，避免长链试算阻塞后台操作。 */
-importScripts('mjhl.engine.js?v=mjhl-agent-20261102-v10', 'mjhl.rtp.pool.js?v=mjhl-agent-20261102-v10');
+importScripts('mjhl.engine.js?v=mjhl-verify-20261105-v1', 'mjhl.rtp.pool.js?v=mjhl-verify-20261105-v1');
+var mjhlFast = null;
+try {
+    importScripts('mjhl.rtp.native.js?v=mjhl-verify-20261105-v1','mjhl.rtp.wasm.js?v=mjhl-verify-20261105-v1','mjhl.rtp.verify.js?v=mjhl-verify-20261105-v1');
+    mjhlFast=MjhlRtpNative.create(MjhlEngine,MjhlRtpWasm);
+} catch (nativeError) { /* The existing verifier remains available without WebAssembly. */ }
 self.onmessage = function (event) {
     var job = event.data;
     var progressAt = 0;
     // 只加速后台试算；游戏服务端开奖不依赖此工作池。
     var pool = MjhlRtpPool.create({ engine:MjhlEngine,
-        workerUrl:'mjhl.rtp.sample.worker.js?v=mjhl-agent-20261102-v10',
-        maxWorkers:Math.max(1, Math.min(4, (self.navigator && self.navigator.hardwareConcurrency) || 2)) });
+        workerUrl:'mjhl.rtp.sample.worker.js?v=mjhl-verify-20261105-v1',nativeSampler:mjhlFast,
+        maxWorkers:Math.max(1, Math.min(8, Math.ceil(((self.navigator && self.navigator.hardwareConcurrency) || 2)/2))) });
+    function verify(profile,opts,done){
+        if(!mjhlFast){MjhlEngine.verifyRtp(profile,opts,done);return;}
+        MjhlRtpVerify.verify(MjhlEngine,profile,opts,function(error,result){
+            if(error&&error.code==='MJHL_NATIVE_UNAVAILABLE'){MjhlEngine.verifyRtp(profile,opts,done);return;}
+            done(error,result);
+        });
+    }
     function progress(value) {
         var now = Date.now();
         if (value.total && value.completed < value.total && now - progressAt < 100) return;
@@ -15,8 +27,20 @@ self.onmessage = function (event) {
     }
     function done(error, result) {
         pool.dispose();
-        if (error) self.postMessage({ error: error.message, code: error.code || '', diagnostic: result || null });
-        else self.postMessage({ result: result });
+        function publish(error) {
+            if (error) self.postMessage({ error: error.message, code: error.code || '', diagnostic: result || null });
+            else self.postMessage({ result: result });
+        }
+        // RTP uses variance reduction; the displayed payout histogram remains an independent
+        // complete-paid-round sample, with its own explicitly recorded denominator.
+        if(!error&&mjhlFast&&result&&result.stats&&result.stats.method&&
+            (job.type==='verify'||(job.type==='calibrate'&&result.success))){
+            mjhlFast.sample(job.type==='calibrate'?result.profile:job.profile,2000,MjhlEngine.freshSeed128(),{},function(e,stats){
+                if(!e){result.stats.distribution=stats.distribution;result.stats.distributionCount=stats.count;}
+                publish(e);
+            });return;
+        }
+        publish(error);
     }
     function runFullCalculation() {
         try {
@@ -25,13 +49,14 @@ self.onmessage = function (event) {
                     onProgress: function (done, total) { progress({ completed:done, total:total }); }
                 }, done);
             } else if (job.type === 'verify') {
-                MjhlEngine.verifyRtp(job.profile, {
+                verify(job.profile, {
                     validationCount:50000000, tolerancePercent:1, quickCheckpoints:true, sampleRunner:pool.sample,
                     onValidationProgress:function (done, total) { progress({ phase:'verify', completed:done, total:total }); },
                     onCheckpoint:function (stats) { progress({ phase:'verify', actual:stats.total, count:stats.count, estimate:stats }); }
                 }, done);
             } else if (job.type === 'calibrate') {
                 MjhlEngine.calibrateRtp(job.profile, job.target, {
+                    verifier:verify,
                     searchCount: 50000, refineCount: 1000000, validationCount: 50000000, tolerancePercent:1, preferSmallWins:true,
                     quickCheckpoints:true, sampleRunner:pool.sample,
                     iterations: 8, maxCorrections:1, maxTotalSamples:151000000, seed:job.seed === undefined ? MjhlEngine.freshSeed() : job.seed,

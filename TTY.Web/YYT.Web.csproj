@@ -200,6 +200,9 @@
     <Content Include="Scripts\app\mjhl.agent.worker.js" />
     <Content Include="Scripts\app\mjhl.agent.simulation.js" />
     <Content Include="Scripts\app\mjhl.rtp.pool.js" />
+    <Content Include="Scripts\app\mjhl.rtp.native.js" />
+    <Content Include="Scripts\app\mjhl.rtp.verify.js" />
+    <Content Include="Scripts\app\mjhl.rtp.wasm.js" />
     <Content Include="Scripts\app\mjhl.rtp.sample.worker.js" />
   </ItemGroup>
   <ItemGroup>

@@ -47,7 +47,7 @@
         <div class="ac-tabs"><span class="ac-tab">全民赛跑（大白兔）</span></div>
         <div class="ac-guide">
             <strong>全民赛跑</strong>：每天在下方北京时间段内，大白兔玩家换牌开出勾选的牌型时，额外获得 <strong>押分 × 倍数</strong> 的活动奖金；
-            每触发一次扣 1 个当日总名额，名额用完当天停止派送，次日自动恢复。<br />
+            每触发一次扣 1 个总名额，用完后剩余保持 0，到下一次设定的开始时间才恢复；中途修改总名额时，剩余按新总数减去本轮已用数量计算。<br />
             游戏中先自动滚入活动奖金，动画结束后玩家再点击得分收取牌型得分；活动局不能比倍。<br />
             所有大白兔桌台默认参与，无需逐桌开启。<br />
             关闭活动后客户端大厅不再显示活动图标；玩家所在代理线没有开放大白兔时也不显示。保存后下一手牌生效。
@@ -57,7 +57,7 @@
             <div class="ac-stat" style="margin-top:12px;">
                 当前状态：<span id="acState"></span>
                 &nbsp;&nbsp;北京时间：<span id="acNow"></span>
-                &nbsp;&nbsp;今日已派：<b id="acUsed">0</b> 次&nbsp;&nbsp;今日剩余：<b id="acRemain">0</b> 个
+                &nbsp;&nbsp;本轮已派：<b id="acUsed">0</b> 次&nbsp;&nbsp;本轮剩余：<b id="acRemain">0</b> 个
                 <span id="acSaved" style="color:#9aa4b1;margin-left:8px;"></span>
             </div>
             <form id="acForm" class="ac-form" autocomplete="off">
@@ -138,7 +138,7 @@
             });
             var state = !data.enabled ? '<span class="ac-pill ac-off">已关闭</span>' : (data.open ? '<span class="ac-pill ac-on">进行中</span>' : '<span class="ac-pill ac-idle">已开启·未到时段</span>');
             $('#acState').html(state);
-            $('#acNow').text(data.beijingNow); $('#acUsed').text(data.usedToday); $('#acRemain').text(data.enabled ? data.remainingToday : '--');
+            $('#acNow').text(data.beijingNow); $('#acUsed').text(data.usedToday); $('#acRemain').text(data.enabled ? Math.max(0, Number(data.remainingToday) || 0) : 0);
             $('#acSaved').text(data.saved ? ('最后保存：' + data.updateTime + ' ' + (data.operatorName || '')) : '尚未保存过（显示的是默认值）');
             acExample();
         });

@@ -96,6 +96,40 @@ namespace UnitTestProj
         }
 
         [TestMethod]
+        public void QuotaDayIncludesAwardsBeforeChangedOpeningTime()
+        {
+            var a = Sample();
+            var noon = new DateTime(2026, 11, 5, 12, 30, 0);
+            Assert.AreEqual(noon.Date, a.QuotaDayStart(noon));
+            a.StartMinute = 720;
+            Assert.AreEqual(noon.Date, a.QuotaDayStart(noon), "修改开始时间不退回当天已用名额");
+            Assert.AreEqual(noon.Date.AddDays(-1), a.QuotaDayStart(noon.Date.AddHours(1)), "开始前保留上一轮");
+            Assert.AreEqual(noon.Date, a.QuotaDayStart(noon.Date.AddDays(1)), "零点不提前恢复名额");
+            Assert.AreEqual(noon.Date, a.QuotaDayStart(noon.Date.AddDays(1).AddHours(12).AddTicks(-1)), "开始前最后一刻保留上一轮");
+            Assert.AreEqual(noon.Date.AddDays(1), a.QuotaDayStart(noon.Date.AddDays(1).AddHours(12)), "到开始时间才切换下一轮");
+            a.StartMinute = 1320; a.EndMinute = 120;
+            Assert.AreEqual(noon.Date.AddDays(-1).AddHours(2), a.QuotaDayStart(noon.Date.AddHours(1)), "跨午夜凌晨属于前日名额");
+            Assert.AreEqual(noon.Date.AddDays(-1).AddHours(2), a.QuotaDayStart(noon.Date.AddHours(2)), "跨午夜结束时不恢复");
+            Assert.AreEqual(noon.Date.AddDays(-1).AddHours(2), a.QuotaDayStart(noon), "跨午夜未开场保留上一轮");
+            Assert.AreEqual(noon.Date.AddHours(2), a.QuotaDayStart(noon.Date.AddHours(22)), "跨午夜到开始时间恢复");
+        }
+
+        [TestMethod]
+        public void EveryOpeningMinuteRestoresOnlyAtTheBoundary()
+        {
+            var nextDay = new DateTime(2026, 11, 6);
+            var a = Sample();
+            for (int start = 0; start < 1440; start++)
+            {
+                a.StartMinute = start; a.EndMinute = (start + 60) % 1440;
+                DateTime opening = nextDay.AddMinutes(start);
+                Assert.AreEqual(opening.AddDays(-1), a.ActivityDayStart(opening.AddTicks(-1)), "开始前仍是上一轮: " + start);
+                Assert.AreEqual(opening, a.ActivityDayStart(opening), "到开始时间切换: " + start);
+                Assert.AreEqual(a.QuotaDayStart(opening.AddTicks(-1)).AddDays(1), a.QuotaDayStart(opening), "只切换一天: " + start);
+            }
+        }
+
+        [TestMethod]
         public void ClientApiHidesWhenClosedOrLineWithoutRabbitAndMenuHasEntry()
         {
             DirectoryInfo root = FindRepoRoot();

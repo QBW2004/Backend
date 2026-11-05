@@ -92,7 +92,7 @@ check('相同代理已保存达标历史加载与恢复不启动Worker', () => {
 check('继承默认配置复用来源版本的达标RTP，目标版本仍用于写入校验', () => {
     const h=harness(),meta=h.meta();meta.configured=false;meta.inherited=true;meta.sourceLine='*';meta.sourceRevision='7';meta.revision='0';
     h.ctx.gcMjhlFill(h.config,meta);assert.equal(h.workers.length,0);assert(h.ctx.GC_MJHL_RTP_RESULT.historical);assert.equal(h.$('#mjhlAgentStatus').data('revision'),'0');
-    assert(h.$('#mjhlAgentStatus').text().includes('默认版本 7'));
+    assert(h.$('#mjhlAgentStatus').text().includes('公共版本 7'));
 });
 for (const [name, mutate] of [
     ['跨代理',m=>{m.lineAgent='anotherAgent';}],['无完整配置哈希',m=>{m.configHash='bad';}],['未保存',m=>{m.configured=false;}],
@@ -172,6 +172,15 @@ check('估算失败不结束正式任务，未中奖估算不冒充精确0%',()=
     worker.onmessage({data:{error:'复核失败'}});assert.equal(h.$('#mjhlRtpProgress').text(),'');assert.equal(c.GC_MJHL_RTP_RESULT,null);
 });
 assert(source.includes('误差不超过±1个百分点'));
+check('快速正式复核保存方法与统计证据，奖型分布使用独立样本分母',()=>{
+    const h=harness(),c=h.ctx;c.gcMjhlFill(h.config,{canEdit:true});const stats=h.stats();
+    Object.assign(stats,{count:9000000,method:'renewal-importance-v1',components:[{count:3000000},{count:3000000},{count:3000000}],distributionCount:2000,
+        distribution:{zero:1200,small:700,medium:80,big:10,mega:5,super:5}});
+    h.workers[0].onmessage({data:{result:{stats,precisionReached:true,exact:false}}});
+    assert(h.$('#mjhlRtpDistribution').text().includes('2,000'));assert(h.$('#mjhlRtpDistribution').text().includes('60.000%'));
+    c.gcMjhlSave();assert.equal(h.calls.length,1);const saved=JSON.parse(h.calls[0].data.simulated);
+    assert.equal(saved.method,'renewal-importance-v1');assert.equal(saved.components.length,3);assert.equal(saved.distributionCount,2000);assert.equal(saved.count,9000000);
+});
 const report={completedAt:new Date().toISOString(),checksPassed:checks.length,checks};
 if (process.env.MJHL_UI_TEST_REPORT) fs.writeFileSync(process.env.MJHL_UI_TEST_REPORT,JSON.stringify(report,null,2));
 console.log(JSON.stringify(report));
