@@ -70,6 +70,8 @@ namespace YYT.Web
                         new GameCommandOutboxRetryService().ProcessDueCommands();
                         new B_LoginMissRecord().ResetLoginMissRecord();
                         B_Records_MySQL.CleanupExpiredRecordsThrottled();
+                        // 排行榜残留（客户端不可见的停用游戏/旧口径行）每日自动清理一次
+                        RankHistoryCleanup.CleanupResidualDaily();
                     }
                     finally
                     {

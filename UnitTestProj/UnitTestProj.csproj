@@ -110,6 +110,7 @@
     <Compile Include="TableDisplayMapTest.cs" />
     <Compile Include="AnnouncementRulesTest.cs" />
     <Compile Include="RabbitRaceActivityTest.cs" />
+    <Compile Include="RankHistoryCleanupTest.cs" />
     <Compile Include="TotalControlRulesTest.cs" />
     <Compile Include="AgencyQueryTest.cs" />
     <Compile Include="GameParaTest.cs" />

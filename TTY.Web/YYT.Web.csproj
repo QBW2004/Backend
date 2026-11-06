@@ -231,6 +231,7 @@
     <Compile Include="Areas\Game\Controllers\AgencyInfoController.cs" />
     <Compile Include="Areas\Game\Controllers\ClientPackageController.cs" />
     <Compile Include="Areas\Game\Controllers\ActivityConfigController.cs" />
+    <Compile Include="Areas\Game\Controllers\RankingManageController.cs" />
 
     <Compile Include="Areas\Game\Controllers\AbnormalController.cs" />
     <Compile Include="Areas\Game\Controllers\AgencyRecordController.cs" />
@@ -1133,6 +1134,7 @@
     <Content Include="Areas\Game\Views\AgencyInfo\Index.cshtml" />
     <Content Include="Areas\Game\Views\ClientPackage\Index.cshtml" />
     <Content Include="Areas\Game\Views\ActivityConfig\Index.cshtml" />
+    <Content Include="Areas\Game\Views\RankingManage\Index.cshtml" />
     <Content Include="Areas\Game\Views\GameConfig\_RabbitConfig.cshtml" />
     <Content Include="Areas\Game\Views\UserRecord\Index.cshtml" />
     <Content Include="Areas\Game\Views\GameConfig\ConfigEditor.cshtml" />

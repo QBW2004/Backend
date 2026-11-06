@@ -1,0 +1,146 @@
+﻿@{
+    Layout = "~/Views/Shared/Layout/_ContentLayout.cshtml";
+    ViewBag.RouteMap = "排行榜管理";
+}
+@section include_res{
+    <style>
+        .rk-wrap { padding: 16px; box-sizing: border-box; }
+        .rk-card { background: #fff; border: 1px solid #e5e9f0; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.04); }
+        .rk-hd { padding: 12px 16px; border-bottom: 1px solid #eef1f6; font-size: 14px; font-weight: 600; color: #1f2d3d; }
+        .rk-guide { margin: 12px 16px 0; padding: 10px 12px; border: 1px solid #dce8ff; border-radius: 6px; background: #f7faff; color: #526173; font-size: 12px; line-height: 1.8; }
+        .rk-bar { padding: 12px 16px 0; font-size: 13px; color: #36404a; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+        .rk-bar label { font-weight: normal; margin: 0; cursor: pointer; }
+        .rk-table { margin: 12px 16px; border-collapse: collapse; width: calc(100% - 32px); font-size: 13px; }
+        .rk-table th, .rk-table td { border: 1px solid #eef1f6; padding: 7px 10px; text-align: left; }
+        .rk-table th { background: #f7f9fc; color: #5a6573; font-weight: 600; }
+        .rk-table td.rk-num { text-align: right; }
+        .rk-chk { width: 40px; text-align: center !important; }
+        .rk-foot { padding: 12px 16px; border-top: 1px solid #eef1f6; }
+        .rk-btn { height: 32px; padding: 0 20px; border-radius: 6px; border: 1px solid #d33b3b; background: #d33b3b; color: #fff; font-size: 13px; cursor: pointer; }
+        .rk-btn.default { background: #fff; color: #5a6573; border-color: #d4dae3; }
+        .rk-bar select { height: 30px; min-width: 180px; padding: 0 8px; border: 1px solid #d4dae3; border-radius: 6px; font-size: 13px; }
+        .rk-scope { margin: 10px 16px 0; padding: 8px 12px; border-radius: 6px; background: #fffaf0; border: 1px solid #f5e1b8; color: #7a5b1e; font-size: 12px; line-height: 1.7; }
+        .rk-tag { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 12px; }
+        .rk-own { background: #eaf1ff; color: #2f6fed; }
+        .rk-pub { background: #f2f4f7; color: #5a6573; }
+        .rk-empty { padding: 36px 16px; text-align: center; color: #d33b3b; font-size: 13px; display: none; }
+    </style>
+}
+<div class="rk-wrap">
+    <div class="rk-card">
+        <div class="rk-hd">排行榜管理</div>
+        <div class="rk-guide">
+            先选择代理线，再勾选游戏点击「清理所选」，会清空这些游戏在该范围内的客户端大厅<strong>排行榜</strong>记录，客户端重新打开排行榜即不再显示。<br />
+            只清理排行榜展示，<strong>不删除</strong>后台中奖记录明细，不影响奖池和玩家分数；清理后新产生的大奖会照常重新上榜。此操作不可撤销。<br />
+            列表只显示客户端排行榜可见的游戏；停用游戏等客户端看不到的残留记录由系统每日自动清理，无需手动处理。
+        </div>
+        <div class="rk-empty" id="rkEmpty"></div>
+        <form id="rkForm" autocomplete="off">@Html.AntiForgeryToken()</form>
+        <div class="rk-bar">
+            <span>代理线：<select id="rkLine"><option value="*">全部代理线</option><option value="~">公共桌台（所有代理线可见）</option></select></span>
+        </div>
+        <div class="rk-scope" id="rkScope"></div>
+        <div class="rk-bar">
+            <label><input type="checkbox" id="rkAll" /> 全选</label>
+            <span>已勾选：<b id="rkPicked">0</b> 款</span>
+        </div>
+        <table class="rk-table">
+            <thead>
+                <tr>
+                    <th class="rk-chk"></th>
+                    <th>编号</th>
+                    <th>游戏</th>
+                    <th>类型</th>
+                    <th id="rkCountHead">显示条数</th>
+                    <th class="rk-src">排行来源</th>
+                    <th>最新上榜时间</th>
+                </tr>
+            </thead>
+            <tbody id="rkRows"></tbody>
+        </table>
+        <div class="rk-foot">
+            <button type="button" class="rk-btn" id="rkClear">清理所选</button>
+            <button type="button" class="rk-btn default" id="rkReload">刷新</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    var RK_URL = {
+        list: '@Url.Action("GetGames", "RankingManage", new { area = "Game" })',
+        clear: '@Url.Action("Clear", "RankingManage", new { area = "Game" })'
+    };
+    var RK_SCOPE_TEXT = {
+        all: '范围：<b>全部代理线</b>。条数为所有专属桌与公共桌合计；清理会删除所选游戏的全部排行榜记录。',
+        'public': '范围：<b>公共桌台</b>。只统计和清理公共桌上的记录；在该游戏没有专属桌的代理线，玩家看到的就是这些记录。各线专属桌记录不受影响。',
+        line: '范围：代理线 <b>{line}</b>，与该线玩家在客户端看到的一致：只列该线可玩游戏；该线有专属桌的游戏显示<b>专属桌台</b>记录，没有专属桌的游戏显示<b>公共桌台</b>记录。清理「公共桌台」来源的游戏会同时影响其它使用公共桌的代理线。'
+    };
+    function rkLineValue() { return $('#rkLine').val() || '*'; }
+    function rkLineText() { return $('#rkLine option:selected').text(); }
+    function rkFillLines(lines) {
+        var $sel = $('#rkLine'), cur = rkLineValue();
+        $sel.find('option.rk-agent').remove();
+        $.each(lines || [], function (i, id) {
+            $sel.append($('<option class="rk-agent"></option>').val(id).text('代理线 ' + id));
+        });
+        $sel.val($sel.find('option').filter(function () { return this.value === cur; }).length ? cur : '*');
+    }
+    function rkEsc(s) { return $('<span></span>').text(s == null ? '' : String(s)).html(); }
+    function rkCount() {
+        var all = $('.rk-game').length, picked = $('.rk-game:checked').length;
+        $('#rkPicked').text(picked);
+        $('#rkAll').prop('checked', all > 0 && picked === all);
+    }
+    function rkLoad() {
+        request(RK_URL.list, { line: rkLineValue() }, function (data) {
+            var $rows = $('#rkRows').empty();
+            if (data && data.lines) rkFillLines(data.lines);
+            if (!data || data.code != 1) {
+                $('#rkEmpty').show().text((data && (data.content || data.msg)) || '查询失败！');
+                rkCount();
+                return;
+            }
+            $('#rkEmpty').hide();
+            var mode = data.lineMode || 'all', showShared = mode === 'line';
+            $('#rkScope').html(RK_SCOPE_TEXT[mode].replace('{line}', rkEsc(rkLineValue())));
+            $('#rkCountHead').text(mode === 'all' ? '显示条数（合计）' : mode === 'public' ? '公共桌台条数' : '该线可见条数');
+            $('.rk-src').toggle(showShared);
+            $.each(data.rows || [], function (i, r) {
+                $rows.append('<tr>' +
+                    '<td class="rk-chk"><input type="checkbox" class="rk-game" value="' + Number(r.GameId) + '" /></td>' +
+                    '<td>' + Number(r.GameId) + '</td>' +
+                    '<td>' + rkEsc(r.Name) + '</td>' +
+                    '<td>' + rkEsc(r.TypeName) + '</td>' +
+                    '<td class="rk-num">' + Number(r.VisibleCount) + '</td>' +
+                    '<td class="rk-src" data-src="' + rkEsc(r.Source) + '"' + (showShared ? '' : ' style="display:none"') + '>' +
+                        (r.Source === 'exclusive' ? '<span class="rk-tag rk-own">专属桌台</span>' : r.Source === 'public' ? '<span class="rk-tag rk-pub">公共桌台</span>' : '') + '</td>' +
+                    '<td>' + rkEsc(r.LastTime || '--') + '</td></tr>');
+            });
+            rkCount();
+        });
+    }
+    $('#rkRows').on('change', '.rk-game', rkCount);
+    $('#rkAll').on('change', function () { $('.rk-game').prop('checked', this.checked); rkCount(); });
+    $('#rkReload').on('click', rkLoad);
+    $('#rkLine').on('change', function () { $('#rkAll').prop('checked', false); rkLoad(); });
+    $('#rkClear').on('click', function () {
+        var $picked = $('.rk-game:checked');
+        if ($picked.length === 0) { showToast('请勾选要清理的游戏！', 'error'); return; }
+        var ids = $picked.map(function () { return this.value; }).get();
+        var names = $picked.map(function () { return $(this).closest('tr').children().eq(2).text(); }).get();
+        var shared = $picked.filter(function () { return $(this).closest('tr').find('.rk-src').attr('data-src') === 'public'; })
+            .map(function () { return $(this).closest('tr').children().eq(2).text(); }).get();
+        var warn = (rkLineValue() !== '*' && rkLineValue() !== '~' && shared.length)
+            ? '\n\n注意：' + shared.join('、') + ' 使用公共桌台，清理后其它使用公共桌台的代理线也将看不到这些记录。' : '';
+        if (!confirm('确定清理【' + rkLineText() + '】以下 ' + ids.length + ' 款游戏的排行榜记录？此操作不可撤销。\n\n' + names.join('、') + warn)) return;
+        request(RK_URL.clear, {
+            __RequestVerificationToken: $('#rkForm [name="__RequestVerificationToken"]').val(),
+            gameIds: ids.join(','),
+            line: rkLineValue()
+        }, function (data) {
+            showToast(data ? (data.msg || data.content || '操作失败！') : '操作失败！', (data && data.code == 1) ? 'success' : 'error');
+            if (data && data.code == 1) rkLoad();
+        });
+    });
+    $(rkLoad);
+</script>
