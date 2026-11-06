@@ -1,5 +1,7 @@
 # Tools 目录脚本说明
 
+- `network-monitor/start.bat`：本机网络链路网页（18766），显示本机→中转、源站→中转反向 Ping，以及经中转/直连 HTTP；支持曲线、丢包时间带、CSV。独立运行、不改生产配置；[使用说明](network-monitor/README.md)。
+
 - `dev/check-multi-seat-robot.ps1`：鱼机/押注总数、每桌上限的实际BLL及MVC JSON验证；独立启动本地MySQL 33406，临时表结构只取clean，测试后删临时库并停止本次实例，不访问生产管道。
 - `db/robot-table-limit-20261106.sql`：本次新增列升级（非初始化全库），运营库执行前备份；依赖和验收见[专题](../Docs/鱼机押注机器人总数与每桌上限-20261106.md)。
 

@@ -1,0 +1,13 @@
+{
+  "port": 18766,
+  "relay_ip": "185.180.17.57",
+  "source_ip": "8.218.67.82",
+  "relay_domain": "a.xi.wuerba.top",
+  "source_http_port": 8080,
+  "source_ssh_alias": "mth-server",
+  "ping_interval_seconds": 2,
+  "http_interval_seconds": 10,
+  "ping_timeout_ms": 1200,
+  "http_timeout_seconds": 8,
+  "retention_days": 7
+}

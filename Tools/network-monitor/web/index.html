@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>MTH · 网络链路观测</title><link rel="stylesheet" href="/style.css"><script src="/app.js" defer></script>
+</head>
+<body>
+<header class="topbar"><a class="brand" href="/"><span class="brand-mark">M</span><strong>MTH <span>/</span> 网络观测</strong></a><div class="top-status"><span id="connection" class="status pending">正在连接</span><time id="clock">—</time></div></header>
+<main>
+  <section class="hero"><div><p class="eyebrow">NETWORK OBSERVATORY</p><h1>看清每一段连接<span>。</span></h1><p class="lead">从这台电脑，到中转，再到源站。让延迟和丢包有迹可循。</p></div><div class="collection-meta"><div><strong id="interval">2<span> 秒</span></strong><small>Ping 采样间隔</small></div><div><strong id="retention">7<span> 天</span></strong><small>本机保留历史</small></div></div></section>
+  <div id="network-error" class="alert" hidden role="status"></div>
+  <section class="topology panel" aria-label="网络链路图">
+    <div class="section-label"><span><i class="dot"></i> 实际测量路径</span><small id="host-label">本机采集器</small></div>
+    <div class="network-map">
+      <div class="node"><span class="node-icon">▣</span><strong>本机</strong><small>当前电脑的网络</small><code id="local-name">—</code></div>
+      <div class="link blue"><span id="local-link">等待采样</span><div class="wire"><i></i></div><small>本机 → 中转 · Ping RTT</small></div>
+      <div class="node relay"><span class="node-icon">⇄</span><strong>中转服务器</strong><small>游戏与接口入口</small><code id="relay-ip">185.180.17.57</code></div>
+      <div class="link teal"><span id="source-link">等待采样</span><div class="wire reverse"><i></i></div><small>源站 → 中转 · 反向 Ping RTT</small></div>
+      <div class="node"><span class="node-icon">▤</span><strong>源站服务器</strong><small>后台、中心服与游戏</small><code id="source-ip">8.218.67.82</code></div>
+    </div>
+    <div class="map-note"><span class="note-tag">测量说明</span><span>源站不回复外部 Ping，所以第二段由源站发起。两段都是往返时延，不能相加当成玩家的游戏延迟。</span></div>
+  </section>
+  <section class="toolbar" aria-label="时间范围与操作"><div class="range-buttons" role="group" aria-label="选择时间范围"><button data-seconds="300">5 分钟</button><button data-seconds="900" class="selected" aria-pressed="true">15 分钟</button><button data-seconds="3600">1 小时</button><button data-seconds="21600">6 小时</button><button data-seconds="86400">24 小时</button></div><div class="actions"><span id="view-time">实时窗口</span><button id="pause" class="button">Ⅱ 暂停查看</button><button id="export" class="button">↓ 导出 CSV</button></div></section>
+  <section id="route-cards" class="route-cards" aria-label="各线路指标"></section>
+  <section class="charts">
+    <article class="panel chart-panel"><div class="chart-heading"><div><p class="eyebrow">NETWORK ROUND TRIP</p><h2>分段网络延迟 <small>ms</small></h2></div><span class="method">ICMP</span></div><div class="legend"><span class="blue-key">本机 → 中转</span><span class="teal-key">源站 → 中转（反向）</span></div><div class="canvas-wrap"><canvas id="ping-chart" aria-label="两段 Ping 往返延迟曲线"></canvas></div><p class="chart-foot">实线为分桶平均，浅线为峰值；没有数据时留空，不补零。</p></article>
+    <article class="panel chart-panel"><div class="chart-heading"><div><p class="eyebrow">END-TO-END RESPONSE</p><h2>网页响应耗时 <small>ms</small></h2></div><span class="method">HTTP HEAD</span></div><div class="legend"><span class="purple-key">经中转访问源站</span><span class="amber-key">直连源站</span></div><div class="canvas-wrap"><canvas id="http-chart" aria-label="经中转和直连网页响应耗时曲线"></canvas></div><p class="chart-foot">从请求发起到收到响应头；经中转含 TLS 握手，直连不含。</p></article>
+  </section>
+  <section class="panel loss-panel"><div class="chart-heading"><div><p class="eyebrow">LOSS & AVAILABILITY</p><h2>丢包与请求失败，落在哪个时刻</h2></div><div class="heat-legend"><span class="good-key">正常</span><span class="bad-key">失败</span><span class="empty-key">无数据</span></div></div><div id="loss-tracks"></div><div class="time-axis"><span id="window-start">—</span><span id="resolution">—</span><span id="window-end">—</span></div><p class="chart-foot">Ping 统计 ICMP 未回包率；HTTP 统计请求失败率。两者不能视为游戏数据包丢失率。采集错误不进入丢包分母。</p></section>
+  <section class="bottom-grid"><article class="panel events-panel"><div class="chart-heading"><div><p class="eyebrow">RECENT SIGNALS</p><h2>当前窗口的异常记录</h2></div><span id="event-count" class="method">—</span></div><div id="events"></div></article><article class="panel readme"><p class="eyebrow">READ THE SIGNAL</p><h2>怎么看这些数字</h2><p><b>只有第一段波动</b><br>优先检查这台电脑的网络、Wi-Fi 或宽带出口。</p><p><b>源站与中转之间波动</b><br>检查两台服务器之间的网络。反向 Ping 不代表正向单向延迟。</p><p><b>Ping 稳定，网页响应变慢</b><br>结合 TLS、代理、转发和服务器性能继续排查。</p><details><summary>口径、采集与停止方式</summary><p>Ping 的 0 ms 表示低于计时精度；抖动是相邻成功样本 RTT 差值的平均。P95 表示 95% 成功样本不超过此值。</p><p>采集来自本机及源站，通过 SSH 取回源站计时结果。浏览器关闭后仍采集；本机关机或停止程序后留空。系统 VPN/TUN 可能改变实际路径。</p><p>停止：运行 Tools/network-monitor/start.ps1 -Stop。不会修改线上配置或重启业务。</p></details></article></section>
+  <footer><span id="updated">等待首批真实数据…</span><span id="timeout-note">北京时间 UTC+8 · 本机独立工具 · 不执行游戏登录或下注</span></footer>
+</main><div id="tooltip" class="tooltip" hidden></div>
+</body></html>
