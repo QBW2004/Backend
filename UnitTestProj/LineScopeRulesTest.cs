@@ -165,14 +165,15 @@ namespace UnitTestProj
         }
 
         [TestMethod]
-        public void ApisFilterByAccountOnlyWhenNewClientSendsIt()
+        public void RankingRequiresAccountAndUsesActualTableScope()
         {
             string games = ReadRepoFile(@"TTY.Web\Controllers\Api\GamesController.cs");
             StringAssert.Contains(games, "public IEnumerable<M_Games> Get(string account = null)");
             StringAssert.Contains(games, "LineScopeRules.GetPlayableGamesOfPlayer(ef, account.Trim())");
             string rank = ReadRepoFile(@"TTY.Web\Controllers\Api\RankingListController.cs");
             StringAssert.Contains(rank, "public IHttpActionResult History(int gameId = 0, string account = null)");
-            StringAssert.Contains(rank, "h.LineAgent='' OR h.LineAgent=@p1");
+            StringAssert.Contains(rank, "tableDisplay.HistoryVisibilitySql(line, types)");
+            StringAssert.Contains(rank, "string.IsNullOrWhiteSpace(account)");
             string agency = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\AgencyInfoController.cs");
             StringAssert.Contains(agency, "bool needPlayable = loginUser.UserPriv == 0 && entity.PRIV == 1;");
             string control = ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\UserInfoController.cs");

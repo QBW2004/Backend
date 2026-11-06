@@ -10,14 +10,14 @@ New-Item -ItemType Directory -Path $rankOutput -Force | Out-Null
 Copy-Item -Path (Join-Path $rankBin '*.dll') -Destination $rankOutput
 $rankConfiguration = [xml](Get-Content -LiteralPath (Join-Path $rankRepo 'TTY.Web/Web.config') -Raw)
 $rankConfiguration.configuration.connectionStrings.add | Where-Object name -eq 'DbConnString' | ForEach-Object {
-    $_.connectionString = 'Server=localhost;Port=33308;Database=mth_rankhistory_validation;Uid=root;Pwd=123456;'
+    $_.connectionString = 'Server=127.0.0.1;Port=33308;Database=mth_rankhistory_validation;Uid=root;Pwd=123456;CharSet=utf8mb4;Allow User Variables=True;SslMode=None;'
 }
 $rankExe = Join-Path $rankOutput 'RankHistoryValidation.exe'
 $rankConfiguration.Save($rankExe + '.config')
 $rankVsWhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio/Installer/vswhere.exe'
 $rankVs = & $rankVsWhere -latest -products '*' -property installationPath
 $rankCompiler = Join-Path $rankVs 'MSBuild/Current/Bin/Roslyn/csc.exe'
-$rankReferences = Get-ChildItem (Join-Path $rankOutput '*.dll') | Where-Object Name -In 'YYT.Web.dll','YYT.BLL.dll','YYT.Entity.dll','YYT.Common.dll','MySql.Data.dll','Newtonsoft.Json.dll','System.Web.Http.dll','System.Net.Http.Formatting.dll' | ForEach-Object { '/r:' + $_.FullName }
+$rankReferences = Get-ChildItem (Join-Path $rankOutput '*.dll') | Where-Object Name -In 'YYT.Web.dll','YYT.BLL.dll','YYT.Entity.dll','YYT.Common.dll','MySql.Data.dll','Newtonsoft.Json.dll','System.Web.Http.dll','System.Net.Http.Formatting.dll','EntityFramework.dll' | ForEach-Object { '/r:' + $_.FullName }
 & $rankCompiler /nologo /t:exe ('/out:' + $rankExe) /r:System.Configuration.dll /r:System.Net.Http.dll /r:System.Web.dll /r:System.Xml.Linq.dll /r:System.Data.dll @rankReferences (Join-Path $PSScriptRoot 'RankHistoryValidation.cs') (Join-Path $PSScriptRoot 'SqlSnapshot.cs')
 if ($LASTEXITCODE -ne 0) { throw '排行榜验证程序编译失败' }
 $rankArguments = @($rankRepo, $rankServerRepo)

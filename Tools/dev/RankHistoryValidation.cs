@@ -9,6 +9,7 @@ using System.Xml.Linq;
 using MySql.Data.MySqlClient;
 using Newtonsoft.Json.Linq;
 using YYT.Web.Controllers.Api;
+using YYT.BLL.EF;
 
 class BackendValidation
 {
@@ -36,19 +37,45 @@ class BackendValidation
             sql("CREATE DATABASE mth_rankhistory_validation CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
             sql("USE mth_rankhistory_validation");
             string schemaDump = SqlSnapshot.Read(backendRoot);
-            foreach (string table in new[] { "games", "users", "userrobot", "admin", "gameprizerecord", "gamerankhistory", "prizebroadcastoutbox" })
+            foreach (string table in new[] { "games", "users", "userrobot", "admin", "gameprizerecord", "gamerankhistory", "prizebroadcastoutbox", "roomtableconfig", "roomtableowner", "pararoom" })
                 sql(SqlSnapshot.Table(schemaDump, table));
+            string tableScopeMigration = File.ReadAllText(Path.Combine(backendRoot, "Tools/db/rank-history-table-scope-20261106.sql"));
+            sql(tableScopeMigration);
+            sql("INSERT INTO roomtableconfig(GAME_ID,RoomIndex,TableIndex,TableName) VALUES(40,0,0,'1')");
+            sql("INSERT INTO pararoom(ID,GAME_ID,NUM) VALUES(5000,5,67)");
+            for (int i = 0; i < 67; i++)
+            {
+                sql("INSERT INTO roomtableconfig(GAME_ID,RoomIndex,TableIndex,TableName) VALUES(5,0," + i + ",'" + (i - 48) + "')");
+                if (i < 49) sql("INSERT INTO roomtableowner(GAME_ID,TableIndex,LineAgent) VALUES(5," + i + ",'#')");
+            }
+            sql("INSERT INTO pararoom(ID,GAME_ID,NUM) VALUES(15000,15,42)");
+            for (int i = 0; i < 42; i++)
+            {
+                sql("INSERT INTO roomtableconfig(GAME_ID,RoomIndex,TableIndex,TableName) VALUES(15,0," + i + ",'" + (i - 23) + "')");
+                if (i < 24) sql("INSERT INTO roomtableowner(GAME_ID,TableIndex,LineAgent) VALUES(15," + i + ",'#')");
+            }
+            using (var ef = new GameDbContext())
+            {
+                var display = TableDisplayMap.Load(ef, new[] { 5, 15, 0 });
+                Check(display.OnlineLabel(15, 24) == "1", "a18001 raw index 24 is visible table 1");
+                Check(display.OnlineLabel(5, 62) == "14", "online and history share visible table 14");
+                Check(display.OnlineLabel(15, 23) == "--" && display.OnlineLabel(0, 0) == "--", "recycled and hall have no machine");
+            }
             sql("INSERT INTO games(GameId,Name,Enable,Num,GameType) VALUES(5,'火凤凰',1,0,1),(40,'水果拉霸',1,0,3),(3,'金蟾捕鱼',1,0,2),(2,'彩金单挑',1,0,4),(54,'麻将胡了',1,0,1),(901,'未知类别',1,0,0),(99,'关闭牌机',0,0,1)");
             sql("INSERT INTO users(ID,NAME,PWD,AGENCY) VALUES('rankplayer','真人昵称','x','')");
             sql("INSERT INTO userrobot(UserName,UserNick,PassW,Ico,Lev,Sex,Gold,IsRobot) VALUES('rankbot','机器人昵称','x',1,1,0,0,2)");
             for (int i = 1; i <= 35; i++)
-                sql("INSERT INTO gameprizerecord(EventId,UserID,GameId,GameType,RoomId,TableId,CardType,Score,RecTime) VALUES('event" + i + "','" + (i % 2 == 0 ? "rankbot" : "rankplayer") + "',5,1,0,25,'大奖'," + i + ",'2026-10-27 12:00:00')");
+                sql("INSERT INTO gameprizerecord(EventId,UserID,GameId,GameType,RoomId,TableId,CardType,Score,RecTime) VALUES('event" + i + "','" + (i % 2 == 0 ? "rankbot" : "rankplayer") + "',5,1,0,63,'大奖'," + i + ",'2026-10-27 12:00:00')");
             sql("INSERT INTO gameprizerecord(EventId,UserID,GameId,GameType,CardType,Score,RecTime) VALUES('closed','rankbot',99,0,'关闭游戏中奖',999999,'2026-10-27 13:00:00')");
             for (int i = 0; i < 35; i++)
                 sql("INSERT INTO gameprizerecord(EventId,UserID,GameId,GameType,CardType,Score,RecTime) VALUES('hidden" + i + "','rankbot'," + new[] { 3, 2, 54, 901, 99 }[i % 5] + ",0,'隐藏游戏中奖',999999,'2026-10-27 14:00:00')");
             // Current ring-schema fixture: the 35 qualifying events retain the latest 30 slots.
             for (int i = 1; i <= 35; i++)
                 sql("INSERT INTO gamerankhistory(GameId,Slot,EventId,UserID,CardType,Score,RecTime,IsBigWin) VALUES(5," + ((i-1)%30) + ",'event" + i + "','" + (i%2==0 ? "rankbot" : "rankplayer") + "','大奖'," + i + ",'2026-10-27 12:00:00',1) ON DUPLICATE KEY UPDATE ID=VALUES(ID),EventId=VALUES(EventId),UserID=VALUES(UserID),Score=VALUES(Score),RecTime=VALUES(RecTime),IsBigWin=VALUES(IsBigWin)");
+            sql(tableScopeMigration);
+            sql(tableScopeMigration);
+            Check(Convert.ToInt32(new MySqlCommand("SELECT COUNT(*) FROM gamerankhistory WHERE RoomId=0 AND TableId=63", db).ExecuteScalar()) == 30,
+                "repeatable migration backfills only existing event coordinates");
             Check(Convert.ToInt32(new MySqlCommand("SELECT COUNT(*) FROM gamerankhistory WHERE GameId=5", db).ExecuteScalar()) == 30, "current ring schema retains 30 slots");
             sql(SqlSnapshot.Table(schemaDump, "gamerankhistory", true));
             Check(Convert.ToInt32(new MySqlCommand("SELECT COUNT(*) FROM gamerankhistory WHERE GameId=5", db).ExecuteScalar()) == 30, "existing-table initialization preserves rank history");
@@ -64,7 +91,7 @@ class BackendValidation
                 using (var http = new HttpClient(server) { BaseAddress = new Uri("http://localhost/") })
                 {
                     Func<int, JObject> read = id => {
-                        var response = http.GetAsync("api/RankingList/History?gameId=" + id).Result;
+                        var response = http.GetAsync("api/RankingList/History?account=rankplayer&gameId=" + id).Result;
                         string body = response.Content.ReadAsStringAsync().Result;
                         Check(response.StatusCode == HttpStatusCode.OK, "HTTP route game=" + id + " " + (response.IsSuccessStatusCode ? "" : body));
                         if (id == 0) Check(response.Headers.CacheControl != null && response.Headers.CacheControl.NoStore, "snapshot must not be cached");
@@ -78,7 +105,8 @@ class BackendValidation
                     Check(rows.All(r => (string)r["PlayerAccount"] == (string)r["Nickname"])
                         && !snapshot.ToString().Contains("rankbot") && !snapshot.ToString().Contains("rankplayer"),
                         "old and new display fields contain full nicknames, never login accounts");
-                    Check(rows.All(r => (string)r["Machine"] == "25号机"), "recorded one-based card machine");
+                    Check(rows.All(r => (string)r["Machine"] == "14号机"), "player and robot raw 63 both map to visible 14 after 49 recycled tables");
+                    Check(Convert.ToInt32(new MySqlCommand("SELECT MIN(TableId) FROM gameprizerecord WHERE GameId=5", db).ExecuteScalar()) == 63, "history raw machine is unchanged");
                     Check(((JArray)snapshot["Games"]).Select(g => (int)g["GameId"]).SequenceEqual(new[] { 5, 40 }), "only enabled card and slot categories, excluding Mahjong fish bet and unknown");
                     foreach (int hidden in new[] { 3, 2, 54, 901, 99, 9876 })
                         Check(((JArray)read(hidden)["Rows"]).Count == 0, "explicit hidden or unknown game returns no rows: " + hidden);
@@ -86,10 +114,11 @@ class BackendValidation
                     Check(scoped.StatusCode == HttpStatusCode.OK && ((JArray)JObject.Parse(scoped.Content.ReadAsStringAsync().Result)["Rows"]).Count == 30,
                         "scoped public player uses same visibility filter");
                     Check(!snapshot.ToString().Contains("关闭牌机") && !snapshot.ToString().Contains("UserID") && !snapshot.ToString().Contains("ManualControl"), "closed-game filter and display-only fields");
-                    sql("INSERT INTO gameprizerecord(EventId,UserID,GameId,GameType,Score,RecTime) VALUES('newwin','rankbot',5,1,400,'2026-10-27 12:00:01')");
+                    sql("INSERT INTO gameprizerecord(EventId,UserID,GameId,GameType,RoomId,TableId,Score,RecTime) VALUES('newwin','rankbot',5,1,0,63,400,'2026-10-27 12:00:01')");
                     // 与中心服同一环形写入 SQL，自动编号更新后同秒仍能区分新旧。
                     sql("SET @slot=(SELECT (Slot+1)%30 FROM gamerankhistory WHERE GameId=5 ORDER BY ID DESC LIMIT 1);");
                     sql("INSERT INTO gamerankhistory(GameId,Slot,EventId,UserID,CardType,Score,RecTime,IsBigWin) VALUES(5,@slot,'newwin','rankbot','大奖',400,'2026-10-27 12:00:01',1) ON DUPLICATE KEY UPDATE ID=VALUES(ID),EventId=VALUES(EventId),UserID=VALUES(UserID),CardType=VALUES(CardType),Score=VALUES(Score),RecTime=VALUES(RecTime)");
+                    sql(tableScopeMigration);
                     rows = (JArray)read(5)["Rows"];
                     Check(rows.Count == 30 && (string)rows[0]["Score"] == "400" && (string)rows[29]["Score"] == "7", "31st win replaces oldest");
                     Check(((JArray)read(40)["Rows"]).Count == 0, "empty game");
@@ -101,10 +130,11 @@ class BackendValidation
                     Check(((JArray)read(5)["Rows"]).Count == 30, "reopen restores retained history");
                     sql("DELETE FROM gameprizerecord");
                     rows = (JArray)read(5)["Rows"];
-                    Check(rows.Count == 30 && rows.All(r => (string)r["Machine"] == "--"), "detail cleanup preserves history and marks unavailable machine");
-                    sql("INSERT INTO gamerankhistory(GameId,Slot,EventId,UserID,CardType,Score,RecTime,IsBigWin) VALUES(40,0,'slot-win','rankbot','拉霸中奖',123,'2026-10-27 15:00:00',1)");
+                    Check(rows.Count == 30 && rows.All(r => (string)r["Machine"] == "14号机"), "detail cleanup preserves durable table scope and machine");
+                    sql("INSERT INTO gamerankhistory(GameId,Slot,EventId,UserID,CardType,Score,RecTime,IsBigWin,RoomId,TableId) VALUES(40,0,'slot-win','rankbot','拉霸中奖',123,'2026-10-27 15:00:00',1,0,0)");
                     Check((string)read(40)["Rows"][0]["Score"] == "123", "slot wins remain visible");
                     sql("INSERT INTO gamerankhistory(GameId,Slot,EventId,UserID,CardType,Score,RecTime,IsBigWin) VALUES(40,1,'zero-extra','rankbot','额外玩法',0,'2026-10-27 16:00:00',1),(40,2,'legacy-small','rankbot','普通小奖',999999,'2026-10-27 17:00:00',0)");
+                    sql("UPDATE gamerankhistory SET RoomId=0,TableId=0 WHERE GameId=40");
                     rows = (JArray)read(40)["Rows"];
                     Check(rows.Count == 2 && (string)rows[0]["Score"] == "0", "zero-score qualified extra is ranked; large ordinary win is excluded before LIMIT");
                     sql("UPDATE games SET Enable=0 WHERE GameId IN (5,40)");
@@ -119,13 +149,7 @@ class BackendValidation
                         && RankingListController.DisplayNickname("7") == "7"
                         && RankingListController.DisplayNickname("77") == "77"
                         && RankingListController.DisplayNickname("a\u0301bcde\u0301") == "a\u0301bcde\u0301", "full nickname display handles missing short and combining text");
-                    Check(RankingListController.DisplayMachine(1, 0, 25) == "25号机"
-                        && RankingListController.DisplayMachine(3, 0, 24) == "25号机"
-                        && RankingListController.DisplayMachine(2, 2, 25) == "25号机"
-                        && RankingListController.DisplayMachine(1, 2, 25) == "25号机"
-                        && RankingListController.DisplayMachine(3, 2, 24) == "25号机"
-                        && RankingListController.DisplayMachine(1, 0, 0) == "--"
-                        && RankingListController.DisplayMachine(3, null, null) == "--", "machine bases without rooms and unavailable metadata");
+                    CheckTableScopes(http, sql);
                 }
             }
             string storeTest = StoreTestExecutable();
@@ -139,6 +163,64 @@ class BackendValidation
             sql("DROP DATABASE mth_rankhistory_validation");
         }
         Console.WriteLine("PASSED " + checks + " checks in " + (DateTime.UtcNow - start).TotalSeconds.ToString("F2") + " seconds");
+    }
+
+    static void CheckTableScopes(HttpClient http, Action<string> sql)
+    {
+        sql("UPDATE games SET Enable=1 WHERE GameId IN (5,40)");
+        sql("INSERT INTO games(GameId,Name,Enable,Num,GameType) VALUES(15,'大字板',1,0,1)");
+        sql("INSERT INTO admin(ID,PWD,AGENCY,PRIV,PlayableGames) VALUES('mo','x','',1,'5,15'),('other','x','',1,'5,15,40')");
+        sql("INSERT INTO users(ID,NAME,PWD,AGENCY) VALUES('mo-player','莫线玩家','x','mo'),('other-player','另一线玩家','x','other')");
+        sql("INSERT INTO roomtableowner(GAME_ID,TableIndex,LineAgent) VALUES(5,49,'mo'),(5,50,'other'),(15,25,'other')");
+        sql("DELETE FROM gamerankhistory");
+        Action<int, int, string, string, int> add = (game, slot, line, label, table) => sql(
+            "INSERT INTO gamerankhistory(GameId,Slot,LineAgent,EventId,UserID,CardType,Score,RecTime,IsBigWin,RoomId,TableId) VALUES("
+            + game + "," + slot + ",'" + line + "','scope-" + game + "-" + label + "','rankbot','" + label + "',1,NOW(),1,0," + table + ")");
+        add(5, 0, "mo", "mo-private", 50);
+        add(5, 0, "other", "other-private", 51);
+        add(5, 0, "", "public-robot", 52);
+        add(5, 1, "mo", "mo-old-public", 52);
+        add(5, 1, "other", "other-old-public", 52);
+        for (int i = 1; i < 30; i++) add(5, i, "", "public-new-" + i, 52);
+        add(15, 0, "mo", "mo-public", 25);
+        add(15, 0, "other", "other-public", 25);
+        add(15, 0, "", "public-robot", 25);
+        add(15, 1, "other", "other-private", 26);
+        add(40, 0, "", "forbidden-game", 0);
+        Func<int, string, JObject> read = (game, account) => {
+            var response = http.GetAsync("api/RankingList/History?gameId=" + game + "&account=" + account).Result;
+            Check(response.StatusCode == HttpStatusCode.OK, "scoped HTTP " + game + " / " + account);
+            return JObject.Parse(response.Content.ReadAsStringAsync().Result);
+        };
+        var mo = read(5, "mo-player");
+        Check(((JArray)mo["Games"]).Select(g => (int)g["GameId"]).SequenceEqual(new[] { 5, 15 }), "mo categories honor playable games");
+        Check(((JArray)mo["Rows"]).Count == 1 && (string)mo["Rows"][0]["Prize"] == "mo-private"
+            && (string)mo["Rows"][0]["Machine"] == "1号机", "mo Phenix only its actual exclusive table");
+        var publicRows = (JArray)read(15, "mo-player")["Rows"];
+        Check(publicRows.Count == 3 && publicRows.All(r => (string)r["Machine"] == "1号机")
+            && publicRows.Any(r => (string)r["Prize"] == "other-public"), "Dazhi public includes all agency humans and robots, excludes private");
+        Check(((JArray)read(40, "mo-player")["Rows"]).Count == 0, "direct forbidden game request denied");
+        Check(((JArray)read(5, "other-player")["Rows"]).Count == 1, "other private line isolated");
+        Check(http.GetAsync("api/RankingList/History?gameId=5").Result.StatusCode == HttpStatusCode.BadRequest, "missing account cannot bypass table isolation");
+        Check(http.GetAsync("api/RankingList/History?account=missing").Result.StatusCode == HttpStatusCode.BadRequest, "unknown player cannot become public viewer");
+        sql("UPDATE roomtableowner SET LineAgent='#' WHERE GAME_ID=5 AND LineAgent='mo'");
+        var recalled = (JArray)read(5, "mo-player")["Rows"];
+        Check(recalled.Count == 30 && recalled.All(r => ((string)r["Prize"]).Contains("public")), "recall switches to public and hides recycled table history");
+        sql("UPDATE roomtableowner SET LineAgent='mo' WHERE GAME_ID=5 AND TableIndex=50");
+        Check(((JArray)read(5, "mo-player")["Rows"]).Count == 0, "reassigned table rejects previous owner history");
+        sql("UPDATE gamerankhistory SET RoomId=NULL,TableId=NULL WHERE GameId=15 AND LineAgent='mo'");
+        Check(((JArray)read(15, "mo-player")["Rows"]).Count == 2, "unknown historical position fails closed without clearing history");
+        sql("INSERT INTO games(GameId,Name,Enable,Num,GameType) VALUES(52,'旧水果',1,0,3)");
+        sql("INSERT INTO roomtableconfig(GAME_ID,RoomIndex,TableIndex,TableName) VALUES(52,0,0,'1')");
+        sql("UPDATE admin SET PlayableGames='5,15,52' WHERE ID='mo'");
+        add(52, 0, "", "legacy-slot-zero", 0);
+        Check(((JArray)read(52, "mo-player")["Rows"]).Count == 1, "raw coordinate convention follows game type, not three-slot ID list");
+        sql("UPDATE admin SET PlayableGames='15' WHERE ID='mo'");
+        Check(((JArray)read(5, "mo-player")["Rows"]).Count == 0, "playable changes apply on next snapshot");
+        sql("UPDATE games SET Enable=0 WHERE GameId=15");
+        var closed = read(0, "mo-player");
+        Check(((JArray)closed["Games"]).Count == 0 && ((JArray)closed["Rows"]).Count == 0, "closed game hides category and rows");
+        sql("DELETE FROM gamerankhistory");
     }
 
     static string StoreTestExecutable()

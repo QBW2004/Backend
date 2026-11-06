@@ -23,28 +23,31 @@ namespace YYT.Web.Controllers.Api
         public IHttpActionResult History(int gameId = 0, string account = null)
         {
             if (gameId < 0) return BadRequest("游戏编号无效");
+            if (string.IsNullOrWhiteSpace(account)) return BadRequest("请提供玩家账号");
             try
             {
                 using (var ef = new GameDbContext())
                 {
-                    // 新包带上玩家账号：只看本线与公共(LineAgent='')的记录，且只限本线可玩游戏；不带账号（老包）口径不变
-                    bool scoped = !string.IsNullOrWhiteSpace(account);
-                    string line = scoped ? LineScopeRules.ResolveLineOfPlayer(ef, account.Trim()) : string.Empty;
-                    List<int> playable = scoped ? LineScopeRules.GetLinePlayableGames(ef, line) : null;
+                    account = account.Trim();
+                    if (!ef.Users.AsNoTracking().Any(u => u.ID == account)) return BadRequest("玩家账号不存在");
+                    string line = LineScopeRules.ResolveLineOfPlayer(ef, account);
+                    List<int> playable = LineScopeRules.GetLinePlayableGames(ef, line);
                     var games = ef.Games.AsNoTracking().Where(g => g.Enable == 1
                         && (g.GameType == 1 || g.GameType == 3) && g.GameId != 54)
                         .OrderBy(g => g.GameId).Select(g => new { g.GameId, g.Name, g.GameType }).ToList();
                     if (playable != null)
                         games = games.Where(g => playable.Contains(g.GameId)).ToList();
                     var enabledIds = games.Select(g => g.GameId).ToList();
+                    var types = games.ToDictionary(g => g.GameId, g => g.GameType);
                     // 分类与记录共用已过滤的整数编号，必须在 LIMIT 前过滤，避免隐藏游戏挤占最新 30 条。
                     string gamesSql = enabledIds.Count == 0 ? " AND 1=0"
                         : " AND h.GameId IN (" + string.Join(",", enabledIds) + ")";
                     // 独立的 30 槽记录不受后台明细七天清理影响；同秒按环形写入时更新的 ID 排序。
-                    string scopeSql = !scoped ? string.Empty
-                        : " AND (h.LineAgent='' OR h.LineAgent=@p1)";
+                    var tableDisplay = TableDisplayMap.Load(ef, enabledIds);
+                    string scopeSql = tableDisplay.HistoryVisibilitySql(line, types);
                     var records = ef.Database.SqlQuery<HistoryRow>(
-                        "SELECT h.GameId,h.UserID,h.CardType,h.Score,h.RecTime,p.RoomId,p.TableId FROM gamerankhistory h " +
+                        "SELECT h.GameId,h.UserID,h.CardType,h.Score,h.RecTime,h.LineAgent," +
+                        "COALESCE(h.RoomId,p.RoomId) AS RoomId,COALESCE(h.TableId,p.TableId) AS TableId FROM gamerankhistory h " +
                         "INNER JOIN games g ON g.GameId=h.GameId AND g.Enable=1 " +
                         "LEFT JOIN gameprizerecord p ON p.EventId=h.EventId AND p.GameId=h.GameId " +
                         "WHERE h.IsBigWin=1 AND h.Score>=0 AND (@p0=0 OR h.GameId=@p0)" + gamesSql + scopeSql + " " +
@@ -57,7 +60,6 @@ namespace YYT.Web.Controllers.Api
                         .Select(u => new { u.UserName, u.UserNick }).ToList()
                         .GroupBy(u => u.UserName).ToDictionary(g => g.Key, g => g.First().UserNick);
                     var names = games.ToDictionary(g => g.GameId, g => g.Name);
-                    var types = games.ToDictionary(g => g.GameId, g => g.GameType);
                     var rows = records.Select(r =>
                     {
                         string nickname = DisplayNickname(players.ContainsKey(r.UserID) ? players[r.UserID]
@@ -68,7 +70,7 @@ namespace YYT.Web.Controllers.Api
                             GameName = names[r.GameId],
                             // 旧包固定读此字段，继续回传完整名称，避免旧包显示账号。
                             PlayerAccount = nickname,
-                            Machine = DisplayMachine(types[r.GameId], r.RoomId, r.TableId),
+                            Machine = tableDisplay.HistoryMachine(r.GameId, types[r.GameId], r.RoomId, r.TableId, r.LineAgent),
                             Nickname = nickname,
                             Prize = r.CardType ?? "中奖",
                             // 分数字符串避免客户端 JSON 转 double 丢失 Int64 精度。
@@ -93,16 +95,6 @@ namespace YYT.Web.Controllers.Api
             return string.IsNullOrWhiteSpace(nickname) ? "未知玩家" : nickname;
         }
 
-        public static string DisplayMachine(int gameType, long? roomId, long? tableId)
-        {
-            // 中奖记录：牌机/鱼机是 1 基桌台号，拉霸是 0 基下标；旧明细已清理时不能假造 1 号机。
-            if (!tableId.HasValue || tableId.Value < 0 || tableId.Value == long.MaxValue) return "--";
-            long number = gameType == 1 || gameType == 2 ? tableId.Value : tableId.Value + 1;
-            if (number <= 0) return "--";
-            // 与中奖播报一致，只展示机台号；房间仍用于业务路由，不拼进展示文字。
-            return number.ToString(CultureInfo.InvariantCulture) + "号机";
-        }
-
         public class HistoryRow
         {
             public int GameId { get; set; }
@@ -112,6 +104,7 @@ namespace YYT.Web.Controllers.Api
             public DateTime RecTime { get; set; }
             public long? RoomId { get; set; }
             public long? TableId { get; set; }
+            public string LineAgent { get; set; }
         }
 
         public static string DisplayScore(int gameId, long score)
