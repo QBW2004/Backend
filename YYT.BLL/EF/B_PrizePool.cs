@@ -208,7 +208,10 @@ namespace YYT.BLL.EF
                 if (ef.Database.SqlQuery<int>("SELECT COUNT(*) FROM agentprizeledger WHERE EventId={0} AND AgentID={1}", eventId, user.Accounts).Single() != 0)
                     return new Msg(1, "此笔操作已完成，请勿重复提交");
                 long coins = ef.Database.SqlQuery<long>("SELECT IFNULL(COINS,0) FROM admin WHERE ID={0} FOR UPDATE", user.Accounts).Single();
-                if ((!withdraw && coins < amount) || (withdraw && pool < amount)) return new Msg(0, "可用余额不足！");
+                // 2026-11-06：手机端“提取”（奖池 → 我的钻）。奖池不足时整笔拒绝并说明当前余额，
+                // 不截断为扣到0；奖池已为负（放水超额）时同样拒绝。
+                if (!withdraw && coins < amount) return new Msg(0, "我的钻石不足，当前 " + coins + " 钻，无法充值 " + amount + " 钻！");
+                if (withdraw && pool < amount) return new Msg(0, "奖池余额不足，当前奖池 " + pool.ToString("0.########") + " 钻，无法提取 " + amount + " 钻！");
                 long change = withdraw ? -amount : amount;
                 if (withdraw && coins > long.MaxValue - amount) return new Msg(0, "钱包余额超过可存储范围！");
                 ef.Database.ExecuteSqlCommand("UPDATE admin SET COINS=COINS-{0} WHERE ID={1}", change, user.Accounts);

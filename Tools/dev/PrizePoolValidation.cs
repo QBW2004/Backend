@@ -75,6 +75,15 @@ class PrizePoolValidation
                 Check(number("SELECT COINS FROM admin WHERE ID='prize_a'") == 1910, "return credits own wallet");
                 Check(number("SELECT Balance FROM agentprizepool WHERE AgentID='prize_a'") == 1060, "return debits pool");
                 Check(service.Transfer(a, 10, Guid.NewGuid().ToString(), false).code == 1, "recharge reverses return");
+                // 2026-11-06 手机端提取：超过奖池整笔拒绝、提示明确、钱包/奖池/流水均不变；扣减流水 Kind=2 且为负数
+                long ledgerBefore = (long)number("SELECT COUNT(*) FROM agentprizeledger WHERE AgentID='prize_a'");
+                var over = service.Transfer(a, 1071, Guid.NewGuid().ToString(), true);
+                Check(over.code == 0 && over.content.Contains("奖池余额不足") && over.content.Contains("1070"), "deduct over pool rejected with explicit message");
+                Check(number("SELECT Balance FROM agentprizepool WHERE AgentID='prize_a'") == 1070 && number("SELECT COINS FROM admin WHERE ID='prize_a'") == 1900, "rejected deduct leaves money unchanged");
+                Check((long)number("SELECT COUNT(*) FROM agentprizeledger WHERE AgentID='prize_a'") == ledgerBefore, "rejected deduct writes no ledger");
+                Check(number("SELECT ChangeDiamonds FROM agentprizeledger WHERE AgentID='prize_a' AND Kind=2 ORDER BY ID DESC LIMIT 1") == -10, "deduct ledger kind 2 is negative");
+                var poorWallet = service.Transfer(a, 999999, Guid.NewGuid().ToString(), false);
+                Check(poorWallet.code == 0 && poorWallet.content.Contains("我的钻石不足"), "recharge over wallet has explicit message");
                 sql("UPDATE usercontrolstatus SET Status=2,ExpiredTime=DATE_SUB(NOW(6),INTERVAL 2 MINUTE) WHERE ID=1");
                 control(2, 5, "player1", a.Accounts);
                 release(2, "net-1", 25, 100);

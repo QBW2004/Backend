@@ -462,34 +462,50 @@
         return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) { var r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16); });
     }
 
+    /** 金额文本归一：全角数字转半角，再去掉所有非数字字符（金额框只允许输入数字）。 */
+    function digitsOnly(text) {
+        return String(text == null ? '' : text)
+            .replace(/[\uFF10-\uFF19]/g, function (c) { return String.fromCharCode(c.charCodeAt(0) - 0xFEE0); })
+            .replace(/[^0-9]/g, '');
+    }
+
     /**
-     * 充值奖池弹窗（对齐参考后台）：只有一个金额框——正数=从我的钻充值到奖池，
-     * 前面加“-”=从奖池退回我的钻；仍走原 Transfer 接口（Withdraw=1 为退回），请求号防重复提交。
+     * 充值奖池弹窗：一个只能输数字的金额框 + 底部“充值”（蓝，我的钻 → 奖池）/“提取”（红，奖池 → 我的钻）两个按钮。
+     * 仍走原 Transfer 接口（Withdraw=1 为提取），请求号防重复提交。
+     * 2026-11-06：手机数字键盘没有“-”键，取消“负数=扣减”的输入方式，改为两个按钮区分方向（按运营确认）。
      */
     function rechargePool() {
         if (submitting) return;
         if (!wallet) { refreshWallet(); M.toast('请等待奖池余额读取完成', 'error'); return; }
         var amount = 0, withdraw = false, token = requestId();
-        // 2026-11-04 需求：标题左右居中、不展示取消按钮、“确认充值”居中（不充值时点遮罩关闭）
-        M.modal({ title: '充值奖池', bodyHTML: '<label class="pool-modal-field">充值金额 (钻石)<input id="poolAmount" class="input-field" type="text" inputmode="numeric" autocomplete="off" placeholder="正数充值，负数扣减奖池"></label><div class="pool-modal-error" id="poolAmountError"></div>',
-            buttons: [{label:'确认充值',type:'confirm',value:true}],
-            onRender: function ($modal) { $modal.addClass('pool-modal'); },
+        // 2026-11-04 需求：标题左右居中、不展示取消按钮（不操作时点遮罩关闭）
+        M.modal({ title: '充值奖池', bodyHTML: '<label class="pool-modal-field">金额 (钻石)<input id="poolAmount" class="input-field" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="请输入整数钻数"></label><div class="pool-modal-error" id="poolAmountError"></div>',
+            buttons: [{label:'充值',type:'confirm pool-in-btn',value:'in'},{label:'提取',type:'pool-out-btn',value:'out'}],
+            onRender: function ($modal) {
+                $modal.addClass('pool-modal');
+                var $input = $modal.find('#poolAmount');
+                $input.on('input change', function () {
+                    var v = digitsOnly($input.val());
+                    if (v !== $input.val()) $input.val(v);
+                    $modal.find('#poolAmountError').text('');
+                });
+            },
             beforeClose: function (value, $modal) {
                 if (!value) return true;
-                var text = $.trim($modal.find('#poolAmount').val());
+                var text = digitsOnly($modal.find('#poolAmount').val());
                 var $err = $modal.find('#poolAmountError');
-                if (!/^-?[1-9][0-9]*$/.test(text)) { $err.text('请输入非 0 整数，负数表示退回我的钻'); return false; }
-                withdraw = text.charAt(0) === '-';
-                amount = Number(withdraw ? text.substring(1) : text);
+                if (!/^[1-9][0-9]*$/.test(text)) { $err.text('请输入大于 0 的整数钻数'); return false; }
+                withdraw = value === 'out';
+                amount = Number(text);
                 if (amount > 9007199254740991) { $err.text('金额过大'); return false; }
-                if (amount > Number(withdraw ? wallet.Balance : wallet.Diamonds)) { $err.text(withdraw ? '奖池余额不足' : '我的钻石不足'); return false; }
+                if (amount > Number(withdraw ? wallet.Balance : wallet.Diamonds)) { $err.text(withdraw ? '奖池余额不足，当前奖池 ' + diamonds(wallet.Balance) + ' 钻' : '我的钻石不足，当前 ' + diamonds(wallet.Diamonds) + ' 钻'); return false; }
                 return true;
             }
-        }).then(function (ok) {
-            if (!ok || submitting) return;
-            submitting = true; updateButtons(); M.loading(withdraw ? '退回中...' : '充值中...');
+        }).then(function (choice) {
+            if (!choice || submitting) return;
+            submitting = true; updateButtons(); M.loading(withdraw ? '提取中...' : '充值中...');
             M.post('/Game/PrizePool/Transfer', {Amount:amount,RequestId:token,Withdraw:withdraw ? 1 : 0}).always(M.hideLoading)
-                .then(function (res) { var r = M.result(res); M.alert(r.ok ? (withdraw ? '已退回 ' + amount + ' 钻到我的钻石' : '奖池充值成功') : r.text, r.ok); refreshWallet(); }, function () { M.toast('充值结果暂未确认，请刷新余额后核对流水', 'error'); refreshWallet(); })
+                .then(function (res) { var r = M.result(res); M.alert(r.ok ? (withdraw ? '已从奖池提取 ' + amount + ' 钻到我的钻石' : '奖池充值成功') : r.text, r.ok); refreshWallet(); }, function () { M.toast((withdraw ? '提取' : '充值') + '结果暂未确认，请刷新余额后核对流水', 'error'); refreshWallet(); })
                 .always(function () { submitting = false; updateButtons(); });
         });
     }

@@ -1601,9 +1601,10 @@ namespace UnitTestProj
             int recIdx = layout.IndexOf("Url.Action(\"Records\""), poolIdx = layout.IndexOf("Url.Action(\"PoolRecords\""), frozenIdx = layout.IndexOf("Url.Action(\"Abnormal\"");
             Assert.IsTrue(recIdx > 0 && recIdx < poolIdx && poolIdx < frozenIdx);
             StringAssert.Contains(home, "public ActionResult PoolRecords()");
-            // 10 单输入框：正数充值、负数退回
-            StringAssert.Contains(control, "placeholder=\"正数充值，负数扣减奖池\"");
-            StringAssert.Contains(control, "withdraw = text.charAt(0) === '-';");
+            // 10 单输入框（只能数字）+ 充值/提取两个按钮（2026-11-06：手机数字键盘无“-”，不再用负数表示退回）
+            StringAssert.Contains(control, "inputmode=\"numeric\" pattern=\"[0-9]*\"");
+            StringAssert.Contains(control, "buttons: [{label:'充值',type:'confirm pool-in-btn',value:'in'},{label:'提取',type:'pool-out-btn',value:'out'}]");
+            StringAssert.Contains(control, "withdraw = value === 'out';");
             // 12 只有总台/特级代理可切奖池
             StringAssert.Contains(flowView, "@if (canPool && !poolOnly)");
             StringAssert.Contains(pool, "(user.UserPriv ?? -1) > AgencyRules.TopAgentPriv");
@@ -2529,8 +2530,9 @@ namespace UnitTestProj
             // 5：应用控制不再弹“操作确认”
             Assert.IsFalse(control.Contains("'操作确认'"));
             Assert.IsFalse(control.Contains("confirmApply"));
-            // 9：充值奖池弹窗只有居中的“确认充值”
-            StringAssert.Contains(control, "buttons: [{label:'确认充值',type:'confirm',value:true}],");
+            // 9：充值奖池弹窗不展示取消；2026-11-06 起底部为“充值”（蓝）/“提取”（红）两个按钮，替代原居中的“确认充值”
+            StringAssert.Contains(control, "buttons: [{label:'充值',type:'confirm pool-in-btn',value:'in'},{label:'提取',type:'pool-out-btn',value:'out'}],");
+            StringAssert.Contains(controlView, ".pool-modal .modal-footer { gap: 12px; }");
             StringAssert.Contains(controlView, ".pool-modal .modal-title { text-align: center; }");
             // 6/7：在线/离线顶部文案
             StringAssert.Contains(ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.players.js"), "$('#totalWinLossLabel').text('今日玩家总盈亏');");

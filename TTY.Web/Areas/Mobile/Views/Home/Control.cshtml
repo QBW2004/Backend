@@ -85,10 +85,15 @@
     .pool-modal-field { display: block; margin-top: 14px; font-size: 14px; }
     .pool-modal-field input { display: block; width: 100%; margin-top: 8px; }
     .pool-modal-error { color: #ff3b30; font-size: 13px; margin-top: 8px; min-height: 18px; text-align: center; }
-    /* 充值奖池弹窗：标题左右居中，只保留居中的“确认充值”按钮（不展示取消，点遮罩关闭） */
+    /* 充值奖池弹窗：标题左右居中，不展示取消（点遮罩关闭） */
     .pool-modal .modal-title { text-align: center; }
     .pool-modal .modal-footer { justify-content: center; }
-    .pool-modal .modal-btn.confirm { width: 60%; min-width: 140px; }
+    /* 2026-11-06：底部“充值”（蓝）/“提取”（红）两个按钮并排等宽，中间留间隙 */
+    .pool-modal .modal-footer { gap: 12px; }
+    .pool-modal .modal-btn { flex: 1 1 0; min-width: 0; }
+    .pool-modal .modal-btn.pool-in-btn { background-color: #007aff; color: #fff; }
+    .pool-modal .modal-btn.pool-out-btn { background-color: #ff3b30; color: #fff; }
+    .pool-modal .modal-btn.pool-out-btn:hover { background-color: #e0332a; }
     .ac-suggest { position: absolute; top: 100%; left: 0; right: 0; z-index: 60; background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; box-shadow: 0 6px 16px #0002; max-height: 228px; overflow-y: auto; display: none; margin-top: 4px; }
     .ac-suggest.show { display: block; }
     .ac-item { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid #f0f0f0; }
