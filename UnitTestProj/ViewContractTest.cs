@@ -16,7 +16,7 @@ namespace UnitTestProj
             StringAssert.Contains(view, "id=\"playTimeMinHours\"");
             StringAssert.Contains(view, "id=\"playTimeMaxHours\"");
             StringAssert.Contains(view, "超时后随机等待 1～5 分钟");
-            StringAssert.Contains(view, "由空闲机器人接替原座位");
+            StringAssert.Contains(view, "牌机与拉霸重新随机选择空桌，其他游戏接替原座位");
             StringAssert.Contains(controller, "PLAYTIME_GET");
             StringAssert.Contains(controller, "PLAYTIME {0} {1} {2}");
             StringAssert.Contains(controller, "TryPlayTimeSeconds");

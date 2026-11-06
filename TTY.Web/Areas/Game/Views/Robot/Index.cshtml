@@ -981,7 +981,7 @@
         <div class="robot-section-heading"><div><h2>自动调度</h2><p>机器人按现有配置重新寻找空位，作用于全部游戏与代理线。</p></div></div>
         <div class="robot-schedule-card">
             <h3>最大游玩时间 <span id="playTimeStatus" class="robot-muted">正在读取…</span></h3>
-            <p>每次成功入座后，在以下小时范围内随机分配游玩上限；超时后随机等待 1～5 分钟，由空闲机器人接替原座位。</p>
+            <p>每次成功入座后，在以下小时范围内随机分配游玩上限；超时后随机等待 1～5 分钟，由空闲机器人接替。牌机与拉霸重新随机选择空桌，其他游戏接替原座位。</p>
             <div class="robot-schedule-fields">
                 <label><input type="checkbox" id="playTimeEnabled" /> 启用超时换人</label>
                 <label>最短上限（小时） <input id="playTimeMinHours" class="easyui-numberbox" style="width:110px;" data-options="min:0.1,max:720,precision:1" value="2" /></label>
@@ -992,6 +992,7 @@
             <button type="button" class="robot-button" onclick="loadRobotPlayTime();">重新读取</button>
         </div>
         <div class="robot-schedule-card">
+            <p class="robot-muted">牌机与拉霸普通入座、超时换人和打乱时，均随机选择空桌，允许两个机器人相邻，优先避免同一行连续 3 个及以上机器人；只有所有空桌都会形成这种连排时才放宽。真人邻桌可坐，有人占用或留机的桌不可坐。</p>
             <h3>每日定时打乱 <span id="scheduleStatus" class="robot-muted">正在读取…</span></h3>
             <p>每天在指定时间范围内执行一次，机器人以 1～5 秒的随机间隔逐个离座。</p>
             <div class="robot-schedule-fields">

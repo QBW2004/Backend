@@ -628,7 +628,7 @@ namespace YYT.Web.Areas.Game.Controllers
             string enabled = (form.Q<string>("Enabled") ?? string.Empty).Trim();
             if (enabled != "0" && enabled != "1") return Json(new Msg(0, "请选择是否启用超时换人。"));
             string command = string.Format(CultureInfo.InvariantCulture, "PLAYTIME {0} {1} {2}", enabled, minSeconds, maxSeconds);
-            return Json(new SConnect().SendRobotAction(command, "PLAYTIME_OK", "机器人游玩时长已保存，超时后随机等待1～5分钟由空闲机器人接替原座位。"));
+            return Json(new SConnect().SendRobotAction(command, "PLAYTIME_OK", "机器人游玩时长已保存，超时后随机等待1～5分钟，由空闲机器人按游戏入座规则接替。"));
         }
 
         private static bool TryPlayTimeSeconds(string raw, out int seconds)
