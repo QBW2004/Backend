@@ -243,7 +243,7 @@ namespace YYT.BLL.EF
         }
 
         /// <summary>
-        /// 专属视图里「新建桌台」（2026-11-05）：给已有专属桌台的线再加一张。桌号接在现有最大桌号之后（不复用已收回桌号——
+        /// 专属视图里「新建桌台」（2026-11-05；2026-11-06 起该线没有专属桌台时也可新建）：给该线加一张专属桌台。桌号接在现有最大桌号之后（不复用已收回桌号——
         /// 那些桌的按桌行还在，走普通新建流程会和旧行冲突），并在写桌台参数**之前**先登记归属，
         /// 保证保存后的 RP/PC 热更下发时这张桌已是该线专属，不会有一瞬间作为公共桌台被其他线看到。
         /// 保存失败时调用方须 <see cref="ReleaseUnusedReservation"/> 撤掉登记。成功时 datas 为桌号（0 起）。
@@ -274,12 +274,7 @@ namespace YYT.BLL.EF
                     msg.content = "该账号不是超管的直属代理！";
                     return msg;
                 }
-                Dictionary<int, string> owners = GetOwners(ef, gameId);
-                if (!owners.Values.Any(v => string.Equals(v, agent, StringComparison.OrdinalIgnoreCase)))
-                {
-                    msg.content = "该线在本游戏还没有专属桌台，请先点「从公共桌台复制一套」！";
-                    return msg;
-                }
+                // 2026-11-06：该线还没有专属桌台时也允许直接新建（首张建好后该线只看到专属桌台，前端已二次确认）
                 int maxIndex = ef.Database.SqlQuery<int?>(
                     "SELECT MAX(TableIndex) FROM roomtableconfig WHERE GAME_ID={0}", gameId).FirstOrDefault() ?? -1;
                 int idx = maxIndex + 1;

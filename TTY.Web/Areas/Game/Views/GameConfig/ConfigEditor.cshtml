@@ -707,12 +707,12 @@
         var mjhlMode = $('#gcForm').hasClass('gc-mjhl-mode');
         $('#gcLineCopy').toggle(!mjhlMode && ready && hasGame && !!line && owned === 0);
         $('#gcLineRecall').toggle(!mjhlMode && ready && hasGame && !!line && owned > 0);
-        // 公共视图照常新建；专属视图在该线已有专属桌台后可再新增（桌号接在最大桌号后，归属该线）
-        $('#gcNewTable').toggle(!mjhlMode && (!line || (ready && hasGame && owned > 0)));
+        // 公共视图照常新建；选中某线时（不论是否已有专属桌台）都可新建该线专属桌台（桌号接在最大桌号后，归属该线）
+        $('#gcNewTable').toggle(!mjhlMode && (!line || (ready && hasGame)));
         $('#gcDelete,#gcRefresh').toggle(!mjhlMode);
         var tip = '';
         if (!ready) tip = '数据库还没有执行代理线补丁，暂不能分配专属桌台';
-        else if (hasGame && line && owned === 0) tip = '该线目前使用公共桌台';
+        else if (hasGame && line && owned === 0) tip = '该线目前使用公共桌台；可「从公共桌台复制一套」，或点「新建桌台」单独建专属桌台';
         else if (hasGame && line) tip = '以下为该线专属桌台，参数只对该线玩家生效（需新版客户端）；可点「新建桌台」继续新增专属桌台';
         $('#gcLineTip').text(tip);
         gcMjhlInheritanceUi();
@@ -869,7 +869,7 @@
         $list.empty();
         if (GC_TABLES.length < 1) {
             if (gcCurLine()) {
-                $('#gcTableEmpty').show().text('该线目前使用公共桌台，点上方「从公共桌台复制一套」生成专属桌台。');
+                $('#gcTableEmpty').show().text('该线目前使用公共桌台：点上方「从公共桌台复制一套」，或点「新建桌台」单独建专属桌台。');
                 return;
             }
             $('#gcTableEmpty').show().text('该游戏暂无桌台，填写参数后点击右上角“新建桌台”。');
@@ -1570,19 +1570,17 @@
         return value;
     }
 
-    function gcPrepareNewTableForm(count) {
+    function gcPrepareNewTableForm(count, template) {
         var type = gcGetType();
-        if (gcCurLine() && gcLineCount(gcCurLine()) < 1) {
-            showToast('该线还没有专属桌台，请先点「从公共桌台复制一套」，之后可在此继续新增专属桌台！', 'warning');
-            return;
-        }
         if (type != 0 && type != 1 && type != 2 && type != 3) {
             showToast('请先选择游戏类型与游戏！', 'warning');
             return;
         }
         var gameId = parseInt($('#gcGameSel').val(), 10);
         $('#gcTableList li').removeClass('active');
-        var src = gcLatestTable();
+        var src = template || gcLatestTable();
+        // 该线还没有专属桌台时列表为空、参数区被隐藏，进入新建表单必须重新显示
+        gcSetParaVisible(true);
         if (src) {
             gcFill(src);
         } else {
@@ -1612,15 +1610,25 @@
 
     function gcNewTable() {
         var type = gcGetType();
-        if (gcCurLine() && gcLineCount(gcCurLine()) < 1) {
-            showToast('该线还没有专属桌台，请先点「从公共桌台复制一套」，之后可在此继续新增专属桌台！', 'warning');
-            return;
-        }
         if (type != 0 && type != 1 && type != 2 && type != 3) {
             showToast('请先选择游戏类型与游戏！', 'warning');
             return;
         }
         // 直接进入新建表单（桌名自动编号）；新建张数在点「保存」时再选
+        var line = gcCurLine();
+        if (line && (!GC_TABLES || GC_TABLES.length < 1)) {
+            // 该线还没有专属桌台：取公共桌台最近一张的参数作模板（桌名仍从 1号机 起编），取不到时用默认参数
+            var gameId = parseInt($('#gcGameSel').val(), 10);
+            request(GC_URL.tableConfig, { GAME_ID: gameId, GAME_TYPE: type, LINE: '' }, function (data) {
+                if (gcCurLine() !== line || parseInt($('#gcGameSel').val(), 10) !== gameId) return;
+                var template = null;
+                $.each((data && data.code == 1 && data.datas) || [], function (i, t) {
+                    if (!template || parseInt(t.id, 10) > parseInt(template.id, 10)) template = t;
+                });
+                gcPrepareNewTableForm(1, template);
+            });
+            return;
+        }
         gcPrepareNewTableForm(1);
     }
 
@@ -2537,6 +2545,13 @@
             return;
         }
         GC_NEW_TABLE_COUNT = wasNew ? opts.count : 1;
+        // 该线首次建专属桌台：建好后该线玩家只看到专属桌台、不再看到公共桌台（代理线隔离规则），先确认
+        if (wasNew && gcCurLine() && gcLineCount(gcCurLine()) < 1 && !opts.firstLineConfirmed) {
+            confirm('【' + gcCurLine() + '】目前使用公共桌台。\n新建后该线玩家进入本游戏只会看到专属桌台（本次 ' + GC_NEW_TABLE_COUNT + ' 张），不再看到公共桌台；之后可继续新建，或点「收回专属桌台」恢复使用公共桌台。\n确定新建吗？', function () {
+                gcSave({ internal: true, count: opts.count, appendConfirmed: opts.appendConfirmed, firstLineConfirmed: true });
+            });
+            return;
+        }
         // 已分配专属桌台后再新建公共桌台：新桌号排在专属桌台之后，旧版客户端按连续位置取配置，进不了这张桌，先确认
         if (wasNew && !gcCurLine() && GC_LINE_INFO && (GC_LINE_INFO.Owned > 0 || GC_LINE_INFO.Recycled > 0) && !opts.appendConfirmed) {
             confirm('本游戏已经分配过专属桌台，新建的公共桌台会排在专属桌台之后，旧版客户端进不了这张桌。\n确定继续新建 ' + GC_NEW_TABLE_COUNT + ' 张吗？', function () {

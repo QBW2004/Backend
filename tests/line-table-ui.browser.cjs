@@ -71,7 +71,7 @@ const server = http.createServer(async (req, res) => {
     const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROME_PATH || 'C:/Program Files/Google/Chrome/Application/chrome.exe' });
     try {
         const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } }); page.setDefaultTimeout(5000); page.on('pageerror', e => errors.push(e.message));
-        page.on('dialog', d => d.accept());
+        const dialogs = []; page.on('dialog', d => { dialogs.push(d.message()); d.accept(); });
         const vis = async sel => page.locator(sel).isVisible();
         const settle = () => page.waitForLoadState('networkidle').then(() => page.waitForTimeout(150));
         const buttons = async () => ({ copy: await vis('#gcLineCopy'), recall: await vis('#gcLineRecall'), add: await vis('#gcNewTable'), del: await vis('#gcDelete') });
@@ -87,10 +87,10 @@ const server = http.createServer(async (req, res) => {
         await page.selectOption('#gcLineSel', 'lineA'); await settle();
         b = await buttons();
         check(b.copy, 'line without exclusive tables: copy button visible after tables load');
-        check(!b.recall && !b.add, 'line without exclusive tables: recall/new hidden');
+        check(!b.recall && b.add, 'line without exclusive tables: recall hidden, new visible');
         check((await page.locator('#gcLineTip').textContent()).includes('使用公共桌台'), 'tip says line uses public tables');
         check((await page.locator('#gcTableEmpty').textContent()).includes('从公共桌台复制一套'), 'empty list points to copy');
-        check(await page.evaluate(() => { gcNewTable(); return !$('#gcNewTableWin').closest('.window').is(':visible'); }), 'new without exclusive tables is refused');
+        check((await page.locator('#gcLineTip').textContent()).includes('新建桌台'), 'tip offers new table for line without exclusive tables');
 
         await page.click('#gcLineCopy'); await okConfirm(); await settle();
         check(posts.at(-1).route.endsWith('/CopyPublicTablesToLine') && posts.at(-1).params.LINE === 'lineA' && posts.at(-1).params.GAME_TYPE === '1', 'copy posts line and type');
@@ -144,7 +144,24 @@ const server = http.createServer(async (req, res) => {
 
         // 另一条线仍是公共
         await page.selectOption('#gcLineSel', 'lineB'); await settle();
-        b = await buttons(); check(b.copy && !b.recall && !b.add, 'other line still uses public tables');
+        b = await buttons(); check(b.copy && !b.recall && b.add, 'other line still uses public tables, new offered');
+        // 该线没有专属桌台时直接新建：参数取公共最近一张，桌名从 1号机 起；保存→选张数→首建影响确认→建 1 张
+        await page.click('#gcNewTable'); await page.waitForTimeout(400);
+        check(Number(await page.inputValue('#gcId')) === -1 && await page.inputValue('#gcTableName') === '1号机', 'first exclusive table form named 1号机: ' + await page.inputValue('#gcTableName'));
+        check((await page.locator('#gcCurTableName').textContent()).includes('已套用最近桌台参数'), 'first exclusive table uses latest public table as template');
+        for (const [sel, v] of [['#gcMinBet', '1'], ['#gcMaxBet', '10'], ['#gcScoreSwitch', '1']]) await page.fill(sel, v);
+        const postsFirst = posts.length, dialogsBefore = dialogs.length;
+        await page.click('#gcSave'); await page.waitForSelector('#gcNewTableWin', { state: 'visible' });
+        await page.locator('#gcNewTableWin .textbox-text:visible').first().click(); await page.keyboard.press('Control+A'); await page.keyboard.type('1'); await page.keyboard.press('Enter');
+        await okConfirm(); await page.waitForFunction(() => !GC_BATCH_SAVING, null); await settle();
+        const firstSaves = posts.slice(postsFirst).filter(x => x.route.endsWith('/SaveTableConfig'));
+        const warnText = dialogs.slice(dialogsBefore).join('|') + (await page.evaluate(() => $('.messager-body').text()));
+        check(warnText.includes('只会看到专属桌台'), 'first exclusive table warns players will only see exclusive tables');
+        check(firstSaves.length === 1 && firstSaves[0].params.LINE === 'lineB' && firstSaves[0].params.ID === '-1' && firstSaves[0].params.TableName === '1号机', 'first exclusive table saved for lineB');
+        check(owned('lineB') === 1, 'lineB now owns 1 exclusive table');
+        b = await buttons(); check(b.recall && b.add && !b.copy, 'after first exclusive table: recall/new shown, copy hidden');
+        await page.click('#gcLineRecall'); await okConfirm(); await settle();
+        b = await buttons(); check(b.copy && b.add && !b.recall, 'lineB recalled back to public');
         await page.selectOption('#gcLineSel', ''); await settle();
         check(await page.locator('#gcTableList li').count() === 3, 'public view still lists only 3 public tables');
         await page.click('#gcNewTable'); await page.waitForTimeout(150);
@@ -154,7 +171,7 @@ const server = http.createServer(async (req, res) => {
         await page.selectOption('#gcLineSel', 'lineA'); await settle();
         await page.click('#gcLineRecall'); await okConfirm(); await settle();
         check(posts.at(-1).route.endsWith('/RecallLineTables') && posts.at(-1).params.LINE === 'lineA', 'recall posts line');
-        b = await buttons(); check(b.copy && !b.recall && !b.add, 'after recall: back to copy only');
+        b = await buttons(); check(b.copy && !b.recall && b.add, 'after recall: copy and new offered');
 
         // 麻将胡了隐藏，切回普通游戏恢复
         await page.selectOption('#gcTypeSel', '3'); await page.selectOption('#gcGameSel', '54'); await settle();

@@ -214,7 +214,10 @@ class LineTablesValidation
                     // ===== 专属视图新建桌台：预登记归属 / 撤销 =====
                     int g3 = 9;
                     SeedPublic(g3, 1, 2);
-                    Check(LineTables.ReserveNewLineTable(g3, 1, "lineA").code == 0, "reserve refused before line has exclusive tables");
+                    Msg first = LineTables.ReserveNewLineTable(g3, 1, "lineA");
+                    Check(first.code == 1 && Convert.ToInt32(first.datas) == 2 && Owner(g3, 2) == "lineA", "reserve allowed before line has exclusive tables: " + first.content);
+                    LineTables.ReleaseUnusedReservation(g3, 2);
+                    Check(Owner(g3, 2) == null, "first reservation released when unused");
                     Check(LineTables.CopyPublicToLine(g3, 1, "lineA").code == 1, "g3 copy lineA");
                     Msg rv = LineTables.ReserveNewLineTable(g3, 1, "LINEA");
                     Check(rv.code == 1 && Convert.ToInt32(rv.datas) == 4, "reserve next index after max: " + rv.content);
@@ -232,7 +235,9 @@ class LineTablesValidation
                     Check(Convert.ToInt32(rv.datas) == 5, "second add goes to 5");
                     LineTables.ReleaseUnusedReservation(g3, 5);
                     Check(LineTables.RecallLine(g3, "lineA").code == 1 && Owner(g3, 4) == "#", "recall covers added table");
-                    Check(LineTables.ReserveNewLineTable(g3, 1, "lineA").code == 0, "reserve refused after recall");
+                    rv = LineTables.ReserveNewLineTable(g3, 1, "lineA");
+                    Check(rv.code == 1 && Owner(g3, Convert.ToInt32(rv.datas)) == "lineA", "reserve allowed again after recall");
+                    LineTables.ReleaseUnusedReservation(g3, Convert.ToInt32(rv.datas));
                     Check(LineTables.ReserveNewLineTable(g3, 1, "sub1").code == 0, "reserve refused for non-line");
                     Check(LineTables.ReserveNewLineTable(g3, 1, "#").code == 0 && LineTables.ReserveNewLineTable(g3, 1, "").code == 0, "reserve refused for #/empty");
                     Check(LineTables.ReserveNewLineTable(54, 3, "lineA").code == 0, "reserve refused for mjhl");
