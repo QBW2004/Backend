@@ -72,7 +72,7 @@ SQL 按本次迁移清单及实际缺项执行，先备份。历史补丁已移�
 | `docker-db.bat` / `docker-db.ps1` | Docker MySQL 5.7 容器管理（start/stop/status/reinit；新卷首启只导入 `Database/mth_clean.sql`，reinit 危险会清库）。容器必须带 `--lower-case-table-names=1`，compose 已配置。 |
 | `start-db.bat` / `start-db.ps1` | 本机（非 Docker）MySQL 服务启停/状态。 |
 | `export-db.bat` / `export-db.ps1` | mysqldump 单事务导出，带 hex-blob/routines/triggers/events；默认输出到仓库外相邻的 `MHT-Backend-db-archives/`，不覆盖已有备份，也不在仓库新建第三份库。密码取 `MYSQL_PWD` 或交互输入。 |
-| `backup-to-remote.ps1` / `register-remote-backup.ps1` / `remote-backup-receiver.py` | 已部署的每日 04:00 完整 SQL 异机备份，SYSTEM 执行、SSH 专用密钥、SHA-256 核验，成功后保留最近 3 个北京时间日期。源/目标、权限、日志和恢复证据见 [每日备份记录](../Docs/数据库每日异机备份-20261105.md)。注册脚本拒绝覆盖已有同名任务。 |
+| `backup-to-remote.ps1` / `register-remote-backup.ps1` / `remote-backup-receiver.py` | 已部署的每日 04:00 完整 SQL 异机备份，SYSTEM 执行、SSH 专用密钥、SHA-256 核验，成功后保留最近 3 个北京时间日期；11 月 7 日已迁往 `94.103.6.39`。源/目标、权限、日志和恢复证据见 [迁移与当前配置](../Docs/数据库异机备份迁移-20261107.md)、[初始实现](../Docs/数据库每日异机备份-20261105.md)。注册脚本拒绝覆盖已有同名任务。 |
 | `reset-db.bat` / `reset-db.ps1` | 重建本地隔离库，必须显式传 `-DbName`；默认导入 `Database/mth_clean.sql`，可用 `-SqlFile` 指定单库快照，不再叠加旧补丁。仅允许 loopback，保留确认及 `-Force`；`-DryRun` 不连接数据库。 |
 | `check-line-ownership.sql` | 只读检查直属代理 ID 拼写、孤儿归属及大小写混用，三段 SELECT 的返回行需人工核对；不是初始化库，也不自动修复数据。 |
 
