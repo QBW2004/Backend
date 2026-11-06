@@ -111,6 +111,7 @@
     <Compile Include="EF\LineScopeRules.cs" />
     <Compile Include="EF\LineTables.cs" />
     <Compile Include="EF\TableDisplayMap.cs" />
+    <Compile Include="EF\AnnouncementRules.cs" />
     <Compile Include="EF\TotalControlRules.cs" />
     <Compile Include="EF\B_Admin.cs" />
     <Compile Include="B_SystemInfo.cs" />

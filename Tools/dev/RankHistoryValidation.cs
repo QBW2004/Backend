@@ -201,6 +201,7 @@ class BackendValidation
             && publicRows.Any(r => (string)r["Prize"] == "other-public"), "Dazhi public includes all agency humans and robots, excludes private");
         Check(((JArray)read(40, "mo-player")["Rows"]).Count == 0, "direct forbidden game request denied");
         Check(((JArray)read(5, "other-player")["Rows"]).Count == 1, "other private line isolated");
+        CheckAnnouncements(sql);
         Check(http.GetAsync("api/RankingList/History?gameId=5").Result.StatusCode == HttpStatusCode.BadRequest, "missing account cannot bypass table isolation");
         Check(http.GetAsync("api/RankingList/History?account=missing").Result.StatusCode == HttpStatusCode.BadRequest, "unknown player cannot become public viewer");
         sql("UPDATE roomtableowner SET LineAgent='#' WHERE GAME_ID=5 AND LineAgent='mo'");
@@ -221,6 +222,36 @@ class BackendValidation
         var closed = read(0, "mo-player");
         Check(((JArray)closed["Games"]).Count == 0 && ((JArray)closed["Rows"]).Count == 0, "closed game hides category and rows");
         sql("DELETE FROM gamerankhistory");
+    }
+
+    static void CheckAnnouncements(Action<string> sql)
+    {
+        Func<int, string, int, string, bool> validate = (game, owner, table, viewer) => {
+            string id = "scope-ann-" + game + "-" + table;
+            string content = "恭喜玩家【机器人】在【游戏】【1】机台，打中【大奖】，获得【1分】，再次表示祝贺！";
+            sql("DELETE FROM gameprizerecord WHERE EventId='" + id + "'");
+            sql("DELETE FROM prizebroadcastoutbox WHERE EventId='" + id + "'");
+            sql("INSERT INTO gameprizerecord(EventId,UserID,GameId,GameType,RoomId,TableId,LineAgent,CardType,Score,IsBroadcast,IsManualControl,RecTime) VALUES('"
+                + id + "','rankbot'," + game + "," + (game == 40 ? 3 : 1) + ",0," + table + ",'" + owner + "','大奖',1,1,2,NOW())");
+            sql("INSERT INTO prizebroadcastoutbox(EventId,GameId,LineAgent,BroadcastText,CreatedAt) VALUES('" + id + "'," + game + ",'" + owner + "','" + content + "',NOW())");
+            using (var controller = new AnnouncementsController(gameId => new System.Collections.Generic.List<YYT.BLL.Services.GameServer.OnlinePlayerInfo>()))
+            using (var config = new HttpConfiguration())
+            using (var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/Announcements/Validate"))
+            {
+                controller.Request = request; controller.Configuration = config;
+                var result = controller.Validate(new AnnouncementsController.ValidateRequest { Account = viewer, Content = content });
+                var response = result.ExecuteAsync(System.Threading.CancellationToken.None).Result;
+                bool play = (bool)JObject.Parse(response.Content.ReadAsStringAsync().Result)["Play"];
+                sql("DELETE FROM gameprizerecord WHERE EventId='" + id + "'");
+                sql("DELETE FROM prizebroadcastoutbox WHERE EventId='" + id + "'");
+                return play;
+            }
+        };
+        Check(validate(5, "mo", 50, "mo-player"), "playback API accepts mo exclusive actual table");
+        Check(!validate(5, "", 52, "mo-player"), "playback API rejects public Phenix for mo");
+        Check(!validate(5, "other", 51, "mo-player"), "playback API rejects another private line");
+        Check(validate(15, "", 25, "mo-player"), "playback API accepts public Dazhi");
+        Check(!validate(40, "", 0, "mo-player"), "playback API rejects robot game outside playable list");
     }
 
     static string StoreTestExecutable()

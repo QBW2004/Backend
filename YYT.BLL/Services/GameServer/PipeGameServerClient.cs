@@ -180,6 +180,31 @@ namespace YYT.BLL.Services.GameServer
             }
         }
 
+        sealed class AnnouncementSnapshot
+        {
+            public int Version { get; set; }
+            public List<int> AvailableGames { get; set; }
+            public List<OnlinePlayerInfo> Players { get; set; }
+        }
+
+        /// <summary>QN专用快照保留尚未离座的掉线真人；子服断连不能以空在线列表放行。</summary>
+        public List<OnlinePlayerInfo> QueryAnnouncementOccupants(int gameId)
+        {
+            string raw = SendRawWithTimeouts(EScMsgType.QN, OnlineQueryConnectTimeoutMs, OnlineQueryReadTimeoutMs);
+            return ParseAnnouncementOccupants(raw, gameId);
+        }
+
+        public static List<OnlinePlayerInfo> ParseAnnouncementOccupants(string raw, int gameId)
+        {
+            try
+            {
+                var snapshot = JsonConvert.DeserializeObject<AnnouncementSnapshot>(raw ?? "");
+                return snapshot != null && snapshot.Version == 1 && snapshot.AvailableGames != null
+                    && snapshot.AvailableGames.Contains(gameId) ? snapshot.Players : null;
+            }
+            catch (JsonException) { return null; }
+        }
+
         public Msg SetUserControl(params object[] args)
         {
             M_GameCommandOutbox command = commandOutbox.Create("UC", GetLastArgAsTarget(args), new { Args = args });

@@ -32,7 +32,13 @@ namespace YYT.BLL.Services.GameServer
         [JsonProperty("TableId")]
         public int TableId { get; set; }
 
+        /// <summary>中心实时坐下标记；缺失必须保留 null，播报校验不能推断为空桌。</summary>
+        [JsonProperty("IsSitDown")]
+        public bool? IsSitDown { get; set; }
+
+        /// <summary>按该桌归属及选桌顺序生成的展示台号；TableId 仍保留协议原值。</summary>
         public string TableDisplay { get; set; }
+
         [JsonProperty("SeatId")]
         public int SeatId { get; set; }
 

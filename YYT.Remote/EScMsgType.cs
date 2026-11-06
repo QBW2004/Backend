@@ -79,7 +79,9 @@ namespace YYT.Remote
         /// 桌台配置(桌名)热更新：后台→center 写 roomtableconfig 表并全量重推给子游戏服。
         /// 二进制报文(非文本模板)，由 SConnect.SendTcCommand 直接组包发送。
         /// </summary>
-        TC
+        TC,
+        /// <summary>播报核验：子服可用性与真人座位快照。</summary>
+        QN
 
     }
 }

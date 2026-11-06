@@ -279,6 +279,7 @@
     <Compile Include="Controllers\Api\PayOrderController.cs" />
     <Compile Include="Controllers\Api\PayOrderNotifyController.cs" />
     <Compile Include="Controllers\Api\RankingListController.cs" />
+    <Compile Include="Controllers\Api\AnnouncementsController.cs" />
     <Compile Include="Controllers\Api\ReChargeNotifyController.cs" />
     <Compile Include="Controllers\Api\ReportsController.cs" />
     <Compile Include="Filters\JsonAntiForgeryAttribute.cs" />
