@@ -134,6 +134,7 @@ namespace YYT.Entity
         public int? CurrentGameType { get; set; }
         public long? CurrentRoomId { get; set; }
         public long? CurrentTableId { get; set; }
+        public string CurrentTableDisplay { get; set; }
         public long? CurrentSeatId { get; set; }
         public long? CurrentBetCoins { get; set; }
         public long? CurrentWinLose { get; set; }

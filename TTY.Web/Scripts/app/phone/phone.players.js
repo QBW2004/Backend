@@ -106,10 +106,10 @@
 
     function playerCardHTML(p, isOnline) {
         var gameText = isOnline ? (M.gameName(p.GameID) || '--') : '--';
-        // 场次/机台号与电脑端同一编号口径（服务端下发 0 基下标，端上统一 +1 显示，
-        // 例：电脑端在线用户"桌号"= TableId+1）；押注走 M.betGold（鱼机 ÷10 保留 1 位小数）
+        // 台号由后台按选桌规则映射，真实 TableId 仅用于业务定位；旧接口缺字段显示未知。
         var hallText = isOnline ? (p.RoomId != null ? (Number(p.RoomId) + 1) + '场' : '--') : '--';
-        var machineText = isOnline ? (p.TableId != null ? (Number(p.TableId) + 1) : '--') : '--';
+        var machineText = isOnline && p.TableDisplay != null && String(p.TableDisplay).length
+            ? String(p.TableDisplay) : '--';
         var betText = isOnline ? onlineBetText(p) : '--';
 
         // 今日/总输赢只显示整数（四舍五入），颜色按取整后的值判断，避免 +0 / -0 带色

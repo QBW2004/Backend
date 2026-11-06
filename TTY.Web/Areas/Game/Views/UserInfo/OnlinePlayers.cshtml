@@ -69,8 +69,7 @@
         }
     }
     function fmtTable(value, rowData, rowIndex) {
-        if (value == null || value < 0) return '--';
-        return (parseInt(value, 10) + 1) + '号桌';
+        return $('<div>').text(value == null || value === '' ? '--' : String(value)).html();
     }
     function fmtSeat(value, rowData, rowIndex) {
         if (value == null || value < 0) return '--';
@@ -218,7 +217,7 @@
             <th field="INHALL" width="70" formatter="fmtStatus">状态</th>
             <th field="CurrentGameName" width="120">当前游戏</th>
             <th field="CurrentRoomId" width="90" formatter="fmtRoom">当前厅</th>
-            <th field="CurrentTableId" width="90" formatter="fmtTable">桌号</th>
+            <th field="CurrentTableDisplay" width="90" formatter="fmtTable">桌号</th>
             <th field="CurrentSeatId" width="90" formatter="fmtSeat">座号</th>
             <th field="CurrentBetCoins" width="85" formatter="fmtCoins">下注</th>
             <th field="CurrentWinLose" width="85" formatter="fmtCoins">当前输赢</th>

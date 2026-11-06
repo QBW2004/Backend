@@ -32,6 +32,7 @@ namespace YYT.BLL.Services.GameServer
         [JsonProperty("TableId")]
         public int TableId { get; set; }
 
+        public string TableDisplay { get; set; }
         [JsonProperty("SeatId")]
         public int SeatId { get; set; }
 

@@ -85,6 +85,12 @@ namespace YYT.Web.Areas.Game.Controllers
                     }
                 }
                 players = players.Where(c => !string.IsNullOrWhiteSpace(c.ID) && visibleIds.Contains(c.ID)).ToList();
+                using (var tableDb = new GameDbContext())
+                {
+                    var tableDisplay = TableDisplayMap.Load(tableDb, players.Select(p => p.GameID));
+                    foreach (OnlinePlayerInfo player in players)
+                        player.TableDisplay = player.Status == 0 ? tableDisplay.OnlineLabel(player.GameID, player.TableId) : "--";
+                }
                 // GetUserRowsByIds 已完成权限裁剪、总盈亏和今日输赢补充，直接复用结果，
                 // 避免在线列表再发起两轮相同的数据库查询。
                 foreach (OnlinePlayerInfo player in players)

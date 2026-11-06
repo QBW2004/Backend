@@ -737,13 +737,9 @@ namespace UnitTestProj
             string mobileHomeController = ReadRepoFile(@"TTY.Web\Areas\Mobile\Controllers\HomeController.cs");
             string prizeScript = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.prizehistory.js");
 
-            // 「机台号」列显示哪台机子出的奖：roomtableconfig.TableName 优先（运营在桌台
-            // 配置里给机台起的名字），无配置回退 "N号机"。TableId 口径按 GameType 换算
-            // TableIndex：牌机/鱼机是房间内 1 基桌台号（-1），拉霸等其它类是 0 基机台下标（原值）。
-            StringAssert.Contains(userRecordController, "FROM roomtableconfig");
-            StringAssert.Contains(userRecordController, "item.GameType == 3 ? (int)item.TableId : (int)item.TableId - 1");
-            StringAssert.Contains(userRecordController, "item.TableLabel = tname;");
-            StringAssert.Contains(userRecordController, "(configIndex + 1) + \"号机\"");
+            // 中奖历史复用榜单的选桌映射，保留按游戏族还原真实桌号和代理归属校验。
+            StringAssert.Contains(userRecordController, "TableDisplayMap.Load(ef, result.Select(r => r.GameId))");
+            StringAssert.Contains(userRecordController, "tableDisplay.HistoryMachine(item.GameId, item.GameType, item.RoomId, item.TableId, item.LineAgent)");
             StringAssert.Contains(prizeScript, "<th>机台号</th>");
             StringAssert.Contains(prizeScript, "esc(r.TableLabel || '--')");
             // 不能再回退成直接显示 RoomId（服务端下发 0 基房间号，真人恒为 0，全部显示 --）
@@ -1316,8 +1312,9 @@ namespace UnitTestProj
             StringAssert.Contains(recordView, "id=\"prevBtn\"");
             StringAssert.Contains(recordView, "id=\"nextBtn\"");
             StringAssert.Contains(recordScript, "'/Game/UserRecord/GetUserRecords'");
-            // 列口径与电脑端"玩家记录"页一致：桌台号/位置号按 +1 展示，得分只取离开记录
-            StringAssert.Contains(recordScript, "(Number(rowData.TABLE_ID) + 1) + '号桌子'");
+            // 桌台号使用共享映射；位置号沿用座位序号，得分只取离开记录。
+            StringAssert.Contains(recordScript, "String(rowData.TableDisplay)");
+            Assert.IsFalse(recordScript.Contains("Number(rowData.TABLE_ID) + 1"));
             StringAssert.Contains(recordScript, "(Number(rowData.SEAT_ID) + 1) + '号位置'");
             StringAssert.Contains(recordScript, "Number(rowData.LeaveCoins || 0) - Number(rowData.EnterCoins || 0)");
 
@@ -1639,9 +1636,10 @@ namespace UnitTestProj
             StringAssert.Contains(phoneCore, "M.DECIMAL_BET_FISH_IDS = [" + fishIds + "];");
             StringAssert.Contains(onlineUsers, "var _decimalBetFishIds = [" + fishIds + "];");
 
-            // 场次/机台号：服务端下发 0 基下标，端上 +1 显示（电脑端桌号即 TableId+1）
+            // 场次沿用原口径；机台号使用独立的选桌显示字段，不能用真实下标 +1。
             StringAssert.Contains(players, "(Number(p.RoomId) + 1) + '场'");
-            StringAssert.Contains(players, "(Number(p.TableId) + 1)");
+            StringAssert.Contains(players, "String(p.TableDisplay)");
+            Assert.IsFalse(players.Contains("Number(p.TableId) + 1"));
 
             // 总输赢取后台口径（user_daily_winloss 累计），不能优先取游戏服 QA 的 TotalWinLoss：
             // 后者是本局/本次在线口径，会让同一玩家在线与离线看到两个不同的数

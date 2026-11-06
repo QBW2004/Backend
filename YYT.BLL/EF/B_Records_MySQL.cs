@@ -321,6 +321,9 @@ namespace YYT.BLL.EF
                         .OrderByDescending(c => c.LID)
                         .Skip(mPage.PageSize * (mPage.PageIndex - 1)).Take(mPage.PageSize)
                         .ToList();
+                    var tableDisplay = TableDisplayMap.Load(ef, users.Select(c => c.GAME_TYPE));
+                    foreach (M_UserOptLog record in users)
+                        record.TableDisplay = tableDisplay.PlayerRecordLabel(record.GAME_TYPE, record.TABLE_ID, record.OPT);
                     list.rows = users;
                     list.total = mPage.TotalCount;
                 }

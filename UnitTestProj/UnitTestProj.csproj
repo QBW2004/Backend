@@ -107,6 +107,7 @@
   <ItemGroup>
     <Compile Include="AgencyRulesTest.cs" />
     <Compile Include="LineScopeRulesTest.cs" />
+    <Compile Include="TableDisplayMapTest.cs" />
     <Compile Include="RabbitRaceActivityTest.cs" />
     <Compile Include="TotalControlRulesTest.cs" />
     <Compile Include="AgencyQueryTest.cs" />

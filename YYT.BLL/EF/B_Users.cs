@@ -1177,6 +1177,7 @@ namespace YYT.BLL.EF
                 {
                     c.LID,
                     c.UserID,
+                    c.OPT,
                     c.GAME_TYPE,
                     c.ROOM,
                     c.TABLE_ID,
@@ -1189,6 +1190,7 @@ namespace YYT.BLL.EF
                 {
                     LID = c.LID,
                     UserID = c.UserID,
+                    OPT = c.OPT,
                     GAME_TYPE = c.GAME_TYPE,
                     ROOM = c.ROOM,
                     TABLE_ID = c.TABLE_ID,
@@ -1199,6 +1201,7 @@ namespace YYT.BLL.EF
                 .GroupBy(c => c.UserID)
                 .ToDictionary(g => g.Key, g => g.First());
 
+            var tableDisplay = TableDisplayMap.Load(ef, latestLogs.Values.Select(c => c.GAME_TYPE));
             foreach (M_Users_DTO user in users)
             {
                 if (!user.INHALL)
@@ -1211,6 +1214,8 @@ namespace YYT.BLL.EF
                 user.CurrentGameType = log.GAME_TYPE;
                 user.CurrentRoomId = log.ROOM;
                 user.CurrentTableId = log.TABLE_ID;
+                user.CurrentTableDisplay = log.OPT == 2 || log.OPT == 8
+                    ? tableDisplay.PlayerRecordLabel(log.GAME_TYPE, log.TABLE_ID, log.OPT) : "--";
                 user.CurrentSeatId = log.SEAT_ID;
                 user.CurrentBetCoins = log.OPT_COINS;
                 user.CurrentWinLose = log.SCORE;

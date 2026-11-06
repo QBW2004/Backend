@@ -174,8 +174,7 @@
         return getGameName(value);
     }
     function fmtTable(value) {
-        if (value == null || value < 0) return '--';
-        return (parseInt(value, 10) + 1) + '号桌';
+        return $('<div>').text(value == null || value === '' ? '--' : String(value)).html();
     }
     function fmtSeat(value) {
         if (value == null || value < 0) return '--';
@@ -1197,7 +1196,7 @@
             <th field="AGENCY" width="70">所属代理</th>
             <th field="Status" width="55" formatter="fmtStatus">状态</th>
             <th field="GameID" width="90" formatter="fmtGame">当前游戏</th>
-            <th field="TableId" width="55" formatter="fmtTable">桌号</th>
+            <th field="TableDisplay" width="55" formatter="fmtTable">桌号</th>
             <th field="SeatId" width="55" formatter="fmtSeat">座号</th>
             <th field="CurBet" width="70" formatter="fmtCoins">当前压分</th>
             <th field="GameScore" width="70" formatter="fmtGameScore">机台分</th>

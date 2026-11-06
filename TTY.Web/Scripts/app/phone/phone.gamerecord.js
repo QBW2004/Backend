@@ -2,7 +2,7 @@
    玩家游戏记录页（独立页面，替代玩家弹窗里的记录浮层）
    数据源：/Game/UserRecord/GetUserRecords（ID 玩家账号 + TIME 日期 + page/rows）
    列口径与电脑端"玩家记录"页（Areas/Game/Views/UserRecord/Index.cshtml）一致：
-     时间 / 游戏 / 桌台号(TABLE_ID+1) / 位置号(SEAT_ID+1) / 下注(OPT_COINS) /
+     时间 / 游戏 / 选桌显示台号(TableDisplay) / 位置号(SEAT_ID+1) / 下注(OPT_COINS) /
      得分(离开-进入，玩家赢为正) / 记录内容
    记录内容不再重复输出"本次盈亏"：电脑端该项按运营口径（进入-离开）展示，
    与同为一行内的"得分"（玩家口径）符号相反，同页并列易生歧义，
@@ -51,7 +51,7 @@
 
     function renderTableId(rowData) {
         if (!isGameRecord(rowData)) return '--';
-        return (Number(rowData.TABLE_ID) + 1) + '号桌子';
+        return M.esc(rowData.TableDisplay == null || rowData.TableDisplay === '' ? '--' : String(rowData.TableDisplay));
     }
 
     function renderSeatId(rowData) {
