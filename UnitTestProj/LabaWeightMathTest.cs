@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -21,6 +22,38 @@ namespace UnitTestProj
         { return new LabaWeightMath(File.ReadAllText(Path.Combine(Root(),"TTY.Web/Config/laba-weight-catalog.json"))); }
         private static void Reject(Action action)
         { try { action(); } catch (ArgumentException) { return; } Assert.Fail("必须拒绝非法配置"); }
+
+        private static void CallWeightGuard(string method, params object[] args)
+        {
+            try
+            {
+                typeof(YYT.Web.Areas.Game.Controllers.GameConfigController)
+                    .GetMethod(method, BindingFlags.NonPublic | BindingFlags.Static).Invoke(null, args);
+            }
+            catch (TargetInvocationException ex) { throw ex.InnerException; }
+        }
+
+        [TestMethod]
+        public void WeightEndpointsAcceptExtendedTablesAndRejectOutsideScope()
+        {
+            foreach (int game in new[] { 16, 40, 53 })
+            {
+                foreach (int table in new[] { 0, 255, 256, 999 })
+                    CallWeightGuard("CheckWeightScope", game, table);
+                Reject(() => CallWeightGuard("CheckWeightScope", game, -1));
+                Reject(() => CallWeightGuard("CheckWeightScope", game, 1000));
+            }
+            Reject(() => CallWeightGuard("CheckWeightScope", 54, 0));
+        }
+
+        [TestMethod]
+        public void FragmentedWeightsExceedOldFrameLimitButKeepU16CountLimit()
+        {
+            CallWeightGuard("CheckWeightProfileCount", 1200L);
+            CallWeightGuard("CheckWeightProfileCount", 65535L);
+            Reject(() => CallWeightGuard("CheckWeightProfileCount", 65536L));
+            Reject(() => CallWeightGuard("CheckWeightProfileCount", (long)int.MaxValue + 1));
+        }
 
         [TestMethod]
         public void AllThreeDefaultsAndRelativeWeightsAreConsistent()

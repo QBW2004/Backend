@@ -17,7 +17,15 @@ namespace YYT.Web.Areas.Game.Controllers
         private LabaWeightMath WeightMath()
         { return new LabaWeightMath(System.IO.File.ReadAllText(Server.MapPath("~/Config/laba-weight-catalog.json"))); }
         private static void CheckWeightScope(int game, int table)
-        { if ((game!=16 && game!=40 && game!=53) || table<0 || table>255) throw new ArgumentException("请选择三款拉霸的有效机台（0至255）。"); }
+        { if ((game!=16 && game!=40 && game!=53) || table<0 || table>=LineTables.MaxTablesFor(3)) throw new ArgumentException("请选择三款拉霸的有效机台（0至"+(LineTables.MaxTablesFor(3)-1)+"）。"); }
+
+        private static void CheckWeightProfileCount(long count)
+        {
+            // 中心与三款拉霸已支持 8MiB 分片；1000 桌及 U16 条权重的载荷小于该上限。
+            // 分片不改变配置条数的 U16 编码，仍须在事务写入前拒绝溢出。
+            if (count > ushort.MaxValue)
+                throw new ArgumentException("该游戏的配置条目总数超过中心服协议上限（65535 条），请先清理不用的桌台配置。");
+        }
 
         [AjaxOnly, HttpPost]
         public ActionResult GetLabaWeights(int gameId, int tableIndex, bool newTable=false)
@@ -84,9 +92,7 @@ namespace YYT.Web.Areas.Game.Controllers
             if (ef.Database.SqlQuery<int>("SELECT COUNT(*) FROM roomtableconfig WHERE GAME_ID={0} AND RoomIndex=0 AND TableIndex={1}",gameId,tableIndex).Single()==0)
                 throw new ArgumentException("请先保存基础桌台，再保存开奖权重。");
             int others=ef.Database.SqlQuery<int>("SELECT COUNT(*) FROM cardpayoutprofile WHERE GAME_ID={0} AND NOT (TableId={1} AND HandType BETWEEN 1000 AND 1279)",gameId,tableIndex).Single();
-            int tables=ef.Database.SqlQuery<int>("SELECT COUNT(*) FROM roomtableconfig WHERE GAME_ID={0}",gameId).Single();
-            if ((others+rows.Count)*52L+tables*218L+8192>60000)
-                throw new ArgumentException("该游戏的配置总量接近当前中心服单帧上限，请先扩展配置传输协议。");
+            CheckWeightProfileCount((long)others+rows.Count);
             ef.Database.ExecuteSqlCommand("DELETE FROM cardpayoutprofile WHERE GAME_ID={0} AND TableId={1} AND HandType BETWEEN 1000 AND 1279",gameId,tableIndex);
             foreach (var row in rows)
                 ef.Database.ExecuteSqlCommand("INSERT INTO cardpayoutprofile (GAME_ID,TableId,HandType,PayoutMultiplier,ProbabilityBasis,StockLimit,StockRemain,Enabled) VALUES ({0},{1},{2},{3},{4},-1,-1,1)",gameId,tableIndex,row.HandType,row.PayoutMultiplier,row.ProbabilityBasis);
