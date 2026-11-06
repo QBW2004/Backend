@@ -93,6 +93,32 @@
         return M.DECIMAL_BET_FISH_IDS.indexOf(Number(gameId)) >= 0;
     };
 
+    /** 在线玩家是否坐在机台上：优先中心服实时 IsSitDown；旧中心服缺字段时按“游戏中(Status=0)且有游戏号”判断。 */
+    M.isSeated = function (p) {
+        if (!p) return false;
+        if (p.IsSitDown === true || p.IsSitDown === false) return p.IsSitDown;
+        return Number(p.Status) === 0 && Number(p.GameID) > 0;
+    };
+
+    /**
+     * 玩家剩余分数/钻显示（玩家列表在线/离线卡片、玩家详细信息共用，2026-11-06 运营确认）：
+     * - 不在游戏里（离线 live=null，或在线但没坐机台）：剩余分数只是不足兑换 1 钻的尾分，显示 0；
+     *   钻按整数钻显示，不把尾分折算进位（尾分兑换比随桌台不同，库里没有记录）。
+     * - 坐在机台上：新版中心服 GameScore/GameCoins = 机台内原始分/钻（0.1 分炮鱼机 ÷10）；
+     *   旧版缺字段回退 Score/Coins（已是折后“分”单位，不再除）。
+     * live：中心服实时在线记录；dbCoins：数据库整数钻（离线或缺实时钻时用）。返回 { score: 文本, coins: 数值 }。
+     */
+    M.playerBalance = function (live, dbCoins) {
+        if (!live || !M.isSeated(live)) {
+            var coins = live ? (live.Coins != null ? live.Coins : live.GameCoins) : null;
+            return { score: '0', coins: coins != null ? coins : dbCoins };
+        }
+        if (live.GameScore != null && live.GameCoins != null) {
+            return { score: M.isDecimalBetFish(live.GameID) ? (Number(live.GameScore) / 10).toFixed(1) : M.num(live.GameScore), coins: live.GameCoins };
+        }
+        return { score: M.num(live.Score != null ? live.Score : (live.GAME_SCORE || 0)), coins: live.Coins != null ? live.Coins : dbCoins };
+    };
+
     /**
      * 押注（当前压分）显示：0.1 分炮鱼机 ÷10 保留 1 位小数（0.1 分不能显示成 1），
      * 其余游戏按 M.gold 口径（真金版折算两位小数）。

@@ -68,8 +68,12 @@
         }
 
         // 2026-11-04 需求：剩余分数只显示数值，不带“分”字
-        $('#dScore').text(M.num(d.GAME_SCORE));
-        setMoney('#dCoins', d.COINS);
+        // 2026-11-06：剩余分数/钻与玩家列表在线/离线卡片同一规则（M.playerBalance）：
+        // 后台按中心服实时记录回填 d.Live（离线或查询失败为 null）；坐在机台上显示准确机台分/钻，
+        // 不在游戏里显示 0 分 + 整数钻。
+        var balance = M.playerBalance(d.Live || null, d.COINS);
+        $('#dScore').text(balance.score);
+        setMoney('#dCoins', balance.coins);
         setMoney('#dTodayBuy', d.TodayBuy);
         setMoney('#dTodayBack', d.TodayBack);
         // 2026-11-04 需求：今日盈亏四舍五入取整（与玩家列表卡片同口径）

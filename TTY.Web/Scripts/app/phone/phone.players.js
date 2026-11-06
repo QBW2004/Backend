@@ -136,18 +136,11 @@
             }).join('') + '</div>'
             : '';
 
-        // 余额：新版中心服下发 GameScore/GameCoins = 机台内原始分/钻（与游戏客户端同口径）；
-        // 旧版缺字段回退 Score/Coins。GameScore 是原始内部单位，0.1 分炮鱼机需 ÷10；
-        // 回退路径的 Score/GAME_SCORE 已是折后"分"单位，不再除。
-        var scoreText;
-        var coinVal;
-        if (p.GameScore != null && p.GameCoins != null) {
-            scoreText = M.isDecimalBetFish(p.GameID) ? (Number(p.GameScore) / 10).toFixed(1) : M.num(p.GameScore);
-            coinVal = p.GameCoins;
-        } else {
-            scoreText = M.num(p.Score != null ? p.Score : (p.GAME_SCORE || 0));
-            coinVal = p.Coins != null ? p.Coins : p.COINS;
-        }
+        // 余额：剩余分数/钻显示规则统一在 M.playerBalance（与玩家详细信息页共用，2026-11-06）。
+        // 离线卡片没有实时记录，按“不在游戏里”显示 0 分 + 数据库整数钻。
+        var balance = M.playerBalance(isOnline ? p : null, p.Coins != null ? p.Coins : p.COINS);
+        var scoreText = balance.score;
+        var coinVal = balance.coins;
 
         return '' +
             '<div class="player-card' + (isOnline ? '' : ' offline') + '" data-account="' + M.esc(p.ID) + '">' +

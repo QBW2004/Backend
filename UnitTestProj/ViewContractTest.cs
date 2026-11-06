@@ -2605,7 +2605,17 @@ namespace UnitTestProj
             StringAssert.Contains(ReadRepoFile(@"TTY.Web\Filters\LocalizationAttribute.cs"), "string value = (lang ?? string.Empty).Split(';')[0].Trim();");
             // 26：玩家详情剩余分数不带“分”，今日盈亏四舍五入取整
             string detail = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.playerdetail.js");
-            StringAssert.Contains(detail, "$('#dScore').text(M.num(d.GAME_SCORE));");
+            // 2026-11-06：剩余分数/钻统一走 M.playerBalance（列表在线/离线卡片与详情同规则；不在游戏里显示 0 分 + 整数钻）
+            StringAssert.Contains(detail, "var balance = M.playerBalance(d.Live || null, d.COINS);");
+            StringAssert.Contains(ReadRepoFile(@"TTY.Web\Areas\Game\Controllers\UserInfoController.cs"), "Live = live");
+            string playersScore = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.players.js");
+            StringAssert.Contains(playersScore, "var balance = M.playerBalance(isOnline ? p : null, p.Coins != null ? p.Coins : p.COINS);");
+            string coreScore = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.core.js");
+            StringAssert.Contains(coreScore, "if (p.IsSitDown === true || p.IsSitDown === false) return p.IsSitDown;");
+            StringAssert.Contains(coreScore, "if (!live || !M.isSeated(live)) {");
+            string huiyuanScore = ReadRepoFile(@"TTY.Web\Scripts\app\phone\phone.huiyuan.js");
+            Assert.IsFalse(huiyuanScore.Contains("M.num(u.GAME_SCORE)"));
+            StringAssert.Contains(huiyuanScore, "'<td>0</td>' +");
             StringAssert.Contains(detail, "setSigned('#dTodayWinLoss', M.roundInt(d.TodayWinLoss));");
             // 27：弹窗底部取消/确定之间留间隙（充值确认等所有双按钮弹窗）
             StringAssert.Contains(ReadRepoFile(@"TTY.Web\Content\css\phone.css"), "两个按钮（取消/确定）之间留 12px");

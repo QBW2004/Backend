@@ -529,6 +529,19 @@ namespace YYT.Web.Areas.Game.Controllers
                 }
 
                 Msg ctrl = new B_UserControl().GetTotalControlStatus(loginUser, id);
+                // 2026-11-06：剩余分数/钻与手机玩家列表在线/离线卡片同一规则，需要中心服实时在线记录
+                // （是否坐机台、机台分/钻）。权限已由 GetUserPhoneDetail 校验；离线或游戏服不可达时为 null，
+                // 页面按“不在游戏里”显示 0 分 + 数据库整数钻。
+                OnlinePlayerInfo live = null;
+                try
+                {
+                    List<OnlinePlayerInfo> online = new PlayerStateService().QueryAllOnlinePlayers();
+                    if (online != null) live = online.FirstOrDefault(p => string.Equals(p.ID, detail.ID, StringComparison.OrdinalIgnoreCase));
+                }
+                catch (Exception liveEx)
+                {
+                    LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.UserInfoController), liveEx);
+                }
                 msg.code = 1;
                 msg.content = "查询成功！";
                 msg.datas = new
@@ -549,7 +562,10 @@ namespace YYT.Web.Areas.Game.Controllers
                     detail.CreateTime,
                     detail.LastLoginTime,
                     detail.InviteCode,
-                    Controls = (ctrl != null && ctrl.code == 1) ? ctrl.datas : null
+                    Controls = (ctrl != null && ctrl.code == 1) ? ctrl.datas : null,
+                    // 直接回整条实时记录（与在线列表同一对象、同一可见范围），不在此硬引用 IsSitDown 等新字段，
+                    // 旧版 OnlinePlayerInfo 也能编译；页面缺 IsSitDown 时按 Status/GameID 判断。
+                    Live = live
                 };
             }
             catch (Exception ex)

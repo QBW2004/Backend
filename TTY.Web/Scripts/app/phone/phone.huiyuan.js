@@ -54,7 +54,8 @@
                 return '<tr>' +
                     '<td class="account"><a href="/Mobile/Home/PlayerDetail?id=' + encodeURIComponent(u.ID) + '">' + M.esc(u.ID) + '</a></td>' +
                     '<td>' + M.gold(u.COINS) + '</td>' +
-                    '<td>' + M.num(u.GAME_SCORE) + '</td>' +
+                    // 2026-11-06：剩余分数是不足兑换 1 钻的离场尾分，四舍五入按 0 钻计，统一显示 0（准确分只在玩家列表在线卡片）
+                    '<td>0</td>' +
                     '<td class="' + M.signClass(profit) + '">' + M.signed(profit) + '</td>' +
                     '<td>' + M.gold(u.COINS_BUY) + '</td>' +
                     '<td>' + (back > 0 ? '-' + M.gold(back) : '0') + '</td>' +
