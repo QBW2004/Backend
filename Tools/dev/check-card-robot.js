@@ -91,8 +91,35 @@ context.SaveRobot();
 assert.strictEqual(requests.length, 0);
 element('#addGameType').combobox('setValue', 2);
 context.configureRobotInputs();
-assert(elements.get('#tableRobotRow,#tableRobotCountRow').visible);
-assert(!elements.get('#addTABLE_ID').disabled);
-assert(!elements.get('#addRobotNo').disabled);
+assert(!elements.get('#tableRobotRow,#tableRobotCountRow').visible);
+assert(elements.get('#addTABLE_ID').disabled);
+assert(elements.get('#addRobotNo').disabled);
+}
+for (const type of [0, 2]) {
+    element('#addGameType').combobox('setValue', type);
+    context.configureRobotInputs();
+    assert(elements.get('#maxPerTableRow').visible);
+    element('#addGameId').combobox('setValue', type === 0 ? 10 : 3);
+    context.getRoom();
+    requests.pop().callback({ code: 1, schemaReady: true, current: 8, maxPerTable: 3, maxAllowed: 5,
+        tableCount: 3, tableLimits: [5, 5, 1] });
+    assert.strictEqual(context.cardTotal, 7);
+    assert.strictEqual(element('#addCardRobotNo').numberbox('getValue'), '8', 'legacy excess is not silently reduced');
+    context.SaveRobot();
+    assert.strictEqual(requests.length, 0);
+    element('#addCardRobotNo').numberbox('setValue', 7);
+    context.SaveRobot();
+    const save = requests.pop();
+    assert.strictEqual(save.data.MaxPerTable, '3');
+    assert.strictEqual(save.data.RobotNo, '7');
+    assert(!('TABLE_ID' in save.data));
+    element('#addMaxPerTable').numberbox('setValue', 1);
+    context.updateMultiSeatCapacity();
+    assert.strictEqual(context.cardTotal, 3);
+    context.SaveRobot();
+    assert.strictEqual(requests.length, 0);
+    context.getRoom();
+    requests.pop().callback({ code: 1, schemaReady: false });
+    assert.strictEqual(context.cardCapacityReady, false);
 }
 console.log('PASS card and 3 laba robot pages: total entry 0~capacity, prefill, stale response, no-table line, payload and type switch');

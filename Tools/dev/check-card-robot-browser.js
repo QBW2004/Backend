@@ -36,6 +36,7 @@ let accounts = Array.from({ length: 27 }, (_, i) => ({
     SeatIndex: i < 20 ? 0 : -1, Connected: i < 22, Sitting: i < 20,
     Status: i < 20 ? '已入座' : (i < 22 ? '未入座' : '未上线')
 }));
+const multiSettings = new Map();
 const mime = { '.js': 'application/javascript', '.css': 'text/css', '.png': 'image/png', '.gif': 'image/gif' };
 const server = http.createServer(async (req, res) => {
     if (req.url === '/') { res.setHeader('Content-Type', 'text/html; charset=utf-8'); res.end(html); return; }
@@ -78,15 +79,28 @@ const server = http.createServer(async (req, res) => {
                 data = [{ id: Number(params.GameType), children: Number(params.GameType) === 3
                     ? [{ id: 16, text: '明星97' }, { id: 40, text: '水果拉霸' }, { id: 53, text: '水浒传' }]
                     : Number(params.GameType) === -1 ? [{ id: 5, text: '火凤凰' }, { id: 16, text: '明星97' }, { id: 40, text: '水果拉霸' }, { id: 53, text: '水浒传' }]
+                        : Number(params.GameType) === 2 ? [{ id: 3, text: '金蟾捕鱼' }]
+                        : Number(params.GameType) === 0 ? [{ id: 10, text: '幸运六狮' }]
                         : [{ id: 5, text: '火凤凰' }] }]; break;
             case '/Game/Robot/GetRobotLineOptions':
                 data = [{ id: '_public', text: '公共桌台', selected: true }, { id: 'sucai', text: 'sucai（24张专属桌台）' }, { id: 'empty', text: '无机台' }]; break;
             case '/Game/Robot/GetCardRobotCapacity':
+                if (['3', '10'].includes(params.GameId)) {
+                    const saved = multiSettings.get(params.GameId + '|' + params.Line) || { current: 4, maxPerTable: 2 };
+                    data = { code: 1, schemaReady: true, ...saved, maxAllowed: params.GameId === '3' ? 5 : 7,
+                        tableCount: params.Line === 'empty' ? 0 : 4, tableLimits: params.Line === 'empty' ? [] : [5, 5, 5, 5] };
+                    if (params.Line === 'empty') data.current = 0;
+                    break;
+                }
                 data = params.Line === 'sucai' ? { code: 1, total: 24, current: 10, remaining: 14 }
                     : params.Line === 'empty' ? { code: 1, total: 0, current: 0, remaining: 0 }
                         : { code: 1, total: 10, current: 2, remaining: 8 }; break;
             case '/Game/Robot/GetRobotTableList': data = [{ id: 0, text: '桌台1', selected: true }]; break;
-            case '/Game/Robot/SaveRobot': saves.push(params); data = { code: 1, content: '机器人已保存' }; break;
+            case '/Game/Robot/SaveRobot':
+                saves.push(params);
+                if (params.MaxPerTable) multiSettings.set(params.GameId + '|' + params.Line,
+                    { current: Number(params.RobotNo), maxPerTable: Number(params.MaxPerTable) });
+                data = { code: 1, content: '机器人已保存' }; break;
             case '/Game/Robot/RemoveRobotSeat': data = { code: 1, content: '机器人已离座' }; break;
             case '/Game/Robot/ShuffleRobots': data = { code: 1, content: '已开始打乱机器人' }; break;
             case '/Game/Robot/SaveRobotShuffleSchedule': schedule = { Enabled: Number(params.Enabled), StartTime: params.StartTime, EndTime: params.EndTime }; data = { code: 1, content: '定时打乱已保存' }; break;
@@ -190,6 +204,48 @@ const server = http.createServer(async (req, res) => {
         assert.strictEqual(saves.length, beforeSaves + 2);
         assert.strictEqual(saves[beforeSaves + 1].RobotNo, '0', 'clearing robots is submitted as zero');
         await page.getByText('确定', { exact: true }).click();
+        }
+        for (const [type, game] of [[2, 3], [0, 10]]) {
+            await page.getByText('设置机器人数量', { exact: true }).click();
+            await page.evaluate(type => $('#addGameType').combobox('setValue', type), type);
+            await page.waitForFunction(game => $('#addGameId').combobox('getData').some(row => row.id === game), game);
+            await page.evaluate(game => $('#addGameId').combobox('setValue', game), game);
+            await page.waitForFunction(() => cardCapacityReady && cardTotal === 8);
+            assert(await page.locator('#maxPerTableRow').isVisible());
+            assert(!await page.locator('#tableRobotRow').isVisible());
+            const limitInput = page.locator('#addMaxPerTable + span input.textbox-text');
+            const totalInput = page.locator('#addCardRobotNo + span input.textbox-text');
+            assert((await limitInput.boundingBox()).width > 100);
+            await limitInput.fill('1');
+            await totalInput.click();
+            await page.waitForFunction(() => cardTotal === 4);
+            await totalInput.fill('5');
+            const before = saves.length;
+            await page.getByText('保存', { exact: true }).click();
+            await page.getByText('确定', { exact: true }).click();
+            assert.strictEqual(saves.length, before, 'capacity overflow rejected');
+            await limitInput.fill('3');
+            await totalInput.click();
+            await page.waitForFunction(() => cardTotal === 12);
+            await totalInput.fill('9');
+            if (output) await page.screenshot({ path: path.join(output, `multi-${game}.png`) });
+            await page.getByText('保存', { exact: true }).click();
+            await page.getByText('确定', { exact: true }).click();
+            assert.strictEqual(saves.at(-1).RobotNo, '9');
+            assert.strictEqual(saves.at(-1).MaxPerTable, '3');
+            assert(!('TABLE_ID' in saves.at(-1)));
+            await page.getByText('设置机器人数量', { exact: true }).click();
+            await page.evaluate(type => $('#addGameType').combobox('setValue', type), type);
+            await page.waitForFunction(game => $('#addGameId').combobox('getData').some(row => row.id === game), game);
+            await page.evaluate(game => $('#addGameId').combobox('setValue', game), game);
+            await page.waitForFunction(() => cardCapacityReady && cardTotal === 12);
+            assert.strictEqual(await limitInput.inputValue(), '3');
+            assert.strictEqual(await totalInput.inputValue(), '9');
+            await totalInput.fill('0');
+            await page.getByText('保存', { exact: true }).click();
+            await page.getByText('确定', { exact: true }).click();
+            assert.strictEqual(saves.at(-1).RobotNo, '0');
+            assert.strictEqual(saves.at(-1).MaxPerTable, '3');
         }
         // Filters stay scoped to their own tabs; overview stays global even with one filtered row.
         await page.getByRole('tab', { name: '实时状态' }).click();
@@ -301,7 +357,7 @@ const server = http.createServer(async (req, res) => {
         await page.getByRole('button', { name: '刷新状态' }).click();
         await page.waitForFunction(() => $('#robotStatTotal').text() === '25');
         assert.deepStrictEqual(errors, [], 'no browser JS errors');
-        console.log(`PASS real EasyUI: play-time range/fixed/decimal/disable/invalid/failure recovery; four tabs, global counts, isolated filters, exact batch deletion, cross-midnight schedule, 4 viewport widths; card + 3 laba quantity regression (${Date.now() - start} ms)`);
+        console.log(`PASS real EasyUI: fish/bet total and table limit, overflow rejection, reopen and clear; card + 3 laba regression; play-time, four tabs, filters, batch deletion, schedule, 4 viewport widths (${Date.now() - start} ms)`);
     } finally {
         if (browser) await browser.close();
         server.close();

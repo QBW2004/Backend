@@ -587,6 +587,14 @@
                     }
                     para.RobotNo = count;
                     delete para.TABLE_ID;
+                    if (usesMultiSeatRobotCount()) {
+                        var limit = $('#addMaxPerTable').numberbox('getValue');
+                        if (!/^[1-9][0-9]*$/.test(limit) || Number(limit) > multiSeatCapacity.maxAllowed) {
+                            showMsg({ code: 0, content: '请填写有效的每桌最大机器人数！' });
+                            return;
+                        }
+                        para.MaxPerTable = limit;
+                    }
                 }
                 request('/Game/Robot/SaveRobot', para, function (data) {
                     //提示消息
@@ -627,13 +635,15 @@
             var para = {
                 winId: '#addWin',
                 title: '【设置机器人数量】',
-                height: 400,
+                width: Math.min(440, window.innerWidth - 24),
+                height: Math.min(460, window.innerHeight - 32),
                 iconCls: 'icon-user_add',
                 callBack: function () {
                     $('#addGameType').combobox('loadData', actionSelData1());
                     $('#addLine').combobox('loadData', publicLineData());
                     $('#addTABLE_ID').combobox('clear').combobox('loadData', []);
                     configureRobotInputs();
+                    $('#addWin').scrollTop(0);
                 }
             };
             openWin(para);
@@ -656,12 +666,6 @@
                     $('#addGameId').combobox('loadData', arr);
                     $('#addLine').combobox('loadData', publicLineData());
                     $('#addTABLE_ID').combobox('clear').combobox('loadData', []);
-                    if (newValue == 0) {
-                        $('#addRobotNo').combobox('loadData', getComboSelData(9,1))
-                    } else if (newValue == 2) {
-                        // 鱼机一桌6个座位，机器人数可选范围 1~6
-                        $('#addRobotNo').combobox('loadData', getComboSelData(7,1))
-                    }
                 })
             }
         }
@@ -730,27 +734,43 @@
         var robotInputsReady = false;
         var cardCapacityReady = false;
         var roomRequestVersion = 0;
+        var multiSeatCapacity = null;
         function resetCardCapacity() {
             roomRequestVersion++;
             cardRemaining = 0;
             cardTotal = 0;
             cardCapacityReady = false;
+            multiSeatCapacity = null;
+            $('#addMaxPerTable').numberbox('clear').numberbox('disable');
             $('#addCardRobotNo').numberbox('clear').numberbox('disable');
             $('#cardRobotHint').text('请选择游戏和代理线');
         }
         function configureRobotInputs() {
             var card = usesMachineRobotCount();
-            $('#tableRobotRow,#tableRobotCountRow').toggle(!card);
+            $('#tableRobotRow,#tableRobotCountRow').toggle(false);
             $('#cardRobotCountRow,#cardRobotHintRow').toggle(card);
+            $('#maxPerTableRow').toggle(usesMultiSeatRobotCount());
             // 数量框在隐藏行里初始化时宽度为 0，显示后要重新计算宽度
             if (card) $('#addCardRobotNo').numberbox('resize', 150);
-            $('#addTABLE_ID').combobox(card ? 'disable' : 'enable');
-            $('#addRobotNo').combobox(card ? 'disable' : 'enable');
+            $('#addTABLE_ID').combobox('disable');
+            $('#addRobotNo').combobox('disable');
             resetCardCapacity();
         }
         function usesMachineRobotCount() {
             var type = $('#addGameType').combobox('getValue');
-            return type == 1 || type == 3;
+            return type !== '' && (type == 0 || type == 1 || type == 2 || type == 3);
+        }
+        function usesMultiSeatRobotCount() {
+            var type = $('#addGameType').combobox('getValue');
+            return type !== '' && (type == 0 || type == 2);
+        }
+        function updateMultiSeatCapacity() {
+            if (!multiSeatCapacity) return;
+            var limit = Number($('#addMaxPerTable').numberbox('getValue'));
+            cardTotal = multiSeatCapacity.tableLimits.reduce(function (sum, seats) { return sum + Math.min(seats, limit); }, 0);
+            $('#addCardRobotNo').numberbox({ min: 0, max: null, disabled: false }).numberbox('resize', 150);
+            $('#cardRobotHint').text('本线启用桌台' + multiSeatCapacity.tableCount + '张，当前已设置' + multiSeatCapacity.current +
+                '个机器人。总数范围0~' + cardTotal + '，均匀分配且每桌至少保留一个真人座位；填0清空人数。');
         }
         function getRoom() {
             resetCardCapacity();
@@ -767,6 +787,21 @@
                     if (version != roomRequestVersion) return;
                     if (!data || data.code != 1) {
                         $('#cardRobotHint').text('机台数量读取失败，请重新选择');
+                        return;
+                    }
+                    if (usesMultiSeatRobotCount()) {
+                        if (!data.schemaReady) {
+                            $('#cardRobotHint').text('请先安装机器人每桌上限数据库升级');
+                            return;
+                        }
+                        multiSeatCapacity = data;
+                        $('#addMaxPerTable').numberbox({ min: 1, max: data.maxAllowed, disabled: false })
+                            .numberbox('resize', 150).numberbox('setValue', data.maxPerTable);
+                        updateMultiSeatCapacity();
+                        cardCapacityReady = data.tableCount > 0 || data.current > 0;
+                        // 旧配置超出新容量时保留原值，交由操作者明确调整，避免悄悄减少人数。
+                        $('#addCardRobotNo').numberbox('setValue', data.current);
+                        if (!cardCapacityReady) $('#addCardRobotNo').numberbox('disable');
                         return;
                     }
                     cardRemaining = data.remaining;
@@ -1025,8 +1060,12 @@
                 </td>
             </tr>
             <tr id="cardRobotCountRow" style="display:none;">
-                <td align="right">机器人数</td>
+                <td align="right" style="white-space:nowrap;width:130px;">总机器人数量</td>
                 <td class="pd5"><input class="easyui-numberbox" id="addCardRobotNo" style="width:150px;" data-options="min:0,precision:0,width:150" /></td>
+            </tr>
+            <tr id="maxPerTableRow" style="display:none;">
+                <td align="right" class="pd5" style="white-space:nowrap;">每桌最大机器人数</td>
+                <td class="pd5"><input class="easyui-numberbox" id="addMaxPerTable" style="width:150px;" data-options="min:1,precision:0,width:150,onChange:updateMultiSeatCapacity" /></td>
             </tr>
             <tr id="cardRobotHintRow" style="display:none;">
                 <td colspan="2" class="pd5" style="color:#999;"><span id="cardRobotHint"></span></td>

@@ -19,6 +19,97 @@ namespace YYT.BLL.EF
             return gameId != 54 && (gameType == 1 || gameType == 3);
         }
 
+        public static bool IsMultiSeatRobotGame(int gameType)
+        {
+            return gameType == 0 || gameType == 2;
+        }
+
+        public sealed class RobotTableCapacity
+        {
+            public int TableIndex { get; set; }
+            public int MaxSeats { get; set; }
+        }
+
+        // 与 ServerRobot 的物理座位能力取交集，并为真人保留一个座位。
+        public static int GetMultiSeatRobotLimit(int gameId, int gameType, int configuredSeats)
+        {
+            int physicalSeats = gameType == 2 ? 6 : (gameId == 2 || gameId == 10 ? 8 : 4);
+            return Math.Max(0, Math.Min(physicalSeats, configuredSeats > 0 ? configuredSeats : physicalSeats) - 1);
+        }
+
+        public static List<RobotTableCapacity> GetMultiSeatRobotTables(GameDbContext ef, int gameId, string line)
+        {
+            if (line == LineScopeRules.RecycledLine) return new List<RobotTableCapacity>();
+            var owners = LineTables.GetOwners(ef, gameId);
+            return ef.Database.SqlQuery<RobotTableCapacity>(
+                "SELECT TableIndex,MaxSeats FROM roomtableconfig WHERE GAME_ID={0} AND RoomIndex=0 AND Enabled=1 ORDER BY TableIndex", gameId)
+                .Where(t => t.TableIndex >= 0 && t.TableIndex < 256 && LineScopeRules.TableBelongsTo(owners, t.TableIndex, line)).ToList();
+        }
+
+        public static Dictionary<int, int> PlanMultiSeatRobots(int gameId, int gameType,
+            IEnumerable<RobotTableCapacity> tables, int target, int maxPerTable)
+        {
+            if (!IsMultiSeatRobotGame(gameType) || target < 0 || maxPerTable < 1) return null;
+            var limits = tables.GroupBy(t => t.TableIndex).OrderBy(g => g.Key).ToDictionary(g => g.Key,
+                g => Math.Min(maxPerTable, g.Min(t => GetMultiSeatRobotLimit(gameId, gameType, t.MaxSeats))));
+            if (maxPerTable > GetMultiSeatRobotLimit(gameId, gameType, 0) || target > limits.Values.Sum()) return null;
+            var plan = limits.ToDictionary(p => p.Key, p => 0);
+            int remaining = target;
+            while (remaining > 0)
+            {
+                foreach (int table in limits.Keys)
+                {
+                    if (plan[table] >= limits[table]) continue;
+                    plan[table]++;
+                    if (--remaining == 0) break;
+                }
+            }
+            return plan;
+        }
+
+        public static bool HasMultiSeatRobotLimit(GameDbContext ef)
+        {
+            return ef.Database.SqlQuery<int>("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='robot_seat' AND COLUMN_NAME='MAX_PER_TABLE'").Single() > 0;
+        }
+
+        public static int ReadMaxPerTable(GameDbContext ef, IEnumerable<M_Robot> robots)
+        {
+            var ids = robots.Select(r => r.ID).ToList();
+            if (ids.Count == 0 || !HasMultiSeatRobotLimit(ef)) return 1;
+            return Math.Max(1, ef.Database.SqlQuery<int>(
+                "SELECT COALESCE(MAX(MAX_PER_TABLE),0) FROM robot_seat WHERE ID IN (" + string.Join(",", ids) + ")").Single());
+        }
+
+        public Msg SetMultiSeatRobots(int gameId, int target, string line, int maxPerTable)
+        {
+            using (var ef = new GameDbContext())
+            using (var tx = ef.Database.BeginTransaction())
+            {
+                ef.Database.SqlQuery<int>("SELECT GameId FROM games WHERE GameId={0} FOR UPDATE", gameId).ToList();
+                var game = ef.Games.SingleOrDefault(g => g.GameId == gameId && g.Enable == 1);
+                if (game == null || !IsMultiSeatRobotGame(game.GameType) || line == LineScopeRules.RecycledLine)
+                    return new Msg(0, "该游戏或代理线不支持此机器人设置！");
+                if (!HasMultiSeatRobotLimit(ef)) return new Msg(0, "请先安装机器人每桌上限数据库升级！");
+                var tables = GetMultiSeatRobotTables(ef, gameId, line);
+                var existing = GetCardRobots(ef, gameId, line);
+                if (tables.Count == 0 && existing.Count == 0) return new Msg(0, "该代理线没有启用的桌台！");
+                var plan = PlanMultiSeatRobots(gameId, game.GameType, tables, target, maxPerTable);
+                if (plan == null) return new Msg(0, "机器人总数或每桌上限超出容量；每桌须至少保留一个真人座位！");
+                ef.Robots.RemoveRange(existing);
+                foreach (var entry in plan)
+                {
+                    ef.Robots.Add(new M_Robot { GAME_ID = gameId, GAME_TYPE = game.GameType, GAME_NAME = game.Name,
+                        ROOM_ID = 0, ROOM_NAME = game.GameType == 0 ? "默认场" : "初级场", TABLE_ID = entry.Key, ROBOT_NO = entry.Value });
+                }
+                ef.SaveChanges();
+                var ids = GetCardRobots(ef, gameId, line).Select(r => r.ID).ToList();
+                if (ids.Count > 0) ef.Database.ExecuteSqlCommand(
+                    "UPDATE robot_seat SET MAX_PER_TABLE={0} WHERE ID IN (" + string.Join(",", ids) + ")", maxPerTable);
+                tx.Commit();
+                return new Msg(1, "已设置总机器人" + target + "个，每桌最多" + maxPerTable + "个，按本线启用桌台均匀分配！");
+            }
+        }
+
         // 每行保留一个机器人名额，TABLE_ID 只用于定位所属代理线；实际入座由 ServerRobot 随机寻找空机台。
         public static List<int> PlanCardRobotAddition(IEnumerable<int> tables, IEnumerable<M_Robot> robots, int count)
         {

@@ -17,7 +17,7 @@
 | 盈亏/流水/审计 | `GameRecord/UserRecord/AgencyRecord/AccountLogController.cs` → `B_Records_MySQL.cs`、`B_Users.cs` | 游戏原分与钻兑换、`user_daily_winloss`/幂等 ledger、账号串与数字平台 ID、代理过滤、时间区间、计数/分页、记录保留期 |
 | 大奖榜/中奖历史/公告 | `Api/RankingListController.History`、`UserRecordController.GetPrizeHistory`、`NoticeController.cs` | 中心先落榜再播、游戏判大奖、IsBroadcast/Multiplier、真人/Robot、同一实际奖项、昵称隐私、代理线/关闭游戏筛选、机台号、客户端队列；不要假设旧客户端协议携带事件 ID |
 | 全民赛跑/活动 | `ActivityConfigController.cs`、`Api/RabbitRaceActivityController.cs` → `RabbitRaceActivity.cs` | 活动日/北京时间、`RabbitRaceLedgerPath` 权威台账读取（未配置环境回退中奖记录统计）、按开始时间恢复、Robot 名额、代理可见性、客户端已入账演出与活动局禁止比倍 |
-| 机器人 | `RobotController.cs`、`UserRobotController.cs` → `B_Robot.cs`、`SConnect.cs` | `robot_seat` 配额、`userrobot` 账户、实际在线/入座区别、代理线、机台/座位容量、自动调度/打乱/超时、ServerRobot 指令与持久化 |
+| 机器人 | `RobotController.cs`、`UserRobotController.cs` → `B_Robot.cs`、`SConnect.cs` | `robot_seat` 配额、`userrobot` 账户、实际在线/入座区别、代理线、机台/座位容量、自动调度/打乱/超时、ServerRobot 指令与持久化；鱼机/押注 `SetMultiSeatRobots` 按总数均分、`MAX_PER_TABLE` 保存每桌上限，至少预留一真人座，见[升级依赖](../鱼机押注机器人总数与每桌上限-20261106.md) |
 | 客服/邀请码/昵称 | `Api/CustomerServiceUrl/AgencyInviteCode/UpdateUsersController.cs` → `B_Admin.cs`、`B_Users.cs` | 直属代理、注册归属、账号鉴权、空值 UI、昵称设置标记、AA01 快照/HTTP 刷新与旧 APK |
 | 登录/菜单/权限 | `Controllers/LoginController.cs`、`Models/AuthorizeAttribute.cs`、`Filters/JsonAntiForgeryAttribute.cs`、`Views/Mgr/Index.cshtml`、`Areas/Mobile/Controllers/HomeController.cs` | Session、手机/电脑入口、后台授权与防伪、权限授予上限、管理范围、失败审计、登录计数冻结与解冻 |
 | 指令投递与补偿 | `YYT.BLL/Services/GameServer/GameCommandService.cs`、`PipeGameServerClient.cs`、`GameCommandOutboxRetryService.cs` → `YYT.Remote/SConnect.cs`、`YYT.BLL/EF/B_GameCommandOutbox.cs` | LK/UL/UC即时发送、失败落发件箱、应用回执、重试幂等、Status与错误语义；QA失败不同于成功空列表，不能为探测重启中心 |

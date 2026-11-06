@@ -9,6 +9,37 @@ namespace UnitTestProj
     public class CardRobotSettingsTest
     {
         [TestMethod]
+        public void MultiSeatTotalsAreBalancedAndReserveHumanSeats()
+        {
+            var tables = new[] { new B_Robot.RobotTableCapacity { TableIndex = 2, MaxSeats = 6 },
+                new B_Robot.RobotTableCapacity { TableIndex = 9, MaxSeats = 6 },
+                new B_Robot.RobotTableCapacity { TableIndex = 20, MaxSeats = 2 } };
+            var plan = B_Robot.PlanMultiSeatRobots(3, 2, tables, 7, 3);
+            Assert.AreEqual(7, plan.Values.Sum());
+            Assert.AreEqual(3, plan[2]);
+            Assert.AreEqual(3, plan[9]);
+            Assert.AreEqual(1, plan[20]);
+            Assert.IsNull(B_Robot.PlanMultiSeatRobots(3, 2, tables, 8, 3));
+            Assert.IsTrue(B_Robot.PlanMultiSeatRobots(3, 2, tables, 0, 3).Values.All(n => n == 0));
+            Assert.AreEqual(5, B_Robot.GetMultiSeatRobotLimit(3, 2, 99));
+            Assert.AreEqual(7, B_Robot.GetMultiSeatRobotLimit(10, 0, 8));
+            Assert.AreEqual(3, B_Robot.GetMultiSeatRobotLimit(47, 0, 99));
+        }
+
+        [TestMethod]
+        public void MultiSeatPlannerRejectsInvalidAndDuplicateCapacity()
+        {
+            var table = new B_Robot.RobotTableCapacity { TableIndex = 9, MaxSeats = 6 };
+            var tables = new[] { table, table };
+            Assert.IsNull(B_Robot.PlanMultiSeatRobots(3, 2, tables, 4, 3));
+            foreach (int limit in new[] { -1, 0, 6, int.MaxValue })
+                Assert.IsNull(B_Robot.PlanMultiSeatRobots(3, 2, tables, 1, limit));
+            Assert.IsNull(B_Robot.PlanMultiSeatRobots(3, 2, tables, -1, 2));
+            Assert.IsNull(B_Robot.PlanMultiSeatRobots(5, 1, tables, 1, 1));
+            Assert.IsNull(B_Robot.PlanMultiSeatRobots(3, 2, new B_Robot.RobotTableCapacity[0], 1, 1));
+        }
+
+        [TestMethod]
         public void MachineRobotCountsSupportCardAndLabaButExcludeMahjongFishAndBet()
         {
             foreach (int id in new[] { 5, 15, 25, 37, 44 }) Assert.IsTrue(B_Robot.IsMachineRobotGame(id, 1));

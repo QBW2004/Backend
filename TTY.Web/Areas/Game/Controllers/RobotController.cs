@@ -199,6 +199,17 @@ namespace YYT.Web.Areas.Game.Controllers
                     int gameId = form.Q<int>("GameId");
                     string line = NormalizeLine(form.Q<string>("Line"));
                     var game = ef.Games.SingleOrDefault(g => g.GameId == gameId && g.Enable == 1);
+                    if (game != null && B_Robot.IsMultiSeatRobotGame(game.GameType))
+                    {
+                        var tables = B_Robot.GetMultiSeatRobotTables(ef, gameId, line);
+                        var robots = B_Robot.GetCardRobots(ef, gameId, line);
+                        int maxPerTable = B_Robot.ReadMaxPerTable(ef, robots);
+                        var tableLimits = tables.Select(t => B_Robot.GetMultiSeatRobotLimit(gameId, game.GameType, t.MaxSeats)).ToArray();
+                        int limit = B_Robot.GetMultiSeatRobotLimit(gameId, game.GameType, 0);
+                        return Json(new { code = 1, total = tableLimits.Sum(n => Math.Min(n, maxPerTable)),
+                            current = robots.Sum(r => Math.Max(0, r.ROBOT_NO)), maxPerTable, maxAllowed = limit,
+                            tableLimits, tableCount = tables.Count, schemaReady = B_Robot.HasMultiSeatRobotLimit(ef) });
+                    }
                     if (game == null || !B_Robot.IsMachineRobotGame(gameId, game.GameType))
                         return Json(new { code = 0, content = "该游戏不支持按机台设置机器人数量！" });
                     int total = B_Robot.GetCardRobotTables(ef, gameId, line).Count;
@@ -1178,10 +1189,9 @@ namespace YYT.Web.Areas.Game.Controllers
             {
                 int GameType = form.Q<int>("GameType");
                 int GameId = form.Q<int>("GameId");
-                int TABLE_ID = form.Q<int>("TABLE_ID");
-                int RobotNo = form.Q<int>("RobotNo");
-                // 玩家/机器人已锁定只能进入第一房间：ROOM_ID 恒为 0(押注类一房N桌亦为0)
-                int RoomId = 0;
+                int RobotNo;
+                if (!int.TryParse(form["RobotNo"], NumberStyles.None, CultureInfo.InvariantCulture, out RobotNo))
+                    return Json(new Msg(0, "机器人总数须为非负整数！"));
                 if (GameType == -1)
                 {
                     msg.content = "请选择游戏类型！";
@@ -1204,35 +1214,11 @@ namespace YYT.Web.Areas.Game.Controllers
                     if (msg.code == 1) RobotReloadAfterChange(ref msg, "机器人已保存");
                     return Json(msg);
                 }
-                using (var ef = new GameDbContext())
-                {
-                    Dictionary<int, string> owners = LineTables.GetOwners(ef, GameId);
-                    if (!LineScopeRules.TableBelongsTo(owners, TABLE_ID, line))
-                    {
-                        msg.content = string.IsNullOrEmpty(line)
-                            ? "所选桌子不是公共桌台，请重新选择代理线和桌子！"
-                            : "所选桌子不属于代理线 " + line + "，请重新选择！";
-                        return Json(msg);
-                    }
-                }
-                string GameName = "";
-                // 押注类单房间固定"默认场"；鱼机/牌机锁定第一房间"初级场"。
-                string RoomName = GameType == 0 ? "默认场" : "初级场";
-                if (game != null)
-                {
-                    GameName = game.Name;
-                }
-                M_Robot entity = new M_Robot
-                {
-                    GAME_TYPE = GameType,
-                    GAME_ID = GameId,
-                    ROOM_ID = RoomId,
-                    GAME_NAME = GameName,
-                    ROOM_NAME = RoomName,
-                    TABLE_ID = TABLE_ID,
-                    ROBOT_NO = RobotNo,
-                };
-                msg = new B_Robot().AddRobot(entity);
+                int maxPerTable;
+                if (!B_Robot.IsMultiSeatRobotGame(game.GameType) ||
+                    !int.TryParse(form["MaxPerTable"], NumberStyles.None, CultureInfo.InvariantCulture, out maxPerTable) || maxPerTable < 1)
+                    return Json(new Msg(0, "请填写每桌最大机器人数；旧页面请刷新后重新设置！"));
+                msg = new B_Robot().SetMultiSeatRobots(GameId, RobotNo, line, maxPerTable);
                 if (msg.code == 1)
                 {
                     RobotReloadAfterChange(ref msg, "机器人已保存");
