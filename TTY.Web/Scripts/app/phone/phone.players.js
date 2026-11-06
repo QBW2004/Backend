@@ -94,13 +94,23 @@
 
     /* ---------------- 卡片渲染 ---------------- */
 
+    function onlineBetText(p) {
+        if (Number(p.GameID) !== 54) return M.betGold(p.CurBet, p.GameID);
+        // 麻将 CurBet 是旧协议的整数分；用精确钻押注和本桌每钻分数还原小数分。
+        // 缺少精确值/兑换比时不能从已截断的 CurBet 恢复，显示未知。
+        var diamonds = Number(p.CurBetDiamonds), unitsPerCoin = Number(p.CurBetUnitsPerCoin);
+        if (p.CurBetDiamonds == null || !isFinite(diamonds) || diamonds < 0 ||
+            !isFinite(unitsPerCoin) || unitsPerCoin <= 0) return '--';
+        return M.betGold(diamonds * unitsPerCoin, p.GameID);
+    }
+
     function playerCardHTML(p, isOnline) {
         var gameText = isOnline ? (M.gameName(p.GameID) || '--') : '--';
         // 场次/机台号与电脑端同一编号口径（服务端下发 0 基下标，端上统一 +1 显示，
         // 例：电脑端在线用户"桌号"= TableId+1）；押注走 M.betGold（鱼机 ÷10 保留 1 位小数）
         var hallText = isOnline ? (p.RoomId != null ? (Number(p.RoomId) + 1) + '场' : '--') : '--';
         var machineText = isOnline ? (p.TableId != null ? (Number(p.TableId) + 1) : '--') : '--';
-        var betText = isOnline ? M.betGold(p.CurBet, p.GameID) : '--';
+        var betText = isOnline ? onlineBetText(p) : '--';
 
         // 今日/总输赢只显示整数（四舍五入），颜色按取整后的值判断，避免 +0 / -0 带色
         var today = M.roundInt(p.TodayWinLoss);
