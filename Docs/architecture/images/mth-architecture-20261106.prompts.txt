@@ -1,0 +1,81 @@
+Generation mode: built-in image_gen. No API/CLI fallback.
+
+OVERVIEW PROMPT
+
+Create a polished Chinese technical infographic as a PNG image, landscape 3:2, very high resolution, crisp legible Simplified Chinese typography. Audience: a nontechnical owner who needs to understand their real online game system. White/light warm grey background, navy titles, blue web arrows, orange game arrows, green database arrows, purple local-command arrows; clear generous whitespace, flat friendly device/building/database icons, minimal ornament, professional diagram. This is an accurate architecture diagram, not a UI screenshot. Exact spelling of all domains, IPs and ports is critical. Use no invented endpoints or components. All arrows must visibly terminate on correct boxes. Render quoted text exactly.
+
+Title: "MTH 线上服务架构"
+Subtitle: "2026-11-06 线上只读核对 · 两台服务器 + 一条后台 CDN 入口"
+Small explanation strip: "域名 = 地址簿里的名字    IP = 机器地址    端口 = 不同服务的门    数据库 = 账本"
+
+Use three broad vertical zones with left-to-right traffic:
+LEFT zone "谁在访问" contains two friendly devices: top "运营人员 / 浏览器"; below "玩家 / 手机 App".
+MIDDLE zone "公网入口" contains:
+top CDN cloud with "后台域名" and "abc.12.sqrdwj.top" and "HTTPS 443 · CDN".
+Below large bounded relay box with header "中转服务器 185.180.17.57" and "a.xi.wuerba.top → 此 IP".
+Within relay clearly separate two modules:
+  blue "网页接口 / Nginx" text "HTTPS 443 → HTTP 8080";
+  orange "游戏流量 / 端口转发" text "同端口转到源站".
+Also dashed blue small branch labeled "备用 HTTP 8081 → 8081".
+RIGHT large bounded zone header "真正干活的源站 · Windows" and "8.218.67.82". Within this zone all components share this SAME machine:
+top web card: "IIS 后台 + App API" / "同一个站点 C:\Backend" / "后台 1.0.110". Show ports 80, 8080, 8081 as THREE incoming doors all to same card.
+central control card: "中心服 · 9000" / "登录、大厅、会话、结算协调".
+lower game card: "14 个子游戏服务" / "玩家直接连接各游戏端口" / "例如：火凤凰 9200 · 大白兔 9212" / "麻将胡了 9404（WebSocket）".
+database cylinder: "MySQL 5.7 / mth" / "源站本机 3306" / "账号、余额、配置、记录".
+small side badge: "Robot 独立进程" / "后台通过本机管道热更".
+
+Connections (avoid confusing crossing, use orthogonal routing and labels):
+Operations/browser -> CDN uses blue arrow "打开后台 · HTTPS 443".
+CDN -> IIS port80 uses blue arrow "HTTP 80 回源".
+Player/App -> relay blue Nginx uses blue arrow "游戏列表等 API · HTTPS 443".
+relay Nginx -> IIS port8080 uses blue arrow "HTTP 8080".
+Dashed blue fallback from App via relay -> IIS port8081 labeled "HTTPS 失败时降级 · HTTP 8081".
+Player/App -> relay orange NAT then split to source center9000 and source game card. Label center route "登录 / 大厅 9000"; game route "进入游戏后使用专属端口". Emphasize games do not go through IIS or CDN.
+Within source: IIS -> DB green arrow "读写数据"; center -> DB green arrow "读写数据". No client-to-DB arrow. Do NOT draw an arrow from relay to DB.
+IIS <-> center PURPLE local arrow "本机命名管道 mynamedpipe" and small "控制、踢人、查询；无 TCP 端口".
+center <-> game purple/local arrow "本机 COM 双向通信" small "8000 + gameID × 10；反向 +1".
+IIS -> Robot small purple connector "MTH_RobotPipe".
+Footer under main traffic: light grey backup strip with left-pointing dashed arrow from source to relay, label "每天 04:00：源站导出 SQL → SSH 22 → 中转机备份；保留最近 3 天".
+Footer plain concise key statements: "玩家不直接连接数据库。" "旧 APK 的内置域名可能不同。" "示意图以本次现场配置为准；端口表见配图。"
+No firewall security promises. Database is used locally but do NOT claim its listener binds only 127.0.0.1; actual listener is ::. Don't show unused old relay addresses or old domains. Don't show 443 on source IIS. Keep all text comfortably readable and routing clear, prioritize diagram clarity over decorative art.
+
+PORT REFERENCE PROMPT
+
+Generate a beautifully typeset Simplified Chinese operational port reference infographic PNG, high resolution landscape 3:2. Crisp readable typography, warm white background, navy headers, blue web section, orange game section, purple internal section, green database note. Friendly sparse icons. This must be exact, all values are verified, no invented rows. Audience nontechnical project owner. Title "MTH 域名与端口速查". Subtitle "2026-11-06 现场核对 · 端口相当于同一台机器上的不同门".
+
+Top wide web routing table, with headings "入口 / 用途" "通信路线":
+row "后台网页" route "abc.12.sqrdwj.top:443 → CDN → 8.218.67.82:80"
+row "App API 首选" route "a.xi.wuerba.top:443 → 中转 Nginx → 8.218.67.82:8080"
+row "App API 降级" route "a.xi.wuerba.top:8081 → 中转转发 → 8.218.67.82:8081"
+row "游戏登录 / 大厅" route "a.xi.wuerba.top:9000 → 中转转发 → 8.218.67.82:9000"
+Small callout "a.xi.wuerba.top 的公网 IP：185.180.17.57" and "IIS 的 80、8080、8081 指向同一个后台站点".
+
+Middle left 60% width: orange panel title "当前运行的 14 款游戏". Small line "玩家 → 中转 185.180.17.57 → 源站 8.218.67.82；端口保持不变". Use a neat 2-pair table with column headings 游戏 / 端口 / 游戏 / 端口, exactly 7 rows:
+"单挑 | 9102 | 幸运六狮 | 9103"
+"火凤凰 | 9200 | 大字板 | 9204"
+"ATT 满花版 | 9206 | 点石成金 | 9208"
+"NBA | 9209 | 大白兔 | 9212"
+"金蟾捕鱼 | 9300 | 李逵劈鱼 | 9305"
+"水果拉霸 | 9400 | 水浒传 | 9402"
+"明星97（拉霸） | 9403 | 麻将胡了 | 9404"
+Note "9404 使用 WebSocket；其余表中游戏使用原生 TCP。"
+Note "中转转发范围更宽，不代表所有预留游戏都已启动。"
+
+Middle right purple/green panel title "源站内部怎么联系"
+rows:
+"MySQL：本机 3306" / "后台、中心服连接同一个 mth 数据库"
+"后台 ↔ 中心服" / "命名管道 mynamedpipe，无 TCP 端口"
+"后台 → Robot" / "命名管道 MTH_RobotPipe"
+"中心服 ↔ 子游戏" / "仅本机 127.0.0.1" / "8000 + gameID × 10；反向端口 +1"
+"例：火凤凰 gameID 5" / "8050 ↔ 8051"
+"例：大白兔 gameID 55" / "8550 ↔ 8551"
+Callout "gameID、玩家端口、COM 端口是三种不同编号。"
+
+Bottom light neutral band title "辅助运维"
+Three compact cards:
+"SSH 22" / "远程管理；源站向中转机传 SQL 备份"
+"源站监控 127.0.0.1:18765" / "本机监听，通过 SSH 隧道查看"
+"其他现场入口" / "源站 IIS 另绑 2052（当前用途未核实）" / "中转机 8901：独立监控静态站点"
+Bottom footnote: "已核对：DNS、转发配置、IIS 绑定、进程监听及 HTTP。未做玩家登录或下注测试。旧 APK 域名需看实际安装包。"
+Keep comfortable margins and large font, ensure all exact digits/domain strings legible, no extra claims about firewall or public database reachability. No old relay IPs.
+

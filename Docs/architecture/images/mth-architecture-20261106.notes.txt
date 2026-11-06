@@ -1,0 +1,49 @@
+MTH 线上架构图片说明
+核对日期：2026-11-06（UTC+8）
+本次范围：只读查看源站和中转机配置、监听、既有连接与日志；GET 网页/API。
+没有部署、重启、修改服务器配置、写业务数据库、连接游戏命名管道或测试下注。
+既有工作区改动保留；仅新增本组图片、提示词与说明。
+
+核心结论
+1. 源站 8.218.67.82：Windows；IIS 后台/API、中心服、14 个子游戏、Robot 和 MySQL 在同机。
+2. 中转 185.180.17.57：Ubuntu；Nginx HTTPS 接口代理、iptables 游戏端口转发、异机 SQL 备份接收。
+3. a.xi.wuerba.top 的公共 A 记录为 185.180.17.57。HTTPS 443 在中转终止，Nginx upstream 为 8.218.67.82:8080。
+4. abc.12.sqrdwj.top 经 CNAME abc.12.sqrdwj.top.a3.initvv.com 进入 CDN，HTTP 响应 Server=ESA；源站现有日志显示 CDN 节点回源 80。未读取 CDN 管理台；80 回源由现场 DNS、HTTP 和 IIS 日志交叉印证。
+5. App HTTP 降级为 a.xi.wuerba.top:8081，经 DNAT 同端口到源站 IIS。
+6. 源站 Default Web Site 同时绑定 HTTP 80、8080、8081、2052，目录 C:\Backend，WebVer=1.0.110；2052 当前业务用途未核实。源站没有观察到 HTTPS 443 监听。
+7. 中心登录端口 9000；当前 14 个玩家游戏端口见配图。NAT 转发范围更宽，预留端口不代表相应游戏启动。
+8. 中心和各游戏的 COM 均监听本机 127.0.0.1，中心口 8000 + gameID * 10，子游戏反向口 +1。旧 8800 不能作为当前通信路径。
+9. 后台中心管道 mynamedpipe、Robot 管道 MTH_RobotPipe 都是同机命名管道，没有对应 TCP 端口。
+10. 当前 w3wp.exe 到 ::1:3306、ServerCenterNew.exe 到 127.0.0.1:3306 的真实连接已观察到。MySQL 程序版本 5.7.44，mth 数据目录存在。3306 实际监听 ::；图中“本机”表示应用使用本机连接，不表示防火墙已验证公网不可达。
+11. 每日备份任务 MTH_DatabaseBackup_Daily 为 Ready；上次 2026-11-06 04:00，退出码 0；下次 2026-11-07 04:00。3 日保留依据已部署备份专题，本次未重新触发备份。
+12. 源站监控监听 127.0.0.1:18765，通过已有 SSH 隧道查看。中转 nginx 8901 是独立静态监控站点 /var/www/mth-perf，不是游戏端口。
+13. 当前客户端源码默认域名是 a.xi.wuerba.top；2026-11-05 的切换记录明确未发新 APK，不能推断所有已安装客户端都已更新。
+
+检查结果与范围
+- 中转发起：后台 HTTPS 200；App HTTPS /Api/Games 带 Unity User-Agent 200。
+- 普通 Python User-Agent 请求 App HTTPS 为 403；中转配置存在游戏客户端请求头筛选，不能把此结果直接解释为服务宕机。
+- 源站经中转公网入口请求 HTTP 8081 /Api/Games 为 200。
+- 从中转本机请求自己的 8081 失败，不当作外部通路结论；DNAT 配置在 PREROUTING，已用源站外部来向复核成功。
+- 两个网址无法由浏览工具打开；最终 HTTP 结论来自实际服务器侧请求。
+- 源站/中转主要只读检查工具耗时合计约 20 秒（不含资料阅读、制图与图片检查）。
+- 本次为解释和制图，无业务代码改动，未运行构建/业务测试。
+- 未执行真实玩家登录、逐款游戏实玩或下注；未验证手机实际安装包。
+- 公网游戏端口逐项可用性没有用主动握手测试；图中运行清单来自源站进程监听和中转转发规则。
+
+证据位置（本地，只保留非敏感字段）
+.build/architecture-20261106/relay-evidence.json
+.build/architecture-20261106/http-evidence.json
+.build/architecture-20261106/source-services-evidence.txt
+.build/architecture-20261106/source-database-evidence.json
+.build/architecture-20261106/backup-schedule-evidence.txt
+
+相关源码/文档
+../MTH-git/Assets/WGM/Common/Script/Network/Network.cs
+../MTH-git/Docs/客户端中转域名切换-20261105.md
+../MTH-Server/Common/Config.h
+../MTH-Server/docs/游戏TCP域名中转部署.md（旧正文仅作历史证据）
+Docs/数据库每日异机备份-20261105.md
+Docs/后台1.0.110与服务端发布-20261106.md
+YYT.Remote/SConnect.cs
+图片由内置 image_gen 生成；完整提示词见同目录 mth-architecture-20261106.prompts.txt。
+
