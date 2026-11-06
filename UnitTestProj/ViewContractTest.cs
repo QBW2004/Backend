@@ -764,7 +764,7 @@ namespace UnitTestProj
             // 下注列（OPT_COINS = mCurBet）是游戏内部单位：0.1 分炮鱼机必须 ÷10 显示。
             // 进入/离开余额（COINS = mCoins 钱包钻）与「得分」(离开-进入) 是真实钻量，不能 ÷10。
             StringAssert.Contains(recordView, "isDecimalBetFish(rowData && rowData.GAME_TYPE)");
-            StringAssert.Contains(recordView, "return top.goldFormat((v / 10).toFixed(1));");
+            StringAssert.Contains(recordView, "return goldFormat((v / 10).toFixed(1));");
             StringAssert.Contains(gameRecordScript, "M.betGold(Number(rowData.OPT_COINS || 0), rowData.GAME_TYPE)");
 
             // 鱼机列表四处同口径（OnlineUsers/UserRecord/GameConfigController/phone.core.js）

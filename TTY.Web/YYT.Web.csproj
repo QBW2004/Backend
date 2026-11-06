@@ -1085,6 +1085,7 @@
     <Content Include="favicon.ico" />
     <Content Include="Global.asax" />
     <Content Include="Scripts\app\common.js" />
+    <Content Include="Scripts\app\gold-format.js" />
     <Content Include="Scripts\app\frame.js" />
     <Content Include="Scripts\app\game.acc.js" />
     <Content Include="Scripts\app\login.js" />

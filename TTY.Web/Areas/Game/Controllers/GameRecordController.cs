@@ -241,30 +241,6 @@ namespace YYT.Web.Areas.Game.Controllers
 
         [AjaxOnly]
         [HttpPost]
-        public ActionResult GetGamesTreeData(FormCollection form)
-        {
-            List<M_TreeModel> list = new List<M_TreeModel>();
-            try
-            {
-                int gameId = form.Q<int>("id", -1);
-
-                M_Games entity = new M_Games();
-                entity.Enable = 1;
-
-                if (gameId > -1)
-                    entity.GameId = gameId;
-
-                list = new B_Games().GetGamesTreeData(entity);
-            }
-            catch (Exception ex)
-            {
-                LogHelper.WriteLog(typeof(YYT.Web.Areas.Game.Controllers.GameRecordController), ex);
-            }
-            return Json(list);
-        }
-
-        [AjaxOnly]
-        [HttpPost]
         public ActionResult GetGameRoomDeskPara(FormCollection form)
         {
             List<M_GameRoomDeskPara> list = new List<M_GameRoomDeskPara>();

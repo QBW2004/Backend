@@ -124,17 +124,17 @@
                 + '账号[ ' + rowData.OptID
                 + ' ]给' + rowData.DestUserTitle
                 + '账号[ ' + rowData.ID + ' ]'
-                + optStr + ' ' + top.goldFormat(rowData.COINS)
+                + optStr + ' ' + goldFormat(rowData.COINS)
                 + ' ，该账号' + optStr
-                + '前 ' + top.goldFormat(rowData.BEF_COINS) + ' ，'
-                + optStr + '后 ' + top.goldFormat(rowData.AFT_COINS) + ' 。';
+                + '前 ' + goldFormat(rowData.BEF_COINS) + ' ，'
+                + optStr + '后 ' + goldFormat(rowData.AFT_COINS) + ' 。';
         }
         function getAngencyMsg(rowData) {
             var optStr = fmtOptType(rowData.OPT);
             return rowData.SrcUserTitle
                 + '账号[ ' + rowData.OptID
                 + ' ]在 ' + rowData.REC_TIME_Str + ' ' + optStr
-                + '，' + optStr + '时携带 ' + top.goldFormat(rowData.BEF_COINS) + ' 。';
+                + '，' + optStr + '时携带 ' + goldFormat(rowData.BEF_COINS) + ' 。';
         }
         function clearRecords() {
             $.messager.confirm('确认', '确定要清空全部代理记录吗？此操作不可恢复！', function (r) {

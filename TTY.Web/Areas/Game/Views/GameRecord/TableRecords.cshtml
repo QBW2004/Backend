@@ -73,7 +73,7 @@
             return arr.join('  ');
         }
         function fmtCoins(value, rowData, rowIndex) {
-            return 0 - top.goldFormat(value);
+            return 0 - goldFormat(value);
         }
         function onGameSelChange(newValue, oldValue) {
             if (oldValue && newValue > -1 && newValue != oldValue) {

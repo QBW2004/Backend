@@ -8,6 +8,11 @@
     <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title></title>
+    <script>
+        window.isRMB = @Html.Raw(ConfigHelper.Get("IsRMB") == "1" ? "true" : "false");
+        window.ExchangeRate = @Html.Raw(Json.Encode(ConfigHelper.Get("ExchangeRate")));
+    </script>
+    <script src="@Url.Content("~/Scripts/app/gold-format.js?v=" + ConfigHelper.Get("WebVer"))"></script>
     @Styles.Render("~/res/easyui-css")
     <link href="@Url.Content("~/Content/css/font-awesome.css?v=" + ConfigHelper.Get("WebVer"))" rel="stylesheet" />
     <link href="@Url.Content("~/Content/css/animate.css?v=" + ConfigHelper.Get("WebVer"))" rel="stylesheet" />
