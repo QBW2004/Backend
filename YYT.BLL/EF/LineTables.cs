@@ -158,7 +158,9 @@ namespace YYT.BLL.EF
 
         /// <summary>
         /// 从公共桌台复制一套给某线：公共桌台的全部按桌数据原样复制到新桌号（桌名改为“1号机……N号机”），并登记归属。
-        /// 调用方随后负责同步房间桌数 NUM 并发 RP 热更。成功时 datas 为复制的桌数。
+        /// 复制内容：1) 全部公共桌台参数；2) 全部公共桌台机器人配置（robot_seat 随桌复制）。
+        /// 复制后该线在本游戏只看到专属桌台、看不到公共桌台；中奖播报与排行榜也只含该线可见桌台与可玩游戏（游戏服/中心服/排行榜接口按归属过滤）。
+        /// 调用方随后负责同步房间桌数 NUM 并发 RP 热更与机器人热更。成功时 datas 为复制的桌数。
         /// </summary>
         public static Msg CopyPublicToLine(int gameId, int paraType, string line)
         {
@@ -209,6 +211,7 @@ namespace YYT.BLL.EF
                 }
 
                 List<CloneSpec> specs = PerTableSpecs(paraType);
+                int robotRows = 0;
                 using (var trans = ef.Database.BeginTransaction())
                 {
                     try
@@ -221,7 +224,8 @@ namespace YYT.BLL.EF
                             foreach (CloneSpec spec in specs)
                             {
                                 ClearRows(ef, spec, gameId, dst);
-                                CloneRows(ef, spec, gameId, src, dst, tableName);
+                                int copied = CloneRows(ef, spec, gameId, src, dst, tableName);
+                                if (spec.Table == "robot_seat") robotRows += copied;
                             }
                             AssignOwner(ef, gameId, dst, line);
                         }
@@ -236,7 +240,7 @@ namespace YYT.BLL.EF
                     }
                 }
                 msg.code = 1;
-                msg.content = "已从公共桌台复制 " + publicIndexes.Count + " 张专属桌台";
+                msg.content = "已从公共桌台复制 " + publicIndexes.Count + " 张专属桌台：桌台参数已全部复制，机器人配置复制 " + robotRows + " 条";
                 msg.datas = publicIndexes.Count;
             }
             return msg;
@@ -306,7 +310,7 @@ namespace YYT.BLL.EF
             }
         }
 
-        /// <summary>收回某线在某游戏的专属桌台：桌号不删除，归属改为 #（谁都看不到），下次分配优先复用。调用方随后发 RP。</summary>
+        /// <summary>收回某线在某游戏的全部专属桌台（不支持只收回部分桌）：桌号不删除，归属改为 #（谁都看不到），下次分配优先复用。调用方随后发 RP。</summary>
         public static Msg RecallLine(int gameId, string line)
         {
             Msg msg = new Msg(0, "收回失败！");
@@ -322,20 +326,39 @@ namespace YYT.BLL.EF
                     msg.content = "数据库缺少 roomtableowner 表，请先执行 SQL 补丁！";
                     return msg;
                 }
-                // 收回的桌谁都看不到，机器人不应再占用：先删掉这些桌上的机器人设置（调用方随后发机器人热更）
-                int robots = ef.Database.ExecuteSqlCommand(
-                    "DELETE rs FROM robot_seat rs INNER JOIN roomtableowner o ON o.GAME_ID=rs.GAME_ID AND o.TableIndex=rs.TABLE_ID WHERE o.GAME_ID={0} AND o.LineAgent={1}",
-                    gameId, line);
-                int n = ef.Database.ExecuteSqlCommand(
-                    "UPDATE roomtableowner SET LineAgent={0} WHERE GAME_ID={1} AND LineAgent={2}",
-                    LineScopeRules.RecycledLine, gameId, line);
-                if (n <= 0)
+                int robots;
+                int n;
+                // 收回范围 = 该线在本游戏的全部专属桌台（复制来的与单独新建的都算），按 GAME_ID+LineAgent 整体处理，不做按桌部分收回。
+                // 删机器人与改归属同一事务：避免机器人已删、归属未改（或反之）的半收回状态。
+                using (var trans = ef.Database.BeginTransaction())
                 {
-                    msg.content = "该线在本游戏没有专属桌台！";
-                    return msg;
+                    try
+                    {
+                        // 收回的桌谁都看不到，机器人不应再占用：先删掉这些桌上的机器人设置（调用方随后发机器人热更）
+                        robots = ef.Database.ExecuteSqlCommand(
+                            "DELETE rs FROM robot_seat rs INNER JOIN roomtableowner o ON o.GAME_ID=rs.GAME_ID AND o.TableIndex=rs.TABLE_ID WHERE o.GAME_ID={0} AND o.LineAgent={1}",
+                            gameId, line);
+                        n = ef.Database.ExecuteSqlCommand(
+                            "UPDATE roomtableowner SET LineAgent={0} WHERE GAME_ID={1} AND LineAgent={2}",
+                            LineScopeRules.RecycledLine, gameId, line);
+                        if (n <= 0)
+                        {
+                            trans.Rollback();
+                            msg.content = "该线在本游戏没有专属桌台！";
+                            return msg;
+                        }
+                        trans.Commit();
+                    }
+                    catch (Exception ex)
+                    {
+                        trans.Rollback();
+                        YYT.Common.LogHelper.WriteLog(typeof(LineTables), ex);
+                        msg.content = "收回失败：" + ex.Message;
+                        return msg;
+                    }
                 }
                 msg.code = 1;
-                msg.content = "已收回 " + n + " 张专属桌台，该线玩家重新进入游戏后改用公共桌台"
+                msg.content = "已收回该线在本游戏的全部 " + n + " 张专属桌台，该线玩家重新进入游戏后改用公共桌台"
                     + (robots > 0 ? "；这些桌上的机器人设置已一并删除（" + robots + " 条）" : "");
                 msg.datas = n;
             }
@@ -380,12 +403,12 @@ namespace YYT.BLL.EF
             ef.Database.ExecuteSqlCommand("DELETE FROM `" + spec.Table + "` WHERE " + filter);
         }
 
-        private static void CloneRows(GameDbContext ef, CloneSpec spec, int gameId, int src, int dst, string tableName)
+        private static int CloneRows(GameDbContext ef, CloneSpec spec, int gameId, int src, int dst, string tableName)
         {
             List<ColumnRow> cols = Columns(ef, spec.Table);
-            if (cols.Count == 0) return;
+            if (cols.Count == 0) return 0;
             string filter = RowFilter(cols, spec, gameId, src);
-            if (filter == null) return;
+            if (filter == null) return 0;
             List<string> insertCols = new List<string>();
             List<string> selectExprs = new List<string>();
             bool renamed = false;
@@ -408,10 +431,7 @@ namespace YYT.BLL.EF
             }
             string sql = "INSERT INTO `" + spec.Table + "` (" + string.Join(",", insertCols) + ") SELECT " +
                 string.Join(",", selectExprs) + " FROM `" + spec.Table + "` WHERE " + filter;
-            if (renamed)
-                ef.Database.ExecuteSqlCommand(sql, tableName);
-            else
-                ef.Database.ExecuteSqlCommand(sql);
+            return renamed ? ef.Database.ExecuteSqlCommand(sql, tableName) : ef.Database.ExecuteSqlCommand(sql);
         }
     }
 }

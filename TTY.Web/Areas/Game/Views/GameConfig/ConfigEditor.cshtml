@@ -167,8 +167,8 @@
         <select id="gcGameSel" class="gc-select"></select>
         <span class="gc-lbl" title="不同直属代理的整条线可以用各自的一套桌台参数；整条线的玩家按所属直属代理取桌台">代理：</span>
         <select id="gcLineSel" class="gc-select"><option value="">公共桌台</option></select>
-        <a href="javascript:;" id="gcLineCopy" class="gc-newbtn" style="display:none;" title="把本游戏全部公共桌台的参数复制一套，作为该线的专属桌台">从公共桌台复制一套</a>
-        <a href="javascript:;" id="gcLineRecall" class="gc-newbtn" style="display:none;" title="收回该线的专属桌台，该线玩家回到公共桌台">收回专属桌台</a>
+        <a href="javascript:;" id="gcLineCopy" class="gc-newbtn" style="display:none;" title="把本游戏全部公共桌台的参数和机器人配置复制一套，作为该线的专属桌台；复制后该线玩家只看到专属桌台，中奖播报和排行榜也只含可见桌台和可见游戏">从公共桌台复制一套</a>
+        <a href="javascript:;" id="gcLineRecall" class="gc-newbtn" style="display:none;" title="收回该线在本游戏的全部专属桌台（含这些桌上的机器人配置），该线玩家回到公共桌台">收回专属桌台</a>
         <button type="button" id="mjhlAgentCopy" class="gc-newbtn" style="display:none;" title="复制当前已保存的公共桌台参数和权重，作为该代理线的独立参数配置">复制公共参数配置</button>
         <button type="button" id="mjhlAgentRecall" class="gc-newbtn" style="display:none;" title="收回该代理线的独立参数配置，改用公共桌台参数并跟随其后续更新">收回独立参数配置</button>
         <span id="gcLineTip" class="gc-line-tip"></span>
@@ -712,8 +712,8 @@
         $('#gcDelete,#gcRefresh').toggle(!mjhlMode);
         var tip = '';
         if (!ready) tip = '数据库还没有执行代理线补丁，暂不能分配专属桌台';
-        else if (hasGame && line && owned === 0) tip = '该线目前使用公共桌台；可「从公共桌台复制一套」，或点「新建桌台」单独建专属桌台';
-        else if (hasGame && line) tip = '以下为该线专属桌台，参数只对该线玩家生效（需新版客户端）；可点「新建桌台」继续新增专属桌台';
+        else if (hasGame && line && owned === 0) tip = '该线没有配置专属桌台，玩家可见公共桌台；可「从公共桌台复制一套」（参数＋机器人配置），或点「新建桌台」单独建专属桌台';
+        else if (hasGame && line) tip = '以下为该线专属桌台：该线玩家只看到这些桌、公共桌台不可见（需新版客户端），参数只对该线玩家生效；可点「新建桌台」继续新增专属桌台';
         $('#gcLineTip').text(tip);
         gcMjhlInheritanceUi();
         if (gameId === 54) { $('#gcLineCopy,#gcLineRecall,#gcNewTable,#gcDelete,#gcRefresh').hide(); }
@@ -724,7 +724,7 @@
         var line = gcCurLine();
         var gameId = parseInt($('#gcGameSel').val(), 10);
         if (!line || isNaN(gameId) || gameId < 0) return;
-        confirm('确定把本游戏全部公共桌台的参数复制一套给【' + line + '】吗？\n复制后该线玩家进入本游戏只看到这些专属桌台（需新版客户端），桌台参数可在左侧逐桌修改。', function () {
+        confirm('确定把本游戏全部公共桌台复制一套给【' + line + '】吗？\n1. 复制所有公共桌台参数到专属桌台；\n2. 复制所有公共桌台机器人配置到专属桌台；\n3. 复制后该线玩家只看到专属桌台、不再看到公共桌台（需新版客户端），中奖播报和排行榜也只含可见桌台和可见游戏。\n桌台参数可在左侧逐桌修改。', function () {
             request(GC_URL.lineCopy, { GAME_ID: gameId, GAME_TYPE: gcGetType(), LINE: line, __RequestVerificationToken: gcLineToken() }, function (data) {
                 gcMsg(data);
                 if (data && data.code == 1) gcReloadLinesAndTables();
@@ -735,7 +735,7 @@
         var line = gcCurLine();
         var gameId = parseInt($('#gcGameSel').val(), 10);
         if (!line || isNaN(gameId) || gameId < 0) return;
-        confirm('确定收回【' + line + '】在本游戏的专属桌台吗？\n收回后该线玩家重新进入游戏会回到公共桌台；专属桌号保留但谁都看不到，下次分配时优先复用。', function () {
+        confirm('确定收回【' + line + '】在本游戏的全部专属桌台吗？\n将一次性收回该线本游戏所有专属桌台（含复制来的和单独新建的），并删除这些桌上的机器人配置；收回后该线玩家重新进入游戏会回到公共桌台；专属桌号保留但谁都看不到，下次分配时优先复用。', function () {
             request(GC_URL.lineRecall, { GAME_ID: gameId, LINE: line, __RequestVerificationToken: gcLineToken() }, function (data) {
                 gcMsg(data);
                 if (data && data.code == 1) gcReloadLinesAndTables();
